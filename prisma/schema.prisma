@@ -66,12 +66,12 @@ model Auditoria {
 }
 
 model Rango {
-  rangoId        Int        @id @default(autoincrement()) @map("rango_id") @db.SmallInt
+  rangoId        Int        @id @default(autoincrement()) @map("grado_id") @db.SmallInt
   abreviacion    String     @unique
   nombreCompleto String     @unique @map("nombre_completo")
   personal       Personal[]
 
-  @@map("rango")
+  @@map("grado")
 }
 
 model Bateria {
@@ -107,7 +107,7 @@ model Personal {
   nombre1       String
   nombre2       String?
   fechaIngreso  DateTime?       @map("fecha_ingreso") @db.Date
-  rangoId       Int             @map("rango_id") @db.SmallInt
+  rangoId       Int             @map("grado_id") @db.SmallInt
   bateriaId     Int             @map("bateria_id") @db.SmallInt
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)

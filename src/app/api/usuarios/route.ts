@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   if (!isValidPayload(body)) {
     return NextResponse.json(
-      { error: "Payload invalido. username y password (min 8 caracteres) son obligatorios." },
+      { error: "Payload invalido. username y contrasena (min 8 caracteres) son obligatorios." },
       { status: 400 },
     );
   }

@@ -26,7 +26,7 @@ function parseRangoId(raw: string) {
 }
 
 export async function PUT(req: Request, context: { params: Promise<{ rangoId: string }> }) {
-  const auth = await authorizeRequest(req, "write_data");
+  const auth = await authorizeRequest(req, "manage_users");
   if (!auth.ok) return auth.response;
 
   const { rangoId: rangoIdParam } = await context.params;
@@ -72,7 +72,7 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
 }
 
 export async function DELETE(req: Request, context: { params: Promise<{ rangoId: string }> }) {
-  const auth = await authorizeRequest(req, "delete_data");
+  const auth = await authorizeRequest(req, "manage_users");
   if (!auth.ok) return auth.response;
 
   const { rangoId: rangoIdParam } = await context.params;

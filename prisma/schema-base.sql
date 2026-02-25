@@ -41,11 +41,17 @@ END
 FROM parts;
 $$;
 
-CREATE TABLE "rango" (
-  "rango_id" SMALLSERIAL PRIMARY KEY,
+CREATE TABLE "grado" (
+  "grado_id" SMALLSERIAL PRIMARY KEY,
   "abreviacion" TEXT NOT NULL UNIQUE,
   "nombre_completo" TEXT NOT NULL UNIQUE
 );
+
+INSERT INTO "grado" ("abreviacion", "nombre_completo") VALUES
+('Sgto', 'Sargento'),
+(U&'Cabo 1\00B0', 'Cabo Primero'),
+(U&'Cabo 2\00B0', 'Cabo Segundo'),
+(U&'Sdo 1\00B0', 'Soldado Primero');
 
 CREATE TABLE "bateria" (
   "bateria_id" SMALLSERIAL PRIMARY KEY,
@@ -74,14 +80,14 @@ CREATE TABLE "personal" (
   "nombre1" TEXT NOT NULL,
   "nombre2" TEXT,
   "fecha_ingreso" DATE,
-  "rango_id" SMALLINT NOT NULL REFERENCES "rango"("rango_id"),
+  "grado_id" SMALLINT NOT NULL REFERENCES "grado"("grado_id"),
   "bateria_id" SMALLINT NOT NULL REFERENCES "bateria"("bateria_id"),
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   CONSTRAINT "personal_ci_uruguaya_valida_chk" CHECK (public.es_ci_uruguaya_valida("ci"))
 );
 
-CREATE INDEX "personal_rango_id_idx" ON "personal"("rango_id");
+CREATE INDEX "personal_grado_id_idx" ON "personal"("grado_id");
 CREATE INDEX "personal_bateria_id_idx" ON "personal"("bateria_id");
 
 CREATE TABLE "personal_talla" (
@@ -89,6 +95,11 @@ CREATE TABLE "personal_talla" (
   "talla_tipo_id" SMALLINT NOT NULL REFERENCES "talla_tipo"("talla_tipo_id"),
   "talla_valor" TEXT NOT NULL,
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+  CONSTRAINT "personal_talla_valor_permitido_chk" CHECK (
+    ("talla_tipo_id" IN (1, 2, 3) AND "talla_valor" IN ('XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'))
+    OR ("talla_tipo_id" = 4 AND "talla_valor" IN ('54', '55', '56', '57', '58', '59', '60', '61', '62', '63'))
+    OR ("talla_tipo_id" = 5 AND "talla_valor" IN ('34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47'))
+  ),
   PRIMARY KEY ("ci", "talla_tipo_id")
 );
 

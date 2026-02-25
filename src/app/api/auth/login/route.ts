@@ -22,7 +22,7 @@ function isValidPayload(body: unknown): body is LoginPayload {
 export async function POST(request: Request) {
   const body = await request.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Usuario y password son obligatorios." }, { status: 400 });
+    return NextResponse.json({ error: "Usuario y contrasena son obligatorios." }, { status: 400 });
   }
 
   const username = body.username.trim();

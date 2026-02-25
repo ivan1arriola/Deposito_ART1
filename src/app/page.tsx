@@ -1,7 +1,15 @@
 "use client";
 
-import { FormEvent, useEffect, useState, type ReactNode } from "react";
+import { FormEvent, useCallback, useEffect, useState, type ReactNode } from "react";
 import { isValidUruguayanCi } from "@/lib/ci";
+import {
+  TALLA_KEYS,
+  TALLA_LABELS,
+  TALLA_OPTIONS,
+  type TallaKey,
+  normalizeTallaValue,
+  isAllowedTallaValue,
+} from "@/lib/tallas";
 
 type Rango = { rangoId: number; abreviacion: string; nombreCompleto: string };
 type Bateria = { bateriaId: number; nombre: string };
@@ -72,16 +80,6 @@ type AuditoriaRecord = {
   createdAt: string;
 };
 
-const TALLA_KEYS = ["PARKA", "CAMISACO", "PANTALON", "KEPI", "CALZADO"] as const;
-type TallaKey = (typeof TALLA_KEYS)[number];
-const TALLA_LABELS: Record<TallaKey, string> = {
-  PARKA: "Parka",
-  CAMISACO: "Camisaco",
-  PANTALON: "Pantalon",
-  KEPI: "Kepi",
-  CALZADO: "Calzado",
-};
-
 const EMPTY_PERSONAL_FORM: PersonalForm = {
   ci: "",
   apellido1: "",
@@ -147,7 +145,20 @@ function toDateInput(dateIso: string | null) {
   return dateIso.slice(0, 10);
 }
 
+function toFormTallaValue(key: TallaKey, value: string) {
+  if (value === "-" || !isAllowedTallaValue(key, value)) return "";
+  return normalizeTallaValue(key, value) ?? "";
+}
+
 function personalPayload(form: PersonalForm, includeCi: boolean) {
+  const tallas = TALLA_KEYS.reduce(
+    (acc, key) => {
+      acc[key] = normalizeTallaValue(key, form[key]) ?? "";
+      return acc;
+    },
+    {} as Record<TallaKey, string>,
+  );
+
   return {
     ...(includeCi ? { ci: form.ci.trim() } : {}),
     apellido1: form.apellido1.trim(),
@@ -157,13 +168,7 @@ function personalPayload(form: PersonalForm, includeCi: boolean) {
     fechaIngreso: form.fechaIngreso || undefined,
     rangoId: Number(form.rangoId),
     bateriaId: Number(form.bateriaId),
-    tallas: {
-      PARKA: form.PARKA.trim(),
-      CAMISACO: form.CAMISACO.trim(),
-      PANTALON: form.PANTALON.trim(),
-      KEPI: form.KEPI.trim(),
-      CALZADO: form.CALZADO.trim(),
-    },
+    tallas,
   };
 }
 
@@ -178,11 +183,11 @@ function toEditablePersonal(persona: Personal): PersonalForm {
     fechaIngreso: toDateInput(persona.fechaIngreso),
     rangoId: String(persona.rangoId),
     bateriaId: String(persona.bateriaId),
-    PARKA: tallas.PARKA === "-" ? "" : tallas.PARKA,
-    CAMISACO: tallas.CAMISACO === "-" ? "" : tallas.CAMISACO,
-    PANTALON: tallas.PANTALON === "-" ? "" : tallas.PANTALON,
-    KEPI: tallas.KEPI === "-" ? "" : tallas.KEPI,
-    CALZADO: tallas.CALZADO === "-" ? "" : tallas.CALZADO,
+    PARKA: toFormTallaValue("PARKA", tallas.PARKA),
+    CAMISACO: toFormTallaValue("CAMISACO", tallas.CAMISACO),
+    PANTALON: toFormTallaValue("PANTALON", tallas.PANTALON),
+    KEPI: toFormTallaValue("KEPI", tallas.KEPI),
+    CALZADO: toFormTallaValue("CALZADO", tallas.CALZADO),
   };
 }
 
@@ -238,8 +243,11 @@ function SmallActionButton(props: { text: string; tone: "edit" | "delete" | "ok"
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState("Cargando datos...");
+  const [status, setStatus] = useState("Verificando sesion...");
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const [rangos, setRangos] = useState<Rango[]>([]);
   const [baterias, setBaterias] = useState<Bateria[]>([]);
@@ -277,6 +285,15 @@ export default function Home() {
   const canRegisterPersonal = canWrite && rangos.length > 0 && baterias.length > 0;
   const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "items";
   const ciLooksValid = newPersonal.ci.trim() === "" || isValidUruguayanCi(newPersonal.ci);
+  const requiredPersonalFields = [
+    newPersonal.ci.trim() !== "" && isValidUruguayanCi(newPersonal.ci),
+    newPersonal.apellido1.trim() !== "",
+    newPersonal.nombre1.trim() !== "",
+    Number(newPersonal.rangoId) > 0,
+    Number(newPersonal.bateriaId) > 0,
+  ];
+  const requiredPersonalCompleted = requiredPersonalFields.filter(Boolean).length;
+  const canSubmitPersonal = canRegisterPersonal && requiredPersonalCompleted === requiredPersonalFields.length;
 
   useEffect(() => {
     if (activeView === "admin" && !isAdmin) {
@@ -284,7 +301,18 @@ export default function Home() {
     }
   }, [activeView, isAdmin]);
 
-  async function loadData(showSpinner = false) {
+  function clearLoadedData() {
+    setRangos([]);
+    setBaterias([]);
+    setItems([]);
+    setPersonal([]);
+    setUsuarios([]);
+    setAuditoria([]);
+    setEditPersonalCi(null);
+    setEditPersonal(EMPTY_PERSONAL_FORM);
+  }
+
+  const loadData = useCallback(async (showSpinner = false) => {
     if (showSpinner) setLoading(true);
 
     try {
@@ -319,25 +347,27 @@ export default function Home() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "No se pudo cargar la informacion.";
       if (message === "No autenticado.") {
-        window.location.href = "/login";
+        setCurrentUser(null);
+        clearLoadedData();
+        setStatus("Ingresa tus credenciales.");
         return;
       }
       setStatus(message);
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
       void loadData(true);
     }, 0);
     return () => window.clearTimeout(timerId);
-  }, []);
+  }, [loadData]);
 
   async function createRango() {
-    if (!canWrite) {
-      setStatus("No tienes permisos para crear.");
+    if (!isAdmin) {
+      setStatus("Solo admin puede modificar grados.");
       return;
     }
     try {
@@ -359,8 +389,8 @@ export default function Home() {
   }
 
   async function updateRango(rangoId: number) {
-    if (!canWrite) {
-      setStatus("No tienes permisos para editar.");
+    if (!isAdmin) {
+      setStatus("Solo admin puede modificar grados.");
       return;
     }
     try {
@@ -383,8 +413,8 @@ export default function Home() {
   }
 
   async function deleteRango(rangoId: number) {
-    if (!canDelete) {
-      setStatus("No tienes permisos para eliminar.");
+    if (!isAdmin) {
+      setStatus("Solo admin puede modificar grados.");
       return;
     }
     if (!window.confirm("Eliminar grado del personal?")) return;
@@ -572,11 +602,35 @@ export default function Home() {
     setEditPersonal(toEditablePersonal(persona));
   }
 
+  async function login(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoginLoading(true);
+    setStatus("Iniciando sesion...");
+
+    try {
+      await api("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+      });
+      setLoginPassword("");
+      await loadData(true);
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "No se pudo iniciar sesion.");
+    } finally {
+      setLoginLoading(false);
+    }
+  }
+
   async function logout() {
     try {
       await api("/api/auth/logout", { method: "POST" });
     } finally {
-      window.location.href = "/login";
+      setCurrentUser(null);
+      clearLoadedData();
+      setLoginPassword("");
+      setActiveView("personal_registro");
+      setStatus("Sesion cerrada. Ingresa tus credenciales.");
     }
   }
 
@@ -653,10 +707,10 @@ export default function Home() {
 
   async function resetUserPassword(usuario: UsuarioAdmin) {
     if (!isAdmin) {
-      setStatus("Solo admin puede resetear passwords.");
+      setStatus("Solo admin puede restablecer contrasenas.");
       return;
     }
-    const password = window.prompt(`Nueva password para ${usuario.username} (min 8 chars)`, "");
+    const password = window.prompt(`Nueva contrasena para ${usuario.username} (min 8 caracteres)`, "");
     if (!password) return;
 
     try {
@@ -665,10 +719,10 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-      setStatus("Password actualizada.");
+      setStatus("Contrasena actualizada.");
       await loadData();
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar la password.");
+      setStatus(error instanceof Error ? error.message : "No se pudo actualizar la contrasena.");
     }
   }
 
@@ -693,6 +747,41 @@ export default function Home() {
     return selected
       ? "ej-view-active rounded-lg px-3 py-2 text-sm font-semibold"
       : "ej-view-idle rounded-lg px-3 py-2 text-sm font-semibold";
+  }
+
+  if (!currentUser) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
+        <section className="w-full rounded-2xl border border-stone-300/80 bg-white/90 p-6 shadow-sm">
+          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Soldados App</p>
+          <h1 className="mt-2 text-2xl font-bold text-stone-900">Iniciar sesion</h1>
+          <p className="mt-2 text-sm text-stone-600">{status}</p>
+
+          <form onSubmit={login} className="mt-4 space-y-3">
+            <input
+              value={loginUsername}
+              onChange={(event) => setLoginUsername(event.target.value)}
+              placeholder="Usuario"
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+            <input
+              value={loginPassword}
+              onChange={(event) => setLoginPassword(event.target.value)}
+              placeholder="Contrasena"
+              type="password"
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={loading || loginLoading}
+              className="w-full rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {loading || loginLoading ? "Ingresando..." : "Entrar"}
+            </button>
+          </form>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -766,23 +855,30 @@ export default function Home() {
           {activeView === "grados" ? (
             <article className="ej-card rounded-2xl p-4">
               <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Grado del Personal</h2>
+              {!isAdmin ? (
+                <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
+                  Modo solo lectura: solo admin puede crear, editar o eliminar grados.
+                </p>
+              ) : null}
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[180px_1fr_auto]">
                 <input
                   value={newRangoAbreviacion}
                   onChange={(event) => setNewRangoAbreviacion(event.target.value)}
                   placeholder="Abreviacion"
                   className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  disabled={!isAdmin}
                 />
                 <input
                   value={newRangoNombreCompleto}
                   onChange={(event) => setNewRangoNombreCompleto(event.target.value)}
                   placeholder="Nombre completo"
                   className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  disabled={!isAdmin}
                 />
                 <button
                   type="button"
                   onClick={() => void createRango()}
-                  disabled={!canWrite}
+                  disabled={!isAdmin}
                   className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
                 >
                   Crear
@@ -804,34 +900,38 @@ export default function Home() {
                           onChange={(event) => setEditRangoNombreCompleto(event.target.value)}
                           className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                         />
-                        <div className="flex gap-2">
-                          <SmallActionButton text="Ok" tone="ok" onClick={() => void updateRango(rango.rangoId)} />
-                          <SmallActionButton
-                            text="Cancelar"
-                            tone="neutral"
-                            onClick={() => {
-                              setEditRangoId(null);
-                              setEditRangoAbreviacion("");
-                              setEditRangoNombreCompleto("");
-                            }}
-                          />
-                        </div>
+                        {isAdmin ? (
+                          <div className="flex gap-2">
+                            <SmallActionButton text="Ok" tone="ok" onClick={() => void updateRango(rango.rangoId)} />
+                            <SmallActionButton
+                              text="Cancelar"
+                              tone="neutral"
+                              onClick={() => {
+                                setEditRangoId(null);
+                                setEditRangoAbreviacion("");
+                                setEditRangoNombreCompleto("");
+                              }}
+                            />
+                          </div>
+                        ) : null}
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <span className="text-sm font-medium text-stone-800">{rangoLabel(rango)}</span>
-                        <div className="flex gap-2">
-                          <SmallActionButton
-                            text="Editar"
-                            tone="edit"
-                            onClick={() => {
-                              setEditRangoId(rango.rangoId);
-                              setEditRangoAbreviacion(rango.abreviacion);
-                              setEditRangoNombreCompleto(rango.nombreCompleto);
-                            }}
-                          />
-                          <SmallActionButton text="Borrar" tone="delete" onClick={() => void deleteRango(rango.rangoId)} />
-                        </div>
+                        {isAdmin ? (
+                          <div className="flex gap-2">
+                            <SmallActionButton
+                              text="Editar"
+                              tone="edit"
+                              onClick={() => {
+                                setEditRangoId(rango.rangoId);
+                                setEditRangoAbreviacion(rango.abreviacion);
+                                setEditRangoNombreCompleto(rango.nombreCompleto);
+                              }}
+                            />
+                            <SmallActionButton text="Borrar" tone="delete" onClick={() => void deleteRango(rango.rangoId)} />
+                          </div>
+                        ) : null}
                       </div>
                     )}
                   </div>
@@ -999,131 +1099,186 @@ export default function Home() {
       ) : null}
 
       {activeView === "personal_registro" ? (
-        <section className="ej-card mt-6 rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-stone-900">Registrar Personal</h2>
-          <p className="mt-1 text-xs text-stone-600">
-            Completa los datos del alistado. Los campos con * son obligatorios.
-          </p>
-          <form onSubmit={createPersonal} className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Cedula de Identidad *</span>
-              <input
-                value={newPersonal.ci}
-                onChange={(event) => setNewPersonal((prev) => ({ ...prev, ci: event.target.value }))}
-                placeholder="Ej: 55366796"
-                inputMode="numeric"
-                className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm ${ciLooksValid ? "border-stone-300" : "border-rose-600 bg-rose-50"}`}
-              />
-              <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
-            </label>
+        <section className="ej-card mt-6 overflow-hidden rounded-2xl">
+          <div className="border-b border-stone-200 bg-gradient-to-r from-stone-50 to-lime-50/60 px-4 py-4 sm:px-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-stone-900">Registrar Personal</h2>
+                <p className="mt-1 text-sm text-stone-600">
+                  Carga datos personales, destino y talles en una sola ficha.
+                </p>
+              </div>
+              <span className="inline-flex items-center rounded-full border border-lime-700/25 bg-lime-100/70 px-3 py-1 text-xs font-semibold text-lime-900">
+                {`Campos obligatorios: ${requiredPersonalCompleted}/5`}
+              </span>
+            </div>
+          </div>
 
-            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Apellido 1 *</span>
-              <input
-                value={newPersonal.apellido1}
-                onChange={(event) => setNewPersonal((prev) => ({ ...prev, apellido1: event.target.value }))}
-                placeholder="Apellido principal"
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
+          <form onSubmit={createPersonal} className="px-4 py-4 sm:px-5 sm:py-5">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+              <div className="space-y-4">
+                <fieldset className="rounded-xl border border-stone-200 bg-stone-50/55 p-4">
+                  <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Identidad</legend>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <label className="xl:col-span-2">
+                      <span className="block text-xs font-medium text-stone-700">Cedula de identidad *</span>
+                      <input
+                        value={newPersonal.ci}
+                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, ci: event.target.value }))}
+                        placeholder="Ej: 55366796"
+                        inputMode="numeric"
+                        className={`mt-1 w-full rounded-lg border px-3 py-2.5 text-sm ${ciLooksValid ? "border-stone-300" : "border-rose-600 bg-rose-50"}`}
+                      />
+                      <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
+                    </label>
 
-            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Apellido 2</span>
-              <input
-                value={newPersonal.apellido2}
-                onChange={(event) => setNewPersonal((prev) => ({ ...prev, apellido2: event.target.value }))}
-                placeholder="Apellido secundario"
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
+                    <label>
+                      <span className="block text-xs font-medium text-stone-700">Apellido 1 *</span>
+                      <input
+                        value={newPersonal.apellido1}
+                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, apellido1: event.target.value }))}
+                        placeholder="Apellido principal"
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+                      />
+                    </label>
 
-            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre 1 *</span>
-              <input
-                value={newPersonal.nombre1}
-                onChange={(event) => setNewPersonal((prev) => ({ ...prev, nombre1: event.target.value }))}
-                placeholder="Primer nombre"
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
+                    <label>
+                      <span className="block text-xs font-medium text-stone-700">Apellido 2</span>
+                      <input
+                        value={newPersonal.apellido2}
+                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, apellido2: event.target.value }))}
+                        placeholder="Apellido secundario"
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+                      />
+                    </label>
 
-            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre 2</span>
-              <input
-                value={newPersonal.nombre2}
-                onChange={(event) => setNewPersonal((prev) => ({ ...prev, nombre2: event.target.value }))}
-                placeholder="Segundo nombre"
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
+                    <label>
+                      <span className="block text-xs font-medium text-stone-700">Nombre 1 *</span>
+                      <input
+                        value={newPersonal.nombre1}
+                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, nombre1: event.target.value }))}
+                        placeholder="Primer nombre"
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+                      />
+                    </label>
 
-            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Fecha de ingreso</span>
-              <input
-                type="date"
-                value={newPersonal.fechaIngreso}
-                onChange={(event) => setNewPersonal((prev) => ({ ...prev, fechaIngreso: event.target.value }))}
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
+                    <label>
+                      <span className="block text-xs font-medium text-stone-700">Nombre 2</span>
+                      <input
+                        value={newPersonal.nombre2}
+                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, nombre2: event.target.value }))}
+                        placeholder="Segundo nombre"
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+                      />
+                    </label>
+                  </div>
+                </fieldset>
 
-            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Grado del Personal *</span>
-              <select
-                value={newPersonal.rangoId}
-                onChange={(event) => setNewPersonal((prev) => ({ ...prev, rangoId: event.target.value }))}
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              >
-                <option value="">Seleccionar grado</option>
-                {rangos.map((rango) => (
-                  <option key={rango.rangoId} value={rango.rangoId}>
-                    {rangoLabel(rango)}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <fieldset className="rounded-xl border border-stone-200 bg-stone-50/55 p-4">
+                  <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Destino</legend>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <label>
+                      <span className="block text-xs font-medium text-stone-700">Fecha de ingreso</span>
+                      <input
+                        type="date"
+                        value={newPersonal.fechaIngreso}
+                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, fechaIngreso: event.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+                      />
+                    </label>
 
-            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Bateria *</span>
-              <select
-                value={newPersonal.bateriaId}
-                onChange={(event) => setNewPersonal((prev) => ({ ...prev, bateriaId: event.target.value }))}
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              >
-                <option value="">Seleccionar bateria</option>
-                {baterias.map((bateria) => (
-                  <option key={bateria.bateriaId} value={bateria.bateriaId}>
-                    {bateria.nombre}
-                  </option>
-                ))}
-              </select>
-            </label>
+                    <label>
+                      <span className="block text-xs font-medium text-stone-700">Grado del personal *</span>
+                      <select
+                        value={newPersonal.rangoId}
+                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, rangoId: event.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+                      >
+                        <option value="">Seleccionar grado</option>
+                        {rangos.map((rango) => (
+                          <option key={rango.rangoId} value={rango.rangoId}>
+                            {rangoLabel(rango)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
-            {TALLA_KEYS.map((key) => (
-              <label key={key} className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-                <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">{`Talla ${TALLA_LABELS[key]}`}</span>
-                <input
-                  value={newPersonal[key]}
-                  onChange={(event) => setNewPersonal((prev) => ({ ...prev, [key]: event.target.value }))}
-                  placeholder={`Talla ${TALLA_LABELS[key]}`}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              </label>
-            ))}
-            <button
-              type="submit"
-              disabled={!canRegisterPersonal}
-              className="ej-button rounded-lg px-3 py-3 text-sm font-semibold disabled:opacity-50 sm:col-span-2 lg:col-span-2"
-            >
-              Registrar Personal
-            </button>
+                    <label>
+                      <span className="block text-xs font-medium text-stone-700">Bateria *</span>
+                      <select
+                        value={newPersonal.bateriaId}
+                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, bateriaId: event.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+                      >
+                        <option value="">Seleccionar bateria</option>
+                        {baterias.map((bateria) => (
+                          <option key={bateria.bateriaId} value={bateria.bateriaId}>
+                            {bateria.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <fieldset className="rounded-xl border border-stone-200 bg-stone-50/55 p-4">
+                  <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Talles reglamentarios</legend>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    {TALLA_KEYS.map((key) => (
+                      <label key={key}>
+                        <span className="block text-xs font-medium text-stone-700">{`Talla ${TALLA_LABELS[key]}`}</span>
+                        <select
+                          value={newPersonal[key]}
+                          onChange={(event) => setNewPersonal((prev) => ({ ...prev, [key]: event.target.value }))}
+                          className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+                        >
+                          <option value="">Seleccionar</option>
+                          {TALLA_OPTIONS[key].map((option) => (
+                            <option key={`${key}-${option}`} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </div>
+
+              <aside className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-stone-900">Estado del formulario</h3>
+                <p className="mt-1 text-xs text-stone-600">Completa los campos obligatorios para habilitar el registro.</p>
+
+                {!canRegisterPersonal ? (
+                  <p className="mt-3 rounded-lg border border-amber-300/80 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    Primero debes registrar Grados y Bateria.
+                  </p>
+                ) : null}
+
+                {!ciLooksValid ? (
+                  <p className="mt-3 rounded-lg border border-rose-300/80 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                    La cedula ingresada no es valida.
+                  </p>
+                ) : null}
+
+                <div className="mt-4 space-y-2 text-xs text-stone-600">
+                  <p>{`Cedula valida: ${requiredPersonalFields[0] ? "Si" : "No"}`}</p>
+                  <p>{`Apellido 1: ${requiredPersonalFields[1] ? "Completo" : "Falta"}`}</p>
+                  <p>{`Nombre 1: ${requiredPersonalFields[2] ? "Completo" : "Falta"}`}</p>
+                  <p>{`Grado: ${requiredPersonalFields[3] ? "Seleccionado" : "Falta"}`}</p>
+                  <p>{`Bateria: ${requiredPersonalFields[4] ? "Seleccionada" : "Falta"}`}</p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!canSubmitPersonal}
+                  className="ej-button mt-5 w-full rounded-lg px-3 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Registrar Personal
+                </button>
+              </aside>
+            </div>
           </form>
-          {!canRegisterPersonal ? (
-            <p className="mt-2 text-xs text-amber-700">
-              No se puede registrar personal sin registrar Grados y Bateria previamente.
-            </p>
-          ) : null}
-          {!ciLooksValid ? <p className="mt-2 text-xs text-rose-700">CI uruguaya invalida.</p> : null}
         </section>
       ) : null}
 
@@ -1260,13 +1415,21 @@ export default function Home() {
               ))}
             </select>
             {TALLA_KEYS.map((key) => (
-              <input
-                key={`edit-${key}`}
-                value={editPersonal[key]}
-                onChange={(event) => setEditPersonal((prev) => ({ ...prev, [key]: event.target.value }))}
-                placeholder={`Talla ${key}`}
-                className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
+              <label key={`edit-${key}`} className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+                <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">{`Talla ${TALLA_LABELS[key]}`}</span>
+                <select
+                  value={editPersonal[key]}
+                  onChange={(event) => setEditPersonal((prev) => ({ ...prev, [key]: event.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                >
+                  <option value="">Seleccionar</option>
+                  {TALLA_OPTIONS[key].map((option) => (
+                    <option key={`edit-${key}-${option}`} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
             ))}
             <button
               type="button"
@@ -1293,7 +1456,7 @@ export default function Home() {
               <input
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
-                placeholder="Password (min 8)"
+                placeholder="Contrasena (min 8)"
                 className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 type="password"
               />
@@ -1339,7 +1502,7 @@ export default function Home() {
                         onClick={() => void toggleUserActive(usuario)}
                       />
                       <SmallActionButton
-                        text="Password"
+                        text="Contrasena"
                         tone="ok"
                         onClick={() => void resetUserPassword(usuario)}
                       />

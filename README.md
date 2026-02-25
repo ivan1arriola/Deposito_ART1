@@ -7,7 +7,7 @@ Next.js + Prisma + PostgreSQL (Neon), con modelo en 3FN.
 Tablas principales:
 
 - `personal` (`ci` como PK)
-- `rango` (catalogo)
+- `grado` (catalogo)
 - `bateria` (catalogo)
 - `talla_tipo` (catalogo: PARKA, CAMISACO, PANTALON, KEPI, CALZADO)
 - `personal_talla` (PK compuesta `ci + talla_tipo_id`)
@@ -24,6 +24,7 @@ Tablas principales:
 Configura en `.env`:
 
 - `DATABASE_URL` (Neon pooler)
+- `DATABASE_URL_UNPOOLED` (opcional)
 
 ## Comandos
 

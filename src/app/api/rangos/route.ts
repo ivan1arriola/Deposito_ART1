@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await authorizeRequest(req, "write_data");
+  const auth = await authorizeRequest(req, "manage_users");
   if (!auth.ok) return auth.response;
 
   const body = await req.json();

@@ -39,7 +39,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
 
   if (body.password !== undefined) {
     if (typeof body.password !== "string" || body.password.length < 8) {
-      return NextResponse.json({ error: "password invalido. Minimo 8 caracteres." }, { status: 400 });
+      return NextResponse.json({ error: "contrasena invalida. Minimo 8 caracteres." }, { status: 400 });
     }
     data.passwordHash = await hashPassword(body.password);
   }

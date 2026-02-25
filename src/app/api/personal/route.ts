@@ -3,9 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidUruguayanCi } from "@/lib/ci";
-
-const TALLA_KEYS = ["PARKA", "CAMISACO", "PANTALON", "KEPI", "CALZADO"] as const;
-type TallaKey = (typeof TALLA_KEYS)[number];
+import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
 
 type PersonalPayload = {
   ci: string;
@@ -115,12 +113,18 @@ export async function POST(req: Request) {
   }
 
   const tallasPayload = extractTallas(body);
+  const tallasValidation = validateAndNormalizeTallas(tallasPayload);
+  if (!tallasValidation.ok) {
+    return NextResponse.json({ error: tallasValidation.error }, { status: 400 });
+  }
+
+  const normalizedTallas = tallasValidation.values;
   const tallaTipos = await prisma.tallaTipo.findMany({
     where: { nombre: { in: TALLA_KEYS as unknown as string[] } },
   });
   const tallaTipoMap = new Map(tallaTipos.map((tipo) => [tipo.nombre as TallaKey, tipo.tallaTipoId]));
 
-  const tallasToCreate = Object.entries(tallasPayload)
+  const tallasToCreate = Object.entries(normalizedTallas)
     .map(([nombre, tallaValor]) => {
       const tallaTipoId = tallaTipoMap.get(nombre as TallaKey);
       if (!tallaTipoId || !tallaValor) return null;
