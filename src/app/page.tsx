@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState, type ReactNode } from "react";
+import { isValidUruguayanCi } from "@/lib/ci";
 
-type Rango = { rangoId: number; nombre: string };
+type Rango = { rangoId: number; abreviacion: string; nombreCompleto: string };
 type Bateria = { bateriaId: number; nombre: string };
 type Item = { itemId: string; nombre: string; requiereTalle: boolean; activo: boolean };
 type Talla = { tallaTipo: { nombre: string }; tallaValor: string };
@@ -43,7 +44,7 @@ type ItemForm = {
 };
 
 type Role = "ADMIN" | "EDITOR" | "VIEWER";
-type MainView = "personal" | "grados" | "baterias" | "items" | "admin";
+type MainView = "personal_registro" | "personal_gestion" | "grados" | "baterias" | "items" | "admin";
 
 type CurrentUser = {
   usuarioId: string;
@@ -72,6 +73,14 @@ type AuditoriaRecord = {
 };
 
 const TALLA_KEYS = ["PARKA", "CAMISACO", "PANTALON", "KEPI", "CALZADO"] as const;
+type TallaKey = (typeof TALLA_KEYS)[number];
+const TALLA_LABELS: Record<TallaKey, string> = {
+  PARKA: "Parka",
+  CAMISACO: "Camisaco",
+  PANTALON: "Pantalon",
+  KEPI: "Kepi",
+  CALZADO: "Calzado",
+};
 
 const EMPTY_PERSONAL_FORM: PersonalForm = {
   ci: "",
@@ -129,6 +138,10 @@ function fullName(persona: Personal) {
     .trim();
 }
 
+function rangoLabel(rango: Rango) {
+  return `${rango.abreviacion} - ${rango.nombreCompleto}`;
+}
+
 function toDateInput(dateIso: string | null) {
   if (!dateIso) return "";
   return dateIso.slice(0, 10);
@@ -183,8 +196,8 @@ function CatalogCard(props: {
   children: ReactNode;
 }) {
   return (
-    <article className="rounded-2xl border border-stone-300/80 bg-white/90 p-4 shadow-sm">
-      <h2 className="text-base font-semibold text-stone-900">{props.title}</h2>
+    <article className="ej-card rounded-2xl p-4">
+      <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">{props.title}</h2>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <input
           value={props.newValue}
@@ -196,7 +209,7 @@ function CatalogCard(props: {
           type="button"
           onClick={props.onCreate}
           disabled={props.createDisabled}
-          className="rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
         >
           Crear
         </button>
@@ -209,15 +222,15 @@ function CatalogCard(props: {
 function SmallActionButton(props: { text: string; tone: "edit" | "delete" | "ok" | "neutral"; onClick: () => void }) {
   const color =
     props.tone === "edit"
-      ? "bg-sky-700"
+      ? "ej-action-edit"
       : props.tone === "delete"
-        ? "bg-rose-700"
+        ? "ej-action-delete"
         : props.tone === "ok"
-          ? "bg-emerald-700"
-          : "bg-stone-500";
+          ? "ej-action-ok"
+          : "ej-action-neutral";
 
   return (
-    <button type="button" onClick={props.onClick} className={`rounded px-2 py-1 text-xs font-medium text-white ${color}`}>
+    <button type="button" onClick={props.onClick} className={`ej-action-btn rounded px-2 py-1 text-xs font-medium ${color}`}>
       {props.text}
     </button>
   );
@@ -239,9 +252,11 @@ export default function Home() {
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<Role>("VIEWER");
 
-  const [newRango, setNewRango] = useState("");
+  const [newRangoAbreviacion, setNewRangoAbreviacion] = useState("");
+  const [newRangoNombreCompleto, setNewRangoNombreCompleto] = useState("");
   const [editRangoId, setEditRangoId] = useState<number | null>(null);
-  const [editRangoNombre, setEditRangoNombre] = useState("");
+  const [editRangoAbreviacion, setEditRangoAbreviacion] = useState("");
+  const [editRangoNombreCompleto, setEditRangoNombreCompleto] = useState("");
 
   const [newBateria, setNewBateria] = useState("");
   const [editBateriaId, setEditBateriaId] = useState<number | null>(null);
@@ -254,17 +269,18 @@ export default function Home() {
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
   const [editPersonal, setEditPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
-  const [activeView, setActiveView] = useState<MainView>("personal");
+  const [activeView, setActiveView] = useState<MainView>("personal_registro");
 
   const isAdmin = currentUser?.rol === "ADMIN";
   const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
   const canDelete = canWrite;
   const canRegisterPersonal = canWrite && rangos.length > 0 && baterias.length > 0;
   const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "items";
+  const ciLooksValid = newPersonal.ci.trim() === "" || isValidUruguayanCi(newPersonal.ci);
 
   useEffect(() => {
     if (activeView === "admin" && !isAdmin) {
-      setActiveView("personal");
+      setActiveView("personal_registro");
     }
   }, [activeView, isAdmin]);
 
@@ -328,9 +344,13 @@ export default function Home() {
       await api("/api/rangos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: newRango }),
+        body: JSON.stringify({
+          abreviacion: newRangoAbreviacion,
+          nombreCompleto: newRangoNombreCompleto,
+        }),
       });
-      setNewRango("");
+      setNewRangoAbreviacion("");
+      setNewRangoNombreCompleto("");
       setStatus("Grado del personal creado.");
       await loadData();
     } catch (error: unknown) {
@@ -347,10 +367,14 @@ export default function Home() {
       await api(`/api/rangos/${rangoId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: editRangoNombre }),
+        body: JSON.stringify({
+          abreviacion: editRangoAbreviacion,
+          nombreCompleto: editRangoNombreCompleto,
+        }),
       });
       setEditRangoId(null);
-      setEditRangoNombre("");
+      setEditRangoAbreviacion("");
+      setEditRangoNombreCompleto("");
       setStatus("Grado del personal actualizado.");
       await loadData();
     } catch (error: unknown) {
@@ -487,6 +511,10 @@ export default function Home() {
     event.preventDefault();
     if (!canRegisterPersonal) {
       setStatus("No se puede registrar personal sin registrar Grados y Bateria previamente.");
+      return;
+    }
+    if (!isValidUruguayanCi(newPersonal.ci)) {
+      setStatus("CI uruguaya invalida. Revisa digito verificador.");
       return;
     }
 
@@ -663,13 +691,13 @@ export default function Home() {
   function viewButtonClass(view: MainView) {
     const selected = activeView === view;
     return selected
-      ? "rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white"
-      : "rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700";
+      ? "ej-view-active rounded-lg px-3 py-2 text-sm font-semibold"
+      : "ej-view-idle rounded-lg px-3 py-2 text-sm font-semibold";
   }
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
-      <section className="rounded-2xl border border-amber-900/20 bg-[linear-gradient(120deg,#2f3b31_0%,#3f4e42_60%,#59604b_100%)] p-5 text-amber-50 shadow-lg sm:p-6">
+      <section className="ej-hero rounded-2xl p-5 shadow-lg sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-amber-200/90">Soldados App</p>
@@ -683,14 +711,14 @@ export default function Home() {
             <button
               type="button"
               onClick={() => void loadData(true)}
-              className="rounded-lg border border-amber-100/35 bg-black/20 px-3 py-2 text-sm font-semibold text-amber-100"
+              className="ej-button-muted rounded-lg px-3 py-2 text-sm font-semibold"
             >
               Recargar
             </button>
             <button
               type="button"
               onClick={() => void logout()}
-              className="rounded-lg border border-amber-100/35 bg-rose-900/60 px-3 py-2 text-sm font-semibold text-amber-50"
+              className="ej-button-danger rounded-lg px-3 py-2 text-sm font-semibold"
             >
               Salir
             </button>
@@ -699,11 +727,22 @@ export default function Home() {
         <p className="mt-4 rounded-lg border border-amber-100/25 bg-black/20 px-3 py-2 text-xs">{status}</p>
       </section>
 
-      <section className="mt-4 rounded-2xl border border-stone-300/80 bg-white/90 p-3 shadow-sm sm:p-4">
+      <section className="ej-card mt-4 rounded-2xl p-3 sm:p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Vistas</p>
         <div className="mt-2 flex flex-wrap gap-2">
-          <button type="button" onClick={() => setActiveView("personal")} className={viewButtonClass("personal")}>
+          <button
+            type="button"
+            onClick={() => setActiveView("personal_registro")}
+            className={viewButtonClass("personal_registro")}
+          >
             Registrar Personal
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveView("personal_gestion")}
+            className={viewButtonClass("personal_gestion")}
+          >
+            Gestionar Personal
           </button>
           <button type="button" onClick={() => setActiveView("grados")} className={viewButtonClass("grados")}>
             Registrar Grados
@@ -725,54 +764,80 @@ export default function Home() {
       {inCatalogView ? (
         <section className="mt-6 grid grid-cols-1 gap-4">
           {activeView === "grados" ? (
-            <CatalogCard
-              title="Grado del Personal"
-              placeholder="Nuevo grado"
-              newValue={newRango}
-              onNewValueChange={setNewRango}
-              onCreate={() => void createRango()}
-              createDisabled={!canWrite}
-            >
-              {rangos.map((rango) => (
-                <div key={rango.rangoId} className="rounded-lg bg-stone-100/80 p-2">
-                  {editRangoId === rango.rangoId ? (
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <input
-                        value={editRangoNombre}
-                        onChange={(event) => setEditRangoNombre(event.target.value)}
-                        className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-                      />
-                      <div className="flex gap-2">
-                        <SmallActionButton text="Ok" tone="ok" onClick={() => void updateRango(rango.rangoId)} />
-                        <SmallActionButton
-                          text="Cancelar"
-                          tone="neutral"
-                          onClick={() => {
-                            setEditRangoId(null);
-                            setEditRangoNombre("");
-                          }}
+            <article className="ej-card rounded-2xl p-4">
+              <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Grado del Personal</h2>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[180px_1fr_auto]">
+                <input
+                  value={newRangoAbreviacion}
+                  onChange={(event) => setNewRangoAbreviacion(event.target.value)}
+                  placeholder="Abreviacion"
+                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+                <input
+                  value={newRangoNombreCompleto}
+                  onChange={(event) => setNewRangoNombreCompleto(event.target.value)}
+                  placeholder="Nombre completo"
+                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => void createRango()}
+                  disabled={!canWrite}
+                  className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                >
+                  Crear
+                </button>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {rangos.map((rango) => (
+                  <div key={rango.rangoId} className="rounded-lg bg-stone-100/80 p-2">
+                    {editRangoId === rango.rangoId ? (
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[180px_1fr_auto]">
+                        <input
+                          value={editRangoAbreviacion}
+                          onChange={(event) => setEditRangoAbreviacion(event.target.value)}
+                          className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                         />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <span className="text-sm font-medium text-stone-800">{rango.nombre}</span>
-                      <div className="flex gap-2">
-                        <SmallActionButton
-                          text="Editar"
-                          tone="edit"
-                          onClick={() => {
-                            setEditRangoId(rango.rangoId);
-                            setEditRangoNombre(rango.nombre);
-                          }}
+                        <input
+                          value={editRangoNombreCompleto}
+                          onChange={(event) => setEditRangoNombreCompleto(event.target.value)}
+                          className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                         />
-                        <SmallActionButton text="Borrar" tone="delete" onClick={() => void deleteRango(rango.rangoId)} />
+                        <div className="flex gap-2">
+                          <SmallActionButton text="Ok" tone="ok" onClick={() => void updateRango(rango.rangoId)} />
+                          <SmallActionButton
+                            text="Cancelar"
+                            tone="neutral"
+                            onClick={() => {
+                              setEditRangoId(null);
+                              setEditRangoAbreviacion("");
+                              setEditRangoNombreCompleto("");
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </CatalogCard>
+                    ) : (
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-sm font-medium text-stone-800">{rangoLabel(rango)}</span>
+                        <div className="flex gap-2">
+                          <SmallActionButton
+                            text="Editar"
+                            tone="edit"
+                            onClick={() => {
+                              setEditRangoId(rango.rangoId);
+                              setEditRangoAbreviacion(rango.abreviacion);
+                              setEditRangoNombreCompleto(rango.nombreCompleto);
+                            }}
+                          />
+                          <SmallActionButton text="Borrar" tone="delete" onClick={() => void deleteRango(rango.rangoId)} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </article>
           ) : null}
 
           {activeView === "baterias" ? (
@@ -827,7 +892,7 @@ export default function Home() {
           ) : null}
 
           {activeView === "items" ? (
-            <article className="rounded-2xl border border-stone-300/80 bg-white/90 p-4 shadow-sm">
+            <article className="ej-card rounded-2xl p-4">
               <h2 className="text-base font-semibold text-stone-900">Items</h2>
               <form onSubmit={createItem} className="mt-3 space-y-2">
                 <input
@@ -857,7 +922,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={!canWrite}
-                  className="rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
                 >
                   Crear item
                 </button>
@@ -933,83 +998,122 @@ export default function Home() {
         </section>
       ) : null}
 
-      {activeView === "personal" ? (
-        <section className="mt-6 rounded-2xl border border-stone-300/80 bg-white/90 p-4 shadow-sm">
+      {activeView === "personal_registro" ? (
+        <section className="ej-card mt-6 rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Registrar Personal</h2>
-          <form onSubmit={createPersonal} className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <input
-              value={newPersonal.ci}
-              onChange={(event) => setNewPersonal((prev) => ({ ...prev, ci: event.target.value }))}
-              placeholder="CI"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              value={newPersonal.apellido1}
-              onChange={(event) => setNewPersonal((prev) => ({ ...prev, apellido1: event.target.value }))}
-              placeholder="Apellido 1"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              value={newPersonal.apellido2}
-              onChange={(event) => setNewPersonal((prev) => ({ ...prev, apellido2: event.target.value }))}
-              placeholder="Apellido 2"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              value={newPersonal.nombre1}
-              onChange={(event) => setNewPersonal((prev) => ({ ...prev, nombre1: event.target.value }))}
-              placeholder="Nombre 1"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              value={newPersonal.nombre2}
-              onChange={(event) => setNewPersonal((prev) => ({ ...prev, nombre2: event.target.value }))}
-              placeholder="Nombre 2"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              type="date"
-              value={newPersonal.fechaIngreso}
-              onChange={(event) => setNewPersonal((prev) => ({ ...prev, fechaIngreso: event.target.value }))}
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <select
-              value={newPersonal.rangoId}
-              onChange={(event) => setNewPersonal((prev) => ({ ...prev, rangoId: event.target.value }))}
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            >
-              <option value="">Grado del Personal</option>
-              {rangos.map((rango) => (
-                <option key={rango.rangoId} value={rango.rangoId}>
-                  {rango.nombre}
-                </option>
-              ))}
-            </select>
-            <select
-              value={newPersonal.bateriaId}
-              onChange={(event) => setNewPersonal((prev) => ({ ...prev, bateriaId: event.target.value }))}
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            >
-              <option value="">Bateria</option>
-              {baterias.map((bateria) => (
-                <option key={bateria.bateriaId} value={bateria.bateriaId}>
-                  {bateria.nombre}
-                </option>
-              ))}
-            </select>
-            {TALLA_KEYS.map((key) => (
+          <p className="mt-1 text-xs text-stone-600">
+            Completa los datos del alistado. Los campos con * son obligatorios.
+          </p>
+          <form onSubmit={createPersonal} className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Cedula de Identidad *</span>
               <input
-                key={key}
-                value={newPersonal[key]}
-                onChange={(event) => setNewPersonal((prev) => ({ ...prev, [key]: event.target.value }))}
-                placeholder={`Talla ${key}`}
-                className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                value={newPersonal.ci}
+                onChange={(event) => setNewPersonal((prev) => ({ ...prev, ci: event.target.value }))}
+                placeholder="Ej: 55366796"
+                inputMode="numeric"
+                className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm ${ciLooksValid ? "border-stone-300" : "border-rose-600 bg-rose-50"}`}
               />
+              <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
+            </label>
+
+            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Apellido 1 *</span>
+              <input
+                value={newPersonal.apellido1}
+                onChange={(event) => setNewPersonal((prev) => ({ ...prev, apellido1: event.target.value }))}
+                placeholder="Apellido principal"
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+
+            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Apellido 2</span>
+              <input
+                value={newPersonal.apellido2}
+                onChange={(event) => setNewPersonal((prev) => ({ ...prev, apellido2: event.target.value }))}
+                placeholder="Apellido secundario"
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+
+            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre 1 *</span>
+              <input
+                value={newPersonal.nombre1}
+                onChange={(event) => setNewPersonal((prev) => ({ ...prev, nombre1: event.target.value }))}
+                placeholder="Primer nombre"
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+
+            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre 2</span>
+              <input
+                value={newPersonal.nombre2}
+                onChange={(event) => setNewPersonal((prev) => ({ ...prev, nombre2: event.target.value }))}
+                placeholder="Segundo nombre"
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+
+            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Fecha de ingreso</span>
+              <input
+                type="date"
+                value={newPersonal.fechaIngreso}
+                onChange={(event) => setNewPersonal((prev) => ({ ...prev, fechaIngreso: event.target.value }))}
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+
+            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Grado del Personal *</span>
+              <select
+                value={newPersonal.rangoId}
+                onChange={(event) => setNewPersonal((prev) => ({ ...prev, rangoId: event.target.value }))}
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              >
+                <option value="">Seleccionar grado</option>
+                {rangos.map((rango) => (
+                  <option key={rango.rangoId} value={rango.rangoId}>
+                    {rangoLabel(rango)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">Bateria *</span>
+              <select
+                value={newPersonal.bateriaId}
+                onChange={(event) => setNewPersonal((prev) => ({ ...prev, bateriaId: event.target.value }))}
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              >
+                <option value="">Seleccionar bateria</option>
+                {baterias.map((bateria) => (
+                  <option key={bateria.bateriaId} value={bateria.bateriaId}>
+                    {bateria.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {TALLA_KEYS.map((key) => (
+              <label key={key} className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+                <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">{`Talla ${TALLA_LABELS[key]}`}</span>
+                <input
+                  value={newPersonal[key]}
+                  onChange={(event) => setNewPersonal((prev) => ({ ...prev, [key]: event.target.value }))}
+                  placeholder={`Talla ${TALLA_LABELS[key]}`}
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
             ))}
             <button
               type="submit"
               disabled={!canRegisterPersonal}
-              className="rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:col-span-2 lg:col-span-1"
+              className="ej-button rounded-lg px-3 py-3 text-sm font-semibold disabled:opacity-50 sm:col-span-2 lg:col-span-2"
             >
               Registrar Personal
             </button>
@@ -1019,11 +1123,12 @@ export default function Home() {
               No se puede registrar personal sin registrar Grados y Bateria previamente.
             </p>
           ) : null}
+          {!ciLooksValid ? <p className="mt-2 text-xs text-rose-700">CI uruguaya invalida.</p> : null}
         </section>
       ) : null}
 
-      {activeView === "personal" ? (
-        <section className="mt-6 rounded-2xl border border-stone-300/80 bg-white/90 p-4 shadow-sm">
+      {activeView === "personal_gestion" ? (
+        <section className="ej-card mt-6 rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Personal</h2>
 
         <div className="mt-3 space-y-3 md:hidden">
@@ -1034,7 +1139,7 @@ export default function Home() {
                 <p className="text-xs font-mono text-stone-600">{persona.ci}</p>
                 <p className="mt-1 text-sm font-semibold text-stone-900">{fullName(persona)}</p>
                 <p className="mt-1 text-xs text-stone-600">
-                  {persona.rango.nombre} | {persona.bateria.nombre}
+                  {rangoLabel(persona.rango)} | {persona.bateria.nombre}
                 </p>
                 <p className="mt-1 text-xs text-stone-600">{`P:${tallas.PARKA} C:${tallas.CAMISACO} Pa:${tallas.PANTALON} K:${tallas.KEPI} Ca:${tallas.CALZADO}`}</p>
                 <div className="mt-2 flex gap-2">
@@ -1065,7 +1170,7 @@ export default function Home() {
                   <tr key={persona.ci}>
                     <td className="px-3 py-2 font-mono text-xs text-stone-700">{persona.ci}</td>
                     <td className="px-3 py-2 text-stone-900">{fullName(persona)}</td>
-                    <td className="px-3 py-2 text-stone-700">{persona.rango.nombre}</td>
+                    <td className="px-3 py-2 text-stone-700">{rangoLabel(persona.rango)}</td>
                     <td className="px-3 py-2 text-stone-700">{persona.bateria.nombre}</td>
                     <td className="px-3 py-2 text-xs text-stone-600">
                       {`P:${tallas.PARKA} C:${tallas.CAMISACO} Pa:${tallas.PANTALON} K:${tallas.KEPI} Ca:${tallas.CALZADO}`}
@@ -1085,8 +1190,8 @@ export default function Home() {
         </section>
       ) : null}
 
-      {activeView === "personal" && editPersonalCi ? (
-        <section className="mt-6 rounded-2xl border border-stone-300/80 bg-white/90 p-4 shadow-sm">
+      {activeView === "personal_gestion" && editPersonalCi ? (
+        <section className="ej-card mt-6 rounded-2xl p-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-base font-semibold text-stone-900">{`Editar Personal (${editPersonalCi})`}</h2>
             <button
@@ -1139,7 +1244,7 @@ export default function Home() {
             >
               {rangos.map((rango) => (
                 <option key={rango.rangoId} value={rango.rangoId}>
-                  {rango.nombre}
+                  {rangoLabel(rango)}
                 </option>
               ))}
             </select>
@@ -1176,7 +1281,7 @@ export default function Home() {
 
       {isAdmin && activeView === "admin" ? (
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <article className="rounded-2xl border border-stone-300/80 bg-white/90 p-4 shadow-sm">
+          <article className="ej-card rounded-2xl p-4">
             <h2 className="text-base font-semibold text-stone-900">Usuarios y privilegios</h2>
             <form onSubmit={createUsuario} className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <input
@@ -1206,7 +1311,7 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={!isAdmin}
-                className="rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 Crear usuario
               </button>
@@ -1246,7 +1351,7 @@ export default function Home() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-stone-300/80 bg-white/90 p-4 shadow-sm">
+          <article className="ej-card rounded-2xl p-4">
             <h2 className="text-base font-semibold text-stone-900">Auditoria (quien hizo que)</h2>
             <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
               {auditoria.map((log) => (

@@ -8,13 +8,14 @@
     "start": "next start",
     "lint": "eslint",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
+    "db:rebuild": "prisma db execute --schema prisma/schema.prisma --file prisma/schema-base.sql && prisma generate",
     "prisma:studio": "prisma studio",
     "user:create": "node scripts/create-user.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",
     "bcryptjs": "^3.0.3",
+    "ciuy": "^1.0.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.0",
     "next": "16.1.6",

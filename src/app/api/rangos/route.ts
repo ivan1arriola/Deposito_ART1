@@ -4,13 +4,19 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 
 type RangoPayload = {
-  nombre: string;
+  abreviacion: string;
+  nombreCompleto: string;
 };
 
 function isValidPayload(body: unknown): body is RangoPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  return typeof candidate.nombre === "string" && candidate.nombre.trim() !== "";
+  return (
+    typeof candidate.abreviacion === "string" &&
+    candidate.abreviacion.trim() !== "" &&
+    typeof candidate.nombreCompleto === "string" &&
+    candidate.nombreCompleto.trim() !== ""
+  );
 }
 
 export async function GET(request: Request) {
@@ -18,7 +24,7 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const rangos = await prisma.rango.findMany({
-    orderBy: { nombre: "asc" },
+    orderBy: { abreviacion: "asc" },
   });
 
   return NextResponse.json(rangos);
@@ -31,13 +37,17 @@ export async function POST(req: Request) {
   const body = await req.json();
 
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. 'nombre' es obligatorio." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Payload invalido. 'abreviacion' y 'nombreCompleto' son obligatorios." },
+      { status: 400 },
+    );
   }
 
   try {
     const created = await prisma.rango.create({
       data: {
-        nombre: body.nombre.trim(),
+        abreviacion: body.abreviacion.trim(),
+        nombreCompleto: body.nombreCompleto.trim(),
       },
     });
 
@@ -46,13 +56,13 @@ export async function POST(req: Request) {
       accion: "CREATE",
       entidad: "GRADO_PERSONAL",
       entidadId: String(created.rangoId),
-      detalle: { nombre: created.nombre },
+      detalle: { abreviacion: created.abreviacion, nombreCompleto: created.nombreCompleto },
     });
 
     return NextResponse.json(created, { status: 201 });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-      return NextResponse.json({ error: "El grado del personal ya existe." }, { status: 409 });
+      return NextResponse.json({ error: "La abreviacion o el nombre completo ya existe." }, { status: 409 });
     }
 
     return NextResponse.json({ error: "No se pudo crear el grado del personal." }, { status: 500 });

@@ -4,13 +4,19 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 
 type RangoPayload = {
-  nombre: string;
+  abreviacion: string;
+  nombreCompleto: string;
 };
 
 function isValidPayload(body: unknown): body is RangoPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  return typeof candidate.nombre === "string" && candidate.nombre.trim() !== "";
+  return (
+    typeof candidate.abreviacion === "string" &&
+    candidate.abreviacion.trim() !== "" &&
+    typeof candidate.nombreCompleto === "string" &&
+    candidate.nombreCompleto.trim() !== ""
+  );
 }
 
 function parseRangoId(raw: string) {
@@ -29,13 +35,19 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
 
   const body = await req.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. 'nombre' es obligatorio." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Payload invalido. 'abreviacion' y 'nombreCompleto' son obligatorios." },
+      { status: 400 },
+    );
   }
 
   try {
     const updated = await prisma.rango.update({
       where: { rangoId },
-      data: { nombre: body.nombre.trim() },
+      data: {
+        abreviacion: body.abreviacion.trim(),
+        nombreCompleto: body.nombreCompleto.trim(),
+      },
     });
 
     await logAudit({
@@ -43,7 +55,7 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
       accion: "UPDATE",
       entidad: "GRADO_PERSONAL",
       entidadId: String(updated.rangoId),
-      detalle: { nombre: updated.nombre },
+      detalle: { abreviacion: updated.abreviacion, nombreCompleto: updated.nombreCompleto },
     });
 
     return NextResponse.json(updated);
@@ -51,7 +63,9 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
       if (code === "P2025") return NextResponse.json({ error: "Grado del personal no encontrado." }, { status: 404 });
-      if (code === "P2002") return NextResponse.json({ error: "El nombre ya existe." }, { status: 409 });
+      if (code === "P2002") {
+        return NextResponse.json({ error: "La abreviacion o el nombre completo ya existe." }, { status: 409 });
+      }
     }
     return NextResponse.json({ error: "No se pudo actualizar el grado del personal." }, { status: 500 });
   }
@@ -73,7 +87,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ rangoId:
       accion: "DELETE",
       entidad: "GRADO_PERSONAL",
       entidadId: String(deleted.rangoId),
-      detalle: { nombre: deleted.nombre },
+      detalle: { abreviacion: deleted.abreviacion, nombreCompleto: deleted.nombreCompleto },
     });
 
     return NextResponse.json({ ok: true });

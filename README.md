@@ -29,10 +29,11 @@ Configura en `.env`:
 
 ```bash
 npm install
-npm run prisma:generate
-npx prisma migrate deploy
+npm run db:rebuild
 npm run dev
 ```
+
+`db:rebuild` elimina y recrea todo el esquema `public` desde `prisma/schema-base.sql` (incluye tablas, FKs, indices y checks).
 
 Crear/actualizar un usuario (incluye primer admin):
 

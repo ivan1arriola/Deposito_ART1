@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { TipoRegistro } from "@prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isValidUruguayanCi } from "@/lib/ci";
 
 type RegistroWithItems = {
   fecha: Date;
@@ -58,6 +59,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
   const { ci } = await context.params;
   const ciValue = decodeURIComponent(ci).trim();
   if (!ciValue) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciValue)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
 
   const persona = await prisma.personal.findUnique({
     where: { ci: ciValue },
@@ -112,7 +114,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       nombre1: persona.nombre1,
       nombre2: persona.nombre2,
       fechaIngreso: persona.fechaIngreso ? persona.fechaIngreso.toISOString() : null,
-      gradoPersonal: persona.rango.nombre,
+      gradoPersonal: persona.rango.abreviacion,
       bateria: persona.bateria.nombre,
       tallas: {
         PARKA: tallas.PARKA ?? "",

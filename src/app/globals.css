@@ -1,7 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ece7da;
+  /* Paleta inspirada en la identidad visual del Ejercito Nacional */
+  --EscudoAmarillo: #ffcc00;
+  --EscudoAzul: #003885;
+  --EscudoRojo: #cf0f21;
+  --EscudoVerde: #1f6728;
+  --EscudoMarron: #4d351d;
+  --EscudoCeleste: #1b75aa;
+  --EscudoGris: #c3c3c6;
+  --EscudoNegro: #000;
+  --UniformeVerdeClaro: #8d845b;
+  --UniformeVerdeMedio: #66704d;
+  --UniformeVerdeOscuro: #37342b;
+  --UniformeVerdeBeige: #bab08c;
+  --Blanco: #fff;
+  --fuentePrincipal: "Liberation Sans", sans-serif;
+
+  --background: var(--EscudoGris);
   --foreground: #1d1d1b;
 }
 
@@ -15,10 +31,91 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
+  font-family: var(--fuentePrincipal), var(--font-geist-sans), "Segoe UI", sans-serif;
   background-image:
-    radial-gradient(circle at 10% 8%, rgba(101, 116, 84, 0.22) 0, transparent 28%),
-    radial-gradient(circle at 92% 16%, rgba(126, 111, 79, 0.2) 0, transparent 25%),
-    linear-gradient(180deg, #f3efe3 0%, #ebe6d8 100%);
+    radial-gradient(circle at 10% 8%, rgb(102 112 77 / 22%) 0, transparent 28%),
+    radial-gradient(circle at 92% 16%, rgb(186 176 140 / 20%) 0, transparent 25%),
+    linear-gradient(180deg, #e6e2d5 0%, #d4d1c8 100%);
   background-attachment: fixed;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  border: 1px solid rgb(77 53 29 / 25%);
+  background: #fff;
+  color: #1d1d1b;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--EscudoCeleste);
+  box-shadow: 0 0 0 2px rgb(27 117 170 / 18%);
+}
+
+.ej-hero {
+  border: 1px solid rgb(55 52 43 / 45%);
+  background: linear-gradient(120deg, var(--UniformeVerdeOscuro) 0%, var(--UniformeVerdeMedio) 60%, var(--UniformeVerdeClaro) 100%);
+  color: var(--Blanco);
+}
+
+.ej-card {
+  border: 1px solid rgb(55 52 43 / 24%);
+  background: rgb(255 255 255 / 93%);
+  box-shadow: 0 10px 26px rgb(55 52 43 / 8%);
+}
+
+.ej-button {
+  border: 1px solid transparent;
+  background: var(--UniformeVerdeMedio);
+  color: var(--Blanco);
+}
+
+.ej-button:hover {
+  background: var(--UniformeVerdeOscuro);
+}
+
+.ej-button-danger {
+  border: 1px solid rgb(255 255 255 / 35%);
+  background: rgb(128 28 37 / 70%);
+  color: var(--Blanco);
+}
+
+.ej-button-muted {
+  border: 1px solid rgb(255 255 255 / 35%);
+  background: rgb(0 0 0 / 20%);
+  color: rgb(255 255 255 / 92%);
+}
+
+.ej-view-active {
+  background: var(--UniformeVerdeOscuro);
+  color: var(--Blanco);
+}
+
+.ej-view-idle {
+  border: 1px solid rgb(77 53 29 / 30%);
+  background: rgb(255 255 255 / 85%);
+  color: #37342b;
+}
+
+.ej-action-btn {
+  color: var(--Blanco);
+}
+
+.ej-action-edit {
+  background: var(--EscudoCeleste);
+}
+
+.ej-action-delete {
+  background: var(--EscudoRojo);
+}
+
+.ej-action-ok {
+  background: var(--EscudoVerde);
+}
+
+.ej-action-neutral {
+  background: var(--UniformeVerdeOscuro);
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { isValidUruguayanCi } from "@/lib/ci";
 
 const TALLA_KEYS = ["PARKA", "CAMISACO", "PANTALON", "KEPI", "CALZADO"] as const;
 type TallaKey = (typeof TALLA_KEYS)[number];
@@ -33,6 +34,7 @@ function isValidPayload(body: unknown): body is PersonalPayload {
   );
 
   if (!hasRequiredStrings) return false;
+  if (!isValidUruguayanCi(String(candidate.ci))) return false;
 
   const rangoId = Number(candidate.rangoId);
   const bateriaId = Number(candidate.bateriaId);
@@ -102,7 +104,7 @@ export async function POST(req: Request) {
 
   if (!isValidPayload(body)) {
     return NextResponse.json(
-      { error: "Payload invalido. Revisa ci, apellido1, nombre1, rangoId (grado del personal) y bateriaId." },
+      { error: "Payload invalido. Revisa CI uruguaya valida, apellido1, nombre1, rangoId (grado del personal) y bateriaId." },
       { status: 400 },
     );
   }

@@ -66,9 +66,10 @@ model Auditoria {
 }
 
 model Rango {
-  rangoId  Int        @id @default(autoincrement()) @map("rango_id") @db.SmallInt
-  nombre   String     @unique
-  personal Personal[]
+  rangoId        Int        @id @default(autoincrement()) @map("rango_id") @db.SmallInt
+  abreviacion    String     @unique
+  nombreCompleto String     @unique @map("nombre_completo")
+  personal       Personal[]
 
   @@map("rango")
 }

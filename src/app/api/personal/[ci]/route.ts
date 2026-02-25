@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { isValidUruguayanCi } from "@/lib/ci";
 
 const TALLA_KEYS = ["PARKA", "CAMISACO", "PANTALON", "KEPI", "CALZADO"] as const;
 type TallaKey = (typeof TALLA_KEYS)[number];
@@ -73,6 +74,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
   const { ci } = await context.params;
   const ciDecoded = decodeURIComponent(ci).trim();
   if (!ciDecoded) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
 
   const body = await req.json();
   if (!isValidPayload(body)) {
@@ -176,6 +178,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
   const { ci } = await context.params;
   const ciDecoded = decodeURIComponent(ci).trim();
   if (!ciDecoded) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
 
   try {
     await prisma.personal.delete({
