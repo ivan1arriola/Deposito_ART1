@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+enum TipoRegistro {
+  ENTREGA
+  DEVOLUCION
+  AJUSTE
+
+  @@map("tipo_registro")
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+  VIEWER
+
+  @@map("user_role")
+}
+
+model Usuario {
+  usuarioId    String      @id @default(cuid()) @map("usuario_id")
+  username     String      @unique
+  passwordHash String      @map("password_hash")
+  rol          UserRole    @default(VIEWER)
+  activo       Boolean     @default(true)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  sesiones     Sesion[]
+  auditorias   Auditoria[]
+
+  @@map("usuario")
+}
+
+model Sesion {
+  sesionId  String   @id @default(cuid()) @map("sesion_id")
+  tokenHash String   @unique @map("token_hash")
+  usuarioId String   @map("usuario_id")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  usuario   Usuario  @relation(fields: [usuarioId], references: [usuarioId], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([expiresAt])
+  @@map("sesion")
+}
+
+model Auditoria {
+  auditoriaId BigInt   @id @default(autoincrement()) @map("auditoria_id")
+  usuarioId   String?  @map("usuario_id")
+  accion      String
+  entidad     String
+  entidadId   String?  @map("entidad_id")
+  detalle     Json?    @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  usuario     Usuario? @relation(fields: [usuarioId], references: [usuarioId], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([usuarioId, createdAt(sort: Desc)])
+  @@map("auditoria")
+}
+
+model Rango {
+  rangoId  Int        @id @default(autoincrement()) @map("rango_id") @db.SmallInt
+  nombre   String     @unique
+  personal Personal[]
+
+  @@map("rango")
+}
+
+model Bateria {
+  bateriaId Int        @id @default(autoincrement()) @map("bateria_id") @db.SmallInt
+  nombre    String     @unique
+  personal  Personal[]
+
+  @@map("bateria")
+}
+
+model TallaTipo {
+  tallaTipoId Int             @id @default(autoincrement()) @map("talla_tipo_id") @db.SmallInt
+  nombre      String          @unique
+  tallas      PersonalTalla[]
+
+  @@map("talla_tipo")
+}
+
+model Item {
+  itemId        BigInt         @id @default(autoincrement()) @map("item_id")
+  nombre        String         @unique
+  requiereTalle Boolean        @default(false) @map("requiere_talle")
+  activo        Boolean        @default(true)
+  registroItems RegistroItem[]
+
+  @@map("item")
+}
+
+model Personal {
+  ci            String          @id @map("ci")
+  apellido1     String
+  apellido2     String?
+  nombre1       String
+  nombre2       String?
+  fechaIngreso  DateTime?       @map("fecha_ingreso") @db.Date
+  rangoId       Int             @map("rango_id") @db.SmallInt
+  bateriaId     Int             @map("bateria_id") @db.SmallInt
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  rango         Rango           @relation(fields: [rangoId], references: [rangoId])
+  bateria       Bateria         @relation(fields: [bateriaId], references: [bateriaId])
+  tallas        PersonalTalla[]
+  registros     Registro[]
+  observaciones Observacion[]
+
+  @@index([rangoId])
+  @@index([bateriaId])
+  @@map("personal")
+}
+
+model PersonalTalla {
+  ci          String    @map("ci")
+  tallaTipoId Int       @map("talla_tipo_id") @db.SmallInt
+  tallaValor  String    @map("talla_valor")
+  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  personal    Personal  @relation(fields: [ci], references: [ci], onDelete: Cascade)
+  tallaTipo   TallaTipo @relation(fields: [tallaTipoId], references: [tallaTipoId])
+
+  @@id([ci, tallaTipoId])
+  @@map("personal_talla")
+}
+
+model Registro {
+  registroId BigInt         @id @default(autoincrement()) @map("registro_id")
+  ci         String         @map("ci")
+  fecha      DateTime       @db.Date
+  tipo       TipoRegistro
+  comentarios String?
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  personal   Personal       @relation(fields: [ci], references: [ci], onDelete: Cascade)
+  items      RegistroItem[]
+
+  @@index([ci, fecha(sort: Desc)])
+  @@map("registro")
+}
+
+model RegistroItem {
+  registroId BigInt   @map("registro_id")
+  itemId     BigInt   @map("item_id")
+  cantidad   Int
+  registro   Registro @relation(fields: [registroId], references: [registroId], onDelete: Cascade)
+  item       Item     @relation(fields: [itemId], references: [itemId])
+
+  @@id([registroId, itemId])
+  @@index([itemId])
+  @@map("registro_item")
+}
+
+model Observacion {
+  observacionId BigInt   @id @default(autoincrement()) @map("observacion_id")
+  ci            String   @map("ci")
+  fecha         DateTime @db.Date
+  texto         String
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  personal      Personal @relation(fields: [ci], references: [ci], onDelete: Cascade)
+
+  @@index([ci, fecha(sort: Desc)])
+  @@map("observacion")
+}
