@@ -87,7 +87,7 @@ export async function updateFirmaConfig(input: {
       oficial_nombre = ${input.oficialNombre},
       updated_at = NOW()
     WHERE id = 1
-    RETURNING encargado_texto, oficial_texto, updated_at;
+    RETURNING encargado_rango, encargado_nombre, oficial_rango, oficial_nombre, updated_at;
   `;
 
   return fromRow(rows[0]);
