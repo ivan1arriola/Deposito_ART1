@@ -61,7 +61,7 @@ export async function getFirmaConfig(): Promise<FirmaConfig> {
   await ensureFirmaConfigTable();
 
   const rows = await prisma.$queryRaw<FirmaRow[]>`
-    SELECT encargado_texto, oficial_texto, updated_at
+    SELECT encargado_rango, encargado_nombre, oficial_rango, oficial_nombre, updated_at
     FROM config_firma
     WHERE id = 1
     LIMIT 1;
