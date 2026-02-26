@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { useEffect, useMemo, useState } from "react";
 import { formatUruguayanCi } from "@/lib/ci";
 import styles from "./ficha.module.css";
 
@@ -88,8 +86,6 @@ export default function FichaPage() {
   const ci = decodeURIComponent(params.ci ?? "");
   const [data, setData] = useState<FichaData | null>(null);
   const [status, setStatus] = useState("Cargando ficha...");
-  const [isExporting, setIsExporting] = useState(false);
-  const sheetRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const timerId = window.setTimeout(async () => {
@@ -123,45 +119,8 @@ export default function FichaPage() {
       .join(" ");
   }, [data]);
 
-  async function exportPdf() {
-    if (!sheetRef.current || !data) return;
-
-    setIsExporting(true);
-    try {
-      const canvas = await html2canvas(sheetRef.current, {
-        scale: 3,
-        backgroundColor: "#ffffff",
-        useCORS: false,
-        allowTaint: true,
-        logging: false,
-        windowWidth: sheetRef.current.scrollWidth,
-        windowHeight: sheetRef.current.scrollHeight,
-        imageTimeout: 0,
-        removeContainer: true,
-      });
-      const imgData = canvas.toDataURL("image/png");
-
-      const pdf = new jsPDF("portrait", "mm", "a4");
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const usableWidth = pageWidth - margin * 2;
-      const usableHeight = pageHeight - margin * 2;
-      const imageHeight = (canvas.height * usableWidth) / canvas.width;
-
-      let consumed = 0;
-      let pageIndex = 0;
-      while (consumed < imageHeight) {
-        if (pageIndex > 0) pdf.addPage();
-        pdf.addImage(imgData, "PNG", margin, margin - consumed, usableWidth, imageHeight, undefined, "FAST");
-        consumed += usableHeight;
-        pageIndex += 1;
-      }
-
-      pdf.save(`ficha-${data.persona.ci}.pdf`);
-    } finally {
-      setIsExporting(false);
-    }
+  function exportPdf() {
+    window.print();
   }
 
   const entregaCols = Array.from({ length: 6 }, (_, idx) => data?.entregas[idx]?.fecha);
@@ -174,15 +133,15 @@ export default function FichaPage() {
         <Link href="/" className={styles.buttonSecondary}>
           Volver
         </Link>
-        <button type="button" className={styles.button} onClick={() => void exportPdf()} disabled={isExporting || !data}>
-          {isExporting ? "Generando PDF..." : "Descargar PDF"}
+        <button type="button" className={styles.button} onClick={exportPdf} disabled={!data}>
+          Imprimir / Guardar PDF
         </button>
       </div>
 
       <p className={styles.statusLine}>{status}</p>
 
       {data ? (
-        <div ref={sheetRef} className={styles.sheet}>
+        <div className={styles.sheet}>
           <div className={styles.frame}>
             <table className={styles.table}>
             <colgroup>
