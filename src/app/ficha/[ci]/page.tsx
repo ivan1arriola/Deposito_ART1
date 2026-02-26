@@ -343,21 +343,21 @@ export default function FichaPage() {
                 <td className={styles.tCol}></td>
               </tr>
               <tr>
-                <td className={`${styles.bold} ${styles.thickTop}`}>
+                <td className={styles.vestuarioHeaderCell}>
                   VESTUARIO
                 </td>
                 {colLabels.map((label) => (
-                  <td key={`hn-e-${label}`} className={`${styles.center} ${styles.thickTop}`}>
+                  <td key={`hn-e-${label}`} className={styles.vestuarioHeaderCell}>
                     {label}
                   </td>
                 ))}
-                <td className={`${styles.tCol} ${styles.thickTop}`}>T</td>
+                <td className={`${styles.vestuarioHeaderCell} ${styles.tCol}`}>T</td>
                 {colLabels.map((label) => (
-                  <td key={`hn-d-${label}`} className={`${styles.center} ${styles.thickTop} ${styles.verticalDivider}`}>
+                  <td key={`hn-d-${label}`} className={`${styles.vestuarioHeaderCell} ${styles.verticalDivider}`}>
                     {label}
                   </td>
                 ))}
-                <td className={`${styles.tCol} ${styles.thickTop}`}>T</td>
+                <td className={`${styles.vestuarioHeaderCell} ${styles.tCol}`}>T</td>
               </tr>
 
               {data.matrix.map((row) => (
