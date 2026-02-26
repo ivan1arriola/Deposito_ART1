@@ -129,19 +129,19 @@ export default function FichaPage() {
     setIsExporting(true);
     try {
       const canvas = await html2canvas(sheetRef.current, {
-        scale: 3,
+        scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         logging: false,
         windowWidth: sheetRef.current.scrollWidth,
         windowHeight: sheetRef.current.scrollHeight,
       });
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
       const pdf = new jsPDF("portrait", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 8;
+      const margin = 10;
       const usableWidth = pageWidth - margin * 2;
       const usableHeight = pageHeight - margin * 2;
       const imageHeight = (canvas.height * usableWidth) / canvas.width;
@@ -150,7 +150,7 @@ export default function FichaPage() {
       let pageIndex = 0;
       while (consumed < imageHeight) {
         if (pageIndex > 0) pdf.addPage();
-        pdf.addImage(imgData, "PNG", margin, margin - consumed, usableWidth, imageHeight);
+        pdf.addImage(imgData, "JPEG", margin, margin - consumed, usableWidth, imageHeight);
         consumed += usableHeight;
         pageIndex += 1;
       }
