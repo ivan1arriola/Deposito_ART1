@@ -81,9 +81,52 @@ export async function GET(req: Request) {
     take: limit,
   });
 
+  const registroIds = registros.map((registro) => registro.registroId.toString());
+  const auditorias =
+    registroIds.length > 0
+      ? await prisma.auditoria.findMany({
+          where: {
+            entidad: "REGISTRO",
+            accion: "CREATE",
+            entidadId: { in: registroIds },
+          },
+          orderBy: { createdAt: "desc" },
+          include: {
+            usuario: {
+              select: { usuarioId: true, username: true, rol: true },
+            },
+          },
+        })
+      : [];
+
+  const auditoriaByRegistroId = new Map<string, (typeof auditorias)[number]>();
+  for (const auditoria of auditorias) {
+    if (!auditoria.entidadId) continue;
+    if (!auditoriaByRegistroId.has(auditoria.entidadId)) {
+      auditoriaByRegistroId.set(auditoria.entidadId, auditoria);
+    }
+  }
+
   return NextResponse.json(
     registros.map((registro) => ({
       registroId: registro.registroId.toString(),
+      auditoria: (() => {
+        const audit = auditoriaByRegistroId.get(registro.registroId.toString());
+        if (!audit) return null;
+        return {
+          auditoriaId: audit.auditoriaId.toString(),
+          createdAt: audit.createdAt.toISOString(),
+          usuarioId: audit.usuarioId,
+          usuario: audit.usuario
+            ? {
+                usuarioId: audit.usuario.usuarioId,
+                username: audit.usuario.username,
+                rol: audit.usuario.rol,
+              }
+            : null,
+          detalle: audit.detalle,
+        };
+      })(),
       ci: registro.ci,
       fecha: registro.fecha.toISOString(),
       tipo: registro.tipo,
@@ -142,7 +185,7 @@ export async function POST(req: Request) {
     prisma.personal.findUnique({ where: { ci }, select: { ci: true } }),
     prisma.item.findMany({
       where: { itemId: { in: itemIds }, activo: true },
-      select: { itemId: true },
+      select: { itemId: true, nombre: true },
     }),
   ]);
 
@@ -154,6 +197,13 @@ export async function POST(req: Request) {
   }
 
   const comentarios = body.comentarios?.trim() || null;
+  const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
+  const itemsDetallados = Array.from(dedupedItems.entries()).map(([itemId, cantidad]) => ({
+    itemId,
+    nombre: itemNombrePorId.get(itemId) ?? "Item sin nombre",
+    cantidad,
+  }));
+  const totalUnidades = itemsDetallados.reduce((acumulado, item) => acumulado + item.cantidad, 0);
 
   try {
     const created = await prisma.$transaction(async (tx) => {
@@ -184,10 +234,14 @@ export async function POST(req: Request) {
       entidad: "REGISTRO",
       entidadId: created.registroId.toString(),
       detalle: {
+        evento: "MOVIMIENTO_VESTUARIO",
         ci,
         tipo,
-        fecha: fecha.toISOString().slice(0, 10),
-        items: Array.from(dedupedItems.entries()).map(([itemId, cantidad]) => ({ itemId, cantidad })),
+        fechaMovimiento: fecha.toISOString().slice(0, 10),
+        comentarios,
+        totalItems: itemsDetallados.length,
+        totalUnidades,
+        items: itemsDetallados,
       },
     });
 

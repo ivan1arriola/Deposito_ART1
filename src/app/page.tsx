@@ -1,6 +1,16 @@
 "use client";
 
-import { Fragment, FormEvent, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Fragment,
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { formatUruguayanCi, isValidUruguayanCi, normalizeCi } from "@/lib/ci";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
 import {
@@ -53,7 +63,7 @@ type ItemForm = {
 };
 
 type Role = "ADMIN" | "EDITOR" | "VIEWER";
-type MainView = "personal_registro" | "personal_gestion" | "grados" | "baterias" | "items" | "admin";
+type MainView = "personal" | "tallas_resumen" | "grados" | "baterias" | "items" | "admin";
 type RegistroTipo = "ENTREGA" | "DEVOLUCION";
 type RegistroViewTipo = RegistroTipo | "AJUSTE";
 
@@ -72,6 +82,13 @@ type RegistroDraft = {
 
 type RegistroView = {
   registroId: string;
+  auditoria: {
+    auditoriaId: string;
+    createdAt: string;
+    usuarioId: string | null;
+    usuario: { usuarioId: string; username: string; rol: Role } | null;
+    detalle: unknown;
+  } | null;
   ci: string;
   fecha: string;
   tipo: RegistroViewTipo;
@@ -148,6 +165,12 @@ const EMPTY_ITEM_FORM: ItemForm = {
 };
 
 const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "VIEWER"];
+type AuditFilter = "TODOS" | "MOVIMIENTOS" | "AUTENTICACION";
+const ROLE_LABELS: Record<Role, string> = {
+  ADMIN: "Administrador",
+  EDITOR: "Editor",
+  VIEWER: "Lector",
+};
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
@@ -201,12 +224,35 @@ function nombresLabel(persona: Personal) {
   return `${persona.nombre1} ${persona.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
 }
 
+function normalizeSearchTerm(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[."']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function tallasEntries(tallas: Record<string, string>) {
   return TALLA_KEYS.map((key) => {
     const rawValue = tallas[key];
     const value = rawValue && rawValue !== "-" ? rawValue : "Sin dato";
     return { key, label: TALLA_LABELS[key], value };
   });
+}
+
+function moveIdInOrder(order: string[], fromIndex: number, toIndex: number) {
+  if (fromIndex === toIndex) return order;
+  const next = [...order];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
+}
+
+function roleLabel(role: Role | null | undefined) {
+  if (!role) return "Sin rol";
+  return ROLE_LABELS[role] ?? role;
 }
 
 function rangoLabel(rango: Rango) {
@@ -305,7 +351,12 @@ function CatalogCard(props: {
   );
 }
 
-function SmallActionButton(props: { text: string; tone: "edit" | "delete" | "ok" | "neutral"; onClick: () => void }) {
+function SmallActionButton(props: {
+  text: string;
+  tone: "edit" | "delete" | "ok" | "neutral";
+  onClick: () => void;
+  className?: string;
+}) {
   const color =
     props.tone === "edit"
       ? "ej-action-edit"
@@ -316,7 +367,11 @@ function SmallActionButton(props: { text: string; tone: "edit" | "delete" | "ok"
           : "ej-action-neutral";
 
   return (
-    <button type="button" onClick={props.onClick} className={`ej-action-btn rounded px-2 py-1 text-xs font-medium ${color}`}>
+    <button
+      type="button"
+      onClick={props.onClick}
+      className={`ej-action-btn rounded px-2 py-1 text-center text-xs font-medium ${color} ${props.className ?? ""}`}
+    >
       {props.text}
     </button>
   );
@@ -354,16 +409,23 @@ export default function Home() {
   const [newItem, setNewItem] = useState<ItemForm>(EMPTY_ITEM_FORM);
   const [editItemId, setEditItemId] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<ItemForm>(EMPTY_ITEM_FORM);
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOrderItemIds, setDragOrderItemIds] = useState<string[] | null>(null);
+  const draggedItemIdRef = useRef<string | null>(null);
+  const dragOrderItemIdsRef = useRef<string[] | null>(null);
 
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
   const [editPersonal, setEditPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [ciSearch, setCiSearch] = useState("");
+  const [bateriaFilter, setBateriaFilter] = useState<string>("ALL");
   const [expandedTallasByCi, setExpandedTallasByCi] = useState<Record<string, boolean>>({});
   const [registroDraft, setRegistroDraft] = useState<RegistroDraft | null>(null);
   const [registroViewer, setRegistroViewer] = useState<RegistroViewerState | null>(null);
-  const [activeView, setActiveView] = useState<MainView>("personal_gestion");
+  const [activeView, setActiveView] = useState<MainView>("personal");
   const [showConfigViews, setShowConfigViews] = useState(false);
+  const [showCreatePersonalForm, setShowCreatePersonalForm] = useState(false);
+  const [auditFilter, setAuditFilter] = useState<AuditFilter>("TODOS");
 
   const isAdmin = currentUser?.rol === "ADMIN";
   const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
@@ -386,12 +448,112 @@ export default function Home() {
   );
   const itemsActivos = useMemo(() => itemsOrdenados.filter((item) => item.activo), [itemsOrdenados]);
   const itemsInactivos = useMemo(() => itemsOrdenados.filter((item) => !item.activo), [itemsOrdenados]);
+  const auditoriaFiltrada = useMemo(() => {
+    if (auditFilter === "MOVIMIENTOS") {
+      return auditoria.filter((log) => log.entidad === "REGISTRO");
+    }
+    if (auditFilter === "AUTENTICACION") {
+      return auditoria.filter((log) => log.entidad === "AUTH");
+    }
+    return auditoria;
+  }, [auditFilter, auditoria]);
+  const itemsActivosEnPantalla = useMemo(() => {
+    if (!dragOrderItemIds) return itemsActivos;
+    const activeById = new Map(itemsActivos.map((item) => [item.itemId, item]));
+    return dragOrderItemIds
+      .map((itemId) => activeById.get(itemId))
+      .filter((item): item is Item => item !== undefined);
+  }, [itemsActivos, dragOrderItemIds]);
   const personalOrdenado = useMemo(() => [...personal].sort(comparePersonalByHierarchy), [personal]);
-  const ciSearchDigits = normalizeCi(ciSearch);
+  const searchQuery = ciSearch.trim();
+  const searchQueryDigits = normalizeCi(searchQuery);
+  const searchQueryText = normalizeSearchTerm(searchQuery);
   const personalFiltrado = useMemo(() => {
-    if (!ciSearchDigits) return personalOrdenado;
-    return personalOrdenado.filter((persona) => normalizeCi(persona.ci).includes(ciSearchDigits));
-  }, [personalOrdenado, ciSearchDigits]);
+    return personalOrdenado.filter((persona) => {
+      const matchBateria =
+        bateriaFilter === "ALL"
+          ? true
+          : bateriaFilter === "NONE"
+            ? persona.bateriaId == null
+            : persona.bateriaId === Number(bateriaFilter);
+
+      if (!matchBateria) return false;
+      if (!searchQueryText) return true;
+
+      const ciMatch = searchQueryDigits !== "" && normalizeCi(persona.ci).includes(searchQueryDigits);
+      const nombreApellido = normalizeSearchTerm(
+        `${persona.nombre1} ${persona.nombre2 ?? ""} ${persona.apellido1} ${persona.apellido2 ?? ""}`,
+      );
+      const textMatch = nombreApellido.includes(searchQueryText);
+      return ciMatch || textMatch;
+    });
+  }, [personalOrdenado, bateriaFilter, searchQueryDigits, searchQueryText]);
+  const resumenTallasPorBateria = useMemo(() => {
+    type ResumenTalla = { key: TallaKey; label: string; values: Array<{ talla: string; cantidad: number }>; sinDato: number };
+    type ResumenBateria = { key: string; nombre: string; total: number; tallas: ResumenTalla[] };
+
+    const bateriasConEtiqueta = [
+      ...baterias
+        .map((bateria) => ({ key: String(bateria.bateriaId), nombre: bateria.nombre }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })),
+      { key: "NONE", nombre: "Sin bateria" },
+    ];
+
+    const personalPorBateria = new Map<string, Personal[]>();
+    for (const bateria of bateriasConEtiqueta) {
+      personalPorBateria.set(bateria.key, []);
+    }
+
+    for (const persona of personalOrdenado) {
+      const key = persona.bateriaId == null ? "NONE" : String(persona.bateriaId);
+      const bucket = personalPorBateria.get(key);
+      if (bucket) {
+        bucket.push(persona);
+        continue;
+      }
+      personalPorBateria.set(key, [persona]);
+    }
+
+    const resumen: ResumenBateria[] = [];
+
+    for (const bateria of bateriasConEtiqueta) {
+      const personas = personalPorBateria.get(bateria.key) ?? [];
+      const tallas: ResumenTalla[] = TALLA_KEYS.map((key) => {
+        const counter = new Map<string, number>();
+
+        for (const persona of personas) {
+          const tallasPersona = tallasMap(persona.tallas);
+          const raw = tallasPersona[key];
+          const value = raw && raw !== "-" ? raw : "Sin dato";
+          counter.set(value, (counter.get(value) ?? 0) + 1);
+        }
+
+        const values = Array.from(counter.entries())
+          .map(([talla, cantidad]) => ({ talla, cantidad }))
+          .sort((a, b) => {
+            if (a.talla === "Sin dato") return 1;
+            if (b.talla === "Sin dato") return -1;
+            return a.talla.localeCompare(b.talla, "es", { sensitivity: "base", numeric: true });
+          });
+
+        return {
+          key,
+          label: TALLA_LABELS[key],
+          values,
+          sinDato: counter.get("Sin dato") ?? 0,
+        };
+      });
+
+      resumen.push({
+        key: bateria.key,
+        nombre: bateria.nombre,
+        total: personas.length,
+        tallas,
+      });
+    }
+
+    return resumen;
+  }, [baterias, personalOrdenado]);
   const isConfigView = activeView === "grados" || activeView === "baterias" || activeView === "items" || activeView === "admin";
   const personaRegistro = useMemo(() => {
     if (!registroDraft) return null;
@@ -400,9 +562,27 @@ export default function Home() {
 
   useEffect(() => {
     if (activeView === "admin" && !isAdmin) {
-      setActiveView("personal_gestion");
+      setActiveView("personal");
     }
   }, [activeView, isAdmin]);
+
+  useEffect(() => {
+    if (activeView !== "personal" && showCreatePersonalForm) {
+      setShowCreatePersonalForm(false);
+    }
+  }, [activeView, showCreatePersonalForm]);
+
+  useEffect(() => {
+    if (!dragOrderItemIds) return;
+    const currentActiveIds = new Set(itemsActivos.map((item) => item.itemId));
+    const dragStateIsValid =
+      dragOrderItemIds.length === itemsActivos.length && dragOrderItemIds.every((itemId) => currentActiveIds.has(itemId));
+    if (dragStateIsValid) return;
+    setDraggedItemId(null);
+    setDragOrderItemIds(null);
+    draggedItemIdRef.current = null;
+    dragOrderItemIdsRef.current = null;
+  }, [dragOrderItemIds, itemsActivos]);
 
   function clearLoadedData() {
     setRangos([]);
@@ -415,6 +595,11 @@ export default function Home() {
     setEditPersonal(EMPTY_PERSONAL_FORM);
     setExpandedTallasByCi({});
     setRegistroDraft(null);
+    setShowCreatePersonalForm(false);
+    setDraggedItemId(null);
+    setDragOrderItemIds(null);
+    draggedItemIdRef.current = null;
+    dragOrderItemIdsRef.current = null;
   }
 
   const loadData = useCallback(async (showSpinner = false) => {
@@ -441,7 +626,7 @@ export default function Home() {
       if (me.user.rol === "ADMIN") {
         const [usuariosData, auditoriaData] = await Promise.all([
           api<UsuarioAdmin[]>("/api/usuarios"),
-          api<AuditoriaRecord[]>("/api/auditoria?limit=40"),
+          api<AuditoriaRecord[]>("/api/auditoria?limit=200"),
         ]);
         setUsuarios(usuariosData);
         setAuditoria(auditoriaData);
@@ -479,7 +664,7 @@ export default function Home() {
 
   async function createRango() {
     if (!isAdmin) {
-      setStatus("Solo admin puede modificar grados.");
+      setStatus("Solo el administrador puede modificar grados.");
       return;
     }
     try {
@@ -502,7 +687,7 @@ export default function Home() {
 
   async function updateRango(rangoId: number) {
     if (!isAdmin) {
-      setStatus("Solo admin puede modificar grados.");
+      setStatus("Solo el administrador puede modificar grados.");
       return;
     }
     try {
@@ -526,7 +711,7 @@ export default function Home() {
 
   async function deleteRango(rangoId: number) {
     if (!isAdmin) {
-      setStatus("Solo admin puede modificar grados.");
+      setStatus("Solo el administrador puede modificar grados.");
       return;
     }
     if (!window.confirm("Eliminar grado del personal?")) return;
@@ -540,8 +725,8 @@ export default function Home() {
   }
 
   async function createBateria() {
-    if (!canWrite) {
-      setStatus("No tienes permisos para crear.");
+    if (!isAdmin) {
+      setStatus("Solo el administrador puede registrar baterias.");
       return;
     }
     try {
@@ -604,7 +789,10 @@ export default function Home() {
       await api("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newItem),
+        body: JSON.stringify({
+          nombre: newItem.nombre,
+          activo: newItem.activo,
+        }),
       });
       setNewItem(EMPTY_ITEM_FORM);
       setStatus("Item creado.");
@@ -657,45 +845,108 @@ export default function Home() {
     }
   }
 
-  async function moveItemOrdenPdf(itemId: string, direction: -1 | 1) {
+  const saveActiveItemsOrder = useCallback(
+    async (orderedItemIds: string[]) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para editar.");
+        return;
+      }
+
+      const itemById = new Map(itemsActivos.map((item) => [item.itemId, item]));
+      const updates = orderedItemIds
+        .map((itemId, idx) => {
+          const item = itemById.get(itemId);
+          if (!item) return null;
+          const ordenPdf = (idx + 1) * 10;
+          return item.ordenPdf === ordenPdf ? null : { item, ordenPdf };
+        })
+        .filter((entry): entry is { item: Item; ordenPdf: number } => entry !== null);
+
+      if (updates.length === 0) return;
+
+      try {
+        await Promise.all(
+          updates.map(({ item, ordenPdf }) =>
+            api(`/api/items/${item.itemId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                nombre: item.nombre,
+                activo: item.activo,
+                ordenPdf,
+              }),
+            }),
+          ),
+        );
+        setStatus("Orden de PDF actualizado.");
+        await loadData();
+      } catch (error: unknown) {
+        setStatus(error instanceof Error ? error.message : "No se pudo actualizar el orden de PDF.");
+      }
+    },
+    [canWrite, itemsActivos, loadData],
+  );
+
+  function startItemDrag(itemId: string, event: ReactPointerEvent<HTMLButtonElement>) {
     if (!canWrite) {
       setStatus("No tienes permisos para editar.");
       return;
     }
 
-    const currentIndex = itemsOrdenados.findIndex((item) => item.itemId === itemId);
-    if (currentIndex < 0) return;
-    const targetIndex = currentIndex + direction;
-    if (targetIndex < 0 || targetIndex >= itemsOrdenados.length) return;
+    event.preventDefault();
+    const orderedIds = itemsActivos.map((item) => item.itemId);
+    if (!orderedIds.includes(itemId)) return;
 
-    const reordered = [...itemsOrdenados];
-    const [movedItem] = reordered.splice(currentIndex, 1);
-    reordered.splice(targetIndex, 0, movedItem);
-
-    const updates = reordered
-      .map((item, idx) => ({ item, ordenPdf: (idx + 1) * 10 }))
-      .filter(({ item, ordenPdf }) => item.ordenPdf !== ordenPdf);
-
-    try {
-      await Promise.all(
-        updates.map(({ item, ordenPdf }) =>
-          api(`/api/items/${item.itemId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              nombre: item.nombre,
-              activo: item.activo,
-              ordenPdf,
-            }),
-          }),
-        ),
-      );
-      setStatus("Orden de PDF actualizado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar el orden de PDF.");
-    }
+    setDraggedItemId(itemId);
+    setDragOrderItemIds(orderedIds);
+    draggedItemIdRef.current = itemId;
+    dragOrderItemIdsRef.current = orderedIds;
   }
+
+  useEffect(() => {
+    if (!draggedItemId) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      if (!(target instanceof HTMLElement)) return;
+      const targetCard = target.closest<HTMLElement>("[data-item-drag-id]");
+      const targetItemId = targetCard?.dataset.itemDragId;
+      const currentDraggedItemId = draggedItemIdRef.current;
+      const currentOrder = dragOrderItemIdsRef.current;
+
+      if (!targetItemId || !currentDraggedItemId || !currentOrder) return;
+
+      const currentIndex = currentOrder.indexOf(currentDraggedItemId);
+      const targetIndex = currentOrder.indexOf(targetItemId);
+      if (currentIndex < 0 || targetIndex < 0 || currentIndex === targetIndex) return;
+
+      const nextOrder = moveIdInOrder(currentOrder, currentIndex, targetIndex);
+      dragOrderItemIdsRef.current = nextOrder;
+      setDragOrderItemIds(nextOrder);
+    };
+
+    const finishDrag = () => {
+      const finalOrder = dragOrderItemIdsRef.current;
+      setDraggedItemId(null);
+      setDragOrderItemIds(null);
+      draggedItemIdRef.current = null;
+      dragOrderItemIdsRef.current = null;
+
+      if (finalOrder) {
+        void saveActiveItemsOrder(finalOrder);
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", finishDrag);
+    window.addEventListener("pointercancel", finishDrag);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", finishDrag);
+      window.removeEventListener("pointercancel", finishDrag);
+    };
+  }, [draggedItemId, saveActiveItemsOrder]);
 
   async function deleteItem(itemId: string) {
     if (!canDelete) {
@@ -730,6 +981,7 @@ export default function Home() {
         body: JSON.stringify(personalPayload(newPersonal, true)),
       });
       setNewPersonal(EMPTY_PERSONAL_FORM);
+      setShowCreatePersonalForm(false);
       setStatus("Personal creado.");
       await loadData();
     } catch (error: unknown) {
@@ -1006,7 +1258,7 @@ export default function Home() {
       setCurrentUser(null);
       clearLoadedData();
       setLoginPassword("");
-      setActiveView("personal_gestion");
+      setActiveView("personal");
       setStatus("Sesion cerrada. Ingresa tus credenciales.");
     }
   }
@@ -1014,7 +1266,7 @@ export default function Home() {
   async function createUsuario(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!isAdmin) {
-      setStatus("Solo admin puede crear usuarios.");
+      setStatus("Solo el administrador puede crear usuarios.");
       return;
     }
     try {
@@ -1040,7 +1292,7 @@ export default function Home() {
 
   async function changeUserRole(usuarioId: string, currentRole: Role) {
     if (!isAdmin) {
-      setStatus("Solo admin puede cambiar roles.");
+      setStatus("Solo el administrador puede cambiar roles.");
       return;
     }
     const nextRole = window.prompt("Nuevo rol (ADMIN/EDITOR/VIEWER)", currentRole);
@@ -1066,7 +1318,7 @@ export default function Home() {
 
   async function toggleUserActive(usuario: UsuarioAdmin) {
     if (!isAdmin) {
-      setStatus("Solo admin puede cambiar estado.");
+      setStatus("Solo el administrador puede cambiar estado.");
       return;
     }
     try {
@@ -1084,7 +1336,7 @@ export default function Home() {
 
   async function resetUserPassword(usuario: UsuarioAdmin) {
     if (!isAdmin) {
-      setStatus("Solo admin puede restablecer contrasenas.");
+      setStatus("Solo el administrador puede restablecer contrasenas.");
       return;
     }
     const password = window.prompt(`Nueva contrasena para ${usuario.username} (min 8 caracteres)`, "");
@@ -1105,7 +1357,7 @@ export default function Home() {
 
   async function deleteUsuario(usuario: UsuarioAdmin) {
     if (!isAdmin) {
-      setStatus("Solo admin puede eliminar usuarios.");
+      setStatus("Solo el administrador puede eliminar usuarios.");
       return;
     }
     if (!window.confirm(`Eliminar usuario ${usuario.username}?`)) return;
@@ -1131,9 +1383,92 @@ export default function Home() {
     setShowConfigViews(false);
   }
 
-  function renderItemCard(item: Item) {
+  function auditActionLabel(accion: string) {
+    if (accion === "CREATE") return "Creo";
+    if (accion === "UPDATE") return "Actualizo";
+    if (accion === "DELETE") return "Elimino";
+    if (accion === "LOGIN") return "Inicio sesion";
+    if (accion === "LOGOUT") return "Cerro sesion";
+    return accion;
+  }
+
+  function auditEntityLabel(entidad: string) {
+    if (entidad === "AUTH") return "autenticacion";
+    if (entidad === "REGISTRO") return "movimiento";
+    if (entidad === "PERSONAL") return "personal";
+    if (entidad === "USUARIO") return "usuario";
+    if (entidad === "RANGO") return "grado";
+    if (entidad === "BATERIA") return "bateria";
+    if (entidad === "ITEM") return "item";
+    return entidad.toLowerCase();
+  }
+
+  function renderAuditDetalle(detalle: unknown) {
+    if (!detalle || typeof detalle !== "object" || Array.isArray(detalle)) return null;
+    const info = detalle as Record<string, unknown>;
+    const items = Array.isArray(info.items)
+      ? info.items
+          .filter((item) => item && typeof item === "object" && !Array.isArray(item))
+          .map((item) => item as Record<string, unknown>)
+      : [];
+
+    const lines: string[] = [];
+    if (typeof info.evento === "string") lines.push(`Evento: ${info.evento}`);
+    if (typeof info.ci === "string") lines.push(`CI: ${formatUruguayanCi(info.ci)}`);
+    if (typeof info.tipo === "string") lines.push(`Tipo: ${info.tipo}`);
+    if (typeof info.fechaMovimiento === "string") lines.push(`Fecha movimiento: ${info.fechaMovimiento}`);
+    if (typeof info.fecha === "string" && !("fechaMovimiento" in info)) lines.push(`Fecha: ${info.fecha}`);
+    if (typeof info.comentarios === "string" && info.comentarios.trim() !== "") lines.push(`Comentarios: ${info.comentarios}`);
+    if (typeof info.totalItems === "number") lines.push(`Items distintos: ${info.totalItems}`);
+    if (typeof info.totalUnidades === "number") lines.push(`Unidades: ${info.totalUnidades}`);
+    if (typeof info.ip === "string" && info.ip.trim() !== "") lines.push(`IP: ${info.ip}`);
+    if (typeof info.userAgent === "string" && info.userAgent.trim() !== "") lines.push(`Navegador: ${info.userAgent}`);
+
+    const hasPrimaryData = lines.length > 0 || items.length > 0;
+    if (!hasPrimaryData) {
+      return (
+        <pre className="mt-2 max-h-24 overflow-auto rounded border border-stone-200 bg-white p-2 text-[11px] text-stone-700">
+          {JSON.stringify(info, null, 2)}
+        </pre>
+      );
+    }
+
     return (
-      <div key={item.itemId} className="rounded-lg bg-stone-100/80 p-2">
+      <div className="mt-2 space-y-1 rounded border border-stone-200 bg-white p-2">
+        {lines.map((line) => (
+          <p key={line} className="text-[11px] text-stone-700">
+            {line}
+          </p>
+        ))}
+        {items.length > 0 ? (
+          <div className="pt-1">
+            <p className="text-[11px] font-semibold text-stone-700">Detalle de items:</p>
+            {items.map((item, index) => {
+              const nombre = typeof item.nombre === "string" && item.nombre.trim() !== "" ? item.nombre : "Item";
+              const cantidad = typeof item.cantidad === "number" ? item.cantidad : 0;
+              const itemId = typeof item.itemId === "string" ? ` (ID ${item.itemId})` : "";
+              return (
+                <p key={`${nombre}-${index}`} className="text-[11px] text-stone-700">
+                  {`${cantidad} x ${nombre}${itemId}`}
+                </p>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  function renderItemCard(item: Item, options?: { draggableInActiveList?: boolean }) {
+    const draggableInActiveList = options?.draggableInActiveList === true;
+    const isDraggingThisItem = draggedItemId === item.itemId;
+
+    return (
+      <div
+        key={item.itemId}
+        data-item-drag-id={draggableInActiveList ? item.itemId : undefined}
+        className={`rounded-lg bg-stone-100/80 p-2 ${isDraggingThisItem ? "ring-2 ring-lime-400/80" : ""}`}
+      >
         {editItemId === item.itemId ? (
           <div className="space-y-2">
             <input
@@ -1180,13 +1515,21 @@ export default function Home() {
               {item.nombre} [orden PDF: {item.ordenPdf}] [{item.activo ? "activo" : "inactivo"}]
             </span>
             <div className="flex flex-wrap gap-2">
+              {draggableInActiveList ? (
+                <button
+                  type="button"
+                  onPointerDown={(event) => startItemDrag(item.itemId, event)}
+                  disabled={!canWrite}
+                  className="rounded border border-stone-400 bg-white px-2 py-1 text-xs font-medium text-stone-700 touch-none disabled:opacity-50"
+                >
+                  Arrastrar
+                </button>
+              ) : null}
               <SmallActionButton
                 text={item.activo ? "Desactivar" : "Activar"}
                 tone={item.activo ? "delete" : "ok"}
                 onClick={() => void toggleItemActivo(item)}
               />
-              <SmallActionButton text="Subir" tone="neutral" onClick={() => void moveItemOrdenPdf(item.itemId, -1)} />
-              <SmallActionButton text="Bajar" tone="neutral" onClick={() => void moveItemOrdenPdf(item.itemId, 1)} />
               <SmallActionButton
                 text="Editar"
                 tone="edit"
@@ -1211,7 +1554,7 @@ export default function Home() {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
         <section className="w-full rounded-2xl border border-stone-300/80 bg-white/90 p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Gestión de Deposito general - Artilleria 1</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Gestion de Deposito General - Artilleria 1</p>
           <h1 className="mt-2 text-2xl font-bold text-stone-900">Iniciar sesion</h1>
           <p className="mt-2 text-sm text-stone-600">{status}</p>
 
@@ -1250,14 +1593,14 @@ export default function Home() {
 
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs uppercase tracking-[0.24em] text-amber-200/95">Gestión de Deposito general - Artilleria 1</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-amber-200/95">Gestion de Deposito General - Artilleria 1</p>
             <span className="rounded-full border border-emerald-200/35 bg-emerald-900/25 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
               {loading ? "Sincronizando" : "Sistema activo"}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <span className="rounded-xl border border-amber-100/35 bg-black/20 px-3 py-2 text-xs font-semibold">
-              {currentUser ? `${currentUser.username} (${currentUser.rol})` : "Sin sesion"}
+              {currentUser ? `${currentUser.username} (${roleLabel(currentUser.rol)})` : "Sin sesion iniciada"}
             </span>
             <button
               type="button"
@@ -1312,22 +1655,22 @@ export default function Home() {
           <button
             type="button"
             onClick={() => {
-              setActiveView("personal_registro");
+              setActiveView("personal");
               setShowConfigViews(false);
             }}
-            className={viewButtonClass("personal_registro")}
+            className={viewButtonClass("personal")}
           >
-            Registrar Personal
+            Personal
           </button>
           <button
             type="button"
             onClick={() => {
-              setActiveView("personal_gestion");
+              setActiveView("tallas_resumen");
               setShowConfigViews(false);
             }}
-            className={viewButtonClass("personal_gestion")}
+            className={viewButtonClass("tallas_resumen")}
           >
-            Gestionar Personal
+            Resumen Tallas
           </button>
           <button
             type="button"
@@ -1370,7 +1713,7 @@ export default function Home() {
               <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Grado del Personal</h2>
               {!isAdmin ? (
                 <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
-                  Modo solo lectura: solo admin puede crear, editar o eliminar grados.
+                  Modo solo lectura: solo el administrador puede crear, editar o eliminar grados.
                 </p>
               ) : null}
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[180px_1fr_auto]">
@@ -1460,7 +1803,7 @@ export default function Home() {
               newValue={newBateria}
               onNewValueChange={setNewBateria}
               onCreate={() => void createBateria()}
-              createDisabled={!canWrite}
+              createDisabled={!isAdmin}
             >
               {baterias.map((bateria) => (
                 <div key={bateria.bateriaId} className="rounded-lg bg-stone-100/80 p-2">
@@ -1514,21 +1857,6 @@ export default function Home() {
                   placeholder="Nuevo item"
                   className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 />
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <label className="text-sm">
-                    <span className="block text-xs font-semibold uppercase tracking-wide text-stone-600">Orden PDF</span>
-                    <input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={newItem.ordenPdf}
-                      onChange={(event) =>
-                        setNewItem((prev) => ({ ...prev, ordenPdf: Math.max(1, Number(event.target.value) || 1) }))
-                      }
-                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                    />
-                  </label>
-                </div>
                 <div className="flex flex-wrap gap-4 text-sm">
                   <label className="flex items-center gap-2">
                     <input
@@ -1550,7 +1878,12 @@ export default function Home() {
 
               <div className="mt-3 space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items activos</p>
-                {itemsActivos.length > 0 ? itemsActivos.map((item) => renderItemCard(item)) : <p className="text-sm text-stone-500">Sin items activos.</p>}
+                <p className="text-xs text-stone-500">Arrastra con mouse o tactil para cambiar el orden del PDF.</p>
+                {itemsActivosEnPantalla.length > 0 ? (
+                  itemsActivosEnPantalla.map((item) => renderItemCard(item, { draggableInActiveList: true }))
+                ) : (
+                  <p className="text-sm text-stone-500">Sin items activos.</p>
+                )}
               </div>
 
               <div className="mt-5 space-y-2">
@@ -1567,8 +1900,9 @@ export default function Home() {
         </section>
       ) : null}
 
-      {activeView === "personal_registro" ? (
-        <section className="ej-card mt-6 overflow-hidden rounded-2xl">
+      {showCreatePersonalForm ? (
+        <section className="fixed inset-0 z-50 flex items-start justify-center bg-black/35 px-3 py-4 sm:items-center sm:py-6">
+          <article className="ej-card max-h-[92vh] w-full max-w-6xl overflow-auto rounded-2xl">
           <div className="border-b border-stone-200 bg-gradient-to-r from-stone-50 to-lime-50/60 px-4 py-4 sm:px-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -1577,9 +1911,18 @@ export default function Home() {
                   Carga datos personales, destino y talles en una sola ficha.
                 </p>
               </div>
-              <span className="inline-flex items-center rounded-full border border-lime-700/25 bg-lime-100/70 px-3 py-1 text-xs font-semibold text-lime-900">
-                {`Campos obligatorios: ${requiredPersonalCompleted}/5`}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-lime-700/25 bg-lime-100/70 px-3 py-1 text-xs font-semibold text-lime-900">
+                  {`Campos obligatorios: ${requiredPersonalCompleted}/5`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowCreatePersonalForm(false)}
+                  className="rounded bg-stone-700 px-2 py-1 text-xs font-semibold text-white"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1750,30 +2093,84 @@ export default function Home() {
               </aside>
             </div>
           </form>
+          </article>
         </section>
       ) : null}
 
-      {activeView === "personal_gestion" ? (
+      {activeView === "personal" ? (
         <section className="ej-card mt-6 rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-stone-900">Personal</h2>
-          <p className="mt-1 text-xs text-stone-600">Orden: Grado del Personal, Apellidos y Nombres.</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-stone-900">Personal</h2>
+              <p className="mt-1 text-xs text-stone-600">Orden: Grado del Personal, Apellidos y Nombres.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCreatePersonalForm(true)}
+              disabled={!canWrite}
+              className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              Registrar nuevo
+            </button>
+          </div>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               value={ciSearch}
               onChange={(event) => setCiSearch(event.target.value)}
-              placeholder="Buscar por cedula (con o sin formato)"
-              inputMode="numeric"
+              placeholder="Buscar por cedula, nombre o apellido"
               className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm sm:max-w-sm"
             />
-            {ciSearch.trim() !== "" ? (
+            {ciSearch.trim() !== "" || bateriaFilter !== "ALL" ? (
               <button
                 type="button"
-                onClick={() => setCiSearch("")}
+                onClick={() => {
+                  setCiSearch("");
+                  setBateriaFilter("ALL");
+                }}
                 className="rounded bg-stone-600 px-3 py-2 text-xs font-semibold text-white"
               >
                 Limpiar
               </button>
             ) : null}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setBateriaFilter("ALL")}
+              className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                bateriaFilter === "ALL"
+                  ? "bg-stone-800 text-white"
+                  : "border border-stone-300 bg-white text-stone-700"
+              }`}
+            >
+              Todas las baterias
+            </button>
+            <button
+              type="button"
+              onClick={() => setBateriaFilter("NONE")}
+              className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                bateriaFilter === "NONE"
+                  ? "bg-stone-800 text-white"
+                  : "border border-stone-300 bg-white text-stone-700"
+              }`}
+            >
+              Sin bateria
+            </button>
+            {baterias.map((bateria) => {
+              const selected = bateriaFilter === String(bateria.bateriaId);
+              return (
+                <button
+                  key={bateria.bateriaId}
+                  type="button"
+                  onClick={() => setBateriaFilter(String(bateria.bateriaId))}
+                  className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                    selected ? "bg-stone-800 text-white" : "border border-stone-300 bg-white text-stone-700"
+                  }`}
+                >
+                  {bateria.nombre}
+                </button>
+              );
+            })}
           </div>
 
           <div className="mt-3 space-y-3 md:hidden">
@@ -1785,19 +2182,17 @@ export default function Home() {
               return (
                 <article
                   key={persona.ci}
-                  className={`rounded-xl border p-3 ${ciValida ? "border-stone-200 bg-stone-50/80" : "border-rose-300 bg-rose-50/70"}`}
+                  className={`rounded-xl border p-3 ${ciValida ? "border-stone-200 bg-stone-50/80" : "border-red-300 bg-red-50/70"}`}
                 >
-                  <p className={`text-xs font-mono ${ciValida ? "text-stone-600" : "font-semibold text-rose-700"}`}>
+                  <p className={`text-xs font-mono ${ciValida ? "text-stone-600" : "font-semibold text-red-700"}`}>
                     {formatUruguayanCi(persona.ci)}
                   </p>
                   {!ciValida ? (
-                    <p className="mt-1 inline-block rounded-full border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-800">
+                    <p className="mt-1 inline-block rounded-full border border-red-300 bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-800">
                       CI invalida en BD
                     </p>
                   ) : null}
-                  <p className="mt-2 text-sm text-stone-900">
-                    <span className="font-semibold">Grado del Personal:</span> {rangoLabel(persona.rango)}
-                  </p>
+                  <p className="mt-2 text-sm font-bold text-stone-900">{persona.rango.nombreCompleto}</p>
                   <p className="mt-2 text-sm text-stone-900">
                     <span className="font-semibold">Apellidos:</span> {apellidosLabel(persona)}
                   </p>
@@ -1871,14 +2266,14 @@ export default function Home() {
                 </article>
               );
             })}
-            {personalFiltrado.length === 0 ? <p className="text-sm text-stone-500">Sin resultados para esa cedula.</p> : null}
+            {personalFiltrado.length === 0 ? <p className="text-sm text-stone-500">Sin resultados con los filtros actuales.</p> : null}
           </div>
 
           <div className="mt-3 hidden overflow-x-auto md:block">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-600">
                 <tr>
-                  <th className="px-3 py-2">CI</th>
+                  <th className="w-[140px] min-w-[140px] whitespace-nowrap px-3 py-2">CI</th>
                   <th className="px-3 py-2">Grado del Personal</th>
                   <th className="px-3 py-2">Apellidos</th>
                   <th className="px-3 py-2">Nombres</th>
@@ -1895,12 +2290,16 @@ export default function Home() {
                   const editing = editPersonalCi === persona.ci;
                   return (
                     <Fragment key={persona.ci}>
-                      <tr>
-                        <td className={`px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-semibold text-rose-700"}`}>
+                      <tr className={!ciValida ? "bg-red-50/60" : undefined}>
+                        <td
+                          className={`w-[140px] min-w-[140px] whitespace-nowrap px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-bold text-red-700"}`}
+                        >
                           <div>{formatUruguayanCi(persona.ci)}</div>
-                          {!ciValida ? <div className="mt-1 text-[10px] uppercase tracking-wide text-rose-800">invalida</div> : null}
+                          {!ciValida ? <div className="mt-1 text-[10px] uppercase tracking-wide text-red-800">invalida</div> : null}
                         </td>
-                        <td className="px-3 py-2 text-stone-700">{rangoLabel(persona.rango)}</td>
+                        <td className="px-3 py-2 text-stone-900">
+                          <span className="font-bold">{persona.rango.nombreCompleto}</span>
+                        </td>
                         <td className="px-3 py-2 text-stone-900">{apellidosLabel(persona)}</td>
                         <td className="px-3 py-2 text-stone-900">{nombresLabel(persona)}</td>
                         <td className="px-3 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin bateria"}</td>
@@ -1913,11 +2312,12 @@ export default function Home() {
                             {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
                           </button>
                         </td>
-                        <td className="px-3 py-2">
-                          <div className="flex flex-wrap gap-2">
+                        <td className="px-3 py-2 align-top">
+                          <div className="grid min-w-[280px] grid-cols-2 gap-1.5">
                             <SmallActionButton
                               text={editing ? "Cancelar" : "Editar"}
                               tone={editing ? "neutral" : "edit"}
+                              className="w-full"
                               onClick={() => {
                                 if (editing) {
                                   setEditPersonalCi(null);
@@ -1927,32 +2327,37 @@ export default function Home() {
                                 startEditPersonal(persona);
                               }}
                             />
-                            <SmallActionButton text="Borrar" tone="delete" onClick={() => void deletePersonal(persona.ci)} />
+                            <SmallActionButton
+                              text="Borrar"
+                              tone="delete"
+                              className="w-full"
+                              onClick={() => void deletePersonal(persona.ci)}
+                            />
                             <button
                               type="button"
                               onClick={() => openRegistro(persona.ci, "ENTREGA")}
-                              className="rounded bg-emerald-700 px-2 py-1 text-xs font-medium text-white"
+                              className="w-full rounded bg-emerald-700 px-2 py-1 text-xs font-medium text-white"
                             >
                               Entrega
                             </button>
                             <button
                               type="button"
                               onClick={() => openRegistro(persona.ci, "DEVOLUCION")}
-                              className="rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white"
+                              className="w-full rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white"
                             >
                               Devolucion
                             </button>
                             <button
                               type="button"
                               onClick={() => void openRegistroViewer(persona)}
-                              className="rounded bg-sky-700 px-2 py-1 text-xs font-medium text-white"
+                              className="w-full rounded bg-sky-700 px-2 py-1 text-xs font-medium text-white"
                             >
                               Ver movimientos
                             </button>
                             <button
                               type="button"
                               onClick={() => window.open(`/hoja-entrega/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
-                              className="rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white"
+                              className="w-full rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white"
                             >
                               Hoja de Entrega
                             </button>
@@ -1986,12 +2391,69 @@ export default function Home() {
                 {personalFiltrado.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-3 py-4 text-sm text-stone-500">
-                      Sin resultados para esa cedula.
+                      Sin resultados con los filtros actuales.
                     </td>
                   </tr>
                 ) : null}
               </tbody>
             </table>
+          </div>
+        </section>
+      ) : null}
+
+      {activeView === "tallas_resumen" ? (
+        <section className="mt-6 space-y-4">
+          <article className="ej-card rounded-2xl p-4">
+            <h2 className="text-base font-semibold text-stone-900">Resumen de Tallas por Bateria</h2>
+            <p className="mt-1 text-xs text-stone-600">
+              Conteo de tallas por bateria y tipo de prenda. Incluye el grupo Sin bateria cuando corresponde.
+            </p>
+          </article>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {resumenTallasPorBateria.map((bateria) => (
+              <article key={bateria.key} className="ej-card rounded-2xl p-4">
+                <div className="flex items-center justify-between gap-3 border-b border-stone-200 pb-2">
+                  <h3 className="text-sm font-semibold text-stone-900">{bateria.nombre}</h3>
+                  <span className="rounded-full border border-stone-300 bg-stone-100 px-2 py-1 text-[11px] font-semibold text-stone-700">
+                    {bateria.total} personal
+                  </span>
+                </div>
+
+                {bateria.total === 0 ? (
+                  <p className="mt-3 text-sm text-stone-500">Sin personal asignado en esta bateria.</p>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    {bateria.tallas.map((talla) => (
+                      <div key={`${bateria.key}-${talla.key}`} className="rounded-lg border border-stone-200 bg-stone-50/75 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">{talla.label}</p>
+                          <p className="text-[11px] text-stone-600">{`Sin dato: ${talla.sinDato}`}</p>
+                        </div>
+                        <div className="max-h-32 overflow-auto">
+                          <table className="min-w-full text-left text-xs">
+                            <thead className="text-[10px] uppercase tracking-wide text-stone-500">
+                              <tr>
+                                <th className="py-1 pr-2">Talla</th>
+                                <th className="py-1 text-right">Cantidad</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-stone-200">
+                              {talla.values.map((value) => (
+                                <tr key={`${bateria.key}-${talla.key}-${value.talla}`}>
+                                  <td className="py-1 pr-2 text-stone-800">{value.talla}</td>
+                                  <td className="py-1 text-right font-semibold text-stone-700">{value.cantidad}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
           </div>
         </section>
       ) : null}
@@ -2039,6 +2501,13 @@ export default function Home() {
                           {registro.tipo}
                         </span>
                       </div>
+                      {registro.auditoria ? (
+                        <p className="mt-1 text-xs text-stone-700">
+                          {`Registrado por: ${registro.auditoria.usuario?.username ?? "Sistema"} (${roleLabel(registro.auditoria.usuario?.rol ?? null)}) - Auditoria BD #${registro.auditoria.auditoriaId}`}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-stone-500">Sin referencia de auditoria para este movimiento.</p>
+                      )}
                       {registro.comentarios ? <p className="mt-1 text-xs text-stone-700">{registro.comentarios}</p> : null}
                       <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
                         {registro.items.map((item) => (
@@ -2170,7 +2639,7 @@ export default function Home() {
               <input
                 value={newUsername}
                 onChange={(event) => setNewUsername(event.target.value)}
-                placeholder="Username"
+                placeholder="Nombre de usuario"
                 className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
               <input
@@ -2187,7 +2656,7 @@ export default function Home() {
               >
                 {ROLE_OPTIONS.map((role) => (
                   <option key={role} value={role}>
-                    {role}
+                    {roleLabel(role)}
                   </option>
                 ))}
               </select>
@@ -2206,7 +2675,7 @@ export default function Home() {
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm font-medium text-stone-900">
-                        {usuario.username} ({usuario.rol})
+                        {usuario.username} ({roleLabel(usuario.rol)})
                       </p>
                       <p className="text-xs text-stone-600">{usuario.activo ? "Activo" : "Inactivo"}</p>
                     </div>
@@ -2235,17 +2704,58 @@ export default function Home() {
           </article>
 
           <article className="ej-card rounded-2xl p-4">
-            <h2 className="text-base font-semibold text-stone-900">Auditoria (quien hizo que)</h2>
+            <h2 className="text-base font-semibold text-stone-900">Auditoria detallada (interfaz y base de datos)</h2>
+            <p className="mt-1 text-xs text-stone-600">
+              Cada registro muestra quien hizo la accion, sobre que entidad y el detalle guardado en la tabla de auditoria.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setAuditFilter("TODOS")}
+                className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                  auditFilter === "TODOS" ? "bg-stone-800 text-white" : "border border-stone-300 bg-white text-stone-700"
+                }`}
+              >
+                Todo
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuditFilter("MOVIMIENTOS")}
+                className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                  auditFilter === "MOVIMIENTOS"
+                    ? "bg-stone-800 text-white"
+                    : "border border-stone-300 bg-white text-stone-700"
+                }`}
+              >
+                Solo movimientos
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuditFilter("AUTENTICACION")}
+                className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                  auditFilter === "AUTENTICACION"
+                    ? "bg-stone-800 text-white"
+                    : "border border-stone-300 bg-white text-stone-700"
+                }`}
+              >
+                Solo autenticacion
+              </button>
+            </div>
             <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
-              {auditoria.map((log) => (
+              {auditoriaFiltrada.map((log) => (
                 <div key={log.auditoriaId} className="rounded-lg border border-stone-200 bg-stone-50 p-2">
-                  <p className="text-xs text-stone-600">{new Date(log.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-stone-600">{new Date(log.createdAt).toLocaleString("es-UY")}</p>
                   <p className="text-sm font-medium text-stone-900">
-                    {log.usuario?.username ?? "Sistema"} - {log.accion} {log.entidad}
+                    {`${log.usuario?.username ?? "Sistema"} (${roleLabel(log.usuario?.rol ?? null)}) - ${auditActionLabel(log.accion)} ${auditEntityLabel(log.entidad)}`}
                   </p>
-                  <p className="text-xs text-stone-600">{log.entidadId ? `ID: ${log.entidadId}` : "Sin ID"}</p>
+                  <p className="text-xs text-stone-600">{`Auditoria BD #${log.auditoriaId}`}</p>
+                  <p className="text-xs text-stone-600">{log.entidadId ? `Entidad ID: ${log.entidadId}` : "Entidad sin ID"}</p>
+                  {renderAuditDetalle(log.detalle)}
                 </div>
               ))}
+              {auditoriaFiltrada.length === 0 ? (
+                <p className="text-sm text-stone-600">No hay eventos para este filtro.</p>
+              ) : null}
             </div>
           </article>
         </section>

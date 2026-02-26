@@ -53,11 +53,23 @@ export async function POST(req: Request) {
   }
 
   try {
+    const isActive = body.activo === undefined ? true : Boolean(body.activo);
+    let ordenPdf = body.ordenPdf;
+
+    if (ordenPdf === undefined) {
+      const lastItem = await prisma.item.findFirst({
+        where: { activo: isActive },
+        orderBy: { ordenPdf: "desc" },
+        select: { ordenPdf: true },
+      });
+      ordenPdf = (lastItem?.ordenPdf ?? 0) + 10;
+    }
+
     const created = await prisma.item.create({
       data: {
         nombre: body.nombre.trim(),
-        activo: body.activo === undefined ? true : Boolean(body.activo),
-        ordenPdf: body.ordenPdf === undefined ? 9999 : body.ordenPdf,
+        activo: isActive,
+        ordenPdf,
       },
     });
 

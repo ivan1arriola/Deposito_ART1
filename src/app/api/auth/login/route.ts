@@ -19,6 +19,14 @@ function isValidPayload(body: unknown): body is LoginPayload {
   );
 }
 
+function readRequestMeta(request: Request) {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const realIp = request.headers.get("x-real-ip");
+  const ip = forwardedFor?.split(",")[0]?.trim() || realIp || null;
+  const userAgent = request.headers.get("user-agent") || null;
+  return { ip, userAgent };
+}
+
 export async function POST(request: Request) {
   const body = await request.json();
   if (!isValidPayload(body)) {
@@ -27,6 +35,7 @@ export async function POST(request: Request) {
 
   const username = body.username.trim();
   const password = body.password;
+  const requestMeta = readRequestMeta(request);
 
   try {
     const user = await prisma.usuario.findUnique({
@@ -57,6 +66,12 @@ export async function POST(request: Request) {
       accion: "LOGIN",
       entidad: "AUTH",
       entidadId: user.usuarioId,
+      detalle: {
+        username: user.username,
+        rol: user.rol,
+        ip: requestMeta.ip,
+        userAgent: requestMeta.userAgent,
+      },
     });
 
     return response;
