@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { TipoRegistro } from "@prisma/client";
 import { authorizeRequest } from "@/lib/auth";
-import { getFirmaConfig } from "@/lib/firma-config";
+import { getFirmaConfig, TEXTO_ENCARGADO, TEXTO_OFICIAL } from "@/lib/firma-config";
 import { prisma } from "@/lib/prisma";
 import { isValidUruguayanCi } from "@/lib/ci";
 
@@ -181,8 +181,12 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     matrix,
     itemOrder,
     firmas: {
-      encargadoTexto: firmas.encargadoTexto,
-      oficialTexto: firmas.oficialTexto,
+      encargadoTexto: TEXTO_ENCARGADO,
+      encargadoRango: firmas.encargadoRango,
+      encargadoNombre: firmas.encargadoNombre,
+      oficialTexto: TEXTO_OFICIAL,
+      oficialRango: firmas.oficialRango,
+      oficialNombre: firmas.oficialNombre,
     },
     observaciones: persona.observaciones.map((obs) => ({
       fecha: obs.fecha.toISOString(),

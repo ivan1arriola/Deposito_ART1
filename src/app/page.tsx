@@ -119,8 +119,10 @@ type CurrentUser = {
 };
 
 type FirmaConfig = {
-  encargadoTexto: string;
-  oficialTexto: string;
+  encargadoRango: string;
+  encargadoNombre: string;
+  oficialRango: string;
+  oficialNombre: string;
   updatedAt: string | null;
 };
 
@@ -527,8 +529,10 @@ export default function Home() {
   const [auditoria, setAuditoria] = useState<AuditoriaRecord[]>([]);
   const [firmaConfig, setFirmaConfig] = useState<FirmaConfig | null>(null);
   const [firmaConfigDraft, setFirmaConfigDraft] = useState({
-    encargadoTexto: "",
-    oficialTexto: "",
+    encargadoRango: "",
+    encargadoNombre: "",
+    oficialRango: "",
+    oficialNombre: "",
   });
   const [firmaConfigLoading, setFirmaConfigLoading] = useState(false);
   const [firmaConfigSaving, setFirmaConfigSaving] = useState(false);
@@ -881,7 +885,7 @@ export default function Home() {
     setUsuarios([]);
     setAuditoria([]);
     setFirmaConfig(null);
-    setFirmaConfigDraft({ encargadoTexto: "", oficialTexto: "" });
+    setFirmaConfigDraft({ encargadoRango: "", encargadoNombre: "", oficialRango: "", oficialNombre: "" });
     setFirmaConfigLoading(false);
     setFirmaConfigSaving(false);
     setFirmaConfigError(null);
@@ -948,8 +952,10 @@ export default function Home() {
         setAuditoria(auditoriaData);
         setFirmaConfig(firmaConfigResult.config);
         setFirmaConfigDraft({
-          encargadoTexto: firmaConfigResult.config?.encargadoTexto ?? "",
-          oficialTexto: firmaConfigResult.config?.oficialTexto ?? "",
+          encargadoRango: firmaConfigResult.config?.encargadoRango ?? "",
+          encargadoNombre: firmaConfigResult.config?.encargadoNombre ?? "",
+          oficialRango: firmaConfigResult.config?.oficialRango ?? "",
+          oficialNombre: firmaConfigResult.config?.oficialNombre ?? "",
         });
         setFirmaConfigError(firmaConfigResult.error);
         setFirmaConfigLoading(false);
@@ -957,7 +963,7 @@ export default function Home() {
         setUsuarios([]);
         setAuditoria([]);
         setFirmaConfig(null);
-        setFirmaConfigDraft({ encargadoTexto: "", oficialTexto: "" });
+        setFirmaConfigDraft({ encargadoRango: "", encargadoNombre: "", oficialRango: "", oficialNombre: "" });
         setFirmaConfigLoading(false);
         setFirmaConfigError(null);
       }
@@ -1824,11 +1830,14 @@ export default function Home() {
       return;
     }
 
-    const encargadoTexto = firmaConfigDraft.encargadoTexto.trim();
-    const oficialTexto = firmaConfigDraft.oficialTexto.trim();
-    if (!encargadoTexto || !oficialTexto) {
-      setFirmaConfigError("Los dos textos son obligatorios.");
-      setStatus("Completa ambos textos de firma.");
+    const encargadoRango = firmaConfigDraft.encargadoRango.trim();
+    const encargadoNombre = firmaConfigDraft.encargadoNombre.trim();
+    const oficialRango = firmaConfigDraft.oficialRango.trim();
+    const oficialNombre = firmaConfigDraft.oficialNombre.trim();
+    
+    if (!encargadoRango || !encargadoNombre || !oficialRango || !oficialNombre) {
+      setFirmaConfigError("Todos los campos son obligatorios.");
+      setStatus("Completa todos los campos de firma.");
       return;
     }
 
@@ -1838,12 +1847,14 @@ export default function Home() {
       const updated = await api<FirmaConfig>("/api/firma-config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ encargadoTexto, oficialTexto }),
+        body: JSON.stringify({ encargadoRango, encargadoNombre, oficialRango, oficialNombre }),
       });
       setFirmaConfig(updated);
       setFirmaConfigDraft({
-        encargadoTexto: updated.encargadoTexto,
-        oficialTexto: updated.oficialTexto,
+        encargadoRango: updated.encargadoRango,
+        encargadoNombre: updated.encargadoNombre,
+        oficialRango: updated.oficialRango,
+        oficialNombre: updated.oficialNombre,
       });
       setStatus("Firmas institucionales actualizadas.");
     } catch (error: unknown) {
@@ -3444,36 +3455,79 @@ export default function Home() {
           <article className="ej-card rounded-2xl p-4 lg:col-span-2">
             <h2 className="text-base font-semibold text-stone-900">Firmas institucionales (solo administrador)</h2>
             <p className="mt-1 text-xs text-stone-600">
-              Esta seccion controla los textos de firma usados en la hoja de entrega.
+              Esta seccion controla los datos de quienes firman la hoja de entrega. Los textos institucionales son fijos.
             </p>
+            <div className="mt-3 space-y-2 rounded-lg border border-stone-200 bg-stone-50 p-3">
+              <p className="text-xs font-semibold text-stone-700">Textos institucionales (fijos):</p>
+              <p className="text-xs text-stone-600">• Encargado: El Encargado del Deposito General del Grp. &quot;Brig. Gral. Manuel Oribe&quot; de Artilleria 105mm No. 1.</p>
+              <p className="text-xs text-stone-600">• Oficial: El Oficial de Administracion del Grp.&quot;Brig. &quot;Gral. Manuel Oribe&quot; de Artilleria 105mm No. 1.</p>
+            </div>
             {firmaConfigLoading ? (
               <p className="mt-3 text-sm text-stone-600">Cargando configuracion de firmas...</p>
             ) : (
-              <form onSubmit={saveFirmaConfig} className="mt-3 space-y-3">
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Texto del encargado</span>
-                  <textarea
-                    value={firmaConfigDraft.encargadoTexto}
-                    onChange={(event) =>
-                      setFirmaConfigDraft((prev) => ({ ...prev, encargadoTexto: event.target.value }))
-                    }
-                    rows={2}
-                    disabled={firmaConfigSaving}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Texto del oficial</span>
-                  <textarea
-                    value={firmaConfigDraft.oficialTexto}
-                    onChange={(event) =>
-                      setFirmaConfigDraft((prev) => ({ ...prev, oficialTexto: event.target.value }))
-                    }
-                    rows={2}
-                    disabled={firmaConfigSaving}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  />
-                </label>
+              <form onSubmit={saveFirmaConfig} className="mt-3 space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-stone-800">Datos del Encargado</h3>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Rango</span>
+                      <input
+                        type="text"
+                        value={firmaConfigDraft.encargadoRango}
+                        onChange={(event) =>
+                          setFirmaConfigDraft((prev) => ({ ...prev, encargadoRango: event.target.value }))
+                        }
+                        placeholder="Ej: Sgto."
+                        disabled={firmaConfigSaving}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre</span>
+                      <input
+                        type="text"
+                        value={firmaConfigDraft.encargadoNombre}
+                        onChange={(event) =>
+                          setFirmaConfigDraft((prev) => ({ ...prev, encargadoNombre: event.target.value }))
+                        }
+                        placeholder="Ej: Wilson Lara"
+                        disabled={firmaConfigSaving}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-stone-800">Datos del Oficial</h3>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Rango</span>
+                      <input
+                        type="text"
+                        value={firmaConfigDraft.oficialRango}
+                        onChange={(event) =>
+                          setFirmaConfigDraft((prev) => ({ ...prev, oficialRango: event.target.value }))
+                        }
+                        placeholder="Ej: -Tte.2º"
+                        disabled={firmaConfigSaving}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre</span>
+                      <input
+                        type="text"
+                        value={firmaConfigDraft.oficialNombre}
+                        onChange={(event) =>
+                          setFirmaConfigDraft((prev) => ({ ...prev, oficialNombre: event.target.value }))
+                        }
+                        placeholder="Ej: Gerardo Otero"
+                        disabled={firmaConfigSaving}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                  </div>
+                </div>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-stone-600">
                     {firmaConfig?.updatedAt

@@ -37,7 +37,11 @@ type FichaData = {
   }>;
   firmas: {
     encargadoTexto: string;
+    encargadoRango: string;
+    encargadoNombre: string;
     oficialTexto: string;
+    oficialRango: string;
+    oficialNombre: string;
   };
   observaciones: Array<{ fecha: string; texto: string }>;
 };
@@ -401,14 +405,14 @@ export default function FichaPage() {
 
             <div className={`${styles.signBlock} ${styles.signBlockB}`}>
               <div className={styles.signTitle}>{data.firmas.encargadoTexto}</div>
-              <div className={styles.signRank}>Sgto.</div>
-              <div className={styles.signName}>Wilson Lara</div>
+              <div className={styles.signRank}>{data.firmas.encargadoRango}</div>
+              <div className={styles.signName}>{data.firmas.encargadoNombre}</div>
             </div>
 
             <div className={`${styles.signBlock} ${styles.signBlockC}`}>
               <div className={styles.signTitle}>{data.firmas.oficialTexto}</div>
-              <div className={styles.signRank}>-Tte.2&ordm;</div>
-              <div className={styles.signName}>Gerardo Otero</div>
+              <div className={styles.signRank}>{data.firmas.oficialRango}</div>
+              <div className={styles.signName}>{data.firmas.oficialNombre}</div>
             </div>
           </div>
         </div>

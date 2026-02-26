@@ -4,18 +4,24 @@ import { logAudit } from "@/lib/audit";
 import { getFirmaConfig, updateFirmaConfig } from "@/lib/firma-config";
 
 type FirmaConfigPayload = {
-  encargadoTexto: string;
-  oficialTexto: string;
+  encargadoRango: string;
+  encargadoNombre: string;
+  oficialRango: string;
+  oficialNombre: string;
 };
 
 function isValidPayload(body: unknown): body is FirmaConfigPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
   return (
-    typeof candidate.encargadoTexto === "string" &&
-    candidate.encargadoTexto.trim() !== "" &&
-    typeof candidate.oficialTexto === "string" &&
-    candidate.oficialTexto.trim() !== ""
+    typeof candidate.encargadoRango === "string" &&
+    candidate.encargadoRango.trim() !== "" &&
+    typeof candidate.encargadoNombre === "string" &&
+    candidate.encargadoNombre.trim() !== "" &&
+    typeof candidate.oficialRango === "string" &&
+    candidate.oficialRango.trim() !== "" &&
+    typeof candidate.oficialNombre === "string" &&
+    candidate.oficialNombre.trim() !== ""
   );
 }
 
@@ -38,7 +44,7 @@ export async function PUT(request: Request) {
   const body = await request.json();
   if (!isValidPayload(body)) {
     return NextResponse.json(
-      { error: "Payload invalido. 'encargadoTexto' y 'oficialTexto' son obligatorios." },
+      { error: "Payload invalido. Todos los campos de rango y nombre son obligatorios." },
       { status: 400 },
     );
   }
@@ -46,8 +52,10 @@ export async function PUT(request: Request) {
   try {
     const previous = await getFirmaConfig();
     const updated = await updateFirmaConfig({
-      encargadoTexto: body.encargadoTexto.trim(),
-      oficialTexto: body.oficialTexto.trim(),
+      encargadoRango: body.encargadoRango.trim(),
+      encargadoNombre: body.encargadoNombre.trim(),
+      oficialRango: body.oficialRango.trim(),
+      oficialNombre: body.oficialNombre.trim(),
     });
 
     await logAudit({
