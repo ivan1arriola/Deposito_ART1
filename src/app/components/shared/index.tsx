@@ -1,0 +1,184 @@
+"use client";
+
+import type { ReactNode } from "react";
+export { ActionMenu } from "./ActionMenu";
+export type { ActionMenuItem } from "./ActionMenu";
+export { ConfirmDialog } from "./ConfirmDialog";
+export { ToastContainer, toast } from "./Toast";
+export { Input, Select, Textarea } from "./FormInputs";
+export { Card, CardHeader, StatCard, EmptyState, Badge } from "./Cards";
+
+/**
+ * Componente para tarjetas de catálogo con entrada de nuevos elementos
+ */
+export function CatalogCard(props: {
+  title: string;
+  placeholder: string;
+  newValue: string;
+  onNewValueChange: (value: string) => void;
+  onCreate: () => void;
+  createDisabled?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <article className="ej-card rounded-2xl p-4">
+      <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">{props.title}</h2>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <input
+          value={props.newValue}
+          onChange={(event) => props.onNewValueChange(event.target.value)}
+          placeholder={props.placeholder}
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        />
+        <button
+          type="button"
+          onClick={props.onCreate}
+          disabled={props.createDisabled}
+          className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
+        >
+          Crear
+        </button>
+      </div>
+      <div className="mt-3 space-y-2">{props.children}</div>
+    </article>
+  );
+}
+
+/**
+ * Componente para botones de acción pequeños mejorados con iconos
+ */
+export function SmallActionButton(props: {
+  text: string;
+  tone: "edit" | "delete" | "ok" | "neutral";
+  onClick: () => void;
+  className?: string;
+  icon?: "edit" | "trash" | "check" | "x";
+}) {
+  // Mapeo de tone a clases de color mejoradas
+  const colorClasses = {
+    edit: "bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300",
+    delete: "bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300",
+    ok: "bg-green-100 text-green-700 hover:bg-green-200 active:bg-green-300",
+    neutral: "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300",
+  };
+
+  // Mapeo de icon a SVG
+  const getIconSvg = () => {
+    const iconMap = {
+      edit: "edit",
+      delete: "trash",
+      ok: "check",
+      neutral: "x",
+    };
+    const icon = props.icon || iconMap[props.tone];
+
+    const iconProps = "w-3.5 h-3.5";
+    switch (icon) {
+      case "edit":
+        return (
+          <svg className={iconProps} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        );
+      case "trash":
+        return (
+          <svg className={iconProps} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        );
+      case "check":
+        return (
+          <svg className={iconProps} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        );
+      case "x":
+        return (
+          <svg className={iconProps} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all duration-200 ${colorClasses[props.tone]} ${props.className ?? ""}`}
+    >
+      {getIconSvg()}
+      {props.text}
+    </button>
+  );
+}
+
+/**
+ * Componente para controles de paginación
+ */
+export function PaginationControls(props: {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  itemLabel: string;
+  onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: number[];
+  className?: string;
+}) {
+  const totalPages = Math.max(1, Math.ceil(props.totalItems / props.pageSize));
+  const safePage = Math.max(1, Math.min(props.page, totalPages));
+
+  const from = props.totalItems === 0 ? 0 : (safePage - 1) * props.pageSize + 1;
+  const to = props.totalItems === 0 ? 0 : Math.min(safePage * props.pageSize, props.totalItems);
+
+  return (
+    <div className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50/50 p-3 ${props.className ?? ""}`}>
+      <div className="text-xs text-stone-600">
+        Mostrando {from} a {to} de {props.totalItems} {props.itemLabel}
+        {props.totalItems !== 1 ? "s" : ""}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {props.onPageSizeChange && props.pageSizeOptions ? (
+          <select
+            value={props.pageSize}
+            onChange={(e) => props.onPageSizeChange?.(Number(e.target.value))}
+            className="rounded border border-stone-300 px-2 py-1 text-xs"
+          >
+            {props.pageSizeOptions.map((size) => (
+              <option key={size} value={size}>
+                {size}/página
+              </option>
+            ))}
+          </select>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={() => props.onPageChange(safePage - 1)}
+          disabled={safePage <= 1}
+          className="rounded border border-stone-300 px-2 py-1 text-xs font-medium disabled:opacity-50"
+        >
+          ← Anterior
+        </button>
+
+        <div className="flex items-center gap-1">
+          <span className="text-xs font-medium text-stone-700">Página {safePage}</span>
+          <span className="text-xs text-stone-500">de {totalPages}</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => props.onPageChange(safePage + 1)}
+          disabled={safePage >= totalPages}
+          className="rounded border border-stone-300 px-2 py-1 text-xs font-medium disabled:opacity-50"
+        >
+          Siguiente →
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -28,6 +28,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -37,22 +42,58 @@ body {
     radial-gradient(circle at 88% 14%, rgb(31 103 40 / 16%) 0, transparent 34%),
     linear-gradient(180deg, rgb(245 246 247 / 96%) 0%, rgb(223 226 230 / 92%) 100%);
   background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Mejoras en inputs para mobile y desktop */
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   border: 1px solid rgb(77 53 29 / 25%);
   background: #fff;
   color: #1d1d1b;
+  transition: all 0.2s ease;
+  /* Touch-friendly para mobile */
+  min-height: 44px;
 }
 
+/* Estados mejorados para inputs */
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--EscudoCeleste);
-  box-shadow: 0 0 0 2px rgb(27 117 170 / 18%);
+  box-shadow: 0 0 0 3px rgb(27 117 170 / 18%);
+  transform: translateY(-1px);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: rgb(0 0 0 / 3%);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Mejoras en checkboxes y radios */
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--EscudoVerde);
+}
+
+/* Touch targets para mobile */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a,
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 .ej-hero {
@@ -66,47 +107,96 @@ textarea:focus {
   border: 1px solid rgb(77 53 29 / 28%);
   background: rgb(255 255 255 / 94%);
   box-shadow: 0 8px 20px rgb(0 0 0 / 10%);
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.ej-card:hover {
+  box-shadow: 0 12px 28px rgb(0 0 0 / 14%);
 }
 
 .ej-button {
   border: 1px solid rgb(31 103 40 / 35%);
   background: var(--EscudoVerde);
   color: var(--Blanco);
+  transition: all 0.2s ease;
+  min-height: 44px;
+  font-weight: 600;
 }
 
-.ej-button:hover {
+.ej-button:hover:not(:disabled) {
   background: #185321;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(31 103 40 / 30%);
+}
+
+.ej-button:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .ej-button-danger {
   border: 1px solid rgb(207 15 33 / 28%);
   background: #c81e31;
   color: var(--Blanco);
+  transition: all 0.2s ease;
 }
 
 .ej-button-muted {
   border: 1px solid rgb(255 204 0 / 25%);
   background: rgb(0 56 133 / 78%);
   color: var(--Blanco);
+  transition: all 0.2s ease;
 }
 
-.ej-button-muted:hover {
+.ej-button-muted:hover:not(:disabled) {
   background: rgb(0 56 133 / 90%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(0 56 133 / 30%);
 }
 
-.ej-button-danger:hover {
+.ej-button-danger:hover:not(:disabled) {
   background: #b41224;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(207 15 33 / 30%);
 }
 
+.ej-button:disabled,
+.ej-button-danger:disabled,
+.ej-button-muted:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ej-button:disabled,
+.ej-button-danger:disabled,
+.ej-button-muted:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Mejoras en tabs/vistas */
 .ej-view-active {
   background: linear-gradient(120deg, rgb(0 0 0 / 92%) 0%, rgb(77 53 29 / 92%) 100%);
   color: var(--Blanco);
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
 }
 
 .ej-view-idle {
   border: 1px solid rgb(77 53 29 / 35%);
   background: rgb(255 255 255 / 90%);
   color: rgb(37 37 37 / 96%);
+  transition: all 0.2s ease;
+}
+
+.ej-view-idle:hover {
+  background: rgb(255 255 255 / 100%);
+  border-color: rgb(77 53 29 / 50%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
 }
 
 .ej-action-btn {
@@ -127,4 +217,94 @@ textarea:focus {
 
 .ej-action-neutral {
   background: var(--UniformeVerdeOscuro);
+}
+
+/* Responsive spacing utilities */
+@media (max-width: 640px) {
+  .mobile-compact {
+    padding: 0.75rem;
+  }
+  
+  .mobile-text-sm {
+    font-size: 0.875rem;
+  }
+}
+
+/* Loading animations */
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.loading-pulse {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Focus visible para accesibilidad */
+*:focus-visible {
+  outline: 2px solid var(--EscudoCeleste);
+  outline-offset: 2px;
+}
+
+/* Scroll personalizado para Webkit */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(0 0 0 / 5%);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(77 53 29 / 40%);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(77 53 29 / 60%);
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  max-width: 400px;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgb(0 0 0 / 20%);
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.toast-success {
+  background: var(--EscudoVerde);
+  color: white;
+}
+
+.toast-error {
+  background: var(--EscudoRojo);
+  color: white;
+}
+
+.toast-info {
+  background: var(--EscudoCeleste);
+  color: white;
 }

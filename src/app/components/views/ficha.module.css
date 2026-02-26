@@ -1,0 +1,379 @@
+/* ficha.module.css - Optimizado para PDF A4 */
+
+/* ===== VARIABLES ===== */
+:root {
+  --color-primary: #1f6728;
+  --color-primary-dark: #185321;
+  --color-secondary: #003885;
+  --color-secondary-dark: #002a63;
+  --color-background: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-border: #000000;
+  --color-header-bg: #e5e7eb;
+  --color-total-bg: #f3f4f6;
+  --color-text: #000000;
+  --color-text-light: #6b7280;
+  --font-family-mono: "Courier New", "Liberation Mono", monospace;
+}
+
+/* ===== LAYOUT PRINCIPAL ===== */
+.page {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+/* ===== BARRA DE HERRAMIENTAS ===== */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-header-bg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos base para botones */
+.buttonBase {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-surface);
+}
+
+.buttonBase:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buttonBase:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.button {
+  background: var(--color-primary);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.buttonSecondary {
+  background: var(--color-secondary);
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  background: var(--color-secondary-dark);
+}
+
+/* ===== ESTADO DE CARGA ===== */
+.statusLine {
+  padding: 0.75rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-light);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* ===== HOJA DE LA FICHA ===== */
+.sheet {
+  max-width: 210mm;
+  margin: 4px auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.frame {
+  background: var(--color-surface);
+  padding: 3mm;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+/* ===== TABLA PRINCIPAL ===== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-family-mono);
+  font-size: 9px;
+  line-height: 1.2;
+  page-break-inside: avoid;
+}
+
+.table th,
+.table td {
+  border: 0.75px solid var(--color-border);
+  padding: 2px 3px;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.table th {
+  background: var(--color-header-bg);
+  font-weight: bold;
+  text-align: center;
+}
+
+/* ===== UTILIDADES ===== */
+.center {
+  text-align: center !important;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.small {
+  font-size: 8px;
+}
+
+.itemCell {
+  text-align: left;
+  padding-left: 2px;
+  width: auto;
+  max-width: 140px;
+  word-wrap: break-word;
+}
+
+.tCol {
+  background: var(--color-total-bg);
+  font-weight: bold;
+  text-align: center;
+  width: 28px;
+  padding: 2px 2px;
+}
+
+.vestuarioHeaderCell {
+  background: var(--color-header-bg);
+  font-weight: bold;
+  text-align: center;
+  padding: 2px 2px;
+  font-size: 9px;
+}
+
+.verticalDivider {
+  border-left: 1px solid var(--color-border) !important;
+}
+
+/* ===== OBSERVACIONES ===== */
+.obsLine {
+  text-align: left;
+  padding: 2px 2px;
+  min-height: 44px;
+  vertical-align: top;
+  font-size: 8px;
+  line-height: 1.3;
+}
+
+/* ===== SECCIÓN DE FIRMAS ===== */
+.sign {
+  margin-top: 2mm;
+  padding: 0 3mm;
+  page-break-inside: avoid;
+  display: flex;
+  flex-direction: column;
+  gap: 2mm;
+}
+
+.signBlock {
+  page-break-inside: avoid;
+  display: block;
+}
+
+.signTitle {
+  font-size: 8px;
+  margin-bottom: 1px;
+  font-weight: normal;
+  color: var(--color-text);
+  line-height: 1.1;
+}
+
+.signRank {
+  font-weight: bold;
+  font-size: 8px;
+  margin-top: 2px;
+  margin-bottom: 0;
+  line-height: 1.1;
+}
+
+.signName {
+  font-size: 8px;
+  color: var(--color-text);
+  margin-top: 1px;
+  padding-left: 12mm;
+  line-height: 1.1;
+}
+
+/* Sangrías en cascada */
+.signBlockA {
+  margin-left: 0;
+}
+
+.signBlockB {
+  margin-left: 50mm;
+}
+
+.signBlockC {
+  margin-left: 100mm;
+}
+
+/* ===== ESTILOS DE IMPRESIÓN Y PDF ===== */
+@media screen {
+  .sheet {
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .frame {
+    background: var(--color-surface);
+    border-radius: 2px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 8mm 8mm 8mm 8mm;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .toolbar,
+  .statusLine {
+    display: none !important;
+  }
+
+  .page {
+    background: var(--color-surface);
+    margin: 0;
+    padding: 0;
+  }
+
+  .sheet {
+    margin: 0;
+    padding: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .frame {
+    padding: 5mm;
+    box-shadow: none;
+    border-radius: 0;
+    page-break-inside: avoid;
+  }
+
+  .table {
+    page-break-inside: avoid;
+    width: 100%;
+    font-size: 9px;
+  }
+
+  .table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  .table th,
+  .table td {
+    border-color: var(--color-border) !important;
+    border-width: 0.75px !important;
+    page-break-inside: avoid;
+  }
+
+  .sign {
+    margin-top: 3mm;
+    padding: 0;
+    gap: 3mm;
+  }
+
+  .signBlock {
+    page-break-inside: avoid;
+  }
+}
+
+/* ===== RESPONSIVIDAD PARA PANTALLA ===== */
+@media (max-width: 1024px) {
+  .table {
+    font-size: 8px;
+  }
+
+  .sheet {
+    max-width: 100%;
+    padding: 0 8px;
+    margin: 8px auto;
+  }
+
+  .frame {
+    padding: 8px;
+  }
+
+  .obsLine {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .button,
+  .buttonSecondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sheet {
+    padding: 4px;
+    margin: 8px auto;
+  }
+
+  .frame {
+    padding: 8px;
+    overflow-x: auto;
+  }
+
+  .table {
+    font-size: 8px;
+    min-width: 600px;
+  }
+
+  .signBlockB {
+    margin-left: 20mm;
+  }
+
+  .signBlockC {
+    margin-left: 40mm;
+  }
+
+  .obsLine {
+    min-height: 35px;
+  }
+}
+
+/* ===== ACCESIBILIDAD ===== */
+@media (prefers-reduced-motion: reduce) {
+  .buttonBase {
+    transition: none;
+  }
+}

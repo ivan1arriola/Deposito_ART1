@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { hasPermission, type Permission } from "@/lib/permissions";
 
 export const SESSION_COOKIE_NAME = "soldados_session";
-const SESSION_DURATION_DAYS = 7;
+const SESSION_DURATION_MINUTES = 15;
 
 export type AuthUser = {
   usuarioId: string;
@@ -40,7 +40,7 @@ export async function verifyPassword(password: string, hash: string) {
 export async function createSession(usuarioId: string) {
   const rawToken = crypto.randomBytes(48).toString("base64url");
   const tokenHash = hashToken(rawToken);
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_MINUTES * 60 * 1000);
 
   await prisma.sesion.create({
     data: {

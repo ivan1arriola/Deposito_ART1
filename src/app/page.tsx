@@ -10,7 +10,6 @@ import {
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
 import { formatUruguayanCi, generatePlaceholderUruguayanCi, isValidUruguayanCi, normalizeCi } from "@/lib/ci";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
@@ -21,496 +20,89 @@ import {
   type TallaKey,
   normalizeTallaValue,
 } from "@/lib/tallas";
+import { ConfigViews } from "./components/views/ConfigViews";
+import { FichaView } from "./components/views/FichaView";
+import { SmallActionButton, PaginationControls, ActionMenu, ConfirmDialog, ToastContainer, toast } from "./components/shared";
 
-type Rango = { rangoId: number; abreviacion: string; nombreCompleto: string };
-type Bateria = { bateriaId: number; nombre: string };
-type Item = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
-type Talla = { tallaTipo: { nombre: string }; tallaValor: string };
-type Personal = {
-  ci: string;
-  apellido1: string;
-  apellido2: string | null;
-  nombre1: string;
-  nombre2: string | null;
-  fechaIngreso: string | null;
-  rangoId: number;
-  bateriaId: number | null;
-  rango: Rango;
-  bateria: Bateria | null;
-  tallas: Talla[];
-};
+// Importar tipos desde archivos de tipos organizados
+import type {
+  Role,
+  Rango,
+  Bateria,
+  Item,
+  Personal,
+  CurrentUser,
+  FirmaConfig,
+  UsuarioAdmin,
+  AuditoriaRecord,
+  DbStatus,
+} from "@/types/entities";
+import type {
+  PersonalForm,
+  ItemForm,
+  RegistroDraftItem,
+  RegistroDraft,
+} from "@/types/forms";
+import type {
+  MainView,
+  RegistroTipo,
+  RegistroView,
+  RegistroViewerState,
+  HojaMatrixData,
+  ConfirmDialogState,
+  AuditFilter,
+} from "@/types/views";
+import { ROLE_OPTIONS } from "@/types/entities";
+import { EMPTY_PERSONAL_FORM, EMPTY_ITEM_FORM } from "@/types/forms";
 
-type PersonalForm = {
-  ci: string;
-  apellido1: string;
-  apellido2: string;
-  nombre1: string;
-  nombre2: string;
-  fechaIngreso: string;
-  rangoId: string;
-  bateriaId: string;
-  PARKA: string;
-  CAMISACO: string;
-  PANTALON: string;
-  KEPI: string;
-  CALZADO: string;
-};
+// Importar utilidades desde archivos organizados
+import { api } from "@/lib/api";
+import { apellidosLabel, nombresLabel, roleLabel, rangoLabel, tallasEntries } from "@/lib/formatters";
+import {
+  tallasMap,
+  getTodayDateInput,
+  personalPayload,
+  toEditablePersonal,
+} from "@/lib/form-mappers";
+import { normalizeSearchTerm } from "@/lib/search";
+import { moveIdInOrder, compareTallaOptions } from "@/lib/array-utils";
 
-type ItemForm = {
-  nombre: string;
-  activo: boolean;
-  ordenPdf: number;
-};
+// Importar handlers de operaciones
+import {
+  createRangoHandler,
+  updateRangoHandler,
+  deleteRangoHandler,
+  createBateriaHandler,
+  updateBateriaHandler,
+  deleteBateriaHandler,
+  createItemHandler,
+  updateItemHandler,
+  deleteItemHandler,
+  updateMultipleItemOrdersHandler,
+} from "@/lib/handlers-catalog";
+import {
+  createPersonalHandler,
+  updatePersonalHandler,
+  deletePersonalHandler,
+} from "@/lib/handlers-personal";
+import {
+  createRegistroHandler,
+  updateRegistroHandler,
+  loadRegistrosHandler,
+} from "@/lib/handlers-registros";
+import {
+  createUsuarioHandler,
+  changeUserRoleHandler,
+  toggleUserActiveHandler,
+  resetUserPasswordHandler,
+  deleteUsuarioHandler,
+  saveFirmaConfigHandler,
+} from "@/lib/handlers-usuarios";
+import { loginHandler, logoutHandler } from "@/lib/handlers-auth";
 
-type Role = "ADMIN" | "EDITOR" | "VIEWER";
-type MainView = "personal" | "hoja_matrix" | "tallas_resumen" | "grados" | "baterias" | "items" | "admin";
-type RegistroTipo = "ENTREGA" | "DEVOLUCION";
-type RegistroViewTipo = RegistroTipo | "AJUSTE";
-
-type RegistroDraftItem = {
-  itemId: string;
-  cantidad: string;
-};
-
-type RegistroDraft = {
-  modo: "crear" | "rectificar";
-  registroId: string | null;
-  ci: string;
-  tipo: RegistroTipo;
-  fecha: string;
-  comentarios: string;
-  items: RegistroDraftItem[];
-};
-
-type RegistroView = {
-  registroId: string;
-  auditoria: {
-    auditoriaId: string;
-    createdAt: string;
-    accion: string;
-    usuarioId: string | null;
-    usuario: { usuarioId: string; username: string; rol: Role } | null;
-    detalle: unknown;
-  } | null;
-  ci: string;
-  fecha: string;
-  tipo: RegistroViewTipo;
-  comentarios: string | null;
-  createdAt: string;
-  items: Array<{
-    itemId: string;
-    nombre: string;
-    cantidad: number;
-  }>;
-};
-
-type RegistroViewerState = {
-  ci: string;
-  nombre: string;
-  loading: boolean;
-  error: string | null;
-  registros: RegistroView[];
-};
-
-type CurrentUser = {
-  usuarioId: string;
-  username: string;
-  rol: Role;
-};
-
-type FirmaConfig = {
-  encargadoRango: string;
-  encargadoNombre: string;
-  oficialRango: string;
-  oficialNombre: string;
-  updatedAt: string | null;
-};
-
-type UsuarioAdmin = {
-  usuarioId: string;
-  username: string;
-  rol: Role;
-  activo: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type AuditoriaRecord = {
-  auditoriaId: string;
-  usuarioId: string | null;
-  usuario: { usuarioId: string; username: string; rol: Role } | null;
-  accion: string;
-  entidad: string;
-  entidadId: string | null;
-  detalle: unknown;
-  createdAt: string;
-};
-
-type DbStatus = {
-  ok: true;
-  database: string | null;
-  dbUser: string | null;
-  host: string | null;
-};
-
-type HojaMatrixItem = {
-  itemId: string;
-  nombre: string;
-};
-
-type HojaMatrixRow = {
-  ci: string;
-  apellido1: string;
-  apellido2: string | null;
-  nombre1: string;
-  nombre2: string | null;
-  bateria: string | null;
-  grado: string;
-  totales: number[];
-  totalGeneral: number;
-};
-
-type HojaMatrixData = {
-  generatedAt: string;
-  items: HojaMatrixItem[];
-  rows: HojaMatrixRow[];
-};
-
-type ConfirmDialogState = {
-  title: string;
-  message: string;
-  confirmText: string;
-  cancelText: string;
-  tone: "danger" | "neutral";
-  onConfirm: () => Promise<void> | void;
-};
-
-const EMPTY_PERSONAL_FORM: PersonalForm = {
-  ci: "",
-  apellido1: "",
-  apellido2: "",
-  nombre1: "",
-  nombre2: "",
-  fechaIngreso: "",
-  rangoId: "",
-  bateriaId: "",
-  PARKA: "",
-  CAMISACO: "",
-  PANTALON: "",
-  KEPI: "",
-  CALZADO: "",
-};
-
-const EMPTY_ITEM_FORM: ItemForm = {
-  nombre: "",
-  activo: true,
-  ordenPdf: 9999,
-};
-
-const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "VIEWER"];
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-type AuditFilter = "TODOS" | "MOVIMIENTOS" | "AUTENTICACION";
-const ROLE_LABELS: Record<Role, string> = {
-  ADMIN: "Administrador",
-  EDITOR: "Editor",
-  VIEWER: "Lector",
-};
-
-async function api<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-  const rawBody = await response.text();
-  let data: unknown = null;
-
-  if (rawBody) {
-    try {
-      data = JSON.parse(rawBody);
-    } catch {
-      throw new Error("El servidor devolvio una respuesta invalida.");
-    }
-  }
-
-  if (!response.ok) {
-    const message =
-      typeof data === "object" && data && "error" in data && typeof (data as { error?: unknown }).error === "string"
-        ? (data as { error: string }).error
-        : "Error en la operacion.";
-    throw new Error(message || "Error en la operacion.");
-  }
-
-  if (data === null) {
-    throw new Error("El servidor no devolvio datos. No se pudo completar la lectura.");
-  }
-
-  return data as T;
-}
-
-function tallasMap(tallas: Talla[]) {
-  const base: Record<string, string> = {
-    PARKA: "-",
-    CAMISACO: "-",
-    PANTALON: "-",
-    KEPI: "-",
-    CALZADO: "-",
-  };
-
-  for (const talla of tallas) {
-    base[talla.tallaTipo.nombre] = talla.tallaValor;
-  }
-
-  return base;
-}
-
-function apellidosLabel(persona: Personal) {
-  return `${persona.apellido1} ${persona.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
-}
-
-function nombresLabel(persona: Personal) {
-  return `${persona.nombre1} ${persona.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
-}
-
-function normalizeSearchTerm(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[."']/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
-
-function tallasEntries(tallas: Record<string, string>) {
-  return TALLA_KEYS.map((key) => {
-    const rawValue = tallas[key];
-    const value = rawValue && rawValue !== "-" ? rawValue : "Sin dato";
-    return { key, label: TALLA_LABELS[key], value };
-  });
-}
-
-function moveIdInOrder(order: string[], fromIndex: number, toIndex: number) {
-  if (fromIndex === toIndex) return order;
-  const next = [...order];
-  const [moved] = next.splice(fromIndex, 1);
-  next.splice(toIndex, 0, moved);
-  return next;
-}
-
-function roleLabel(role: Role | null | undefined) {
-  if (!role) return "Sin rol";
-  return ROLE_LABELS[role] ?? role;
-}
-
-function rangoLabel(rango: Rango) {
-  return `${rango.abreviacion} - ${rango.nombreCompleto}`;
-}
-
-function toDateInput(dateIso: string | null) {
-  if (!dateIso) return "";
-  return dateIso.slice(0, 10);
-}
-
-function getTodayDateInput() {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function toFormTallaValue(key: TallaKey, value: string) {
-  if (value === "-") return "";
-  return normalizeTallaValue(key, value) ?? "";
-}
-
-function compareTallaOptions(key: TallaKey, a: string, b: string) {
-  if (key === "PARKA" || key === "CAMISACO" || key === "PANTALON") {
-    const order = TALLA_OPTIONS[key];
-    const aIdx = order.indexOf(a);
-    const bIdx = order.indexOf(b);
-    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
-    if (aIdx !== -1) return -1;
-    if (bIdx !== -1) return 1;
-    return a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
-  }
-
-  const aNum = Number(a);
-  const bNum = Number(b);
-  const aIsNum = Number.isFinite(aNum);
-  const bIsNum = Number.isFinite(bNum);
-  if (aIsNum && bIsNum) return aNum - bNum;
-  if (aIsNum) return -1;
-  if (bIsNum) return 1;
-  return a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
-}
-
-function personalPayload(form: PersonalForm, includeCi: boolean) {
-  const tallas = TALLA_KEYS.reduce(
-    (acc, key) => {
-      acc[key] = normalizeTallaValue(key, form[key]) ?? "";
-      return acc;
-    },
-    {} as Record<TallaKey, string>,
-  );
-
-  return {
-    ...(includeCi ? { ci: form.ci.trim() } : {}),
-    apellido1: form.apellido1.trim(),
-    apellido2: form.apellido2.trim(),
-    nombre1: form.nombre1.trim(),
-    nombre2: form.nombre2.trim(),
-    fechaIngreso: form.fechaIngreso || undefined,
-    rangoId: Number(form.rangoId),
-    bateriaId: form.bateriaId ? Number(form.bateriaId) : undefined,
-    tallas,
-  };
-}
-
-function toEditablePersonal(persona: Personal): PersonalForm {
-  const tallas = tallasMap(persona.tallas);
-  return {
-    ci: persona.ci,
-    apellido1: persona.apellido1,
-    apellido2: persona.apellido2 ?? "",
-    nombre1: persona.nombre1,
-    nombre2: persona.nombre2 ?? "",
-    fechaIngreso: toDateInput(persona.fechaIngreso),
-    rangoId: String(persona.rangoId),
-    bateriaId: persona.bateriaId ? String(persona.bateriaId) : "",
-    PARKA: toFormTallaValue("PARKA", tallas.PARKA),
-    CAMISACO: toFormTallaValue("CAMISACO", tallas.CAMISACO),
-    PANTALON: toFormTallaValue("PANTALON", tallas.PANTALON),
-    KEPI: toFormTallaValue("KEPI", tallas.KEPI),
-    CALZADO: toFormTallaValue("CALZADO", tallas.CALZADO),
-  };
-}
-
-function CatalogCard(props: {
-  title: string;
-  placeholder: string;
-  newValue: string;
-  onNewValueChange: (value: string) => void;
-  onCreate: () => void;
-  createDisabled?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <article className="ej-card rounded-2xl p-4">
-      <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">{props.title}</h2>
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-        <input
-          value={props.newValue}
-          onChange={(event) => props.onNewValueChange(event.target.value)}
-          placeholder={props.placeholder}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        />
-        <button
-          type="button"
-          onClick={props.onCreate}
-          disabled={props.createDisabled}
-          className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
-        >
-          Crear
-        </button>
-      </div>
-      <div className="mt-3 space-y-2">{props.children}</div>
-    </article>
-  );
-}
-
-function SmallActionButton(props: {
-  text: string;
-  tone: "edit" | "delete" | "ok" | "neutral";
-  onClick: () => void;
-  className?: string;
-}) {
-  const color =
-    props.tone === "edit"
-      ? "ej-action-edit"
-      : props.tone === "delete"
-        ? "ej-action-delete"
-        : props.tone === "ok"
-          ? "ej-action-ok"
-          : "ej-action-neutral";
-
-  return (
-    <button
-      type="button"
-      onClick={props.onClick}
-      className={`ej-action-btn rounded px-2 py-1 text-center text-xs font-medium ${color} ${props.className ?? ""}`}
-    >
-      {props.text}
-    </button>
-  );
-}
-
-function PaginationControls(props: {
-  page: number;
-  pageSize: number;
-  totalItems: number;
-  itemLabel: string;
-  onPageChange: (page: number) => void;
-  onPageSizeChange: (pageSize: number) => void;
-  className?: string;
-}) {
-  const totalPages = Math.max(1, Math.ceil(props.totalItems / props.pageSize));
-  const safePage = Math.min(Math.max(props.page, 1), totalPages);
-  const from = props.totalItems === 0 ? 0 : (safePage - 1) * props.pageSize + 1;
-  const to = props.totalItems === 0 ? 0 : Math.min(safePage * props.pageSize, props.totalItems);
-
-  return (
-    <div className={`mt-2 flex flex-col gap-2 rounded-lg border border-stone-200 bg-stone-50/80 px-3 py-2 sm:flex-row sm:items-center sm:justify-between ${props.className ?? ""}`}>
-      <p className="text-xs text-stone-600">{`Mostrando ${from}-${to} de ${props.totalItems} ${props.itemLabel}`}</p>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <label className="text-xs text-stone-600">
-          Por pagina
-          <select
-            value={props.pageSize}
-            onChange={(event) => props.onPageSizeChange(Number(event.target.value))}
-            className="ml-1 rounded border border-stone-300 bg-white px-1.5 py-1 text-xs text-stone-700"
-          >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={`page-size-${size}`} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          onClick={() => props.onPageChange(1)}
-          disabled={safePage <= 1}
-          className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 disabled:opacity-50"
-        >
-          {"<<"}
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onPageChange(Math.max(1, safePage - 1))}
-          disabled={safePage <= 1}
-          className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 disabled:opacity-50"
-        >
-          {"<"}
-        </button>
-        <span className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700">{`${safePage}/${totalPages}`}</span>
-        <button
-          type="button"
-          onClick={() => props.onPageChange(Math.min(totalPages, safePage + 1))}
-          disabled={safePage >= totalPages}
-          className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 disabled:opacity-50"
-        >
-          {">"}
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onPageChange(totalPages)}
-          disabled={safePage >= totalPages}
-          className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 disabled:opacity-50"
-        >
-          {">>"}
-        </button>
-      </div>
-    </div>
-  );
-}
+// Importar utilidades de helpers
+import { auditActionLabel, auditEntityLabel, renderAuditDetalle } from "@/lib/audit-helpers";
+import { getDatePart } from "@/lib/date-helpers";
 
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
@@ -575,6 +167,7 @@ export default function Home() {
   const [registroViewerPage, setRegistroViewerPage] = useState(1);
   const [registroViewerPageSize, setRegistroViewerPageSize] = useState(20);
   const [activeView, setActiveView] = useState<MainView>("personal");
+  const [fichaViewingCi, setFichaViewingCi] = useState<string | null>(null);
   const [showConfigViews, setShowConfigViews] = useState(false);
   const configMenuRef = useRef<HTMLDivElement | null>(null);
   const [hojaMatrixData, setHojaMatrixData] = useState<HojaMatrixData | null>(null);
@@ -1018,204 +611,220 @@ export default function Home() {
     void loadHojaMatrix();
   }, [activeView, hojaMatrixData, hojaMatrixLoading, loadHojaMatrix]);
 
-  async function createRango() {
+  const createRango = useCallback(async () => {
     if (!isAdmin) {
       setStatus("Solo el administrador puede modificar grados.");
       return;
     }
     try {
-      await api("/api/rangos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          abreviacion: newRangoAbreviacion,
-          nombreCompleto: newRangoNombreCompleto,
-        }),
-      });
-      setNewRangoAbreviacion("");
-      setNewRangoNombreCompleto("");
-      setStatus("Grado del personal creado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo crear el grado del personal.");
-    }
-  }
-
-  async function updateRango(rangoId: number) {
-    if (!isAdmin) {
-      setStatus("Solo el administrador puede modificar grados.");
-      return;
-    }
-    try {
-      await api(`/api/rangos/${rangoId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          abreviacion: editRangoAbreviacion,
-          nombreCompleto: editRangoNombreCompleto,
-        }),
-      });
-      setEditRangoId(null);
-      setEditRangoAbreviacion("");
-      setEditRangoNombreCompleto("");
-      setStatus("Grado del personal actualizado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar el grado del personal.");
-    }
-  }
-
-  async function deleteRango(rangoId: number) {
-    if (!isAdmin) {
-      setStatus("Solo el administrador puede modificar grados.");
-      return;
-    }
-    const rango = rangos.find((entry) => entry.rangoId === rangoId);
-    openConfirmDialog({
-      title: "Eliminar grado",
-      message: `Se eliminara ${rango?.nombreCompleto ?? "este grado del personal"}.`,
-      confirmText: "Eliminar grado",
-      tone: "danger",
-      onConfirm: async () => {
-        try {
-          await api(`/api/rangos/${rangoId}`, { method: "DELETE" });
-          setStatus("Grado del personal eliminado.");
+      await createRangoHandler(newRangoAbreviacion, newRangoNombreCompleto, {
+        onSuccess: async () => {
+          setNewRangoAbreviacion("");
+          setNewRangoNombreCompleto("");
+          setStatus("Grado del personal creado.");
           await loadData();
-        } catch (error: unknown) {
-          setStatus(error instanceof Error ? error.message : "No se pudo eliminar el grado del personal.");
-        }
-      },
-    });
-  }
+        },
+        onError: (message) => setStatus(message),
+      });
+    } catch {
+      // Error manejado en el handler
+    }
+  }, [isAdmin, newRangoAbreviacion, newRangoNombreCompleto, loadData]);
 
-  async function createBateria() {
+  const updateRango = useCallback(
+    async (rangoId: number) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede modificar grados.");
+        return;
+      }
+      try {
+        await updateRangoHandler(rangoId, editRangoAbreviacion, editRangoNombreCompleto, {
+          onSuccess: async () => {
+            setEditRangoId(null);
+            setEditRangoAbreviacion("");
+            setEditRangoNombreCompleto("");
+            setStatus("Grado del personal actualizado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [isAdmin, editRangoAbreviacion, editRangoNombreCompleto, loadData],
+  );
+
+  const deleteRango = useCallback(
+    (rangoId: number) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede modificar grados.");
+        return;
+      }
+      const rango = rangos.find((entry) => entry.rangoId === rangoId);
+      openConfirmDialog({
+        title: "Eliminar grado",
+        message: `Se eliminara ${rango?.nombreCompleto ?? "este grado del personal"}.`,
+        confirmText: "Eliminar grado",
+        tone: "danger",
+        onConfirm: async () => {
+          try {
+            await deleteRangoHandler(rangoId, {
+              onSuccess: async () => {
+                setStatus("Grado del personal eliminado.");
+                await loadData();
+              },
+              onError: (message) => setStatus(message),
+            });
+          } catch {
+            // Error manejado en el handler
+          }
+        },
+      });
+    },
+    [isAdmin, rangos, loadData],
+  );
+
+  const createBateria = useCallback(async () => {
     if (!isAdmin) {
       setStatus("Solo el administrador puede registrar baterias.");
       return;
     }
     try {
-      await api("/api/baterias", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: newBateria }),
-      });
-      setNewBateria("");
-      setStatus("Bateria creada.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo crear la bateria.");
-    }
-  }
-
-  async function updateBateria(bateriaId: number) {
-    if (!canWrite) {
-      setStatus("No tienes permisos para editar.");
-      return;
-    }
-    try {
-      await api(`/api/baterias/${bateriaId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: editBateriaNombre }),
-      });
-      setEditBateriaId(null);
-      setEditBateriaNombre("");
-      setStatus("Bateria actualizada.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar la bateria.");
-    }
-  }
-
-  async function deleteBateria(bateriaId: number) {
-    if (!canDelete) {
-      setStatus("No tienes permisos para eliminar.");
-      return;
-    }
-    const bateria = baterias.find((entry) => entry.bateriaId === bateriaId);
-    openConfirmDialog({
-      title: "Eliminar bateria",
-      message: `Se eliminara ${bateria?.nombre ?? "esta bateria"}.`,
-      confirmText: "Eliminar bateria",
-      tone: "danger",
-      onConfirm: async () => {
-        try {
-          await api(`/api/baterias/${bateriaId}`, { method: "DELETE" });
-          setStatus("Bateria eliminada.");
+      await createBateriaHandler(newBateria, {
+        onSuccess: async () => {
+          setNewBateria("");
+          setStatus("Bateria creada.");
           await loadData();
-        } catch (error: unknown) {
-          setStatus(error instanceof Error ? error.message : "No se pudo eliminar la bateria.");
-        }
-      },
-    });
-  }
-
-  async function createItem(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!canWrite) {
-      setStatus("No tienes permisos para crear.");
-      return;
-    }
-
-    try {
-      await api("/api/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre: newItem.nombre,
-          activo: newItem.activo,
-        }),
+        },
+        onError: (message) => setStatus(message),
       });
-      setNewItem(EMPTY_ITEM_FORM);
-      setStatus("Item creado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo crear el item.");
+    } catch {
+      // Error manejado en el handler
     }
-  }
+  }, [isAdmin, newBateria, loadData]);
 
-  async function updateItem(itemId: string) {
-    if (!canWrite) {
-      setStatus("No tienes permisos para editar.");
-      return;
-    }
-    try {
-      await api(`/api/items/${itemId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editItem),
+  const updateBateria = useCallback(
+    async (bateriaId: number) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para editar.");
+        return;
+      }
+      try {
+        await updateBateriaHandler(bateriaId, editBateriaNombre, {
+          onSuccess: async () => {
+            setEditBateriaId(null);
+            setEditBateriaNombre("");
+            setStatus("Bateria actualizada.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [canWrite, editBateriaNombre, loadData],
+  );
+
+  const deleteBateria = useCallback(
+    (bateriaId: number) => {
+      if (!canDelete) {
+        setStatus("No tienes permisos para eliminar.");
+        return;
+      }
+      const bateria = baterias.find((entry) => entry.bateriaId === bateriaId);
+      openConfirmDialog({
+        title: "Eliminar bateria",
+        message: `Se eliminara ${bateria?.nombre ?? "esta bateria"}.`,
+        confirmText: "Eliminar bateria",
+        tone: "danger",
+        onConfirm: async () => {
+          try {
+            await deleteBateriaHandler(bateriaId, {
+              onSuccess: async () => {
+                setStatus("Bateria eliminada.");
+                await loadData();
+              },
+              onError: (message) => setStatus(message),
+            });
+          } catch {
+            // Error manejado en el handler
+          }
+        },
       });
-      setEditItemId(null);
-      setEditItem(EMPTY_ITEM_FORM);
-      setStatus("Item actualizado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar el item.");
-    }
-  }
+    },
+    [canDelete, baterias, loadData],
+  );
 
-  async function toggleItemActivo(item: Item) {
-    if (!canWrite) {
-      setStatus("No tienes permisos para editar.");
-      return;
-    }
+  const createItem = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!canWrite) {
+        setStatus("No tienes permisos para crear.");
+        return;
+      }
 
-    try {
-      await api(`/api/items/${item.itemId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre: item.nombre,
-          activo: !item.activo,
-          ordenPdf: item.ordenPdf,
-        }),
-      });
-      setStatus(`Item ${!item.activo ? "activado" : "desactivado"}.`);
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar el item.");
-    }
-  }
+      try {
+        await createItemHandler(newItem.nombre, newItem.activo, {
+          onSuccess: async () => {
+            setNewItem(EMPTY_ITEM_FORM);
+            setStatus("Item creado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [canWrite, newItem, loadData],
+  );
+
+  const updateItem = useCallback(
+    async (itemId: string) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para editar.");
+        return;
+      }
+      try {
+        await updateItemHandler(itemId, editItem.nombre, editItem.activo, editItem.ordenPdf ?? 0, {
+          onSuccess: async () => {
+            setEditItemId(null);
+            setEditItem(EMPTY_ITEM_FORM);
+            setStatus("Item actualizado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [canWrite, editItem, loadData],
+  );
+
+  const toggleItemActivo = useCallback(
+    async (item: Item) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para editar.");
+        return;
+      }
+
+      try {
+        await updateItemHandler(item.itemId, item.nombre, !item.activo, item.ordenPdf, {
+          onSuccess: async () => {
+            setStatus(`Item ${!item.activo ? "activado" : "desactivado"}.`);
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [canWrite, loadData],
+  );
 
   const saveActiveItemsOrder = useCallback(
     async (orderedItemIds: string[]) => {
@@ -1230,30 +839,22 @@ export default function Home() {
           const item = itemById.get(itemId);
           if (!item) return null;
           const ordenPdf = (idx + 1) * 10;
-          return item.ordenPdf === ordenPdf ? null : { item, ordenPdf };
+          return item.ordenPdf === ordenPdf ? null : { itemId: item.itemId, nombre: item.nombre, activo: item.activo, ordenPdf };
         })
-        .filter((entry): entry is { item: Item; ordenPdf: number } => entry !== null);
+        .filter((entry): entry is { itemId: string; nombre: string; activo: boolean; ordenPdf: number } => entry !== null);
 
       if (updates.length === 0) return;
 
       try {
-        await Promise.all(
-          updates.map(({ item, ordenPdf }) =>
-            api(`/api/items/${item.itemId}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                nombre: item.nombre,
-                activo: item.activo,
-                ordenPdf,
-              }),
-            }),
-          ),
-        );
-        setStatus("Orden de PDF actualizado.");
-        await loadData();
-      } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo actualizar el orden de PDF.");
+        await updateMultipleItemOrdersHandler(updates, {
+          onSuccess: async () => {
+            setStatus("Orden de PDF actualizado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
       }
     },
     [canWrite, itemsActivos, loadData],
@@ -1320,113 +921,132 @@ export default function Home() {
     };
   }, [draggedItemId, saveActiveItemsOrder]);
 
-  async function deleteItem(itemId: string) {
-    if (!canDelete) {
-      setStatus("No tienes permisos para eliminar.");
-      return;
-    }
-    const item = items.find((entry) => entry.itemId === itemId);
-    openConfirmDialog({
-      title: "Eliminar item",
-      message: `Se eliminara ${item?.nombre ?? "este item"} del catalogo.`,
-      confirmText: "Eliminar item",
-      tone: "danger",
-      onConfirm: async () => {
-        try {
-          await api(`/api/items/${itemId}`, { method: "DELETE" });
-          setStatus("Item eliminado.");
-          await loadData();
-        } catch (error: unknown) {
-          setStatus(error instanceof Error ? error.message : "No se pudo eliminar el item.");
-        }
-      },
-    });
-  }
-
-  async function createPersonal(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (creatingPersonal) return;
-    if (!canRegisterPersonal) {
-      setStatus("No se puede registrar personal sin registrar Grados previamente.");
-      setCreatePersonalNotice({ type: "error", message: "No se puede registrar personal sin registrar grados previamente." });
-      return;
-    }
-    if (ciAlreadyExists) {
-      setStatus("La cedula ya existe.");
-      setCreatePersonalNotice({ type: "error", message: "La cedula ya existe en el sistema." });
-      return;
-    }
-    if (!isValidUruguayanCi(newPersonal.ci)) {
-      setStatus("CI uruguaya invalida. Revisa digito verificador.");
-      setCreatePersonalNotice({ type: "error", message: "CI uruguaya invalida. Revisa digito verificador." });
-      return;
-    }
-
-    setCreatingPersonal(true);
-    setCreatePersonalNotice(null);
-    try {
-      await api("/api/personal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(personalPayload(newPersonal, true)),
+  const deleteItem = useCallback(
+    (itemId: string) => {
+      if (!canDelete) {
+        setStatus("No tienes permisos para eliminar.");
+        return;
+      }
+      const item = items.find((entry) => entry.itemId === itemId);
+      openConfirmDialog({
+        title: "Eliminar item",
+        message: `Se eliminara ${item?.nombre ?? "este item"} del catalogo.`,
+        confirmText: "Eliminar item",
+        tone: "danger",
+        onConfirm: async () => {
+          try {
+            await deleteItemHandler(itemId, {
+              onSuccess: async () => {
+                setStatus("Item eliminado.");
+                await loadData();
+              },
+              onError: (message) => setStatus(message),
+            });
+          } catch {
+            // Error manejado en el handler
+          }
+        },
       });
-      setNewPersonal(EMPTY_PERSONAL_FORM);
-      setStatus("Personal creado.");
-      setCreatePersonalNotice({ type: "success", message: "Personal registrado correctamente." });
-      await loadData();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo crear el personal.";
-      setStatus(message);
-      setCreatePersonalNotice({ type: "error", message });
-    } finally {
-      setCreatingPersonal(false);
-    }
-  }
+    },
+    [canDelete, items, loadData],
+  );
 
-  async function updatePersonal(ci: string) {
-    if (!canWrite) {
-      setStatus("No tienes permisos para editar.");
-      return;
-    }
-    try {
-      await api(`/api/personal/${encodeURIComponent(ci)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(personalPayload(editPersonal, false)),
+  const createPersonal = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (creatingPersonal) return;
+      if (!canRegisterPersonal) {
+        setStatus("No se puede registrar personal sin registrar Grados previamente.");
+        setCreatePersonalNotice({ type: "error", message: "No se puede registrar personal sin registrar grados previamente." });
+        return;
+      }
+      if (ciAlreadyExists) {
+        setStatus("La cedula ya existe.");
+        setCreatePersonalNotice({ type: "error", message: "La cedula ya existe en el sistema." });
+        return;
+      }
+      if (!isValidUruguayanCi(newPersonal.ci)) {
+        setStatus("CI uruguaya invalida. Revisa digito verificador.");
+        setCreatePersonalNotice({ type: "error", message: "CI uruguaya invalida. Revisa digito verificador." });
+        return;
+      }
+
+      setCreatingPersonal(true);
+      setCreatePersonalNotice(null);
+      try {
+        await createPersonalHandler(personalPayload(newPersonal, true), {
+          onSuccess: async () => {
+            setNewPersonal(EMPTY_PERSONAL_FORM);
+            setStatus("Personal creado.");
+            setCreatePersonalNotice({ type: "success", message: "Personal registrado correctamente." });
+            await loadData();
+          },
+          onError: (message) => {
+            setStatus(message);
+            setCreatePersonalNotice({ type: "error", message });
+          },
+        });
+      } finally {
+        setCreatingPersonal(false);
+      }
+    },
+    [canRegisterPersonal, ciAlreadyExists, creatingPersonal, newPersonal, loadData],
+  );
+
+  const updatePersonal = useCallback(
+    async (ci: string) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para editar.");
+        return;
+      }
+      try {
+        await updatePersonalHandler(ci, personalPayload(editPersonal, false), {
+          onSuccess: async () => {
+            setEditPersonalCi(null);
+            setEditPersonal(EMPTY_PERSONAL_FORM);
+            setStatus("Personal actualizado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [canWrite, editPersonal, loadData],
+  );
+
+  const deletePersonal = useCallback(
+    (ci: string) => {
+      if (!canDelete) {
+        setStatus("No tienes permisos para eliminar.");
+        return;
+      }
+      const persona = personal.find((entry) => entry.ci === ci);
+      openConfirmDialog({
+        title: "Eliminar personal",
+        message: persona
+          ? `Se eliminara ${apellidosLabel(persona)}, ${nombresLabel(persona)} (${formatUruguayanCi(ci)}).`
+          : `Se eliminara el personal con CI ${formatUruguayanCi(ci)}.`,
+        confirmText: "Eliminar personal",
+        tone: "danger",
+        onConfirm: async () => {
+          try {
+            await deletePersonalHandler(ci, {
+              onSuccess: async () => {
+                setStatus("Personal eliminado.");
+                await loadData();
+              },
+              onError: (message) => setStatus(message),
+            });
+          } catch {
+            // Error manejado en el handler
+          }
+        },
       });
-      setEditPersonalCi(null);
-      setEditPersonal(EMPTY_PERSONAL_FORM);
-      setStatus("Personal actualizado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar el personal.");
-    }
-  }
-
-  async function deletePersonal(ci: string) {
-    if (!canDelete) {
-      setStatus("No tienes permisos para eliminar.");
-      return;
-    }
-    const persona = personal.find((entry) => entry.ci === ci);
-    openConfirmDialog({
-      title: "Eliminar personal",
-      message: persona
-        ? `Se eliminara ${apellidosLabel(persona)}, ${nombresLabel(persona)} (${formatUruguayanCi(ci)}).`
-        : `Se eliminara el personal con CI ${formatUruguayanCi(ci)}.`,
-      confirmText: "Eliminar personal",
-      tone: "danger",
-      onConfirm: async () => {
-        try {
-          await api(`/api/personal/${encodeURIComponent(ci)}`, { method: "DELETE" });
-          setStatus("Personal eliminado.");
-          await loadData();
-        } catch (error: unknown) {
-          setStatus(error instanceof Error ? error.message : "No se pudo eliminar el personal.");
-        }
-      },
-    });
-  }
+    },
+    [canDelete, personal, loadData],
+  );
 
   function startEditPersonal(persona: Personal) {
     setEditPersonalCi(persona.ci);
@@ -1677,194 +1297,228 @@ export default function Home() {
     );
   }
 
-  async function login(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoginLoading(true);
-    setStatus("Iniciando sesión...");
+  const login = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      setLoginLoading(true);
+      setStatus("Iniciando sesión...");
 
+      try {
+        await loginHandler(loginUsername, loginPassword, {
+          onSuccess: async () => {
+            setLoginPassword("");
+            await loadData(true);
+          },
+          onError: (message) => setStatus(message),
+        });
+      } finally {
+        setLoginLoading(false);
+      }
+    },
+    [loginUsername, loginPassword, loadData],
+  );
+
+  const logout = useCallback(async () => {
     try {
-      await api("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+      await logoutHandler({
+        onSuccess: () => {
+          setCurrentUser(null);
+          clearLoadedData();
+          setLoginPassword("");
+          setActiveView("personal");
+          setStatus("Sesion cerrada. Ingresa tus credenciales.");
+        },
       });
-      setLoginPassword("");
-      await loadData(true);
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo iniciar sesión.");
-    } finally {
-      setLoginLoading(false);
-    }
-  }
-
-  async function logout() {
-    try {
-      await api("/api/auth/logout", { method: "POST" });
-    } finally {
+    } catch {
+      // Error manejado o ignorado en logout
       setCurrentUser(null);
       clearLoadedData();
       setLoginPassword("");
       setActiveView("personal");
       setStatus("Sesion cerrada. Ingresa tus credenciales.");
     }
-  }
+  }, []);
 
-  async function createUsuario(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!isAdmin) {
-      setStatus("Solo el administrador puede crear usuarios.");
-      return;
-    }
-    try {
-      await api("/api/usuarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: newUsername,
-          password: newPassword,
-          rol: newRole,
-          activo: true,
-        }),
+  const createUsuario = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede crear usuarios.");
+        return;
+      }
+      try {
+        await createUsuarioHandler(newUsername, newPassword, newRole, {
+          onSuccess: async () => {
+            setNewUsername("");
+            setNewPassword("");
+            setNewRole("VIEWER");
+            setStatus("Usuario creado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [isAdmin, newUsername, newPassword, newRole, loadData],
+  );
+
+  const changeUserRole = useCallback(
+    async (usuarioId: string, currentRole: Role) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede cambiar roles.");
+        return;
+      }
+      const nextRole = window.prompt("Nuevo rol (ADMIN/EDITOR/VIEWER)", currentRole);
+      if (!nextRole) return;
+      const normalized = nextRole.toUpperCase();
+      if (!ROLE_OPTIONS.includes(normalized as Role)) {
+        setStatus("Rol invalido.");
+        return;
+      }
+
+      try {
+        await changeUserRoleHandler(usuarioId, normalized as Role, {
+          onSuccess: async () => {
+            setStatus("Rol actualizado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [isAdmin, loadData],
+  );
+
+  const toggleUserActive = useCallback(
+    async (usuario: UsuarioAdmin) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede cambiar estado.");
+        return;
+      }
+      try {
+        await toggleUserActiveHandler(usuario.usuarioId, !usuario.activo, {
+          onSuccess: async () => {
+            setStatus("Estado de usuario actualizado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [isAdmin, loadData],
+  );
+
+  const resetUserPassword = useCallback(
+    async (usuario: UsuarioAdmin) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede restablecer contraseñas.");
+        return;
+      }
+      const password = window.prompt(`Nueva contraseña para ${usuario.username} (min 8 caracteres)`, "");
+      if (!password) return;
+
+      try {
+        await resetUserPasswordHandler(usuario.usuarioId, password, {
+          onSuccess: async () => {
+            setStatus("Contraseña actualizada.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [isAdmin, loadData],
+  );
+
+  const deleteUsuario = useCallback(
+    (usuario: UsuarioAdmin) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede eliminar usuarios.");
+        return;
+      }
+      openConfirmDialog({
+        title: "Eliminar usuario",
+        message: `Se eliminara la cuenta ${usuario.username}.`,
+        confirmText: "Eliminar usuario",
+        tone: "danger",
+        onConfirm: async () => {
+          try {
+            await deleteUsuarioHandler(usuario.usuarioId, {
+              onSuccess: async () => {
+                setStatus("Usuario eliminado.");
+                await loadData();
+              },
+              onError: (message) => setStatus(message),
+            });
+          } catch {
+            // Error manejado en el handler
+          }
+        },
       });
-      setNewUsername("");
-      setNewPassword("");
-      setNewRole("VIEWER");
-      setStatus("Usuario creado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo crear el usuario.");
-    }
-  }
+    },
+    [isAdmin, loadData],
+  );
 
-  async function changeUserRole(usuarioId: string, currentRole: Role) {
-    if (!isAdmin) {
-      setStatus("Solo el administrador puede cambiar roles.");
-      return;
-    }
-    const nextRole = window.prompt("Nuevo rol (ADMIN/EDITOR/VIEWER)", currentRole);
-    if (!nextRole) return;
-    const normalized = nextRole.toUpperCase();
-    if (!ROLE_OPTIONS.includes(normalized as Role)) {
-      setStatus("Rol invalido.");
-      return;
-    }
+  const saveFirmaConfig = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede editar firmas institucionales.");
+        return;
+      }
 
-    try {
-      await api(`/api/usuarios/${usuarioId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rol: normalized }),
-      });
-      setStatus("Rol actualizado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar el rol.");
-    }
-  }
+      const encargadoRango = firmaConfigDraft.encargadoRango.trim();
+      const encargadoNombre = firmaConfigDraft.encargadoNombre.trim();
+      const oficialRango = firmaConfigDraft.oficialRango.trim();
+      const oficialNombre = firmaConfigDraft.oficialNombre.trim();
+      
+      if (!encargadoRango || !encargadoNombre || !oficialRango || !oficialNombre) {
+        setFirmaConfigError("Todos los campos son obligatorios.");
+        setStatus("Completa todos los campos de firma.");
+        return;
+      }
 
-  async function toggleUserActive(usuario: UsuarioAdmin) {
-    if (!isAdmin) {
-      setStatus("Solo el administrador puede cambiar estado.");
-      return;
-    }
-    try {
-      await api(`/api/usuarios/${usuario.usuarioId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activo: !usuario.activo }),
-      });
-      setStatus("Estado de usuario actualizado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar el usuario.");
-    }
-  }
-
-  async function resetUserPassword(usuario: UsuarioAdmin) {
-    if (!isAdmin) {
-      setStatus("Solo el administrador puede restablecer contraseñas.");
-      return;
-    }
-    const password = window.prompt(`Nueva contraseña para ${usuario.username} (min 8 caracteres)`, "");
-    if (!password) return;
-
-    try {
-      await api(`/api/usuarios/${usuario.usuarioId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      setStatus("Contraseña actualizada.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar la contraseña.");
-    }
-  }
-
-  async function deleteUsuario(usuario: UsuarioAdmin) {
-    if (!isAdmin) {
-      setStatus("Solo el administrador puede eliminar usuarios.");
-      return;
-    }
-    openConfirmDialog({
-      title: "Eliminar usuario",
-      message: `Se eliminara la cuenta ${usuario.username}.`,
-      confirmText: "Eliminar usuario",
-      tone: "danger",
-      onConfirm: async () => {
-        try {
-          await api(`/api/usuarios/${usuario.usuarioId}`, { method: "DELETE" });
-          setStatus("Usuario eliminado.");
-          await loadData();
-        } catch (error: unknown) {
-          setStatus(error instanceof Error ? error.message : "No se pudo eliminar el usuario.");
-        }
-      },
-    });
-  }
-
-  async function saveFirmaConfig(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!isAdmin) {
-      setStatus("Solo el administrador puede editar firmas institucionales.");
-      return;
-    }
-
-    const encargadoRango = firmaConfigDraft.encargadoRango.trim();
-    const encargadoNombre = firmaConfigDraft.encargadoNombre.trim();
-    const oficialRango = firmaConfigDraft.oficialRango.trim();
-    const oficialNombre = firmaConfigDraft.oficialNombre.trim();
-    
-    if (!encargadoRango || !encargadoNombre || !oficialRango || !oficialNombre) {
-      setFirmaConfigError("Todos los campos son obligatorios.");
-      setStatus("Completa todos los campos de firma.");
-      return;
-    }
-
-    setFirmaConfigSaving(true);
-    setFirmaConfigError(null);
-    try {
-      const updated = await api<FirmaConfig>("/api/firma-config", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ encargadoRango, encargadoNombre, oficialRango, oficialNombre }),
-      });
-      setFirmaConfig(updated);
-      setFirmaConfigDraft({
-        encargadoRango: updated.encargadoRango,
-        encargadoNombre: updated.encargadoNombre,
-        oficialRango: updated.oficialRango,
-        oficialNombre: updated.oficialNombre,
-      });
-      setStatus("Firmas institucionales actualizadas.");
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo guardar la configuracion de firmas.";
-      setFirmaConfigError(message);
-      setStatus(message);
-    } finally {
-      setFirmaConfigSaving(false);
-    }
-  }
+      setFirmaConfigSaving(true);
+      setFirmaConfigError(null);
+      try {
+        await saveFirmaConfigHandler(
+          encargadoRango,
+          encargadoNombre,
+          oficialRango,
+          oficialNombre,
+          {
+            onSave: (updated) => {
+              const config = updated as FirmaConfig;
+              setFirmaConfig(config);
+              setFirmaConfigDraft({
+                encargadoRango: config.encargadoRango,
+                encargadoNombre: config.encargadoNombre,
+                oficialRango: config.oficialRango,
+                oficialNombre: config.oficialNombre,
+              });
+              setStatus("Firmas institucionales actualizadas.");
+            },
+            onSuccess: () => {},
+            onError: (message) => {
+              setFirmaConfigError(message);
+              setStatus(message);
+            },
+          }
+        );
+      } finally {
+        setFirmaConfigSaving(false);
+      }
+    },
+    [isAdmin, firmaConfigDraft],
+  );
 
   function viewButtonClass(view: MainView) {
     const selected = activeView === view;
@@ -1876,8 +1530,8 @@ export default function Home() {
   function configOptionClass(view: Extract<MainView, "grados" | "baterias" | "items" | "admin">) {
     const selected = activeView === view;
     return selected
-      ? "w-full rounded-lg border border-stone-900 bg-stone-900 px-3 py-2 text-left text-sm font-semibold text-white"
-      : "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-left text-sm font-semibold text-stone-800 hover:bg-stone-100";
+      ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
+      : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-100 hover:border-stone-400";
   }
 
   function selectConfigView(view: Extract<MainView, "grados" | "baterias" | "items" | "admin">) {
@@ -1912,82 +1566,7 @@ export default function Home() {
     }
   }
 
-  function auditActionLabel(accion: string) {
-    if (accion === "CREATE") return "Creo";
-    if (accion === "UPDATE") return "Actualizo";
-    if (accion === "DELETE") return "Elimino";
-    if (accion === "LOGIN") return "Inicio sesión";
-    if (accion === "LOGOUT") return "Cerró sesión";
-    return accion;
-  }
-
-  function auditEntityLabel(entidad: string) {
-    if (entidad === "AUTH") return "autenticacion";
-    if (entidad === "REGISTRO") return "movimiento";
-    if (entidad === "PERSONAL") return "personal";
-    if (entidad === "USUARIO") return "usuario";
-    if (entidad === "RANGO") return "grado";
-    if (entidad === "BATERIA") return "bateria";
-    if (entidad === "ITEM") return "item";
-    if (entidad === "FIRMAS_CONFIG") return "firmas institucionales";
-    return entidad.toLowerCase();
-  }
-
-  function renderAuditDetalle(detalle: unknown) {
-    if (!detalle || typeof detalle !== "object" || Array.isArray(detalle)) return null;
-    const info = detalle as Record<string, unknown>;
-    const items = Array.isArray(info.items)
-      ? info.items
-          .filter((item) => item && typeof item === "object" && !Array.isArray(item))
-          .map((item) => item as Record<string, unknown>)
-      : [];
-
-    const lines: string[] = [];
-    if (typeof info.evento === "string") lines.push(`Evento: ${info.evento}`);
-    if (typeof info.ci === "string") lines.push(`CI: ${formatUruguayanCi(info.ci)}`);
-    if (typeof info.tipo === "string") lines.push(`Tipo: ${info.tipo}`);
-    if (typeof info.fechaMovimiento === "string") lines.push(`Fecha movimiento: ${info.fechaMovimiento}`);
-    if (typeof info.fecha === "string" && !("fechaMovimiento" in info)) lines.push(`Fecha: ${info.fecha}`);
-    if (typeof info.comentarios === "string" && info.comentarios.trim() !== "") lines.push(`Comentarios: ${info.comentarios}`);
-    if (typeof info.totalItems === "number") lines.push(`Items distintos: ${info.totalItems}`);
-    if (typeof info.totalUnidades === "number") lines.push(`Unidades: ${info.totalUnidades}`);
-    if (typeof info.ip === "string" && info.ip.trim() !== "") lines.push(`IP: ${info.ip}`);
-    if (typeof info.userAgent === "string" && info.userAgent.trim() !== "") lines.push(`Navegador: ${info.userAgent}`);
-
-    const hasPrimaryData = lines.length > 0 || items.length > 0;
-    if (!hasPrimaryData) {
-      return (
-        <pre className="mt-2 max-h-24 overflow-auto rounded border border-stone-200 bg-white p-2 text-[11px] text-stone-700">
-          {JSON.stringify(info, null, 2)}
-        </pre>
-      );
-    }
-
-    return (
-      <div className="mt-2 space-y-1 rounded border border-stone-200 bg-white p-2">
-        {lines.map((line) => (
-          <p key={line} className="text-[11px] text-stone-700">
-            {line}
-          </p>
-        ))}
-        {items.length > 0 ? (
-          <div className="pt-1">
-            <p className="text-[11px] font-semibold text-stone-700">Detalle de items:</p>
-            {items.map((item, index) => {
-              const nombre = typeof item.nombre === "string" && item.nombre.trim() !== "" ? item.nombre : "Item";
-              const cantidad = typeof item.cantidad === "number" ? item.cantidad : 0;
-              const itemId = typeof item.itemId === "string" ? ` (ID ${item.itemId})` : "";
-              return (
-                <p key={`${nombre}-${index}`} className="text-[11px] text-stone-700">
-                  {`${cantidad} x ${nombre}${itemId}`}
-                </p>
-              );
-            })}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
+  // Las funciones de auditería se importan directamente desde lib/audit-helpers
 
   function renderItemCard(item: Item, options?: { draggableInActiveList?: boolean }) {
     const draggableInActiveList = options?.draggableInActiveList === true;
@@ -1997,38 +1576,42 @@ export default function Home() {
       <div
         key={item.itemId}
         data-item-drag-id={draggableInActiveList ? item.itemId : undefined}
-        className={`rounded-lg bg-stone-100/80 p-2 ${isDraggingThisItem ? "ring-2 ring-lime-400/80" : ""}`}
+        className={`rounded-lg border-2 border-transparent bg-white p-4 shadow-sm transition-all ${
+          isDraggingThisItem ? "border-lime-400 shadow-md" : "border-stone-200 hover:shadow-md"
+        }`}
       >
         {editItemId === item.itemId ? (
-          <div className="space-y-2">
-            <input
-              value={editItem.nombre}
-              onChange={(event) => setEditItem((prev) => ({ ...prev, nombre: event.target.value }))}
-              className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-            />
-            <label className="block text-sm">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-600">Orden PDF</span>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-stone-700 mb-1">Nombre</label>
+              <input
+                value={editItem.nombre}
+                onChange={(event) => setEditItem((prev) => ({ ...prev, nombre: event.target.value }))}
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-stone-700 mb-1">Orden PDF</label>
               <input
                 type="number"
                 min={1}
                 step={1}
                 value={editItem.ordenPdf}
                 onChange={(event) => setEditItem((prev) => ({ ...prev, ordenPdf: Math.max(1, Number(event.target.value) || 1) }))}
-                className="mt-1 w-full rounded border border-stone-300 px-2 py-1 text-sm"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-            </label>
-            <div className="flex flex-wrap gap-4 text-sm">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={editItem.activo}
-                  onChange={(event) => setEditItem((prev) => ({ ...prev, activo: event.target.checked }))}
-                />
-                Activo
-              </label>
             </div>
-            <div className="flex gap-2">
-              <SmallActionButton text="Ok" tone="ok" onClick={() => void updateItem(item.itemId)} />
+            <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-stone-50 p-2 rounded-lg">
+              <input
+                type="checkbox"
+                checked={editItem.activo}
+                onChange={(event) => setEditItem((prev) => ({ ...prev, activo: event.target.checked }))}
+                className="w-4 h-4 rounded border-stone-300"
+              />
+              <span className="font-medium text-stone-700">Activo</span>
+            </label>
+            <div className="flex gap-2 pt-2">
+              <SmallActionButton text="Guardar" tone="ok" onClick={() => void updateItem(item.itemId)} />
               <SmallActionButton
                 text="Cancelar"
                 tone="neutral"
@@ -2040,39 +1623,72 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-sm font-medium text-stone-800">
-              {item.nombre} [orden PDF: {item.ordenPdf}] [{item.activo ? "activo" : "inactivo"}]
-            </span>
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-stone-900">{item.nombre}</h3>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  item.activo 
+                    ? "bg-green-100 text-green-700" 
+                    : "bg-gray-100 text-gray-700"
+                }`}>
+                  {item.activo ? "Activo" : "Inactivo"}
+                </span>
+              </div>
+              <p className="text-xs text-stone-500 mt-1">Orden PDF: {item.ordenPdf}</p>
+            </div>
+
+            <div className="flex flex-wrap gap-2 items-center">
               {draggableInActiveList ? (
                 <button
                   type="button"
                   onPointerDown={(event) => startItemDrag(item.itemId, event)}
                   disabled={!canWrite}
-                  className="rounded border border-stone-400 bg-white px-2 py-1 text-xs font-medium text-stone-700 touch-none disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400 transition-all duration-200 touch-none disabled:opacity-50"
+                  title="Arrastra para reordenar"
                 >
-                  Arrastrar
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="9" cy="5" r="1.5" />
+                    <circle cx="9" cy="12" r="1.5" />
+                    <circle cx="9" cy="19" r="1.5" />
+                    <circle cx="15" cy="5" r="1.5" />
+                    <circle cx="15" cy="12" r="1.5" />
+                    <circle cx="15" cy="19" r="1.5" />
+                  </svg>
+                  Reordenar
                 </button>
               ) : null}
-              <SmallActionButton
-                text={item.activo ? "Desactivar" : "Activar"}
-                tone={item.activo ? "delete" : "ok"}
-                onClick={() => void toggleItemActivo(item)}
+
+              <ActionMenu
+                buttonLabel="Acciones"
+                actions={[
+                  {
+                    label: item.activo ? "Desactivar" : "Activar",
+                    icon: item.activo ? "x" : "check",
+                    tone: item.activo ? "danger" : "success",
+                    onClick: () => void toggleItemActivo(item),
+                  },
+                  {
+                    label: "Editar",
+                    icon: "edit",
+                    tone: "primary",
+                    onClick: () => {
+                      setEditItemId(item.itemId);
+                      setEditItem({
+                        nombre: item.nombre,
+                        activo: item.activo,
+                        ordenPdf: item.ordenPdf,
+                      });
+                    },
+                  },
+                  {
+                    label: "Eliminar",
+                    icon: "trash",
+                    tone: "danger",
+                    onClick: () => void deleteItem(item.itemId),
+                  },
+                ]}
               />
-              <SmallActionButton
-                text="Editar"
-                tone="edit"
-                onClick={() => {
-                  setEditItemId(item.itemId);
-                  setEditItem({
-                    nombre: item.nombre,
-                    activo: item.activo,
-                    ordenPdf: item.ordenPdf,
-                  });
-                }}
-              />
-              <SmallActionButton text="Borrar" tone="delete" onClick={() => void deleteItem(item.itemId)} />
             </div>
           </div>
         )}
@@ -2206,17 +1822,22 @@ export default function Home() {
       </section>
 
       <section className="ej-card mt-4 rounded-2xl p-3 sm:p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Vistas</p>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Navegación</p>
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button
             type="button"
             onClick={() => {
               setActiveView("personal");
               setShowConfigViews(false);
             }}
-            className={`${viewButtonClass("personal")} w-full`}
+            className={`${viewButtonClass("personal")} group relative flex-1 overflow-hidden transition-all`}
           >
-            Personal
+            <div className="flex items-center justify-center gap-2">
+              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Personal</span>
+            </div>
           </button>
           <button
             type="button"
@@ -2224,9 +1845,14 @@ export default function Home() {
               setActiveView("hoja_matrix");
               setShowConfigViews(false);
             }}
-            className={`${viewButtonClass("hoja_matrix")} w-full`}
+            className={`${viewButtonClass("hoja_matrix")} group relative flex-1 overflow-hidden transition-all`}
           >
-            Hoja Matriz
+            <div className="flex items-center justify-center gap-2">
+              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+              </svg>
+              <span>Hoja Matriz</span>
+            </div>
           </button>
           <button
             type="button"
@@ -2234,25 +1860,40 @@ export default function Home() {
               setActiveView("tallas_resumen");
               setShowConfigViews(false);
             }}
-            className={`${viewButtonClass("tallas_resumen")} w-full`}
+            className={`${viewButtonClass("tallas_resumen")} group relative flex-1 overflow-hidden transition-all`}
           >
-            Resumen Tallas
+            <div className="flex items-center justify-center gap-2">
+              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span className="hidden sm:inline">Resumen Tallas</span>
+              <span className="sm:hidden">Tallas</span>
+            </div>
           </button>
-          <div ref={configMenuRef} className="relative w-full">
+          <div ref={configMenuRef} className="relative flex-1">
             <button
               type="button"
               onClick={() => setShowConfigViews((prev) => !prev)}
               aria-haspopup="menu"
               aria-expanded={showConfigViews}
               aria-controls="menu-configuracion"
-              className={
-                isConfigView || showConfigViews
-                  ? "ej-view-active flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold"
-                  : "ej-view-idle flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold"
-              }
+              className={`
+                group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all
+                ${
+                  isConfigView || showConfigViews
+                    ? "ej-view-active"
+                    : "ej-view-idle"
+                }
+              `}
             >
+              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
               <span>Configuración</span>
-              <span className="text-xs">{showConfigViews ? "^" : "v"}</span>
+              <svg className={`h-3 w-3 transition-transform ${showConfigViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
             {showConfigViews ? (
               <div
@@ -2263,16 +1904,28 @@ export default function Home() {
                 <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de configuracion</p>
                 <div className="grid grid-cols-1 gap-1.5">
                   <button type="button" onClick={() => selectConfigView("grados")} className={configOptionClass("grados")}>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
                     Registrar Grados
                   </button>
                   <button type="button" onClick={() => selectConfigView("baterias")} className={configOptionClass("baterias")}>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
                     Registrar Baterías
                   </button>
                   <button type="button" onClick={() => selectConfigView("items")} className={configOptionClass("items")}>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
                     Registrar Items
                   </button>
                   {isAdmin ? (
                     <button type="button" onClick={() => selectConfigView("admin")} className={configOptionClass("admin")}>
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
                       Usuarios y Auditoria
                     </button>
                   ) : null}
@@ -2283,198 +1936,85 @@ export default function Home() {
         </div>
       </section>
 
-      {inCatalogView ? (
-        <section className="mt-6 grid grid-cols-1 gap-4">
-          {activeView === "grados" ? (
-            <article className="ej-card rounded-2xl p-4">
-              <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Grado del Personal</h2>
-              {!isAdmin ? (
-                <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
-                  Modo solo lectura: solo el administrador puede crear, editar o eliminar grados.
-                </p>
-              ) : null}
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[180px_1fr_auto]">
-                <input
-                  value={newRangoAbreviacion}
-                  onChange={(event) => setNewRangoAbreviacion(event.target.value)}
-                  placeholder="Abreviacion"
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  disabled={!isAdmin}
-                />
-                <input
-                  value={newRangoNombreCompleto}
-                  onChange={(event) => setNewRangoNombreCompleto(event.target.value)}
-                  placeholder="Nombre completo"
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  disabled={!isAdmin}
-                />
-                <button
-                  type="button"
-                  onClick={() => void createRango()}
-                  disabled={!isAdmin}
-                  className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
-                >
-                  Crear
-                </button>
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {rangos.map((rango) => (
-                  <div key={rango.rangoId} className="rounded-lg bg-stone-100/80 p-2">
-                    {editRangoId === rango.rangoId ? (
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[180px_1fr_auto]">
-                        <input
-                          value={editRangoAbreviacion}
-                          onChange={(event) => setEditRangoAbreviacion(event.target.value)}
-                          className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-                        />
-                        <input
-                          value={editRangoNombreCompleto}
-                          onChange={(event) => setEditRangoNombreCompleto(event.target.value)}
-                          className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-                        />
-                        {isAdmin ? (
-                          <div className="flex gap-2">
-                            <SmallActionButton text="Ok" tone="ok" onClick={() => void updateRango(rango.rangoId)} />
-                            <SmallActionButton
-                              text="Cancelar"
-                              tone="neutral"
-                              onClick={() => {
-                                setEditRangoId(null);
-                                setEditRangoAbreviacion("");
-                                setEditRangoNombreCompleto("");
-                              }}
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-sm font-medium text-stone-800">{rangoLabel(rango)}</span>
-                        {isAdmin ? (
-                          <div className="flex gap-2">
-                            <SmallActionButton
-                              text="Editar"
-                              tone="edit"
-                              onClick={() => {
-                                setEditRangoId(rango.rangoId);
-                                setEditRangoAbreviacion(rango.abreviacion);
-                                setEditRangoNombreCompleto(rango.nombreCompleto);
-                              }}
-                            />
-                            <SmallActionButton text="Borrar" tone="delete" onClick={() => void deleteRango(rango.rangoId)} />
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </article>
-          ) : null}
-
-          {activeView === "baterias" ? (
-            <CatalogCard
-              title="Baterías"
-              placeholder="Nueva bateria"
-              newValue={newBateria}
-              onNewValueChange={setNewBateria}
-              onCreate={() => void createBateria()}
-              createDisabled={!isAdmin}
-            >
-              {baterias.map((bateria) => (
-                <div key={bateria.bateriaId} className="rounded-lg bg-stone-100/80 p-2">
-                  {editBateriaId === bateria.bateriaId ? (
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <input
-                        value={editBateriaNombre}
-                        onChange={(event) => setEditBateriaNombre(event.target.value)}
-                        className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-                      />
-                      <div className="flex gap-2">
-                        <SmallActionButton text="Ok" tone="ok" onClick={() => void updateBateria(bateria.bateriaId)} />
-                        <SmallActionButton
-                          text="Cancelar"
-                          tone="neutral"
-                          onClick={() => {
-                            setEditBateriaId(null);
-                            setEditBateriaNombre("");
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <span className="text-sm font-medium text-stone-800">{bateria.nombre}</span>
-                      <div className="flex gap-2">
-                        <SmallActionButton
-                          text="Editar"
-                          tone="edit"
-                          onClick={() => {
-                            setEditBateriaId(bateria.bateriaId);
-                            setEditBateriaNombre(bateria.nombre);
-                          }}
-                        />
-                        <SmallActionButton text="Borrar" tone="delete" onClick={() => void deleteBateria(bateria.bateriaId)} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </CatalogCard>
-          ) : null}
-
-          {activeView === "items" ? (
-            <article className="ej-card rounded-2xl p-4">
-              <h2 className="text-base font-semibold text-stone-900">Items</h2>
-              <form onSubmit={createItem} className="mt-3 space-y-2">
-                <input
-                  value={newItem.nombre}
-                  onChange={(event) => setNewItem((prev) => ({ ...prev, nombre: event.target.value }))}
-                  placeholder="Nuevo item"
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={newItem.activo}
-                      onChange={(event) => setNewItem((prev) => ({ ...prev, activo: event.target.checked }))}
-                    />
-                    Activo
-                  </label>
-                </div>
-                <button
-                  type="submit"
-                  disabled={!canWrite}
-                  className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
-                >
-                  Crear item
-                </button>
-              </form>
-
-              <div className="mt-3 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items activos</p>
-                <p className="text-xs text-stone-500">Arrastra con mouse o tactil para cambiar el orden del PDF.</p>
-                {itemsActivosEnPantalla.length > 0 ? (
-                  itemsActivosEnPantalla.map((item) => renderItemCard(item, { draggableInActiveList: true }))
-                ) : (
-                  <p className="text-sm text-stone-500">Sin items activos.</p>
-                )}
-              </div>
-
-              <div className="mt-5 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items inactivos</p>
-                <p className="text-xs text-stone-500">Estos items no aparecen en la Ficha ni en registrar movimientos.</p>
-                {itemsInactivos.length > 0 ? (
-                  itemsInactivos.map((item) => renderItemCard(item))
-                ) : (
-                  <p className="text-sm text-stone-500">Sin items inactivos.</p>
-                )}
-              </div>
-            </article>
-          ) : null}
-        </section>
+      {inCatalogView || (isAdmin && activeView === "admin") ? (
+        <ConfigViews
+          activeView={activeView as "grados" | "baterias" | "items" | "admin"}
+          isAdmin={isAdmin}
+          canWrite={canWrite}
+          rangos={rangos}
+          newRangoAbreviacion={newRangoAbreviacion}
+          newRangoNombreCompleto={newRangoNombreCompleto}
+          editRangoId={editRangoId}
+          editRangoAbreviacion={editRangoAbreviacion}
+          editRangoNombreCompleto={editRangoNombreCompleto}
+          baterias={baterias}
+          newBateria={newBateria}
+          editBateriaId={editBateriaId}
+          editBateriaNombre={editBateriaNombre}
+          items={items}
+          newItem={newItem}
+          editItemId={editItemId}
+          editItem={editItem}
+          itemsActivos={itemsActivos}
+          itemsInactivos={itemsInactivos}
+          itemsActivosEnPantalla={itemsActivosEnPantalla}
+          draggedItemId={draggedItemId}
+          usuarios={usuarios}
+          newUsername={newUsername}
+          newPassword={newPassword}
+          newRole={newRole}
+          firmaConfig={firmaConfig}
+          firmaConfigDraft={firmaConfigDraft}
+          firmaConfigLoading={firmaConfigLoading}
+          firmaConfigSaving={firmaConfigSaving}
+          firmaConfigError={firmaConfigError}
+          auditFilter={auditFilter}
+          auditPage={auditPage}
+          auditPageSize={auditPageSize}
+          auditoriaFiltradaPaginada={auditoriaFiltradaPaginada}
+          auditoriaFiltrada={auditoriaFiltrada}
+          onNewRangoAbreviacionChange={setNewRangoAbreviacion}
+          onNewRangoNombreCompletoChange={setNewRangoNombreCompleto}
+          onEditRangoIdChange={setEditRangoId}
+          onEditRangoAbreviacionChange={setEditRangoAbreviacion}
+          onEditRangoNombreCompletoChange={setEditRangoNombreCompleto}
+          onCreateRango={() => void createRango()}
+          onUpdateRango={(rangoId) => void updateRango(rangoId)}
+          onDeleteRango={(rangoId) => void deleteRango(rangoId)}
+          onNewBateriaChange={setNewBateria}
+          onEditBateriaIdChange={setEditBateriaId}
+          onEditBateriaNombreChange={setEditBateriaNombre}
+          onCreateBateria={() => void createBateria()}
+          onUpdateBateria={(bateriaId) => void updateBateria(bateriaId)}
+          onDeleteBateria={(bateriaId) => void deleteBateria(bateriaId)}
+          onNewItemChange={(value, key) => setNewItem((prev) => ({ ...prev, [key]: value }))}
+          onEditItemIdChange={setEditItemId}
+          onEditItemChange={(value, key) => setEditItem((prev) => ({ ...prev, [key]: value }))}
+          onCreateItem={(event) => void createItem(event)}
+          onUpdateItem={(itemId) => void updateItem(itemId)}
+          onToggleItemActivo={(item) => void toggleItemActivo(item)}
+          onDeleteItem={(itemId) => void deleteItem(itemId)}
+          onStartItemDrag={() => {}}
+          renderItemCard={renderItemCard}
+          onNewUsernameChange={setNewUsername}
+          onNewPasswordChange={setNewPassword}
+          onNewRoleChange={setNewRole}
+          onCreateUsuario={(event) => void createUsuario(event)}
+          onChangeUserRole={(usuarioId, currentRole) => void changeUserRole(usuarioId, currentRole)}
+          onToggleUserActive={(usuario) => void toggleUserActive(usuario)}
+          onResetUserPassword={(usuario) => void resetUserPassword(usuario)}
+          onDeleteUsuario={(usuario) => void deleteUsuario(usuario)}
+          onFirmaConfigDraftChange={(key, value) => setFirmaConfigDraft((prev) => ({ ...prev, [key]: value }))}
+          onSaveFirmaConfig={(event) => void saveFirmaConfig(event)}
+          onAuditFilterChange={setAuditFilter}
+          onAuditPageChange={setAuditPage}
+          onAuditPageSizeChange={setAuditPageSize}
+          roleLabel={roleLabel}
+          rangoLabel={rangoLabel}
+          auditActionLabel={auditActionLabel}
+          auditEntityLabel={auditEntityLabel}
+          renderAuditDetalle={renderAuditDetalle}
+        />
       ) : null}
 
       {showCreatePersonalForm ? (
@@ -2735,15 +2275,15 @@ export default function Home() {
               className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             />
             <input
-              value={searchNombres}
-              onChange={(event) => setSearchNombres(event.target.value)}
-              placeholder="Buscar por nombres"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
               value={searchApellidos}
               onChange={(event) => setSearchApellidos(event.target.value)}
               placeholder="Buscar por apellidos"
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+            <input
+              value={searchNombres}
+              onChange={(event) => setSearchNombres(event.target.value)}
+              placeholder="Buscar por nombres"
               className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             />
             <select
@@ -2826,35 +2366,38 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => toggleTallas(persona.ci)}
-                      className="rounded bg-stone-600 px-2 py-1 text-xs font-medium text-white"
+                      className="rounded bg-stone-600 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-stone-700 hover:shadow-md active:scale-95"
                     >
                       {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
                     </button>
                     <button
                       type="button"
                       onClick={() => openRegistro(persona.ci, "ENTREGA")}
-                      className="rounded bg-emerald-700 px-2 py-1 text-xs font-medium text-white"
+                      className="rounded bg-emerald-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-emerald-800 hover:shadow-md active:scale-95"
                     >
                       Entrega
                     </button>
                     <button
                       type="button"
                       onClick={() => openRegistro(persona.ci, "DEVOLUCION")}
-                      className="rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white"
+                      className="rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-amber-800 hover:shadow-md active:scale-95"
                     >
                       Devolucion
                     </button>
                     <button
                       type="button"
                       onClick={() => void openRegistroViewer(persona)}
-                      className="rounded bg-sky-700 px-2 py-1 text-xs font-medium text-white"
+                      className="rounded bg-sky-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-sky-800 hover:shadow-md active:scale-95"
                     >
                       Ver movimientos
                     </button>
                     <button
                       type="button"
-                      onClick={() => window.open(`/ficha/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
-                      className="rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white"
+                      onClick={() => {
+                        setActiveView("ficha");
+                        setFichaViewingCi(persona.ci);
+                      }}
+                      className="rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-indigo-800 hover:shadow-md active:scale-95"
                     >
                       Ficha
                     </button>
@@ -2878,6 +2421,17 @@ export default function Home() {
             {personalFiltrado.length === 0 ? <p className="text-sm text-stone-500">Sin resultados con los filtros actuales.</p> : null}
           </div>
 
+          <div className="mt-3 md:hidden">
+            <PaginationControls
+              page={personalPage}
+              pageSize={personalPageSize}
+              totalItems={personalFiltrado.length}
+              itemLabel="personas"
+              onPageChange={setPersonalPage}
+              onPageSizeChange={setPersonalPageSize}
+            />
+          </div>
+
           <div className="mt-3 hidden md:block">
             <table className="w-full table-fixed text-left text-sm">
               <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-600">
@@ -2892,14 +2446,15 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {personalFiltradoPaginado.map((persona) => {
+                {personalFiltradoPaginado.map((persona, index) => {
                   const tallas = tallasMap(persona.tallas);
                   const ciValida = isValidUruguayanCi(persona.ci);
                   const tallasOpen = expandedTallasByCi[persona.ci] === true;
                   const editing = editPersonalCi === persona.ci;
+                  const isEven = index % 2 === 0;
                   return (
                     <Fragment key={persona.ci}>
-                      <tr className={!ciValida ? "bg-red-50/60" : undefined}>
+                      <tr className={!ciValida ? "bg-red-50/60" : isEven ? "bg-white" : "bg-stone-50/40"}>
                         <td className={`px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-bold text-red-700"}`}>
                           <div>
                             {formatUruguayanCi(persona.ci)}
@@ -2916,7 +2471,7 @@ export default function Home() {
                           <button
                             type="button"
                             onClick={() => toggleTallas(persona.ci)}
-                            className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700"
+                            className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700 transition-all duration-200 hover:bg-stone-50 hover:border-stone-400 hover:shadow-sm active:scale-95"
                           >
                             {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
                           </button>
@@ -2945,28 +2500,31 @@ export default function Home() {
                             <button
                               type="button"
                               onClick={() => openRegistro(persona.ci, "ENTREGA")}
-                              className="w-full rounded bg-emerald-700 px-2 py-1 text-[11px] font-medium leading-tight text-white"
+                              className="w-full rounded bg-emerald-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-emerald-800 hover:shadow-md active:scale-95"
                             >
                               Entrega
                             </button>
                             <button
                               type="button"
                               onClick={() => openRegistro(persona.ci, "DEVOLUCION")}
-                              className="w-full rounded bg-amber-700 px-2 py-1 text-[11px] font-medium leading-tight text-white"
+                              className="w-full rounded bg-amber-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-amber-800 hover:shadow-md active:scale-95"
                             >
                               Devolucion
                             </button>
                             <button
                               type="button"
                               onClick={() => void openRegistroViewer(persona)}
-                              className="w-full rounded bg-sky-700 px-2 py-1 text-[11px] font-medium leading-tight text-white"
+                              className="w-full rounded bg-sky-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-sky-800 hover:shadow-md active:scale-95"
                             >
                               Ver movimientos
                             </button>
                             <button
                               type="button"
-                              onClick={() => window.open(`/ficha/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
-                              className="w-full rounded bg-indigo-700 px-2 py-1 text-[11px] font-medium leading-tight text-white"
+                              onClick={() => {
+                                setActiveView("ficha");
+                                setFichaViewingCi(persona.ci);
+                              }}
+                              className="w-full rounded bg-indigo-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-indigo-800 hover:shadow-md active:scale-95"
                             >
                               Ficha
                             </button>
@@ -3007,6 +2565,15 @@ export default function Home() {
               </tbody>
             </table>
           </div>
+
+          <PaginationControls
+            page={personalPage}
+            pageSize={personalPageSize}
+            totalItems={personalFiltrado.length}
+            itemLabel="personas"
+            onPageChange={setPersonalPage}
+            onPageSizeChange={setPersonalPageSize}
+          />
         </section>
       ) : null}
 
@@ -3030,10 +2597,10 @@ export default function Home() {
               </button>
               <button
                 type="button"
-                onClick={() => window.open("/hoja-matriz", "_blank", "noopener,noreferrer")}
+                onClick={() => window.print()}
                 className="rounded bg-indigo-700 px-3 py-2 text-xs font-semibold text-white"
               >
-                Generar hoja
+                Imprimir / Guardar PDF
               </button>
             </div>
           </div>
@@ -3450,243 +3017,13 @@ export default function Home() {
         </section>
       ) : null}
 
-      {isAdmin && activeView === "admin" ? (
-        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <article className="ej-card rounded-2xl p-4 lg:col-span-2">
-            <h2 className="text-base font-semibold text-stone-900">Firmas institucionales (solo administrador)</h2>
-            <p className="mt-1 text-xs text-stone-600">
-              Esta seccion controla los datos de quienes firman la hoja de entrega. Los textos institucionales son fijos.
-            </p>
-            <div className="mt-3 space-y-2 rounded-lg border border-stone-200 bg-stone-50 p-3">
-              <p className="text-xs font-semibold text-stone-700">Textos institucionales (fijos):</p>
-              <p className="text-xs text-stone-600">• Encargado: El Encargado del Deposito General del Grp. &quot;Brig. Gral. Manuel Oribe&quot; de Artilleria 105mm No. 1.</p>
-              <p className="text-xs text-stone-600">• Oficial: El Oficial de Administracion del Grp.&quot;Brig. &quot;Gral. Manuel Oribe&quot; de Artilleria 105mm No. 1.</p>
-            </div>
-            {firmaConfigLoading ? (
-              <p className="mt-3 text-sm text-stone-600">Cargando configuracion de firmas...</p>
-            ) : (
-              <form onSubmit={saveFirmaConfig} className="mt-3 space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-stone-800">Datos del Encargado</h3>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Rango</span>
-                      <input
-                        type="text"
-                        value={firmaConfigDraft.encargadoRango}
-                        onChange={(event) =>
-                          setFirmaConfigDraft((prev) => ({ ...prev, encargadoRango: event.target.value }))
-                        }
-                        placeholder="Ej: Sgto."
-                        disabled={firmaConfigSaving}
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre</span>
-                      <input
-                        type="text"
-                        value={firmaConfigDraft.encargadoNombre}
-                        onChange={(event) =>
-                          setFirmaConfigDraft((prev) => ({ ...prev, encargadoNombre: event.target.value }))
-                        }
-                        placeholder="Ej: Wilson Lara"
-                        disabled={firmaConfigSaving}
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                      />
-                    </label>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-stone-800">Datos del Oficial</h3>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Rango</span>
-                      <input
-                        type="text"
-                        value={firmaConfigDraft.oficialRango}
-                        onChange={(event) =>
-                          setFirmaConfigDraft((prev) => ({ ...prev, oficialRango: event.target.value }))
-                        }
-                        placeholder="Ej: -Tte.2º"
-                        disabled={firmaConfigSaving}
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre</span>
-                      <input
-                        type="text"
-                        value={firmaConfigDraft.oficialNombre}
-                        onChange={(event) =>
-                          setFirmaConfigDraft((prev) => ({ ...prev, oficialNombre: event.target.value }))
-                        }
-                        placeholder="Ej: Gerardo Otero"
-                        disabled={firmaConfigSaving}
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                      />
-                    </label>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs text-stone-600">
-                    {firmaConfig?.updatedAt
-                      ? `Ultima actualizacion: ${new Date(firmaConfig.updatedAt).toLocaleString("es-UY")}`
-                      : "Sin actualizaciones registradas todavia."}
-                  </p>
-                  <button
-                    type="submit"
-                    disabled={firmaConfigSaving}
-                    className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
-                  >
-                    {firmaConfigSaving ? "Guardando..." : "Guardar firmas"}
-                  </button>
-                </div>
-                {firmaConfigError ? <p className="text-xs font-medium text-rose-700">{firmaConfigError}</p> : null}
-              </form>
-            )}
-          </article>
-
-          <article className="ej-card rounded-2xl p-4">
-            <h2 className="text-base font-semibold text-stone-900">Usuarios y privilegios</h2>
-            <form onSubmit={createUsuario} className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <input
-                value={newUsername}
-                onChange={(event) => setNewUsername(event.target.value)}
-                placeholder="Nombre de usuario"
-                className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-              <input
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                placeholder="Contraseña (min 8)"
-                className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                type="password"
-              />
-              <select
-                value={newRole}
-                onChange={(event) => setNewRole(event.target.value as Role)}
-                className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              >
-                {ROLE_OPTIONS.map((role) => (
-                  <option key={role} value={role}>
-                    {roleLabel(role)}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                disabled={!isAdmin}
-                className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
-              >
-                Crear usuario
-              </button>
-            </form>
-
-            <div className="mt-3 space-y-2">
-              {usuarios.map((usuario) => (
-                <div key={usuario.usuarioId} className="rounded-lg bg-stone-100/80 p-2">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-stone-900">
-                        {usuario.username} ({roleLabel(usuario.rol)})
-                      </p>
-                      <p className="text-xs text-stone-600">{usuario.activo ? "Activo" : "Inactivo"}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <SmallActionButton
-                        text="Rol"
-                        tone="edit"
-                        onClick={() => void changeUserRole(usuario.usuarioId, usuario.rol)}
-                      />
-                      <SmallActionButton
-                        text={usuario.activo ? "Desactivar" : "Activar"}
-                        tone="neutral"
-                        onClick={() => void toggleUserActive(usuario)}
-                      />
-                      <SmallActionButton
-                        text="Contraseña"
-                        tone="ok"
-                        onClick={() => void resetUserPassword(usuario)}
-                      />
-                      <SmallActionButton text="Borrar" tone="delete" onClick={() => void deleteUsuario(usuario)} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="ej-card rounded-2xl p-4">
-            <h2 className="text-base font-semibold text-stone-900">Auditoria detallada (interfaz y base de datos)</h2>
-            <p className="mt-1 text-xs text-stone-600">
-              Cada registro muestra quien hizo la accion, sobre que entidad y el detalle guardado en la tabla de auditoria.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setAuditFilter("TODOS")}
-                className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                  auditFilter === "TODOS" ? "bg-stone-800 text-white" : "border border-stone-300 bg-white text-stone-700"
-                }`}
-              >
-                Todo
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuditFilter("MOVIMIENTOS")}
-                className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                  auditFilter === "MOVIMIENTOS"
-                    ? "bg-stone-800 text-white"
-                    : "border border-stone-300 bg-white text-stone-700"
-                }`}
-              >
-                Solo movimientos
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuditFilter("AUTENTICACION")}
-                className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                  auditFilter === "AUTENTICACION"
-                    ? "bg-stone-800 text-white"
-                    : "border border-stone-300 bg-white text-stone-700"
-                }`}
-              >
-                Solo autenticacion
-              </button>
-            </div>
-            <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
-              {auditoriaFiltradaPaginada.map((log) => (
-                <div key={log.auditoriaId} className="rounded-lg border border-stone-200 bg-stone-50 p-2">
-                  <p className="text-xs text-stone-600">{new Date(log.createdAt).toLocaleString("es-UY")}</p>
-                  <p className="text-sm font-medium text-stone-900">
-                    {`${log.usuario?.username ?? "Sistema"} (${roleLabel(log.usuario?.rol ?? null)}) - ${auditActionLabel(log.accion)} ${auditEntityLabel(log.entidad)}`}
-                  </p>
-                  <p className="text-xs text-stone-600">{`Auditoria BD #${log.auditoriaId}`}</p>
-                  <p className="text-xs text-stone-600">{log.entidadId ? `Entidad ID: ${log.entidadId}` : "Entidad sin ID"}</p>
-                  {renderAuditDetalle(log.detalle)}
-                </div>
-              ))}
-              {auditoriaFiltrada.length === 0 ? (
-                <p className="text-sm text-stone-600">No hay eventos para este filtro.</p>
-              ) : null}
-            </div>
-            {auditoriaFiltrada.length > 0 ? (
-              <PaginationControls
-                page={auditPage}
-                pageSize={auditPageSize}
-                totalItems={auditoriaFiltrada.length}
-                itemLabel="eventos"
-                onPageChange={setAuditPage}
-                onPageSizeChange={setAuditPageSize}
-                className="mt-3"
-              />
-            ) : null}
-          </article>
-        </section>
+      {activeView === "ficha" && fichaViewingCi ? (
+        <FichaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
       ) : null}
 
       {loading ? <p className="mt-4 text-xs text-stone-600">Actualizando informacion...</p> : null}
+      
+      <ToastContainer />
     </main>
   );
 }

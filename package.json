@@ -8,6 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
     "prisma:generate": "prisma generate",
     "db:rebuild": "prisma db execute --schema prisma/schema.prisma --file prisma/schema-base.sql && prisma generate",
     "prisma:studio": "prisma studio",
@@ -17,23 +20,31 @@
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",
+    "@types/pdfkit": "^0.17.5",
     "bcryptjs": "^3.0.3",
     "ciuy": "^1.0.0",
     "html2canvas": "^1.4.1",
+    "html2pdf.js": "^0.14.0",
     "jspdf": "^4.2.0",
     "next": "16.1.6",
+    "pdfkit": "^0.17.2",
     "prisma": "^6.17.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/html2pdf.js": "^0.10.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.1.4",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }
