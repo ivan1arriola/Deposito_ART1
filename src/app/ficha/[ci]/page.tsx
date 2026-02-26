@@ -367,16 +367,16 @@ export default function FichaPage() {
                   </td>
                   {row.entrega.map((value, idx) => (
                     <td key={`${row.item}-e-${idx}`} className={styles.center}>
-                      {value}
+                      {value || ""}
                     </td>
                   ))}
-                  <td className={styles.tCol}>{row.entregaTotal}</td>
+                  <td className={styles.tCol}>{row.entregaTotal || ""}</td>
                   {row.devolucion.map((value, idx) => (
                     <td key={`${row.item}-d-${idx}`} className={`${styles.center} ${styles.verticalDivider}`}>
-                      {value}
+                      {value || ""}
                     </td>
                   ))}
-                  <td className={styles.tCol}>{row.devolucionTotal}</td>
+                  <td className={styles.tCol}>{row.devolucionTotal || ""}</td>
                 </tr>
               ))}
 
