@@ -217,22 +217,52 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
   if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
 
   try {
-    await prisma.personal.delete({
-      where: { ci: ciDecoded },
+    const deleted = await prisma.$transaction(async (tx) => {
+      const existing = await tx.personal.findUnique({
+        where: { ci: ciDecoded },
+        select: { ci: true },
+      });
+      if (!existing) return null;
+
+      const deletedTallas = await tx.personalTalla.deleteMany({
+        where: { ci: ciDecoded },
+      });
+      const deletedObservaciones = await tx.observacion.deleteMany({
+        where: { ci: ciDecoded },
+      });
+      const deletedRegistroItems = await tx.registroItem.deleteMany({
+        where: { registro: { ci: ciDecoded } },
+      });
+      const deletedRegistros = await tx.registro.deleteMany({
+        where: { ci: ciDecoded },
+      });
+      await tx.personal.delete({
+        where: { ci: ciDecoded },
+      });
+
+      return {
+        ci: ciDecoded,
+        tallas: deletedTallas.count,
+        observaciones: deletedObservaciones.count,
+        registroItems: deletedRegistroItems.count,
+        registros: deletedRegistros.count,
+      };
     });
+
+    if (!deleted) {
+      return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
+    }
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
       accion: "DELETE",
       entidad: "PERSONAL",
       entidadId: ciDecoded,
+      detalle: deleted,
     });
 
     return NextResponse.json({ ok: true });
-  } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2025") {
-      return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
-    }
+  } catch {
     return NextResponse.json({ error: "No se pudo eliminar el registro." }, { status: 500 });
   }
 }

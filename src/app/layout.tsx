@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Soldados App",
-  description: "Panel de consulta para personal, grado del personal y baterias",
+  title: "Gestión de Deposito general - Artilleria 1",
+  description: "Gestión de Deposito general - Artilleria 1",
 };
 
 export default function RootLayout({

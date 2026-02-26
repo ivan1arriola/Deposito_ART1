@@ -76,9 +76,11 @@ INSERT INTO "talla_tipo" ("nombre") VALUES
 CREATE TABLE "item" (
   "item_id" BIGSERIAL PRIMARY KEY,
   "nombre" TEXT NOT NULL UNIQUE,
-  "requiere_talle" BOOLEAN NOT NULL DEFAULT FALSE,
-  "activo" BOOLEAN NOT NULL DEFAULT TRUE
+  "activo" BOOLEAN NOT NULL DEFAULT TRUE,
+  "orden_pdf" INTEGER NOT NULL DEFAULT 9999
 );
+
+CREATE INDEX "item_orden_pdf_nombre_idx" ON "item"("orden_pdf", "nombre");
 
 CREATE TABLE "personal" (
   "ci" TEXT PRIMARY KEY,

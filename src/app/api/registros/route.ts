@@ -56,6 +56,48 @@ function isValidPayload(body: unknown): body is RegistroPayload {
   return true;
 }
 
+export async function GET(req: Request) {
+  const auth = await authorizeRequest(req, "read_data");
+  if (!auth.ok) return auth.response;
+
+  const url = new URL(req.url);
+  const ci = (url.searchParams.get("ci") ?? "").trim();
+  const limitRaw = Number(url.searchParams.get("limit") ?? "120");
+  const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 1), 300) : 120;
+
+  if (ci && !isValidUruguayanCi(ci)) {
+    return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  }
+
+  const registros = await prisma.registro.findMany({
+    where: ci ? { ci } : undefined,
+    include: {
+      items: {
+        include: { item: true },
+        orderBy: { item: { ordenPdf: "asc" } },
+      },
+    },
+    orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
+    take: limit,
+  });
+
+  return NextResponse.json(
+    registros.map((registro) => ({
+      registroId: registro.registroId.toString(),
+      ci: registro.ci,
+      fecha: registro.fecha.toISOString(),
+      tipo: registro.tipo,
+      comentarios: registro.comentarios,
+      createdAt: registro.createdAt.toISOString(),
+      items: registro.items.map((detail) => ({
+        itemId: detail.itemId.toString(),
+        nombre: detail.item.nombre,
+        cantidad: detail.cantidad,
+      })),
+    })),
+  );
+}
+
 export async function POST(req: Request) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
@@ -154,4 +196,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No se pudo registrar el movimiento." }, { status: 500 });
   }
 }
-

@@ -5,22 +5,26 @@ import { logAudit } from "@/lib/audit";
 
 type ItemPayload = {
   nombre: string;
-  requiereTalle?: boolean;
   activo?: boolean;
+  ordenPdf?: number;
 };
 
 function isValidPayload(body: unknown): body is ItemPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  return typeof candidate.nombre === "string" && candidate.nombre.trim() !== "";
+  const hasValidName = typeof candidate.nombre === "string" && candidate.nombre.trim() !== "";
+  const hasValidOrder =
+    candidate.ordenPdf === undefined ||
+    (typeof candidate.ordenPdf === "number" && Number.isInteger(candidate.ordenPdf) && candidate.ordenPdf > 0);
+  return hasValidName && hasValidOrder;
 }
 
-function serializeItem(item: { itemId: bigint; nombre: string; requiereTalle: boolean; activo: boolean }) {
+function serializeItem(item: { itemId: bigint; nombre: string; activo: boolean; ordenPdf: number }) {
   return {
     itemId: item.itemId.toString(),
     nombre: item.nombre,
-    requiereTalle: item.requiereTalle,
     activo: item.activo,
+    ordenPdf: item.ordenPdf,
   };
 }
 
@@ -29,7 +33,7 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const items = await prisma.item.findMany({
-    orderBy: { nombre: "asc" },
+    orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
   });
 
   return NextResponse.json(items.map(serializeItem));
@@ -42,15 +46,18 @@ export async function POST(req: Request) {
   const body = await req.json();
 
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. 'nombre' es obligatorio." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Payload invalido. 'nombre' es obligatorio y 'ordenPdf' debe ser entero positivo." },
+      { status: 400 },
+    );
   }
 
   try {
     const created = await prisma.item.create({
       data: {
         nombre: body.nombre.trim(),
-        requiereTalle: Boolean(body.requiereTalle),
         activo: body.activo === undefined ? true : Boolean(body.activo),
+        ordenPdf: body.ordenPdf === undefined ? 9999 : body.ordenPdf,
       },
     });
 
@@ -61,8 +68,8 @@ export async function POST(req: Request) {
       entidadId: created.itemId.toString(),
       detalle: {
         nombre: created.nombre,
-        requiereTalle: created.requiereTalle,
         activo: created.activo,
+        ordenPdf: created.ordenPdf,
       },
     });
 

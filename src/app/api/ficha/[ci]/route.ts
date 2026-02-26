@@ -14,23 +14,53 @@ type RegistroWithItems = {
   }>;
 };
 
-function sliceSix(records: RegistroWithItems[]) {
-  return records
-    .sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
-    .slice(0, 6)
-    .map((record) => ({
+type MatrixColumn = {
+  fecha: string | null;
+  items: Array<{ nombre: string; cantidad: number }>;
+};
+
+function aggregateItems(records: RegistroWithItems[]) {
+  const map = new Map<string, number>();
+  for (const record of records) {
+    for (const detail of record.items) {
+      const key = detail.item.nombre;
+      map.set(key, (map.get(key) ?? 0) + detail.cantidad);
+    }
+  }
+  return Array.from(map.entries()).map(([nombre, cantidad]) => ({ nombre, cantidad }));
+}
+
+// 6 columnas: 1 acumulada (antiguos) + 5 mas recientes
+function toSixColumns(records: RegistroWithItems[]): MatrixColumn[] {
+  const sorted = [...records].sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
+  const oldRecords = sorted.slice(0, Math.max(0, sorted.length - 5));
+  const recentRecords = sorted.slice(-5);
+
+  const columns: MatrixColumn[] = [
+    {
+      fecha: null,
+      items: aggregateItems(oldRecords),
+    },
+    ...recentRecords.map((record) => ({
       fecha: record.fecha.toISOString(),
       items: record.items.map((detail) => ({
         nombre: detail.item.nombre,
         cantidad: detail.cantidad,
       })),
-    }));
+    })),
+  ];
+
+  while (columns.length < 6) {
+    columns.push({ fecha: null, items: [] });
+  }
+
+  return columns.slice(0, 6);
 }
 
 function buildMatrix(
   itemsOrder: string[],
-  entregas: Array<{ items: Array<{ nombre: string; cantidad: number }> }>,
-  devoluciones: Array<{ items: Array<{ nombre: string; cantidad: number }> }>,
+  entregas: MatrixColumn[],
+  devoluciones: MatrixColumn[],
 ) {
   return itemsOrder.map((itemName) => {
     const entrega = Array.from({ length: 6 }, (_, idx) => {
@@ -90,11 +120,11 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
   }
 
-  const entregas = sliceSix(persona.registros.filter((record) => record.tipo === TipoRegistro.ENTREGA));
-  const devoluciones = sliceSix(persona.registros.filter((record) => record.tipo === TipoRegistro.DEVOLUCION));
+  const entregas = toSixColumns(persona.registros.filter((record) => record.tipo === TipoRegistro.ENTREGA));
+  const devoluciones = toSixColumns(persona.registros.filter((record) => record.tipo === TipoRegistro.DEVOLUCION));
   const itemCatalog = await prisma.item.findMany({
     where: { activo: true },
-    orderBy: { nombre: "asc" },
+    orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
     select: { nombre: true },
   });
 

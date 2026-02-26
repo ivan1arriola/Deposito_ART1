@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, FormEvent, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { isValidUruguayanCi } from "@/lib/ci";
+import { formatUruguayanCi, isValidUruguayanCi, normalizeCi } from "@/lib/ci";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
 import {
   TALLA_KEYS,
@@ -14,7 +14,7 @@ import {
 
 type Rango = { rangoId: number; abreviacion: string; nombreCompleto: string };
 type Bateria = { bateriaId: number; nombre: string };
-type Item = { itemId: string; nombre: string; requiereTalle: boolean; activo: boolean };
+type Item = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
 type Talla = { tallaTipo: { nombre: string }; tallaValor: string };
 type Personal = {
   ci: string;
@@ -48,13 +48,14 @@ type PersonalForm = {
 
 type ItemForm = {
   nombre: string;
-  requiereTalle: boolean;
   activo: boolean;
+  ordenPdf: number;
 };
 
 type Role = "ADMIN" | "EDITOR" | "VIEWER";
 type MainView = "personal_registro" | "personal_gestion" | "grados" | "baterias" | "items" | "admin";
 type RegistroTipo = "ENTREGA" | "DEVOLUCION";
+type RegistroViewTipo = RegistroTipo | "AJUSTE";
 
 type RegistroDraftItem = {
   itemId: string;
@@ -67,6 +68,28 @@ type RegistroDraft = {
   fecha: string;
   comentarios: string;
   items: RegistroDraftItem[];
+};
+
+type RegistroView = {
+  registroId: string;
+  ci: string;
+  fecha: string;
+  tipo: RegistroViewTipo;
+  comentarios: string | null;
+  createdAt: string;
+  items: Array<{
+    itemId: string;
+    nombre: string;
+    cantidad: number;
+  }>;
+};
+
+type RegistroViewerState = {
+  ci: string;
+  nombre: string;
+  loading: boolean;
+  error: string | null;
+  registros: RegistroView[];
 };
 
 type CurrentUser = {
@@ -120,8 +143,8 @@ const EMPTY_PERSONAL_FORM: PersonalForm = {
 
 const EMPTY_ITEM_FORM: ItemForm = {
   nombre: "",
-  requiereTalle: false,
   activo: true,
+  ordenPdf: 9999,
 };
 
 const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "VIEWER"];
@@ -178,8 +201,12 @@ function nombresLabel(persona: Personal) {
   return `${persona.nombre1} ${persona.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
 }
 
-function tallasInlineText(tallas: Record<string, string>) {
-  return `P:${tallas.PARKA} C:${tallas.CAMISACO} Pa:${tallas.PANTALON} K:${tallas.KEPI} Ca:${tallas.CALZADO}`;
+function tallasEntries(tallas: Record<string, string>) {
+  return TALLA_KEYS.map((key) => {
+    const rawValue = tallas[key];
+    const value = rawValue && rawValue !== "-" ? rawValue : "Sin dato";
+    return { key, label: TALLA_LABELS[key], value };
+  });
 }
 
 function rangoLabel(rango: Rango) {
@@ -331,9 +358,12 @@ export default function Home() {
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
   const [editPersonal, setEditPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
+  const [ciSearch, setCiSearch] = useState("");
   const [expandedTallasByCi, setExpandedTallasByCi] = useState<Record<string, boolean>>({});
   const [registroDraft, setRegistroDraft] = useState<RegistroDraft | null>(null);
-  const [activeView, setActiveView] = useState<MainView>("personal_registro");
+  const [registroViewer, setRegistroViewer] = useState<RegistroViewerState | null>(null);
+  const [activeView, setActiveView] = useState<MainView>("personal_gestion");
+  const [showConfigViews, setShowConfigViews] = useState(false);
 
   const isAdmin = currentUser?.rol === "ADMIN";
   const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
@@ -350,11 +380,27 @@ export default function Home() {
   const requiredPersonalCompleted = requiredPersonalFields.filter(Boolean).length;
   const canSubmitPersonal = canRegisterPersonal && requiredPersonalCompleted === requiredPersonalFields.length;
   const maxFechaIngreso = getTodayDateInput();
+  const itemsOrdenados = useMemo(
+    () => [...items].sort((a, b) => a.ordenPdf - b.ordenPdf || a.nombre.localeCompare(b.nombre, "es")),
+    [items],
+  );
+  const itemsActivos = useMemo(() => itemsOrdenados.filter((item) => item.activo), [itemsOrdenados]);
+  const itemsInactivos = useMemo(() => itemsOrdenados.filter((item) => !item.activo), [itemsOrdenados]);
   const personalOrdenado = useMemo(() => [...personal].sort(comparePersonalByHierarchy), [personal]);
+  const ciSearchDigits = normalizeCi(ciSearch);
+  const personalFiltrado = useMemo(() => {
+    if (!ciSearchDigits) return personalOrdenado;
+    return personalOrdenado.filter((persona) => normalizeCi(persona.ci).includes(ciSearchDigits));
+  }, [personalOrdenado, ciSearchDigits]);
+  const isConfigView = activeView === "grados" || activeView === "baterias" || activeView === "items" || activeView === "admin";
+  const personaRegistro = useMemo(() => {
+    if (!registroDraft) return null;
+    return personal.find((persona) => persona.ci === registroDraft.ci) ?? null;
+  }, [personal, registroDraft]);
 
   useEffect(() => {
     if (activeView === "admin" && !isAdmin) {
-      setActiveView("personal_registro");
+      setActiveView("personal_gestion");
     }
   }, [activeView, isAdmin]);
 
@@ -588,6 +634,69 @@ export default function Home() {
     }
   }
 
+  async function toggleItemActivo(item: Item) {
+    if (!canWrite) {
+      setStatus("No tienes permisos para editar.");
+      return;
+    }
+
+    try {
+      await api(`/api/items/${item.itemId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: item.nombre,
+          activo: !item.activo,
+          ordenPdf: item.ordenPdf,
+        }),
+      });
+      setStatus(`Item ${!item.activo ? "activado" : "desactivado"}.`);
+      await loadData();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "No se pudo actualizar el item.");
+    }
+  }
+
+  async function moveItemOrdenPdf(itemId: string, direction: -1 | 1) {
+    if (!canWrite) {
+      setStatus("No tienes permisos para editar.");
+      return;
+    }
+
+    const currentIndex = itemsOrdenados.findIndex((item) => item.itemId === itemId);
+    if (currentIndex < 0) return;
+    const targetIndex = currentIndex + direction;
+    if (targetIndex < 0 || targetIndex >= itemsOrdenados.length) return;
+
+    const reordered = [...itemsOrdenados];
+    const [movedItem] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, movedItem);
+
+    const updates = reordered
+      .map((item, idx) => ({ item, ordenPdf: (idx + 1) * 10 }))
+      .filter(({ item, ordenPdf }) => item.ordenPdf !== ordenPdf);
+
+    try {
+      await Promise.all(
+        updates.map(({ item, ordenPdf }) =>
+          api(`/api/items/${item.itemId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              nombre: item.nombre,
+              activo: item.activo,
+              ordenPdf,
+            }),
+          }),
+        ),
+      );
+      setStatus("Orden de PDF actualizado.");
+      await loadData();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "No se pudo actualizar el orden de PDF.");
+    }
+  }
+
   async function deleteItem(itemId: string) {
     if (!canDelete) {
       setStatus("No tienes permisos para eliminar.");
@@ -675,6 +784,36 @@ export default function Home() {
     }));
   }
 
+  async function openRegistroViewer(persona: Personal) {
+    const nombre = `${apellidosLabel(persona)}, ${nombresLabel(persona)}`;
+    setRegistroViewer({
+      ci: persona.ci,
+      nombre,
+      loading: true,
+      error: null,
+      registros: [],
+    });
+
+    try {
+      const registros = await api<RegistroView[]>(`/api/registros?ci=${encodeURIComponent(persona.ci)}&limit=200`);
+      setRegistroViewer({
+        ci: persona.ci,
+        nombre,
+        loading: false,
+        error: null,
+        registros,
+      });
+    } catch (error: unknown) {
+      setRegistroViewer({
+        ci: persona.ci,
+        nombre,
+        loading: false,
+        error: error instanceof Error ? error.message : "No se pudo cargar el historial.",
+        registros: [],
+      });
+    }
+  }
+
   function openRegistro(ci: string, tipo: RegistroTipo) {
     if (!canWrite) {
       setStatus("No tienes permisos para registrar movimientos.");
@@ -692,6 +831,10 @@ export default function Home() {
   function updateRegistroItem(index: number, field: keyof RegistroDraftItem, value: string) {
     setRegistroDraft((prev) => {
       if (!prev) return prev;
+      if (field === "itemId" && value !== "" && prev.items.some((item, itemIndex) => itemIndex !== index && item.itemId === value)) {
+        setStatus("Ese item ya fue seleccionado en este movimiento.");
+        return prev;
+      }
       const items = prev.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item));
       return { ...prev, items };
     });
@@ -723,6 +866,11 @@ export default function Home() {
 
     if (payloadItems.length === 0) {
       setStatus("Debes agregar al menos un item con cantidad valida.");
+      return;
+    }
+    const uniqueItemIds = new Set(payloadItems.map((item) => item.itemId));
+    if (uniqueItemIds.size !== payloadItems.length) {
+      setStatus("No puedes repetir items en un mismo movimiento.");
       return;
     }
 
@@ -858,7 +1006,7 @@ export default function Home() {
       setCurrentUser(null);
       clearLoadedData();
       setLoginPassword("");
-      setActiveView("personal_registro");
+      setActiveView("personal_gestion");
       setStatus("Sesion cerrada. Ingresa tus credenciales.");
     }
   }
@@ -978,11 +1126,92 @@ export default function Home() {
       : "ej-view-idle rounded-lg px-3 py-2 text-sm font-semibold";
   }
 
+  function selectConfigView(view: Extract<MainView, "grados" | "baterias" | "items" | "admin">) {
+    setActiveView(view);
+    setShowConfigViews(false);
+  }
+
+  function renderItemCard(item: Item) {
+    return (
+      <div key={item.itemId} className="rounded-lg bg-stone-100/80 p-2">
+        {editItemId === item.itemId ? (
+          <div className="space-y-2">
+            <input
+              value={editItem.nombre}
+              onChange={(event) => setEditItem((prev) => ({ ...prev, nombre: event.target.value }))}
+              className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+            />
+            <label className="block text-sm">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-stone-600">Orden PDF</span>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={editItem.ordenPdf}
+                onChange={(event) => setEditItem((prev) => ({ ...prev, ordenPdf: Math.max(1, Number(event.target.value) || 1) }))}
+                className="mt-1 w-full rounded border border-stone-300 px-2 py-1 text-sm"
+              />
+            </label>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={editItem.activo}
+                  onChange={(event) => setEditItem((prev) => ({ ...prev, activo: event.target.checked }))}
+                />
+                Activo
+              </label>
+            </div>
+            <div className="flex gap-2">
+              <SmallActionButton text="Ok" tone="ok" onClick={() => void updateItem(item.itemId)} />
+              <SmallActionButton
+                text="Cancelar"
+                tone="neutral"
+                onClick={() => {
+                  setEditItemId(null);
+                  setEditItem(EMPTY_ITEM_FORM);
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-sm font-medium text-stone-800">
+              {item.nombre} [orden PDF: {item.ordenPdf}] [{item.activo ? "activo" : "inactivo"}]
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <SmallActionButton
+                text={item.activo ? "Desactivar" : "Activar"}
+                tone={item.activo ? "delete" : "ok"}
+                onClick={() => void toggleItemActivo(item)}
+              />
+              <SmallActionButton text="Subir" tone="neutral" onClick={() => void moveItemOrdenPdf(item.itemId, -1)} />
+              <SmallActionButton text="Bajar" tone="neutral" onClick={() => void moveItemOrdenPdf(item.itemId, 1)} />
+              <SmallActionButton
+                text="Editar"
+                tone="edit"
+                onClick={() => {
+                  setEditItemId(item.itemId);
+                  setEditItem({
+                    nombre: item.nombre,
+                    activo: item.activo,
+                    ordenPdf: item.ordenPdf,
+                  });
+                }}
+              />
+              <SmallActionButton text="Borrar" tone="delete" onClick={() => void deleteItem(item.itemId)} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!currentUser) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
         <section className="w-full rounded-2xl border border-stone-300/80 bg-white/90 p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Soldados App</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Gestión de Deposito general - Artilleria 1</p>
           <h1 className="mt-2 text-2xl font-bold text-stone-900">Iniciar sesion</h1>
           <p className="mt-2 text-sm text-stone-600">{status}</p>
 
@@ -1021,7 +1250,7 @@ export default function Home() {
 
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs uppercase tracking-[0.24em] text-amber-200/95">Soldados App</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-amber-200/95">Gestión de Deposito general - Artilleria 1</p>
             <span className="rounded-full border border-emerald-200/35 bg-emerald-900/25 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
               {loading ? "Sincronizando" : "Sistema activo"}
             </span>
@@ -1082,33 +1311,56 @@ export default function Home() {
         <div className="mt-2 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => setActiveView("personal_registro")}
+            onClick={() => {
+              setActiveView("personal_registro");
+              setShowConfigViews(false);
+            }}
             className={viewButtonClass("personal_registro")}
           >
             Registrar Personal
           </button>
           <button
             type="button"
-            onClick={() => setActiveView("personal_gestion")}
+            onClick={() => {
+              setActiveView("personal_gestion");
+              setShowConfigViews(false);
+            }}
             className={viewButtonClass("personal_gestion")}
           >
             Gestionar Personal
           </button>
-          <button type="button" onClick={() => setActiveView("grados")} className={viewButtonClass("grados")}>
-            Registrar Grados
+          <button
+            type="button"
+            onClick={() => setShowConfigViews((prev) => !prev)}
+            className={
+              isConfigView || showConfigViews
+                ? "ej-view-active rounded-lg px-3 py-2 text-sm font-semibold"
+                : "ej-view-idle rounded-lg px-3 py-2 text-sm font-semibold"
+            }
+          >
+            Configuracion {showConfigViews ? "▲" : "▼"}
           </button>
-          <button type="button" onClick={() => setActiveView("baterias")} className={viewButtonClass("baterias")}>
-            Registrar Baterias
-          </button>
-          <button type="button" onClick={() => setActiveView("items")} className={viewButtonClass("items")}>
-            Registrar Items
-          </button>
-          {isAdmin ? (
-            <button type="button" onClick={() => setActiveView("admin")} className={viewButtonClass("admin")}>
-              Usuarios y Auditoria
-            </button>
-          ) : null}
         </div>
+        {showConfigViews ? (
+          <div className="mt-2 rounded-xl border border-stone-200 bg-stone-50 p-2">
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => selectConfigView("grados")} className={viewButtonClass("grados")}>
+                Registrar Grados
+              </button>
+              <button type="button" onClick={() => selectConfigView("baterias")} className={viewButtonClass("baterias")}>
+                Registrar Baterias
+              </button>
+              <button type="button" onClick={() => selectConfigView("items")} className={viewButtonClass("items")}>
+                Registrar Items
+              </button>
+              {isAdmin ? (
+                <button type="button" onClick={() => selectConfigView("admin")} className={viewButtonClass("admin")}>
+                  Usuarios y Auditoria
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       {inCatalogView ? (
@@ -1262,15 +1514,22 @@ export default function Home() {
                   placeholder="Nuevo item"
                   className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 />
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <label className="flex items-center gap-2">
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <label className="text-sm">
+                    <span className="block text-xs font-semibold uppercase tracking-wide text-stone-600">Orden PDF</span>
                     <input
-                      type="checkbox"
-                      checked={newItem.requiereTalle}
-                      onChange={(event) => setNewItem((prev) => ({ ...prev, requiereTalle: event.target.checked }))}
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={newItem.ordenPdf}
+                      onChange={(event) =>
+                        setNewItem((prev) => ({ ...prev, ordenPdf: Math.max(1, Number(event.target.value) || 1) }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                     />
-                    Requiere talle
                   </label>
+                </div>
+                <div className="flex flex-wrap gap-4 text-sm">
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -1290,69 +1549,18 @@ export default function Home() {
               </form>
 
               <div className="mt-3 space-y-2">
-                {items.map((item) => (
-                  <div key={item.itemId} className="rounded-lg bg-stone-100/80 p-2">
-                    {editItemId === item.itemId ? (
-                      <div className="space-y-2">
-                        <input
-                          value={editItem.nombre}
-                          onChange={(event) => setEditItem((prev) => ({ ...prev, nombre: event.target.value }))}
-                          className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-                        />
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <label className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={editItem.requiereTalle}
-                              onChange={(event) => setEditItem((prev) => ({ ...prev, requiereTalle: event.target.checked }))}
-                            />
-                            Requiere talle
-                          </label>
-                          <label className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={editItem.activo}
-                              onChange={(event) => setEditItem((prev) => ({ ...prev, activo: event.target.checked }))}
-                            />
-                            Activo
-                          </label>
-                        </div>
-                        <div className="flex gap-2">
-                          <SmallActionButton text="Ok" tone="ok" onClick={() => void updateItem(item.itemId)} />
-                          <SmallActionButton
-                            text="Cancelar"
-                            tone="neutral"
-                            onClick={() => {
-                              setEditItemId(null);
-                              setEditItem(EMPTY_ITEM_FORM);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-sm font-medium text-stone-800">
-                          {item.nombre} [{item.requiereTalle ? "talle" : "sin talle"}] [{item.activo ? "activo" : "inactivo"}]
-                        </span>
-                        <div className="flex gap-2">
-                          <SmallActionButton
-                            text="Editar"
-                            tone="edit"
-                            onClick={() => {
-                              setEditItemId(item.itemId);
-                              setEditItem({
-                                nombre: item.nombre,
-                                requiereTalle: item.requiereTalle,
-                                activo: item.activo,
-                              });
-                            }}
-                          />
-                          <SmallActionButton text="Borrar" tone="delete" onClick={() => void deleteItem(item.itemId)} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items activos</p>
+                {itemsActivos.length > 0 ? itemsActivos.map((item) => renderItemCard(item)) : <p className="text-sm text-stone-500">Sin items activos.</p>}
+              </div>
+
+              <div className="mt-5 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items inactivos</p>
+                <p className="text-xs text-stone-500">Estos items no aparecen en la Hoja de Entrega ni en registrar movimientos.</p>
+                {itemsInactivos.length > 0 ? (
+                  itemsInactivos.map((item) => renderItemCard(item))
+                ) : (
+                  <p className="text-sm text-stone-500">Sin items inactivos.</p>
+                )}
               </div>
             </article>
           ) : null}
@@ -1549,9 +1757,27 @@ export default function Home() {
         <section className="ej-card mt-6 rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Personal</h2>
           <p className="mt-1 text-xs text-stone-600">Orden: Grado del Personal, Apellidos y Nombres.</p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              value={ciSearch}
+              onChange={(event) => setCiSearch(event.target.value)}
+              placeholder="Buscar por cedula (con o sin formato)"
+              inputMode="numeric"
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm sm:max-w-sm"
+            />
+            {ciSearch.trim() !== "" ? (
+              <button
+                type="button"
+                onClick={() => setCiSearch("")}
+                className="rounded bg-stone-600 px-3 py-2 text-xs font-semibold text-white"
+              >
+                Limpiar
+              </button>
+            ) : null}
+          </div>
 
           <div className="mt-3 space-y-3 md:hidden">
-            {personalOrdenado.map((persona) => {
+            {personalFiltrado.map((persona) => {
               const tallas = tallasMap(persona.tallas);
               const ciValida = isValidUruguayanCi(persona.ci);
               const tallasOpen = expandedTallasByCi[persona.ci] === true;
@@ -1561,21 +1787,24 @@ export default function Home() {
                   key={persona.ci}
                   className={`rounded-xl border p-3 ${ciValida ? "border-stone-200 bg-stone-50/80" : "border-rose-300 bg-rose-50/70"}`}
                 >
-                  <p className={`text-xs font-mono ${ciValida ? "text-stone-600" : "font-semibold text-rose-700"}`}>{persona.ci}</p>
+                  <p className={`text-xs font-mono ${ciValida ? "text-stone-600" : "font-semibold text-rose-700"}`}>
+                    {formatUruguayanCi(persona.ci)}
+                  </p>
                   {!ciValida ? (
                     <p className="mt-1 inline-block rounded-full border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-800">
                       CI invalida en BD
                     </p>
                   ) : null}
                   <p className="mt-2 text-sm text-stone-900">
+                    <span className="font-semibold">Grado del Personal:</span> {rangoLabel(persona.rango)}
+                  </p>
+                  <p className="mt-2 text-sm text-stone-900">
                     <span className="font-semibold">Apellidos:</span> {apellidosLabel(persona)}
                   </p>
                   <p className="text-sm text-stone-900">
                     <span className="font-semibold">Nombres:</span> {nombresLabel(persona)}
                   </p>
-                  <p className="mt-1 text-xs text-stone-600">
-                    {rangoLabel(persona.rango)} | {persona.bateria?.nombre ?? "Sin bateria"}
-                  </p>
+                  <p className="mt-1 text-xs text-stone-600">{persona.bateria?.nombre ?? "Sin bateria"}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <SmallActionButton
                       text={editing ? "Cancelar" : "Editar"}
@@ -1611,16 +1840,38 @@ export default function Home() {
                     >
                       Devolucion
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => void openRegistroViewer(persona)}
+                      className="rounded bg-sky-700 px-2 py-1 text-xs font-medium text-white"
+                    >
+                      Ver movimientos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => window.open(`/hoja-entrega/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
+                      className="rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white"
+                    >
+                      Hoja de Entrega
+                    </button>
                   </div>
                   {tallasOpen ? (
-                    <div className="mt-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs text-stone-700">
-                      {tallasInlineText(tallas)}
+                    <div className="mt-2 rounded-lg border border-stone-200 bg-white p-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        {tallasEntries(tallas).map((entry) => (
+                          <div key={entry.key} className="rounded-md border border-stone-200 bg-stone-50 px-2 py-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">{entry.label}</p>
+                            <p className="mt-1 text-sm font-bold text-stone-900">{entry.value}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : null}
                   {editing ? <div className="mt-3 rounded-lg border border-stone-200 bg-white p-3">{renderInlineEditForm(persona.ci)}</div> : null}
                 </article>
               );
             })}
+            {personalFiltrado.length === 0 ? <p className="text-sm text-stone-500">Sin resultados para esa cedula.</p> : null}
           </div>
 
           <div className="mt-3 hidden overflow-x-auto md:block">
@@ -1628,16 +1879,16 @@ export default function Home() {
               <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-600">
                 <tr>
                   <th className="px-3 py-2">CI</th>
+                  <th className="px-3 py-2">Grado del Personal</th>
                   <th className="px-3 py-2">Apellidos</th>
                   <th className="px-3 py-2">Nombres</th>
-                  <th className="px-3 py-2">Grado del Personal</th>
                   <th className="px-3 py-2">Bateria</th>
                   <th className="px-3 py-2">Detalles</th>
                   <th className="px-3 py-2">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {personalOrdenado.map((persona) => {
+                {personalFiltrado.map((persona) => {
                   const tallas = tallasMap(persona.tallas);
                   const ciValida = isValidUruguayanCi(persona.ci);
                   const tallasOpen = expandedTallasByCi[persona.ci] === true;
@@ -1646,12 +1897,12 @@ export default function Home() {
                     <Fragment key={persona.ci}>
                       <tr>
                         <td className={`px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-semibold text-rose-700"}`}>
-                          <div>{persona.ci}</div>
+                          <div>{formatUruguayanCi(persona.ci)}</div>
                           {!ciValida ? <div className="mt-1 text-[10px] uppercase tracking-wide text-rose-800">invalida</div> : null}
                         </td>
+                        <td className="px-3 py-2 text-stone-700">{rangoLabel(persona.rango)}</td>
                         <td className="px-3 py-2 text-stone-900">{apellidosLabel(persona)}</td>
                         <td className="px-3 py-2 text-stone-900">{nombresLabel(persona)}</td>
-                        <td className="px-3 py-2 text-stone-700">{rangoLabel(persona.rango)}</td>
                         <td className="px-3 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin bateria"}</td>
                         <td className="px-3 py-2">
                           <button
@@ -1691,13 +1942,34 @@ export default function Home() {
                             >
                               Devolucion
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => void openRegistroViewer(persona)}
+                              className="rounded bg-sky-700 px-2 py-1 text-xs font-medium text-white"
+                            >
+                              Ver movimientos
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => window.open(`/hoja-entrega/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
+                              className="rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white"
+                            >
+                              Hoja de Entrega
+                            </button>
                           </div>
                         </td>
                       </tr>
                       {tallasOpen ? (
                         <tr className="bg-stone-50/80">
-                          <td colSpan={7} className="px-3 py-2 text-xs text-stone-700">
-                            {tallasInlineText(tallas)}
+                          <td colSpan={7} className="px-3 py-2">
+                            <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
+                              {tallasEntries(tallas).map((entry) => (
+                                <div key={entry.key} className="rounded-md border border-stone-200 bg-white px-2 py-2">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">{entry.label}</p>
+                                  <p className="mt-1 text-sm font-bold text-stone-900">{entry.value}</p>
+                                </div>
+                              ))}
+                            </div>
                           </td>
                         </tr>
                       ) : null}
@@ -1711,9 +1983,75 @@ export default function Home() {
                     </Fragment>
                   );
                 })}
+                {personalFiltrado.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-4 text-sm text-stone-500">
+                      Sin resultados para esa cedula.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
+        </section>
+      ) : null}
+
+      {registroViewer ? (
+        <section className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-3">
+          <article className="w-full max-w-3xl rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-stone-900">Visualizador de Entregas / Devoluciones</h3>
+                <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(registroViewer.ci)}`}</p>
+                <p className="text-xs font-medium text-stone-700">{`Personal: ${registroViewer.nombre}`}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRegistroViewer(null)}
+                className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="mt-3 max-h-[60vh] space-y-2 overflow-auto pr-1">
+              {registroViewer.loading ? <p className="text-sm text-stone-600">Cargando movimientos...</p> : null}
+              {!registroViewer.loading && registroViewer.error ? (
+                <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{registroViewer.error}</p>
+              ) : null}
+              {!registroViewer.loading && !registroViewer.error && registroViewer.registros.length === 0 ? (
+                <p className="text-sm text-stone-600">No hay movimientos registrados para esta persona.</p>
+              ) : null}
+              {!registroViewer.loading && !registroViewer.error
+                ? registroViewer.registros.map((registro) => (
+                    <div key={registro.registroId} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-stone-900">{new Date(registro.fecha).toLocaleDateString("es-UY")}</p>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                            registro.tipo === "ENTREGA"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : registro.tipo === "DEVOLUCION"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-sky-100 text-sky-800"
+                          }`}
+                        >
+                          {registro.tipo}
+                        </span>
+                      </div>
+                      {registro.comentarios ? <p className="mt-1 text-xs text-stone-700">{registro.comentarios}</p> : null}
+                      <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+                        {registro.items.map((item) => (
+                          <p key={`${registro.registroId}-${item.itemId}`} className="text-xs text-stone-700">
+                            <span className="font-semibold">{item.cantidad}x</span> {item.nombre}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                : null}
+            </div>
+          </article>
         </section>
       ) : null}
 
@@ -1725,7 +2063,10 @@ export default function Home() {
                 <h3 className="text-base font-semibold text-stone-900">
                   {registroDraft.tipo === "ENTREGA" ? "Registrar Entrega" : "Registrar Devolucion"}
                 </h3>
-                <p className="text-xs text-stone-600">{`CI: ${registroDraft.ci}`}</p>
+                <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(registroDraft.ci)}`}</p>
+                {personaRegistro ? (
+                  <p className="text-xs font-medium text-stone-700">{`Personal: ${apellidosLabel(personaRegistro)}, ${nombresLabel(personaRegistro)}`}</p>
+                ) : null}
               </div>
               <button
                 type="button"
@@ -1768,8 +2109,14 @@ export default function Home() {
                     className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   >
                     <option value="">Seleccionar item</option>
-                    {items
-                      .filter((catalogItem) => catalogItem.activo)
+                    {itemsOrdenados
+                      .filter((catalogItem) => {
+                        if (!catalogItem.activo) return false;
+                        if (catalogItem.itemId === item.itemId) return true;
+                        return !registroDraft.items.some(
+                          (selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId,
+                        );
+                      })
                       .map((catalogItem) => (
                         <option key={catalogItem.itemId} value={catalogItem.itemId}>
                           {catalogItem.nombre}

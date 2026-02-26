@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { formatUruguayanCi } from "@/lib/ci";
 import styles from "./ficha.module.css";
 
 type FichaData = {
@@ -25,8 +26,8 @@ type FichaData = {
       CALZADO: string;
     };
   };
-  entregas: Array<{ fecha: string }>;
-  devoluciones: Array<{ fecha: string }>;
+  entregas: Array<{ fecha: string | null }>;
+  devoluciones: Array<{ fecha: string | null }>;
   matrix: Array<{
     item: string;
     entrega: number[];
@@ -65,7 +66,7 @@ async function api<T>(url: string): Promise<T> {
   return data as T;
 }
 
-function getDatePart(value: string | undefined, part: "day" | "month" | "year") {
+function getDatePart(value: string | null | undefined, part: "day" | "month" | "year") {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
@@ -78,7 +79,7 @@ export default function FichaPage() {
   const params = useParams<{ ci: string }>();
   const ci = decodeURIComponent(params.ci ?? "");
   const [data, setData] = useState<FichaData | null>(null);
-  const [status, setStatus] = useState("Cargando ficha...");
+  const [status, setStatus] = useState("Cargando hoja de entrega...");
   const [isExporting, setIsExporting] = useState(false);
   const sheetRef = useRef<HTMLDivElement | null>(null);
 
@@ -87,9 +88,9 @@ export default function FichaPage() {
       try {
         const result = await api<FichaData>(`/api/ficha/${encodeURIComponent(ci)}`);
         setData(result);
-        setStatus("Ficha cargada.");
+        setStatus("Hoja de entrega cargada.");
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "No se pudo cargar la ficha.";
+        const message = error instanceof Error ? error.message : "No se pudo cargar la hoja de entrega.";
         setStatus(message);
         if (message === "No autenticado.") {
           window.location.href = "/login";
@@ -118,26 +119,25 @@ export default function FichaPage() {
       });
       const imgData = canvas.toDataURL("image/png");
 
-      const pdf = new jsPDF("landscape", "mm", "a4");
+      const pdf = new jsPDF("portrait", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 5;
-      const imgWidth = pageWidth - margin * 2;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const usableWidth = pageWidth - margin * 2;
+      const usableHeight = pageHeight - margin * 2;
 
-      let heightLeft = imgHeight;
-      let position = margin;
-      pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight - margin * 2;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + margin;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight - margin * 2;
+      let imgWidth = usableWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+      if (imgHeight > usableHeight) {
+        imgHeight = usableHeight;
+        imgWidth = (canvas.width * imgHeight) / canvas.height;
       }
 
-      pdf.save(`ficha-${data.persona.ci}.pdf`);
+      const x = (pageWidth - imgWidth) / 2;
+      const y = (pageHeight - imgHeight) / 2;
+      pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
+
+      pdf.save(`hoja-entrega-${data.persona.ci}.pdf`);
     } finally {
       setIsExporting(false);
     }
@@ -145,6 +145,7 @@ export default function FichaPage() {
 
   const entregaCols = Array.from({ length: 6 }, (_, idx) => data?.entregas[idx]?.fecha);
   const devolCols = Array.from({ length: 6 }, (_, idx) => data?.devoluciones[idx]?.fecha);
+  const colLabels = ["ANT", "1", "2", "3", "4", "5"];
 
   return (
     <main className={styles.page}>
@@ -153,19 +154,41 @@ export default function FichaPage() {
           Volver
         </Link>
         <button type="button" className={styles.button} onClick={() => void exportPdf()} disabled={isExporting || !data}>
-          {isExporting ? "Generando PDF..." : "Crear PDF"}
+          {isExporting ? "Generando PDF..." : "Descargar PDF"}
         </button>
       </div>
 
-      <p className={styles.small}>{status}</p>
+      <p className={styles.statusLine}>{status}</p>
 
       {data ? (
         <div ref={sheetRef} className={styles.sheet}>
           <table className={styles.table}>
+            <colgroup>
+              <col style={{ width: "280px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "28px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "42px" }} />
+              <col style={{ width: "28px" }} />
+            </colgroup>
             <tbody>
               <tr>
                 <td colSpan={15} className={`${styles.center} ${styles.bold}`}>
                   {'Grupo "Brig.Gral.Manuel Oribe " de Artilleria 105mm No.1.-'}
+                </td>
+              </tr>
+              <tr>
+                <td colSpan={15} className={`${styles.center} ${styles.bold}`}>
+                  HOJA DE ENTREGA
                 </td>
               </tr>
               <tr>
@@ -208,7 +231,7 @@ export default function FichaPage() {
                 <td>Parka:</td>
                 <td colSpan={6}>{data.persona.tallas.PARKA}</td>
                 <td className={styles.bold}>C.I :</td>
-                <td colSpan={7}>{data.persona.ci}</td>
+                <td colSpan={7}>{formatUruguayanCi(data.persona.ci)}</td>
               </tr>
               <tr>
                 <td>Camisaco:</td>
@@ -232,21 +255,21 @@ export default function FichaPage() {
                 <td colSpan={8}></td>
               </tr>
               <tr>
-                <td colSpan={4} className={styles.bold}>
-                  FECHA DE INGRESO:
+                <td className={styles.bold}>
+                  FECHA DE INGRESO:{" "}
+                  {data.persona.fechaIngreso ? new Date(data.persona.fechaIngreso).toLocaleDateString("es-UY") : ""}
                 </td>
-                <td colSpan={3}>{data.persona.fechaIngreso ? new Date(data.persona.fechaIngreso).toLocaleDateString("es-UY") : ""}</td>
                 <td colSpan={6} className={`${styles.center} ${styles.bold}`}>
-                  ENTREGA
+                  DISTRIBUCION
                 </td>
                 <td className={`${styles.center} ${styles.bold}`}>T</td>
                 <td colSpan={6} className={`${styles.center} ${styles.bold} ${styles.verticalDivider}`}>
-                  DEVOLUCION
+                  ENTREGA / DEVOLUCION
                 </td>
                 <td className={`${styles.center} ${styles.bold}`}>T</td>
               </tr>
               <tr>
-                <td colSpan={3} className={styles.bold}>
+                <td className={styles.bold}>
                   DIA
                 </td>
                 {entregaCols.map((value, idx) => (
@@ -263,7 +286,7 @@ export default function FichaPage() {
                 <td></td>
               </tr>
               <tr>
-                <td colSpan={3} className={styles.bold}>
+                <td className={styles.bold}>
                   MES
                 </td>
                 {entregaCols.map((value, idx) => (
@@ -280,7 +303,7 @@ export default function FichaPage() {
                 <td></td>
               </tr>
               <tr>
-                <td colSpan={3} className={styles.bold}>
+                <td className={styles.bold}>
                   ANO
                 </td>
                 {entregaCols.map((value, idx) => (
@@ -297,18 +320,18 @@ export default function FichaPage() {
                 <td></td>
               </tr>
               <tr>
-                <td colSpan={3} className={`${styles.bold} ${styles.thickTop}`}>
+                <td className={`${styles.bold} ${styles.thickTop}`}>
                   VESTUARIO
                 </td>
-                {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <td key={`hn-e-${n}`} className={`${styles.center} ${styles.thickTop}`}>
-                    {n}
+                {colLabels.map((label, idx) => (
+                  <td key={`hn-e-${label}`} className={`${styles.center} ${styles.thickTop}`}>
+                    {idx === 0 ? <span className={styles.tiny}>{label}</span> : label}
                   </td>
                 ))}
                 <td className={`${styles.center} ${styles.bold} ${styles.thickTop}`}>T</td>
-                {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <td key={`hn-d-${n}`} className={`${styles.center} ${styles.thickTop} ${styles.verticalDivider}`}>
-                    {n}
+                {colLabels.map((label, idx) => (
+                  <td key={`hn-d-${label}`} className={`${styles.center} ${styles.thickTop} ${styles.verticalDivider}`}>
+                    {idx === 0 ? <span className={styles.tiny}>{label}</span> : label}
                   </td>
                 ))}
                 <td className={`${styles.center} ${styles.bold} ${styles.thickTop}`}>T</td>
@@ -316,7 +339,7 @@ export default function FichaPage() {
 
               {data.matrix.map((row) => (
                 <tr key={row.item}>
-                  <td colSpan={3} className={styles.small}>
+                  <td className={styles.small}>
                     {row.item}
                   </td>
                   {row.entrega.map((value, idx) => (
