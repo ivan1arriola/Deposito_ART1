@@ -108,6 +108,13 @@ export default function FichaPage() {
     });
   }, [data]);
 
+  const nombreAlistado = useMemo(() => {
+    if (!data) return "";
+    return [data.persona.nombre1, data.persona.nombre2, data.persona.apellido1, data.persona.apellido2]
+      .filter((value): value is string => Boolean(value && value.trim()))
+      .join(" ");
+  }, [data]);
+
   async function exportPdf() {
     if (!sheetRef.current || !data) return;
 
@@ -145,7 +152,7 @@ export default function FichaPage() {
 
   const entregaCols = Array.from({ length: 6 }, (_, idx) => data?.entregas[idx]?.fecha);
   const devolCols = Array.from({ length: 6 }, (_, idx) => data?.devoluciones[idx]?.fecha);
-  const colLabels = ["ANT", "1", "2", "3", "4", "5"];
+  const colLabels = ["1", "2", "3", "4", "5", "6"];
 
   return (
     <main className={styles.page}>
@@ -162,23 +169,24 @@ export default function FichaPage() {
 
       {data ? (
         <div ref={sheetRef} className={styles.sheet}>
-          <table className={styles.table}>
+          <div className={styles.frame}>
+            <table className={styles.table}>
             <colgroup>
-              <col style={{ width: "280px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "28px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "42px" }} />
-              <col style={{ width: "28px" }} />
+              <col className={styles.colItem} />
+              <col className={styles.colSlot} />
+              <col className={styles.colSlot} />
+              <col className={styles.colSlot} />
+              <col className={styles.colSlot} />
+              <col className={styles.colSlot} />
+              <col className={styles.colSlot} />
+              <col className={styles.colTotal} />
+              <col className={styles.colSlot} />
+              <col className={styles.colSlot} />
+              <col className={styles.colSlot} />
+              <col className={styles.colSlot} />
+              <col className={styles.colSlot} />
+              <col className={styles.colSlot} />
+              <col className={styles.colTotal} />
             </colgroup>
             <tbody>
               <tr>
@@ -262,11 +270,11 @@ export default function FichaPage() {
                 <td colSpan={6} className={`${styles.center} ${styles.bold}`}>
                   DISTRIBUCION
                 </td>
-                <td className={`${styles.center} ${styles.bold}`}>T</td>
+                <td className={styles.tCol}>T</td>
                 <td colSpan={6} className={`${styles.center} ${styles.bold} ${styles.verticalDivider}`}>
                   ENTREGA / DEVOLUCION
                 </td>
-                <td className={`${styles.center} ${styles.bold}`}>T</td>
+                <td className={styles.tCol}>T</td>
               </tr>
               <tr>
                 <td className={styles.bold}>
@@ -277,13 +285,13 @@ export default function FichaPage() {
                     {getDatePart(value, "day")}
                   </td>
                 ))}
-                <td></td>
+                <td className={styles.tCol}></td>
                 {devolCols.map((value, idx) => (
                   <td key={`ddia-${idx}`} className={`${styles.center} ${styles.verticalDivider}`}>
                     {getDatePart(value, "day")}
                   </td>
                 ))}
-                <td></td>
+                <td className={styles.tCol}></td>
               </tr>
               <tr>
                 <td className={styles.bold}>
@@ -294,13 +302,13 @@ export default function FichaPage() {
                     {getDatePart(value, "month")}
                   </td>
                 ))}
-                <td></td>
+                <td className={styles.tCol}></td>
                 {devolCols.map((value, idx) => (
                   <td key={`dmes-${idx}`} className={`${styles.center} ${styles.verticalDivider}`}>
                     {getDatePart(value, "month")}
                   </td>
                 ))}
-                <td></td>
+                <td className={styles.tCol}></td>
               </tr>
               <tr>
                 <td className={styles.bold}>
@@ -311,35 +319,35 @@ export default function FichaPage() {
                     {getDatePart(value, "year")}
                   </td>
                 ))}
-                <td></td>
+                <td className={styles.tCol}></td>
                 {devolCols.map((value, idx) => (
                   <td key={`danio-${idx}`} className={`${styles.center} ${styles.verticalDivider}`}>
                     {getDatePart(value, "year")}
                   </td>
                 ))}
-                <td></td>
+                <td className={styles.tCol}></td>
               </tr>
               <tr>
                 <td className={`${styles.bold} ${styles.thickTop}`}>
                   VESTUARIO
                 </td>
-                {colLabels.map((label, idx) => (
+                {colLabels.map((label) => (
                   <td key={`hn-e-${label}`} className={`${styles.center} ${styles.thickTop}`}>
-                    {idx === 0 ? <span className={styles.tiny}>{label}</span> : label}
+                    {label}
                   </td>
                 ))}
-                <td className={`${styles.center} ${styles.bold} ${styles.thickTop}`}>T</td>
-                {colLabels.map((label, idx) => (
+                <td className={`${styles.tCol} ${styles.thickTop}`}>T</td>
+                {colLabels.map((label) => (
                   <td key={`hn-d-${label}`} className={`${styles.center} ${styles.thickTop} ${styles.verticalDivider}`}>
-                    {idx === 0 ? <span className={styles.tiny}>{label}</span> : label}
+                    {label}
                   </td>
                 ))}
-                <td className={`${styles.center} ${styles.bold} ${styles.thickTop}`}>T</td>
+                <td className={`${styles.tCol} ${styles.thickTop}`}>T</td>
               </tr>
 
               {data.matrix.map((row) => (
                 <tr key={row.item}>
-                  <td className={styles.small}>
+                  <td className={`${styles.small} ${styles.itemCell}`}>
                     {row.item}
                   </td>
                   {row.entrega.map((value, idx) => (
@@ -347,13 +355,13 @@ export default function FichaPage() {
                       {value}
                     </td>
                   ))}
-                  <td className={styles.center}>{row.entregaTotal}</td>
+                  <td className={styles.tCol}>{row.entregaTotal}</td>
                   {row.devolucion.map((value, idx) => (
                     <td key={`${row.item}-d-${idx}`} className={`${styles.center} ${styles.verticalDivider}`}>
                       {value}
                     </td>
                   ))}
-                  <td className={styles.center}>{row.devolucionTotal}</td>
+                  <td className={styles.tCol}>{row.devolucionTotal}</td>
                 </tr>
               ))}
 
@@ -362,52 +370,39 @@ export default function FichaPage() {
                   OBSERVACIONES
                 </td>
               </tr>
-              <tr>
-                <td colSpan={15} className={styles.obsBox}>
-                  {observacionesTexto.length > 0 ? (
-                    <ul>
-                      {observacionesTexto.map((line) => (
-                        <li key={line} className={styles.small}>
-                          {line}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </td>
-              </tr>
-              <tr>
-                <td colSpan={15} className={styles.firmaSpace}></td>
-              </tr>
-              <tr>
-                <td colSpan={7} className={styles.small}>
-                  Firma del alistado:
-                </td>
-                <td colSpan={8} className={styles.small}>
-                  {data.persona.gradoPersonal}
-                </td>
-              </tr>
-              <tr>
-                <td colSpan={15} className={styles.center}>
-                  {'El Encargado del Deposito General del Grp. "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1.'}
-                </td>
-              </tr>
-              <tr>
-                <td colSpan={15} className={styles.center}>
-                  Sgto. Esteban Martins - Wilson Lara
-                </td>
-              </tr>
-              <tr>
-                <td colSpan={15} className={styles.center}>
-                  {'El Oficial de Administracion del Grp."Brig. "Gral. Manuel Oribe" de Artilleria 105mm No. 1.'}
-                </td>
-              </tr>
-              <tr>
-                <td colSpan={15} className={styles.center}>
-                  Tte.2&ordm; Lucas Perez - Gerardo Otero
-                </td>
-              </tr>
+              {Array.from({ length: 5 }).map((_, idx) => (
+                <tr key={`obs-${idx}`}>
+                  <td colSpan={15} className={styles.obsLine}>
+                    <span className={styles.small}>{observacionesTexto[idx] ?? ""}</span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
-          </table>
+            </table>
+          </div>
+
+          <div className={styles.sign}>
+            <div className={styles.signLine}>Firma del alistado:</div>
+            <div className={styles.signIndentA}>
+              {data.persona.gradoPersonal} {nombreAlistado}
+            </div>
+
+            <div className={styles.signGap} />
+
+            <div className={styles.signIndentB}>
+              {'El Encargado del Deposito General del Grp. "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1.'}
+            </div>
+            <div className={styles.signIndentB}>Sgto.</div>
+            <div className={styles.signIndentC}>Wilson Lara</div>
+
+            <div className={styles.signGap} />
+
+            <div className={styles.signIndentD}>
+              {'El Oficial de Administracion del Grp."Brig. "Gral. Manuel Oribe" de Artilleria 105mm No. 1.'}
+            </div>
+            <div className={styles.signIndentD}>-Tte.2&ordm;</div>
+            <div className={styles.signIndentE}>Gerardo Otero</div>
+          </div>
         </div>
       ) : null}
     </main>

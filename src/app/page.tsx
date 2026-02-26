@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Fragment,
@@ -63,7 +63,7 @@ type ItemForm = {
 };
 
 type Role = "ADMIN" | "EDITOR" | "VIEWER";
-type MainView = "personal" | "tallas_resumen" | "grados" | "baterias" | "items" | "admin";
+type MainView = "personal" | "hoja_matrix" | "tallas_resumen" | "grados" | "baterias" | "items" | "admin";
 type RegistroTipo = "ENTREGA" | "DEVOLUCION";
 type RegistroViewTipo = RegistroTipo | "AJUSTE";
 
@@ -73,6 +73,8 @@ type RegistroDraftItem = {
 };
 
 type RegistroDraft = {
+  modo: "crear" | "rectificar";
+  registroId: string | null;
   ci: string;
   tipo: RegistroTipo;
   fecha: string;
@@ -85,6 +87,7 @@ type RegistroView = {
   auditoria: {
     auditoriaId: string;
     createdAt: string;
+    accion: string;
     usuarioId: string | null;
     usuario: { usuarioId: string; username: string; rol: Role } | null;
     detalle: unknown;
@@ -142,6 +145,38 @@ type DbStatus = {
   host: string | null;
 };
 
+type HojaMatrixItem = {
+  itemId: string;
+  nombre: string;
+};
+
+type HojaMatrixRow = {
+  ci: string;
+  apellido1: string;
+  apellido2: string | null;
+  nombre1: string;
+  nombre2: string | null;
+  bateria: string | null;
+  grado: string;
+  totales: number[];
+  totalGeneral: number;
+};
+
+type HojaMatrixData = {
+  generatedAt: string;
+  items: HojaMatrixItem[];
+  rows: HojaMatrixRow[];
+};
+
+type ConfirmDialogState = {
+  title: string;
+  message: string;
+  confirmText: string;
+  cancelText: string;
+  tone: "danger" | "neutral";
+  onConfirm: () => Promise<void> | void;
+};
+
 const EMPTY_PERSONAL_FORM: PersonalForm = {
   ci: "",
   apellido1: "",
@@ -165,6 +200,7 @@ const EMPTY_ITEM_FORM: ItemForm = {
 };
 
 const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "VIEWER"];
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 type AuditFilter = "TODOS" | "MOVIMIENTOS" | "AUTENTICACION";
 const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Administrador",
@@ -377,6 +413,76 @@ function SmallActionButton(props: {
   );
 }
 
+function PaginationControls(props: {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  itemLabel: string;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  className?: string;
+}) {
+  const totalPages = Math.max(1, Math.ceil(props.totalItems / props.pageSize));
+  const safePage = Math.min(Math.max(props.page, 1), totalPages);
+  const from = props.totalItems === 0 ? 0 : (safePage - 1) * props.pageSize + 1;
+  const to = props.totalItems === 0 ? 0 : Math.min(safePage * props.pageSize, props.totalItems);
+
+  return (
+    <div className={`mt-2 flex flex-col gap-2 rounded-lg border border-stone-200 bg-stone-50/80 px-3 py-2 sm:flex-row sm:items-center sm:justify-between ${props.className ?? ""}`}>
+      <p className="text-xs text-stone-600">{`Mostrando ${from}-${to} de ${props.totalItems} ${props.itemLabel}`}</p>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <label className="text-xs text-stone-600">
+          Por pagina
+          <select
+            value={props.pageSize}
+            onChange={(event) => props.onPageSizeChange(Number(event.target.value))}
+            className="ml-1 rounded border border-stone-300 bg-white px-1.5 py-1 text-xs text-stone-700"
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={`page-size-${size}`} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={() => props.onPageChange(1)}
+          disabled={safePage <= 1}
+          className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 disabled:opacity-50"
+        >
+          {"<<"}
+        </button>
+        <button
+          type="button"
+          onClick={() => props.onPageChange(Math.max(1, safePage - 1))}
+          disabled={safePage <= 1}
+          className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 disabled:opacity-50"
+        >
+          {"<"}
+        </button>
+        <span className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700">{`${safePage}/${totalPages}`}</span>
+        <button
+          type="button"
+          onClick={() => props.onPageChange(Math.min(totalPages, safePage + 1))}
+          disabled={safePage >= totalPages}
+          className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 disabled:opacity-50"
+        >
+          {">"}
+        </button>
+        <button
+          type="button"
+          onClick={() => props.onPageChange(totalPages)}
+          disabled={safePage >= totalPages}
+          className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 disabled:opacity-50"
+        >
+          {">>"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("Verificando sesion...");
@@ -417,15 +523,30 @@ export default function Home() {
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
   const [editPersonal, setEditPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
-  const [ciSearch, setCiSearch] = useState("");
+  const [searchCedula, setSearchCedula] = useState("");
+  const [searchNombres, setSearchNombres] = useState("");
+  const [searchApellidos, setSearchApellidos] = useState("");
   const [bateriaFilter, setBateriaFilter] = useState<string>("ALL");
   const [expandedTallasByCi, setExpandedTallasByCi] = useState<Record<string, boolean>>({});
   const [registroDraft, setRegistroDraft] = useState<RegistroDraft | null>(null);
+  const [registroSaving, setRegistroSaving] = useState(false);
   const [registroViewer, setRegistroViewer] = useState<RegistroViewerState | null>(null);
+  const [registroViewerPage, setRegistroViewerPage] = useState(1);
+  const [registroViewerPageSize, setRegistroViewerPageSize] = useState(20);
   const [activeView, setActiveView] = useState<MainView>("personal");
   const [showConfigViews, setShowConfigViews] = useState(false);
+  const configMenuRef = useRef<HTMLDivElement | null>(null);
+  const [hojaMatrixData, setHojaMatrixData] = useState<HojaMatrixData | null>(null);
+  const [hojaMatrixLoading, setHojaMatrixLoading] = useState(false);
+  const [hojaMatrixError, setHojaMatrixError] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
+  const [confirmDialogBusy, setConfirmDialogBusy] = useState(false);
   const [showCreatePersonalForm, setShowCreatePersonalForm] = useState(false);
   const [auditFilter, setAuditFilter] = useState<AuditFilter>("TODOS");
+  const [personalPage, setPersonalPage] = useState(1);
+  const [personalPageSize, setPersonalPageSize] = useState(25);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditPageSize, setAuditPageSize] = useState(25);
 
   const isAdmin = currentUser?.rol === "ADMIN";
   const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
@@ -457,6 +578,12 @@ export default function Home() {
     }
     return auditoria;
   }, [auditFilter, auditoria]);
+  const auditTotalPages = Math.max(1, Math.ceil(auditoriaFiltrada.length / auditPageSize));
+  const auditPageSafe = Math.min(auditPage, auditTotalPages);
+  const auditoriaFiltradaPaginada = useMemo(() => {
+    const start = (auditPageSafe - 1) * auditPageSize;
+    return auditoriaFiltrada.slice(start, start + auditPageSize);
+  }, [auditoriaFiltrada, auditPageSafe, auditPageSize]);
   const itemsActivosEnPantalla = useMemo(() => {
     if (!dragOrderItemIds) return itemsActivos;
     const activeById = new Map(itemsActivos.map((item) => [item.itemId, item]));
@@ -465,9 +592,11 @@ export default function Home() {
       .filter((item): item is Item => item !== undefined);
   }, [itemsActivos, dragOrderItemIds]);
   const personalOrdenado = useMemo(() => [...personal].sort(comparePersonalByHierarchy), [personal]);
-  const searchQuery = ciSearch.trim();
-  const searchQueryDigits = normalizeCi(searchQuery);
-  const searchQueryText = normalizeSearchTerm(searchQuery);
+  const searchCedulaDigits = normalizeCi(searchCedula.trim());
+  const searchNombresText = normalizeSearchTerm(searchNombres);
+  const searchApellidosText = normalizeSearchTerm(searchApellidos);
+  const hasPersonalFilters =
+    searchCedula.trim() !== "" || searchNombres.trim() !== "" || searchApellidos.trim() !== "" || bateriaFilter !== "ALL";
   const personalFiltrado = useMemo(() => {
     return personalOrdenado.filter((persona) => {
       const matchBateria =
@@ -478,16 +607,30 @@ export default function Home() {
             : persona.bateriaId === Number(bateriaFilter);
 
       if (!matchBateria) return false;
-      if (!searchQueryText) return true;
 
-      const ciMatch = searchQueryDigits !== "" && normalizeCi(persona.ci).includes(searchQueryDigits);
-      const nombreApellido = normalizeSearchTerm(
-        `${persona.nombre1} ${persona.nombre2 ?? ""} ${persona.apellido1} ${persona.apellido2 ?? ""}`,
-      );
-      const textMatch = nombreApellido.includes(searchQueryText);
-      return ciMatch || textMatch;
+      if (searchCedulaDigits !== "" && !normalizeCi(persona.ci).includes(searchCedulaDigits)) {
+        return false;
+      }
+
+      if (searchNombresText !== "") {
+        const nombresPersona = normalizeSearchTerm(`${persona.nombre1} ${persona.nombre2 ?? ""}`);
+        if (!nombresPersona.includes(searchNombresText)) return false;
+      }
+
+      if (searchApellidosText !== "") {
+        const apellidosPersona = normalizeSearchTerm(`${persona.apellido1} ${persona.apellido2 ?? ""}`);
+        if (!apellidosPersona.includes(searchApellidosText)) return false;
+      }
+
+      return true;
     });
-  }, [personalOrdenado, bateriaFilter, searchQueryDigits, searchQueryText]);
+  }, [personalOrdenado, bateriaFilter, searchCedulaDigits, searchNombresText, searchApellidosText]);
+  const personalTotalPages = Math.max(1, Math.ceil(personalFiltrado.length / personalPageSize));
+  const personalPageSafe = Math.min(personalPage, personalTotalPages);
+  const personalFiltradoPaginado = useMemo(() => {
+    const start = (personalPageSafe - 1) * personalPageSize;
+    return personalFiltrado.slice(start, start + personalPageSize);
+  }, [personalFiltrado, personalPageSafe, personalPageSize]);
   const resumenTallasPorBateria = useMemo(() => {
     type ResumenTalla = { key: TallaKey; label: string; values: Array<{ talla: string; cantidad: number }>; sinDato: number };
     type ResumenBateria = { key: string; nombre: string; total: number; tallas: ResumenTalla[] };
@@ -559,6 +702,13 @@ export default function Home() {
     if (!registroDraft) return null;
     return personal.find((persona) => persona.ci === registroDraft.ci) ?? null;
   }, [personal, registroDraft]);
+  const registroViewerRows = useMemo(() => registroViewer?.registros ?? [], [registroViewer]);
+  const registroViewerTotalPages = Math.max(1, Math.ceil(registroViewerRows.length / registroViewerPageSize));
+  const registroViewerPageSafe = Math.min(registroViewerPage, registroViewerTotalPages);
+  const registroViewerRowsPaginados = useMemo(() => {
+    const start = (registroViewerPageSafe - 1) * registroViewerPageSize;
+    return registroViewerRows.slice(start, start + registroViewerPageSize);
+  }, [registroViewerRows, registroViewerPageSafe, registroViewerPageSize]);
 
   useEffect(() => {
     if (activeView === "admin" && !isAdmin) {
@@ -573,6 +723,34 @@ export default function Home() {
   }, [activeView, showCreatePersonalForm]);
 
   useEffect(() => {
+    setPersonalPage(1);
+  }, [searchCedula, searchNombres, searchApellidos, bateriaFilter, personalPageSize]);
+
+  useEffect(() => {
+    if (personalPage <= personalTotalPages) return;
+    setPersonalPage(personalTotalPages);
+  }, [personalPage, personalTotalPages]);
+
+  useEffect(() => {
+    if (!registroViewer) return;
+    setRegistroViewerPage(1);
+  }, [registroViewer, registroViewerPageSize]);
+
+  useEffect(() => {
+    if (registroViewerPage <= registroViewerTotalPages) return;
+    setRegistroViewerPage(registroViewerTotalPages);
+  }, [registroViewerPage, registroViewerTotalPages]);
+
+  useEffect(() => {
+    setAuditPage(1);
+  }, [auditFilter, auditPageSize]);
+
+  useEffect(() => {
+    if (auditPage <= auditTotalPages) return;
+    setAuditPage(auditTotalPages);
+  }, [auditPage, auditTotalPages]);
+
+  useEffect(() => {
     if (!dragOrderItemIds) return;
     const currentActiveIds = new Set(itemsActivos.map((item) => item.itemId));
     const dragStateIsValid =
@@ -583,6 +761,42 @@ export default function Home() {
     draggedItemIdRef.current = null;
     dragOrderItemIdsRef.current = null;
   }, [dragOrderItemIds, itemsActivos]);
+
+  useEffect(() => {
+    if (!showConfigViews) return;
+
+    function handleOutsideClick(event: MouseEvent) {
+      if (!configMenuRef.current) return;
+      if (!(event.target instanceof Node)) return;
+      if (configMenuRef.current.contains(event.target)) return;
+      setShowConfigViews(false);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setShowConfigViews(false);
+    }
+
+    window.addEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [showConfigViews]);
+
+  useEffect(() => {
+    if (!confirmDialog) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape" || confirmDialogBusy) return;
+      event.preventDefault();
+      setConfirmDialog(null);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [confirmDialog, confirmDialogBusy]);
 
   function clearLoadedData() {
     setRangos([]);
@@ -595,7 +809,19 @@ export default function Home() {
     setEditPersonal(EMPTY_PERSONAL_FORM);
     setExpandedTallasByCi({});
     setRegistroDraft(null);
+    setRegistroSaving(false);
+    setRegistroViewerPage(1);
+    setRegistroViewerPageSize(20);
+    setHojaMatrixData(null);
+    setHojaMatrixLoading(false);
+    setHojaMatrixError(null);
+    setConfirmDialog(null);
+    setConfirmDialogBusy(false);
     setShowCreatePersonalForm(false);
+    setPersonalPage(1);
+    setPersonalPageSize(25);
+    setAuditPage(1);
+    setAuditPageSize(25);
     setDraggedItemId(null);
     setDragOrderItemIds(null);
     draggedItemIdRef.current = null;
@@ -635,6 +861,8 @@ export default function Home() {
         setAuditoria([]);
       }
 
+      setHojaMatrixData(null);
+      setHojaMatrixError(null);
       setStatus("Datos actualizados.");
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "No se pudo cargar la informacion.";
@@ -655,12 +883,32 @@ export default function Home() {
     }
   }, []);
 
+  const loadHojaMatrix = useCallback(async () => {
+    setHojaMatrixLoading(true);
+    setHojaMatrixError(null);
+    try {
+      const data = await api<HojaMatrixData>("/api/hoja-matrix");
+      setHojaMatrixData(data);
+    } catch (error: unknown) {
+      setHojaMatrixError(error instanceof Error ? error.message : "No se pudo cargar la Hoja Matrix.");
+    } finally {
+      setHojaMatrixLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const timerId = window.setTimeout(() => {
       void loadData(true);
     }, 0);
     return () => window.clearTimeout(timerId);
   }, [loadData]);
+
+  useEffect(() => {
+    if (activeView !== "hoja_matrix") return;
+    if (hojaMatrixLoading) return;
+    if (hojaMatrixData) return;
+    void loadHojaMatrix();
+  }, [activeView, hojaMatrixData, hojaMatrixLoading, loadHojaMatrix]);
 
   async function createRango() {
     if (!isAdmin) {
@@ -714,14 +962,22 @@ export default function Home() {
       setStatus("Solo el administrador puede modificar grados.");
       return;
     }
-    if (!window.confirm("Eliminar grado del personal?")) return;
-    try {
-      await api(`/api/rangos/${rangoId}`, { method: "DELETE" });
-      setStatus("Grado del personal eliminado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo eliminar el grado del personal.");
-    }
+    const rango = rangos.find((entry) => entry.rangoId === rangoId);
+    openConfirmDialog({
+      title: "Eliminar grado",
+      message: `Se eliminara ${rango?.nombreCompleto ?? "este grado del personal"}.`,
+      confirmText: "Eliminar grado",
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          await api(`/api/rangos/${rangoId}`, { method: "DELETE" });
+          setStatus("Grado del personal eliminado.");
+          await loadData();
+        } catch (error: unknown) {
+          setStatus(error instanceof Error ? error.message : "No se pudo eliminar el grado del personal.");
+        }
+      },
+    });
   }
 
   async function createBateria() {
@@ -768,14 +1024,22 @@ export default function Home() {
       setStatus("No tienes permisos para eliminar.");
       return;
     }
-    if (!window.confirm("Eliminar bateria?")) return;
-    try {
-      await api(`/api/baterias/${bateriaId}`, { method: "DELETE" });
-      setStatus("Bateria eliminada.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo eliminar la bateria.");
-    }
+    const bateria = baterias.find((entry) => entry.bateriaId === bateriaId);
+    openConfirmDialog({
+      title: "Eliminar bateria",
+      message: `Se eliminara ${bateria?.nombre ?? "esta bateria"}.`,
+      confirmText: "Eliminar bateria",
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          await api(`/api/baterias/${bateriaId}`, { method: "DELETE" });
+          setStatus("Bateria eliminada.");
+          await loadData();
+        } catch (error: unknown) {
+          setStatus(error instanceof Error ? error.message : "No se pudo eliminar la bateria.");
+        }
+      },
+    });
   }
 
   async function createItem(event: FormEvent<HTMLFormElement>) {
@@ -953,14 +1217,22 @@ export default function Home() {
       setStatus("No tienes permisos para eliminar.");
       return;
     }
-    if (!window.confirm("Eliminar item?")) return;
-    try {
-      await api(`/api/items/${itemId}`, { method: "DELETE" });
-      setStatus("Item eliminado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo eliminar el item.");
-    }
+    const item = items.find((entry) => entry.itemId === itemId);
+    openConfirmDialog({
+      title: "Eliminar item",
+      message: `Se eliminara ${item?.nombre ?? "este item"} del catalogo.`,
+      confirmText: "Eliminar item",
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          await api(`/api/items/${itemId}`, { method: "DELETE" });
+          setStatus("Item eliminado.");
+          await loadData();
+        } catch (error: unknown) {
+          setStatus(error instanceof Error ? error.message : "No se pudo eliminar el item.");
+        }
+      },
+    });
   }
 
   async function createPersonal(event: FormEvent<HTMLFormElement>) {
@@ -1014,14 +1286,24 @@ export default function Home() {
       setStatus("No tienes permisos para eliminar.");
       return;
     }
-    if (!window.confirm("Eliminar personal?")) return;
-    try {
-      await api(`/api/personal/${encodeURIComponent(ci)}`, { method: "DELETE" });
-      setStatus("Personal eliminado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo eliminar el personal.");
-    }
+    const persona = personal.find((entry) => entry.ci === ci);
+    openConfirmDialog({
+      title: "Eliminar personal",
+      message: persona
+        ? `Se eliminara ${apellidosLabel(persona)}, ${nombresLabel(persona)} (${formatUruguayanCi(ci)}).`
+        : `Se eliminara el personal con CI ${formatUruguayanCi(ci)}.`,
+      confirmText: "Eliminar personal",
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          await api(`/api/personal/${encodeURIComponent(ci)}`, { method: "DELETE" });
+          setStatus("Personal eliminado.");
+          await loadData();
+        } catch (error: unknown) {
+          setStatus(error instanceof Error ? error.message : "No se pudo eliminar el personal.");
+        }
+      },
+    });
   }
 
   function startEditPersonal(persona: Personal) {
@@ -1036,10 +1318,9 @@ export default function Home() {
     }));
   }
 
-  async function openRegistroViewer(persona: Personal) {
-    const nombre = `${apellidosLabel(persona)}, ${nombresLabel(persona)}`;
+  async function loadRegistroViewer(ci: string, nombre: string) {
     setRegistroViewer({
-      ci: persona.ci,
+      ci,
       nombre,
       loading: true,
       error: null,
@@ -1047,9 +1328,9 @@ export default function Home() {
     });
 
     try {
-      const registros = await api<RegistroView[]>(`/api/registros?ci=${encodeURIComponent(persona.ci)}&limit=200`);
+      const registros = await api<RegistroView[]>(`/api/registros?ci=${encodeURIComponent(ci)}&limit=200`);
       setRegistroViewer({
-        ci: persona.ci,
+        ci,
         nombre,
         loading: false,
         error: null,
@@ -1057,7 +1338,7 @@ export default function Home() {
       });
     } catch (error: unknown) {
       setRegistroViewer({
-        ci: persona.ci,
+        ci,
         nombre,
         loading: false,
         error: error instanceof Error ? error.message : "No se pudo cargar el historial.",
@@ -1066,17 +1347,48 @@ export default function Home() {
     }
   }
 
+  async function openRegistroViewer(persona: Personal) {
+    const nombre = `${apellidosLabel(persona)}, ${nombresLabel(persona)}`;
+    await loadRegistroViewer(persona.ci, nombre);
+  }
+
   function openRegistro(ci: string, tipo: RegistroTipo) {
     if (!canWrite) {
       setStatus("No tienes permisos para registrar movimientos.");
       return;
     }
     setRegistroDraft({
+      modo: "crear",
+      registroId: null,
       ci,
       tipo,
       fecha: getTodayDateInput(),
       comentarios: "",
       items: [{ itemId: "", cantidad: "1" }],
+    });
+  }
+
+  function rectifyRegistro(registro: RegistroView) {
+    if (!canWrite) {
+      setStatus("No tienes permisos para rectificar movimientos.");
+      return;
+    }
+    if (registro.tipo === "AJUSTE") {
+      setStatus("Los ajustes no se rectifican desde esta vista.");
+      return;
+    }
+
+    setRegistroDraft({
+      modo: "rectificar",
+      registroId: registro.registroId,
+      ci: registro.ci,
+      tipo: registro.tipo,
+      fecha: registro.fecha.slice(0, 10),
+      comentarios: registro.comentarios ?? "",
+      items:
+        registro.items.length > 0
+          ? registro.items.map((item) => ({ itemId: item.itemId, cantidad: String(item.cantidad) }))
+          : [{ itemId: "", cantidad: "1" }],
     });
   }
 
@@ -1108,7 +1420,8 @@ export default function Home() {
   }
 
   async function saveRegistro() {
-    if (!registroDraft) return;
+    if (!registroDraft || registroSaving) return;
+    const isRectificacion = registroDraft.modo === "rectificar" && registroDraft.registroId !== null;
     const payloadItems = registroDraft.items
       .map((item) => ({
         itemId: item.itemId.trim(),
@@ -1126,9 +1439,11 @@ export default function Home() {
       return;
     }
 
+    setRegistroSaving(true);
+    setStatus(isRectificacion ? "Actualizando rectificacion..." : "Actualizando movimiento...");
     try {
-      await api("/api/registros", {
-        method: "POST",
+      await api(isRectificacion ? `/api/registros/${registroDraft.registroId}` : "/api/registros", {
+        method: isRectificacion ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ci: registroDraft.ci,
@@ -1138,11 +1453,20 @@ export default function Home() {
           items: payloadItems,
         }),
       });
-      setStatus(`${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolucion"} registrada para ${registroDraft.ci}.`);
+      setStatus(
+        isRectificacion
+          ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolucion"} rectificada para ${formatUruguayanCi(registroDraft.ci)}.`
+          : `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolucion"} registrada para ${formatUruguayanCi(registroDraft.ci)}.`,
+      );
       setRegistroDraft(null);
       await loadData();
+      if (registroViewer && registroViewer.ci === registroDraft.ci) {
+        await loadRegistroViewer(registroViewer.ci, registroViewer.nombre);
+      }
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo registrar el movimiento.");
+      setStatus(error instanceof Error ? error.message : isRectificacion ? "No se pudo rectificar el movimiento." : "No se pudo registrar el movimiento.");
+    } finally {
+      setRegistroSaving(false);
     }
   }
 
@@ -1360,15 +1684,21 @@ export default function Home() {
       setStatus("Solo el administrador puede eliminar usuarios.");
       return;
     }
-    if (!window.confirm(`Eliminar usuario ${usuario.username}?`)) return;
-
-    try {
-      await api(`/api/usuarios/${usuario.usuarioId}`, { method: "DELETE" });
-      setStatus("Usuario eliminado.");
-      await loadData();
-    } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo eliminar el usuario.");
-    }
+    openConfirmDialog({
+      title: "Eliminar usuario",
+      message: `Se eliminara la cuenta ${usuario.username}.`,
+      confirmText: "Eliminar usuario",
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          await api(`/api/usuarios/${usuario.usuarioId}`, { method: "DELETE" });
+          setStatus("Usuario eliminado.");
+          await loadData();
+        } catch (error: unknown) {
+          setStatus(error instanceof Error ? error.message : "No se pudo eliminar el usuario.");
+        }
+      },
+    });
   }
 
   function viewButtonClass(view: MainView) {
@@ -1378,9 +1708,43 @@ export default function Home() {
       : "ej-view-idle rounded-lg px-3 py-2 text-sm font-semibold";
   }
 
+  function configOptionClass(view: Extract<MainView, "grados" | "baterias" | "items" | "admin">) {
+    const selected = activeView === view;
+    return selected
+      ? "w-full rounded-lg border border-stone-900 bg-stone-900 px-3 py-2 text-left text-sm font-semibold text-white"
+      : "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-left text-sm font-semibold text-stone-800 hover:bg-stone-100";
+  }
+
   function selectConfigView(view: Extract<MainView, "grados" | "baterias" | "items" | "admin">) {
     setActiveView(view);
     setShowConfigViews(false);
+  }
+
+  function openConfirmDialog(options: Omit<ConfirmDialogState, "cancelText" | "tone"> & Partial<Pick<ConfirmDialogState, "cancelText" | "tone">>) {
+    setConfirmDialog({
+      title: options.title,
+      message: options.message,
+      confirmText: options.confirmText,
+      cancelText: options.cancelText ?? "Cancelar",
+      tone: options.tone ?? "danger",
+      onConfirm: options.onConfirm,
+    });
+  }
+
+  function closeConfirmDialog() {
+    if (confirmDialogBusy) return;
+    setConfirmDialog(null);
+  }
+
+  async function confirmDialogAccept() {
+    if (!confirmDialog) return;
+    setConfirmDialogBusy(true);
+    try {
+      await confirmDialog.onConfirm();
+      setConfirmDialog(null);
+    } finally {
+      setConfirmDialogBusy(false);
+    }
   }
 
   function auditActionLabel(accion: string) {
@@ -1554,7 +1918,9 @@ export default function Home() {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
         <section className="w-full rounded-2xl border border-stone-300/80 bg-white/90 p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Gestion de Deposito General - Artilleria 1</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">
+            {'Grupo "Brig.Gral.Manuel Oribe " de Artilleria 105mm NÂ°.1.'}
+          </p>
           <h1 className="mt-2 text-2xl font-bold text-stone-900">Iniciar sesion</h1>
           <p className="mt-2 text-sm text-stone-600">{status}</p>
 
@@ -1591,14 +1957,19 @@ export default function Home() {
         <div className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full bg-amber-300/15 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-black/15 blur-3xl" />
 
-        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs uppercase tracking-[0.24em] text-amber-200/95">Gestion de Deposito General - Artilleria 1</p>
-            <span className="rounded-full border border-emerald-200/35 bg-emerald-900/25 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
-              {loading ? "Sincronizando" : "Sistema activo"}
-            </span>
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-4xl">Gestion de Personal y Vestuario</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-emerald-200/35 bg-emerald-900/25 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
+                {loading ? "Sincronizando" : "Sistema activo"}
+              </span>
+              <span className="rounded-full border border-amber-100/25 bg-black/20 px-2.5 py-1 text-[11px] text-amber-50/95">
+                {status}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
             <span className="rounded-xl border border-amber-100/35 bg-black/20 px-3 py-2 text-xs font-semibold">
               {currentUser ? `${currentUser.username} (${roleLabel(currentUser.rol)})` : "Sin sesion iniciada"}
             </span>
@@ -1619,48 +1990,48 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="relative mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-4xl">Gestion de Personal y Vestuario</h1>
-            <p className="mt-2 text-sm text-amber-100/90 sm:max-w-2xl">
-              Registro de alistados, grados, baterias e inventario operativo en una sola interfaz.
-            </p>
+        <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Personal</p>
+            <p className="text-lg font-bold text-white">{personal.length}</p>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Personal</p>
-              <p className="text-lg font-bold text-white">{personal.length}</p>
-            </div>
-            <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Grados</p>
-              <p className="text-lg font-bold text-white">{rangos.length}</p>
-            </div>
-            <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Baterias</p>
-              <p className="text-lg font-bold text-white">{baterias.length}</p>
-            </div>
-            <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Items activos</p>
-              <p className="text-lg font-bold text-white">{items.filter((item) => item.activo).length}</p>
-            </div>
+          <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Grados</p>
+            <p className="text-lg font-bold text-white">{rangos.length}</p>
+          </div>
+          <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Baterias</p>
+            <p className="text-lg font-bold text-white">{baterias.length}</p>
+          </div>
+          <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Items activos</p>
+            <p className="text-lg font-bold text-white">{items.filter((item) => item.activo).length}</p>
           </div>
         </div>
-
-        <p className="relative mt-5 rounded-xl border border-amber-100/25 bg-black/25 px-3 py-2 text-xs">{status}</p>
       </section>
 
       <section className="ej-card mt-4 rounded-2xl p-3 sm:p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Vistas</p>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <button
             type="button"
             onClick={() => {
               setActiveView("personal");
               setShowConfigViews(false);
             }}
-            className={viewButtonClass("personal")}
+            className={`${viewButtonClass("personal")} w-full`}
           >
             Personal
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveView("hoja_matrix");
+              setShowConfigViews(false);
+            }}
+            className={`${viewButtonClass("hoja_matrix")} w-full`}
+          >
+            Hoja Matrix
           </button>
           <button
             type="button"
@@ -1668,42 +2039,53 @@ export default function Home() {
               setActiveView("tallas_resumen");
               setShowConfigViews(false);
             }}
-            className={viewButtonClass("tallas_resumen")}
+            className={`${viewButtonClass("tallas_resumen")} w-full`}
           >
             Resumen Tallas
           </button>
-          <button
-            type="button"
-            onClick={() => setShowConfigViews((prev) => !prev)}
-            className={
-              isConfigView || showConfigViews
-                ? "ej-view-active rounded-lg px-3 py-2 text-sm font-semibold"
-                : "ej-view-idle rounded-lg px-3 py-2 text-sm font-semibold"
-            }
-          >
-            Configuracion {showConfigViews ? "▲" : "▼"}
-          </button>
-        </div>
-        {showConfigViews ? (
-          <div className="mt-2 rounded-xl border border-stone-200 bg-stone-50 p-2">
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => selectConfigView("grados")} className={viewButtonClass("grados")}>
-                Registrar Grados
-              </button>
-              <button type="button" onClick={() => selectConfigView("baterias")} className={viewButtonClass("baterias")}>
-                Registrar Baterias
-              </button>
-              <button type="button" onClick={() => selectConfigView("items")} className={viewButtonClass("items")}>
-                Registrar Items
-              </button>
-              {isAdmin ? (
-                <button type="button" onClick={() => selectConfigView("admin")} className={viewButtonClass("admin")}>
-                  Usuarios y Auditoria
-                </button>
-              ) : null}
-            </div>
+          <div ref={configMenuRef} className="relative w-full">
+            <button
+              type="button"
+              onClick={() => setShowConfigViews((prev) => !prev)}
+              aria-haspopup="menu"
+              aria-expanded={showConfigViews}
+              aria-controls="menu-configuracion"
+              className={
+                isConfigView || showConfigViews
+                  ? "ej-view-active flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold"
+                  : "ej-view-idle flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold"
+              }
+            >
+              <span>Configuracion</span>
+              <span className="text-xs">{showConfigViews ? "▲" : "▼"}</span>
+            </button>
+            {showConfigViews ? (
+              <div
+                id="menu-configuracion"
+                role="menu"
+                className="absolute right-0 z-30 mt-2 w-full min-w-[290px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[360px]"
+              >
+                <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de configuracion</p>
+                <div className="grid grid-cols-1 gap-1.5">
+                  <button type="button" onClick={() => selectConfigView("grados")} className={configOptionClass("grados")}>
+                    Registrar Grados
+                  </button>
+                  <button type="button" onClick={() => selectConfigView("baterias")} className={configOptionClass("baterias")}>
+                    Registrar Baterias
+                  </button>
+                  <button type="button" onClick={() => selectConfigView("items")} className={configOptionClass("items")}>
+                    Registrar Items
+                  </button>
+                  {isAdmin ? (
+                    <button type="button" onClick={() => selectConfigView("admin")} className={configOptionClass("admin")}>
+                      Usuarios y Auditoria
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </section>
 
       {inCatalogView ? (
@@ -2113,68 +2495,67 @@ export default function Home() {
               Registrar nuevo
             </button>
           </div>
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
             <input
-              value={ciSearch}
-              onChange={(event) => setCiSearch(event.target.value)}
-              placeholder="Buscar por cedula, nombre o apellido"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm sm:max-w-sm"
+              value={searchCedula}
+              onChange={(event) => setSearchCedula(event.target.value)}
+              placeholder="Buscar por cedula"
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             />
-            {ciSearch.trim() !== "" || bateriaFilter !== "ALL" ? (
+            <input
+              value={searchNombres}
+              onChange={(event) => setSearchNombres(event.target.value)}
+              placeholder="Buscar por nombres"
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+            <input
+              value={searchApellidos}
+              onChange={(event) => setSearchApellidos(event.target.value)}
+              placeholder="Buscar por apellidos"
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+            <select
+              value={bateriaFilter}
+              onChange={(event) => setBateriaFilter(event.target.value)}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            >
+              <option value="ALL">Todas las baterias</option>
+              <option value="NONE">Sin bateria</option>
+              {baterias.map((bateria) => (
+                <option key={bateria.bateriaId} value={String(bateria.bateriaId)}>
+                  {bateria.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+          {hasPersonalFilters ? (
+            <div className="mt-2">
               <button
                 type="button"
                 onClick={() => {
-                  setCiSearch("");
+                  setSearchCedula("");
+                  setSearchNombres("");
+                  setSearchApellidos("");
                   setBateriaFilter("ALL");
                 }}
                 className="rounded bg-stone-600 px-3 py-2 text-xs font-semibold text-white"
               >
-                Limpiar
+                Limpiar filtros
               </button>
-            ) : null}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setBateriaFilter("ALL")}
-              className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                bateriaFilter === "ALL"
-                  ? "bg-stone-800 text-white"
-                  : "border border-stone-300 bg-white text-stone-700"
-              }`}
-            >
-              Todas las baterias
-            </button>
-            <button
-              type="button"
-              onClick={() => setBateriaFilter("NONE")}
-              className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                bateriaFilter === "NONE"
-                  ? "bg-stone-800 text-white"
-                  : "border border-stone-300 bg-white text-stone-700"
-              }`}
-            >
-              Sin bateria
-            </button>
-            {baterias.map((bateria) => {
-              const selected = bateriaFilter === String(bateria.bateriaId);
-              return (
-                <button
-                  key={bateria.bateriaId}
-                  type="button"
-                  onClick={() => setBateriaFilter(String(bateria.bateriaId))}
-                  className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                    selected ? "bg-stone-800 text-white" : "border border-stone-300 bg-white text-stone-700"
-                  }`}
-                >
-                  {bateria.nombre}
-                </button>
-              );
-            })}
-          </div>
+            </div>
+          ) : null}
+
+          <PaginationControls
+            page={personalPage}
+            pageSize={personalPageSize}
+            totalItems={personalFiltrado.length}
+            itemLabel="personas"
+            onPageChange={setPersonalPage}
+            onPageSizeChange={setPersonalPageSize}
+          />
 
           <div className="mt-3 space-y-3 md:hidden">
-            {personalFiltrado.map((persona) => {
+            {personalFiltradoPaginado.map((persona) => {
               const tallas = tallasMap(persona.tallas);
               const ciValida = isValidUruguayanCi(persona.ci);
               const tallasOpen = expandedTallasByCi[persona.ci] === true;
@@ -2186,12 +2567,8 @@ export default function Home() {
                 >
                   <p className={`text-xs font-mono ${ciValida ? "text-stone-600" : "font-semibold text-red-700"}`}>
                     {formatUruguayanCi(persona.ci)}
+                    {!ciValida ? <span className="ml-1 text-red-700">(con error)</span> : null}
                   </p>
-                  {!ciValida ? (
-                    <p className="mt-1 inline-block rounded-full border border-red-300 bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-800">
-                      CI invalida en BD
-                    </p>
-                  ) : null}
                   <p className="mt-2 text-sm font-bold text-stone-900">{persona.rango.nombreCompleto}</p>
                   <p className="mt-2 text-sm text-stone-900">
                     <span className="font-semibold">Apellidos:</span> {apellidosLabel(persona)}
@@ -2270,20 +2647,20 @@ export default function Home() {
           </div>
 
           <div className="mt-3 hidden overflow-x-auto md:block">
-            <table className="min-w-full text-left text-sm">
+            <table className="w-full min-w-[1260px] table-fixed text-left text-sm">
               <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-600">
                 <tr>
-                  <th className="w-[140px] min-w-[140px] whitespace-nowrap px-3 py-2">CI</th>
-                  <th className="px-3 py-2">Grado del Personal</th>
-                  <th className="px-3 py-2">Apellidos</th>
-                  <th className="px-3 py-2">Nombres</th>
-                  <th className="px-3 py-2">Bateria</th>
-                  <th className="px-3 py-2">Detalles</th>
-                  <th className="px-3 py-2">Acciones</th>
+                  <th className="w-[130px] min-w-[130px] whitespace-nowrap px-3 py-2">CI</th>
+                  <th className="w-[180px] min-w-[180px] px-3 py-2">Grado del Personal</th>
+                  <th className="w-[210px] min-w-[210px] px-3 py-2">Apellidos</th>
+                  <th className="w-[210px] min-w-[210px] px-3 py-2">Nombres</th>
+                  <th className="w-[150px] min-w-[150px] px-3 py-2">Bateria</th>
+                  <th className="w-[120px] min-w-[120px] px-3 py-2">Detalles</th>
+                  <th className="w-[260px] min-w-[260px] px-3 py-2">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {personalFiltrado.map((persona) => {
+                {personalFiltradoPaginado.map((persona) => {
                   const tallas = tallasMap(persona.tallas);
                   const ciValida = isValidUruguayanCi(persona.ci);
                   const tallasOpen = expandedTallasByCi[persona.ci] === true;
@@ -2294,8 +2671,10 @@ export default function Home() {
                         <td
                           className={`w-[140px] min-w-[140px] whitespace-nowrap px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-bold text-red-700"}`}
                         >
-                          <div>{formatUruguayanCi(persona.ci)}</div>
-                          {!ciValida ? <div className="mt-1 text-[10px] uppercase tracking-wide text-red-800">invalida</div> : null}
+                          <div>
+                            {formatUruguayanCi(persona.ci)}
+                            {!ciValida ? <span className="ml-1 text-red-700">(con error)</span> : null}
+                          </div>
                         </td>
                         <td className="px-3 py-2 text-stone-900">
                           <span className="font-bold">{persona.rango.nombreCompleto}</span>
@@ -2307,13 +2686,13 @@ export default function Home() {
                           <button
                             type="button"
                             onClick={() => toggleTallas(persona.ci)}
-                            className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700"
+                            className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700"
                           >
                             {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
                           </button>
                         </td>
                         <td className="px-3 py-2 align-top">
-                          <div className="grid min-w-[280px] grid-cols-2 gap-1.5">
+                          <div className="grid min-w-[260px] grid-cols-2 gap-1.5">
                             <SmallActionButton
                               text={editing ? "Cancelar" : "Editar"}
                               tone={editing ? "neutral" : "edit"}
@@ -2401,6 +2780,89 @@ export default function Home() {
         </section>
       ) : null}
 
+      {activeView === "hoja_matrix" ? (
+        <section className="ej-card mt-6 rounded-2xl p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-stone-900">Hoja Matrix</h2>
+              <p className="mt-1 text-xs text-stone-600">
+                Vista matricial por personal. Ordenada por bateria, grado y apellido. Totales por item segun registros.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void loadHojaMatrix()}
+                disabled={hojaMatrixLoading}
+                className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {hojaMatrixLoading ? "Actualizando..." : "Actualizar Matrix"}
+              </button>
+              <button
+                type="button"
+                onClick={() => window.open("/hoja-matrix", "_blank", "noopener,noreferrer")}
+                className="rounded bg-indigo-700 px-3 py-2 text-xs font-semibold text-white"
+              >
+                Generar hoja
+              </button>
+            </div>
+          </div>
+
+          {hojaMatrixError ? (
+            <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{hojaMatrixError}</p>
+          ) : null}
+
+          {hojaMatrixLoading && !hojaMatrixData ? <p className="mt-3 text-sm text-stone-600">Cargando Hoja Matrix...</p> : null}
+
+          {hojaMatrixData ? (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs text-stone-600">{`Generado: ${new Date(hojaMatrixData.generatedAt).toLocaleString("es-UY")}`}</p>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-xs">
+                  <thead className="bg-stone-100 text-[11px] uppercase tracking-wide text-stone-700">
+                    <tr>
+                      <th className="px-2 py-2">Bateria</th>
+                      <th className="px-2 py-2">Grado</th>
+                      <th className="px-2 py-2">Apellidos</th>
+                      <th className="px-2 py-2">Nombres</th>
+                      <th className="px-2 py-2">CI</th>
+                      {hojaMatrixData.items.map((item) => (
+                        <th key={item.itemId} className="px-2 py-2 text-right">
+                          {item.nombre}
+                        </th>
+                      ))}
+                      <th className="px-2 py-2 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {hojaMatrixData.rows.map((row) => (
+                      <tr key={row.ci}>
+                        <td className="whitespace-nowrap px-2 py-2 text-stone-700">{row.bateria ?? "Sin bateria"}</td>
+                        <td className="whitespace-nowrap px-2 py-2 font-semibold text-stone-900">{row.grado}</td>
+                        <td className="whitespace-nowrap px-2 py-2 text-stone-900">{`${row.apellido1} ${row.apellido2 ?? ""}`.replace(/\s+/g, " ").trim()}</td>
+                        <td className="whitespace-nowrap px-2 py-2 text-stone-900">{`${row.nombre1} ${row.nombre2 ?? ""}`.replace(/\s+/g, " ").trim()}</td>
+                        <td className="whitespace-nowrap px-2 py-2 font-mono text-stone-700">{formatUruguayanCi(row.ci)}</td>
+                        {row.totales.map((cantidad, index) => (
+                          <td
+                            key={`${row.ci}-${hojaMatrixData.items[index]?.itemId ?? index}`}
+                            className={`px-2 py-2 text-right font-semibold ${cantidad < 0 ? "text-rose-700" : "text-stone-900"}`}
+                          >
+                            {cantidad}
+                          </td>
+                        ))}
+                        <td className={`px-2 py-2 text-right font-bold ${row.totalGeneral < 0 ? "text-rose-700" : "text-stone-900"}`}>
+                          {row.totalGeneral}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       {activeView === "tallas_resumen" ? (
         <section className="mt-6 space-y-4">
           <article className="ej-card rounded-2xl p-4">
@@ -2410,51 +2872,126 @@ export default function Home() {
             </p>
           </article>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {resumenTallasPorBateria.map((bateria) => (
-              <article key={bateria.key} className="ej-card rounded-2xl p-4">
-                <div className="flex items-center justify-between gap-3 border-b border-stone-200 pb-2">
-                  <h3 className="text-sm font-semibold text-stone-900">{bateria.nombre}</h3>
-                  <span className="rounded-full border border-stone-300 bg-stone-100 px-2 py-1 text-[11px] font-semibold text-stone-700">
-                    {bateria.total} personal
-                  </span>
-                </div>
-
-                {bateria.total === 0 ? (
-                  <p className="mt-3 text-sm text-stone-500">Sin personal asignado en esta bateria.</p>
-                ) : (
-                  <div className="mt-3 space-y-3">
-                    {bateria.tallas.map((talla) => (
-                      <div key={`${bateria.key}-${talla.key}`} className="rounded-lg border border-stone-200 bg-stone-50/75 p-3">
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">{talla.label}</p>
-                          <p className="text-[11px] text-stone-600">{`Sin dato: ${talla.sinDato}`}</p>
-                        </div>
-                        <div className="max-h-32 overflow-auto">
-                          <table className="min-w-full text-left text-xs">
-                            <thead className="text-[10px] uppercase tracking-wide text-stone-500">
-                              <tr>
-                                <th className="py-1 pr-2">Talla</th>
-                                <th className="py-1 text-right">Cantidad</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-stone-200">
-                              {talla.values.map((value) => (
-                                <tr key={`${bateria.key}-${talla.key}-${value.talla}`}>
-                                  <td className="py-1 pr-2 text-stone-800">{value.talla}</td>
-                                  <td className="py-1 text-right font-semibold text-stone-700">{value.cantidad}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+          <article className="ej-card rounded-2xl p-4">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-stone-900">Matriz completa de tallas por bateria</h3>
+                <p className="mt-1 text-xs text-stone-600">Tabla horizontal con bateria y total fijos para facilitar lectura.</p>
+              </div>
+              <p className="rounded-full border border-stone-300 bg-stone-100 px-2 py-1 text-[11px] font-semibold text-stone-700">
+                Desliza lateralmente para ver todas las prendas
+              </p>
+            </div>
+            <div className="mt-3 max-h-[70vh] overflow-auto rounded-xl border border-stone-200">
+              <table className="min-w-[1280px] border-separate border-spacing-0 text-left text-xs">
+                <thead className="sticky top-0 z-20 bg-stone-100 text-[11px] uppercase tracking-wide text-stone-600">
+                  <tr>
+                    <th className="sticky left-0 z-30 w-[220px] min-w-[220px] border-b border-r border-stone-200 bg-stone-100 px-3 py-2">
+                      Bateria
+                    </th>
+                    <th className="sticky left-[220px] z-30 w-[130px] min-w-[130px] border-b border-r border-stone-200 bg-stone-100 px-3 py-2">
+                      Total personal
+                    </th>
+                    {TALLA_KEYS.map((key) => (
+                      <th key={`matriz-head-${key}`} className="w-[220px] min-w-[220px] border-b border-stone-200 px-3 py-2">
+                        {TALLA_LABELS[key]}
+                      </th>
                     ))}
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resumenTallasPorBateria.map((bateria, rowIndex) => (
+                    <tr key={`matriz-row-${bateria.key}`} className={`align-top ${rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}`}>
+                      <td className="sticky left-0 z-10 whitespace-nowrap border-b border-r border-stone-200 bg-inherit px-3 py-3 text-sm font-semibold text-stone-900">
+                        {bateria.nombre}
+                      </td>
+                      <td className="sticky left-[220px] z-10 border-b border-r border-stone-200 bg-inherit px-3 py-3">
+                        <span
+                          className={`inline-flex min-w-[2.5rem] justify-center rounded-full px-2 py-0.5 text-sm font-bold ${
+                            bateria.total > 0 ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-600"
+                          }`}
+                        >
+                          {bateria.total}
+                        </span>
+                      </td>
+                      {TALLA_KEYS.map((key) => {
+                        const talla = bateria.tallas.find((entry) => entry.key === key);
+                        if (!talla || talla.values.length === 0) {
+                          return (
+                            <td key={`matriz-cell-${bateria.key}-${key}`} className="border-b border-stone-200 px-3 py-3">
+                              <span className="inline-flex rounded-md border border-stone-300 bg-stone-100 px-2 py-1 text-[11px] font-medium text-stone-500">
+                                Sin datos
+                              </span>
+                            </td>
+                          );
+                        }
+
+                        const maxCantidad = talla.values.reduce((max, value) => (value.cantidad > max ? value.cantidad : max), 0);
+                        return (
+                          <td key={`matriz-cell-${bateria.key}-${key}`} className="border-b border-stone-200 px-3 py-3">
+                            <div className="flex flex-wrap gap-1.5">
+                              {talla.values.map((value) => {
+                                const isTop = maxCantidad > 0 && value.cantidad === maxCantidad;
+                                return (
+                                  <span
+                                    key={`matriz-chip-${bateria.key}-${key}-${value.talla}`}
+                                    className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold ${
+                                      isTop ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-stone-300 bg-white text-stone-700"
+                                    }`}
+                                  >
+                                    <span>{value.talla}</span>
+                                    <span className="rounded-sm bg-black/5 px-1">{value.cantidad}</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+        </section>
+      ) : null}
+
+      {confirmDialog ? (
+        <section className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3" onClick={closeConfirmDialog}>
+          <article
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
+            className="w-full max-w-md rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 id="confirm-dialog-title" className="text-base font-semibold text-stone-900">
+              {confirmDialog.title}
+            </h3>
+            <p className="mt-2 text-sm text-stone-700">{confirmDialog.message}</p>
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeConfirmDialog}
+                disabled={confirmDialogBusy}
+                className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {confirmDialog.cancelText}
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmDialogAccept()}
+                disabled={confirmDialogBusy}
+                className={`rounded px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${
+                  confirmDialog.tone === "danger" ? "bg-rose-700 hover:bg-rose-800" : "bg-stone-700 hover:bg-stone-800"
+                }`}
+              >
+                {confirmDialogBusy ? "Procesando..." : confirmDialog.confirmText}
+              </button>
+            </div>
+          </article>
         </section>
       ) : null}
 
@@ -2481,33 +3018,46 @@ export default function Home() {
               {!registroViewer.loading && registroViewer.error ? (
                 <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{registroViewer.error}</p>
               ) : null}
-              {!registroViewer.loading && !registroViewer.error && registroViewer.registros.length === 0 ? (
+              {!registroViewer.loading && !registroViewer.error && registroViewerRows.length === 0 ? (
                 <p className="text-sm text-stone-600">No hay movimientos registrados para esta persona.</p>
               ) : null}
               {!registroViewer.loading && !registroViewer.error
-                ? registroViewer.registros.map((registro) => (
-                    <div key={registro.registroId} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-stone-900">{new Date(registro.fecha).toLocaleDateString("es-UY")}</p>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                            registro.tipo === "ENTREGA"
-                              ? "bg-emerald-100 text-emerald-800"
-                              : registro.tipo === "DEVOLUCION"
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-sky-100 text-sky-800"
-                          }`}
-                        >
-                          {registro.tipo}
-                        </span>
-                      </div>
-                      {registro.auditoria ? (
-                        <p className="mt-1 text-xs text-stone-700">
-                          {`Registrado por: ${registro.auditoria.usuario?.username ?? "Sistema"} (${roleLabel(registro.auditoria.usuario?.rol ?? null)}) - Auditoria BD #${registro.auditoria.auditoriaId}`}
-                        </p>
-                      ) : (
-                        <p className="mt-1 text-xs text-stone-500">Sin referencia de auditoria para este movimiento.</p>
-                      )}
+                  ? registroViewerRowsPaginados.map((registro) => (
+                      <div key={registro.registroId} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-stone-900">{new Date(registro.fecha).toLocaleDateString("es-UY")}</p>
+                          <div className="flex items-center gap-2">
+                            {canWrite && registro.tipo !== "AJUSTE" ? (
+                              <button
+                                type="button"
+                                onClick={() => rectifyRegistro(registro)}
+                                className="rounded bg-sky-700 px-2 py-1 text-[11px] font-semibold text-white"
+                              >
+                                Rectificar
+                              </button>
+                            ) : null}
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                registro.tipo === "ENTREGA"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : registro.tipo === "DEVOLUCION"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : "bg-sky-100 text-sky-800"
+                              }`}
+                            >
+                              {registro.tipo}
+                            </span>
+                          </div>
+                        </div>
+                        {registro.auditoria ? (
+                          <p className="mt-1 text-xs text-stone-700">
+                            {`${registro.auditoria.accion === "UPDATE" ? "Rectificado por" : "Registrado por"}: ${
+                              registro.auditoria.usuario?.username ?? "Sistema"
+                            } (${roleLabel(registro.auditoria.usuario?.rol ?? null)}) - Auditoria BD #${registro.auditoria.auditoriaId}`}
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-xs text-stone-500">Sin referencia de auditoria para este movimiento.</p>
+                        )}
                       {registro.comentarios ? <p className="mt-1 text-xs text-stone-700">{registro.comentarios}</p> : null}
                       <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
                         {registro.items.map((item) => (
@@ -2520,6 +3070,17 @@ export default function Home() {
                   ))
                 : null}
             </div>
+            {!registroViewer.loading && !registroViewer.error && registroViewerRows.length > 0 ? (
+              <PaginationControls
+                page={registroViewerPage}
+                pageSize={registroViewerPageSize}
+                totalItems={registroViewerRows.length}
+                itemLabel="movimientos"
+                onPageChange={setRegistroViewerPage}
+                onPageSizeChange={setRegistroViewerPageSize}
+                className="mt-3"
+              />
+            ) : null}
           </article>
         </section>
       ) : null}
@@ -2530,9 +3091,18 @@ export default function Home() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold text-stone-900">
-                  {registroDraft.tipo === "ENTREGA" ? "Registrar Entrega" : "Registrar Devolucion"}
+                  {registroDraft.modo === "rectificar"
+                    ? registroDraft.tipo === "ENTREGA"
+                      ? "Rectificar Entrega"
+                      : "Rectificar Devolucion"
+                    : registroDraft.tipo === "ENTREGA"
+                      ? "Registrar Entrega"
+                      : "Registrar Devolucion"}
                 </h3>
                 <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(registroDraft.ci)}`}</p>
+                {registroDraft.modo === "rectificar" && registroDraft.registroId ? (
+                  <p className="text-xs text-stone-600">{`Registro #${registroDraft.registroId}`}</p>
+                ) : null}
                 {personaRegistro ? (
                   <p className="text-xs font-medium text-stone-700">{`Personal: ${apellidosLabel(personaRegistro)}, ${nombresLabel(personaRegistro)}`}</p>
                 ) : null}
@@ -2540,11 +3110,18 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setRegistroDraft(null)}
-                className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white"
+                disabled={registroSaving}
+                className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cerrar
               </button>
             </div>
+
+            {registroSaving ? (
+              <p className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800">
+                Actualizando movimiento...
+              </p>
+            ) : null}
 
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <label className="text-xs text-stone-700">
@@ -2553,6 +3130,7 @@ export default function Home() {
                   type="date"
                   max={maxFechaIngreso}
                   value={registroDraft.fecha}
+                  disabled={registroSaving}
                   onChange={(event) => setRegistroDraft((prev) => (prev ? { ...prev, fecha: event.target.value } : prev))}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 />
@@ -2561,6 +3139,7 @@ export default function Home() {
                 Comentarios (opcional)
                 <input
                   value={registroDraft.comentarios}
+                  disabled={registroSaving}
                   onChange={(event) => setRegistroDraft((prev) => (prev ? { ...prev, comentarios: event.target.value } : prev))}
                   placeholder="Detalle breve"
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -2574,13 +3153,14 @@ export default function Home() {
                 <div key={`reg-item-${index}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
                   <select
                     value={item.itemId}
+                    disabled={registroSaving}
                     onChange={(event) => updateRegistroItem(index, "itemId", event.target.value)}
                     className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   >
                     <option value="">Seleccionar item</option>
                     {itemsOrdenados
                       .filter((catalogItem) => {
-                        if (!catalogItem.activo) return false;
+                        if (!catalogItem.activo && catalogItem.itemId !== item.itemId) return false;
                         if (catalogItem.itemId === item.itemId) return true;
                         return !registroDraft.items.some(
                           (selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId,
@@ -2596,13 +3176,14 @@ export default function Home() {
                     type="number"
                     min={1}
                     value={item.cantidad}
+                    disabled={registroSaving}
                     onChange={(event) => updateRegistroItem(index, "cantidad", event.target.value)}
                     className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => removeRegistroItem(index)}
-                    disabled={registroDraft.items.length <= 1}
+                    disabled={registroSaving || registroDraft.items.length <= 1}
                     className="rounded bg-rose-700 px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
                   >
                     Quitar
@@ -2615,16 +3196,24 @@ export default function Home() {
               <button
                 type="button"
                 onClick={addRegistroItem}
-                className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white"
+                disabled={registroSaving}
+                className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Agregar item
               </button>
               <button
                 type="button"
                 onClick={() => void saveRegistro()}
-                className="rounded bg-emerald-700 px-3 py-2 text-xs font-semibold text-white"
+                disabled={registroSaving}
+                className="rounded bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Guardar movimiento
+                {registroSaving
+                  ? registroDraft.modo === "rectificar"
+                    ? "Guardando rectificacion..."
+                    : "Guardando movimiento..."
+                  : registroDraft.modo === "rectificar"
+                    ? "Guardar rectificacion"
+                    : "Guardar movimiento"}
               </button>
             </div>
           </article>
@@ -2742,7 +3331,7 @@ export default function Home() {
               </button>
             </div>
             <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
-              {auditoriaFiltrada.map((log) => (
+              {auditoriaFiltradaPaginada.map((log) => (
                 <div key={log.auditoriaId} className="rounded-lg border border-stone-200 bg-stone-50 p-2">
                   <p className="text-xs text-stone-600">{new Date(log.createdAt).toLocaleString("es-UY")}</p>
                   <p className="text-sm font-medium text-stone-900">
@@ -2757,6 +3346,17 @@ export default function Home() {
                 <p className="text-sm text-stone-600">No hay eventos para este filtro.</p>
               ) : null}
             </div>
+            {auditoriaFiltrada.length > 0 ? (
+              <PaginationControls
+                page={auditPage}
+                pageSize={auditPageSize}
+                totalItems={auditoriaFiltrada.length}
+                itemLabel="eventos"
+                onPageChange={setAuditPage}
+                onPageSizeChange={setAuditPageSize}
+                className="mt-3"
+              />
+            ) : null}
           </article>
         </section>
       ) : null}
@@ -2765,3 +3365,4 @@ export default function Home() {
     </main>
   );
 }
+

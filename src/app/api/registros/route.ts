@@ -47,6 +47,14 @@ function parseFecha(value: unknown) {
   return date;
 }
 
+function readRequestMeta(request: Request) {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const realIp = request.headers.get("x-real-ip");
+  const ip = forwardedFor?.split(",")[0]?.trim() || realIp || null;
+  const userAgent = request.headers.get("user-agent") || null;
+  return { ip, userAgent };
+}
+
 function isValidPayload(body: unknown): body is RegistroPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
@@ -87,7 +95,7 @@ export async function GET(req: Request) {
       ? await prisma.auditoria.findMany({
           where: {
             entidad: "REGISTRO",
-            accion: "CREATE",
+            accion: { in: ["CREATE", "UPDATE"] },
             entidadId: { in: registroIds },
           },
           orderBy: { createdAt: "desc" },
@@ -125,6 +133,7 @@ export async function GET(req: Request) {
               }
             : null,
           detalle: audit.detalle,
+          accion: audit.accion,
         };
       })(),
       ci: registro.ci,
@@ -146,6 +155,7 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response;
 
   const body = await req.json();
+  const requestMeta = readRequestMeta(req);
   if (!isValidPayload(body)) {
     return NextResponse.json({ error: "Payload invalido. Revisa ci, tipo e items." }, { status: 400 });
   }
@@ -242,6 +252,8 @@ export async function POST(req: Request) {
         totalItems: itemsDetallados.length,
         totalUnidades,
         items: itemsDetallados,
+        ip: requestMeta.ip,
+        userAgent: requestMeta.userAgent,
       },
     });
 

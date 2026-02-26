@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  /* Paleta inspirada en la identidad visual del Ejercito Nacional */
-  --EscudoAmarillo: #ffcc00;
+  /* Paleta oficial del Ejercito para desarrollo web */
+  --EscudoAmarillo: #FFCC00;
   --EscudoAzul: #003885;
-  --EscudoRojo: #cf0f21;
-  --EscudoVerde: #1f6728;
-  --EscudoMarron: #4d351d;
-  --EscudoCeleste: #1b75aa;
-  --EscudoGris: #c3c3c6;
-  --EscudoNegro: #000;
-  --UniformeVerdeClaro: #8d845b;
-  --UniformeVerdeMedio: #66704d;
-  --UniformeVerdeOscuro: #37342b;
-  --UniformeVerdeBeige: #bab08c;
-  --Blanco: #fff;
+  --EscudoRojo: #CF0F21;
+  --EscudoVerde: #1F6728;
+  --EscudoMarron: #4D351D;
+  --EscudoCeleste: #1B75AA;
+  --EscudoGris: #C3C3C6;
+  --EscudoNegro: #000000;
+  --UniformeVerdeClaro: var(--EscudoVerde);
+  --UniformeVerdeMedio: var(--EscudoMarron);
+  --UniformeVerdeOscuro: var(--EscudoNegro);
+  --UniformeVerdeBeige: var(--EscudoGris);
+  --Blanco: #FFFFFF;
   --fuentePrincipal: "Liberation Sans", sans-serif;
 
   --background: var(--EscudoGris);
@@ -33,9 +33,9 @@ body {
   color: var(--foreground);
   font-family: var(--fuentePrincipal), var(--font-geist-sans), "Segoe UI", sans-serif;
   background-image:
-    radial-gradient(circle at 10% 8%, rgb(102 112 77 / 22%) 0, transparent 28%),
-    radial-gradient(circle at 92% 16%, rgb(186 176 140 / 20%) 0, transparent 25%),
-    linear-gradient(180deg, #e6e2d5 0%, #d4d1c8 100%);
+    radial-gradient(circle at 10% 8%, rgb(27 117 170 / 16%) 0, transparent 28%),
+    radial-gradient(circle at 92% 16%, rgb(31 103 40 / 14%) 0, transparent 25%),
+    linear-gradient(180deg, rgb(195 195 198 / 60%) 0%, rgb(255 255 255 / 92%) 100%);
   background-attachment: fixed;
 }
 
@@ -79,13 +79,13 @@ textarea:focus {
 
 .ej-button-danger {
   border: 1px solid rgb(255 255 255 / 35%);
-  background: rgb(128 28 37 / 70%);
+  background: var(--EscudoRojo);
   color: var(--Blanco);
 }
 
 .ej-button-muted {
-  border: 1px solid rgb(255 255 255 / 35%);
-  background: rgb(0 0 0 / 20%);
+  border: 1px solid rgb(195 195 198 / 45%);
+  background: rgb(0 0 0 / 28%);
   color: rgb(255 255 255 / 92%);
 }
 

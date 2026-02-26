@@ -27,6 +27,9 @@ export async function GET(request: Request) {
 export async function POST(req: Request) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
+  if (auth.user.rol !== "ADMIN") {
+    return NextResponse.json({ error: "Solo admin puede registrar baterias." }, { status: 403 });
+  }
 
   const body = await req.json();
 

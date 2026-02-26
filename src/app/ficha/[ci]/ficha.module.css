@@ -2,6 +2,8 @@
   margin: 0 auto;
   max-width: 1280px;
   padding: 12px;
+  background: #fff;
+  min-height: 100vh;
 }
 
 .toolbar {
@@ -35,25 +37,46 @@
 }
 
 .sheet {
+  width: min(100%, 860px);
+  margin: 0 auto;
   background: #fff;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.frame {
   border: 2px solid #111;
-  overflow-x: auto;
+  padding: 0;
+  overflow: hidden;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1100px;
+  table-layout: fixed;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.1;
   color: #000;
 }
 
 .table td,
 .table th {
   border: 1px solid #111;
-  padding: 2px 4px;
+  padding: 2px 3px;
   vertical-align: middle;
+}
+
+.colItem {
+  width: 34%;
+}
+
+.colSlot {
+  width: 5%;
+}
+
+.colTotal {
+  width: 3%;
 }
 
 .center {
@@ -72,20 +95,25 @@
   font-size: 11px;
 }
 
-.tiny {
-  font-size: 10px;
-}
-
 .statusLine {
   font-size: 11px;
 }
 
-.obsBox {
-  min-height: 110px;
+.itemCell {
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: top;
 }
 
-.firmaSpace {
-  height: 28px;
+.tCol {
+  background: #cfcfcf;
+  text-align: center;
+  font-weight: 700;
+  padding: 0;
+}
+
+.obsLine {
+  height: 14px;
 }
 
 .verticalDivider {
@@ -94,6 +122,40 @@
 
 .thickTop {
   border-top-width: 2px !important;
+}
+
+.sign {
+  margin-top: 22px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.signLine {
+  margin-left: 10px;
+}
+
+.signIndentA {
+  margin-left: 46px;
+}
+
+.signIndentB {
+  margin-left: 58px;
+}
+
+.signIndentC {
+  margin-left: 94px;
+}
+
+.signIndentD {
+  margin-left: 140px;
+}
+
+.signIndentE {
+  margin-left: 176px;
+}
+
+.signGap {
+  height: 24px;
 }
 
 @media (max-width: 768px) {
@@ -114,10 +176,17 @@
 }
 
 @media print {
+  :global(body) {
+    background: #fff !important;
+    background-image: none !important;
+  }
+
   .page {
     max-width: none;
     padding: 0;
     margin: 0;
+    background: #fff;
+    min-height: calc(297mm - 10mm);
   }
 
   .toolbar,
@@ -126,34 +195,72 @@
   }
 
   .sheet {
-    border: 1px solid #000;
+    width: 190mm;
+    margin: 0 auto;
+    padding: 0;
     overflow: visible;
   }
 
   .table {
-    min-width: 0;
-    font-size: 8px;
-    line-height: 1;
+    width: 100%;
+    table-layout: fixed;
+    font-size: 9px;
+    line-height: 1.08;
+  }
+
+  .colItem {
+    width: 34% !important;
+  }
+
+  .colSlot {
+    width: 5% !important;
+  }
+
+  .colTotal {
+    width: 3% !important;
   }
 
   .table td,
   .table th {
-    padding: 1px 2px;
+    padding: 1px 2.5px;
+    word-break: break-word;
   }
 
-  .obsBox {
-    min-height: 42px;
+  .obsLine {
+    height: 11px;
   }
 
-  .firmaSpace {
-    height: 10px;
+  .sign {
+    margin-top: 14px;
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .signIndentA {
+    margin-left: 30px;
+  }
+
+  .signIndentB {
+    margin-left: 34px;
+  }
+
+  .signIndentC {
+    margin-left: 58px;
+  }
+
+  .signIndentD {
+    margin-left: 84px;
+  }
+
+  .signIndentE {
+    margin-left: 108px;
+  }
+
+  .signGap {
+    height: 16px;
   }
 
   .small {
     font-size: 8px;
-  }
-
-  .tiny {
-    font-size: 7px;
   }
 }
