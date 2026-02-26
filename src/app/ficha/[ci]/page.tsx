@@ -370,13 +370,13 @@ export default function FichaPage() {
                       {value || ""}
                     </td>
                   ))}
-                  <td className={styles.tCol}>{row.entregaTotal || ""}</td>
+                  <td className={styles.tCol}>{row.entregaTotal}</td>
                   {row.devolucion.map((value, idx) => (
                     <td key={`${row.item}-d-${idx}`} className={`${styles.center} ${styles.verticalDivider}`}>
                       {value || ""}
                     </td>
                   ))}
-                  <td className={styles.tCol}>{row.devolucionTotal || ""}</td>
+                  <td className={styles.tCol}>{row.devolucionTotal}</td>
                 </tr>
               ))}
 
