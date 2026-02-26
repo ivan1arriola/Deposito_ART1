@@ -12,7 +12,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { formatUruguayanCi, isValidUruguayanCi, normalizeCi } from "@/lib/ci";
+import { formatUruguayanCi, generatePlaceholderUruguayanCi, isValidUruguayanCi, normalizeCi } from "@/lib/ci";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
 import {
   TALLA_KEYS,
@@ -116,6 +116,12 @@ type CurrentUser = {
   usuarioId: string;
   username: string;
   rol: Role;
+};
+
+type FirmaConfig = {
+  encargadoTexto: string;
+  oficialTexto: string;
+  updatedAt: string | null;
 };
 
 type UsuarioAdmin = {
@@ -505,8 +511,9 @@ function PaginationControls(props: {
 }
 
 export default function Home() {
+  const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState("Verificando sesion...");
+  const [status, setStatus] = useState("Verificando sesión...");
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -518,6 +525,14 @@ export default function Home() {
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaRecord[]>([]);
+  const [firmaConfig, setFirmaConfig] = useState<FirmaConfig | null>(null);
+  const [firmaConfigDraft, setFirmaConfigDraft] = useState({
+    encargadoTexto: "",
+    oficialTexto: "",
+  });
+  const [firmaConfigLoading, setFirmaConfigLoading] = useState(false);
+  const [firmaConfigSaving, setFirmaConfigSaving] = useState(false);
+  const [firmaConfigError, setFirmaConfigError] = useState<string | null>(null);
   const [movimientosTotal, setMovimientosTotal] = useState(0);
 
   const [newUsername, setNewUsername] = useState("");
@@ -564,6 +579,8 @@ export default function Home() {
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const [confirmDialogBusy, setConfirmDialogBusy] = useState(false);
   const [showCreatePersonalForm, setShowCreatePersonalForm] = useState(false);
+  const [creatingPersonal, setCreatingPersonal] = useState(false);
+  const [createPersonalNotice, setCreatePersonalNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [auditFilter, setAuditFilter] = useState<AuditFilter>("TODOS");
   const [personalPage, setPersonalPage] = useState(1);
   const [personalPageSize, setPersonalPageSize] = useState(25);
@@ -575,15 +592,22 @@ export default function Home() {
   const canDelete = canWrite;
   const canRegisterPersonal = canWrite && rangos.length > 0;
   const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "items";
+  const normalizedNewCi = normalizeCi(newPersonal.ci.trim());
+  const duplicatePersonal = useMemo(() => {
+    if (normalizedNewCi === "") return null;
+    return personal.find((persona) => normalizeCi(persona.ci) === normalizedNewCi) ?? null;
+  }, [normalizedNewCi, personal]);
+  const ciAlreadyExists = duplicatePersonal !== null;
   const ciLooksValid = newPersonal.ci.trim() === "" || isValidUruguayanCi(newPersonal.ci);
+  const ciHasError = !ciLooksValid || ciAlreadyExists;
   const requiredPersonalFields = [
-    newPersonal.ci.trim() !== "" && isValidUruguayanCi(newPersonal.ci),
+    newPersonal.ci.trim() !== "" && isValidUruguayanCi(newPersonal.ci) && !ciAlreadyExists,
     newPersonal.apellido1.trim() !== "",
     newPersonal.nombre1.trim() !== "",
     Number(newPersonal.rangoId) > 0,
   ];
   const requiredPersonalCompleted = requiredPersonalFields.filter(Boolean).length;
-  const canSubmitPersonal = canRegisterPersonal && requiredPersonalCompleted === requiredPersonalFields.length;
+  const canSubmitPersonal = canRegisterPersonal && requiredPersonalCompleted === requiredPersonalFields.length && !creatingPersonal;
   const maxFechaIngreso = getTodayDateInput();
   const itemsOrdenados = useMemo(
     () => [...items].sort((a, b) => a.ordenPdf - b.ordenPdf || a.nombre.localeCompare(b.nombre, "es")),
@@ -769,6 +793,11 @@ export default function Home() {
   }, [activeView, showCreatePersonalForm]);
 
   useEffect(() => {
+    if (!showCreatePersonalForm) return;
+    setCreatePersonalNotice((prev) => (prev?.type === "error" ? null : prev));
+  }, [newPersonal, showCreatePersonalForm]);
+
+  useEffect(() => {
     setPersonalPage(1);
   }, [searchCedula, searchNombres, searchApellidos, bateriaFilter, personalPageSize]);
 
@@ -851,6 +880,11 @@ export default function Home() {
     setPersonal([]);
     setUsuarios([]);
     setAuditoria([]);
+    setFirmaConfig(null);
+    setFirmaConfigDraft({ encargadoTexto: "", oficialTexto: "" });
+    setFirmaConfigLoading(false);
+    setFirmaConfigSaving(false);
+    setFirmaConfigError(null);
     setMovimientosTotal(0);
     setEditPersonalCi(null);
     setEditPersonal(EMPTY_PERSONAL_FORM);
@@ -899,15 +933,33 @@ export default function Home() {
       setMovimientosTotal(movimientosSummary.total);
 
       if (me.user.rol === "ADMIN") {
-        const [usuariosData, auditoriaData] = await Promise.all([
+        setFirmaConfigLoading(true);
+        const [usuariosData, auditoriaData, firmaConfigResult] = await Promise.all([
           api<UsuarioAdmin[]>("/api/usuarios"),
           api<AuditoriaRecord[]>("/api/auditoria?limit=200"),
+          api<FirmaConfig>("/api/firma-config")
+            .then((config) => ({ config, error: null as string | null }))
+            .catch((error: unknown) => ({
+              config: null,
+              error: error instanceof Error ? error.message : "No se pudo cargar la configuracion de firmas.",
+            })),
         ]);
         setUsuarios(usuariosData);
         setAuditoria(auditoriaData);
+        setFirmaConfig(firmaConfigResult.config);
+        setFirmaConfigDraft({
+          encargadoTexto: firmaConfigResult.config?.encargadoTexto ?? "",
+          oficialTexto: firmaConfigResult.config?.oficialTexto ?? "",
+        });
+        setFirmaConfigError(firmaConfigResult.error);
+        setFirmaConfigLoading(false);
       } else {
         setUsuarios([]);
         setAuditoria([]);
+        setFirmaConfig(null);
+        setFirmaConfigDraft({ encargadoTexto: "", oficialTexto: "" });
+        setFirmaConfigLoading(false);
+        setFirmaConfigError(null);
       }
 
       setHojaMatrixData(null);
@@ -928,6 +980,7 @@ export default function Home() {
       }
       setStatus(message);
     } finally {
+      setFirmaConfigLoading(false);
       setLoading(false);
     }
   }, []);
@@ -1286,15 +1339,25 @@ export default function Home() {
 
   async function createPersonal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (creatingPersonal) return;
     if (!canRegisterPersonal) {
       setStatus("No se puede registrar personal sin registrar Grados previamente.");
+      setCreatePersonalNotice({ type: "error", message: "No se puede registrar personal sin registrar grados previamente." });
+      return;
+    }
+    if (ciAlreadyExists) {
+      setStatus("La cedula ya existe.");
+      setCreatePersonalNotice({ type: "error", message: "La cedula ya existe en el sistema." });
       return;
     }
     if (!isValidUruguayanCi(newPersonal.ci)) {
       setStatus("CI uruguaya invalida. Revisa digito verificador.");
+      setCreatePersonalNotice({ type: "error", message: "CI uruguaya invalida. Revisa digito verificador." });
       return;
     }
 
+    setCreatingPersonal(true);
+    setCreatePersonalNotice(null);
     try {
       await api("/api/personal", {
         method: "POST",
@@ -1302,11 +1365,15 @@ export default function Home() {
         body: JSON.stringify(personalPayload(newPersonal, true)),
       });
       setNewPersonal(EMPTY_PERSONAL_FORM);
-      setShowCreatePersonalForm(false);
       setStatus("Personal creado.");
+      setCreatePersonalNotice({ type: "success", message: "Personal registrado correctamente." });
       await loadData();
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo crear el personal.");
+      const message = error instanceof Error ? error.message : "No se pudo crear el personal.";
+      setStatus(message);
+      setCreatePersonalNotice({ type: "error", message });
+    } finally {
+      setCreatingPersonal(false);
     }
   }
 
@@ -1607,7 +1674,7 @@ export default function Home() {
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoginLoading(true);
-    setStatus("Iniciando sesion...");
+    setStatus("Iniciando sesión...");
 
     try {
       await api("/api/auth/login", {
@@ -1618,7 +1685,7 @@ export default function Home() {
       setLoginPassword("");
       await loadData(true);
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo iniciar sesion.");
+      setStatus(error instanceof Error ? error.message : "No se pudo iniciar sesión.");
     } finally {
       setLoginLoading(false);
     }
@@ -1709,10 +1776,10 @@ export default function Home() {
 
   async function resetUserPassword(usuario: UsuarioAdmin) {
     if (!isAdmin) {
-      setStatus("Solo el administrador puede restablecer contrasenas.");
+      setStatus("Solo el administrador puede restablecer contraseñas.");
       return;
     }
-    const password = window.prompt(`Nueva contrasena para ${usuario.username} (min 8 caracteres)`, "");
+    const password = window.prompt(`Nueva contraseña para ${usuario.username} (min 8 caracteres)`, "");
     if (!password) return;
 
     try {
@@ -1721,10 +1788,10 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-      setStatus("Contrasena actualizada.");
+      setStatus("Contraseña actualizada.");
       await loadData();
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo actualizar la contrasena.");
+      setStatus(error instanceof Error ? error.message : "No se pudo actualizar la contraseña.");
     }
   }
 
@@ -1748,6 +1815,44 @@ export default function Home() {
         }
       },
     });
+  }
+
+  async function saveFirmaConfig(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!isAdmin) {
+      setStatus("Solo el administrador puede editar firmas institucionales.");
+      return;
+    }
+
+    const encargadoTexto = firmaConfigDraft.encargadoTexto.trim();
+    const oficialTexto = firmaConfigDraft.oficialTexto.trim();
+    if (!encargadoTexto || !oficialTexto) {
+      setFirmaConfigError("Los dos textos son obligatorios.");
+      setStatus("Completa ambos textos de firma.");
+      return;
+    }
+
+    setFirmaConfigSaving(true);
+    setFirmaConfigError(null);
+    try {
+      const updated = await api<FirmaConfig>("/api/firma-config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ encargadoTexto, oficialTexto }),
+      });
+      setFirmaConfig(updated);
+      setFirmaConfigDraft({
+        encargadoTexto: updated.encargadoTexto,
+        oficialTexto: updated.oficialTexto,
+      });
+      setStatus("Firmas institucionales actualizadas.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "No se pudo guardar la configuracion de firmas.";
+      setFirmaConfigError(message);
+      setStatus(message);
+    } finally {
+      setFirmaConfigSaving(false);
+    }
   }
 
   function viewButtonClass(view: MainView) {
@@ -1800,8 +1905,8 @@ export default function Home() {
     if (accion === "CREATE") return "Creo";
     if (accion === "UPDATE") return "Actualizo";
     if (accion === "DELETE") return "Elimino";
-    if (accion === "LOGIN") return "Inicio sesion";
-    if (accion === "LOGOUT") return "Cerro sesion";
+    if (accion === "LOGIN") return "Inicio sesión";
+    if (accion === "LOGOUT") return "Cerró sesión";
     return accion;
   }
 
@@ -1813,6 +1918,7 @@ export default function Home() {
     if (entidad === "RANGO") return "grado";
     if (entidad === "BATERIA") return "bateria";
     if (entidad === "ITEM") return "item";
+    if (entidad === "FIRMAS_CONFIG") return "firmas institucionales";
     return entidad.toLowerCase();
   }
 
@@ -1970,7 +2076,7 @@ export default function Home() {
           <div className="mb-4 flex justify-center">
             <Image
               src="/assets/logo-artilleria.jpg"
-              alt="Logo Artilleria"
+              alt="Logo Artillería"
               width={180}
               height={128}
               priority
@@ -1978,9 +2084,9 @@ export default function Home() {
             />
           </div>
           <p className="text-xs uppercase tracking-[0.2em] text-stone-500">
-            {'Grupo "Brig.Gral.Manuel Oribe " de Artilleria 105mm No. 1.'}
+            {'Grupo "Brig.Gral.Manuel Oribe" de Artillería 105mm No. 1.'}
           </p>
-          <h1 className="mt-2 text-2xl font-bold text-stone-900">Iniciar sesion</h1>
+          <h1 className="mt-2 text-2xl font-bold text-stone-900">Iniciar sesión</h1>
           <p className="mt-2 text-sm text-stone-600">{status}</p>
 
           <form onSubmit={login} className="mt-4 space-y-3">
@@ -1993,7 +2099,7 @@ export default function Home() {
             <input
               value={loginPassword}
               onChange={(event) => setLoginPassword(event.target.value)}
-              placeholder="Contrasena"
+              placeholder="Contraseña"
               type="password"
               className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             />
@@ -2013,36 +2119,39 @@ export default function Home() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
       <section className="ej-hero relative overflow-hidden rounded-3xl p-5 shadow-lg sm:p-7">
-        <div className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full bg-sky-300/30 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-emerald-200/35 blur-3xl" />
+        <div className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full bg-[#FFCC00]/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-[#1F6728]/30 blur-3xl" />
 
-        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="mb-3">
-              <Image
-                src="/assets/logo-artilleria.jpg"
-                alt="Logo Artilleria"
-                width={220}
-                height={150}
-                priority
-                className="h-auto w-[160px] rounded-lg border border-stone-300 bg-white/90 object-contain p-1 shadow-sm sm:w-[200px]"
-              />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-stone-900 sm:text-4xl">
-              {"Gesti\u00F3n del Deposito General - Grupo \"Brig.Gral Manuel Oribe \" de Artilleria 105mm No.1."}
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">
+        <div className="relative flex flex-col gap-4 lg:grid lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:items-start">
+          <div className="order-1">
+            <Image
+              src="/assets/logo-artilleria.jpg"
+                alt="Logo Artillería"
+              width={220}
+              height={150}
+              priority
+              className="h-auto w-[160px] rounded-lg border border-[#FFCC00]/60 bg-white/95 object-contain p-1 shadow-sm sm:w-[200px]"
+            />
+          </div>
+
+          <div className="order-3 min-w-0 text-center lg:order-2 lg:flex lg:min-h-[200px] lg:flex-col lg:items-center lg:justify-center">
+            <p className="text-[11px] font-medium tracking-wide text-[#FFCC00] sm:text-xs">
+              {'Grupo "Brig.Gral Manuel Oribe" de Artillería 105mm No.1.'}
+            </p>
+            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Depósito General</h1>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              <span className="rounded-full border border-[#1F6728]/60 bg-[#1F6728]/55 px-2.5 py-1 text-[11px] font-semibold text-white">
                 {loading ? "Sincronizando" : "Sistema activo"}
               </span>
-              <span className="rounded-full border border-stone-300 bg-white/80 px-2.5 py-1 text-[11px] text-stone-700">
+              <span className="rounded-full border border-[#FFCC00]/45 bg-black/35 px-2.5 py-1 text-[11px] text-[#FFCC00]">
                 {status}
               </span>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <span className="rounded-xl border border-stone-300 bg-white/80 px-3 py-2 text-xs font-semibold text-stone-700">
-              {currentUser ? `${currentUser.username} (${roleLabel(currentUser.rol)})` : "Sin sesion iniciada"}
+
+          <div className="order-2 flex flex-wrap items-center gap-2 self-start lg:order-3 lg:justify-end">
+            <span className="rounded-xl border border-[#FFCC00]/45 bg-black/35 px-3 py-2 text-xs font-semibold text-white">
+              {currentUser ? `${currentUser.username} (${roleLabel(currentUser.rol)})` : "Sin sesión iniciada"}
             </span>
             <button
               type="button"
@@ -2062,25 +2171,25 @@ export default function Home() {
         </div>
 
         <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-          <div className="rounded-xl border border-stone-200 bg-white/75 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-stone-600">Personal</p>
-            <p className="text-lg font-bold text-stone-900">{personal.length}</p>
+          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
+            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Personal</p>
+            <p className="text-lg font-bold text-white">{personal.length}</p>
           </div>
-          <div className="rounded-xl border border-stone-200 bg-white/75 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-stone-600">Grados</p>
-            <p className="text-lg font-bold text-stone-900">{rangos.length}</p>
+          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
+            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Grados</p>
+            <p className="text-lg font-bold text-white">{rangos.length}</p>
           </div>
-          <div className="rounded-xl border border-stone-200 bg-white/75 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-stone-600">Baterias</p>
-            <p className="text-lg font-bold text-stone-900">{baterias.length}</p>
+          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
+            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Baterías</p>
+            <p className="text-lg font-bold text-white">{baterias.length}</p>
           </div>
-          <div className="rounded-xl border border-stone-200 bg-white/75 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-stone-600">Items activos</p>
-            <p className="text-lg font-bold text-stone-900">{itemsActivos.length}</p>
+          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
+            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Items activos</p>
+            <p className="text-lg font-bold text-white">{itemsActivos.length}</p>
           </div>
-          <div className="rounded-xl border border-stone-200 bg-white/75 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-stone-600">Movimientos</p>
-            <p className="text-lg font-bold text-stone-900">{movimientosTotal}</p>
+          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
+            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Movimientos</p>
+            <p className="text-lg font-bold text-white">{movimientosTotal}</p>
           </div>
         </div>
       </section>
@@ -2131,7 +2240,7 @@ export default function Home() {
                   : "ej-view-idle flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold"
               }
             >
-              <span>Configuracion</span>
+              <span>Configuración</span>
               <span className="text-xs">{showConfigViews ? "^" : "v"}</span>
             </button>
             {showConfigViews ? (
@@ -2146,7 +2255,7 @@ export default function Home() {
                     Registrar Grados
                   </button>
                   <button type="button" onClick={() => selectConfigView("baterias")} className={configOptionClass("baterias")}>
-                    Registrar Baterias
+                    Registrar Baterías
                   </button>
                   <button type="button" onClick={() => selectConfigView("items")} className={configOptionClass("items")}>
                     Registrar Items
@@ -2255,7 +2364,7 @@ export default function Home() {
 
           {activeView === "baterias" ? (
             <CatalogCard
-              title="Baterias"
+              title="Baterías"
               placeholder="Nueva bateria"
               newValue={newBateria}
               onNewValueChange={setNewBateria}
@@ -2374,8 +2483,13 @@ export default function Home() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setShowCreatePersonalForm(false)}
-                  className="rounded bg-stone-700 px-2 py-1 text-xs font-semibold text-white"
+                  onClick={() => {
+                    if (creatingPersonal) return;
+                    setShowCreatePersonalForm(false);
+                    setCreatePersonalNotice(null);
+                  }}
+                  disabled={creatingPersonal}
+                  className="rounded bg-stone-700 px-2 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cerrar
                 </button>
@@ -2384,6 +2498,17 @@ export default function Home() {
           </div>
 
           <form onSubmit={createPersonal} className="px-4 py-4 sm:px-5 sm:py-5">
+            {createPersonalNotice ? (
+              <p
+                className={`mb-3 rounded-lg border px-3 py-2 text-sm ${
+                  createPersonalNotice.type === "success"
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                    : "border-rose-300 bg-rose-50 text-rose-800"
+                }`}
+              >
+                {createPersonalNotice.message}
+              </p>
+            ) : null}
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
               <div className="space-y-4">
                 <fieldset className="rounded-xl border border-stone-200 bg-stone-50/55 p-4">
@@ -2394,11 +2519,17 @@ export default function Home() {
                       <input
                         value={newPersonal.ci}
                         onChange={(event) => setNewPersonal((prev) => ({ ...prev, ci: event.target.value }))}
-                        placeholder="Ej: 55366796"
+                        placeholder={ciPlaceholder}
                         inputMode="numeric"
-                        className={`mt-1 w-full rounded-lg border px-3 py-2.5 text-sm ${ciLooksValid ? "border-stone-300" : "border-rose-600 bg-rose-50"}`}
+                        className={`mt-1 w-full rounded-lg border px-3 py-2.5 text-sm ${ciHasError ? "border-rose-600 bg-rose-50" : "border-stone-300"}`}
                       />
-                      <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
+                      {ciAlreadyExists && duplicatePersonal ? (
+                        <span className="mt-1 block text-[11px] font-medium text-rose-700">
+                          {`Cedula repetida: ${apellidosLabel(duplicatePersonal)}, ${nombresLabel(duplicatePersonal)}.`}
+                        </span>
+                      ) : (
+                        <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
+                      )}
                     </label>
 
                     <label>
@@ -2530,6 +2661,11 @@ export default function Home() {
                     La cedula ingresada no es valida.
                   </p>
                 ) : null}
+                {ciAlreadyExists && duplicatePersonal ? (
+                  <p className="mt-3 rounded-lg border border-rose-300/80 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                    {`Cedula repetida detectada: ${apellidosLabel(duplicatePersonal)}, ${nombresLabel(duplicatePersonal)}.`}
+                  </p>
+                ) : null}
 
                 <div className="mt-4 space-y-2 text-xs text-stone-600">
                   <p>{`Cedula valida: ${requiredPersonalFields[0] ? "Si" : "No"}`}</p>
@@ -2543,9 +2679,16 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={!canSubmitPersonal}
-                  className="ej-button mt-5 w-full rounded-lg px-3 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                  className="ej-button mt-5 flex w-full items-center justify-center rounded-lg px-3 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Registrar Personal
+                  {creatingPersonal ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white" />
+                      Registrando...
+                    </span>
+                  ) : (
+                    "Registrar Personal"
+                  )}
                 </button>
               </aside>
             </div>
@@ -2563,7 +2706,10 @@ export default function Home() {
             </div>
             <button
               type="button"
-              onClick={() => setShowCreatePersonalForm(true)}
+              onClick={() => {
+                setCreatePersonalNotice(null);
+                setShowCreatePersonalForm(true);
+              }}
               disabled={!canWrite}
               className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
             >
@@ -3295,6 +3441,58 @@ export default function Home() {
 
       {isAdmin && activeView === "admin" ? (
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <article className="ej-card rounded-2xl p-4 lg:col-span-2">
+            <h2 className="text-base font-semibold text-stone-900">Firmas institucionales (solo administrador)</h2>
+            <p className="mt-1 text-xs text-stone-600">
+              Esta seccion controla los textos de firma usados en la hoja de entrega.
+            </p>
+            {firmaConfigLoading ? (
+              <p className="mt-3 text-sm text-stone-600">Cargando configuracion de firmas...</p>
+            ) : (
+              <form onSubmit={saveFirmaConfig} className="mt-3 space-y-3">
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Texto del encargado</span>
+                  <textarea
+                    value={firmaConfigDraft.encargadoTexto}
+                    onChange={(event) =>
+                      setFirmaConfigDraft((prev) => ({ ...prev, encargadoTexto: event.target.value }))
+                    }
+                    rows={2}
+                    disabled={firmaConfigSaving}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Texto del oficial</span>
+                  <textarea
+                    value={firmaConfigDraft.oficialTexto}
+                    onChange={(event) =>
+                      setFirmaConfigDraft((prev) => ({ ...prev, oficialTexto: event.target.value }))
+                    }
+                    rows={2}
+                    disabled={firmaConfigSaving}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                </label>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-stone-600">
+                    {firmaConfig?.updatedAt
+                      ? `Ultima actualizacion: ${new Date(firmaConfig.updatedAt).toLocaleString("es-UY")}`
+                      : "Sin actualizaciones registradas todavia."}
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={firmaConfigSaving}
+                    className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                  >
+                    {firmaConfigSaving ? "Guardando..." : "Guardar firmas"}
+                  </button>
+                </div>
+                {firmaConfigError ? <p className="text-xs font-medium text-rose-700">{firmaConfigError}</p> : null}
+              </form>
+            )}
+          </article>
+
           <article className="ej-card rounded-2xl p-4">
             <h2 className="text-base font-semibold text-stone-900">Usuarios y privilegios</h2>
             <form onSubmit={createUsuario} className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -3307,7 +3505,7 @@ export default function Home() {
               <input
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
-                placeholder="Contrasena (min 8)"
+                placeholder="Contraseña (min 8)"
                 className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 type="password"
               />
@@ -3353,7 +3551,7 @@ export default function Home() {
                         onClick={() => void toggleUserActive(usuario)}
                       />
                       <SmallActionButton
-                        text="Contrasena"
+                        text="Contraseña"
                         tone="ok"
                         onClick={() => void resetUserPassword(usuario)}
                       />

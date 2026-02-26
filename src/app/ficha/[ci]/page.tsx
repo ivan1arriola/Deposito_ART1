@@ -35,6 +35,10 @@ type FichaData = {
     devolucion: number[];
     devolucionTotal: number;
   }>;
+  firmas: {
+    encargadoTexto: string;
+    oficialTexto: string;
+  };
   observaciones: Array<{ fecha: string; texto: string }>;
 };
 
@@ -108,9 +112,9 @@ export default function FichaPage() {
     });
   }, [data]);
 
-  const nombreAlistado = useMemo(() => {
+  const nombreFirmaAlistado = useMemo(() => {
     if (!data) return "";
-    return [data.persona.nombre1, data.persona.nombre2, data.persona.apellido1, data.persona.apellido2]
+    return [data.persona.nombre1, data.persona.apellido1]
       .filter((value): value is string => Boolean(value && value.trim()))
       .join(" ");
   }, [data]);
@@ -123,6 +127,10 @@ export default function FichaPage() {
       const canvas = await html2canvas(sheetRef.current, {
         scale: 2,
         backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+        windowWidth: sheetRef.current.scrollWidth,
+        windowHeight: sheetRef.current.scrollHeight,
       });
       const imgData = canvas.toDataURL("image/png");
 
@@ -132,17 +140,16 @@ export default function FichaPage() {
       const margin = 5;
       const usableWidth = pageWidth - margin * 2;
       const usableHeight = pageHeight - margin * 2;
+      const imageHeight = (canvas.height * usableWidth) / canvas.width;
 
-      let imgWidth = usableWidth;
-      let imgHeight = (canvas.height * imgWidth) / canvas.width;
-      if (imgHeight > usableHeight) {
-        imgHeight = usableHeight;
-        imgWidth = (canvas.width * imgHeight) / canvas.height;
+      let consumed = 0;
+      let pageIndex = 0;
+      while (consumed < imageHeight) {
+        if (pageIndex > 0) pdf.addPage();
+        pdf.addImage(imgData, "PNG", margin, margin - consumed, usableWidth, imageHeight);
+        consumed += usableHeight;
+        pageIndex += 1;
       }
-
-      const x = (pageWidth - imgWidth) / 2;
-      const y = (pageHeight - imgHeight) / 2;
-      pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
 
       pdf.save(`ficha-${data.persona.ci}.pdf`);
     } finally {
@@ -190,77 +197,81 @@ export default function FichaPage() {
             </colgroup>
             <tbody>
               <tr>
-                <td colSpan={15} className={`${styles.center} ${styles.bold}`}>
-                  {'Grupo "Brig.Gral.Manuel Oribe " de Artilleria 105mm No.1.-'}
+                <td colSpan={15} className={styles.topSectionCell}>
+                  <table className={styles.topTable}>
+                    <tbody>
+                      <tr>
+                        <td colSpan={4} className={`${styles.center} ${styles.bold}`}>
+                          {'Grupo "Brig.Gral.Manuel Oribe " de Artilleria 105mm No.1.-'}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colSpan={3} className={styles.bold}>
+                          ADMINISTRACION.-
+                        </td>
+                        <td className={`${styles.bold} ${styles.center}`}>S-4</td>
+                      </tr>
+                      <tr>
+                        <td colSpan={2} className={`${styles.center} ${styles.bold}`}>
+                          APELLIDOS
+                        </td>
+                        <td colSpan={2} className={`${styles.center} ${styles.bold}`}>
+                          NOMBRES
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className={`${styles.bold} ${styles.topOrdCell}`}>1&deg;</td>
+                        <td className={styles.topValueCell}>{data.persona.apellido1}</td>
+                        <td className={`${styles.bold} ${styles.topOrdCell}`}>1&deg;</td>
+                        <td className={styles.topValueCell}>{data.persona.nombre1}</td>
+                      </tr>
+                      <tr>
+                        <td className={`${styles.bold} ${styles.topOrdCell}`}>2&deg;</td>
+                        <td className={styles.topValueCell}>{data.persona.apellido2 ?? ""}</td>
+                        <td className={`${styles.bold} ${styles.topOrdCell}`}>2&deg;</td>
+                        <td className={styles.topValueCell}>{data.persona.nombre2 ?? ""}</td>
+                      </tr>
+                      <tr>
+                        <td colSpan={2} className={`${styles.center} ${styles.bold}`}>
+                          Talle
+                        </td>
+                        <td colSpan={2} className={`${styles.center} ${styles.bold}`}>
+                          Numero de Orden
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className={styles.bold}>Parka:</td>
+                        <td>{data.persona.tallas.PARKA}</td>
+                        <td className={`${styles.bold} ${styles.topOrderLabel}`}>C.I :</td>
+                        <td className={styles.topOrderValue}>{formatUruguayanCi(data.persona.ci)}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.bold}>Camisaco:</td>
+                        <td>{data.persona.tallas.CAMISACO}</td>
+                        <td className={`${styles.bold} ${styles.topOrderLabel}`}>Ba.:</td>
+                        <td className={styles.topOrderValue}>{data.persona.bateria ?? "Pendiente"}</td>
+                      </tr>
+                      <tr>
+                        <td className={styles.bold}>Pantalon:</td>
+                        <td>{data.persona.tallas.PANTALON}</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td className={styles.bold}>Kepi:</td>
+                        <td>{data.persona.tallas.KEPI}</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td className={styles.bold}>Calzado:</td>
+                        <td>{data.persona.tallas.CALZADO}</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </td>
-              </tr>
-              <tr>
-                <td colSpan={15} className={`${styles.center} ${styles.bold}`}>
-                  FICHA DE VESTUARIO
-                </td>
-              </tr>
-              <tr>
-                <td colSpan={10} className={styles.bold}>
-                  ADMINISTRACION.-
-                </td>
-                <td colSpan={5} className={`${styles.bold} ${styles.center}`}>
-                  S-4
-                </td>
-              </tr>
-              <tr>
-                <td colSpan={7} className={`${styles.center} ${styles.bold}`}>
-                  APELLIDOS
-                </td>
-                <td colSpan={8} className={`${styles.center} ${styles.bold}`}>
-                  NOMBRES
-                </td>
-              </tr>
-              <tr>
-                <td className={styles.bold}>1&deg;.</td>
-                <td colSpan={6}>{data.persona.apellido1}</td>
-                <td className={styles.bold}>1&deg;</td>
-                <td colSpan={7}>{data.persona.nombre1}</td>
-              </tr>
-              <tr>
-                <td className={styles.bold}>2&deg;</td>
-                <td colSpan={6}>{data.persona.apellido2 ?? ""}</td>
-                <td className={styles.bold}>2&deg;</td>
-                <td colSpan={7}>{data.persona.nombre2 ?? ""}</td>
-              </tr>
-              <tr>
-                <td colSpan={7} className={`${styles.center} ${styles.bold}`}>
-                  Talle
-                </td>
-                <td colSpan={8} className={`${styles.center} ${styles.bold}`}>
-                  Numero de Orden
-                </td>
-              </tr>
-              <tr>
-                <td>Parka:</td>
-                <td colSpan={6}>{data.persona.tallas.PARKA}</td>
-                <td className={styles.bold}>C.I :</td>
-                <td colSpan={7}>{formatUruguayanCi(data.persona.ci)}</td>
-              </tr>
-              <tr>
-                <td>Camisaco:</td>
-                <td colSpan={6}>{data.persona.tallas.CAMISACO}</td>
-                <td className={styles.bold}>Ba.:</td>
-                <td colSpan={7}>{data.persona.bateria ?? "Pendiente"}</td>
-              </tr>
-              <tr>
-                <td>Pantalon:</td>
-                <td colSpan={6}>{data.persona.tallas.PANTALON}</td>
-                <td colSpan={8}></td>
-              </tr>
-              <tr>
-                <td>Kepi:</td>
-                <td colSpan={6}>{data.persona.tallas.KEPI}</td>
-                <td colSpan={8}></td>
-              </tr>
-              <tr>
-                <td>Calzado:</td>
-                <td colSpan={6}>{data.persona.tallas.CALZADO}</td>
-                <td colSpan={8}></td>
               </tr>
               <tr>
                 <td className={styles.bold}>
@@ -382,26 +393,23 @@ export default function FichaPage() {
           </div>
 
           <div className={styles.sign}>
-            <div className={styles.signLine}>Firma del alistado:</div>
-            <div className={styles.signIndentA}>
-              {data.persona.gradoPersonal} {nombreAlistado}
+            <div className={`${styles.signBlock} ${styles.signBlockA}`}>
+              <div className={styles.signTitle}>Firma del alistado:</div>
+              <div className={styles.signRank}>{data.persona.gradoPersonal}</div>
+              <div className={styles.signName}>{nombreFirmaAlistado}</div>
             </div>
 
-            <div className={styles.signGap} />
-
-            <div className={styles.signIndentB}>
-              {'El Encargado del Deposito General del Grp. "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1.'}
+            <div className={`${styles.signBlock} ${styles.signBlockB}`}>
+              <div className={styles.signTitle}>{data.firmas.encargadoTexto}</div>
+              <div className={styles.signRank}>Sgto.</div>
+              <div className={styles.signName}>Wilson Lara</div>
             </div>
-            <div className={styles.signIndentB}>Sgto.</div>
-            <div className={styles.signIndentC}>Wilson Lara</div>
 
-            <div className={styles.signGap} />
-
-            <div className={styles.signIndentD}>
-              {'El Oficial de Administracion del Grp."Brig. "Gral. Manuel Oribe" de Artilleria 105mm No. 1.'}
+            <div className={`${styles.signBlock} ${styles.signBlockC}`}>
+              <div className={styles.signTitle}>{data.firmas.oficialTexto}</div>
+              <div className={styles.signRank}>-Tte.2&ordm;</div>
+              <div className={styles.signName}>Gerardo Otero</div>
             </div>
-            <div className={styles.signIndentD}>-Tte.2&ordm;</div>
-            <div className={styles.signIndentE}>Gerardo Otero</div>
           </div>
         </div>
       ) : null}

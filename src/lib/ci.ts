@@ -41,3 +41,9 @@ export function generateRandomUruguayanCi() {
 export function completeCiValidationDigit(ciWithoutDigit: string | number) {
   return generateValidationDigit(ciWithoutDigit);
 }
+
+export function generatePlaceholderUruguayanCi() {
+  const base = "0000000";
+  const checkDigit = completeCiValidationDigit(base);
+  return `${base}${checkDigit}`;
+}

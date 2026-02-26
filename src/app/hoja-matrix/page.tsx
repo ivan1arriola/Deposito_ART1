@@ -191,7 +191,7 @@ export default function HojaMatrizPage() {
     window.setTimeout(() => window.print(), 120);
   }, [autoPrintRequested, data, loading, visibleBateriaGroups.length]);
 
-  const totalColumns = data ? data.items.length + 4 : 4;
+  const totalColumns = data ? data.items.length + 3 : 3;
 
   return (
     <main className={styles.page}>
@@ -255,16 +255,6 @@ export default function HojaMatrizPage() {
                   </button>
                 </div>
                 <div className={styles.sheetHeader}>
-                  <div className={styles.logoWrap}>
-                    <Image
-                      src="/assets/logo-artilleria.jpg"
-                      alt="Logo Artilleria"
-                      width={140}
-                      height={100}
-                      className={styles.logo}
-                      priority={groupIndex === 0}
-                    />
-                  </div>
                   <div className={styles.sheetHeaderText}>
                     <p className={styles.headerTitle}>{'Grupo "Brig.Gral.Manuel Oribe" de Artilleria 105mm No.1.'}</p>
                     <h1 className={styles.headerSubtitle}>HOJA MATRIZ</h1>
@@ -277,7 +267,6 @@ export default function HojaMatrizPage() {
                     <col className={styles.colNro} />
                     <col className={styles.colGrado} />
                     <col className={styles.colNombre} />
-                    <col className={styles.colEquipo} />
                     {data.items.map((item) => (
                       <col key={`col-${group.bateria}-${item.itemId}`} className={styles.colItem} />
                     ))}
@@ -289,15 +278,31 @@ export default function HojaMatrizPage() {
                       </th>
                     </tr>
                     <tr>
-                      <th className={styles.headCell}>Nro</th>
-                      <th className={styles.headCell}>Grado</th>
-                      <th className={styles.headCell}>Nombre</th>
-                      <th className={styles.headCell}>Equipo</th>
+                      <th colSpan={3} className={`${styles.headCell} ${styles.logoHeadCell}`}>
+                        <div className={styles.logoHeadWrap}>
+                          <Image
+                            src="/assets/logo-artilleria.jpg"
+                            alt="Logo Artilleria"
+                            width={250}
+                            height={170}
+                            className={styles.logo}
+                            priority={groupIndex === 0}
+                          />
+                        </div>
+                      </th>
                       {data.items.map((item) => (
                         <th key={`head-${group.bateria}-${item.itemId}`} className={`${styles.headCell} ${styles.itemHead}`}>
                           <span className={styles.itemHeadText}>{item.nombre}</span>
                         </th>
                       ))}
+                    </tr>
+                    <tr>
+                      <th className={styles.headCell}>Nro</th>
+                      <th className={styles.headCell}>Grado</th>
+                      <th className={styles.headCell}>Nombre</th>
+                      <th colSpan={data.items.length} className={`${styles.headCell} ${styles.equipoGroupCell}`}>
+                        Equipo
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -313,7 +318,6 @@ export default function HojaMatrizPage() {
                               <td className={styles.numberCell}>{rowNumber}</td>
                               <td className={styles.centerCell}>{normalizedGrade(row)}</td>
                               <td className={styles.nameCell}>{personLabel(row)}</td>
-                              <td className={styles.totalCell}>{row.totalGeneral}</td>
                               {row.totales.map((value, idx) => (
                                 <td
                                   key={`item-${row.ci}-${data.items[idx]?.itemId ?? idx}`}
@@ -329,7 +333,6 @@ export default function HojaMatrizPage() {
                     ))}
                     <tr className={styles.totalRow}>
                       <td colSpan={3}>TOTAL</td>
-                      <td>{group.totalGeneral}</td>
                       {group.itemTotals.map((value, idx) => (
                         <td key={`total-${group.bateria}-${data.items[idx]?.itemId ?? idx}`} className={value < 0 ? styles.negative : ""}>
                           {value}
