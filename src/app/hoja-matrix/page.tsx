@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import styles from "./hoja-matriz.module.css";
 
@@ -86,15 +85,16 @@ function normalizeText(value: string) {
 }
 
 function personLabel(row: HojaMatrizRow) {
-  return `${row.nombre1} ${row.nombre2 ?? ""} ${row.apellido1} ${row.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
+  return `${row.apellido1} ${row.nombre1}`.replace(/\s+/g, " ").trim();
 }
 
 export default function HojaMatrizPage() {
-  const searchParams = useSearchParams();
   const [data, setData] = useState<HojaMatrizData | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("Cargando Hoja Matriz...");
   const autoPrintedRef = useRef(false);
+  const [urlBateriaFilter, setUrlBateriaFilter] = useState("");
+  const [urlAutoPrint, setUrlAutoPrint] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -166,8 +166,14 @@ export default function HojaMatrizPage() {
     });
   }, [data]);
 
-  const bateriaFilter = searchParams.get("bateria")?.trim() ?? "";
-  const autoPrintRequested = searchParams.get("autoprint") === "1";
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setUrlBateriaFilter(params.get("bateria")?.trim() ?? "");
+    setUrlAutoPrint(params.get("autoprint") === "1");
+  }, []);
+
+  const bateriaFilter = urlBateriaFilter;
+  const autoPrintRequested = urlAutoPrint;
 
   const visibleBateriaGroups = useMemo(() => {
     if (!bateriaFilter) return bateriaGroups;
@@ -289,7 +295,7 @@ export default function HojaMatrizPage() {
                       <th className={styles.headCell}>Equipo</th>
                       {data.items.map((item) => (
                         <th key={`head-${group.bateria}-${item.itemId}`} className={`${styles.headCell} ${styles.itemHead}`}>
-                          {item.nombre}
+                          <span className={styles.itemHeadText}>{item.nombre}</span>
                         </th>
                       ))}
                     </tr>
