@@ -129,7 +129,7 @@ export default function FichaPage() {
     setIsExporting(true);
     try {
       const canvas = await html2canvas(sheetRef.current, {
-        scale: 2,
+        scale: 3,
         backgroundColor: "#ffffff",
         useCORS: true,
         logging: false,
@@ -141,7 +141,7 @@ export default function FichaPage() {
       const pdf = new jsPDF("portrait", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 5;
+      const margin = 8;
       const usableWidth = pageWidth - margin * 2;
       const usableHeight = pageHeight - margin * 2;
       const imageHeight = (canvas.height * usableWidth) / canvas.width;
