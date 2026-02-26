@@ -17,6 +17,7 @@ type MatrixRow = {
   nombre2: string | null;
   bateria: string | null;
   grado: string;
+  gradoAbreviacion: string;
   totales: number[];
   totalGeneral: number;
 };
@@ -103,6 +104,7 @@ export async function GET(request: Request) {
       nombre2: persona.nombre2,
       bateria: persona.bateria?.nombre ?? null,
       grado: persona.rango.nombreCompleto,
+      gradoAbreviacion: persona.rango.abreviacion,
       totales,
       totalGeneral,
     };

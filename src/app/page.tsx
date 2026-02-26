@@ -1,5 +1,6 @@
-﻿"use client";
+"use client";
 
+import Image from "next/image";
 import {
   Fragment,
   FormEvent,
@@ -19,7 +20,6 @@ import {
   TALLA_OPTIONS,
   type TallaKey,
   normalizeTallaValue,
-  isAllowedTallaValue,
 } from "@/lib/tallas";
 
 type Rango = { rangoId: number; abreviacion: string; nombreCompleto: string };
@@ -309,8 +309,29 @@ function getTodayDateInput() {
 }
 
 function toFormTallaValue(key: TallaKey, value: string) {
-  if (value === "-" || !isAllowedTallaValue(key, value)) return "";
+  if (value === "-") return "";
   return normalizeTallaValue(key, value) ?? "";
+}
+
+function compareTallaOptions(key: TallaKey, a: string, b: string) {
+  if (key === "PARKA" || key === "CAMISACO" || key === "PANTALON") {
+    const order = TALLA_OPTIONS[key];
+    const aIdx = order.indexOf(a);
+    const bIdx = order.indexOf(b);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
+  }
+
+  const aNum = Number(a);
+  const bNum = Number(b);
+  const aIsNum = Number.isFinite(aNum);
+  const bIsNum = Number.isFinite(bNum);
+  if (aIsNum && bIsNum) return aNum - bNum;
+  if (aIsNum) return -1;
+  if (bIsNum) return 1;
+  return a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
 }
 
 function personalPayload(form: PersonalForm, includeCi: boolean) {
@@ -497,6 +518,7 @@ export default function Home() {
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaRecord[]>([]);
+  const [movimientosTotal, setMovimientosTotal] = useState(0);
 
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -569,6 +591,30 @@ export default function Home() {
   );
   const itemsActivos = useMemo(() => itemsOrdenados.filter((item) => item.activo), [itemsOrdenados]);
   const itemsInactivos = useMemo(() => itemsOrdenados.filter((item) => !item.activo), [itemsOrdenados]);
+  const tallaOptionsByKey = useMemo(() => {
+    const dynamic = {} as Record<TallaKey, string[]>;
+
+    for (const key of TALLA_KEYS) {
+      const values = new Set<string>(TALLA_OPTIONS[key]);
+
+      for (const persona of personal) {
+        for (const talla of persona.tallas) {
+          if (talla.tallaTipo.nombre !== key) continue;
+          const normalized = normalizeTallaValue(key, talla.tallaValor);
+          if (normalized) values.add(normalized);
+        }
+      }
+
+      const newValue = normalizeTallaValue(key, newPersonal[key]);
+      const editValue = normalizeTallaValue(key, editPersonal[key]);
+      if (newValue) values.add(newValue);
+      if (editValue) values.add(editValue);
+
+      dynamic[key] = Array.from(values).sort((a, b) => compareTallaOptions(key, a, b));
+    }
+
+    return dynamic;
+  }, [personal, newPersonal, editPersonal]);
   const auditoriaFiltrada = useMemo(() => {
     if (auditFilter === "MOVIMIENTOS") {
       return auditoria.filter((log) => log.entidad === "REGISTRO");
@@ -805,6 +851,7 @@ export default function Home() {
     setPersonal([]);
     setUsuarios([]);
     setAuditoria([]);
+    setMovimientosTotal(0);
     setEditPersonalCi(null);
     setEditPersonal(EMPTY_PERSONAL_FORM);
     setExpandedTallasByCi({});
@@ -837,17 +884,19 @@ export default function Home() {
 
       await api<DbStatus>("/api/db-status");
 
-      const [rangosData, bateriasData, itemsData, personalData] = await Promise.all([
+      const [rangosData, bateriasData, itemsData, personalData, movimientosSummary] = await Promise.all([
         api<Rango[]>("/api/rangos"),
         api<Bateria[]>("/api/baterias"),
         api<Item[]>("/api/items"),
         api<Personal[]>("/api/personal"),
+        api<{ total: number }>("/api/registros?summary=1").catch(() => ({ total: 0 })),
       ]);
 
       setRangos(rangosData);
       setBaterias(bateriasData);
       setItems(itemsData);
       setPersonal(personalData);
+      setMovimientosTotal(movimientosSummary.total);
 
       if (me.user.rol === "ADMIN") {
         const [usuariosData, auditoriaData] = await Promise.all([
@@ -890,7 +939,7 @@ export default function Home() {
       const data = await api<HojaMatrixData>("/api/hoja-matrix");
       setHojaMatrixData(data);
     } catch (error: unknown) {
-      setHojaMatrixError(error instanceof Error ? error.message : "No se pudo cargar la Hoja Matrix.");
+      setHojaMatrixError(error instanceof Error ? error.message : "No se pudo cargar la Hoja Matriz.");
     } finally {
       setHojaMatrixLoading(false);
     }
@@ -1536,7 +1585,7 @@ export default function Home() {
               className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             >
               <option value="">Seleccionar</option>
-              {TALLA_OPTIONS[key].map((option) => (
+              {tallaOptionsByKey[key].map((option) => (
                 <option key={`edit-${ci}-${key}-${option}`} value={option}>
                   {option}
                 </option>
@@ -1918,8 +1967,18 @@ export default function Home() {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
         <section className="w-full rounded-2xl border border-stone-300/80 bg-white/90 p-6 shadow-sm">
+          <div className="mb-4 flex justify-center">
+            <Image
+              src="/assets/logo-artilleria.jpg"
+              alt="Logo Artilleria"
+              width={180}
+              height={128}
+              priority
+              className="h-auto w-36 rounded-lg border border-stone-300 bg-white object-contain p-1 sm:w-40"
+            />
+          </div>
           <p className="text-xs uppercase tracking-[0.2em] text-stone-500">
-            {'Grupo "Brig.Gral.Manuel Oribe " de Artilleria 105mm NÂ°.1.'}
+            {'Grupo "Brig.Gral.Manuel Oribe " de Artilleria 105mm No. 1.'}
           </p>
           <h1 className="mt-2 text-2xl font-bold text-stone-900">Iniciar sesion</h1>
           <p className="mt-2 text-sm text-stone-600">{status}</p>
@@ -1953,24 +2012,36 @@ export default function Home() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
-      <section className="ej-hero relative overflow-hidden rounded-3xl p-5 shadow-xl sm:p-7">
-        <div className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full bg-amber-300/15 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-black/15 blur-3xl" />
+      <section className="ej-hero relative overflow-hidden rounded-3xl p-5 shadow-lg sm:p-7">
+        <div className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full bg-sky-300/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-emerald-200/35 blur-3xl" />
 
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-4xl">Gestion de Personal y Vestuario</h1>
+            <div className="mb-3">
+              <Image
+                src="/assets/logo-artilleria.jpg"
+                alt="Logo Artilleria"
+                width={220}
+                height={150}
+                priority
+                className="h-auto w-[160px] rounded-lg border border-stone-300 bg-white/90 object-contain p-1 shadow-sm sm:w-[200px]"
+              />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-stone-900 sm:text-4xl">
+              {"Gesti\u00F3n del Deposito General - Grupo \"Brig.Gral Manuel Oribe \" de Artilleria 105mm No.1."}
+            </h1>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-emerald-200/35 bg-emerald-900/25 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
+              <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">
                 {loading ? "Sincronizando" : "Sistema activo"}
               </span>
-              <span className="rounded-full border border-amber-100/25 bg-black/20 px-2.5 py-1 text-[11px] text-amber-50/95">
+              <span className="rounded-full border border-stone-300 bg-white/80 px-2.5 py-1 text-[11px] text-stone-700">
                 {status}
               </span>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <span className="rounded-xl border border-amber-100/35 bg-black/20 px-3 py-2 text-xs font-semibold">
+            <span className="rounded-xl border border-stone-300 bg-white/80 px-3 py-2 text-xs font-semibold text-stone-700">
               {currentUser ? `${currentUser.username} (${roleLabel(currentUser.rol)})` : "Sin sesion iniciada"}
             </span>
             <button
@@ -1990,22 +2061,26 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Personal</p>
-            <p className="text-lg font-bold text-white">{personal.length}</p>
+        <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+          <div className="rounded-xl border border-stone-200 bg-white/75 px-3 py-2 backdrop-blur-sm">
+            <p className="text-[10px] uppercase tracking-wider text-stone-600">Personal</p>
+            <p className="text-lg font-bold text-stone-900">{personal.length}</p>
           </div>
-          <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Grados</p>
-            <p className="text-lg font-bold text-white">{rangos.length}</p>
+          <div className="rounded-xl border border-stone-200 bg-white/75 px-3 py-2 backdrop-blur-sm">
+            <p className="text-[10px] uppercase tracking-wider text-stone-600">Grados</p>
+            <p className="text-lg font-bold text-stone-900">{rangos.length}</p>
           </div>
-          <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Baterias</p>
-            <p className="text-lg font-bold text-white">{baterias.length}</p>
+          <div className="rounded-xl border border-stone-200 bg-white/75 px-3 py-2 backdrop-blur-sm">
+            <p className="text-[10px] uppercase tracking-wider text-stone-600">Baterias</p>
+            <p className="text-lg font-bold text-stone-900">{baterias.length}</p>
           </div>
-          <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Items activos</p>
-            <p className="text-lg font-bold text-white">{items.filter((item) => item.activo).length}</p>
+          <div className="rounded-xl border border-stone-200 bg-white/75 px-3 py-2 backdrop-blur-sm">
+            <p className="text-[10px] uppercase tracking-wider text-stone-600">Items activos</p>
+            <p className="text-lg font-bold text-stone-900">{itemsActivos.length}</p>
+          </div>
+          <div className="rounded-xl border border-stone-200 bg-white/75 px-3 py-2 backdrop-blur-sm">
+            <p className="text-[10px] uppercase tracking-wider text-stone-600">Movimientos</p>
+            <p className="text-lg font-bold text-stone-900">{movimientosTotal}</p>
           </div>
         </div>
       </section>
@@ -2031,7 +2106,7 @@ export default function Home() {
             }}
             className={`${viewButtonClass("hoja_matrix")} w-full`}
           >
-            Hoja Matrix
+            Hoja Matriz
           </button>
           <button
             type="button"
@@ -2057,7 +2132,7 @@ export default function Home() {
               }
             >
               <span>Configuracion</span>
-              <span className="text-xs">{showConfigViews ? "▲" : "▼"}</span>
+              <span className="text-xs">{showConfigViews ? "^" : "v"}</span>
             </button>
             {showConfigViews ? (
               <div
@@ -2270,7 +2345,7 @@ export default function Home() {
 
               <div className="mt-5 space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items inactivos</p>
-                <p className="text-xs text-stone-500">Estos items no aparecen en la Hoja de Entrega ni en registrar movimientos.</p>
+                <p className="text-xs text-stone-500">Estos items no aparecen en la Ficha ni en registrar movimientos.</p>
                 {itemsInactivos.length > 0 ? (
                   itemsInactivos.map((item) => renderItemCard(item))
                 ) : (
@@ -2428,7 +2503,7 @@ export default function Home() {
                           className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
                         >
                           <option value="">Seleccionar</option>
-                          {TALLA_OPTIONS[key].map((option) => (
+                          {tallaOptionsByKey[key].map((option) => (
                             <option key={`${key}-${option}`} value={option}>
                               {option}
                             </option>
@@ -2621,10 +2696,10 @@ export default function Home() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => window.open(`/hoja-entrega/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
+                      onClick={() => window.open(`/ficha/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
                       className="rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white"
                     >
-                      Hoja de Entrega
+                      Ficha
                     </button>
                   </div>
                   {tallasOpen ? (
@@ -2646,17 +2721,17 @@ export default function Home() {
             {personalFiltrado.length === 0 ? <p className="text-sm text-stone-500">Sin resultados con los filtros actuales.</p> : null}
           </div>
 
-          <div className="mt-3 hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[1260px] table-fixed text-left text-sm">
+          <div className="mt-3 hidden md:block">
+            <table className="w-full table-fixed text-left text-sm">
               <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-600">
                 <tr>
-                  <th className="w-[130px] min-w-[130px] whitespace-nowrap px-3 py-2">CI</th>
-                  <th className="w-[180px] min-w-[180px] px-3 py-2">Grado del Personal</th>
-                  <th className="w-[210px] min-w-[210px] px-3 py-2">Apellidos</th>
-                  <th className="w-[210px] min-w-[210px] px-3 py-2">Nombres</th>
-                  <th className="w-[150px] min-w-[150px] px-3 py-2">Bateria</th>
-                  <th className="w-[120px] min-w-[120px] px-3 py-2">Detalles</th>
-                  <th className="w-[260px] min-w-[260px] px-3 py-2">Acciones</th>
+                  <th className="w-[11%] px-3 py-2">CI</th>
+                  <th className="w-[15%] px-3 py-2">Grado del Personal</th>
+                  <th className="w-[18%] px-3 py-2">Apellidos</th>
+                  <th className="w-[18%] px-3 py-2">Nombres</th>
+                  <th className="w-[13%] px-3 py-2">Bateria</th>
+                  <th className="w-[9%] px-3 py-2">Detalles</th>
+                  <th className="w-[16%] px-3 py-2">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
@@ -2668,9 +2743,7 @@ export default function Home() {
                   return (
                     <Fragment key={persona.ci}>
                       <tr className={!ciValida ? "bg-red-50/60" : undefined}>
-                        <td
-                          className={`w-[140px] min-w-[140px] whitespace-nowrap px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-bold text-red-700"}`}
-                        >
+                        <td className={`px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-bold text-red-700"}`}>
                           <div>
                             {formatUruguayanCi(persona.ci)}
                             {!ciValida ? <span className="ml-1 text-red-700">(con error)</span> : null}
@@ -2691,12 +2764,12 @@ export default function Home() {
                             {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
                           </button>
                         </td>
-                        <td className="px-3 py-2 align-top">
-                          <div className="grid min-w-[260px] grid-cols-2 gap-1.5">
+                        <td className="px-2 py-2 align-top">
+                          <div className="grid grid-cols-2 gap-1.5">
                             <SmallActionButton
                               text={editing ? "Cancelar" : "Editar"}
                               tone={editing ? "neutral" : "edit"}
-                              className="w-full"
+                              className="w-full text-[11px] leading-tight"
                               onClick={() => {
                                 if (editing) {
                                   setEditPersonalCi(null);
@@ -2709,36 +2782,36 @@ export default function Home() {
                             <SmallActionButton
                               text="Borrar"
                               tone="delete"
-                              className="w-full"
+                              className="w-full text-[11px] leading-tight"
                               onClick={() => void deletePersonal(persona.ci)}
                             />
                             <button
                               type="button"
                               onClick={() => openRegistro(persona.ci, "ENTREGA")}
-                              className="w-full rounded bg-emerald-700 px-2 py-1 text-xs font-medium text-white"
+                              className="w-full rounded bg-emerald-700 px-2 py-1 text-[11px] font-medium leading-tight text-white"
                             >
                               Entrega
                             </button>
                             <button
                               type="button"
                               onClick={() => openRegistro(persona.ci, "DEVOLUCION")}
-                              className="w-full rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white"
+                              className="w-full rounded bg-amber-700 px-2 py-1 text-[11px] font-medium leading-tight text-white"
                             >
                               Devolucion
                             </button>
                             <button
                               type="button"
                               onClick={() => void openRegistroViewer(persona)}
-                              className="w-full rounded bg-sky-700 px-2 py-1 text-xs font-medium text-white"
+                              className="w-full rounded bg-sky-700 px-2 py-1 text-[11px] font-medium leading-tight text-white"
                             >
                               Ver movimientos
                             </button>
                             <button
                               type="button"
-                              onClick={() => window.open(`/hoja-entrega/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
-                              className="w-full rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white"
+                              onClick={() => window.open(`/ficha/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
+                              className="w-full rounded bg-indigo-700 px-2 py-1 text-[11px] font-medium leading-tight text-white"
                             >
-                              Hoja de Entrega
+                              Ficha
                             </button>
                           </div>
                         </td>
@@ -2784,7 +2857,7 @@ export default function Home() {
         <section className="ej-card mt-6 rounded-2xl p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-stone-900">Hoja Matrix</h2>
+              <h2 className="text-base font-semibold text-stone-900">Hoja Matriz</h2>
               <p className="mt-1 text-xs text-stone-600">
                 Vista matricial por personal. Ordenada por bateria, grado y apellido. Totales por item segun registros.
               </p>
@@ -2796,11 +2869,11 @@ export default function Home() {
                 disabled={hojaMatrixLoading}
                 className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
               >
-                {hojaMatrixLoading ? "Actualizando..." : "Actualizar Matrix"}
+                {hojaMatrixLoading ? "Actualizando..." : "Actualizar Matriz"}
               </button>
               <button
                 type="button"
-                onClick={() => window.open("/hoja-matrix", "_blank", "noopener,noreferrer")}
+                onClick={() => window.open("/hoja-matriz", "_blank", "noopener,noreferrer")}
                 className="rounded bg-indigo-700 px-3 py-2 text-xs font-semibold text-white"
               >
                 Generar hoja
@@ -2812,7 +2885,7 @@ export default function Home() {
             <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{hojaMatrixError}</p>
           ) : null}
 
-          {hojaMatrixLoading && !hojaMatrixData ? <p className="mt-3 text-sm text-stone-600">Cargando Hoja Matrix...</p> : null}
+          {hojaMatrixLoading && !hojaMatrixData ? <p className="mt-3 text-sm text-stone-600">Cargando Hoja Matriz...</p> : null}
 
           {hojaMatrixData ? (
             <div className="mt-3 space-y-2">

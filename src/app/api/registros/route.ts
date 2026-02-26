@@ -70,11 +70,19 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const ci = (url.searchParams.get("ci") ?? "").trim();
+  const summaryOnly = url.searchParams.get("summary") === "1";
   const limitRaw = Number(url.searchParams.get("limit") ?? "120");
   const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 1), 300) : 120;
 
   if (ci && !isValidUruguayanCi(ci)) {
     return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  }
+
+  if (summaryOnly) {
+    const total = await prisma.registro.count({
+      where: ci ? { ci } : undefined,
+    });
+    return NextResponse.json({ total });
   }
 
   const registros = await prisma.registro.findMany({

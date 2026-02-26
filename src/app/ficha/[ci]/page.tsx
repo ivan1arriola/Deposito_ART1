@@ -79,7 +79,7 @@ export default function FichaPage() {
   const params = useParams<{ ci: string }>();
   const ci = decodeURIComponent(params.ci ?? "");
   const [data, setData] = useState<FichaData | null>(null);
-  const [status, setStatus] = useState("Cargando hoja de entrega...");
+  const [status, setStatus] = useState("Cargando ficha...");
   const [isExporting, setIsExporting] = useState(false);
   const sheetRef = useRef<HTMLDivElement | null>(null);
 
@@ -88,9 +88,9 @@ export default function FichaPage() {
       try {
         const result = await api<FichaData>(`/api/ficha/${encodeURIComponent(ci)}`);
         setData(result);
-        setStatus("Hoja de entrega cargada.");
+        setStatus("Ficha cargada.");
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "No se pudo cargar la hoja de entrega.";
+        const message = error instanceof Error ? error.message : "No se pudo cargar la ficha.";
         setStatus(message);
         if (message === "No autenticado.") {
           window.location.href = "/login";
@@ -144,7 +144,7 @@ export default function FichaPage() {
       const y = (pageHeight - imgHeight) / 2;
       pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
 
-      pdf.save(`hoja-entrega-${data.persona.ci}.pdf`);
+      pdf.save(`ficha-${data.persona.ci}.pdf`);
     } finally {
       setIsExporting(false);
     }
@@ -196,7 +196,7 @@ export default function FichaPage() {
               </tr>
               <tr>
                 <td colSpan={15} className={`${styles.center} ${styles.bold}`}>
-                  HOJA DE ENTREGA
+                  FICHA DE VESTUARIO
                 </td>
               </tr>
               <tr>

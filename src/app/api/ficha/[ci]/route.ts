@@ -30,25 +30,45 @@ function aggregateItems(records: RegistroWithItems[]) {
   return Array.from(map.entries()).map(([nombre, cantidad]) => ({ nombre, cantidad }));
 }
 
-// 6 columnas: 1 acumulada (antiguos) + 5 mas recientes
+// 6 columnas en orden cronologico (1 viejo -> 6 nuevo).
+// Si hay mas de 5 registros:
+// - col 6: mas nuevo
+// - col 2: 5to mas nuevo
+// - col 1: acumulado del 6to mas nuevo hacia atras, con fecha del 6to mas nuevo.
 function toSixColumns(records: RegistroWithItems[]): MatrixColumn[] {
   const sorted = [...records].sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
-  const oldRecords = sorted.slice(0, Math.max(0, sorted.length - 5));
-  const recentRecords = sorted.slice(-5);
+  const columns: MatrixColumn[] = [];
 
-  const columns: MatrixColumn[] = [
-    {
-      fecha: null,
+  if (sorted.length > 5) {
+    const oldRecords = sorted.slice(0, sorted.length - 5);
+    const recentRecords = sorted.slice(-5);
+    const cutoffRecord = oldRecords[oldRecords.length - 1] ?? null;
+
+    columns.push({
+      fecha: cutoffRecord ? cutoffRecord.fecha.toISOString() : null,
       items: aggregateItems(oldRecords),
-    },
-    ...recentRecords.map((record) => ({
-      fecha: record.fecha.toISOString(),
-      items: record.items.map((detail) => ({
-        nombre: detail.item.nombre,
-        cantidad: detail.cantidad,
+    });
+
+    columns.push(
+      ...recentRecords.map((record) => ({
+        fecha: record.fecha.toISOString(),
+        items: record.items.map((detail) => ({
+          nombre: detail.item.nombre,
+          cantidad: detail.cantidad,
+        })),
       })),
-    })),
-  ];
+    );
+  } else {
+    columns.push(
+      ...sorted.map((record) => ({
+        fecha: record.fecha.toISOString(),
+        items: record.items.map((detail) => ({
+          nombre: detail.item.nombre,
+          cantidad: detail.cantidad,
+        })),
+      })),
+    );
+  }
 
   while (columns.length < 6) {
     columns.push({ fecha: null, items: [] });

@@ -10,15 +10,15 @@
   --EscudoCeleste: #1B75AA;
   --EscudoGris: #C3C3C6;
   --EscudoNegro: #000000;
-  --UniformeVerdeClaro: var(--EscudoVerde);
-  --UniformeVerdeMedio: var(--EscudoMarron);
-  --UniformeVerdeOscuro: var(--EscudoNegro);
-  --UniformeVerdeBeige: var(--EscudoGris);
+  --UniformeVerdeClaro: #dfeee4;
+  --UniformeVerdeMedio: #1b75aa;
+  --UniformeVerdeOscuro: #003885;
+  --UniformeVerdeBeige: #f2f4f7;
   --Blanco: #FFFFFF;
   --fuentePrincipal: "Liberation Sans", sans-serif;
 
-  --background: var(--EscudoGris);
-  --foreground: #1d1d1b;
+  --background: #eef2f6;
+  --foreground: #1f2937;
 }
 
 @theme inline {
@@ -33,9 +33,9 @@ body {
   color: var(--foreground);
   font-family: var(--fuentePrincipal), var(--font-geist-sans), "Segoe UI", sans-serif;
   background-image:
-    radial-gradient(circle at 10% 8%, rgb(27 117 170 / 16%) 0, transparent 28%),
-    radial-gradient(circle at 92% 16%, rgb(31 103 40 / 14%) 0, transparent 25%),
-    linear-gradient(180deg, rgb(195 195 198 / 60%) 0%, rgb(255 255 255 / 92%) 100%);
+    radial-gradient(circle at 12% 8%, rgb(27 117 170 / 12%) 0, transparent 35%),
+    radial-gradient(circle at 88% 14%, rgb(31 103 40 / 10%) 0, transparent 30%),
+    linear-gradient(180deg, rgb(248 250 252 / 96%) 0%, rgb(238 242 246 / 92%) 100%);
   background-attachment: fixed;
 }
 
@@ -56,48 +56,56 @@ textarea:focus {
 }
 
 .ej-hero {
-  border: 1px solid rgb(55 52 43 / 45%);
-  background: linear-gradient(120deg, var(--UniformeVerdeOscuro) 0%, var(--UniformeVerdeMedio) 60%, var(--UniformeVerdeClaro) 100%);
-  color: var(--Blanco);
+  border: 1px solid rgb(27 117 170 / 24%);
+  background: linear-gradient(130deg, rgb(255 255 255 / 96%) 0%, rgb(233 244 255 / 93%) 44%, rgb(231 245 235 / 93%) 100%);
+  color: #1f2937;
 }
 
 .ej-card {
-  border: 1px solid rgb(55 52 43 / 24%);
-  background: rgb(255 255 255 / 93%);
-  box-shadow: 0 10px 26px rgb(55 52 43 / 8%);
+  border: 1px solid rgb(148 163 184 / 28%);
+  background: rgb(255 255 255 / 95%);
+  box-shadow: 0 8px 20px rgb(15 23 42 / 6%);
 }
 
 .ej-button {
-  border: 1px solid transparent;
-  background: var(--UniformeVerdeMedio);
+  border: 1px solid rgb(27 117 170 / 22%);
+  background: #2d84b5;
   color: var(--Blanco);
 }
 
 .ej-button:hover {
-  background: var(--UniformeVerdeOscuro);
+  background: #1b75aa;
 }
 
 .ej-button-danger {
-  border: 1px solid rgb(255 255 255 / 35%);
-  background: var(--EscudoRojo);
+  border: 1px solid rgb(207 15 33 / 28%);
+  background: #c81e31;
   color: var(--Blanco);
 }
 
 .ej-button-muted {
-  border: 1px solid rgb(195 195 198 / 45%);
-  background: rgb(0 0 0 / 28%);
-  color: rgb(255 255 255 / 92%);
+  border: 1px solid rgb(148 163 184 / 45%);
+  background: rgb(255 255 255 / 88%);
+  color: rgb(30 41 59 / 92%);
+}
+
+.ej-button-muted:hover {
+  background: rgb(241 245 249 / 95%);
+}
+
+.ej-button-danger:hover {
+  background: #b41224;
 }
 
 .ej-view-active {
-  background: var(--UniformeVerdeOscuro);
+  background: var(--EscudoAzul);
   color: var(--Blanco);
 }
 
 .ej-view-idle {
-  border: 1px solid rgb(77 53 29 / 30%);
-  background: rgb(255 255 255 / 85%);
-  color: #37342b;
+  border: 1px solid rgb(148 163 184 / 40%);
+  background: rgb(255 255 255 / 88%);
+  color: #334155;
 }
 
 .ej-action-btn {
