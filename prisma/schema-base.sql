@@ -58,6 +58,13 @@ CREATE TABLE "bateria" (
   "nombre" TEXT NOT NULL UNIQUE
 );
 
+INSERT INTO "bateria" ("nombre") VALUES
+('Cdo. y Serv.'),
+('Ba. Obus. "A"'),
+('Ba. Obus. "B"'),
+('S/ CIRR'),
+('Cursando CIRR');
+
 CREATE TABLE "talla_tipo" (
   "talla_tipo_id" SMALLSERIAL PRIMARY KEY,
   "nombre" TEXT NOT NULL UNIQUE
@@ -81,10 +88,11 @@ CREATE TABLE "personal" (
   "nombre2" TEXT,
   "fecha_ingreso" DATE,
   "grado_id" SMALLINT NOT NULL REFERENCES "grado"("grado_id"),
-  "bateria_id" SMALLINT NOT NULL REFERENCES "bateria"("bateria_id"),
+  "bateria_id" SMALLINT REFERENCES "bateria"("bateria_id"),
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
-  CONSTRAINT "personal_ci_uruguaya_valida_chk" CHECK (public.es_ci_uruguaya_valida("ci"))
+  CONSTRAINT "personal_ci_uruguaya_valida_chk" CHECK (public.es_ci_uruguaya_valida("ci")),
+  CONSTRAINT "personal_fecha_ingreso_hoy_chk" CHECK ("fecha_ingreso" IS NULL OR "fecha_ingreso" <= CURRENT_DATE)
 );
 
 CREATE INDEX "personal_grado_id_idx" ON "personal"("grado_id");

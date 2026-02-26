@@ -4,6 +4,7 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
+import { comparePersonalByHierarchy } from "@/lib/rank-order";
 
 type PersonalPayload = {
   ci: string;
@@ -13,7 +14,7 @@ type PersonalPayload = {
   nombre2?: string;
   fechaIngreso?: string;
   rangoId: number | string;
-  bateriaId: number | string;
+  bateriaId?: number | string | null;
   tallas?: Partial<Record<TallaKey, string>>;
   tallaParka?: string;
   tallaCamisaco?: string;
@@ -35,13 +36,33 @@ function isValidPayload(body: unknown): body is PersonalPayload {
   if (!isValidUruguayanCi(String(candidate.ci))) return false;
 
   const rangoId = Number(candidate.rangoId);
-  const bateriaId = Number(candidate.bateriaId);
-  return Number.isInteger(rangoId) && rangoId > 0 && Number.isInteger(bateriaId) && bateriaId > 0;
+  if (!Number.isInteger(rangoId) || rangoId <= 0) return false;
+
+  const bateriaRaw = candidate.bateriaId;
+  if (bateriaRaw === undefined || bateriaRaw === null || String(bateriaRaw).trim() === "") return true;
+  const bateriaId = Number(bateriaRaw);
+  return Number.isInteger(bateriaId) && bateriaId > 0;
 }
 
 function normalizeNullableText(value: string | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
+}
+
+function isAfterToday(rawValue: string, parsedDate: Date) {
+  const datePart = rawValue.trim().slice(0, 10);
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return datePart > today;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const ingreso = new Date(parsedDate);
+  ingreso.setHours(0, 0, 0, 0);
+  return ingreso.getTime() > today.getTime();
 }
 
 function extractTallas(payload: PersonalPayload): Partial<Record<TallaKey, string>> {
@@ -67,12 +88,18 @@ function extractTallas(payload: PersonalPayload): Partial<Record<TallaKey, strin
   return clean;
 }
 
+function parseOptionalBateriaId(value: unknown) {
+  if (value === undefined || value === null || String(value).trim() === "") return null;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  return parsed;
+}
+
 export async function GET(request: Request) {
   const auth = await authorizeRequest(request, "read_data");
   if (!auth.ok) return auth.response;
 
   const personal = await prisma.personal.findMany({
-    orderBy: { createdAt: "desc" },
     include: {
       rango: true,
       bateria: true,
@@ -83,6 +110,8 @@ export async function GET(request: Request) {
     },
   });
 
+  personal.sort(comparePersonalByHierarchy);
+
   return NextResponse.json(personal);
 }
 
@@ -90,10 +119,10 @@ export async function POST(req: Request) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
 
-  const [totalGrados, totalBaterias] = await Promise.all([prisma.rango.count(), prisma.bateria.count()]);
-  if (totalGrados === 0 || totalBaterias === 0) {
+  const totalGrados = await prisma.rango.count();
+  if (totalGrados === 0) {
     return NextResponse.json(
-      { error: "No se puede registrar personal sin registrar Grados y Bateria previamente." },
+      { error: "No se puede registrar personal sin registrar Grados previamente." },
       { status: 400 },
     );
   }
@@ -102,14 +131,19 @@ export async function POST(req: Request) {
 
   if (!isValidPayload(body)) {
     return NextResponse.json(
-      { error: "Payload invalido. Revisa CI uruguaya valida, apellido1, nombre1, rangoId (grado del personal) y bateriaId." },
+      { error: "Payload invalido. Revisa CI uruguaya valida, apellido1, nombre1 y rangoId (grado del personal)." },
       { status: 400 },
     );
   }
+  const bateriaId = parseOptionalBateriaId(body.bateriaId);
 
-  const fechaIngreso = body.fechaIngreso?.trim() ? new Date(body.fechaIngreso) : null;
+  const fechaIngresoRaw = body.fechaIngreso?.trim();
+  const fechaIngreso = fechaIngresoRaw ? new Date(fechaIngresoRaw) : null;
   if (fechaIngreso && Number.isNaN(fechaIngreso.getTime())) {
     return NextResponse.json({ error: "fechaIngreso debe ser una fecha valida." }, { status: 400 });
+  }
+  if (fechaIngresoRaw && fechaIngreso && isAfterToday(fechaIngresoRaw, fechaIngreso)) {
+    return NextResponse.json({ error: "fechaIngreso debe ser antes o igual a hoy." }, { status: 400 });
   }
 
   const tallasPayload = extractTallas(body);
@@ -147,7 +181,7 @@ export async function POST(req: Request) {
           nombre2: normalizeNullableText(body.nombre2),
           fechaIngreso,
           rangoId: Number(body.rangoId),
-          bateriaId: Number(body.bateriaId),
+          bateriaId,
         },
       });
 
@@ -182,7 +216,7 @@ export async function POST(req: Request) {
       detalle: {
         ci: created?.ci ?? null,
         rangoId: Number(body.rangoId),
-        bateriaId: Number(body.bateriaId),
+        bateriaId,
       },
     });
 
@@ -192,7 +226,7 @@ export async function POST(req: Request) {
       const code = (error as { code: string }).code;
       if (code === "P2002") return NextResponse.json({ error: "La cedula ya existe." }, { status: 409 });
       if (code === "P2003") {
-        return NextResponse.json({ error: "rangoId (grado del personal) o bateriaId no existe." }, { status: 400 });
+        return NextResponse.json({ error: "rangoId (grado del personal) o bateriaId invalido." }, { status: 400 });
       }
     }
 

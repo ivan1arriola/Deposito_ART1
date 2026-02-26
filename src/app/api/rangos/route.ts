@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { compareRankAbbreviation } from "@/lib/rank-order";
 
 type RangoPayload = {
   abreviacion: string;
@@ -24,8 +25,10 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const rangos = await prisma.rango.findMany({
-    orderBy: { abreviacion: "asc" },
+    orderBy: { rangoId: "asc" },
   });
+
+  rangos.sort((a, b) => compareRankAbbreviation(a.abreviacion, b.abreviacion));
 
   return NextResponse.json(rangos);
 }

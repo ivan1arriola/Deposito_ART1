@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState, type ReactNode } from "react";
+import { Fragment, FormEvent, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { isValidUruguayanCi } from "@/lib/ci";
+import { comparePersonalByHierarchy } from "@/lib/rank-order";
 import {
   TALLA_KEYS,
   TALLA_LABELS,
@@ -23,9 +24,9 @@ type Personal = {
   nombre2: string | null;
   fechaIngreso: string | null;
   rangoId: number;
-  bateriaId: number;
+  bateriaId: number | null;
   rango: Rango;
-  bateria: Bateria;
+  bateria: Bateria | null;
   tallas: Talla[];
 };
 
@@ -53,6 +54,20 @@ type ItemForm = {
 
 type Role = "ADMIN" | "EDITOR" | "VIEWER";
 type MainView = "personal_registro" | "personal_gestion" | "grados" | "baterias" | "items" | "admin";
+type RegistroTipo = "ENTREGA" | "DEVOLUCION";
+
+type RegistroDraftItem = {
+  itemId: string;
+  cantidad: string;
+};
+
+type RegistroDraft = {
+  ci: string;
+  tipo: RegistroTipo;
+  fecha: string;
+  comentarios: string;
+  items: RegistroDraftItem[];
+};
 
 type CurrentUser = {
   usuarioId: string;
@@ -78,6 +93,13 @@ type AuditoriaRecord = {
   entidadId: string | null;
   detalle: unknown;
   createdAt: string;
+};
+
+type DbStatus = {
+  ok: true;
+  database: string | null;
+  dbUser: string | null;
+  host: string | null;
 };
 
 const EMPTY_PERSONAL_FORM: PersonalForm = {
@@ -106,11 +128,29 @@ const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "VIEWER"];
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
-  const data = (await response.json()) as T | { error?: string };
+  const rawBody = await response.text();
+  let data: unknown = null;
+
+  if (rawBody) {
+    try {
+      data = JSON.parse(rawBody);
+    } catch {
+      throw new Error("El servidor devolvio una respuesta invalida.");
+    }
+  }
+
   if (!response.ok) {
-    const message = typeof data === "object" && data && "error" in data ? data.error : "Error en la operacion.";
+    const message =
+      typeof data === "object" && data && "error" in data && typeof (data as { error?: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : "Error en la operacion.";
     throw new Error(message || "Error en la operacion.");
   }
+
+  if (data === null) {
+    throw new Error("El servidor no devolvio datos. No se pudo completar la lectura.");
+  }
+
   return data as T;
 }
 
@@ -130,10 +170,16 @@ function tallasMap(tallas: Talla[]) {
   return base;
 }
 
-function fullName(persona: Personal) {
-  return `${persona.apellido1} ${persona.apellido2 ?? ""}, ${persona.nombre1} ${persona.nombre2 ?? ""}`
-    .replace(/\s+/g, " ")
-    .trim();
+function apellidosLabel(persona: Personal) {
+  return `${persona.apellido1} ${persona.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
+}
+
+function nombresLabel(persona: Personal) {
+  return `${persona.nombre1} ${persona.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
+}
+
+function tallasInlineText(tallas: Record<string, string>) {
+  return `P:${tallas.PARKA} C:${tallas.CAMISACO} Pa:${tallas.PANTALON} K:${tallas.KEPI} Ca:${tallas.CALZADO}`;
 }
 
 function rangoLabel(rango: Rango) {
@@ -143,6 +189,14 @@ function rangoLabel(rango: Rango) {
 function toDateInput(dateIso: string | null) {
   if (!dateIso) return "";
   return dateIso.slice(0, 10);
+}
+
+function getTodayDateInput() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function toFormTallaValue(key: TallaKey, value: string) {
@@ -167,7 +221,7 @@ function personalPayload(form: PersonalForm, includeCi: boolean) {
     nombre2: form.nombre2.trim(),
     fechaIngreso: form.fechaIngreso || undefined,
     rangoId: Number(form.rangoId),
-    bateriaId: Number(form.bateriaId),
+    bateriaId: form.bateriaId ? Number(form.bateriaId) : undefined,
     tallas,
   };
 }
@@ -182,7 +236,7 @@ function toEditablePersonal(persona: Personal): PersonalForm {
     nombre2: persona.nombre2 ?? "",
     fechaIngreso: toDateInput(persona.fechaIngreso),
     rangoId: String(persona.rangoId),
-    bateriaId: String(persona.bateriaId),
+    bateriaId: persona.bateriaId ? String(persona.bateriaId) : "",
     PARKA: toFormTallaValue("PARKA", tallas.PARKA),
     CAMISACO: toFormTallaValue("CAMISACO", tallas.CAMISACO),
     PANTALON: toFormTallaValue("PANTALON", tallas.PANTALON),
@@ -277,12 +331,14 @@ export default function Home() {
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
   const [editPersonal, setEditPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
+  const [expandedTallasByCi, setExpandedTallasByCi] = useState<Record<string, boolean>>({});
+  const [registroDraft, setRegistroDraft] = useState<RegistroDraft | null>(null);
   const [activeView, setActiveView] = useState<MainView>("personal_registro");
 
   const isAdmin = currentUser?.rol === "ADMIN";
   const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
   const canDelete = canWrite;
-  const canRegisterPersonal = canWrite && rangos.length > 0 && baterias.length > 0;
+  const canRegisterPersonal = canWrite && rangos.length > 0;
   const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "items";
   const ciLooksValid = newPersonal.ci.trim() === "" || isValidUruguayanCi(newPersonal.ci);
   const requiredPersonalFields = [
@@ -290,10 +346,11 @@ export default function Home() {
     newPersonal.apellido1.trim() !== "",
     newPersonal.nombre1.trim() !== "",
     Number(newPersonal.rangoId) > 0,
-    Number(newPersonal.bateriaId) > 0,
   ];
   const requiredPersonalCompleted = requiredPersonalFields.filter(Boolean).length;
   const canSubmitPersonal = canRegisterPersonal && requiredPersonalCompleted === requiredPersonalFields.length;
+  const maxFechaIngreso = getTodayDateInput();
+  const personalOrdenado = useMemo(() => [...personal].sort(comparePersonalByHierarchy), [personal]);
 
   useEffect(() => {
     if (activeView === "admin" && !isAdmin) {
@@ -310,6 +367,8 @@ export default function Home() {
     setAuditoria([]);
     setEditPersonalCi(null);
     setEditPersonal(EMPTY_PERSONAL_FORM);
+    setExpandedTallasByCi({});
+    setRegistroDraft(null);
   }
 
   const loadData = useCallback(async (showSpinner = false) => {
@@ -318,6 +377,8 @@ export default function Home() {
     try {
       const me = await api<{ user: CurrentUser }>("/api/auth/me");
       setCurrentUser(me.user);
+
+      await api<DbStatus>("/api/db-status");
 
       const [rangosData, bateriasData, itemsData, personalData] = await Promise.all([
         api<Rango[]>("/api/rangos"),
@@ -350,6 +411,11 @@ export default function Home() {
         setCurrentUser(null);
         clearLoadedData();
         setStatus("Ingresa tus credenciales.");
+        return;
+      }
+      if (message.toLowerCase().includes("base de datos")) {
+        clearLoadedData();
+        setStatus(`Error de base de datos: ${message}`);
         return;
       }
       setStatus(message);
@@ -540,7 +606,7 @@ export default function Home() {
   async function createPersonal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canRegisterPersonal) {
-      setStatus("No se puede registrar personal sin registrar Grados y Bateria previamente.");
+      setStatus("No se puede registrar personal sin registrar Grados previamente.");
       return;
     }
     if (!isValidUruguayanCi(newPersonal.ci)) {
@@ -600,6 +666,169 @@ export default function Home() {
   function startEditPersonal(persona: Personal) {
     setEditPersonalCi(persona.ci);
     setEditPersonal(toEditablePersonal(persona));
+  }
+
+  function toggleTallas(ci: string) {
+    setExpandedTallasByCi((prev) => ({
+      ...prev,
+      [ci]: !prev[ci],
+    }));
+  }
+
+  function openRegistro(ci: string, tipo: RegistroTipo) {
+    if (!canWrite) {
+      setStatus("No tienes permisos para registrar movimientos.");
+      return;
+    }
+    setRegistroDraft({
+      ci,
+      tipo,
+      fecha: getTodayDateInput(),
+      comentarios: "",
+      items: [{ itemId: "", cantidad: "1" }],
+    });
+  }
+
+  function updateRegistroItem(index: number, field: keyof RegistroDraftItem, value: string) {
+    setRegistroDraft((prev) => {
+      if (!prev) return prev;
+      const items = prev.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item));
+      return { ...prev, items };
+    });
+  }
+
+  function addRegistroItem() {
+    setRegistroDraft((prev) => {
+      if (!prev) return prev;
+      return { ...prev, items: [...prev.items, { itemId: "", cantidad: "1" }] };
+    });
+  }
+
+  function removeRegistroItem(index: number) {
+    setRegistroDraft((prev) => {
+      if (!prev) return prev;
+      if (prev.items.length <= 1) return prev;
+      return { ...prev, items: prev.items.filter((_, itemIndex) => itemIndex !== index) };
+    });
+  }
+
+  async function saveRegistro() {
+    if (!registroDraft) return;
+    const payloadItems = registroDraft.items
+      .map((item) => ({
+        itemId: item.itemId.trim(),
+        cantidad: Number(item.cantidad),
+      }))
+      .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
+
+    if (payloadItems.length === 0) {
+      setStatus("Debes agregar al menos un item con cantidad valida.");
+      return;
+    }
+
+    try {
+      await api("/api/registros", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ci: registroDraft.ci,
+          tipo: registroDraft.tipo,
+          fecha: registroDraft.fecha,
+          comentarios: registroDraft.comentarios.trim() || undefined,
+          items: payloadItems,
+        }),
+      });
+      setStatus(`${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolucion"} registrada para ${registroDraft.ci}.`);
+      setRegistroDraft(null);
+      await loadData();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "No se pudo registrar el movimiento.");
+    }
+  }
+
+  function renderInlineEditForm(ci: string) {
+    return (
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <input
+          value={editPersonal.apellido1}
+          onChange={(event) => setEditPersonal((prev) => ({ ...prev, apellido1: event.target.value }))}
+          placeholder="Apellido 1"
+          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        />
+        <input
+          value={editPersonal.apellido2}
+          onChange={(event) => setEditPersonal((prev) => ({ ...prev, apellido2: event.target.value }))}
+          placeholder="Apellido 2"
+          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        />
+        <input
+          value={editPersonal.nombre1}
+          onChange={(event) => setEditPersonal((prev) => ({ ...prev, nombre1: event.target.value }))}
+          placeholder="Nombre 1"
+          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        />
+        <input
+          value={editPersonal.nombre2}
+          onChange={(event) => setEditPersonal((prev) => ({ ...prev, nombre2: event.target.value }))}
+          placeholder="Nombre 2"
+          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        />
+        <input
+          type="date"
+          value={editPersonal.fechaIngreso}
+          onChange={(event) => setEditPersonal((prev) => ({ ...prev, fechaIngreso: event.target.value }))}
+          max={maxFechaIngreso}
+          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        />
+        <select
+          value={editPersonal.rangoId}
+          onChange={(event) => setEditPersonal((prev) => ({ ...prev, rangoId: event.target.value }))}
+          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        >
+          {rangos.map((rango) => (
+            <option key={rango.rangoId} value={rango.rangoId}>
+              {rangoLabel(rango)}
+            </option>
+          ))}
+        </select>
+        <select
+          value={editPersonal.bateriaId}
+          onChange={(event) => setEditPersonal((prev) => ({ ...prev, bateriaId: event.target.value }))}
+          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        >
+          <option value="">Sin bateria (pendiente)</option>
+          {baterias.map((bateria) => (
+            <option key={bateria.bateriaId} value={bateria.bateriaId}>
+              {bateria.nombre}
+            </option>
+          ))}
+        </select>
+        {TALLA_KEYS.map((key) => (
+          <label key={`edit-${ci}-${key}`} className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
+            <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">{`Talla ${TALLA_LABELS[key]}`}</span>
+            <select
+              value={editPersonal[key]}
+              onChange={(event) => setEditPersonal((prev) => ({ ...prev, [key]: event.target.value }))}
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            >
+              <option value="">Seleccionar</option>
+              {TALLA_OPTIONS[key].map((option) => (
+                <option key={`edit-${ci}-${key}-${option}`} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+        <button
+          type="button"
+          onClick={() => void updatePersonal(ci)}
+          className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white sm:col-span-2 lg:col-span-1"
+        >
+          Guardar cambios
+        </button>
+      </div>
+    );
   }
 
   async function login(event: FormEvent<HTMLFormElement>) {
@@ -786,34 +1015,66 @@ export default function Home() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
-      <section className="ej-hero rounded-2xl p-5 shadow-lg sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-amber-200/90">Soldados App</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Panel CRUD Responsive</h1>
-            <p className="mt-2 text-sm text-amber-100/90">Grado del Personal, baterias, items y personal desde celular o PC.</p>
-          </div>
+      <section className="ej-hero relative overflow-hidden rounded-3xl p-5 shadow-xl sm:p-7">
+        <div className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full bg-amber-300/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-black/15 blur-3xl" />
+
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-lg border border-amber-100/35 bg-black/20 px-3 py-2 text-xs">
+            <p className="text-xs uppercase tracking-[0.24em] text-amber-200/95">Soldados App</p>
+            <span className="rounded-full border border-emerald-200/35 bg-emerald-900/25 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
+              {loading ? "Sincronizando" : "Sistema activo"}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <span className="rounded-xl border border-amber-100/35 bg-black/20 px-3 py-2 text-xs font-semibold">
               {currentUser ? `${currentUser.username} (${currentUser.rol})` : "Sin sesion"}
             </span>
             <button
               type="button"
               onClick={() => void loadData(true)}
-              className="ej-button-muted rounded-lg px-3 py-2 text-sm font-semibold"
+              className="ej-button-muted rounded-xl px-3 py-2 text-sm font-semibold"
             >
               Recargar
             </button>
             <button
               type="button"
               onClick={() => void logout()}
-              className="ej-button-danger rounded-lg px-3 py-2 text-sm font-semibold"
+              className="ej-button-danger rounded-xl px-3 py-2 text-sm font-semibold"
             >
               Salir
             </button>
           </div>
         </div>
-        <p className="mt-4 rounded-lg border border-amber-100/25 bg-black/20 px-3 py-2 text-xs">{status}</p>
+
+        <div className="relative mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-4xl">Gestion de Personal y Vestuario</h1>
+            <p className="mt-2 text-sm text-amber-100/90 sm:max-w-2xl">
+              Registro de alistados, grados, baterias e inventario operativo en una sola interfaz.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
+              <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Personal</p>
+              <p className="text-lg font-bold text-white">{personal.length}</p>
+            </div>
+            <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
+              <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Grados</p>
+              <p className="text-lg font-bold text-white">{rangos.length}</p>
+            </div>
+            <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
+              <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Baterias</p>
+              <p className="text-lg font-bold text-white">{baterias.length}</p>
+            </div>
+            <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-2">
+              <p className="text-[10px] uppercase tracking-wider text-amber-200/90">Items activos</p>
+              <p className="text-lg font-bold text-white">{items.filter((item) => item.activo).length}</p>
+            </div>
+          </div>
+        </div>
+
+        <p className="relative mt-5 rounded-xl border border-amber-100/25 bg-black/25 px-3 py-2 text-xs">{status}</p>
       </section>
 
       <section className="ej-card mt-4 rounded-2xl p-3 sm:p-4">
@@ -1120,7 +1381,7 @@ export default function Home() {
                 <fieldset className="rounded-xl border border-stone-200 bg-stone-50/55 p-4">
                   <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Identidad</legend>
                   <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <label className="xl:col-span-2">
+                    <label className="sm:col-span-2 xl:col-span-4">
                       <span className="block text-xs font-medium text-stone-700">Cedula de identidad *</span>
                       <input
                         value={newPersonal.ci}
@@ -1175,18 +1436,8 @@ export default function Home() {
                 </fieldset>
 
                 <fieldset className="rounded-xl border border-stone-200 bg-stone-50/55 p-4">
-                  <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Destino</legend>
+                  <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Datos de servicio</legend>
                   <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    <label>
-                      <span className="block text-xs font-medium text-stone-700">Fecha de ingreso</span>
-                      <input
-                        type="date"
-                        value={newPersonal.fechaIngreso}
-                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, fechaIngreso: event.target.value }))}
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
-                      />
-                    </label>
-
                     <label>
                       <span className="block text-xs font-medium text-stone-700">Grado del personal *</span>
                       <select
@@ -1204,19 +1455,30 @@ export default function Home() {
                     </label>
 
                     <label>
-                      <span className="block text-xs font-medium text-stone-700">Bateria *</span>
+                      <span className="block text-xs font-medium text-stone-700">Bateria (importante)</span>
                       <select
                         value={newPersonal.bateriaId}
                         onChange={(event) => setNewPersonal((prev) => ({ ...prev, bateriaId: event.target.value }))}
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
                       >
-                        <option value="">Seleccionar bateria</option>
+                        <option value="">Sin bateria (pendiente)</option>
                         {baterias.map((bateria) => (
                           <option key={bateria.bateriaId} value={bateria.bateriaId}>
                             {bateria.nombre}
                           </option>
                         ))}
                       </select>
+                    </label>
+
+                    <label>
+                      <span className="block text-xs font-medium text-stone-700">Fecha de ingreso (importante)</span>
+                      <input
+                        type="date"
+                        value={newPersonal.fechaIngreso}
+                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, fechaIngreso: event.target.value }))}
+                        max={maxFechaIngreso}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+                      />
                     </label>
                   </div>
                 </fieldset>
@@ -1251,7 +1513,7 @@ export default function Home() {
 
                 {!canRegisterPersonal ? (
                   <p className="mt-3 rounded-lg border border-amber-300/80 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                    Primero debes registrar Grados y Bateria.
+                    Primero debes registrar Grados.
                   </p>
                 ) : null}
 
@@ -1266,7 +1528,8 @@ export default function Home() {
                   <p>{`Apellido 1: ${requiredPersonalFields[1] ? "Completo" : "Falta"}`}</p>
                   <p>{`Nombre 1: ${requiredPersonalFields[2] ? "Completo" : "Falta"}`}</p>
                   <p>{`Grado: ${requiredPersonalFields[3] ? "Seleccionado" : "Falta"}`}</p>
-                  <p>{`Bateria: ${requiredPersonalFields[4] ? "Seleccionada" : "Falta"}`}</p>
+                  <p>{`Bateria (importante): ${Number(newPersonal.bateriaId) > 0 ? "Completa" : "Pendiente"}`}</p>
+                  <p>{`Fecha de ingreso (importante): ${newPersonal.fechaIngreso ? "Completa" : "Pendiente"}`}</p>
                 </div>
 
                 <button
@@ -1285,160 +1548,270 @@ export default function Home() {
       {activeView === "personal_gestion" ? (
         <section className="ej-card mt-6 rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Personal</h2>
+          <p className="mt-1 text-xs text-stone-600">Orden: Grado del Personal, Apellidos y Nombres.</p>
 
-        <div className="mt-3 space-y-3 md:hidden">
-          {personal.map((persona) => {
-            const tallas = tallasMap(persona.tallas);
-            return (
-              <article key={persona.ci} className="rounded-xl border border-stone-200 bg-stone-50/80 p-3">
-                <p className="text-xs font-mono text-stone-600">{persona.ci}</p>
-                <p className="mt-1 text-sm font-semibold text-stone-900">{fullName(persona)}</p>
-                <p className="mt-1 text-xs text-stone-600">
-                  {rangoLabel(persona.rango)} | {persona.bateria.nombre}
-                </p>
-                <p className="mt-1 text-xs text-stone-600">{`P:${tallas.PARKA} C:${tallas.CAMISACO} Pa:${tallas.PANTALON} K:${tallas.KEPI} Ca:${tallas.CALZADO}`}</p>
-                <div className="mt-2 flex gap-2">
-                  <SmallActionButton text="Editar" tone="edit" onClick={() => startEditPersonal(persona)} />
-                  <SmallActionButton text="Borrar" tone="delete" onClick={() => void deletePersonal(persona.ci)} />
-                </div>
-              </article>
-            );
-          })}
-        </div>
+          <div className="mt-3 space-y-3 md:hidden">
+            {personalOrdenado.map((persona) => {
+              const tallas = tallasMap(persona.tallas);
+              const ciValida = isValidUruguayanCi(persona.ci);
+              const tallasOpen = expandedTallasByCi[persona.ci] === true;
+              const editing = editPersonalCi === persona.ci;
+              return (
+                <article
+                  key={persona.ci}
+                  className={`rounded-xl border p-3 ${ciValida ? "border-stone-200 bg-stone-50/80" : "border-rose-300 bg-rose-50/70"}`}
+                >
+                  <p className={`text-xs font-mono ${ciValida ? "text-stone-600" : "font-semibold text-rose-700"}`}>{persona.ci}</p>
+                  {!ciValida ? (
+                    <p className="mt-1 inline-block rounded-full border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-800">
+                      CI invalida en BD
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-sm text-stone-900">
+                    <span className="font-semibold">Apellidos:</span> {apellidosLabel(persona)}
+                  </p>
+                  <p className="text-sm text-stone-900">
+                    <span className="font-semibold">Nombres:</span> {nombresLabel(persona)}
+                  </p>
+                  <p className="mt-1 text-xs text-stone-600">
+                    {rangoLabel(persona.rango)} | {persona.bateria?.nombre ?? "Sin bateria"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <SmallActionButton
+                      text={editing ? "Cancelar" : "Editar"}
+                      tone={editing ? "neutral" : "edit"}
+                      onClick={() => {
+                        if (editing) {
+                          setEditPersonalCi(null);
+                          setEditPersonal(EMPTY_PERSONAL_FORM);
+                          return;
+                        }
+                        startEditPersonal(persona);
+                      }}
+                    />
+                    <SmallActionButton text="Borrar" tone="delete" onClick={() => void deletePersonal(persona.ci)} />
+                    <button
+                      type="button"
+                      onClick={() => toggleTallas(persona.ci)}
+                      className="rounded bg-stone-600 px-2 py-1 text-xs font-medium text-white"
+                    >
+                      {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openRegistro(persona.ci, "ENTREGA")}
+                      className="rounded bg-emerald-700 px-2 py-1 text-xs font-medium text-white"
+                    >
+                      Entrega
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openRegistro(persona.ci, "DEVOLUCION")}
+                      className="rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white"
+                    >
+                      Devolucion
+                    </button>
+                  </div>
+                  {tallasOpen ? (
+                    <div className="mt-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs text-stone-700">
+                      {tallasInlineText(tallas)}
+                    </div>
+                  ) : null}
+                  {editing ? <div className="mt-3 rounded-lg border border-stone-200 bg-white p-3">{renderInlineEditForm(persona.ci)}</div> : null}
+                </article>
+              );
+            })}
+          </div>
 
-        <div className="mt-3 hidden overflow-x-auto md:block">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-600">
-              <tr>
-                <th className="px-3 py-2">CI</th>
-                <th className="px-3 py-2">Nombre</th>
-                <th className="px-3 py-2">Grado del Personal</th>
-                <th className="px-3 py-2">Bateria</th>
-                <th className="px-3 py-2">Tallas</th>
-                <th className="px-3 py-2">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {personal.map((persona) => {
-                const tallas = tallasMap(persona.tallas);
-                return (
-                  <tr key={persona.ci}>
-                    <td className="px-3 py-2 font-mono text-xs text-stone-700">{persona.ci}</td>
-                    <td className="px-3 py-2 text-stone-900">{fullName(persona)}</td>
-                    <td className="px-3 py-2 text-stone-700">{rangoLabel(persona.rango)}</td>
-                    <td className="px-3 py-2 text-stone-700">{persona.bateria.nombre}</td>
-                    <td className="px-3 py-2 text-xs text-stone-600">
-                      {`P:${tallas.PARKA} C:${tallas.CAMISACO} Pa:${tallas.PANTALON} K:${tallas.KEPI} Ca:${tallas.CALZADO}`}
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex gap-2">
-                        <SmallActionButton text="Editar" tone="edit" onClick={() => startEditPersonal(persona)} />
-                        <SmallActionButton text="Borrar" tone="delete" onClick={() => void deletePersonal(persona.ci)} />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+          <div className="mt-3 hidden overflow-x-auto md:block">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-600">
+                <tr>
+                  <th className="px-3 py-2">CI</th>
+                  <th className="px-3 py-2">Apellidos</th>
+                  <th className="px-3 py-2">Nombres</th>
+                  <th className="px-3 py-2">Grado del Personal</th>
+                  <th className="px-3 py-2">Bateria</th>
+                  <th className="px-3 py-2">Detalles</th>
+                  <th className="px-3 py-2">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {personalOrdenado.map((persona) => {
+                  const tallas = tallasMap(persona.tallas);
+                  const ciValida = isValidUruguayanCi(persona.ci);
+                  const tallasOpen = expandedTallasByCi[persona.ci] === true;
+                  const editing = editPersonalCi === persona.ci;
+                  return (
+                    <Fragment key={persona.ci}>
+                      <tr>
+                        <td className={`px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-semibold text-rose-700"}`}>
+                          <div>{persona.ci}</div>
+                          {!ciValida ? <div className="mt-1 text-[10px] uppercase tracking-wide text-rose-800">invalida</div> : null}
+                        </td>
+                        <td className="px-3 py-2 text-stone-900">{apellidosLabel(persona)}</td>
+                        <td className="px-3 py-2 text-stone-900">{nombresLabel(persona)}</td>
+                        <td className="px-3 py-2 text-stone-700">{rangoLabel(persona.rango)}</td>
+                        <td className="px-3 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin bateria"}</td>
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleTallas(persona.ci)}
+                            className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700"
+                          >
+                            {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
+                          </button>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-wrap gap-2">
+                            <SmallActionButton
+                              text={editing ? "Cancelar" : "Editar"}
+                              tone={editing ? "neutral" : "edit"}
+                              onClick={() => {
+                                if (editing) {
+                                  setEditPersonalCi(null);
+                                  setEditPersonal(EMPTY_PERSONAL_FORM);
+                                  return;
+                                }
+                                startEditPersonal(persona);
+                              }}
+                            />
+                            <SmallActionButton text="Borrar" tone="delete" onClick={() => void deletePersonal(persona.ci)} />
+                            <button
+                              type="button"
+                              onClick={() => openRegistro(persona.ci, "ENTREGA")}
+                              className="rounded bg-emerald-700 px-2 py-1 text-xs font-medium text-white"
+                            >
+                              Entrega
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openRegistro(persona.ci, "DEVOLUCION")}
+                              className="rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white"
+                            >
+                              Devolucion
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {tallasOpen ? (
+                        <tr className="bg-stone-50/80">
+                          <td colSpan={7} className="px-3 py-2 text-xs text-stone-700">
+                            {tallasInlineText(tallas)}
+                          </td>
+                        </tr>
+                      ) : null}
+                      {editing ? (
+                        <tr className="bg-white">
+                          <td colSpan={7} className="px-3 py-3">
+                            {renderInlineEditForm(persona.ci)}
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
       ) : null}
 
-      {activeView === "personal_gestion" && editPersonalCi ? (
-        <section className="ej-card mt-6 rounded-2xl p-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-base font-semibold text-stone-900">{`Editar Personal (${editPersonalCi})`}</h2>
-            <button
-              type="button"
-              onClick={() => {
-                setEditPersonalCi(null);
-                setEditPersonal(EMPTY_PERSONAL_FORM);
-              }}
-              className="rounded-lg bg-stone-600 px-3 py-2 text-sm font-semibold text-white"
-            >
-              Cancelar
-            </button>
-          </div>
+      {registroDraft ? (
+        <section className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-3">
+          <article className="w-full max-w-2xl rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-stone-900">
+                  {registroDraft.tipo === "ENTREGA" ? "Registrar Entrega" : "Registrar Devolucion"}
+                </h3>
+                <p className="text-xs text-stone-600">{`CI: ${registroDraft.ci}`}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRegistroDraft(null)}
+                className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white"
+              >
+                Cerrar
+              </button>
+            </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <input
-              value={editPersonal.apellido1}
-              onChange={(event) => setEditPersonal((prev) => ({ ...prev, apellido1: event.target.value }))}
-              placeholder="Apellido 1"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              value={editPersonal.apellido2}
-              onChange={(event) => setEditPersonal((prev) => ({ ...prev, apellido2: event.target.value }))}
-              placeholder="Apellido 2"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              value={editPersonal.nombre1}
-              onChange={(event) => setEditPersonal((prev) => ({ ...prev, nombre1: event.target.value }))}
-              placeholder="Nombre 1"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              value={editPersonal.nombre2}
-              onChange={(event) => setEditPersonal((prev) => ({ ...prev, nombre2: event.target.value }))}
-              placeholder="Nombre 2"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              type="date"
-              value={editPersonal.fechaIngreso}
-              onChange={(event) => setEditPersonal((prev) => ({ ...prev, fechaIngreso: event.target.value }))}
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <select
-              value={editPersonal.rangoId}
-              onChange={(event) => setEditPersonal((prev) => ({ ...prev, rangoId: event.target.value }))}
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            >
-              {rangos.map((rango) => (
-                <option key={rango.rangoId} value={rango.rangoId}>
-                  {rangoLabel(rango)}
-                </option>
-              ))}
-            </select>
-            <select
-              value={editPersonal.bateriaId}
-              onChange={(event) => setEditPersonal((prev) => ({ ...prev, bateriaId: event.target.value }))}
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            >
-              {baterias.map((bateria) => (
-                <option key={bateria.bateriaId} value={bateria.bateriaId}>
-                  {bateria.nombre}
-                </option>
-              ))}
-            </select>
-            {TALLA_KEYS.map((key) => (
-              <label key={`edit-${key}`} className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-                <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">{`Talla ${TALLA_LABELS[key]}`}</span>
-                <select
-                  value={editPersonal[key]}
-                  onChange={(event) => setEditPersonal((prev) => ({ ...prev, [key]: event.target.value }))}
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label className="text-xs text-stone-700">
+                Fecha
+                <input
+                  type="date"
+                  max={maxFechaIngreso}
+                  value={registroDraft.fecha}
+                  onChange={(event) => setRegistroDraft((prev) => (prev ? { ...prev, fecha: event.target.value } : prev))}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Seleccionar</option>
-                  {TALLA_OPTIONS[key].map((option) => (
-                    <option key={`edit-${key}-${option}`} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
-            ))}
-            <button
-              type="button"
-              onClick={() => void updatePersonal(editPersonalCi)}
-              className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white sm:col-span-2 lg:col-span-1"
-            >
-              Guardar cambios
-            </button>
-          </div>
+              <label className="text-xs text-stone-700">
+                Comentarios (opcional)
+                <input
+                  value={registroDraft.comentarios}
+                  onChange={(event) => setRegistroDraft((prev) => (prev ? { ...prev, comentarios: event.target.value } : prev))}
+                  placeholder="Detalle breve"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items del movimiento</p>
+              {registroDraft.items.map((item, index) => (
+                <div key={`reg-item-${index}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
+                  <select
+                    value={item.itemId}
+                    onChange={(event) => updateRegistroItem(index, "itemId", event.target.value)}
+                    className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  >
+                    <option value="">Seleccionar item</option>
+                    {items
+                      .filter((catalogItem) => catalogItem.activo)
+                      .map((catalogItem) => (
+                        <option key={catalogItem.itemId} value={catalogItem.itemId}>
+                          {catalogItem.nombre}
+                        </option>
+                      ))}
+                  </select>
+                  <input
+                    type="number"
+                    min={1}
+                    value={item.cantidad}
+                    onChange={(event) => updateRegistroItem(index, "cantidad", event.target.value)}
+                    className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeRegistroItem(index)}
+                    disabled={registroDraft.items.length <= 1}
+                    className="rounded bg-rose-700 px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 flex flex-wrap justify-between gap-2">
+              <button
+                type="button"
+                onClick={addRegistroItem}
+                className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white"
+              >
+                Agregar item
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveRegistro()}
+                className="rounded bg-emerald-700 px-3 py-2 text-xs font-semibold text-white"
+              >
+                Guardar movimiento
+              </button>
+            </div>
+          </article>
         </section>
       ) : null}
 

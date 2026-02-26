@@ -115,7 +115,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       nombre2: persona.nombre2,
       fechaIngreso: persona.fechaIngreso ? persona.fechaIngreso.toISOString() : null,
       gradoPersonal: persona.rango.abreviacion,
-      bateria: persona.bateria.nombre,
+      bateria: persona.bateria?.nombre ?? null,
       tallas: {
         PARKA: tallas.PARKA ?? "",
         CAMISACO: tallas.CAMISACO ?? "",

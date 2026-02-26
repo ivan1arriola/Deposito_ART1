@@ -108,11 +108,11 @@ model Personal {
   nombre2       String?
   fechaIngreso  DateTime?       @map("fecha_ingreso") @db.Date
   rangoId       Int             @map("grado_id") @db.SmallInt
-  bateriaId     Int             @map("bateria_id") @db.SmallInt
+  bateriaId     Int?            @map("bateria_id") @db.SmallInt
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
   rango         Rango           @relation(fields: [rangoId], references: [rangoId])
-  bateria       Bateria         @relation(fields: [bateriaId], references: [bateriaId])
+  bateria       Bateria?        @relation(fields: [bateriaId], references: [bateriaId])
   tallas        PersonalTalla[]
   registros     Registro[]
   observaciones Observacion[]

@@ -16,7 +16,7 @@ type FichaData = {
     nombre2: string | null;
     fechaIngreso: string | null;
     gradoPersonal: string;
-    bateria: string;
+    bateria: string | null;
     tallas: {
       PARKA: string;
       CAMISACO: string;
@@ -39,11 +39,29 @@ type FichaData = {
 
 async function api<T>(url: string): Promise<T> {
   const response = await fetch(url, { cache: "no-store" });
-  const data = (await response.json()) as T | { error?: string };
+  const rawBody = await response.text();
+  let data: unknown = null;
+
+  if (rawBody) {
+    try {
+      data = JSON.parse(rawBody);
+    } catch {
+      throw new Error("El servidor devolvio una respuesta invalida.");
+    }
+  }
+
   if (!response.ok) {
-    const message = typeof data === "object" && data && "error" in data ? data.error : "Error";
+    const message =
+      typeof data === "object" && data && "error" in data && typeof (data as { error?: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : "Error";
     throw new Error(message || "Error");
   }
+
+  if (data === null) {
+    throw new Error("El servidor no devolvio datos.");
+  }
+
   return data as T;
 }
 
@@ -196,7 +214,7 @@ export default function FichaPage() {
                 <td>Camisaco:</td>
                 <td colSpan={6}>{data.persona.tallas.CAMISACO}</td>
                 <td className={styles.bold}>Ba.:</td>
-                <td colSpan={7}>{data.persona.bateria}</td>
+                <td colSpan={7}>{data.persona.bateria ?? "Pendiente"}</td>
               </tr>
               <tr>
                 <td>Pantalon:</td>

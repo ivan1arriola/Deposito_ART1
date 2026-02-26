@@ -28,35 +28,39 @@ export async function POST(request: Request) {
   const username = body.username.trim();
   const password = body.password;
 
-  const user = await prisma.usuario.findUnique({
-    where: { username },
-  });
+  try {
+    const user = await prisma.usuario.findUnique({
+      where: { username },
+    });
 
-  if (!user || !user.activo) {
-    return NextResponse.json({ error: "Credenciales invalidas." }, { status: 401 });
-  }
+    if (!user || !user.activo) {
+      return NextResponse.json({ error: "Credenciales invalidas." }, { status: 401 });
+    }
 
-  const validPassword = await verifyPassword(password, user.passwordHash);
-  if (!validPassword) {
-    return NextResponse.json({ error: "Credenciales invalidas." }, { status: 401 });
-  }
+    const validPassword = await verifyPassword(password, user.passwordHash);
+    if (!validPassword) {
+      return NextResponse.json({ error: "Credenciales invalidas." }, { status: 401 });
+    }
 
-  const session = await createSession(user.usuarioId);
-  const response = NextResponse.json({
-    user: {
+    const session = await createSession(user.usuarioId);
+    const response = NextResponse.json({
+      user: {
+        usuarioId: user.usuarioId,
+        username: user.username,
+        rol: user.rol,
+      },
+    });
+    setSessionCookie(response, session.rawToken, session.expiresAt);
+
+    await logAudit({
       usuarioId: user.usuarioId,
-      username: user.username,
-      rol: user.rol,
-    },
-  });
-  setSessionCookie(response, session.rawToken, session.expiresAt);
+      accion: "LOGIN",
+      entidad: "AUTH",
+      entidadId: user.usuarioId,
+    });
 
-  await logAudit({
-    usuarioId: user.usuarioId,
-    accion: "LOGIN",
-    entidad: "AUTH",
-    entidadId: user.usuarioId,
-  });
-
-  return response;
+    return response;
+  } catch {
+    return NextResponse.json({ error: "No se pudo leer la base de datos." }, { status: 503 });
+  }
 }
