@@ -13,8 +13,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gestión de Deposito general - Artilleria 1",
-  description: "Gestión de Deposito general - Artilleria 1",
+  title: "Gestión de Depósito General - Artillería 1",
+  description: "Sistema de gestión de depósito general del Grupo de Artillería 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
+  openGraph: {
+    title: "Gestión de Depósito General - Artillería 1",
+    description: "Sistema de gestión de depósito general del Grupo de Artillería 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
+    type: "website",
+    locale: "es_UY",
+    siteName: "Gestión de Depósito General - Artillería 1",
+  },
+  twitter: {
+    card: "summary",
+    title: "Gestión de Depósito General - Artillería 1",
+    description: "Sistema de gestión de depósito general del Grupo de Artillería 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
+  },
 };
 
 export default function RootLayout({
