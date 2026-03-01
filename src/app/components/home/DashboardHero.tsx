@@ -8,9 +8,7 @@ type DashboardHeroProps = {
   currentUser: CurrentUser;
   canManageAccount: boolean;
   personalCount: number;
-  rangosCount: number;
-  bateriasCount: number;
-  equiposActivosCount: number;
+  equiposRegistradosCount: number;
   movimientosTotal: number;
   roleLabel: (role: CurrentUser["rol"]) => string;
   onReload: () => void;
@@ -24,9 +22,7 @@ export function DashboardHero({
   currentUser,
   canManageAccount,
   personalCount,
-  rangosCount,
-  bateriasCount,
-  equiposActivosCount,
+  equiposRegistradosCount,
   movimientosTotal,
   roleLabel,
   onReload,
@@ -111,22 +107,14 @@ export function DashboardHero({
           </div>
         </div>
 
-        <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-3">
           <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
             <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Personal</p>
             <p className="text-lg font-bold text-white">{personalCount}</p>
           </div>
           <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Grados</p>
-            <p className="text-lg font-bold text-white">{rangosCount}</p>
-          </div>
-          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Baterías</p>
-            <p className="text-lg font-bold text-white">{bateriasCount}</p>
-          </div>
-          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Equipos activos</p>
-            <p className="text-lg font-bold text-white">{equiposActivosCount}</p>
+            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Equipos registrados</p>
+            <p className="text-lg font-bold text-white">{equiposRegistradosCount}</p>
           </div>
           <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
             <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Movimientos</p>

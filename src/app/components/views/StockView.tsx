@@ -5,6 +5,7 @@ import type { StockOperacionDraft, StockOperacionDraftItem } from "@/types/forms
 import type { StockDashboardData } from "@/types/views";
 
 type StockViewProps = {
+  section: "actual" | "alta" | "baja" | "historial";
   data: StockDashboardData | null;
   loading: boolean;
   error: string | null;
@@ -27,6 +28,7 @@ function historyBadgeClass(tipo: "INGRESO" | "EGRESO" | "ENTREGA" | "DEVOLUCION"
 }
 
 export function StockView({
+  section,
   data,
   loading,
   error,
@@ -47,13 +49,27 @@ export function StockView({
   const totalUnidades = resumen.reduce((total, item) => total + item.stockActual, 0);
   const itemsConStock = resumen.filter((item) => item.stockActual !== 0).length;
   const itemsNegativos = resumen.filter((item) => item.stockActual < 0).length;
+  const showSummaryCards = section === "actual";
+  const showManualForm = canWrite && (section === "alta" || section === "baja");
+  const showCurrentStock = section === "actual";
+  const showHistory = section === "historial";
+  const formTitle = section === "alta" ? "Alta de Stock" : "Baja de Stock";
+  const submitLabel = saving ? "Guardando..." : section === "alta" ? "Guardar ingreso" : "Guardar egreso";
 
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-stone-900">Stock de Equipo</h2>
+            <h2 className="text-base font-semibold text-stone-900">
+              {section === "actual"
+                ? "Estado Actual de Stock"
+                : section === "alta"
+                  ? "Alta de Stock"
+                  : section === "baja"
+                    ? "Baja de Stock"
+                    : "Historial de Stock"}
+            </h2>
             <p className="mt-1 text-xs text-stone-600">
               El stock se calcula por ingresos, egresos y movimientos de personal marcados para afectar stock.
             </p>
@@ -67,38 +83,31 @@ export function StockView({
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total unidades</p>
-            <p className="mt-2 text-2xl font-bold text-stone-900">{totalUnidades}</p>
+        {showSummaryCards ? (
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total unidades</p>
+              <p className="mt-2 text-2xl font-bold text-stone-900">{totalUnidades}</p>
+            </div>
+            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items con stock</p>
+              <p className="mt-2 text-2xl font-bold text-stone-900">{itemsConStock}</p>
+            </div>
+            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items en negativo</p>
+              <p className={`mt-2 text-2xl font-bold ${itemsNegativos > 0 ? "text-rose-700" : "text-stone-900"}`}>{itemsNegativos}</p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items con stock</p>
-            <p className="mt-2 text-2xl font-bold text-stone-900">{itemsConStock}</p>
-          </div>
-          <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items en negativo</p>
-            <p className={`mt-2 text-2xl font-bold ${itemsNegativos > 0 ? "text-rose-700" : "text-stone-900"}`}>{itemsNegativos}</p>
-          </div>
-        </div>
+        ) : null}
       </article>
 
-      {canWrite ? (
+      {showManualForm ? (
         <article className="ej-card rounded-2xl p-4">
-          <h3 className="text-sm font-semibold text-stone-900">Movimiento manual de stock</h3>
-          <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
-            <label className="text-xs text-stone-700">
-              Tipo
-              <select
-                value={draft.tipo}
-                disabled={saving}
-                onChange={(event) => onDraftChange("tipo", event.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              >
-                <option value="INGRESO">Ingreso de Stock</option>
-                <option value="EGRESO">Egreso de Stock</option>
-              </select>
-            </label>
+          <h3 className="text-sm font-semibold text-stone-900">{formTitle}</h3>
+          <p className="mt-1 text-xs text-stone-600">
+            Puedes cargar varios equipos dentro del mismo movimiento. Agrega una fila por cada equipo que quieras incluir.
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
             <label className="text-xs text-stone-700">
               Fecha
               <input
@@ -110,7 +119,7 @@ export function StockView({
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
             </label>
-            <label className="text-xs text-stone-700">
+            <label className="text-xs text-stone-700 md:col-span-1">
               Comentarios
               <input
                 value={draft.comentarios}
@@ -123,70 +132,91 @@ export function StockView({
           </div>
 
           <div className="mt-3 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items del movimiento</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items del movimiento</p>
+                <p className="mt-1 text-xs text-stone-500">
+                  {draft.items.length === 1
+                    ? "Actualmente tienes 1 equipo cargado en este movimiento."
+                    : `Actualmente tienes ${draft.items.length} equipos cargados en este movimiento.`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onAddItem}
+                disabled={saving}
+                className="rounded-lg bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                Agregar otro equipo
+              </button>
+            </div>
             {draft.items.map((item, index) => (
-              <div key={`stock-item-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_120px_auto]">
-                <select
-                  value={item.itemId}
-                  disabled={saving}
-                  onChange={(event) => onDraftItemChange(index, "itemId", event.target.value)}
-                  className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Seleccionar equipo</option>
-                  {equipos
-                    .filter((catalogItem) => {
-                      if (catalogItem.itemId === item.itemId) return true;
-                      return !draft.items.some(
-                        (selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId,
-                      );
-                    })
-                    .map((catalogItem) => (
-                      <option key={catalogItem.itemId} value={catalogItem.itemId}>
-                        {catalogItem.nombre}
-                      </option>
-                    ))}
-                </select>
-                <input
-                  type="number"
-                  min={1}
-                  value={item.cantidad}
-                  disabled={saving}
-                  onChange={(event) => onDraftItemChange(index, "cantidad", event.target.value)}
-                  className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => onRemoveItem(index)}
-                  disabled={saving || draft.items.length <= 1}
-                  className="rounded-lg bg-rose-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                >
-                  Quitar
-                </button>
+              <div key={`stock-item-${index}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">{`Equipo ${index + 1}`}</p>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveItem(index)}
+                    disabled={saving || draft.items.length <= 1}
+                    className="rounded-lg bg-rose-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                  >
+                    Quitar
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_120px]">
+                  <label className="text-xs text-stone-700">
+                    Equipo
+                    <select
+                      value={item.itemId}
+                      disabled={saving}
+                      onChange={(event) => onDraftItemChange(index, "itemId", event.target.value)}
+                      className="mt-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    >
+                      <option value="">Seleccionar equipo</option>
+                      {equipos
+                        .filter((catalogItem) => {
+                          if (catalogItem.itemId === item.itemId) return true;
+                          return !draft.items.some(
+                            (selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId,
+                          );
+                        })
+                        .map((catalogItem) => (
+                          <option key={catalogItem.itemId} value={catalogItem.itemId}>
+                            {catalogItem.nombre}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label className="text-xs text-stone-700">
+                    Cantidad
+                    <input
+                      type="number"
+                      min={1}
+                      value={item.cantidad}
+                      disabled={saving}
+                      onChange={(event) => onDraftItemChange(index, "cantidad", event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-3 flex flex-wrap justify-between gap-2">
-            <button
-              type="button"
-              onClick={onAddItem}
-              disabled={saving}
-              className="rounded-lg bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-            >
-              Agregar item
-            </button>
+          <div className="mt-3 flex flex-wrap justify-end gap-2">
             <button
               type="button"
               onClick={onSubmit}
               disabled={saving}
               className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-50"
             >
-              {saving ? "Guardando..." : draft.tipo === "INGRESO" ? "Guardar ingreso" : "Guardar egreso"}
+              {submitLabel}
             </button>
           </div>
         </article>
       ) : null}
 
+      {showCurrentStock ? (
       <article className="ej-card rounded-2xl p-4">
         <h3 className="text-sm font-semibold text-stone-900">Stock actual por equipo</h3>
         {loading ? <p className="mt-3 text-sm text-stone-600">Cargando stock...</p> : null}
@@ -227,9 +257,13 @@ export function StockView({
           </>
         ) : null}
       </article>
+      ) : null}
 
+      {showHistory ? (
       <article className="ej-card rounded-2xl p-4">
         <h3 className="text-sm font-semibold text-stone-900">Historial que impacta stock</h3>
+        {loading ? <p className="mt-3 text-sm text-stone-600">Cargando stock...</p> : null}
+        {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
         <div className="mt-3 space-y-2">
           {historial.length === 0 ? <p className="text-sm text-stone-600">No hay movimientos de stock registrados.</p> : null}
           {historial.map((entry) => (
@@ -241,6 +275,9 @@ export function StockView({
                     {entry.origen === "MANUAL"
                       ? "Movimiento manual de stock"
                       : `${entry.persona ?? "Personal sin dato"}${entry.ci ? ` - CI ${entry.ci}` : ""}`}
+                  </p>
+                  <p className="text-xs text-stone-500">
+                    {entry.registradoPor ? `Registrado por: ${entry.registradoPor}` : "Registrado por: sin dato"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -265,6 +302,7 @@ export function StockView({
           ))}
         </div>
       </article>
+      ) : null}
     </section>
   );
 }

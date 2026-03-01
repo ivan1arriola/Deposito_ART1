@@ -36,7 +36,6 @@ function parseTipoRegistro(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
   if (raw === "ENTREGA") return TipoRegistro.ENTREGA;
   if (raw === "DEVOLUCION") return TipoRegistro.DEVOLUCION;
-  if (raw === "AJUSTE") return TipoRegistro.AJUSTE;
   return null;
 }
 

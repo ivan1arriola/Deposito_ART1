@@ -24,10 +24,13 @@ import { MainNavigation } from "./components/home/MainNavigation";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
 import { PersonalSection } from "./components/personal/PersonalSection";
 import { ConfigViews } from "./components/views/ConfigViews";
+import { BateriaCreateView } from "./components/views/BateriaCreateView";
 import { EquipoResumenView } from "./components/views/EquipoResumenView";
+import { EquipoCreateView } from "./components/views/EquipoCreateView";
 import { HojaDeEntregaView } from "./components/views/HojaDeEntregaView";
 import { HojaMatrixView } from "./components/views/HojaMatrixView";
 import { PersonalCreateView } from "./components/views/PersonalCreateView";
+import { RangoCreateView } from "./components/views/RangoCreateView";
 import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
 import { SmallActionButton, ActionMenu, toast } from "./components/shared";
@@ -391,6 +394,18 @@ export default function Home() {
   }, [activeView, canWrite]);
 
   useEffect(() => {
+    if (activeView === "equipo_nuevo" && !canWrite) {
+      setActiveView("personal");
+    }
+  }, [activeView, canWrite]);
+
+  useEffect(() => {
+    if ((activeView === "bateria_nueva" || activeView === "grado_nuevo") && !isAdmin) {
+      setActiveView("personal");
+    }
+  }, [activeView, isAdmin]);
+
+  useEffect(() => {
     setPersonalPage(1);
   }, [searchCedula, searchNombres, searchApellidos, bateriaFilter, personalPageSize]);
 
@@ -544,11 +559,21 @@ export default function Home() {
   }, [activeView, equipoResumenData, equipoResumenLoading, loadEquipoResumen]);
 
   useEffect(() => {
-    if (activeView !== "stock") return;
+    if (!["stock", "stock_actual", "stock_alta", "stock_baja", "stock_historial"].includes(activeView)) return;
     if (stockLoading) return;
     if (stockData) return;
     void loadStockData();
   }, [activeView, stockData, stockLoading, loadStockData]);
+
+  useEffect(() => {
+    if (activeView === "stock_alta" && stockDraft.tipo !== "INGRESO") {
+      setStockDraft((prev) => ({ ...prev, tipo: "INGRESO" }));
+      return;
+    }
+    if (activeView === "stock_baja" && stockDraft.tipo !== "EGRESO") {
+      setStockDraft((prev) => ({ ...prev, tipo: "EGRESO" }));
+    }
+  }, [activeView, stockDraft.tipo]);
 
   const createRango = useCallback(async () => {
     if (!isAdmin) {
@@ -1334,6 +1359,7 @@ export default function Home() {
       });
       setStockDraft({ ...EMPTY_STOCK_OPERACION_DRAFT, fecha: getTodayDateInput() });
       setStatus(stockDraft.tipo === "INGRESO" ? "Ingreso de stock registrado." : "Egreso de stock registrado.");
+      await loadData();
       await loadStockData();
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "No se pudo registrar el movimiento de stock.");
@@ -2255,9 +2281,7 @@ export default function Home() {
         currentUser={currentUser}
         canManageAccount={canManageOwnAccount}
         personalCount={personal.length}
-        rangosCount={rangos.length}
-        bateriasCount={baterias.length}
-        equiposActivosCount={equiposActivos.length}
+        equiposRegistradosCount={equipos.length}
         movimientosTotal={movimientosTotal}
         roleLabel={roleLabel}
         onReload={() => void loadData(true)}
@@ -2305,6 +2329,7 @@ export default function Home() {
           editBateriaId={editBateriaId}
           editBateriaNombre={editBateriaNombre}
           editBateriaOrden={editBateriaOrden}
+          equipos={equiposOrdenados}
           newEquipo={newEquipo}
           editEquipoId={editEquipoId}
           editEquipo={editEquipo}
@@ -2413,6 +2438,49 @@ export default function Home() {
         />
       ) : null}
 
+      {activeView === "equipo_nuevo" ? (
+        <EquipoCreateView
+          form={newEquipo}
+          saving={loading}
+          onBack={() => setActiveView("personal")}
+          onSubmit={(event) => void createEquipo(event)}
+          onChange={(key, value) => {
+            setNewEquipo((previous) => ({
+              ...previous,
+              [key]: value,
+            }));
+          }}
+        />
+      ) : null}
+
+      {activeView === "bateria_nueva" ? (
+        <BateriaCreateView
+          nombre={newBateria}
+          orden={newBateriaOrden}
+          saving={loading}
+          suggestedOrder={baterias.length + 1}
+          onBack={() => setActiveView("personal")}
+          onCreate={() => void createBateria()}
+          onNombreChange={setNewBateria}
+          onOrdenChange={setNewBateriaOrden}
+        />
+      ) : null}
+
+      {activeView === "grado_nuevo" ? (
+        <RangoCreateView
+          abreviacion={newRangoAbreviacion}
+          nombreCompleto={newRangoNombreCompleto}
+          orden={newRangoOrden}
+          saving={loading}
+          suggestedOrder={rangos.length + 1}
+          onBack={() => setActiveView("personal")}
+          onCreate={() => void createRango()}
+          onAbreviacionChange={setNewRangoAbreviacion}
+          onNombreCompletoChange={setNewRangoNombreCompleto}
+          onOrdenChange={setNewRangoOrden}
+        />
+      ) : null}
+
       {activeView === "personal" ? (
         <PersonalSection
           personal={personal}
@@ -2491,8 +2559,17 @@ export default function Home() {
         />
       ) : null}
 
-      {activeView === "stock" ? (
+      {["stock", "stock_actual", "stock_alta", "stock_baja", "stock_historial"].includes(activeView) ? (
         <StockView
+          section={
+            activeView === "stock_alta"
+              ? "alta"
+              : activeView === "stock_baja"
+                ? "baja"
+                : activeView === "stock_historial"
+                  ? "historial"
+                  : "actual"
+          }
           data={stockData}
           loading={stockLoading}
           error={stockError}

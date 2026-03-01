@@ -123,6 +123,41 @@ export async function GET(req: Request) {
     }),
   ]);
 
+  const stockAuditKeys = stockOperaciones.map((operacion) => operacion.stockOperacionId.toString());
+  const registroAuditKeys = registros.map((registro) => registro.registroId.toString());
+  const auditorias = await prisma.auditoria.findMany({
+    where: {
+      OR: [
+        { entidad: "STOCK", entidadId: { in: stockAuditKeys } },
+        { entidad: "REGISTRO", entidadId: { in: registroAuditKeys } },
+      ],
+    },
+    include: {
+      usuario: {
+        select: {
+          grado: true,
+          nombre: true,
+          apellido: true,
+          username: true,
+        },
+      },
+    },
+    orderBy: [{ createdAt: "desc" }],
+  });
+
+  const auditUserByEntity = new Map<string, string | null>();
+  for (const audit of auditorias) {
+    if (!audit.entidadId) continue;
+    const key = `${audit.entidad}:${audit.entidadId}`;
+    if (auditUserByEntity.has(key)) continue;
+    const userLabel = audit.usuario
+      ? `${audit.usuario.grado} ${audit.usuario.apellido}, ${audit.usuario.nombre}`.replace(/\s+/g, " ").trim()
+      : audit.usuarioId
+        ? "Usuario eliminado"
+        : null;
+    auditUserByEntity.set(key, userLabel ?? audit.usuario?.username ?? null);
+  }
+
   const resumen = items.map((item) => ({
     itemId: item.itemId.toString(),
     nombre: item.nombre,
@@ -142,6 +177,7 @@ export async function GET(req: Request) {
     totalUnidades: operacion.items.reduce((total, item) => total + item.cantidad, 0),
     ci: null,
     persona: null,
+    registradoPor: auditUserByEntity.get(`STOCK:${operacion.stockOperacionId.toString()}`) ?? null,
     items: operacion.items.map((item) => ({
       itemId: item.item.itemId.toString(),
       nombre: item.item.nombre,
@@ -166,6 +202,7 @@ export async function GET(req: Request) {
         totalUnidades: registro.items.reduce((total, item) => total + item.cantidad, 0),
         ci: registro.ci,
         persona: `${registro.personal.rango.abreviacion} ${apellidos}, ${nombres}`,
+        registradoPor: auditUserByEntity.get(`REGISTRO:${registro.registroId.toString()}`) ?? null,
         items: registro.items.map((item) => ({
           itemId: item.item.itemId.toString(),
           nombre: item.item.nombre,

@@ -5,6 +5,8 @@ import type { MainView } from "@/types/views";
 
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">;
 type SummaryView = Extract<MainView, "equipo_resumen" | "tallas_resumen">;
+type CreateView = Extract<MainView, "personal_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuarios">;
+type StockView = Extract<MainView, "stock" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial">;
 
 type MainNavigationProps = {
   activeView: MainView;
@@ -20,7 +22,7 @@ type MainNavigationProps = {
 const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean; icon: JSX.Element }> = [
   {
     view: "grados",
-    label: "Registrar Grados",
+    label: "Grados Registrados",
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -29,7 +31,7 @@ const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean;
   },
   {
     view: "baterias",
-    label: "Registrar Baterías",
+    label: "Baterías Registradas",
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -38,7 +40,7 @@ const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean;
   },
   {
     view: "equipos",
-    label: "Registrar Equipos",
+    label: "Equipos Registrados",
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -57,7 +59,7 @@ const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean;
   },
   {
     view: "usuarios",
-    label: "Usuarios",
+    label: "Usuarios Registrados",
     adminOnly: true,
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,6 +102,105 @@ const summaryViews: Array<{ view: SummaryView; label: string; shortLabel: string
   },
 ];
 
+const createViews: Array<{ view: CreateView; label: string; shortLabel: string; adminOnly?: boolean; icon: JSX.Element }> = [
+  {
+    view: "personal_nuevo",
+    label: "Alta de personal",
+    shortLabel: "Personal",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+    ),
+  },
+  {
+    view: "equipo_nuevo",
+    label: "Alta de equipo",
+    shortLabel: "Equipo",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
+  },
+  {
+    view: "bateria_nueva",
+    label: "Alta de batería",
+    shortLabel: "Batería",
+    adminOnly: true,
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
+      </svg>
+    ),
+  },
+  {
+    view: "grado_nuevo",
+    label: "Alta de grado",
+    shortLabel: "Grado",
+    adminOnly: true,
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+      </svg>
+    ),
+  },
+  {
+    view: "usuarios",
+    label: "Alta de usuario",
+    shortLabel: "Usuario",
+    adminOnly: true,
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v6m3-3h-6M5 20h8a2 2 0 002-2v-1a4 4 0 00-4-4H9a4 4 0 00-4 4v1a2 2 0 002 2zm8-13a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+  },
+];
+
+const stockViews: Array<{ view: StockView; label: string; shortLabel: string; icon: JSX.Element }> = [
+  {
+    view: "stock_actual",
+    label: "Estado Actual",
+    shortLabel: "Actual",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
+      </svg>
+    ),
+  },
+  {
+    view: "stock_alta",
+    label: "Alta de Stock",
+    shortLabel: "Alta",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+    ),
+  },
+  {
+    view: "stock_baja",
+    label: "Baja de Stock",
+    shortLabel: "Baja",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+      </svg>
+    ),
+  },
+  {
+    view: "stock_historial",
+    label: "Historial",
+    shortLabel: "Historial",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3M12 3a9 9 0 109 9" />
+      </svg>
+    ),
+  },
+];
+
 function viewButtonClass(activeView: MainView, view: MainView) {
   return activeView === view
     ? "ej-view-active rounded-lg px-3 py-2 text-sm font-semibold"
@@ -118,6 +219,18 @@ function summaryOptionClass(activeView: MainView, view: SummaryView) {
     : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-100";
 }
 
+function createOptionClass(activeView: MainView, view: CreateView) {
+  return activeView === view
+    ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
+    : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-100";
+}
+
+function stockOptionClass(activeView: MainView, view: StockView) {
+  return activeView === view
+    ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
+    : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-100";
+}
+
 export function MainNavigation({
   activeView,
   canWrite,
@@ -129,11 +242,33 @@ export function MainNavigation({
   onToggleConfigViews,
 }: MainNavigationProps) {
   const [showSummaryViews, setShowSummaryViews] = useState(false);
+  const [showCreateViews, setShowCreateViews] = useState(false);
+  const [showStockViews, setShowStockViews] = useState(false);
   const summaryMenuRef = useRef<HTMLDivElement | null>(null);
+  const createMenuRef = useRef<HTMLDivElement | null>(null);
+  const stockMenuRef = useRef<HTMLDivElement | null>(null);
   const isSummaryView = activeView === "equipo_resumen" || activeView === "tallas_resumen";
+  const isStockView =
+    activeView === "stock" ||
+    activeView === "stock_actual" ||
+    activeView === "stock_alta" ||
+    activeView === "stock_baja" ||
+    activeView === "stock_historial";
+  const isCreateView =
+    activeView === "personal_nuevo" ||
+    activeView === "equipo_nuevo" ||
+    activeView === "bateria_nueva" ||
+    activeView === "grado_nuevo" ||
+    activeView === "usuarios";
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
+      if (createMenuRef.current && event.target instanceof Node && !createMenuRef.current.contains(event.target)) {
+        setShowCreateViews(false);
+      }
+      if (stockMenuRef.current && event.target instanceof Node && !stockMenuRef.current.contains(event.target)) {
+        setShowStockViews(false);
+      }
       if (!summaryMenuRef.current) return;
       if (!(event.target instanceof Node)) return;
       if (summaryMenuRef.current.contains(event.target)) return;
@@ -142,10 +277,12 @@ export function MainNavigation({
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
+      setShowCreateViews(false);
+      setShowStockViews(false);
       setShowSummaryViews(false);
     }
 
-    if (!showSummaryViews) return;
+    if (!showSummaryViews && !showCreateViews && !showStockViews) return;
 
     document.addEventListener("mousedown", handleOutsideClick);
     document.addEventListener("keydown", handleEscape);
@@ -153,7 +290,7 @@ export function MainNavigation({
       document.removeEventListener("mousedown", handleOutsideClick);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [showSummaryViews]);
+  }, [showSummaryViews, showCreateViews, showStockViews]);
 
   return (
     <section className="ej-card relative z-40 mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
@@ -175,14 +312,52 @@ export function MainNavigation({
             <span>Hoja Matriz</span>
           </div>
         </button>
-        <button type="button" onClick={() => onSelectView("stock")} className={`${viewButtonClass(activeView, "stock")} group relative flex-1 overflow-hidden transition-all`}>
-          <div className="flex items-center justify-center gap-2">
+        <div ref={stockMenuRef} className="relative z-50 flex-1">
+          <button
+            type="button"
+            onClick={() => setShowStockViews((current) => !current)}
+            aria-haspopup="menu"
+            aria-expanded={showStockViews}
+            aria-controls="menu-stock"
+            className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+              isStockView || showStockViews ? "ej-view-active" : "ej-view-idle"
+            }`}
+          >
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7H4m16 5H4m16 5H4M8 4v16" />
             </svg>
             <span>Stock</span>
-          </div>
-        </button>
+            <svg className={`h-3 w-3 transition-transform ${showStockViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showStockViews ? (
+            <div
+              id="menu-stock"
+              role="menu"
+              className="absolute right-0 z-[60] mt-2 w-full min-w-[260px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[300px]"
+            >
+              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de stock</p>
+              <div className="grid grid-cols-1 gap-1.5">
+                {stockViews.map((item) => (
+                  <button
+                    key={item.view}
+                    type="button"
+                    onClick={() => {
+                      setShowStockViews(false);
+                      onSelectView(item.view);
+                    }}
+                    className={stockOptionClass(activeView, item.view)}
+                  >
+                    {item.icon}
+                    <span className="hidden sm:inline">{item.label}</span>
+                    <span className="sm:hidden">{item.shortLabel}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
         <div ref={summaryMenuRef} className="relative z-50 flex-1">
           <button
             type="button"
@@ -197,7 +372,7 @@ export function MainNavigation({
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19h16M4 12h10M4 5h16" />
             </svg>
-            <span>Resumenes</span>
+            <span>Resúmenes</span>
             <svg className={`h-3 w-3 transition-transform ${showSummaryViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -229,19 +404,56 @@ export function MainNavigation({
             </div>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={() => onSelectView("personal_nuevo")}
-          disabled={!canWrite}
-          className={`${viewButtonClass(activeView, "personal_nuevo")} group relative flex-1 overflow-hidden transition-all disabled:cursor-not-allowed disabled:opacity-50`}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Alta Personal</span>
+        {canWrite ? (
+          <div ref={createMenuRef} className="relative z-50 flex-1">
+            <button
+              type="button"
+              onClick={() => setShowCreateViews((current) => !current)}
+              aria-haspopup="menu"
+              aria-expanded={showCreateViews}
+              aria-controls="menu-altas"
+              className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+                isCreateView || showCreateViews ? "ej-view-active" : "ej-view-idle"
+              }`}
+            >
+              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Altas</span>
+              <svg className={`h-3 w-3 transition-transform ${showCreateViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {showCreateViews ? (
+              <div
+                id="menu-altas"
+                role="menu"
+                className="absolute right-0 z-[60] mt-2 w-full min-w-[260px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[300px]"
+              >
+                <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Pantallas de alta</p>
+                <div className="grid grid-cols-1 gap-1.5">
+                  {createViews
+                    .filter((item) => (item.adminOnly ? isAdmin : true))
+                    .map((item) => (
+                      <button
+                        key={item.view}
+                        type="button"
+                        onClick={() => {
+                          setShowCreateViews(false);
+                          onSelectView(item.view);
+                        }}
+                        className={createOptionClass(activeView, item.view)}
+                      >
+                        {item.icon}
+                        <span className="hidden sm:inline">{item.label}</span>
+                        <span className="sm:hidden">{item.shortLabel}</span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            ) : null}
           </div>
-        </button>
+        ) : null}
         <button type="button" onClick={() => onSelectView("formularios")} className={`${viewButtonClass(activeView, "formularios")} group relative flex-1 overflow-hidden transition-all`}>
           <div className="flex items-center justify-center gap-2">
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">

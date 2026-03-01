@@ -7,8 +7,15 @@ import type { Role } from "./entities";
 export type MainView =
   | "personal"
   | "personal_nuevo"
+  | "equipo_nuevo"
+  | "bateria_nueva"
+  | "grado_nuevo"
   | "formularios"
   | "stock"
+  | "stock_actual"
+  | "stock_alta"
+  | "stock_baja"
+  | "stock_historial"
   | "hoja_matrix"
   | "equipo_resumen"
   | "tallas_resumen"
@@ -78,6 +85,7 @@ export type StockHistorialEntry = {
   totalUnidades: number;
   ci: string | null;
   persona: string | null;
+  registradoPor: string | null;
   items: Array<{
     itemId: string;
     nombre: string;

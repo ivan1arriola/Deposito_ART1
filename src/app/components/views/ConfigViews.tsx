@@ -54,6 +54,7 @@ interface ConfigViewsProps {
   editBateriaNombre: string;
   editBateriaOrden: string;
   // Equipos state
+  equipos: EquipoConfig[];
   newEquipo: { nombre: string; activo: boolean; ordenPdf: number };
   editEquipoId: string | null;
   editEquipo: { nombre: string; activo: boolean; ordenPdf: number };
@@ -155,45 +156,13 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Grado del Personal</h2>
+          <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Grados registrados</h2>
+          <p className="mt-1 text-xs text-stone-600">Desde esta vista puedes editar o eliminar grados existentes. Las altas nuevas se hacen desde el menú `Altas`.</p>
           {!props.isAdmin ? (
             <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
-              Modo solo lectura: solo el administrador puede crear, editar o eliminar grados.
+              Modo solo lectura: solo el administrador puede editar o eliminar grados.
             </p>
           ) : null}
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[140px_1fr_96px_auto]">
-            <input
-              value={props.newRangoAbreviacion}
-              onChange={(event) => props.onNewRangoAbreviacionChange(event.target.value)}
-              placeholder="Abreviacion"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              disabled={!props.isAdmin}
-            />
-            <input
-              value={props.newRangoNombreCompleto}
-              onChange={(event) => props.onNewRangoNombreCompletoChange(event.target.value)}
-              placeholder="Nombre completo"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              disabled={!props.isAdmin}
-            />
-            <input
-              type="number"
-              min="1"
-              value={props.newRangoOrden}
-              onChange={(event) => props.onNewRangoOrdenChange(event.target.value)}
-              placeholder={String(props.rangos.length + 1)}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              disabled={!props.isAdmin}
-            />
-            <button
-              type="button"
-              onClick={() => props.onCreateRango()}
-              disabled={!props.isAdmin}
-              className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              Crear
-            </button>
-          </div>
 
           <div className="mt-3 space-y-2">
             {props.rangos.map((rango) => (
@@ -268,13 +237,14 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Baterías</h2>
+          <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Baterías registradas</h2>
+          <p className="mt-1 text-xs text-stone-600">Desde esta vista puedes editar o eliminar baterías existentes. Las altas nuevas se hacen desde el menú `Altas`.</p>
           {!props.isAdmin ? (
             <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
-              Modo solo lectura: solo el administrador puede crear, editar o eliminar baterías.
+              Modo solo lectura: solo el administrador puede editar o eliminar baterías.
             </p>
           ) : null}
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_96px_auto]">
+          <div className="hidden mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_96px_auto]">
             <input
               value={props.newBateria}
               onChange={(event) => props.onNewBateriaChange(event.target.value)}
@@ -359,16 +329,23 @@ export function ConfigViews(props: ConfigViewsProps) {
   }
 
   if (props.activeView === "equipos") {
+    const activeOrderById = new Map(
+      props.equiposActivosEnPantalla.map((equipo, index) => [equipo.itemId, index]),
+    );
+
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-stone-900">Equipos</h2>
+          <h2 className="text-base font-semibold text-stone-900">Equipos registrados</h2>
+          <p className="mt-1 text-xs text-stone-600">
+            Desde esta vista puedes editar o eliminar equipos existentes y decidir si aparecen en Hoja de Entrega / Hoja Matriz. Las altas nuevas se hacen desde el menú `Altas`.
+          </p>
           {!props.canWrite ? (
             <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
               Modo solo lectura: puedes consultar equipos y su orden, pero no modificarlos.
             </p>
           ) : null}
-          <form onSubmit={props.onCreateEquipo} className="mt-3 space-y-2">
+          <form onSubmit={props.onCreateEquipo} className="hidden mt-3 space-y-2">
             <input
               value={props.newEquipo.nombre}
               onChange={(event) => props.onNewEquipoChange(event.target.value, "nombre")}
@@ -399,13 +376,13 @@ export function ConfigViews(props: ConfigViewsProps) {
           <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-sm font-semibold text-stone-900">Aparecen en Hoja de Entrega</h3>
+                <h3 className="text-sm font-semibold text-stone-900">Aparecen en Hoja de Entrega / Hoja Matriz</h3>
                 <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                   {props.equiposActivosEnPantalla.length}
                 </span>
               </div>
               <p className="text-xs text-stone-600 mb-3">
-                Usa flechas o el selector de posicion para definir el orden en las hojas antes de guardar.
+                Estos equipos se muestran en hoja y mantienen el editor de orden.
               </p>
             </div>
             {props.equiposActivosEnPantalla.length > 0 ? (
@@ -436,36 +413,40 @@ export function ConfigViews(props: ConfigViewsProps) {
             ) : null}
             {props.equiposActivosEnPantalla.length > 0 ? (
               <div className="space-y-2">
-                {props.equiposActivosEnPantalla.map((equipo, index) =>
+                {props.equiposActivosEnPantalla.map((equipo) =>
                   props.renderEquipoCard(equipo, {
                     reorderableInActiveList: true,
-                    orderIndex: index,
+                    orderIndex: activeOrderById.get(equipo.itemId) ?? -1,
                     orderCount: props.equiposActivosEnPantalla.length,
                   }),
                 )}
               </div>
             ) : (
               <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                <p className="text-sm text-stone-600">No hay equipos visibles en la hoja.</p>
+                <p className="text-sm text-stone-600">No hay equipos visibles en hoja.</p>
               </div>
             )}
           </div>
 
           <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-sm font-semibold text-stone-900">Ocultos de Hoja de Entrega</h3>
-                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+              <div className="mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-stone-900">No aparecen en Hoja de Entrega / Hoja Matriz</h3>
+                <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
                   {props.equiposInactivos.length}
                 </span>
               </div>
-              <p className="text-xs text-stone-600 mb-3">
-                Los equipos ocultos no aparecen en la Hoja de Entrega ni en el registro de movimientos.
+              <p className="mb-3 text-xs text-stone-600">
+                Estos equipos siguen registrados, pero están ocultos de las hojas hasta que vuelvas a habilitarlos.
               </p>
             </div>
             {props.equiposInactivos.length > 0 ? (
               <div className="space-y-2">
-                {props.equiposInactivos.map((equipo) => props.renderEquipoCard(equipo))}
+                {props.equiposInactivos.map((equipo) =>
+                  props.renderEquipoCard(equipo, {
+                    reorderableInActiveList: false,
+                  }),
+                )}
               </div>
             ) : (
               <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
@@ -579,8 +560,11 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-stone-900">Usuarios y privilegios</h2>
-          <form onSubmit={props.onCreateUsuario} className="mt-3 space-y-3">
+          <h2 className="text-base font-semibold text-stone-900">Usuarios registrados</h2>
+          <p className="mt-1 text-xs text-stone-600">
+            Desde esta vista puedes editar, activar, desactivar o eliminar usuarios existentes. Las altas nuevas se hacen desde el menú `Altas`.
+          </p>
+          <form onSubmit={props.onCreateUsuario} className="hidden mt-3 space-y-3">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <input
                 value={props.newGrado}
