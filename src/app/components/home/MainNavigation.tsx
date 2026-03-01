@@ -82,8 +82,8 @@ const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean;
 const summaryViews: Array<{ view: SummaryView; label: string; shortLabel: string; icon: JSX.Element }> = [
   {
     view: "equipo_resumen",
-    label: "Resumen por equipo",
-    shortLabel: "Equipo",
+    label: "Resumen de Equipo en Baterías",
+    shortLabel: "Baterías",
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M7 3v4m10-4v4M6 12h4v8H6zM14 10h4v10h-4z" />

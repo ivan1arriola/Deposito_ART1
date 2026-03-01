@@ -63,7 +63,7 @@ export function StockView({
           <div>
             <h2 className="text-base font-semibold text-stone-900">
               {section === "actual"
-                ? "Estado Actual de Stock"
+                ? "Stock en Depósito"
                 : section === "alta"
                   ? "Alta de Stock"
                   : section === "baja"
@@ -71,7 +71,7 @@ export function StockView({
                     : "Historial de Stock"}
             </h2>
             <p className="mt-1 text-xs text-stone-600">
-              El stock se calcula por ingresos, egresos y movimientos de personal marcados para afectar stock.
+              Refleja el equipo disponible en depósito, calculado por ingresos, egresos y movimientos de personal marcados para afectar stock.
             </p>
           </div>
           <button
@@ -218,7 +218,7 @@ export function StockView({
 
       {showCurrentStock ? (
       <article className="ej-card rounded-2xl p-4">
-        <h3 className="text-sm font-semibold text-stone-900">Stock actual por equipo</h3>
+        <h3 className="text-sm font-semibold text-stone-900">Stock en depósito por equipo</h3>
         {loading ? <p className="mt-3 text-sm text-stone-600">Cargando stock...</p> : null}
         {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
         {!loading && !error ? (

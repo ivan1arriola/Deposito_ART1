@@ -38,9 +38,9 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
       <article className="ej-card rounded-2xl p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-stone-900">Resumen de Equipo</h2>
+            <h2 className="text-base font-semibold text-stone-900">Resumen de Equipo en Baterías</h2>
             <p className="mt-1 text-xs text-stone-600">
-              Filas por equipo en el orden definido para hojas. Columnas por bateria y una ultima columna con el total de toda la unidad.
+              Muestra cómo está distribuido cada equipo entre las baterías. Filas por equipo y columnas por batería, con una última columna para el total de la unidad.
             </p>
           </div>
           <button
@@ -55,16 +55,16 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
         {error ? (
           <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
         ) : null}
-        {!data && !loading ? <p className="mt-3 text-xs text-stone-600">Presiona Cargar resumen para ver cantidades por bateria y unidad.</p> : null}
-        {loading && !data ? <p className="mt-3 text-sm text-stone-600">Cargando resumen de equipo...</p> : null}
+        {!data && !loading ? <p className="mt-3 text-xs text-stone-600">Presiona Cargar resumen para ver cantidades por batería y unidad.</p> : null}
+        {loading && !data ? <p className="mt-3 text-sm text-stone-600">Cargando resumen de equipo en baterías...</p> : null}
       </article>
 
       {data ? (
         <article className="ej-card rounded-2xl p-4">
           <div className="mb-4">
-            <h3 className="text-base font-semibold text-stone-900">Totales por equipo</h3>
+            <h3 className="text-base font-semibold text-stone-900">Total de equipo en baterías según hojas de entrega</h3>
             <p className="mt-1 text-xs text-stone-600">
-              Cada fila representa un equipo. La columna final muestra el total de la unidad como suma de todas las baterias.
+              La primera columna muestra los nombres de los equipos. Cada fila representa un equipo, cada columna representa una batería y la columna final representa el total de las baterías, que es lo mismo que el total de la unidad.
             </p>
           </div>
 
