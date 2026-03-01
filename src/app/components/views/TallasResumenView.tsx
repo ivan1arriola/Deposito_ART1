@@ -121,7 +121,7 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-stone-900">{TALLA_LABELS[tallaKey]}</h3>
-                <p className="mt-1 text-xs text-stone-600">Frecuencias absolutas por talla</p>
+                <p className="mt-1 text-xs text-stone-600">Cantidades absolutas por talla</p>
               </div>
               {!hasAnyData && (
                 <span className="rounded-full border border-stone-300 bg-stone-100 px-2 py-1 text-[11px] font-semibold text-stone-500">
@@ -240,29 +240,39 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
     <section className="mt-6 space-y-4">
       <article className="ej-card flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-stone-900">Tabla imprimible de talles</h2>
+          <h2 className="text-base font-semibold text-stone-900">Impresion de talles</h2>
           <p className="mt-1 text-xs text-stone-600">
-            Genera una hoja con todo el personal de la unidad y sus talles en formato de tabla.
+            Genera una hoja nominal de talles o un resumen con cantidades absolutas por prenda para toda la unidad.
           </p>
         </div>
-        <a
-          href="/tallas-unidad?autoprint=1"
-          target="_blank"
-          rel="noreferrer"
-          className="ej-button inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold"
-        >
-          Imprimir talles de la unidad
-        </a>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <a
+            href="/tallas-unidad?autoprint=1"
+            target="_blank"
+            rel="noreferrer"
+            className="ej-button inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold"
+          >
+            Imprimir talles de la unidad
+          </a>
+          <a
+            href="/resumen-tallas-unidad?autoprint=1"
+            target="_blank"
+            rel="noreferrer"
+            className="ej-button-muted inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold"
+          >
+            Imprimir resumen de talles
+          </a>
+        </div>
       </article>
       {renderResumen(
         [resumenUnidad],
         "Resumen de Tallas de la Unidad",
-        "Frecuencias absolutas por prenda para toda la unidad. Incluye Sin dato cuando corresponde."
+        "Cantidades absolutas por prenda para toda la unidad. Incluye Sin dato cuando corresponde."
       )}
       {renderResumen(
         resumenTallasPorBateria,
         "Resumen de Tallas por Bateria",
-        "Frecuencias absolutas por prenda y bateria. Incluye el grupo Sin bateria cuando corresponde."
+        "Cantidades absolutas por prenda y bateria. Incluye el grupo Sin bateria cuando corresponde."
       )}
     </section>
   );

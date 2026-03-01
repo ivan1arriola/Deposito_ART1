@@ -154,6 +154,29 @@ CREATE TABLE "usuario" (
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
 );
 
+CREATE TABLE "config_firma" (
+  "id" SMALLINT PRIMARY KEY,
+  "encargado_rango" TEXT NOT NULL,
+  "encargado_nombre" TEXT NOT NULL,
+  "oficial_rango" TEXT NOT NULL,
+  "oficial_nombre" TEXT NOT NULL,
+  "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
+);
+
+INSERT INTO "config_firma" (
+  "id",
+  "encargado_rango",
+  "encargado_nombre",
+  "oficial_rango",
+  "oficial_nombre"
+) VALUES (
+  1,
+  'Sgto.',
+  'Wilson Lara',
+  U&'-Tte.2\00BA',
+  'Gerardo Otero'
+);
+
 CREATE TABLE "password_reset" (
   "reset_id" TEXT PRIMARY KEY,
   "usuario_id" TEXT NOT NULL REFERENCES "usuario"("usuario_id") ON DELETE CASCADE,
