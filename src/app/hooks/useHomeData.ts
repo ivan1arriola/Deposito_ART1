@@ -14,7 +14,7 @@ import type {
   Rango,
   UsuarioAdmin,
 } from "@/types/entities";
-import type { HojaMatrixData } from "@/types/views";
+import type { EquipoResumenData, HojaMatrixData } from "@/types/views";
 
 type UseHomeDataOptions = {
   onStatusChange: (message: string) => void;
@@ -46,6 +46,9 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
   const [hojaMatrixData, setHojaMatrixData] = useState<HojaMatrixData | null>(null);
   const [hojaMatrixLoading, setHojaMatrixLoading] = useState(false);
   const [hojaMatrixError, setHojaMatrixError] = useState<string | null>(null);
+  const [equipoResumenData, setEquipoResumenData] = useState<EquipoResumenData | null>(null);
+  const [equipoResumenLoading, setEquipoResumenLoading] = useState(false);
+  const [equipoResumenError, setEquipoResumenError] = useState<string | null>(null);
 
   const clearLoadedData = useCallback(() => {
     setRangos([]);
@@ -63,6 +66,9 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     setHojaMatrixData(null);
     setHojaMatrixLoading(false);
     setHojaMatrixError(null);
+    setEquipoResumenData(null);
+    setEquipoResumenLoading(false);
+    setEquipoResumenError(null);
   }, []);
 
   const loadData = useCallback(
@@ -123,6 +129,8 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
 
         setHojaMatrixData(null);
         setHojaMatrixError(null);
+        setEquipoResumenData(null);
+        setEquipoResumenError(null);
         onStatusChange("Datos actualizados.");
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "No se pudo cargar la informacion.";
@@ -156,6 +164,19 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
       setHojaMatrixError(error instanceof Error ? error.message : "No se pudo cargar la Hoja Matriz.");
     } finally {
       setHojaMatrixLoading(false);
+    }
+  }, []);
+
+  const loadEquipoResumen = useCallback(async () => {
+    setEquipoResumenLoading(true);
+    setEquipoResumenError(null);
+    try {
+      const data = await api<EquipoResumenData>("/api/resumen-equipos");
+      setEquipoResumenData(data);
+    } catch (error: unknown) {
+      setEquipoResumenError(error instanceof Error ? error.message : "No se pudo cargar el resumen de equipo.");
+    } finally {
+      setEquipoResumenLoading(false);
     }
   }, []);
 
@@ -227,8 +248,14 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     hojaMatrixLoading,
     hojaMatrixError,
     setHojaMatrixError,
+    equipoResumenData,
+    setEquipoResumenData,
+    equipoResumenLoading,
+    equipoResumenError,
+    setEquipoResumenError,
     loadData,
     loadHojaMatrix,
+    loadEquipoResumen,
     clearLoadedData,
     setRangos,
     setBaterias,

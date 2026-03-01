@@ -24,6 +24,7 @@ import { MainNavigation } from "./components/home/MainNavigation";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
 import { PersonalSection } from "./components/personal/PersonalSection";
 import { ConfigViews } from "./components/views/ConfigViews";
+import { EquipoResumenView } from "./components/views/EquipoResumenView";
 import { HojaDeEntregaView } from "./components/views/HojaDeEntregaView";
 import { HojaMatrixView } from "./components/views/HojaMatrixView";
 import { PersonalCreateView } from "./components/views/PersonalCreateView";
@@ -152,6 +153,10 @@ export default function Home() {
     hojaMatrixError,
     loadData,
     loadHojaMatrix,
+    equipoResumenData,
+    equipoResumenLoading,
+    equipoResumenError,
+    loadEquipoResumen,
     clearLoadedData: clearLoadedDataState,
   } = useHomeData({ onStatusChange: setStatus });
   const [loginUsername, setLoginUsername] = useState("");
@@ -522,6 +527,13 @@ export default function Home() {
     if (hojaMatrixData) return;
     void loadHojaMatrix();
   }, [activeView, hojaMatrixData, hojaMatrixLoading, loadHojaMatrix]);
+
+  useEffect(() => {
+    if (activeView !== "equipo_resumen") return;
+    if (equipoResumenLoading) return;
+    if (equipoResumenData) return;
+    void loadEquipoResumen();
+  }, [activeView, equipoResumenData, equipoResumenLoading, loadEquipoResumen]);
 
   const createRango = useCallback(async () => {
     if (!isAdmin) {
@@ -2424,6 +2436,15 @@ export default function Home() {
           loading={hojaMatrixLoading}
           error={hojaMatrixError}
           onReload={loadHojaMatrix}
+        />
+      ) : null}
+
+      {activeView === "equipo_resumen" ? (
+        <EquipoResumenView
+          data={equipoResumenData}
+          loading={equipoResumenLoading}
+          error={equipoResumenError}
+          onReload={loadEquipoResumen}
         />
       ) : null}
 

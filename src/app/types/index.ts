@@ -65,7 +65,7 @@ export type CurrentUser = {
 };
 
 // Tipos de vistas
-export type MainView = "personal" | "personal_nuevo" | "formularios" | "hoja_matrix" | "tallas_resumen" | "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
+export type MainView = "personal" | "personal_nuevo" | "formularios" | "hoja_matrix" | "equipo_resumen" | "tallas_resumen" | "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
 
 // Tipos de registros
 export type RegistroTipo = "ENTREGA" | "DEVOLUCION";

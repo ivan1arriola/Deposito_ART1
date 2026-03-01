@@ -9,6 +9,7 @@ export type MainView =
   | "personal_nuevo"
   | "formularios"
   | "hoja_matrix"
+  | "equipo_resumen"
   | "tallas_resumen"
   | "grados"
   | "baterias"
@@ -80,6 +81,26 @@ export type HojaMatrixData = {
   generatedAt: string;
   items: HojaMatrixEquipo[];
   rows: HojaMatrixRow[];
+};
+
+export type EquipoResumenItem = {
+  itemId: string;
+  nombre: string;
+};
+
+export type EquipoResumenRow = {
+  key: string;
+  nombre: string;
+  orden: number | null;
+  totales: number[];
+  totalGeneral: number;
+};
+
+export type EquipoResumenData = {
+  generatedAt: string;
+  items: EquipoResumenItem[];
+  unidad: EquipoResumenRow;
+  baterias: EquipoResumenRow[];
 };
 
 export type ConfirmDialogState = {

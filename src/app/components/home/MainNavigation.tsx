@@ -118,6 +118,15 @@ export function MainNavigation({
             <span>Hoja Matriz</span>
           </div>
         </button>
+        <button type="button" onClick={() => onSelectView("equipo_resumen")} className={`${viewButtonClass(activeView, "equipo_resumen")} group relative flex-1 overflow-hidden transition-all`}>
+          <div className="flex items-center justify-center gap-2">
+            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M7 3v4m10-4v4M6 12h4v8H6zM14 10h4v10h-4z" />
+            </svg>
+            <span className="hidden sm:inline">Resumen Equipo</span>
+            <span className="sm:hidden">Equipo</span>
+          </div>
+        </button>
         <button
           type="button"
           onClick={() => onSelectView("personal_nuevo")}
