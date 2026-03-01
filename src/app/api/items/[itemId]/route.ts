@@ -8,10 +8,6 @@ type ItemPayload = {
   nombre: string;
   activo?: boolean;
   ordenPdf?: number;
-  codigos?: Array<{
-    codigo: string;
-    aclaracion?: string | null;
-  }>;
 };
 
 function parseItemId(raw: string) {
@@ -22,63 +18,8 @@ function parseItemId(raw: string) {
   }
 }
 
-function normalizeCodigo(value: string) {
-  return value.trim().toUpperCase();
-}
-
-function parseCodigos(value: unknown) {
-  if (value === undefined) {
-    return { ok: true as const, codigos: undefined };
-  }
-
-  if (!Array.isArray(value)) {
-    return { ok: false as const, error: "Los codigos deben enviarse como una lista." };
-  }
-
-  const seen = new Set<string>();
-  const codigos: Array<{ codigo: string; aclaracion: string | null; orden: number }> = [];
-
-  for (const entry of value) {
-    if (!entry || typeof entry !== "object") {
-      return { ok: false as const, error: "Cada codigo debe incluir un valor valido." };
-    }
-
-    const candidate = entry as Record<string, unknown>;
-    const codigo = typeof candidate.codigo === "string" ? normalizeCodigo(candidate.codigo) : "";
-    const aclaracion = typeof candidate.aclaracion === "string" ? candidate.aclaracion.trim() : "";
-
-    if (!codigo) {
-      if (aclaracion) {
-        return { ok: false as const, error: "Cada aclaracion debe pertenecer a un codigo." };
-      }
-      continue;
-    }
-
-    if (seen.has(codigo)) {
-      return { ok: false as const, error: `El codigo ${codigo} esta repetido en el mismo equipo.` };
-    }
-
-    seen.add(codigo);
-    codigos.push({
-      codigo,
-      aclaracion: aclaracion || null,
-      orden: codigos.length + 1,
-    });
-  }
-
-  return { ok: true as const, codigos };
-}
-
 function isValidOrder(value: unknown) {
   return value === undefined || (typeof value === "number" && Number.isInteger(value) && value > 0);
-}
-
-function isCodigoConflict(error: unknown) {
-  if (typeof error !== "object" || !error || !("code" in error)) return false;
-  if ((error as { code?: string }).code !== "P2002") return false;
-  const target = (error as { meta?: { target?: string | string[] } }).meta?.target;
-  if (Array.isArray(target)) return target.some((entry) => String(entry).includes("codigo"));
-  return typeof target === "string" && target.includes("codigo");
 }
 
 function serializeItem(item: {
@@ -86,19 +27,12 @@ function serializeItem(item: {
   nombre: string;
   activo: boolean;
   ordenPdf: number;
-  codigos: Array<{ itemCodigoId: bigint; codigo: string; aclaracion: string | null; orden: number }>;
 }) {
   return {
     itemId: item.itemId.toString(),
     nombre: item.nombre,
     activo: item.activo,
     ordenPdf: item.ordenPdf,
-    codigos: item.codigos.map((codigo) => ({
-      itemCodigoId: codigo.itemCodigoId.toString(),
-      codigo: codigo.codigo,
-      aclaracion: codigo.aclaracion,
-      orden: codigo.orden,
-    })),
   };
 }
 
@@ -112,18 +46,11 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
     return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
   }
 
-  const body = await req.json();
-  const candidate = body as Record<string, unknown>;
-  const nombre = typeof candidate?.nombre === "string" ? candidate.nombre.trim() : "";
-  const codigosResult = parseCodigos(candidate?.codigos);
-  if (!nombre || !isValidOrder(candidate?.ordenPdf) || !codigosResult.ok) {
+  const body = (await req.json()) as ItemPayload;
+  const nombre = typeof body?.nombre === "string" ? body.nombre.trim() : "";
+  if (!nombre || !isValidOrder(body?.ordenPdf)) {
     return NextResponse.json(
-      {
-        error:
-          codigosResult.ok
-            ? "Payload invalido. 'nombre' es obligatorio y 'ordenPdf' debe ser entero positivo."
-            : codigosResult.error,
-      },
+      { error: "Payload invalido. 'nombre' es obligatorio y 'ordenPdf' debe ser entero positivo." },
       { status: 400 },
     );
   }
@@ -156,20 +83,6 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
         },
       });
 
-      if (codigosResult.codigos !== undefined) {
-        await tx.itemCodigo.deleteMany({ where: { itemId } });
-        if (codigosResult.codigos.length > 0) {
-          await tx.itemCodigo.createMany({
-            data: codigosResult.codigos.map((codigo) => ({
-              itemId,
-              codigo: codigo.codigo,
-              aclaracion: codigo.aclaracion,
-              orden: codigo.orden,
-            })),
-          });
-        }
-      }
-
       await normalizeItemOrders(tx, nextActive);
       if (existing.activo !== nextActive) {
         await normalizeItemOrders(tx, existing.activo);
@@ -177,11 +90,6 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
 
       return tx.item.findUniqueOrThrow({
         where: { itemId },
-        include: {
-          codigos: {
-            orderBy: [{ orden: "asc" }, { itemCodigoId: "asc" }],
-          },
-        },
       });
     });
 
@@ -194,10 +102,6 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
         nombre: updated.nombre,
         activo: updated.activo,
         ordenPdf: updated.ordenPdf,
-        codigos: updated.codigos.map((codigo) => ({
-          codigo: codigo.codigo,
-          aclaracion: codigo.aclaracion,
-        })),
       },
     });
 
@@ -206,12 +110,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
       if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
-      if (code === "P2002") {
-        return NextResponse.json(
-          { error: isCodigoConflict(error) ? "Uno de los codigos ya esta asignado a otro equipo." : "El nombre ya existe." },
-          { status: 409 },
-        );
-      }
+      if (code === "P2002") return NextResponse.json({ error: "El nombre ya existe." }, { status: 409 });
     }
 
     return NextResponse.json({ error: "No se pudo actualizar el equipo." }, { status: 500 });

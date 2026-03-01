@@ -5,6 +5,7 @@ import type { PersonalForm } from "@/types/forms";
 const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Administrador",
   EDITOR: "Editor",
+  READ_ONLY: "Solo Lectura",
 };
 
 /**
@@ -160,7 +161,9 @@ export function personalPayload(form: PersonalForm, includeCi: boolean) {
     nombre1: form.nombre1.trim(),
     nombre2: form.nombre2.trim(),
     telefonoContacto: form.telefonoContacto.trim(),
+    esReingreso: form.esReingreso,
     fechaIngreso: form.fechaIngreso || undefined,
+    fechaIngresoOriginal: form.esReingreso ? form.fechaIngresoOriginal || undefined : undefined,
     rangoId: Number(form.rangoId),
     bateriaId: form.bateriaId ? Number(form.bateriaId) : undefined,
     tallas,
@@ -179,7 +182,9 @@ export function toEditablePersonal(persona: Personal): PersonalForm {
     nombre1: persona.nombre1,
     nombre2: persona.nombre2 ?? "",
     telefonoContacto: persona.telefonoContacto ?? "",
+    esReingreso: persona.esReingreso,
     fechaIngreso: toDateInput(persona.fechaIngreso),
+    fechaIngresoOriginal: toDateInput(persona.fechaIngresoOriginal),
     rangoId: String(persona.rangoId),
     bateriaId: persona.bateriaId ? String(persona.bateriaId) : "",
     PARKA: toFormTallaValue("PARKA", tallas.PARKA),
@@ -228,7 +233,9 @@ export const EMPTY_PERSONAL_FORM: PersonalForm = {
   nombre1: "",
   nombre2: "",
   telefonoContacto: "",
+  esReingreso: false,
   fechaIngreso: "",
+  fechaIngresoOriginal: "",
   rangoId: "",
   bateriaId: "",
   PARKA: "",

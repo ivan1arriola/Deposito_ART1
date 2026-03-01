@@ -14,6 +14,7 @@ type RegistroPayload = {
   ci: string;
   fecha?: string;
   tipo: TipoRegistro | string;
+  afectaStock?: boolean;
   comentarios?: string;
   items: RegistroItemPayload[];
 };
@@ -165,6 +166,7 @@ export async function GET(req: Request) {
       ci: registro.ci,
       fecha: registro.fecha.toISOString(),
       tipo: registro.tipo,
+      afectaStock: registro.afectaStock,
       comentarios: registro.comentarios,
       createdAt: registro.createdAt.toISOString(),
       items: registro.items.map((detail) => ({
@@ -248,6 +250,7 @@ export async function POST(req: Request) {
   }
 
   const comentarios = body.comentarios?.trim() || null;
+  const afectaStock = body.afectaStock === true;
   const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
   const itemsDetallados = Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
     itemId,
@@ -263,6 +266,7 @@ export async function POST(req: Request) {
           ci,
           fecha,
           tipo,
+          afectaStock,
           comentarios,
         },
         select: { registroId: true },
@@ -289,6 +293,7 @@ export async function POST(req: Request) {
         ci,
         personal: buildPersonalAuditDetail(personalRecord),
         tipo,
+        afectaStock,
         fechaMovimiento: fecha.toISOString().slice(0, 10),
         comentarios,
         totalEquipos: itemsDetallados.length,

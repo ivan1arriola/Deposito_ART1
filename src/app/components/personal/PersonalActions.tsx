@@ -3,6 +3,7 @@
 import { SmallActionButton } from "@/app/components/shared";
 
 type PersonalActionsProps = {
+  canWrite: boolean;
   editing: boolean;
   tallasOpen: boolean;
   compact?: boolean;
@@ -17,6 +18,7 @@ type PersonalActionsProps = {
 };
 
 export function PersonalActions({
+  canWrite,
   editing,
   tallasOpen,
   compact = false,
@@ -35,27 +37,40 @@ export function PersonalActions({
 
   return (
     <div className={compact ? "grid grid-cols-2 gap-1.5" : "flex flex-wrap gap-2"}>
-      <SmallActionButton
-        text={editing ? "Cancelar" : "Editar"}
-        tone={editing ? "neutral" : "edit"}
-        className={compact ? "w-full text-[11px] leading-tight" : undefined}
-        onClick={onToggleEdit}
-      />
-      <SmallActionButton text="Borrar" tone="delete" className={compact ? "w-full text-[11px] leading-tight" : undefined} onClick={onDelete} />
+      {canWrite ? (
+        <>
+          <SmallActionButton
+            text={editing ? "Cancelar" : "Editar"}
+            tone={editing ? "neutral" : "edit"}
+            className={compact ? "w-full text-[11px] leading-tight" : undefined}
+            onClick={onToggleEdit}
+          />
+          <SmallActionButton
+            text="Borrar"
+            tone="delete"
+            className={compact ? "w-full text-[11px] leading-tight" : undefined}
+            onClick={onDelete}
+          />
+        </>
+      ) : null}
       {!compact ? (
         <button type="button" onClick={onToggleTallas} className={`${secondaryClass} bg-stone-600 hover:bg-stone-700`}>
           {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
         </button>
       ) : null}
-      <button type="button" onClick={onEntrega} className={`${secondaryClass} bg-emerald-700 hover:bg-emerald-800`}>
-        Entrega
-      </button>
-      <button type="button" onClick={onDevolucion} className={`${secondaryClass} bg-amber-700 hover:bg-amber-800`}>
-        Devolución
-      </button>
-      <button type="button" onClick={onObservacion} className={`${secondaryClass} bg-teal-700 hover:bg-teal-800`}>
-        Observación
-      </button>
+      {canWrite ? (
+        <>
+          <button type="button" onClick={onEntrega} className={`${secondaryClass} bg-emerald-700 hover:bg-emerald-800`}>
+            Entrega
+          </button>
+          <button type="button" onClick={onDevolucion} className={`${secondaryClass} bg-amber-700 hover:bg-amber-800`}>
+            Devolucion
+          </button>
+          <button type="button" onClick={onObservacion} className={`${secondaryClass} bg-teal-700 hover:bg-teal-800`}>
+            Observacion
+          </button>
+        </>
+      ) : null}
       <button type="button" onClick={onViewMoves} className={`${secondaryClass} bg-sky-700 hover:bg-sky-800`}>
         Ver movimientos
       </button>

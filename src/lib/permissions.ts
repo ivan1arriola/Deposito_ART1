@@ -17,6 +17,13 @@ const permissionMatrix: Record<UserRole, Record<Permission, boolean>> = {
     manage_users: false,
     view_audit: false,
   },
+  READ_ONLY: {
+    read_data: true,
+    write_data: false,
+    delete_data: false,
+    manage_users: false,
+    view_audit: false,
+  },
 };
 
 export function hasPermission(role: UserRole, permission: Permission) {

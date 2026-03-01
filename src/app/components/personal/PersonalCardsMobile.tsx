@@ -11,6 +11,7 @@ import { PersonalTallasPanel } from "./PersonalTallasPanel";
 
 type PersonalCardsMobileProps = {
   personas: Personal[];
+  canWrite: boolean;
   expandedTallasByCi: Record<string, boolean>;
   editPersonalCi: string | null;
   onToggleEdit: (persona: Personal) => void;
@@ -26,6 +27,7 @@ type PersonalCardsMobileProps = {
 
 export function PersonalCardsMobile({
   personas,
+  canWrite,
   expandedTallasByCi,
   editPersonalCi,
   onToggleEdit,
@@ -64,10 +66,11 @@ export function PersonalCardsMobile({
                 <span className="font-semibold">Contacto:</span> {formatUruguayanMobileNumber(persona.telefonoContacto)}
               </p>
             ) : null}
-            <p className="mt-1 text-xs text-stone-600">{persona.bateria?.nombre ?? "Sin baterÃ­a"}</p>
+            <p className="mt-1 text-xs text-stone-600">{persona.bateria?.nombre ?? "Sin bateria"}</p>
 
             <div className="mt-2">
               <PersonalActions
+                canWrite={canWrite}
                 editing={editing}
                 tallasOpen={tallasOpen}
                 onToggleEdit={() => onToggleEdit(persona)}

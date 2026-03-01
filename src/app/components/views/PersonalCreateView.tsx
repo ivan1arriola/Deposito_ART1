@@ -25,7 +25,7 @@ type PersonalCreateViewProps = {
   maxFechaIngreso: string;
   onBack: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onPersonalChange: (key: keyof PersonalForm, value: string) => void;
+  onPersonalChange: (key: keyof PersonalForm, value: string | boolean) => void;
 };
 
 export function PersonalCreateView({
@@ -50,6 +50,7 @@ export function PersonalCreateView({
 }: PersonalCreateViewProps) {
   const telefonoContactoLooksValid =
     newPersonal.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(newPersonal.telefonoContacto);
+  const fechaActualLabel = newPersonal.esReingreso ? "Fecha de re-ingreso *" : "Fecha de ingreso";
 
   return (
     <section className="mt-6 space-y-4">
@@ -163,6 +164,16 @@ export function PersonalCreateView({
               <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
                 <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Destino</legend>
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <label className="md:col-span-3 flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5">
+                    <input
+                      type="checkbox"
+                      checked={newPersonal.esReingreso}
+                      onChange={(event) => onPersonalChange("esReingreso", event.target.checked)}
+                      className="h-4 w-4 rounded border-stone-300"
+                    />
+                    <span className="text-sm font-medium text-stone-700">Es reingreso</span>
+                  </label>
+
                   <label>
                     <span className="block text-xs font-medium text-stone-700">Grado *</span>
                     <select
@@ -196,7 +207,7 @@ export function PersonalCreateView({
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">Fecha de ingreso</span>
+                    <span className="block text-xs font-medium text-stone-700">{fechaActualLabel}</span>
                     <input
                       type="date"
                       value={newPersonal.fechaIngreso}
@@ -204,7 +215,24 @@ export function PersonalCreateView({
                       max={maxFechaIngreso}
                       className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                     />
+                    <span className="mt-1 block text-[11px] text-stone-500">
+                      {newPersonal.esReingreso ? "Obligatoria para personal que vuelve a ingresar." : "Opcional."}
+                    </span>
                   </label>
+
+                  {newPersonal.esReingreso ? (
+                    <label>
+                      <span className="block text-xs font-medium text-stone-700">Fecha de ingreso original</span>
+                      <input
+                        type="date"
+                        value={newPersonal.fechaIngresoOriginal}
+                        onChange={(event) => onPersonalChange("fechaIngresoOriginal", event.target.value)}
+                        max={maxFechaIngreso}
+                        className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
+                      />
+                      <span className="mt-1 block text-[11px] text-stone-500">Opcional. Solo para casos de reingreso.</span>
+                    </label>
+                  ) : null}
                 </div>
               </fieldset>
 
@@ -262,9 +290,11 @@ export function PersonalCreateView({
                   <p>{`Apellido 1: ${requiredPersonalFields[1] ? "Completo" : "Falta"}`}</p>
                   <p>{`Nombre 1: ${requiredPersonalFields[2] ? "Completo" : "Falta"}`}</p>
                   <p>{`Grado: ${requiredPersonalFields[3] ? "Seleccionado" : "Falta"}`}</p>
+                  <p>{`Condicion: ${newPersonal.esReingreso ? "Reingreso" : "Ingreso inicial"}`}</p>
                   <p>{`Celular: ${newPersonal.telefonoContacto.trim() === "" ? "Opcional" : telefonoContactoLooksValid ? "Valido" : "Invalido"}`}</p>
                   <p>{`Batería: ${Number(newPersonal.bateriaId) > 0 ? "Completa" : "Pendiente"}`}</p>
-                  <p>{`Fecha de ingreso: ${newPersonal.fechaIngreso ? "Completa" : "Pendiente"}`}</p>
+                  <p>{`${newPersonal.esReingreso ? "Fecha de re-ingreso" : "Fecha de ingreso"}: ${newPersonal.fechaIngreso ? "Completa" : "Pendiente"}`}</p>
+                  {newPersonal.esReingreso ? <p>{`Fecha de ingreso original: ${newPersonal.fechaIngresoOriginal ? "Completa" : "Opcional"}`}</p> : null}
                 </div>
               </article>
 

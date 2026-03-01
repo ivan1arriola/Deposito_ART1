@@ -8,6 +8,7 @@ export type MainView =
   | "personal"
   | "personal_nuevo"
   | "formularios"
+  | "stock"
   | "hoja_matrix"
   | "equipo_resumen"
   | "tallas_resumen"
@@ -38,6 +39,7 @@ export type RegistroView = {
   ci: string;
   fecha: string;
   tipo: RegistroViewTipo;
+  afectaStock: boolean;
   comentarios: string | null;
   createdAt: string;
   items: Array<{
@@ -53,6 +55,41 @@ export type RegistroViewerState = {
   loading: boolean;
   error: string | null;
   registros: RegistroView[];
+};
+
+export type StockOperacionViewTipo = "INGRESO" | "EGRESO";
+
+export type StockResumenRow = {
+  itemId: string;
+  nombre: string;
+  ordenPdf: number;
+  apareceEnHoja: boolean;
+  stockActual: number;
+};
+
+export type StockHistorialEntry = {
+  id: string;
+  fecha: string;
+  createdAt: string;
+  origen: "MANUAL" | "PERSONAL";
+  tipo: StockOperacionViewTipo | RegistroTipo;
+  afectaStock: boolean;
+  comentarios: string | null;
+  totalUnidades: number;
+  ci: string | null;
+  persona: string | null;
+  items: Array<{
+    itemId: string;
+    nombre: string;
+    cantidad: number;
+    delta: number;
+  }>;
+};
+
+export type StockDashboardData = {
+  generatedAt: string;
+  resumen: StockResumenRow[];
+  historial: StockHistorialEntry[];
 };
 
 export type HojaMatrixEquipo = {

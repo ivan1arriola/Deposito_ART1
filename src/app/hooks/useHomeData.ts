@@ -14,7 +14,7 @@ import type {
   Rango,
   UsuarioAdmin,
 } from "@/types/entities";
-import type { EquipoResumenData, HojaMatrixData } from "@/types/views";
+import type { EquipoResumenData, HojaMatrixData, StockDashboardData } from "@/types/views";
 
 type UseHomeDataOptions = {
   onStatusChange: (message: string) => void;
@@ -49,6 +49,9 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
   const [equipoResumenData, setEquipoResumenData] = useState<EquipoResumenData | null>(null);
   const [equipoResumenLoading, setEquipoResumenLoading] = useState(false);
   const [equipoResumenError, setEquipoResumenError] = useState<string | null>(null);
+  const [stockData, setStockData] = useState<StockDashboardData | null>(null);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [stockError, setStockError] = useState<string | null>(null);
 
   const clearLoadedData = useCallback(() => {
     setRangos([]);
@@ -69,6 +72,9 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     setEquipoResumenData(null);
     setEquipoResumenLoading(false);
     setEquipoResumenError(null);
+    setStockData(null);
+    setStockLoading(false);
+    setStockError(null);
   }, []);
 
   const loadData = useCallback(
@@ -131,6 +137,8 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
         setHojaMatrixError(null);
         setEquipoResumenData(null);
         setEquipoResumenError(null);
+        setStockData(null);
+        setStockError(null);
         onStatusChange("Datos actualizados.");
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "No se pudo cargar la informacion.";
@@ -177,6 +185,19 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
       setEquipoResumenError(error instanceof Error ? error.message : "No se pudo cargar el resumen de equipo.");
     } finally {
       setEquipoResumenLoading(false);
+    }
+  }, []);
+
+  const loadStockData = useCallback(async () => {
+    setStockLoading(true);
+    setStockError(null);
+    try {
+      const data = await api<StockDashboardData>("/api/stock");
+      setStockData(data);
+    } catch (error: unknown) {
+      setStockError(error instanceof Error ? error.message : "No se pudo cargar el stock.");
+    } finally {
+      setStockLoading(false);
     }
   }, []);
 
@@ -253,9 +274,15 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     equipoResumenLoading,
     equipoResumenError,
     setEquipoResumenError,
+    stockData,
+    setStockData,
+    stockLoading,
+    stockError,
+    setStockError,
     loadData,
     loadHojaMatrix,
     loadEquipoResumen,
+    loadStockData,
     clearLoadedData,
     setRangos,
     setBaterias,

@@ -6,11 +6,6 @@
 import { api } from "@/lib/api";
 import type { Rango, Bateria, Item } from "@/types/entities";
 
-type EquipoCodigoInput = {
-  codigo: string;
-  aclaracion: string;
-};
-
 interface CallbackProps {
   onSuccess: (data?: unknown) => void;
   onError: (message: string) => void;
@@ -123,14 +118,13 @@ export async function deleteBateriaHandler(bateriaId: number, callbacks: Callbac
 export async function createItemHandler(
   nombre: string,
   activo: boolean,
-  codigos: EquipoCodigoInput[],
   callbacks: CallbackProps
 ) {
   try {
     await api("/api/items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, activo, codigos }),
+      body: JSON.stringify({ nombre, activo }),
     });
     callbacks.onSuccess();
   } catch (error) {
@@ -145,14 +139,13 @@ export async function updateItemHandler(
   nombre: string,
   activo: boolean,
   ordenPdf: number,
-  codigos: EquipoCodigoInput[] | undefined,
   callbacks: CallbackProps
 ) {
   try {
     await api(`/api/items/${itemId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, activo, ordenPdf, codigos }),
+      body: JSON.stringify({ nombre, activo, ordenPdf }),
     });
     callbacks.onSuccess();
   } catch (error) {

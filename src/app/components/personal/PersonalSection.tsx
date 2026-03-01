@@ -45,7 +45,7 @@ type PersonalSectionProps = {
   onOpenDeliverySheet: (ci: string) => void;
   onStartEditPersonal: (persona: Personal) => void;
   onCancelEditPersonal: () => void;
-  onEditPersonalChange: (field: keyof PersonalForm, value: string) => void;
+  onEditPersonalChange: (field: keyof PersonalForm, value: string | boolean) => void;
   onSaveEditPersonal: (ci: string) => void;
 };
 
@@ -158,9 +158,10 @@ export function PersonalSection({
         onPageSizeChange={onPersonalPageSizeChange}
       />
 
-      <PersonalCardsMobile
-        personas={personalFiltradoPaginado}
-        expandedTallasByCi={expandedTallasByCi}
+        <PersonalCardsMobile
+          personas={personalFiltradoPaginado}
+          canWrite={canWrite}
+          expandedTallasByCi={expandedTallasByCi}
         editPersonalCi={editPersonalCi}
         onToggleEdit={handleToggleEdit}
         onDelete={onDeletePersonal}
@@ -186,6 +187,7 @@ export function PersonalSection({
 
       <PersonalTableDesktop
         personas={personalFiltradoPaginado}
+        canWrite={canWrite}
         expandedTallasByCi={expandedTallasByCi}
         editPersonalCi={editPersonalCi}
         onToggleEdit={handleToggleEdit}

@@ -11,6 +11,7 @@ import { PersonalTallasPanel } from "./PersonalTallasPanel";
 
 type PersonalTableDesktopProps = {
   personas: Personal[];
+  canWrite: boolean;
   expandedTallasByCi: Record<string, boolean>;
   editPersonalCi: string | null;
   onToggleEdit: (persona: Personal) => void;
@@ -26,6 +27,7 @@ type PersonalTableDesktopProps = {
 
 export function PersonalTableDesktop({
   personas,
+  canWrite,
   expandedTallasByCi,
   editPersonalCi,
   onToggleEdit,
@@ -109,6 +111,7 @@ export function PersonalTableDesktop({
                   </td>
                   <td className="px-2 py-2 align-top">
                     <PersonalActions
+                      canWrite={canWrite}
                       editing={editing}
                       tallasOpen={tallasOpen}
                       compact

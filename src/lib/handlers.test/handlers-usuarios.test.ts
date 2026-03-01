@@ -100,13 +100,13 @@ describe("Handlers de Usuarios", () => {
       const onSuccess = vi.fn();
       vi.mocked(api).mockResolvedValue({});
 
-      await changeUserRoleHandler("USR123", "ADMIN", { onSuccess });
+      await changeUserRoleHandler("USR123", "READ_ONLY", { onSuccess });
 
       expect(vi.mocked(api)).toHaveBeenCalledWith(
         "/api/usuarios/USR123",
         expect.objectContaining({
           method: "PUT",
-          body: JSON.stringify({ rol: "ADMIN" }),
+          body: JSON.stringify({ rol: "READ_ONLY" }),
         }),
       );
       expect(onSuccess).toHaveBeenCalled();

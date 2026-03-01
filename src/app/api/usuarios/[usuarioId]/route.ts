@@ -16,7 +16,7 @@ type UsuarioUpdatePayload = {
 };
 
 function roleFromValue(value: unknown): UserRole | null {
-  if (value === "ADMIN" || value === "EDITOR") return value;
+  if (value === "ADMIN" || value === "EDITOR" || value === "READ_ONLY") return value;
   return null;
 }
 
@@ -29,8 +29,12 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
 
   const isSelfUpdate = actor.usuarioId === usuarioId;
   const isAdmin = actor.rol === "ADMIN";
+  const isReadOnly = actor.rol === "READ_ONLY";
   if (!isAdmin && !isSelfUpdate) {
     return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+  }
+  if (isReadOnly) {
+    return NextResponse.json({ error: "El rol Solo Lectura no puede modificar usuarios." }, { status: 403 });
   }
 
   const body = (await request.json()) as UsuarioUpdatePayload;

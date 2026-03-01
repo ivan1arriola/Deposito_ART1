@@ -1,8 +1,7 @@
 // Tipos de entidades principales
 export type Rango = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
 export type Bateria = { bateriaId: number; nombre: string; orden: number };
-export type EquipoCodigo = { itemCodigoId: string; codigo: string; aclaracion: string | null; orden: number };
-export type Equipo = { itemId: string; nombre: string; activo: boolean; ordenPdf: number; codigos: EquipoCodigo[] };
+export type Equipo = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
 export type Item = Equipo;
 export type Talla = { tallaTipo: { nombre: string }; tallaValor: string };
 
@@ -13,7 +12,9 @@ export type Personal = {
   nombre1: string;
   nombre2: string | null;
   telefonoContacto: string | null;
+  esReingreso: boolean;
   fechaIngreso: string | null;
+  fechaIngresoOriginal: string | null;
   rangoId: number;
   bateriaId: number | null;
   rango: Rango;
@@ -29,7 +30,9 @@ export type PersonalForm = {
   nombre1: string;
   nombre2: string;
   telefonoContacto: string;
+  esReingreso: boolean;
   fechaIngreso: string;
+  fechaIngresoOriginal: string;
   rangoId: string;
   bateriaId: string;
   PARKA: string;
@@ -43,17 +46,11 @@ export type EquipoForm = {
   nombre: string;
   activo: boolean;
   ordenPdf: number;
-  codigos: EquipoCodigoForm[];
 };
 export type ItemForm = EquipoForm;
 
-export type EquipoCodigoForm = {
-  codigo: string;
-  aclaracion: string;
-};
-
 // Tipos de autenticación y permisos
-export type Role = "ADMIN" | "EDITOR";
+export type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
 
 export type CurrentUser = {
   usuarioId: string;
@@ -65,7 +62,7 @@ export type CurrentUser = {
 };
 
 // Tipos de vistas
-export type MainView = "personal" | "personal_nuevo" | "formularios" | "hoja_matrix" | "equipo_resumen" | "tallas_resumen" | "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
+export type MainView = "personal" | "personal_nuevo" | "formularios" | "stock" | "hoja_matrix" | "equipo_resumen" | "tallas_resumen" | "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
 
 // Tipos de registros
 export type RegistroTipo = "ENTREGA" | "DEVOLUCION";
@@ -82,6 +79,7 @@ export type RegistroDraft = {
   registroId: string | null;
   ci: string;
   tipo: RegistroTipo;
+  afectaStock: boolean;
   fecha: string;
   comentarios: string;
   items: RegistroDraftEquipo[];
@@ -100,6 +98,7 @@ export type RegistroView = {
   ci: string;
   fecha: string;
   tipo: RegistroViewTipo;
+  afectaStock: boolean;
   comentarios: string | null;
   createdAt: string;
   items: Array<{

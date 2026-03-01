@@ -4,6 +4,8 @@
 
 import type { RegistroTipo } from "./views";
 
+export type StockOperacionTipo = "INGRESO" | "EGRESO";
+
 export type PersonalForm = {
   ci: string;
   apellido1: string;
@@ -11,7 +13,9 @@ export type PersonalForm = {
   nombre1: string;
   nombre2: string;
   telefonoContacto: string;
+  esReingreso: boolean;
   fechaIngreso: string;
+  fechaIngresoOriginal: string;
   rangoId: string;
   bateriaId: string;
   PARKA: string;
@@ -25,15 +29,9 @@ export type EquipoForm = {
   nombre: string;
   activo: boolean;
   ordenPdf: number;
-  codigos: EquipoCodigoForm[];
 };
 
 export type ItemForm = EquipoForm;
-
-export type EquipoCodigoForm = {
-  codigo: string;
-  aclaracion: string;
-};
 
 export type RegistroDraftEquipo = {
   itemId: string;
@@ -47,9 +45,22 @@ export type RegistroDraft = {
   registroId: string | null;
   ci: string;
   tipo: RegistroTipo;
+  afectaStock: boolean;
   fecha: string;
   comentarios: string;
   items: RegistroDraftEquipo[];
+};
+
+export type StockOperacionDraftItem = {
+  itemId: string;
+  cantidad: string;
+};
+
+export type StockOperacionDraft = {
+  tipo: StockOperacionTipo;
+  fecha: string;
+  comentarios: string;
+  items: StockOperacionDraftItem[];
 };
 
 /**
@@ -62,7 +73,9 @@ export const EMPTY_PERSONAL_FORM: PersonalForm = {
   nombre1: "",
   nombre2: "",
   telefonoContacto: "",
+  esReingreso: false,
   fechaIngreso: "",
+  fechaIngresoOriginal: "",
   rangoId: "",
   bateriaId: "",
   PARKA: "",
@@ -76,7 +89,13 @@ export const EMPTY_EQUIPO_FORM: EquipoForm = {
   nombre: "",
   activo: true,
   ordenPdf: 1,
-  codigos: [],
 };
 
 export const EMPTY_ITEM_FORM: ItemForm = EMPTY_EQUIPO_FORM;
+
+export const EMPTY_STOCK_OPERACION_DRAFT: StockOperacionDraft = {
+  tipo: "INGRESO",
+  fecha: "",
+  comentarios: "",
+  items: [{ itemId: "", cantidad: "1" }],
+};

@@ -12,7 +12,7 @@ type PersonalInlineEditFormProps = {
   baterias: Bateria[];
   tallaOptionsByKey: Record<TallaKey, string[]>;
   maxFechaIngreso: string;
-  onChange: (field: keyof PersonalForm, value: string) => void;
+  onChange: (field: keyof PersonalForm, value: string | boolean) => void;
   onSave: () => void;
 };
 
@@ -27,6 +27,7 @@ export function PersonalInlineEditForm({
 }: PersonalInlineEditFormProps) {
   const telefonoContactoLooksValid =
     editPersonal.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(editPersonal.telefonoContacto);
+  const fechaActualLabel = editPersonal.esReingreso ? "Fecha de re-ingreso" : "Fecha de ingreso";
 
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -46,13 +47,34 @@ export function PersonalInlineEditForm({
           {telefonoContactoLooksValid ? "Opcional. Formato uruguayo." : "Ingresa un celular uruguayo valido."}
         </p>
       </div>
+      <label className="flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm sm:col-span-2 lg:col-span-1">
+        <input
+          type="checkbox"
+          checked={editPersonal.esReingreso}
+          onChange={(event) => onChange("esReingreso", event.target.checked)}
+          className="h-4 w-4 rounded border-stone-300"
+        />
+        <span>Es reingreso</span>
+      </label>
       <input
         type="date"
         value={editPersonal.fechaIngreso}
         onChange={(event) => onChange("fechaIngreso", event.target.value)}
         max={maxFechaIngreso}
         className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        aria-label={fechaActualLabel}
       />
+      {editPersonal.esReingreso ? (
+        <input
+          type="date"
+          value={editPersonal.fechaIngresoOriginal}
+          onChange={(event) => onChange("fechaIngresoOriginal", event.target.value)}
+          max={maxFechaIngreso}
+          placeholder="Fecha de ingreso original"
+          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+          aria-label="Fecha de ingreso original"
+        />
+      ) : null}
       <select value={editPersonal.rangoId} onChange={(event) => onChange("rangoId", event.target.value)} className="rounded-lg border border-stone-300 px-3 py-2 text-sm">
         {rangos.map((rango) => (
           <option key={rango.rangoId} value={rango.rangoId}>

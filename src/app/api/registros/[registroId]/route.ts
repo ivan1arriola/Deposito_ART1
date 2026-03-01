@@ -12,6 +12,7 @@ type RegistroItemPayload = {
 type UpdateRegistroPayload = {
   fecha?: string;
   tipo: TipoRegistro | string;
+  afectaStock?: boolean;
   comentarios?: string;
   items: RegistroItemPayload[];
 };
@@ -173,6 +174,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   }
 
   const comentarios = body.comentarios?.trim() || null;
+  const afectaStock = body.afectaStock === true;
   const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
   const itemsNuevos = Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
     itemId,
@@ -195,6 +197,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
         data: {
           tipo,
           fecha,
+          afectaStock,
           comentarios,
         },
       });
@@ -223,6 +226,8 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
         personal: buildPersonalAuditDetail(existing.personal),
         tipoAnterior: existing.tipo,
         tipoNuevo: tipo,
+        afectaStockAnterior: existing.afectaStock,
+        afectaStockNuevo: afectaStock,
         fechaAnterior: existing.fecha.toISOString().slice(0, 10),
         fechaNueva: fecha.toISOString().slice(0, 10),
         comentariosAnterior: existing.comentarios,

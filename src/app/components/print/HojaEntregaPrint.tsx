@@ -369,7 +369,7 @@ export function HojaEntregaPrintSheet({
           </tr>
           <tr>
             <td colSpan={15} className="info-grid-shell info-grid-shell-bottom">
-              <div className="info-grid info-grid-4">
+              <div className="info-grid info-grid-5">
                 <div className="info-grid-item info-grid-item-compact">
                   <span className="header-info-label">C.I:</span> {ciWarningPrefix}
                   {ciFormateado}
@@ -378,10 +378,18 @@ export function HojaEntregaPrintSheet({
                   <span className="header-info-label">Batería:</span> {data.persona.bateria || "Cdo. y Serv."}
                 </div>
                 <div className="info-grid-item info-grid-item-compact">
-                  <span className="header-info-label">Fecha Ingreso:</span>{" "}
+                  <span className="header-info-label">
+                    {data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:"}
+                  </span>{" "}
                   {data.persona.fechaIngreso
                     ? `${getHojaEntregaDatePart(data.persona.fechaIngreso, "day")}/${getHojaEntregaDatePart(data.persona.fechaIngreso, "month")}/${getHojaEntregaDatePart(data.persona.fechaIngreso, "year")}`
                     : "-"}
+                </div>
+                <div className="info-grid-item info-grid-item-compact">
+                  <span className="header-info-label">Fecha ingreso original:</span>{" "}
+                  {data.persona.fechaIngresoOriginal
+                    ? `${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "day")}/${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "month")}/${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "year")}`
+                    : ""}
                 </div>
                 <div className="info-grid-item info-grid-item-compact">
                   <span className="header-info-label">Fecha de emisión:</span> {fechaEmision}

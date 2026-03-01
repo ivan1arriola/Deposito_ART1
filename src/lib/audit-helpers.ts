@@ -123,6 +123,21 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
     lines.push(buildLine("items-nuevos", "Equipos nuevos", itemsNuevos.join(", ")));
   }
 
+  const afectaStock = typeof info.afectaStock === "boolean" ? info.afectaStock : null;
+  const afectaStockAnterior = typeof info.afectaStockAnterior === "boolean" ? info.afectaStockAnterior : null;
+  const afectaStockNuevo = typeof info.afectaStockNuevo === "boolean" ? info.afectaStockNuevo : null;
+  if (afectaStockAnterior !== null || afectaStockNuevo !== null) {
+    lines.push(
+      buildLine(
+        "afecta-stock-cambio",
+        "Afecta stock",
+        `${afectaStockAnterior ? "Si" : "No"} -> ${afectaStockNuevo ? "Si" : "No"}`,
+      ),
+    );
+  } else if (afectaStock !== null) {
+    lines.push(buildLine("afecta-stock", "Afecta stock", afectaStock ? "Si" : "No"));
+  }
+
   const totalUnidades = asText(info.totalUnidades);
   const totalUnidadesAnterior = asText(info.totalUnidadesAnterior);
   const totalUnidadesNuevo = asText(info.totalUnidadesNuevo);
@@ -170,6 +185,7 @@ export function auditEntityLabel(entidad: string): string {
     ITEM: "item",
     FIRMAS_CONFIG: "firmas institucionales",
     OBSERVACION: "observacion",
+    STOCK: "stock",
   };
   return labels[entidad] || entidad.toLowerCase();
 }
@@ -183,7 +199,7 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
   if (!isObject(detalle)) return "";
 
   const evento = asText(detalle.evento);
-  if (evento.startsWith("MOVIMIENTO_")) {
+  if (evento.startsWith("MOVIMIENTO_") || evento.startsWith("STOCK_")) {
     return renderMovimientoDetalle(detalle, ciReferences);
   }
 

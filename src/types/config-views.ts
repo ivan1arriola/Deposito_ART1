@@ -4,11 +4,10 @@
 
 import { ReactNode, FormEvent } from "react";
 
-export type Role = "ADMIN" | "EDITOR";
+export type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
 export type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
 export type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
-export type EquipoCodigoConfig = { itemCodigoId: string; codigo: string; aclaracion: string | null; orden: number };
-export type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number; codigos: EquipoCodigoConfig[] };
+export type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
 export type ItemConfig = EquipoConfig;
 export type UsuarioAdmin = {
   usuarioId: string;
@@ -94,9 +93,9 @@ export interface BateriaConfigCallbacks {
 // Equipos
 export interface EquipoConfigState {
   equipos: EquipoConfig[];
-  newEquipo: { nombre: string; activo: boolean; ordenPdf: number; codigos: Array<{ codigo: string; aclaracion: string }> };
+  newEquipo: { nombre: string; activo: boolean; ordenPdf: number };
   editEquipoId: string | null;
-  editEquipo: { nombre: string; activo: boolean; ordenPdf: number; codigos: Array<{ codigo: string; aclaracion: string }> };
+  editEquipo: { nombre: string; activo: boolean; ordenPdf: number };
   equiposActivos: EquipoConfig[];
   equiposInactivos: EquipoConfig[];
   equiposActivosEnPantalla: EquipoConfig[];
@@ -105,9 +104,6 @@ export interface EquipoConfigState {
 
 export interface EquipoConfigCallbacks {
   onNewEquipoChange: (value: string | boolean, key: keyof Pick<EquipoConfig, "nombre" | "activo">) => void;
-  onNewEquipoCodigoChange: (index: number, key: "codigo" | "aclaracion", value: string) => void;
-  onAddNewEquipoCodigo: () => void;
-  onRemoveNewEquipoCodigo: (index: number) => void;
   onEditEquipoIdChange: (id: string | null) => void;
   onEditEquipoChange: (
     value: string | boolean | number,

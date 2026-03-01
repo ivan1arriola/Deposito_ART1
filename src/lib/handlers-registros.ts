@@ -13,6 +13,7 @@ interface CallbackProps {
 interface RegistroPayload {
   ci: string;
   tipo: "ENTREGA" | "DEVOLUCION" | "AJUSTE";
+  afectaStock?: boolean;
   fecha: string;
   comentarios?: string;
   items: Array<{ itemId: string; cantidad: number }>;

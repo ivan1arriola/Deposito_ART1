@@ -1,12 +1,3 @@
-/**
- * Tests para handlers de catálogos (Rango, Bateria, Item)
- * 
- * Estos tests demuestran cómo validar: 
- * - Manejo de errores
- * - Llamadas correctas a API
- * - Callbacks ejecutados apropiadamente
- */
-
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { api } from "@/lib/api";
 import {
@@ -17,19 +8,17 @@ import {
   updateItemHandler,
 } from "@/lib/handlers-catalog";
 
-// Mock del módulo de API
 vi.mock("@/lib/api", () => ({
   api: vi.fn(),
 }));
 
-declare const api: any;
-describe("Handlers de Catálogos - Rangos", () => {
+describe("Handlers de Catalogos - Rangos", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe("createRangoHandler", () => {
-    it("debería llamar a onSuccess cuando la creación es exitosa", async () => {
+    it("deberia llamar a onSuccess cuando la creacion es exitosa", async () => {
       const onSuccess = vi.fn();
       const onError = vi.fn();
       vi.mocked(api).mockResolvedValue({ rangoId: 1 });
@@ -43,11 +32,10 @@ describe("Handlers de Catálogos - Rangos", () => {
       expect(onError).not.toHaveBeenCalled();
     });
 
-    it("debería llamar a onError con mensaje cuando falla", async () => {
+    it("deberia llamar a onError con mensaje cuando falla", async () => {
       const onSuccess = vi.fn();
       const onError = vi.fn();
-      const errorMessage = "Error de conexión";
-      vi.mocked(api).mockRejectedValue(new Error(errorMessage));
+      vi.mocked(api).mockRejectedValue(new Error("Error de conexion"));
 
       try {
         await createRangoHandler("Ten.", "Teniente", 2, {
@@ -55,51 +43,55 @@ describe("Handlers de Catálogos - Rangos", () => {
           onError,
         });
       } catch {
-        // Error esperado
+        // Error esperado.
       }
 
-      expect(onError).toHaveBeenCalledWith(errorMessage);
+      expect(onError).toHaveBeenCalledWith("Error de conexion");
       expect(onSuccess).not.toHaveBeenCalled();
     });
 
-    it("debería hacer llamada POST a /api/rangos", async () => {
+    it("deberia hacer llamada POST a /api/rangos", async () => {
       const onSuccess = vi.fn();
       const onError = vi.fn();
       vi.mocked(api).mockResolvedValue({});
 
       await createRangoHandler("Ten.", "Teniente", 2, { onSuccess, onError });
 
-      expect(vi.mocked(api)).toHaveBeenCalledWith("/api/rangos", expect.objectContaining({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      }));
-      expect(vi.mocked(api)).toHaveBeenCalledWith("/api/rangos", expect.objectContaining({
-        body: JSON.stringify({ abreviacion: "Ten.", nombreCompleto: "Teniente", orden: 2 }),
-      }));
+      expect(vi.mocked(api)).toHaveBeenCalledWith(
+        "/api/rangos",
+        expect.objectContaining({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ abreviacion: "Ten.", nombreCompleto: "Teniente", orden: 2 }),
+        }),
+      );
     });
   });
 
   describe("updateRangoHandler", () => {
-    it("debería hacer llamada PUT a /api/rangos/:id", async () => {
+    it("deberia hacer llamada PUT a /api/rangos/:id", async () => {
       const onSuccess = vi.fn();
       const onError = vi.fn();
       vi.mocked(api).mockResolvedValue({});
 
       await updateRangoHandler(1, "Ten.", "Teniente", 3, { onSuccess, onError });
 
-      expect(vi.mocked(api)).toHaveBeenCalledWith("/api/rangos/1", expect.objectContaining({
-        method: "PUT",
-      }));
+      expect(vi.mocked(api)).toHaveBeenCalledWith(
+        "/api/rangos/1",
+        expect.objectContaining({
+          method: "PUT",
+        }),
+      );
     });
 
-    it("debería manejar errores correctamente", async () => {
+    it("deberia manejar errores correctamente", async () => {
       const onError = vi.fn();
       vi.mocked(api).mockRejectedValue(new Error("No encontrado"));
 
       try {
-        await updateRangoHandler(999, "Ten.", "Teniente", 3, { onError });
+        await updateRangoHandler(999, "Ten.", "Teniente", 3, { onError, onSuccess: vi.fn() });
       } catch {
-        // Error esperado
+        // Error esperado.
       }
 
       expect(onError).toHaveBeenCalledWith("No encontrado");
@@ -107,63 +99,60 @@ describe("Handlers de Catálogos - Rangos", () => {
   });
 
   describe("deleteRangoHandler", () => {
-    it("debería hacer llamada DELETE a /api/rangos/:id", async () => {
+    it("deberia hacer llamada DELETE a /api/rangos/:id", async () => {
       const onSuccess = vi.fn();
       const onError = vi.fn();
       vi.mocked(api).mockResolvedValue({});
 
       await deleteRangoHandler(1, { onSuccess, onError });
 
-      expect(vi.mocked(api)).toHaveBeenCalledWith("/api/rangos/1", expect.objectContaining({
-        method: "DELETE",
-      }));
+      expect(vi.mocked(api)).toHaveBeenCalledWith(
+        "/api/rangos/1",
+        expect.objectContaining({
+          method: "DELETE",
+        }),
+      );
     });
   });
 });
 
-describe("Handlers de Catálogos - Equipos", () => {
+describe("Handlers de Catalogos - Equipos", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("debería enviar los códigos opcionales al crear un equipo", async () => {
+  it("deberia enviar el estado de aparicion en hoja al crear un equipo", async () => {
     const onSuccess = vi.fn();
     const onError = vi.fn();
     vi.mocked(api).mockResolvedValue({});
 
-    await createItemHandler(
-      "Parka Pixelada",
-      true,
-      [
-        { codigo: "PK-001", aclaracion: "Deposito" },
-        { codigo: "PK-002", aclaracion: "" },
-      ],
-      { onSuccess, onError },
-    );
+    await createItemHandler("Parka Pixelada", true, { onSuccess, onError });
 
-    expect(vi.mocked(api)).toHaveBeenCalledWith("/api/items", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({
-        nombre: "Parka Pixelada",
-        activo: true,
-        codigos: [
-          { codigo: "PK-001", aclaracion: "Deposito" },
-          { codigo: "PK-002", aclaracion: "" },
-        ],
+    expect(vi.mocked(api)).toHaveBeenCalledWith(
+      "/api/items",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          nombre: "Parka Pixelada",
+          activo: true,
+        }),
       }),
-    }));
+    );
   });
 
-  it("debería permitir actualizar un equipo sin reenviar códigos", async () => {
+  it("deberia permitir actualizar un equipo con el orden y visibilidad en hoja", async () => {
     const onSuccess = vi.fn();
     const onError = vi.fn();
     vi.mocked(api).mockResolvedValue({});
 
-    await updateItemHandler("12", "Parka Pixelada", true, 4, undefined, { onSuccess, onError });
+    await updateItemHandler("12", "Parka Pixelada", true, 4, { onSuccess, onError });
 
-    expect(vi.mocked(api)).toHaveBeenCalledWith("/api/items/12", expect.objectContaining({
-      method: "PUT",
-      body: JSON.stringify({ nombre: "Parka Pixelada", activo: true, ordenPdf: 4, codigos: undefined }),
-    }));
+    expect(vi.mocked(api)).toHaveBeenCalledWith(
+      "/api/items/12",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({ nombre: "Parka Pixelada", activo: true, ordenPdf: 4 }),
+      }),
+    );
   });
 });

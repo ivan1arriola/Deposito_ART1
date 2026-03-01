@@ -14,7 +14,9 @@ type PersonalPayload = {
   nombre1: string;
   nombre2?: string;
   telefonoContacto?: string;
+  esReingreso?: boolean;
   fechaIngreso?: string;
+  fechaIngresoOriginal?: string;
   rangoId: number | string;
   bateriaId?: number | string | null;
   tallas?: Partial<Record<TallaKey, string>>;
@@ -40,6 +42,8 @@ function isValidPayload(body: unknown): body is PersonalPayload {
   const rangoId = Number(candidate.rangoId);
   if (!Number.isInteger(rangoId) || rangoId <= 0) return false;
   if (candidate.telefonoContacto !== undefined && typeof candidate.telefonoContacto !== "string") return false;
+  if (candidate.esReingreso !== undefined && typeof candidate.esReingreso !== "boolean") return false;
+  if (candidate.fechaIngresoOriginal !== undefined && typeof candidate.fechaIngresoOriginal !== "string") return false;
 
   const bateriaRaw = candidate.bateriaId;
   if (bateriaRaw === undefined || bateriaRaw === null || String(bateriaRaw).trim() === "") return true;
@@ -144,6 +148,7 @@ export async function POST(req: Request) {
   if ((body.telefonoContacto?.trim() ?? "") !== "" && !telefonoContacto) {
     return NextResponse.json({ error: "telefonoContacto debe ser un celular uruguayo valido." }, { status: 400 });
   }
+  const esReingreso = body.esReingreso === true;
 
   const fechaIngresoRaw = body.fechaIngreso?.trim();
   const fechaIngreso = fechaIngresoRaw ? new Date(fechaIngresoRaw) : null;
@@ -152,6 +157,21 @@ export async function POST(req: Request) {
   }
   if (fechaIngresoRaw && fechaIngreso && isAfterToday(fechaIngresoRaw, fechaIngreso)) {
     return NextResponse.json({ error: "fechaIngreso debe ser antes o igual a hoy." }, { status: 400 });
+  }
+  if (esReingreso && !fechaIngresoRaw) {
+    return NextResponse.json({ error: "fechaIngreso es obligatoria para registrar un reingreso." }, { status: 400 });
+  }
+
+  const fechaIngresoOriginalRaw = body.fechaIngresoOriginal?.trim();
+  const fechaIngresoOriginal = esReingreso && fechaIngresoOriginalRaw ? new Date(fechaIngresoOriginalRaw) : null;
+  if (fechaIngresoOriginal && Number.isNaN(fechaIngresoOriginal.getTime())) {
+    return NextResponse.json({ error: "fechaIngresoOriginal debe ser una fecha valida." }, { status: 400 });
+  }
+  if (fechaIngresoOriginalRaw && fechaIngresoOriginal && isAfterToday(fechaIngresoOriginalRaw, fechaIngresoOriginal)) {
+    return NextResponse.json({ error: "fechaIngresoOriginal debe ser antes o igual a hoy." }, { status: 400 });
+  }
+  if (fechaIngreso && fechaIngresoOriginal && fechaIngresoOriginal.getTime() > fechaIngreso.getTime()) {
+    return NextResponse.json({ error: "fechaIngresoOriginal no puede ser posterior a la fecha de reingreso." }, { status: 400 });
   }
 
   const tallasPayload = extractTallas(body);
@@ -188,7 +208,9 @@ export async function POST(req: Request) {
           nombre1: body.nombre1.trim(),
           nombre2: normalizeNullableText(body.nombre2),
           telefonoContacto,
+          esReingreso,
           fechaIngreso,
+          fechaIngresoOriginal,
           rangoId: Number(body.rangoId),
           bateriaId,
         },
@@ -227,6 +249,9 @@ export async function POST(req: Request) {
         rangoId: Number(body.rangoId),
         bateriaId,
         telefonoContacto,
+        esReingreso,
+        fechaIngreso: fechaIngresoRaw ?? null,
+        fechaIngresoOriginal: esReingreso ? fechaIngresoOriginalRaw ?? null : null,
       },
     });
 

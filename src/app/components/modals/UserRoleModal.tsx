@@ -33,7 +33,7 @@ export function UserRoleModal({
       <p className="mt-1 text-sm text-stone-600">{`Usuario: ${dialog.username}`}</p>
       <p className="mt-1 text-xs text-stone-500">{`Rol actual: ${roleLabel(dialog.currentRole)}`}</p>
 
-      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
         {ROLE_OPTIONS.map((role) => {
           const selected = dialog.nextRole === role;
           return (

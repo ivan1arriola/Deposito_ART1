@@ -6,6 +6,7 @@ import type { CurrentUser } from "@/types/entities";
 type DashboardHeroProps = {
   loading: boolean;
   currentUser: CurrentUser;
+  canManageAccount: boolean;
   personalCount: number;
   rangosCount: number;
   bateriasCount: number;
@@ -21,6 +22,7 @@ type DashboardHeroProps = {
 export function DashboardHero({
   loading,
   currentUser,
+  canManageAccount,
   personalCount,
   rangosCount,
   bateriasCount,
@@ -80,20 +82,28 @@ export function DashboardHero({
               <button type="button" onClick={onReload} className="ej-button-muted rounded-2xl px-3 py-3 text-sm font-semibold">
                 Recargar panel
               </button>
-              <button
-                type="button"
-                onClick={onEditOwnUser}
-                className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
-              >
-                Cambiar usuario
-              </button>
+              {canManageAccount ? (
+                <button
+                  type="button"
+                  onClick={onEditOwnUser}
+                  className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+                >
+                  Cambiar usuario
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={onChangePassword}
-                className="rounded-2xl border border-[#FFCC00]/35 bg-black/30 px-3 py-3 text-sm font-semibold text-white transition hover:bg-black/40"
+                disabled={!canManageAccount}
+                className="rounded-2xl border border-[#FFCC00]/35 bg-black/30 px-3 py-3 text-sm font-semibold text-white transition hover:bg-black/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cambiar contraseña
               </button>
+              {!canManageAccount ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white/80">
+                  Modo solo lectura: esta cuenta no puede cambiar credenciales ni datos.
+                </div>
+              ) : null}
               <button type="button" onClick={onLogout} className="ej-button-danger rounded-2xl px-3 py-3 text-sm font-semibold">
                 Cerrar sesión
               </button>

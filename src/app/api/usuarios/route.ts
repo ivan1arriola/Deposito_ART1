@@ -29,7 +29,7 @@ function isValidPayload(body: unknown): body is UsuarioPayload {
 }
 
 function roleFromValue(value: unknown): UserRole {
-  if (value === "ADMIN" || value === "EDITOR") return value;
+  if (value === "ADMIN" || value === "EDITOR" || value === "READ_ONLY") return value;
   return "EDITOR";
 }
 

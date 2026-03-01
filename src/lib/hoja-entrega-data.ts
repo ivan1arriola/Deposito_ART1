@@ -35,7 +35,9 @@ export type HojaEntregaSheetData = {
     apellido2: string | null;
     nombre1: string;
     nombre2: string | null;
+    esReingreso: boolean;
     fechaIngreso: string | null;
+    fechaIngresoOriginal: string | null;
     rango: string;
     rangoAbreviacion: string;
     bateria: string | null;
@@ -182,7 +184,9 @@ function mapPersonaToHojaEntregaData(
       apellido2: persona.apellido2,
       nombre1: persona.nombre1,
       nombre2: persona.nombre2,
+      esReingreso: persona.esReingreso,
       fechaIngreso: persona.fechaIngreso ? persona.fechaIngreso.toISOString() : null,
+      fechaIngresoOriginal: persona.fechaIngresoOriginal ? persona.fechaIngresoOriginal.toISOString() : null,
       rango: persona.rango.nombreCompleto,
       rangoAbreviacion: persona.rango.abreviacion,
       bateria: persona.bateria?.nombre ?? null,

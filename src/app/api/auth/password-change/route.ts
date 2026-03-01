@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest, hashPassword, verifyPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { hasPermission } from "@/lib/permissions";
 
 type PasswordChangePayload = {
   currentPassword: string;
@@ -23,6 +24,9 @@ export async function POST(request: Request) {
   const user = await getUserFromRequest();
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+  if (!hasPermission(user.rol, "write_data")) {
+    return NextResponse.json({ error: "El rol Solo Lectura no puede cambiar credenciales." }, { status: 403 });
   }
 
   const body = await request.json();

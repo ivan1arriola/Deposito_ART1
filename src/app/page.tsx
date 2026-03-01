@@ -28,6 +28,7 @@ import { EquipoResumenView } from "./components/views/EquipoResumenView";
 import { HojaDeEntregaView } from "./components/views/HojaDeEntregaView";
 import { HojaMatrixView } from "./components/views/HojaMatrixView";
 import { PersonalCreateView } from "./components/views/PersonalCreateView";
+import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
 import { SmallActionButton, ActionMenu, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
@@ -46,9 +47,9 @@ import type {
 import type {
   PersonalForm,
   EquipoForm,
-  EquipoCodigoForm,
   RegistroDraftEquipo,
   RegistroDraft,
+  StockOperacionDraft,
 } from "@/types/forms";
 import type {
   MainView,
@@ -59,7 +60,7 @@ import type {
   AuditFilter,
 } from "@/types/views";
 import { ROLE_OPTIONS } from "@/types/entities";
-import { EMPTY_PERSONAL_FORM, EMPTY_EQUIPO_FORM } from "@/types/forms";
+import { EMPTY_PERSONAL_FORM, EMPTY_EQUIPO_FORM, EMPTY_STOCK_OPERACION_DRAFT } from "@/types/forms";
 import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDialogState, UserRoleDialogState } from "./types/home";
 
 // Importar utilidades desde archivos organizados
@@ -114,13 +115,6 @@ import {
 // Importar utilidades de helpers
 import { auditActionLabel, auditEntityLabel, renderAuditDetalle } from "@/lib/audit-helpers";
 
-function mapEquipoCodigosToForm(codigos: Equipo["codigos"]): EquipoCodigoForm[] {
-  return codigos.map((codigo) => ({
-    codigo: codigo.codigo,
-    aclaracion: codigo.aclaracion ?? "",
-  }));
-}
-
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
   const [status, setStatus] = useState("Verificando sesión...");
@@ -157,6 +151,10 @@ export default function Home() {
     equipoResumenLoading,
     equipoResumenError,
     loadEquipoResumen,
+    stockData,
+    stockLoading,
+    stockError,
+    loadStockData,
     clearLoadedData: clearLoadedDataState,
   } = useHomeData({ onStatusChange: setStatus });
   const [loginUsername, setLoginUsername] = useState("");
@@ -213,6 +211,8 @@ export default function Home() {
   const [expandedTallasByCi, setExpandedTallasByCi] = useState<Record<string, boolean>>({});
   const [registroDraft, setRegistroDraft] = useState<RegistroDraft | null>(null);
   const [registroSaving, setRegistroSaving] = useState(false);
+  const [stockDraft, setStockDraft] = useState<StockOperacionDraft>({ ...EMPTY_STOCK_OPERACION_DRAFT, fecha: getTodayDateInput() });
+  const [stockSaving, setStockSaving] = useState(false);
   const [personalObservacionDraft, setPersonalObservacionDraft] = useState<PersonalObservacionDraft | null>(null);
   const [personalObservacionSaving, setPersonalObservacionSaving] = useState(false);
   const [registroViewer, setRegistroViewer] = useState<RegistroViewerState | null>(null);
@@ -234,6 +234,7 @@ export default function Home() {
 
   const isAdmin = currentUser?.rol === "ADMIN";
   const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
+  const canManageOwnAccount = canWrite;
   const canDelete = canWrite;
   const canRegisterPersonal = canWrite && rangos.length > 0;
   const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "equipos";
@@ -247,6 +248,10 @@ export default function Home() {
   const ciLooksValid = newPersonal.ci.trim() === "" || isValidUruguayanCi(newPersonal.ci);
   const newPersonalPhoneLooksValid =
     newPersonal.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(newPersonal.telefonoContacto);
+  const newPersonalReentryDatesLookValid =
+    !newPersonal.esReingreso ||
+    (newPersonal.fechaIngreso.trim() !== "" &&
+      (newPersonal.fechaIngresoOriginal.trim() === "" || newPersonal.fechaIngresoOriginal <= newPersonal.fechaIngreso));
   const ciHasError = !ciLooksValid || ciAlreadyExists;
   const requiredPersonalFields = [
     newPersonal.ci.trim() !== "" && isValidUruguayanCi(newPersonal.ci) && !ciAlreadyExists,
@@ -259,6 +264,7 @@ export default function Home() {
     canRegisterPersonal &&
     requiredPersonalCompleted === requiredPersonalFields.length &&
     newPersonalPhoneLooksValid &&
+    newPersonalReentryDatesLookValid &&
     !creatingPersonal;
   const maxFechaIngreso = getTodayDateInput();
   const equiposOrdenados = useMemo(
@@ -509,6 +515,8 @@ export default function Home() {
     setExpandedTallasByCi({});
     setRegistroDraft(null);
     setRegistroSaving(false);
+    setStockDraft({ ...EMPTY_STOCK_OPERACION_DRAFT, fecha: getTodayDateInput() });
+    setStockSaving(false);
     setPersonalObservacionDraft(null);
     setPersonalObservacionSaving(false);
     setRegistroViewerPage(1);
@@ -534,6 +542,13 @@ export default function Home() {
     if (equipoResumenData) return;
     void loadEquipoResumen();
   }, [activeView, equipoResumenData, equipoResumenLoading, loadEquipoResumen]);
+
+  useEffect(() => {
+    if (activeView !== "stock") return;
+    if (stockLoading) return;
+    if (stockData) return;
+    void loadStockData();
+  }, [activeView, stockData, stockLoading, loadStockData]);
 
   const createRango = useCallback(async () => {
     if (!isAdmin) {
@@ -701,27 +716,6 @@ export default function Home() {
     [canDelete, baterias, loadData],
   );
 
-  const updateNewEquipoCodigo = useCallback((index: number, key: keyof EquipoCodigoForm, value: string) => {
-    setNewEquipo((prev) => ({
-      ...prev,
-      codigos: prev.codigos.map((codigo, codigoIndex) => (codigoIndex === index ? { ...codigo, [key]: value } : codigo)),
-    }));
-  }, []);
-
-  const addNewEquipoCodigo = useCallback(() => {
-    setNewEquipo((prev) => ({
-      ...prev,
-      codigos: [...prev.codigos, { codigo: "", aclaracion: "" }],
-    }));
-  }, []);
-
-  const removeNewEquipoCodigo = useCallback((index: number) => {
-    setNewEquipo((prev) => ({
-      ...prev,
-      codigos: prev.codigos.filter((_, codigoIndex) => codigoIndex !== index),
-    }));
-  }, []);
-
   const createEquipo = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -731,7 +725,7 @@ export default function Home() {
       }
 
       try {
-        await createItemHandler(newEquipo.nombre, newEquipo.activo, newEquipo.codigos, {
+        await createItemHandler(newEquipo.nombre, newEquipo.activo, {
           onSuccess: async () => {
             setNewEquipo(EMPTY_EQUIPO_FORM);
             setStatus("Equipo creado.");
@@ -753,7 +747,7 @@ export default function Home() {
         return;
       }
       try {
-        await updateItemHandler(itemId, editEquipo.nombre, editEquipo.activo, editEquipo.ordenPdf ?? 0, editEquipo.codigos, {
+        await updateItemHandler(itemId, editEquipo.nombre, editEquipo.activo, editEquipo.ordenPdf ?? 0, {
           onSuccess: async () => {
             setEditEquipoId(null);
             setEditEquipo(EMPTY_EQUIPO_FORM);
@@ -777,9 +771,9 @@ export default function Home() {
       }
 
       try {
-        await updateItemHandler(equipo.itemId, equipo.nombre, !equipo.activo, equipo.ordenPdf, undefined, {
+        await updateItemHandler(equipo.itemId, equipo.nombre, !equipo.activo, equipo.ordenPdf, {
           onSuccess: async () => {
-            setStatus(`Equipo ${!equipo.activo ? "activado" : "desactivado"}.`);
+            setStatus(`Equipo ${!equipo.activo ? "visible en hoja" : "oculto de hoja"}.`);
             await loadData();
           },
           onError: (message) => setStatus(message),
@@ -917,6 +911,18 @@ export default function Home() {
         setStatus("El celular de contacto debe tener formato uruguayo valido.");
         return;
       }
+      if (newPersonal.esReingreso && newPersonal.fechaIngreso.trim() === "") {
+        setStatus("La fecha de re-ingreso es obligatoria.");
+        return;
+      }
+      if (
+        newPersonal.esReingreso &&
+        newPersonal.fechaIngresoOriginal.trim() !== "" &&
+        newPersonal.fechaIngresoOriginal > newPersonal.fechaIngreso
+      ) {
+        setStatus("La fecha de ingreso original no puede ser posterior al re-ingreso.");
+        return;
+      }
 
       setCreatingPersonal(true);
       try {
@@ -941,8 +947,14 @@ export default function Home() {
     [canRegisterPersonal, ciAlreadyExists, creatingPersonal, newPersonal, newPersonalPhoneLooksValid, loadData],
   );
 
-  const updateNewPersonalField = useCallback((field: keyof PersonalForm, value: string) => {
-    setNewPersonal((prev) => ({ ...prev, [field]: value }));
+  const updateNewPersonalField = useCallback((field: keyof PersonalForm, value: string | boolean) => {
+    setNewPersonal((prev) => {
+      const next = { ...prev, [field]: value } as PersonalForm;
+      if (field === "esReingreso" && value === false) {
+        next.fechaIngresoOriginal = "";
+      }
+      return next;
+    });
   }, []);
 
   const updatePersonal = useCallback(
@@ -953,6 +965,18 @@ export default function Home() {
       }
       if (editPersonal.telefonoContacto.trim() !== "" && !isValidUruguayanMobileNumber(editPersonal.telefonoContacto)) {
         setStatus("El celular de contacto debe tener formato uruguayo valido.");
+        return;
+      }
+      if (editPersonal.esReingreso && editPersonal.fechaIngreso.trim() === "") {
+        setStatus("La fecha de re-ingreso es obligatoria.");
+        return;
+      }
+      if (
+        editPersonal.esReingreso &&
+        editPersonal.fechaIngresoOriginal.trim() !== "" &&
+        editPersonal.fechaIngresoOriginal > editPersonal.fechaIngreso
+      ) {
+        setStatus("La fecha de ingreso original no puede ser posterior al re-ingreso.");
         return;
       }
       try {
@@ -1060,6 +1084,7 @@ export default function Home() {
       registroId: null,
       ci,
       tipo,
+      afectaStock: true,
       fecha: getTodayDateInput(),
       comentarios: "",
       items: [{ itemId: "", cantidad: "1" }],
@@ -1160,6 +1185,7 @@ export default function Home() {
       registroId: registro.registroId,
       ci: registro.ci,
       tipo: registro.tipo,
+      afectaStock: registro.afectaStock,
       fecha: registro.fecha.slice(0, 10),
       comentarios: registro.comentarios ?? "",
       items:
@@ -1225,6 +1251,7 @@ export default function Home() {
         body: JSON.stringify({
           ci: registroDraft.ci,
           tipo: registroDraft.tipo,
+          afectaStock: registroDraft.afectaStock,
           fecha: registroDraft.fecha,
           comentarios: registroDraft.comentarios.trim() || undefined,
           items: payloadEquipos,
@@ -1244,6 +1271,74 @@ export default function Home() {
       setStatus(error instanceof Error ? error.message : isRectificacion ? "No se pudo rectificar el movimiento." : "No se pudo registrar el movimiento.");
     } finally {
       setRegistroSaving(false);
+    }
+  }
+
+  function updateStockDraftItem(index: number, field: keyof RegistroDraftEquipo, value: string) {
+    setStockDraft((prev) => {
+      if (field === "itemId" && value !== "" && prev.items.some((item, itemIndex) => itemIndex !== index && item.itemId === value)) {
+        setStatus("Ese equipo ya fue seleccionado en este movimiento de stock.");
+        return prev;
+      }
+      return {
+        ...prev,
+        items: prev.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
+      };
+    });
+  }
+
+  function addStockDraftItem() {
+    setStockDraft((prev) => ({ ...prev, items: [...prev.items, { itemId: "", cantidad: "1" }] }));
+  }
+
+  function removeStockDraftItem(index: number) {
+    setStockDraft((prev) => {
+      if (prev.items.length <= 1) return prev;
+      return { ...prev, items: prev.items.filter((_, itemIndex) => itemIndex !== index) };
+    });
+  }
+
+  async function saveStockOperation() {
+    if (stockSaving) return;
+
+    const payloadItems = stockDraft.items
+      .map((item) => ({
+        itemId: item.itemId.trim(),
+        cantidad: Number(item.cantidad),
+      }))
+      .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
+
+    if (payloadItems.length === 0) {
+      setStatus("Debes agregar al menos un equipo con cantidad valida.");
+      return;
+    }
+
+    const uniqueItemIds = new Set(payloadItems.map((item) => item.itemId));
+    if (uniqueItemIds.size !== payloadItems.length) {
+      setStatus("No puedes repetir equipos en un mismo movimiento de stock.");
+      return;
+    }
+
+    setStockSaving(true);
+    setStatus(stockDraft.tipo === "INGRESO" ? "Registrando ingreso de stock..." : "Registrando egreso de stock...");
+    try {
+      await api("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tipo: stockDraft.tipo,
+          fecha: stockDraft.fecha,
+          comentarios: stockDraft.comentarios.trim() || undefined,
+          items: payloadItems,
+        }),
+      });
+      setStockDraft({ ...EMPTY_STOCK_OPERACION_DRAFT, fecha: getTodayDateInput() });
+      setStatus(stockDraft.tipo === "INGRESO" ? "Ingreso de stock registrado." : "Egreso de stock registrado.");
+      await loadStockData();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "No se pudo registrar el movimiento de stock.");
+    } finally {
+      setStockSaving(false);
     }
   }
 
@@ -1452,6 +1547,10 @@ export default function Home() {
   );
 
   const submitChangePassword = useCallback(async () => {
+    if (!canManageOwnAccount) {
+      setStatus("El rol Solo Lectura no puede cambiar credenciales ni datos.");
+      return;
+    }
     if (changeNewPassword.trim() === "" || changeNewPassword !== changeConfirmPassword) {
       setStatus("La nueva contraseña no coincide.");
       return;
@@ -1479,7 +1578,7 @@ export default function Home() {
     } finally {
       setChangeLoading(false);
     }
-  }, [changeCurrentPassword, changeNewPassword, changeConfirmPassword]);
+  }, [canManageOwnAccount, changeCurrentPassword, changeNewPassword, changeConfirmPassword]);
 
   const logout = useCallback(async () => {
     try {
@@ -1646,12 +1745,16 @@ export default function Home() {
 
   const changeOwnUsername = useCallback(() => {
     if (!currentUser) return;
+    if (!canManageOwnAccount) {
+      setStatus("El rol Solo Lectura no puede cambiar credenciales ni datos.");
+      return;
+    }
 
     openUsernameDialog(currentUser, {
       title: "Editar mi usuario",
       description: "Actualiza tus datos principales de acceso.",
     });
-  }, [currentUser, openUsernameDialog]);
+  }, [canManageOwnAccount, currentUser, openUsernameDialog]);
 
   const closeUsernameDialog = useCallback(() => {
     if (usernameSaving) return;
@@ -1714,6 +1817,10 @@ export default function Home() {
 
   const submitUsernameChange = useCallback(async () => {
     if (!usernameDialog) return;
+    if (!canManageOwnAccount) {
+      setStatus("El rol Solo Lectura no puede cambiar credenciales ni datos.");
+      return;
+    }
 
     const nextGrado = usernameDialog.grado.trim();
     const nextNombre = usernameDialog.nombre.trim();
@@ -1747,7 +1854,7 @@ export default function Home() {
     } finally {
       setUsernameSaving(false);
     }
-  }, [usernameDialog, currentUser, loadData]);
+  }, [canManageOwnAccount, usernameDialog, currentUser, loadData]);
 
   const toggleUserActive = useCallback(
     async (usuario: UsuarioAdmin) => {
@@ -1907,26 +2014,6 @@ export default function Home() {
     const orderIndex = options?.orderIndex ?? -1;
     const orderCount = options?.orderCount ?? 0;
     const currentOrderLabel = reorderableInActiveList && orderIndex >= 0 ? orderIndex + 1 : equipo.ordenPdf;
-    const updateEditEquipoCodigo = (index: number, key: keyof EquipoCodigoForm, value: string) => {
-      setEditEquipo((prev) => ({
-        ...prev,
-        codigos: prev.codigos.map((codigo, codigoIndex) => (codigoIndex === index ? { ...codigo, [key]: value } : codigo)),
-      }));
-    };
-
-    const addEditEquipoCodigo = () => {
-      setEditEquipo((prev) => ({
-        ...prev,
-        codigos: [...prev.codigos, { codigo: "", aclaracion: "" }],
-      }));
-    };
-
-    const removeEditEquipoCodigo = (index: number) => {
-      setEditEquipo((prev) => ({
-        ...prev,
-        codigos: prev.codigos.filter((_, codigoIndex) => codigoIndex !== index),
-      }));
-    };
 
     return (
       <div
@@ -1961,52 +2048,8 @@ export default function Home() {
                 onChange={(event) => setEditEquipo((prev) => ({ ...prev, activo: event.target.checked }))}
                 className="w-4 h-4 rounded border-stone-300"
               />
-              <span className="font-medium text-stone-700">Activo</span>
+              <span className="font-medium text-stone-700">Aparece en Hoja de Entrega</span>
             </label>
-            <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">Codigos unicos</p>
-                  <p className="text-xs text-stone-500">Opcional. Cada codigo puede llevar una aclaracion.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={addEditEquipoCodigo}
-                  className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100"
-                >
-                  Agregar codigo
-                </button>
-              </div>
-              {editEquipo.codigos.length === 0 ? (
-                <p className="mt-3 text-xs text-stone-500">Sin codigos cargados.</p>
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {editEquipo.codigos.map((codigo, index) => (
-                    <div key={`${equipo.itemId}-codigo-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[180px_minmax(0,1fr)_auto]">
-                      <input
-                        value={codigo.codigo}
-                        onChange={(event) => updateEditEquipoCodigo(index, "codigo", event.target.value)}
-                        placeholder="Codigo unico"
-                        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                      <input
-                        value={codigo.aclaracion}
-                        onChange={(event) => updateEditEquipoCodigo(index, "aclaracion", event.target.value)}
-                        placeholder="Aclaracion opcional"
-                        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeEditEquipoCodigo(index)}
-                        className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100"
-                      >
-                        Quitar
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
             <div className="flex gap-2 pt-2">
               <SmallActionButton text="Guardar" tone="ok" onClick={() => void updateEquipo(equipo.itemId)} />
               <SmallActionButton
@@ -2029,29 +2072,25 @@ export default function Home() {
                     ? "bg-green-100 text-green-700"
                     : "bg-gray-100 text-gray-700"
                 }`}>
-                  {equipo.activo ? "Activo" : "Inactivo"}
+                  {equipo.activo ? "Aparece en hoja" : "Oculto de hoja"}
                 </span>
               </div>
               <p className="text-xs text-stone-500 mt-1">
                 {reorderableInActiveList ? `Posicion actual en hoja: ${currentOrderLabel}` : `Orden PDF: ${equipo.ordenPdf}`}
               </p>
-              {equipo.codigos.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {equipo.codigos.map((codigo) => (
-                    <span
-                      key={codigo.itemCodigoId}
-                      className="inline-flex items-center rounded-full border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-medium text-stone-700"
-                    >
+              {/*
                       {codigo.aclaracion ? `${codigo.codigo} · ${codigo.aclaracion}` : codigo.codigo}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-2 text-xs text-stone-400">Sin codigos asociados.</p>
-              )}
+              */}
             </div>
 
             <div className="flex flex-wrap gap-2 items-center">
+              {canWrite ? (
+                <SmallActionButton
+                  text={equipo.activo ? "Ocultar de hoja" : "Mostrar en hoja"}
+                  tone="neutral"
+                  onClick={() => void toggleEquipoActivo(equipo)}
+                />
+              ) : null}
               {reorderableInActiveList ? (
                 <div className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-stone-50 px-2 py-2">
                   <span className="inline-flex min-w-8 items-center justify-center rounded-xl bg-stone-900 px-2 py-1 text-xs font-semibold text-white">
@@ -2099,37 +2138,38 @@ export default function Home() {
                 </div>
               ) : null}
 
+              {canWrite ? (
                 <ActionMenu
                   buttonLabel="Acciones"
                   actions={[
                     {
-                    label: equipo.activo ? "Desactivar" : "Activar",
-                    icon: equipo.activo ? "x" : "check",
-                    tone: equipo.activo ? "danger" : "success",
-                    onClick: () => void toggleEquipoActivo(equipo),
-                  },
-                  {
-                    label: "Editar",
-                    icon: "edit",
-                    tone: "primary",
-                    onClick: () => {
-                      setEditEquipoId(equipo.itemId);
-                      setEditEquipo({
-                        nombre: equipo.nombre,
-                        activo: equipo.activo,
-                        ordenPdf: equipo.ordenPdf,
-                        codigos: mapEquipoCodigosToForm(equipo.codigos),
-                      });
+                      label: equipo.activo ? "Ocultar de hoja" : "Mostrar en hoja",
+                      icon: equipo.activo ? "x" : "check",
+                      tone: equipo.activo ? "danger" : "success",
+                      onClick: () => void toggleEquipoActivo(equipo),
                     },
-                  },
-                  {
-                    label: "Eliminar",
-                    icon: "trash",
-                    tone: "danger",
-                    onClick: () => void deleteEquipo(equipo.itemId),
-                  },
-                ]}
-              />
+                    {
+                      label: "Editar",
+                      icon: "edit",
+                      tone: "primary",
+                      onClick: () => {
+                        setEditEquipoId(equipo.itemId);
+                        setEditEquipo({
+                          nombre: equipo.nombre,
+                          activo: equipo.activo,
+                          ordenPdf: equipo.ordenPdf,
+                        });
+                      },
+                    },
+                    {
+                      label: "Eliminar",
+                      icon: "trash",
+                      tone: "danger",
+                      onClick: () => void deleteEquipo(equipo.itemId),
+                    },
+                  ]}
+                />
+              ) : null}
             </div>
           </div>
         )}
@@ -2213,6 +2253,7 @@ export default function Home() {
       <DashboardHero
         loading={loading}
         currentUser={currentUser}
+        canManageAccount={canManageOwnAccount}
         personalCount={personal.length}
         rangosCount={rangos.length}
         bateriasCount={baterias.length}
@@ -2264,11 +2305,9 @@ export default function Home() {
           editBateriaId={editBateriaId}
           editBateriaNombre={editBateriaNombre}
           editBateriaOrden={editBateriaOrden}
-          equipos={equipos}
           newEquipo={newEquipo}
           editEquipoId={editEquipoId}
           editEquipo={editEquipo}
-          equiposActivos={equiposActivos}
           equiposInactivos={equiposInactivos}
           equiposActivosEnPantalla={equiposActivosEnPantalla}
           hasEquipoOrderDraftChanges={hasEquipoOrderDraftChanges}
@@ -2310,9 +2349,6 @@ export default function Home() {
           onUpdateBateria={(bateriaId) => void updateBateria(bateriaId)}
           onDeleteBateria={(bateriaId) => void deleteBateria(bateriaId)}
           onNewEquipoChange={(value, key) => setNewEquipo((prev) => ({ ...prev, [key]: value }))}
-          onNewEquipoCodigoChange={updateNewEquipoCodigo}
-          onAddNewEquipoCodigo={addNewEquipoCodigo}
-          onRemoveNewEquipoCodigo={removeNewEquipoCodigo}
           onEditEquipoIdChange={setEditEquipoId}
           onEditEquipoChange={(value, key) => setEditEquipo((prev) => ({ ...prev, [key]: value }))}
           onCreateEquipo={(event) => void createEquipo(event)}
@@ -2425,7 +2461,14 @@ export default function Home() {
             setEditPersonalCi(null);
             setEditPersonal(EMPTY_PERSONAL_FORM);
           }}
-          onEditPersonalChange={(field, value) => setEditPersonal((prev) => ({ ...prev, [field]: value }))}
+          onEditPersonalChange={(field, value) =>
+            setEditPersonal((prev) => {
+              const next = { ...prev, [field]: value } as PersonalForm;
+              if (field === "esReingreso" && value === false) {
+                next.fechaIngresoOriginal = "";
+              }
+              return next;
+            })}
           onSaveEditPersonal={(ci) => void updatePersonal(ci)}
         />
       ) : null}
@@ -2445,6 +2488,25 @@ export default function Home() {
           loading={equipoResumenLoading}
           error={equipoResumenError}
           onReload={loadEquipoResumen}
+        />
+      ) : null}
+
+      {activeView === "stock" ? (
+        <StockView
+          data={stockData}
+          loading={stockLoading}
+          error={stockError}
+          canWrite={canWrite}
+          equipos={equiposOrdenados}
+          draft={stockDraft}
+          saving={stockSaving}
+          maxDate={maxFechaIngreso}
+          onDraftChange={(field, value) => setStockDraft((prev) => ({ ...prev, [field]: value }))}
+          onDraftItemChange={updateStockDraftItem}
+          onAddItem={addStockDraftItem}
+          onRemoveItem={removeStockDraftItem}
+          onSubmit={() => void saveStockOperation()}
+          onReload={() => void loadStockData()}
         />
       ) : null}
 
@@ -2506,6 +2568,7 @@ export default function Home() {
         maxFechaIngreso={maxFechaIngreso}
         registroSaving={registroSaving}
         onCloseRegistroEditor={() => setRegistroDraft(null)}
+        onAfectaStockChange={(value) => setRegistroDraft((prev) => (prev ? { ...prev, afectaStock: value } : prev))}
         onRegistroDraftChange={(field, value) => setRegistroDraft((prev) => (prev ? { ...prev, [field]: value } : prev))}
         onRegistroItemChange={updateRegistroItem}
         onAddRegistroItem={addRegistroItem}

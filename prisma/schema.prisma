@@ -15,9 +15,17 @@ enum TipoRegistro {
   @@map("tipo_registro")
 }
 
+enum TipoStockOperacion {
+  INGRESO
+  EGRESO
+
+  @@map("tipo_stock_operacion")
+}
+
 enum UserRole {
   ADMIN
   EDITOR
+  READ_ONLY
 
   @@map("user_role")
 }
@@ -113,26 +121,14 @@ model TallaTipo {
 }
 
 model Item {
-  itemId        BigInt         @id @default(autoincrement()) @map("item_id")
-  nombre        String         @unique
-  activo        Boolean        @default(true)
-  ordenPdf      Int            @map("orden_pdf")
-  codigos       ItemCodigo[]
-  registroItems RegistroItem[]
+  itemId               BigInt               @id @default(autoincrement()) @map("item_id")
+  nombre               String               @unique
+  activo               Boolean              @default(true)
+  ordenPdf             Int                  @map("orden_pdf")
+  registroItems        RegistroItem[]
+  stockOperacionItems  StockOperacionItem[]
 
   @@map("item")
-}
-
-model ItemCodigo {
-  itemCodigoId BigInt  @id @default(autoincrement()) @map("item_codigo_id")
-  itemId       BigInt  @map("item_id")
-  codigo       String  @unique
-  aclaracion   String?
-  orden        Int
-  item         Item    @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
-
-  @@index([itemId, orden])
-  @@map("item_codigo")
 }
 
 model Personal {
@@ -142,7 +138,9 @@ model Personal {
   nombre1       String
   nombre2       String?
   telefonoContacto String?      @map("telefono_contacto")
+  esReingreso   Boolean         @default(false) @map("es_reingreso")
   fechaIngreso  DateTime?       @map("fecha_ingreso") @db.Date
+  fechaIngresoOriginal DateTime? @map("fecha_ingreso_original") @db.Date
   rangoId       Int             @map("grado_id") @db.SmallInt
   bateriaId     Int?            @map("bateria_id") @db.SmallInt
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -171,14 +169,15 @@ model PersonalTalla {
 }
 
 model Registro {
-  registroId BigInt         @id @default(autoincrement()) @map("registro_id")
-  ci         String         @map("ci")
-  fecha      DateTime       @db.Date
-  tipo       TipoRegistro
-  comentarios String?
-  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  personal   Personal       @relation(fields: [ci], references: [ci], onDelete: Cascade)
-  items      RegistroItem[]
+  registroId    BigInt         @id @default(autoincrement()) @map("registro_id")
+  ci            String         @map("ci")
+  fecha         DateTime       @db.Date
+  tipo          TipoRegistro
+  afectaStock   Boolean        @default(false) @map("afecta_stock")
+  comentarios   String?
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  personal      Personal       @relation(fields: [ci], references: [ci], onDelete: Cascade)
+  items         RegistroItem[]
 
   @@index([ci, fecha(sort: Desc)])
   @@map("registro")
@@ -206,4 +205,28 @@ model Observacion {
 
   @@index([ci, fecha(sort: Desc)])
   @@map("observacion")
+}
+
+model StockOperacion {
+  stockOperacionId BigInt               @id @default(autoincrement()) @map("stock_operacion_id")
+  fecha            DateTime             @db.Date
+  tipo             TipoStockOperacion
+  comentarios      String?
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  items            StockOperacionItem[]
+
+  @@index([fecha(sort: Desc)])
+  @@map("stock_operacion")
+}
+
+model StockOperacionItem {
+  stockOperacionId BigInt         @map("stock_operacion_id")
+  itemId           BigInt         @map("item_id")
+  cantidad         Int
+  stockOperacion   StockOperacion @relation(fields: [stockOperacionId], references: [stockOperacionId], onDelete: Cascade)
+  item             Item           @relation(fields: [itemId], references: [itemId])
+
+  @@id([stockOperacionId, itemId])
+  @@index([itemId])
+  @@map("stock_operacion_item")
 }

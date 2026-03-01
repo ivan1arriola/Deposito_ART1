@@ -89,6 +89,7 @@ export function useRegistroHandlers(
           {
             ci: registroDraft.ci,
             tipo: registroDraft.tipo,
+            afectaStock: registroDraft.afectaStock,
             fecha: registroDraft.fecha,
             comentarios: registroDraft.comentarios.trim() || undefined,
             items: payloadEquipos,

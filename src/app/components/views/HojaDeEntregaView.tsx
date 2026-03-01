@@ -11,7 +11,9 @@ type FichaData = {
     apellido2: string | null;
     nombre1: string;
     nombre2: string | null;
+    esReingreso: boolean;
     fechaIngreso: string | null;
+    fechaIngresoOriginal: string | null;
     gradoPersonal: string;
     gradoPersonalAbreviado: string;
     bateria: string | null;
@@ -255,7 +257,7 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
               </tr>
               <tr>
                 <td colSpan={15} className={`${styles.infoGridShell} ${styles.infoGridShellBottom}`}>
-                  <div className={`${styles.infoGrid} ${styles.infoGrid4}`}>
+                  <div className={`${styles.infoGrid} ${styles.infoGrid5}`}>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
                       <span className={styles.headerInfoLabel}>C.I:</span> {ciWarningPrefix}
                       {formatUruguayanCi(data.persona.ci)}
@@ -264,10 +266,16 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
                       <span className={styles.headerInfoLabel}>{"Bater\u00eda:"}</span> {data.persona.bateria || "Cdo. y Serv."}
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>Fecha Ingreso:</span>{" "}
+                      <span className={styles.headerInfoLabel}>{data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:"}</span>{" "}
                       {data.persona.fechaIngreso
                         ? `${getDatePart(data.persona.fechaIngreso, "day")}/${getDatePart(data.persona.fechaIngreso, "month")}/${getDatePart(data.persona.fechaIngreso, "year")}`
                         : "-"}
+                    </div>
+                    <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
+                      <span className={styles.headerInfoLabel}>Fecha ingreso original:</span>{" "}
+                      {data.persona.fechaIngresoOriginal
+                        ? `${getDatePart(data.persona.fechaIngresoOriginal, "day")}/${getDatePart(data.persona.fechaIngresoOriginal, "month")}/${getDatePart(data.persona.fechaIngresoOriginal, "year")}`
+                        : ""}
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
                       <span className={styles.headerInfoLabel}>{"Fecha de emisi\u00f3n:"}</span> {fechaImpresion}

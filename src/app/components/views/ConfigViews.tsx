@@ -4,11 +4,10 @@ import { FormEvent, ReactNode } from "react";
 import { formatAuditEntityId, type AuditCiReferences } from "@/lib/audit-helpers";
 import { SmallActionButton, PaginationControls } from "../shared";
 
-type Role = "ADMIN" | "EDITOR";
+type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
 type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
 type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
-type EquipoCodigoConfig = { itemCodigoId: string; codigo: string; aclaracion: string | null; orden: number };
-type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number; codigos: EquipoCodigoConfig[] };
+type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
 type UsuarioAdmin = {
   usuarioId: string;
   grado: string;
@@ -55,11 +54,9 @@ interface ConfigViewsProps {
   editBateriaNombre: string;
   editBateriaOrden: string;
   // Equipos state
-  equipos: EquipoConfig[];
-  newEquipo: { nombre: string; activo: boolean; ordenPdf: number; codigos: Array<{ codigo: string; aclaracion: string }> };
+  newEquipo: { nombre: string; activo: boolean; ordenPdf: number };
   editEquipoId: string | null;
-  editEquipo: { nombre: string; activo: boolean; ordenPdf: number; codigos: Array<{ codigo: string; aclaracion: string }> };
-  equiposActivos: EquipoConfig[];
+  editEquipo: { nombre: string; activo: boolean; ordenPdf: number };
   equiposInactivos: EquipoConfig[];
   equiposActivosEnPantalla: EquipoConfig[];
   hasEquipoOrderDraftChanges: boolean;
@@ -107,9 +104,6 @@ interface ConfigViewsProps {
   onDeleteBateria: (bateriaId: number) => void;
   // Equipos callbacks
   onNewEquipoChange: (value: string | boolean, key: keyof Pick<EquipoConfig, "nombre" | "activo">) => void;
-  onNewEquipoCodigoChange: (index: number, key: "codigo" | "aclaracion", value: string) => void;
-  onAddNewEquipoCodigo: () => void;
-  onRemoveNewEquipoCodigo: (index: number) => void;
   onEditEquipoIdChange: (id: string | null) => void;
   onEditEquipoChange: (
     value: string | boolean | number,
@@ -154,7 +148,7 @@ interface ConfigViewsProps {
   renderAuditDetalle: (detalle: unknown, ciReferences?: AuditCiReferences) => ReactNode;
 }
 
-const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR"];
+const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "READ_ONLY"];
 
 export function ConfigViews(props: ConfigViewsProps) {
   if (props.activeView === "grados") {
@@ -369,12 +363,18 @@ export function ConfigViews(props: ConfigViewsProps) {
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Equipos</h2>
+          {!props.canWrite ? (
+            <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
+              Modo solo lectura: puedes consultar equipos y su orden, pero no modificarlos.
+            </p>
+          ) : null}
           <form onSubmit={props.onCreateEquipo} className="mt-3 space-y-2">
             <input
               value={props.newEquipo.nombre}
               onChange={(event) => props.onNewEquipoChange(event.target.value, "nombre")}
               placeholder="Nuevo equipo"
               className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              disabled={!props.canWrite}
             />
             <div className="flex flex-wrap gap-4 text-sm">
               <label className="flex items-center gap-2">
@@ -382,53 +382,10 @@ export function ConfigViews(props: ConfigViewsProps) {
                   type="checkbox"
                   checked={props.newEquipo.activo}
                   onChange={(event) => props.onNewEquipoChange(event.target.checked, "activo")}
+                  disabled={!props.canWrite}
                 />
-                Activo
+                Aparece en Hoja de Entrega
               </label>
-            </div>
-            <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">Codigos unicos</p>
-                  <p className="text-xs text-stone-500">Opcional. Puedes cargar varios y agregar una aclaracion por cada uno.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={props.onAddNewEquipoCodigo}
-                  className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100"
-                >
-                  Agregar codigo
-                </button>
-              </div>
-              {props.newEquipo.codigos.length === 0 ? (
-                <p className="mt-3 text-xs text-stone-500">Sin codigos cargados.</p>
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {props.newEquipo.codigos.map((codigo, index) => (
-                    <div key={`nuevo-codigo-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[180px_minmax(0,1fr)_auto]">
-                      <input
-                        value={codigo.codigo}
-                        onChange={(event) => props.onNewEquipoCodigoChange(index, "codigo", event.target.value)}
-                        placeholder="Codigo unico"
-                        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={codigo.aclaracion ?? ""}
-                        onChange={(event) => props.onNewEquipoCodigoChange(index, "aclaracion", event.target.value)}
-                        placeholder="Aclaracion opcional"
-                        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => props.onRemoveNewEquipoCodigo(index)}
-                        className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100"
-                      >
-                        Quitar
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
             <button
               type="submit"
@@ -442,7 +399,7 @@ export function ConfigViews(props: ConfigViewsProps) {
           <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-sm font-semibold text-stone-900">Equipos activos</h3>
+                <h3 className="text-sm font-semibold text-stone-900">Aparecen en Hoja de Entrega</h3>
                 <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                   {props.equiposActivosEnPantalla.length}
                 </span>
@@ -461,7 +418,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                   <button
                     type="button"
                     onClick={props.onResetEquipoOrderDraft}
-                    disabled={!props.hasEquipoOrderDraftChanges}
+                    disabled={!props.canWrite || !props.hasEquipoOrderDraftChanges}
                     className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Restablecer
@@ -469,7 +426,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                   <button
                     type="button"
                     onClick={props.onSaveEquipoOrder}
-                    disabled={!props.hasEquipoOrderDraftChanges}
+                    disabled={!props.canWrite || !props.hasEquipoOrderDraftChanges}
                     className="ej-button rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Guardar orden
@@ -489,7 +446,7 @@ export function ConfigViews(props: ConfigViewsProps) {
               </div>
             ) : (
               <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                <p className="text-sm text-stone-600">Sin equipos activos.</p>
+                <p className="text-sm text-stone-600">No hay equipos visibles en la hoja.</p>
               </div>
             )}
           </div>
@@ -497,13 +454,13 @@ export function ConfigViews(props: ConfigViewsProps) {
           <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-sm font-semibold text-stone-900">Equipos inactivos</h3>
+                <h3 className="text-sm font-semibold text-stone-900">Ocultos de Hoja de Entrega</h3>
                 <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
                   {props.equiposInactivos.length}
                 </span>
               </div>
               <p className="text-xs text-stone-600 mb-3">
-                Los equipos inactivos no aparecen en la ficha de personal ni en el formulario de registrar movimientos.
+                Los equipos ocultos no aparecen en la Hoja de Entrega ni en el registro de movimientos.
               </p>
             </div>
             {props.equiposInactivos.length > 0 ? (
@@ -512,7 +469,7 @@ export function ConfigViews(props: ConfigViewsProps) {
               </div>
             ) : (
               <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                <p className="text-sm text-stone-600">Sin equipos inactivos.</p>
+                <p className="text-sm text-stone-600">No hay equipos ocultos.</p>
               </div>
             )}
           </div>
@@ -624,7 +581,7 @@ export function ConfigViews(props: ConfigViewsProps) {
         <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Usuarios y privilegios</h2>
           <form onSubmit={props.onCreateUsuario} className="mt-3 space-y-3">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <input
                 value={props.newGrado}
                 onChange={(event) => props.onNewGradoChange(event.target.value)}

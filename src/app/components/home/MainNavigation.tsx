@@ -1,9 +1,10 @@
 "use client";
 
-import type { JSX, RefObject } from "react";
+import { useEffect, useRef, useState, type JSX, type RefObject } from "react";
 import type { MainView } from "@/types/views";
 
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">;
+type SummaryView = Extract<MainView, "equipo_resumen" | "tallas_resumen">;
 
 type MainNavigationProps = {
   activeView: MainView;
@@ -76,6 +77,29 @@ const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean;
   },
 ];
 
+const summaryViews: Array<{ view: SummaryView; label: string; shortLabel: string; icon: JSX.Element }> = [
+  {
+    view: "equipo_resumen",
+    label: "Resumen por equipo",
+    shortLabel: "Equipo",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M7 3v4m10-4v4M6 12h4v8H6zM14 10h4v10h-4z" />
+      </svg>
+    ),
+  },
+  {
+    view: "tallas_resumen",
+    label: "Resumen por tallas",
+    shortLabel: "Tallas",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+  },
+];
+
 function viewButtonClass(activeView: MainView, view: MainView) {
   return activeView === view
     ? "ej-view-active rounded-lg px-3 py-2 text-sm font-semibold"
@@ -83,6 +107,12 @@ function viewButtonClass(activeView: MainView, view: MainView) {
 }
 
 function configOptionClass(activeView: MainView, view: ConfigView) {
+  return activeView === view
+    ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
+    : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-100";
+}
+
+function summaryOptionClass(activeView: MainView, view: SummaryView) {
   return activeView === view
     ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
     : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-100";
@@ -98,6 +128,33 @@ export function MainNavigation({
   onSelectView,
   onToggleConfigViews,
 }: MainNavigationProps) {
+  const [showSummaryViews, setShowSummaryViews] = useState(false);
+  const summaryMenuRef = useRef<HTMLDivElement | null>(null);
+  const isSummaryView = activeView === "equipo_resumen" || activeView === "tallas_resumen";
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (!summaryMenuRef.current) return;
+      if (!(event.target instanceof Node)) return;
+      if (summaryMenuRef.current.contains(event.target)) return;
+      setShowSummaryViews(false);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setShowSummaryViews(false);
+    }
+
+    if (!showSummaryViews) return;
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showSummaryViews]);
+
   return (
     <section className="ej-card relative z-40 mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Navegación</p>
@@ -118,15 +175,60 @@ export function MainNavigation({
             <span>Hoja Matriz</span>
           </div>
         </button>
-        <button type="button" onClick={() => onSelectView("equipo_resumen")} className={`${viewButtonClass(activeView, "equipo_resumen")} group relative flex-1 overflow-hidden transition-all`}>
+        <button type="button" onClick={() => onSelectView("stock")} className={`${viewButtonClass(activeView, "stock")} group relative flex-1 overflow-hidden transition-all`}>
           <div className="flex items-center justify-center gap-2">
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M7 3v4m10-4v4M6 12h4v8H6zM14 10h4v10h-4z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7H4m16 5H4m16 5H4M8 4v16" />
             </svg>
-            <span className="hidden sm:inline">Resumen Equipo</span>
-            <span className="sm:hidden">Equipo</span>
+            <span>Stock</span>
           </div>
         </button>
+        <div ref={summaryMenuRef} className="relative z-50 flex-1">
+          <button
+            type="button"
+            onClick={() => setShowSummaryViews((current) => !current)}
+            aria-haspopup="menu"
+            aria-expanded={showSummaryViews}
+            aria-controls="menu-resumenes"
+            className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+              isSummaryView || showSummaryViews ? "ej-view-active" : "ej-view-idle"
+            }`}
+          >
+            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19h16M4 12h10M4 5h16" />
+            </svg>
+            <span>Resumenes</span>
+            <svg className={`h-3 w-3 transition-transform ${showSummaryViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showSummaryViews ? (
+            <div
+              id="menu-resumenes"
+              role="menu"
+              className="absolute right-0 z-[60] mt-2 w-full min-w-[260px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[300px]"
+            >
+              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de resumen</p>
+              <div className="grid grid-cols-1 gap-1.5">
+                {summaryViews.map((item) => (
+                  <button
+                    key={item.view}
+                    type="button"
+                    onClick={() => {
+                      setShowSummaryViews(false);
+                      onSelectView(item.view);
+                    }}
+                    className={summaryOptionClass(activeView, item.view)}
+                  >
+                    {item.icon}
+                    <span className="hidden sm:inline">{item.label}</span>
+                    <span className="sm:hidden">{item.shortLabel}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
         <button
           type="button"
           onClick={() => onSelectView("personal_nuevo")}
@@ -146,15 +248,6 @@ export function MainNavigation({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M9 8h6m-9 12h12a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <span>Formularios</span>
-          </div>
-        </button>
-        <button type="button" onClick={() => onSelectView("tallas_resumen")} className={`${viewButtonClass(activeView, "tallas_resumen")} group relative flex-1 overflow-hidden transition-all`}>
-          <div className="flex items-center justify-center gap-2">
-            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="hidden sm:inline">Resumen Tallas</span>
-            <span className="sm:hidden">Tallas</span>
           </div>
         </button>
         <div ref={configMenuRef} className="relative z-50 flex-1">
