@@ -109,7 +109,7 @@ model Item {
   itemId        BigInt         @id @default(autoincrement()) @map("item_id")
   nombre        String         @unique
   activo        Boolean        @default(true)
-  ordenPdf      Int            @default(9999) @map("orden_pdf")
+  ordenPdf      Int            @map("orden_pdf")
   registroItems RegistroItem[]
 
   @@map("item")

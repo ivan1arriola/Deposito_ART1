@@ -63,5 +63,5 @@ export const EMPTY_PERSONAL_FORM: PersonalForm = {
 export const EMPTY_ITEM_FORM: ItemForm = {
   nombre: "",
   activo: true,
-  ordenPdf: 9999,
+  ordenPdf: 1,
 };

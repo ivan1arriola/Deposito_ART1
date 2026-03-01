@@ -841,7 +841,7 @@ export default function Home() {
         .map((itemId, idx) => {
           const item = itemById.get(itemId);
           if (!item) return null;
-          const ordenPdf = (idx + 1) * 10;
+          const ordenPdf = idx + 1;
           return item.ordenPdf === ordenPdf ? null : { itemId: item.itemId, nombre: item.nombre, activo: item.activo, ordenPdf };
         })
         .filter((entry): entry is { itemId: string; nombre: string; activo: boolean; ordenPdf: number } => entry !== null);

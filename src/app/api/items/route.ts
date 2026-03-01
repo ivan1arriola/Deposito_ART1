@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { getNextItemOrder, normalizeItemOrders } from "@/lib/item-ordering";
 
 type ItemPayload = {
   nombre: string;
@@ -54,23 +55,20 @@ export async function POST(req: Request) {
 
   try {
     const isActive = body.activo === undefined ? true : Boolean(body.activo);
-    let ordenPdf = body.ordenPdf;
-
-    if (ordenPdf === undefined) {
-      const lastItem = await prisma.item.findFirst({
-        where: { activo: isActive },
-        orderBy: { ordenPdf: "desc" },
-        select: { ordenPdf: true },
+    const created = await prisma.$transaction(async (tx) => {
+      const createdItem = await tx.item.create({
+        data: {
+          nombre: body.nombre.trim(),
+          activo: isActive,
+          ordenPdf: body.ordenPdf ?? (await getNextItemOrder(tx, isActive)),
+        },
       });
-      ordenPdf = (lastItem?.ordenPdf ?? 0) + 10;
-    }
 
-    const created = await prisma.item.create({
-      data: {
-        nombre: body.nombre.trim(),
-        activo: isActive,
-        ordenPdf,
-      },
+      await normalizeItemOrders(tx, isActive);
+
+      return tx.item.findUniqueOrThrow({
+        where: { itemId: createdItem.itemId },
+      });
     });
 
     await logAudit({

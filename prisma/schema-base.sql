@@ -77,10 +77,36 @@ CREATE TABLE "item" (
   "item_id" BIGSERIAL PRIMARY KEY,
   "nombre" TEXT NOT NULL UNIQUE,
   "activo" BOOLEAN NOT NULL DEFAULT TRUE,
-  "orden_pdf" INTEGER NOT NULL DEFAULT 9999
+  "orden_pdf" INTEGER NOT NULL
 );
 
 CREATE INDEX "item_orden_pdf_nombre_idx" ON "item"("orden_pdf", "nombre");
+
+INSERT INTO "item" ("nombre", "activo", "orden_pdf") VALUES
+('Buzo Verde M/C', TRUE, 1),
+('Buzo M/L V/Oliva', TRUE, 2),
+('Parka Pixelada 4A', TRUE, 3),
+('Birrete Eq. Pixelado A4', TRUE, 4),
+('Camisaco Eq. Pixelado A4', TRUE, 5),
+('Pantalón Eq. Pixelado A4', TRUE, 6),
+('Birrete Eq.Pixelado', TRUE, 7),
+('Camisaco Eq.Pixelado', TRUE, 8),
+('Pantalón Eq.Pixelado', TRUE, 9),
+('Parka Pixelada', TRUE, 10),
+('Campera Eq. Deportivo Largo', TRUE, 11),
+('Pantalón Eq. Deportivo Largo', TRUE, 12),
+('Buzo Verde Polar.', TRUE, 13),
+('Medias Verdes', TRUE, 14),
+('Equipo Termico', TRUE, 15),
+('Funda de Almohada', TRUE, 16),
+('Sabanas', TRUE, 17),
+('Arnes Combate (Y)', TRUE, 18),
+('Arnes de tela (H)', TRUE, 19),
+('Cinturon de Combate tela (H)', TRUE, 20),
+('Cinturon de combate (Y)', TRUE, 21),
+('Frazada', TRUE, 22),
+('Bota Corta de Cuero SIE', TRUE, 23),
+('Bota Corta de tela S.I.E.', TRUE, 24);
 
 CREATE TABLE "personal" (
   "ci" TEXT PRIMARY KEY,

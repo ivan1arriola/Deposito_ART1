@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { getNextItemOrder, normalizeItemOrders } from "@/lib/item-ordering";
 
 type ItemPayload = {
   nombre: string;
@@ -55,13 +56,41 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
   }
 
   try {
-    const updated = await prisma.item.update({
-      where: { itemId },
-      data: {
-        nombre: body.nombre.trim(),
-        activo: body.activo === undefined ? true : Boolean(body.activo),
-        ordenPdf: body.ordenPdf === undefined ? 9999 : body.ordenPdf,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.item.findUniqueOrThrow({
+        where: { itemId },
+        select: {
+          itemId: true,
+          activo: true,
+          ordenPdf: true,
+        },
+      });
+
+      const nextActive = body.activo === undefined ? existing.activo : Boolean(body.activo);
+      const nextOrder =
+        nextActive !== existing.activo
+          ? await getNextItemOrder(tx, nextActive)
+          : body.ordenPdf === undefined
+            ? existing.ordenPdf
+            : body.ordenPdf;
+
+      await tx.item.update({
+        where: { itemId },
+        data: {
+          nombre: body.nombre.trim(),
+          activo: nextActive,
+          ordenPdf: nextOrder,
+        },
+      });
+
+      await normalizeItemOrders(tx, nextActive);
+      if (existing.activo !== nextActive) {
+        await normalizeItemOrders(tx, existing.activo);
+      }
+
+      return tx.item.findUniqueOrThrow({
+        where: { itemId },
+      });
     });
 
     await logAudit({
@@ -99,8 +128,23 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
   }
 
   try {
-    const deleted = await prisma.item.delete({
-      where: { itemId },
+    const deleted = await prisma.$transaction(async (tx) => {
+      const existing = await tx.item.findUniqueOrThrow({
+        where: { itemId },
+        select: {
+          itemId: true,
+          nombre: true,
+          activo: true,
+        },
+      });
+
+      const removed = await tx.item.delete({
+        where: { itemId },
+      });
+
+      await normalizeItemOrders(tx, existing.activo);
+
+      return removed;
     });
 
     await logAudit({

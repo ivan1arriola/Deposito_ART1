@@ -7,31 +7,30 @@ const prisma = new PrismaClient();
 const COMMENT_TAG = "Importacion de datos anteriores ";
 
 const CATALOGO_ITEMS = [
-  "Buzo Verde M/C Escote Redondo",
-  "Buzo Manga Larga V/ Oliva",
-  "Parka Pixelada con Forro Polar 4A",
-  "Birrete Pixelado 4A",
-  "Camisaco Pixelado 4A",
-  "Pantalon Pixelado 4A",
-  "Parka Pixelada CON Forro Polar",
-  "Parka Pixelada SIN Forro Polar",
-  "Birrete Eq.Pixelado",
-  "Camisaco Eq.Pixelado",
-  "Pantalon Eq.Pixelado",
-  "Campera Eq.Deportivo Largo",
-  "Pantalon Eq.Deportivo Largo",
-  "Buzo Verde Polar",
-  "Medias verdes",
-  "Equipo Termico",
-  "Funda de Almohada",
-  "Sabanas",
-  "Arnes de combate (Y)",
-  "Arnes en tela H",
-  "Cinturon de Combate en tela H",
-  "Cinturon de combate",
-  "Frazada",
-  "Bota Corta de cuero S.I.E",
-  "Bota Corta de tela S.I.E",
+  { nombre: "Buzo Verde M/C", ordenPdf: 1 },
+  { nombre: "Buzo M/L V/Oliva", ordenPdf: 2 },
+  { nombre: "Parka Pixelada 4A", ordenPdf: 3 },
+  { nombre: "Birrete Eq. Pixelado A4", ordenPdf: 4 },
+  { nombre: "Camisaco Eq. Pixelado A4", ordenPdf: 5 },
+  { nombre: "Pantalón Eq. Pixelado A4", ordenPdf: 6 },
+  { nombre: "Birrete Eq.Pixelado", ordenPdf: 7 },
+  { nombre: "Camisaco Eq.Pixelado", ordenPdf: 8 },
+  { nombre: "Pantalón Eq.Pixelado", ordenPdf: 9 },
+  { nombre: "Parka Pixelada", ordenPdf: 10 },
+  { nombre: "Campera Eq. Deportivo Largo", ordenPdf: 11 },
+  { nombre: "Pantalón Eq. Deportivo Largo", ordenPdf: 12 },
+  { nombre: "Buzo Verde Polar.", ordenPdf: 13 },
+  { nombre: "Medias Verdes", ordenPdf: 14 },
+  { nombre: "Equipo Termico", ordenPdf: 15 },
+  { nombre: "Funda de Almohada", ordenPdf: 16 },
+  { nombre: "Sabanas", ordenPdf: 17 },
+  { nombre: "Arnes Combate (Y)", ordenPdf: 18 },
+  { nombre: "Arnes de tela (H)", ordenPdf: 19 },
+  { nombre: "Cinturon de Combate tela (H)", ordenPdf: 20 },
+  { nombre: "Cinturon de combate (Y)", ordenPdf: 21 },
+  { nombre: "Frazada", ordenPdf: 22 },
+  { nombre: "Bota Corta de Cuero SIE", ordenPdf: 23 },
+  { nombre: "Bota Corta de tela S.I.E.", ordenPdf: 24 },
 ];
 
 function getArg(name, fallback = "") {
@@ -53,18 +52,32 @@ function normalizeTextKey(value) {
 function buildCanonicalMap() {
   const map = new Map();
   for (const item of CATALOGO_ITEMS) {
-    map.set(normalizeTextKey(item), item);
+    map.set(normalizeTextKey(item.nombre), item.nombre);
   }
 
-  map.set(normalizeTextKey("Parka Pixelada con Forro Polar"), "Parka Pixelada CON Forro Polar");
-  map.set(normalizeTextKey("Parka Pixelada con Forro Polar 4A"), "Parka Pixelada con Forro Polar 4A");
-  map.set(normalizeTextKey("Parka Pixelada CON Forro Polar"), "Parka Pixelada CON Forro Polar");
-  map.set(normalizeTextKey("Parka Pixelada SIN Forro Polar"), "Parka Pixelada SIN Forro Polar");
-  map.set(normalizeTextKey("Buzo verde m/c Escote redondo"), "Buzo Verde M/C Escote Redondo");
-  map.set(normalizeTextKey("Bota Corta de cuero S.I.E"), "Bota Corta de cuero S.I.E");
-  map.set(normalizeTextKey("Bota Corta de tela S.I.E"), "Bota Corta de tela S.I.E");
-  map.set(normalizeTextKey("Cinturon de Combate en tela H"), "Cinturon de Combate en tela H");
-  map.set(normalizeTextKey("Cinturon de combate"), "Cinturon de combate");
+  map.set(normalizeTextKey("Buzo Verde M/C Escote Redondo"), "Buzo Verde M/C");
+  map.set(normalizeTextKey("Buzo Manga Larga V/ Oliva"), "Buzo M/L V/Oliva");
+  map.set(normalizeTextKey("Parka Pixelada con Forro Polar"), "Parka Pixelada");
+  map.set(normalizeTextKey("Parka Pixelada CON Forro Polar"), "Parka Pixelada");
+  map.set(normalizeTextKey("Parka Pixelada SIN Forro Polar"), "Parka Pixelada");
+  map.set(normalizeTextKey("Parka Pixelada con Forro Polar 4A"), "Parka Pixelada 4A");
+  map.set(normalizeTextKey("Birrete Pixelado 4A"), "Birrete Eq. Pixelado A4");
+  map.set(normalizeTextKey("Birrete Eq. Pixelado 4A"), "Birrete Eq. Pixelado A4");
+  map.set(normalizeTextKey("Camisaco Pixelado 4A"), "Camisaco Eq. Pixelado A4");
+  map.set(normalizeTextKey("Camisaco Eq. Pixelado 4A"), "Camisaco Eq. Pixelado A4");
+  map.set(normalizeTextKey("Pantalon Pixelado 4A"), "Pantalón Eq. Pixelado A4");
+  map.set(normalizeTextKey("Pantalon Eq. Pixelado 4A"), "Pantalón Eq. Pixelado A4");
+  map.set(normalizeTextKey("Campera Eq.Deportivo Largo"), "Campera Eq. Deportivo Largo");
+  map.set(normalizeTextKey("Pantalon Eq.Deportivo Largo"), "Pantalón Eq. Deportivo Largo");
+  map.set(normalizeTextKey("Buzo Verde Polar"), "Buzo Verde Polar.");
+  map.set(normalizeTextKey("Medias verdes"), "Medias Verdes");
+  map.set(normalizeTextKey("Arnes de combate (Y)"), "Arnes Combate (Y)");
+  map.set(normalizeTextKey("Arnes en tela H"), "Arnes de tela (H)");
+  map.set(normalizeTextKey("Cinturon de Combate en tela H"), "Cinturon de Combate tela (H)");
+  map.set(normalizeTextKey("Cinturon de combate"), "Cinturon de combate (Y)");
+  map.set(normalizeTextKey("Cinturon de cobate (Y)"), "Cinturon de combate (Y)");
+  map.set(normalizeTextKey("Bota Corta de cuero S.I.E"), "Bota Corta de Cuero SIE");
+  map.set(normalizeTextKey("Bota Corta de tela S.I.E"), "Bota Corta de tela S.I.E.");
 
   return map;
 }
@@ -98,16 +111,19 @@ function splitColumns(line) {
 }
 
 async function ensureCatalogItems() {
-  for (const nombre of CATALOGO_ITEMS) {
-    const existing = await prisma.item.findUnique({ where: { nombre }, select: { itemId: true } });
-    if (!existing) {
-      await prisma.item.create({
-        data: {
-          nombre,
-          activo: true,
-        },
-      });
-    }
+  for (const item of CATALOGO_ITEMS) {
+    await prisma.item.upsert({
+      where: { nombre: item.nombre },
+      update: {
+        activo: true,
+        ordenPdf: item.ordenPdf,
+      },
+      create: {
+        nombre: item.nombre,
+        activo: true,
+        ordenPdf: item.ordenPdf,
+      },
+    });
   }
 }
 
