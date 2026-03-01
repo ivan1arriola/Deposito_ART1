@@ -3,7 +3,7 @@
 import { FormEvent, ReactNode } from "react";
 import { SmallActionButton, CatalogCard, PaginationControls } from "../shared";
 
-type Role = "ADMIN" | "EDITOR" | "VIEWER";
+type Role = "ADMIN" | "EDITOR";
 type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string };
 type BateriaConfig = { bateriaId: number; nombre: string };
 type ItemConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
@@ -21,7 +21,7 @@ type AuditoriaRecord = {
 };
 
 interface ConfigViewsProps {
-  activeView: "grados" | "baterias" | "items" | "admin";
+  activeView: "grados" | "baterias" | "items" | "firmas" | "usuarios" | "auditoria";
   isAdmin: boolean;
   canWrite: boolean;
   // Grados state
@@ -114,7 +114,7 @@ interface ConfigViewsProps {
   renderAuditDetalle: (detalle: unknown) => ReactNode;
 }
 
-const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "VIEWER"];
+const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR"];
 
 export function ConfigViews(props: ConfigViewsProps) {
   if (props.activeView === "grados") {
@@ -350,10 +350,10 @@ export function ConfigViews(props: ConfigViewsProps) {
     );
   }
 
-  if (props.activeView === "admin" && props.isAdmin) {
+  if (props.activeView === "firmas" && props.isAdmin) {
     return (
-      <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <article className="ej-card rounded-2xl p-4 lg:col-span-2">
+      <section className="mt-6 grid grid-cols-1 gap-4">
+        <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Firmas institucionales (solo administrador)</h2>
           <p className="mt-1 text-xs text-stone-600">
             Esta seccion controla los datos de quienes firman la hoja de entrega. Los textos institucionales son fijos.
@@ -443,7 +443,13 @@ export function ConfigViews(props: ConfigViewsProps) {
             </form>
           )}
         </article>
+      </section>
+    );
+  }
 
+  if (props.activeView === "usuarios" && props.isAdmin) {
+    return (
+      <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Usuarios y privilegios</h2>
           <form onSubmit={props.onCreateUsuario} className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -517,7 +523,13 @@ export function ConfigViews(props: ConfigViewsProps) {
             ))}
           </div>
         </article>
+      </section>
+    );
+  }
 
+  if (props.activeView === "auditoria" && props.isAdmin) {
+    return (
+      <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Auditoria detallada (interfaz y base de datos)</h2>
           <p className="mt-1 text-xs text-stone-600">

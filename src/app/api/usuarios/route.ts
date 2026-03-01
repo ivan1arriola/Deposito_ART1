@@ -28,8 +28,8 @@ function isValidPayload(body: unknown): body is UsuarioPayload {
 }
 
 function roleFromValue(value: unknown): UserRole {
-  if (value === "ADMIN" || value === "EDITOR" || value === "VIEWER") return value;
-  return "VIEWER";
+  if (value === "ADMIN" || value === "EDITOR") return value;
+  return "EDITOR";
 }
 
 export async function GET(request: Request) {

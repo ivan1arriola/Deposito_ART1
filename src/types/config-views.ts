@@ -161,7 +161,7 @@ export interface UtilityFunctions {
  * Props principales del componente ConfigViews
  */
 export interface ConfigViewsProps {
-  activeView: "grados" | "baterias" | "items" | "admin";
+  activeView: "grados" | "baterias" | "items" | "firmas" | "usuarios" | "auditoria";
   isAdmin: boolean;
   canWrite: boolean;
 

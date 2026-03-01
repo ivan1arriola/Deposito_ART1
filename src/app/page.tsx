@@ -226,6 +226,7 @@ export default function Home() {
   const canDelete = canWrite;
   const canRegisterPersonal = canWrite && rangos.length > 0;
   const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "items";
+  const inAdminConfigView = activeView === "firmas" || activeView === "usuarios" || activeView === "auditoria";
   const normalizedNewCi = normalizeCi(newPersonal.ci.trim());
   const duplicatePersonal = useMemo(() => {
     if (normalizedNewCi === "") return null;
@@ -335,7 +336,7 @@ export default function Home() {
     const start = (personalPageSafe - 1) * personalPageSize;
     return personalFiltrado.slice(start, start + personalPageSize);
   }, [personalFiltrado, personalPageSafe, personalPageSize]);
-  const isConfigView = activeView === "grados" || activeView === "baterias" || activeView === "items" || activeView === "admin";
+  const isConfigView = inCatalogView || inAdminConfigView;
   const personaRegistro = useMemo(() => {
     if (!registroDraft) return null;
     return personal.find((persona) => persona.ci === registroDraft.ci) ?? null;
@@ -349,10 +350,10 @@ export default function Home() {
   }, [registroViewerRows, registroViewerPageSafe, registroViewerPageSize]);
 
   useEffect(() => {
-    if (activeView === "admin" && !isAdmin) {
+    if (inAdminConfigView && !isAdmin) {
       setActiveView("personal");
     }
-  }, [activeView, isAdmin]);
+  }, [inAdminConfigView, isAdmin]);
 
   useEffect(() => {
     if (activeView !== "personal" && showCreatePersonalForm) {
@@ -1635,7 +1636,7 @@ export default function Home() {
             setNewUsername("");
             setNewEmail("");
             setNewPassword("");
-            setNewRole("VIEWER");
+            setNewRole("EDITOR");
             setStatus("Usuario creado.");
             await loadData();
           },
@@ -1654,7 +1655,7 @@ export default function Home() {
         setStatus("Solo el administrador puede cambiar roles.");
         return;
       }
-      const nextRole = window.prompt("Nuevo rol (ADMIN/EDITOR/VIEWER)", currentRole);
+      const nextRole = window.prompt("Nuevo rol (ADMIN/EDITOR)", currentRole);
       if (!nextRole) return;
       const normalized = nextRole.toUpperCase();
       if (!ROLE_OPTIONS.includes(normalized as Role)) {
@@ -1810,14 +1811,14 @@ export default function Home() {
       : "ej-view-idle rounded-lg px-3 py-2 text-sm font-semibold";
   }
 
-  function configOptionClass(view: Extract<MainView, "grados" | "baterias" | "items" | "admin">) {
+  function configOptionClass(view: Extract<MainView, "grados" | "baterias" | "items" | "firmas" | "usuarios" | "auditoria">) {
     const selected = activeView === view;
     return selected
       ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
       : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-100 hover:border-stone-400";
   }
 
-  function selectConfigView(view: Extract<MainView, "grados" | "baterias" | "items" | "admin">) {
+  function selectConfigView(view: Extract<MainView, "grados" | "baterias" | "items" | "firmas" | "usuarios" | "auditoria">) {
     setActiveView(view);
     setShowConfigViews(false);
   }
@@ -1837,6 +1838,25 @@ export default function Home() {
     if (confirmDialogBusy) return;
     setConfirmDialog(null);
   }
+
+  const printAllDeliverySheets = useCallback(() => {
+    if (personal.length === 0) {
+      toast.info("No hay personal para imprimir.");
+      return;
+    }
+
+    const popup = window.open("/hojas-de-entrega?autoprint=1", "_blank", "noopener,noreferrer");
+
+    if (!popup) {
+      const message = "Permite ventanas emergentes para imprimir todas las hojas de entrega.";
+      setStatus(message);
+      toast.error(message);
+      return;
+    }
+
+    setStatus(`Abriendo hojas de entrega para ${personal.length} personas...`);
+    toast.info(`Abriendo ${personal.length} hojas de entrega.`);
+  }, [personal.length]);
 
   async function confirmDialogAccept() {
     if (!confirmDialog) return;
@@ -2187,7 +2207,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="ej-card mt-4 rounded-2xl p-3 sm:p-4">
+      <section className="ej-card relative z-40 mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Navegación</p>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button
@@ -2236,7 +2256,7 @@ export default function Home() {
               <span className="sm:hidden">Tallas</span>
             </div>
           </button>
-          <div ref={configMenuRef} className="relative flex-1">
+          <div ref={configMenuRef} className="relative z-50 flex-1">
             <button
               type="button"
               onClick={() => setShowConfigViews((prev) => !prev)}
@@ -2265,7 +2285,7 @@ export default function Home() {
               <div
                 id="menu-configuracion"
                 role="menu"
-                className="absolute right-0 z-30 mt-2 w-full min-w-[290px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[360px]"
+                className="absolute right-0 z-[60] mt-2 w-full min-w-[290px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[360px]"
               >
                 <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de configuracion</p>
                 <div className="grid grid-cols-1 gap-1.5">
@@ -2288,12 +2308,26 @@ export default function Home() {
                     Registrar Items
                   </button>
                   {isAdmin ? (
-                    <button type="button" onClick={() => selectConfigView("admin")} className={configOptionClass("admin")}>
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                      Usuarios y Auditoria
-                    </button>
+                    <>
+                      <button type="button" onClick={() => selectConfigView("firmas")} className={configOptionClass("firmas")}>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h2m10 0V6a3 3 0 10-6 0v2m6 0H7" />
+                        </svg>
+                        Firmas institucionales
+                      </button>
+                      <button type="button" onClick={() => selectConfigView("usuarios")} className={configOptionClass("usuarios")}>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Usuarios
+                      </button>
+                      <button type="button" onClick={() => selectConfigView("auditoria")} className={configOptionClass("auditoria")}>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m4 6V7m4 10v-3M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        Auditoria detallada
+                      </button>
+                    </>
                   ) : null}
                 </div>
               </div>
@@ -2302,9 +2336,9 @@ export default function Home() {
         </div>
       </section>
 
-      {inCatalogView || (isAdmin && activeView === "admin") ? (
+      {inCatalogView || (isAdmin && inAdminConfigView) ? (
         <ConfigViews
-          activeView={activeView as "grados" | "baterias" | "items" | "admin"}
+          activeView={activeView as "grados" | "baterias" | "items" | "firmas" | "usuarios" | "auditoria"}
           isAdmin={isAdmin}
           canWrite={canWrite}
           rangos={rangos}
@@ -2623,17 +2657,27 @@ export default function Home() {
               <h2 className="text-base font-semibold text-stone-900">Personal</h2>
               <p className="mt-1 text-xs text-stone-600">Orden: Grado del Personal, Apellidos y Nombres.</p>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setCreatePersonalNotice(null);
-                setShowCreatePersonalForm(true);
-              }}
-              disabled={!canWrite}
-              className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              Registrar nuevo
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={printAllDeliverySheets}
+                disabled={personal.length === 0}
+                className="rounded-lg bg-indigo-700 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Imprimir todas las hojas
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreatePersonalNotice(null);
+                  setShowCreatePersonalForm(true);
+                }}
+                disabled={!canWrite}
+                className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
+              >
+                Registrar nuevo
+              </button>
+            </div>
           </div>
           <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
             <input

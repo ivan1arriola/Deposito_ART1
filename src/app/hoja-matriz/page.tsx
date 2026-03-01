@@ -1,9 +1,13 @@
 import Image from "next/image";
+import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
 import { compareRankAbbreviation } from "@/lib/rank-order";
 import { SIN_BATERIA_LABEL, getHojaMatrixData } from "@/lib/hoja-matrix";
 import type { HojaMatrixRow } from "@/types/views";
 
 export const revalidate = 0;
+export const metadata = {
+  title: "Hoja Matriz",
+};
 
 const LEFT_COLUMNS_WIDTH_MM = 76;
 
@@ -128,19 +132,9 @@ export default async function HojaMatrizPage({
   const itemColumnWidth = `calc((100% - ${LEFT_COLUMNS_WIDTH_MM}mm) / ${Math.max(data.items.length, 1)})`;
 
   return (
-    <html lang="es">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Hoja Matriz</title>
-        {shouldAutoPrint ? (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: "window.addEventListener('load',()=>window.setTimeout(()=>window.print(),180));",
-            }}
-          />
-        ) : null}
-        <style>{`
+    <>
+      {shouldAutoPrint ? <AutoPrintOnLoad /> : null}
+      <style>{`
           * {
             margin: 0;
             padding: 0;
@@ -367,8 +361,8 @@ export default async function HojaMatrizPage({
               margin-top: 0;
             }
 
-            thead {
-              display: table-header-group;
+            .matrix-table thead {
+              display: table-row-group;
             }
 
             tr,
@@ -379,95 +373,92 @@ export default async function HojaMatrizPage({
             }
           }
         `}</style>
-      </head>
-      <body>
-        {sections.length === 0 ? (
-          <main className="empty-state">No hay datos para generar la hoja matriz.</main>
-        ) : (
-          <main className="matrix-document">
-            {sections.map((section, sectionIndex) => (
-              <section key={section.batteryLabel} className="matrix-sheet">
-                <table className="matrix-table">
-                  <colgroup>
-                    <col className="col-number" />
-                    <col className="col-grade" />
-                    <col className="col-name" />
+      {sections.length === 0 ? (
+        <main className="empty-state">No hay datos para generar la hoja matriz.</main>
+      ) : (
+        <main className="matrix-document">
+          {sections.map((section, sectionIndex) => (
+            <section key={section.batteryLabel} className="matrix-sheet">
+              <table className="matrix-table">
+                <colgroup>
+                  <col className="col-number" />
+                  <col className="col-grade" />
+                  <col className="col-name" />
+                  {data.items.map((item) => (
+                    <col key={item.itemId} style={{ width: itemColumnWidth }} />
+                  ))}
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th colSpan={3} className="identity-block">
+                      <div className="identity-inner">
+                        <Image
+                          className="identity-logo"
+                          src="/assets/logo-artilleria.jpg"
+                          alt="Logo de Artilleria"
+                          width={200}
+                          height={200}
+                          unoptimized
+                        />
+                        <div className="identity-group">{'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No.1.-'}</div>
+                        <div className="identity-battery">{section.batteryLabel}</div>
+                      </div>
+                    </th>
                     {data.items.map((item) => (
-                      <col key={item.itemId} style={{ width: itemColumnWidth }} />
+                      <th key={item.itemId} className="item-header">
+                        <span>{item.nombre}</span>
+                      </th>
                     ))}
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th colSpan={3} className="identity-block">
-                        <div className="identity-inner">
-                          <Image
-                            className="identity-logo"
-                            src="/assets/logo-artilleria.jpg"
-                            alt="Logo de Artilleria"
-                            width={200}
-                            height={200}
-                            unoptimized
-                          />
-                          <div className="identity-group">{'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No.1.-'}</div>
-                          <div className="identity-battery">{section.batteryLabel}</div>
-                        </div>
-                      </th>
-                      {data.items.map((item) => (
-                        <th key={item.itemId} className="item-header">
-                          <span>{item.nombre}</span>
-                        </th>
-                      ))}
-                    </tr>
-                    <tr>
-                      <th className="left-header">N&ordm;</th>
-                      <th className="left-header">Grado</th>
-                      <th className="left-header">Nombre</th>
-                      <th colSpan={data.items.length} className="equipment-header">
-                        EQUIPO
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {section.rows.map((row, index) =>
-                      row.kind === "grade" ? (
-                        <tr key={`${section.batteryLabel}-grade-${row.label}-${index}`} className="grade-separator">
-                          <td colSpan={3 + data.items.length}>{row.label}</td>
-                        </tr>
-                      ) : (
-                        <tr key={`${section.batteryLabel}-person-${row.number}`} className="person-row">
-                          <td className="number-cell">{row.number}</td>
-                          <td className="grade-cell">{row.grade}</td>
-                          <td className="name-cell">{row.name}</td>
-                          {row.totales.map((value, valueIndex) => (
-                            <td
-                              key={`${section.batteryLabel}-${row.number}-${valueIndex}`}
-                              className={`value-cell ${value < 0 ? "negative" : ""}`.trim()}
-                            >
-                              {value}
-                            </td>
-                          ))}
-                        </tr>
-                      ),
-                    )}
-                    {sectionIndex === sections.length - 1 ? (
-                      <tr className="total-row">
-                        <td colSpan={3} className="total-label">
-                          TOTAL
-                        </td>
-                        {grandTotals.map((value, index) => (
-                          <td key={`grand-total-${index}`} className={value < 0 ? "negative" : undefined}>
-                            <span className={`total-value ${Math.abs(value) >= 100 ? "total-value-compact" : ""}`.trim()}>{value}</span>
+                  </tr>
+                  <tr>
+                    <th className="left-header">N&ordm;</th>
+                    <th className="left-header">Grado</th>
+                    <th className="left-header">Nombre</th>
+                    <th colSpan={data.items.length} className="equipment-header">
+                      EQUIPO
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.rows.map((row, index) =>
+                    row.kind === "grade" ? (
+                      <tr key={`${section.batteryLabel}-grade-${row.label}-${index}`} className="grade-separator">
+                        <td colSpan={3 + data.items.length}>{row.label}</td>
+                      </tr>
+                    ) : (
+                      <tr key={`${section.batteryLabel}-person-${row.number}`} className="person-row">
+                        <td className="number-cell">{row.number}</td>
+                        <td className="grade-cell">{row.grade}</td>
+                        <td className="name-cell">{row.name}</td>
+                        {row.totales.map((value, valueIndex) => (
+                          <td
+                            key={`${section.batteryLabel}-${row.number}-${valueIndex}`}
+                            className={`value-cell ${value < 0 ? "negative" : ""}`.trim()}
+                          >
+                            {value}
                           </td>
                         ))}
                       </tr>
-                    ) : null}
-                  </tbody>
-                </table>
-              </section>
-            ))}
-          </main>
-        )}
-      </body>
-    </html>
+                    ),
+                  )}
+                  {sectionIndex === sections.length - 1 ? (
+                    <tr className="total-row">
+                      <td colSpan={3} className="total-label">
+                        TOTAL
+                      </td>
+                      {grandTotals.map((value, index) => (
+                        <td key={`grand-total-${index}`} className={value < 0 ? "negative" : undefined}>
+                          <span className={`total-value ${Math.abs(value) >= 100 ? "total-value-compact" : ""}`.trim()}>{value}</span>
+                        </td>
+                      ))}
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </section>
+          ))}
+        </main>
+      )}
+    </>
   );
 }

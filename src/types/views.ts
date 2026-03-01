@@ -4,7 +4,17 @@
 
 import type { Role } from "./entities";
 
-export type MainView = "personal" | "hoja_matrix" | "tallas_resumen" | "grados" | "baterias" | "items" | "admin" | "hoja-de-entrega";
+export type MainView =
+  | "personal"
+  | "hoja_matrix"
+  | "tallas_resumen"
+  | "grados"
+  | "baterias"
+  | "items"
+  | "firmas"
+  | "usuarios"
+  | "auditoria"
+  | "hoja-de-entrega";
 
 export type RegistroTipo = "ENTREGA" | "DEVOLUCION";
 

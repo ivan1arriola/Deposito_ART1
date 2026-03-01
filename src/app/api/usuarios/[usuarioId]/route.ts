@@ -13,7 +13,7 @@ type UsuarioUpdatePayload = {
 };
 
 function roleFromValue(value: unknown): UserRole | null {
-  if (value === "ADMIN" || value === "EDITOR" || value === "VIEWER") return value;
+  if (value === "ADMIN" || value === "EDITOR") return value;
   return null;
 }
 

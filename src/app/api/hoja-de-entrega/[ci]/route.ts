@@ -93,13 +93,15 @@ function buildMatrix(
       const found = devoluciones[idx]?.items.find((item) => item.nombre === itemName);
       return found?.cantidad ?? 0;
     });
+    const entregaTotal = entrega.reduce((acc, value) => acc + value, 0);
+    const devolucionRegistradaTotal = devolucion.reduce((acc, value) => acc + value, 0);
 
     return {
       item: itemName,
       entrega,
-      entregaTotal: entrega.reduce((acc, value) => acc + value, 0),
+      entregaTotal,
       devolucion,
-      devolucionTotal: devolucion.reduce((acc, value) => acc + value, 0),
+      devolucionTotal: entregaTotal - devolucionRegistradaTotal,
     };
   });
 }
