@@ -32,7 +32,7 @@ export function PersonalActions({
   onOpenSheet,
 }: PersonalActionsProps) {
   const secondaryClass = compact
-    ? "w-full rounded px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:shadow-md active:scale-95"
+    ? "w-full rounded-lg px-3 py-2 text-xs font-semibold leading-tight text-white transition-all duration-200 hover:shadow-md active:scale-95"
     : "rounded px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:shadow-md active:scale-95";
 
   return (
@@ -53,11 +53,9 @@ export function PersonalActions({
           />
         </>
       ) : null}
-      {!compact ? (
-        <button type="button" onClick={onToggleTallas} className={`${secondaryClass} bg-stone-600 hover:bg-stone-700`}>
-          {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
-        </button>
-      ) : null}
+      <button type="button" onClick={onToggleTallas} className={`${secondaryClass} bg-stone-600 hover:bg-stone-700`}>
+        {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
+      </button>
       {canWrite ? (
         <>
           <button type="button" onClick={onEntrega} className={`${secondaryClass} bg-emerald-700 hover:bg-emerald-800`}>
@@ -71,7 +69,7 @@ export function PersonalActions({
           </button>
         </>
       ) : null}
-      <button type="button" onClick={onViewMoves} className={`${secondaryClass} bg-sky-700 hover:bg-sky-800`}>
+      <button type="button" onClick={onViewMoves} className={`${secondaryClass} bg-sky-700 hover:bg-sky-800 ${compact ? "col-span-2" : ""}`}>
         Ver movimientos
       </button>
       <button type="button" onClick={onOpenSheet} className={`${secondaryClass} bg-indigo-700 hover:bg-indigo-800 ${compact ? "col-span-2" : ""}`}>

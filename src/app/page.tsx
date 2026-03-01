@@ -2302,11 +2302,8 @@ export default function Home() {
         showConfigViews={showConfigViews}
         isConfigView={isConfigView}
         configMenuRef={configMenuRef}
-        onSelectView={(view) => {
-          setActiveView(view);
-          setShowConfigViews(false);
-        }}
-        onToggleConfigViews={() => setShowConfigViews((prev) => !prev)}
+        onSelectView={(view) => setActiveView(view)}
+        onSetConfigViews={setShowConfigViews}
       />
 
 

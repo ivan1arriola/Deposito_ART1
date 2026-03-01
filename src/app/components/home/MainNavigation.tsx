@@ -16,7 +16,7 @@ type MainNavigationProps = {
   isConfigView: boolean;
   configMenuRef: RefObject<HTMLDivElement | null>;
   onSelectView: (view: MainView) => void;
-  onToggleConfigViews: () => void;
+  onSetConfigViews: (open: boolean) => void;
 };
 
 const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean; icon: JSX.Element }> = [
@@ -231,6 +231,14 @@ function stockOptionClass(activeView: MainView, view: StockView) {
     : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-100";
 }
 
+function menuContainerClass(isOpen: boolean) {
+  return `relative flex-1 ${isOpen ? "z-30" : "z-0"}`;
+}
+
+function menuPanelClass(desktopWidthClass: string) {
+  return `absolute left-0 right-0 top-full z-40 mt-2 rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:left-auto sm:right-0 ${desktopWidthClass}`;
+}
+
 export function MainNavigation({
   activeView,
   canWrite,
@@ -239,7 +247,7 @@ export function MainNavigation({
   isConfigView,
   configMenuRef,
   onSelectView,
-  onToggleConfigViews,
+  onSetConfigViews,
 }: MainNavigationProps) {
   const [showSummaryViews, setShowSummaryViews] = useState(false);
   const [showCreateViews, setShowCreateViews] = useState(false);
@@ -260,6 +268,51 @@ export function MainNavigation({
     activeView === "bateria_nueva" ||
     activeView === "grado_nuevo" ||
     activeView === "usuarios";
+
+  function closeLocalMenus() {
+    setShowSummaryViews(false);
+    setShowCreateViews(false);
+    setShowStockViews(false);
+  }
+
+  function closeAllMenus() {
+    closeLocalMenus();
+    onSetConfigViews(false);
+  }
+
+  function handleSelectView(view: MainView) {
+    closeAllMenus();
+    onSelectView(view);
+  }
+
+  function handleToggleStockViews() {
+    const next = !showStockViews;
+    setShowStockViews(next);
+    setShowSummaryViews(false);
+    setShowCreateViews(false);
+    onSetConfigViews(false);
+  }
+
+  function handleToggleSummaryViews() {
+    const next = !showSummaryViews;
+    setShowSummaryViews(next);
+    setShowStockViews(false);
+    setShowCreateViews(false);
+    onSetConfigViews(false);
+  }
+
+  function handleToggleCreateViews() {
+    const next = !showCreateViews;
+    setShowCreateViews(next);
+    setShowStockViews(false);
+    setShowSummaryViews(false);
+    onSetConfigViews(false);
+  }
+
+  function handleToggleConfigViews() {
+    closeLocalMenus();
+    onSetConfigViews(!showConfigViews);
+  }
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
@@ -293,10 +346,10 @@ export function MainNavigation({
   }, [showSummaryViews, showCreateViews, showStockViews]);
 
   return (
-    <section className="ej-card relative z-40 mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
+    <section className="ej-card relative isolate z-20 mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Navegación</p>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <button type="button" onClick={() => onSelectView("personal")} className={`${viewButtonClass(activeView, "personal")} group relative flex-1 overflow-hidden transition-all`}>
+        <button type="button" onClick={() => handleSelectView("personal")} className={`${viewButtonClass(activeView, "personal")} group relative flex-1 overflow-hidden transition-all`}>
           <div className="flex items-center justify-center gap-2">
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -304,7 +357,7 @@ export function MainNavigation({
             <span>Personal</span>
           </div>
         </button>
-        <button type="button" onClick={() => onSelectView("hoja_matrix")} className={`${viewButtonClass(activeView, "hoja_matrix")} group relative flex-1 overflow-hidden transition-all`}>
+        <button type="button" onClick={() => handleSelectView("hoja_matrix")} className={`${viewButtonClass(activeView, "hoja_matrix")} group relative flex-1 overflow-hidden transition-all`}>
           <div className="flex items-center justify-center gap-2">
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
@@ -312,10 +365,10 @@ export function MainNavigation({
             <span>Hoja Matriz</span>
           </div>
         </button>
-        <div ref={stockMenuRef} className="relative z-50 flex-1">
+        <div ref={stockMenuRef} className={menuContainerClass(showStockViews)}>
           <button
             type="button"
-            onClick={() => setShowStockViews((current) => !current)}
+            onClick={handleToggleStockViews}
             aria-haspopup="menu"
             aria-expanded={showStockViews}
             aria-controls="menu-stock"
@@ -335,7 +388,7 @@ export function MainNavigation({
             <div
               id="menu-stock"
               role="menu"
-              className="absolute right-0 z-[60] mt-2 w-full min-w-[260px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[300px]"
+              className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
             >
               <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de stock</p>
               <div className="grid grid-cols-1 gap-1.5">
@@ -343,10 +396,7 @@ export function MainNavigation({
                   <button
                     key={item.view}
                     type="button"
-                    onClick={() => {
-                      setShowStockViews(false);
-                      onSelectView(item.view);
-                    }}
+                    onClick={() => handleSelectView(item.view)}
                     className={stockOptionClass(activeView, item.view)}
                   >
                     {item.icon}
@@ -358,10 +408,10 @@ export function MainNavigation({
             </div>
           ) : null}
         </div>
-        <div ref={summaryMenuRef} className="relative z-50 flex-1">
+        <div ref={summaryMenuRef} className={menuContainerClass(showSummaryViews)}>
           <button
             type="button"
-            onClick={() => setShowSummaryViews((current) => !current)}
+            onClick={handleToggleSummaryViews}
             aria-haspopup="menu"
             aria-expanded={showSummaryViews}
             aria-controls="menu-resumenes"
@@ -381,7 +431,7 @@ export function MainNavigation({
             <div
               id="menu-resumenes"
               role="menu"
-              className="absolute right-0 z-[60] mt-2 w-full min-w-[260px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[300px]"
+              className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
             >
               <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de resumen</p>
               <div className="grid grid-cols-1 gap-1.5">
@@ -389,10 +439,7 @@ export function MainNavigation({
                   <button
                     key={item.view}
                     type="button"
-                    onClick={() => {
-                      setShowSummaryViews(false);
-                      onSelectView(item.view);
-                    }}
+                    onClick={() => handleSelectView(item.view)}
                     className={summaryOptionClass(activeView, item.view)}
                   >
                     {item.icon}
@@ -405,10 +452,10 @@ export function MainNavigation({
           ) : null}
         </div>
         {canWrite ? (
-          <div ref={createMenuRef} className="relative z-50 flex-1">
+          <div ref={createMenuRef} className={menuContainerClass(showCreateViews)}>
             <button
               type="button"
-              onClick={() => setShowCreateViews((current) => !current)}
+              onClick={handleToggleCreateViews}
               aria-haspopup="menu"
               aria-expanded={showCreateViews}
               aria-controls="menu-altas"
@@ -428,7 +475,7 @@ export function MainNavigation({
               <div
                 id="menu-altas"
                 role="menu"
-                className="absolute right-0 z-[60] mt-2 w-full min-w-[260px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[300px]"
+                className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
               >
                 <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Pantallas de alta</p>
                 <div className="grid grid-cols-1 gap-1.5">
@@ -438,10 +485,7 @@ export function MainNavigation({
                       <button
                         key={item.view}
                         type="button"
-                        onClick={() => {
-                          setShowCreateViews(false);
-                          onSelectView(item.view);
-                        }}
+                        onClick={() => handleSelectView(item.view)}
                         className={createOptionClass(activeView, item.view)}
                       >
                         {item.icon}
@@ -454,7 +498,7 @@ export function MainNavigation({
             ) : null}
           </div>
         ) : null}
-        <button type="button" onClick={() => onSelectView("formularios")} className={`${viewButtonClass(activeView, "formularios")} group relative flex-1 overflow-hidden transition-all`}>
+        <button type="button" onClick={() => handleSelectView("formularios")} className={`${viewButtonClass(activeView, "formularios")} group relative flex-1 overflow-hidden transition-all`}>
           <div className="flex items-center justify-center gap-2">
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M9 8h6m-9 12h12a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -462,10 +506,10 @@ export function MainNavigation({
             <span>Formularios</span>
           </div>
         </button>
-        <div ref={configMenuRef} className="relative z-50 flex-1">
+        <div ref={configMenuRef} className={menuContainerClass(showConfigViews)}>
           <button
             type="button"
-            onClick={onToggleConfigViews}
+            onClick={handleToggleConfigViews}
             aria-haspopup="menu"
             aria-expanded={showConfigViews}
             aria-controls="menu-configuracion"
@@ -486,14 +530,14 @@ export function MainNavigation({
             <div
               id="menu-configuracion"
               role="menu"
-              className="absolute right-0 z-[60] mt-2 w-full min-w-[290px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[360px]"
+              className={menuPanelClass("sm:w-[360px] sm:min-w-[360px]")}
             >
               <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de configuración</p>
               <div className="grid grid-cols-1 gap-1.5">
                 {configViews
                   .filter((item) => (item.adminOnly ? isAdmin : true))
                   .map((item) => (
-                    <button key={item.view} type="button" onClick={() => onSelectView(item.view)} className={configOptionClass(activeView, item.view)}>
+                    <button key={item.view} type="button" onClick={() => handleSelectView(item.view)} className={configOptionClass(activeView, item.view)}>
                       {item.icon}
                       {item.label}
                     </button>

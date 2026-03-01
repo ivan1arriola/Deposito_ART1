@@ -18,11 +18,11 @@ const sizeClassMap = {
 export function ModalFrame({ children, onClose, closeOnBackdrop = true, size = "md" }: ModalFrameProps) {
   return (
     <section
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3"
+      className="fixed inset-0 z-[70] flex items-end justify-center overflow-y-auto bg-black/45 px-2 pb-2 pt-8 sm:items-center sm:px-3"
       onClick={closeOnBackdrop ? onClose : undefined}
     >
       <article
-        className={`w-full ${sizeClassMap[size]} rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl`}
+        className={`max-h-[calc(100dvh-0.75rem)] w-full ${sizeClassMap[size]} overflow-y-auto overscroll-contain rounded-[28px] border border-stone-300 bg-white p-4 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl`}
         onClick={(event) => event.stopPropagation()}
       >
         {children}

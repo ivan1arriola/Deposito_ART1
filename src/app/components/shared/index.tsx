@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+
 export { toast } from "sonner";
 export { ActionMenu } from "./ActionMenu";
 export type { ActionMenuItem } from "./ActionMenu";
@@ -8,9 +9,6 @@ export { ConfirmDialog } from "./ConfirmDialog";
 export { Input, Select, Textarea } from "./FormInputs";
 export { Card, CardHeader, StatCard, EmptyState, Badge } from "./Cards";
 
-/**
- * Componente para tarjetas de catálogo con entrada de nuevos elementos
- */
 export function CatalogCard(props: {
   title: string;
   placeholder: string;
@@ -44,9 +42,6 @@ export function CatalogCard(props: {
   );
 }
 
-/**
- * Componente para botones de acción pequeños mejorados con iconos
- */
 export function SmallActionButton(props: {
   text: string;
   tone: "edit" | "delete" | "ok" | "neutral";
@@ -54,7 +49,6 @@ export function SmallActionButton(props: {
   className?: string;
   icon?: "edit" | "trash" | "check" | "x";
 }) {
-  // Mapeo de tone a clases de color mejoradas
   const colorClasses = {
     edit: "bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300",
     delete: "bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300",
@@ -62,17 +56,16 @@ export function SmallActionButton(props: {
     neutral: "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300",
   };
 
-  // Mapeo de icon a SVG
   const getIconSvg = () => {
     const iconMap = {
       edit: "edit",
       delete: "trash",
       ok: "check",
       neutral: "x",
-    };
+    } as const;
     const icon = props.icon || iconMap[props.tone];
+    const iconProps = "h-3.5 w-3.5";
 
-    const iconProps = "w-3.5 h-3.5";
     switch (icon) {
       case "edit":
         return (
@@ -115,9 +108,6 @@ export function SmallActionButton(props: {
   );
 }
 
-/**
- * Componente para controles de paginación
- */
 export function PaginationControls(props: {
   page: number;
   pageSize: number;
@@ -130,27 +120,26 @@ export function PaginationControls(props: {
 }) {
   const totalPages = Math.max(1, Math.ceil(props.totalItems / props.pageSize));
   const safePage = Math.max(1, Math.min(props.page, totalPages));
-
   const from = props.totalItems === 0 ? 0 : (safePage - 1) * props.pageSize + 1;
   const to = props.totalItems === 0 ? 0 : Math.min(safePage * props.pageSize, props.totalItems);
 
   return (
-    <div className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50/50 p-3 ${props.className ?? ""}`}>
-      <div className="text-xs text-stone-600">
+    <div className={`flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50/50 p-3 sm:flex-row sm:items-center sm:justify-between ${props.className ?? ""}`}>
+      <div className="text-xs leading-5 text-stone-600">
         Mostrando {from} a {to} de {props.totalItems} {props.itemLabel}
         {props.totalItems !== 1 ? "s" : ""}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {props.onPageSizeChange && props.pageSizeOptions ? (
           <select
             value={props.pageSize}
-            onChange={(e) => props.onPageSizeChange?.(Number(e.target.value))}
-            className="rounded border border-stone-300 px-2 py-1 text-xs"
+            onChange={(event) => props.onPageSizeChange?.(Number(event.target.value))}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-xs sm:w-auto"
           >
             {props.pageSizeOptions.map((size) => (
               <option key={size} value={size}>
-                {size}/página
+                {size}/pagina
               </option>
             ))}
           </select>
@@ -160,13 +149,13 @@ export function PaginationControls(props: {
           type="button"
           onClick={() => props.onPageChange(safePage - 1)}
           disabled={safePage <= 1}
-          className="rounded border border-stone-300 px-2 py-1 text-xs font-medium disabled:opacity-50"
+          className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium disabled:opacity-50"
         >
-          ← Anterior
+          Anterior
         </button>
 
-        <div className="flex items-center gap-1">
-          <span className="text-xs font-medium text-stone-700">Página {safePage}</span>
+        <div className="flex items-center justify-center gap-1 rounded-lg bg-white px-3 py-2">
+          <span className="text-xs font-medium text-stone-700">Pagina {safePage}</span>
           <span className="text-xs text-stone-500">de {totalPages}</span>
         </div>
 
@@ -174,9 +163,9 @@ export function PaginationControls(props: {
           type="button"
           onClick={() => props.onPageChange(safePage + 1)}
           disabled={safePage >= totalPages}
-          className="rounded border border-stone-300 px-2 py-1 text-xs font-medium disabled:opacity-50"
+          className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium disabled:opacity-50"
         >
-          Siguiente →
+          Siguiente
         </button>
       </div>
     </div>
