@@ -35,6 +35,7 @@ npm run dev
 ```
 
 `db:rebuild` elimina y recrea todo el esquema `public` desde `prisma/schema-base.sql` (incluye tablas, FKs, indices y checks).
+La precarga base queda limitada a catalogos: grados, baterias, talla_tipo e items. No importa personal ni movimientos.
 
 Crear/actualizar un usuario (incluye primer admin):
 

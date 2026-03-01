@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import {
   createUsuarioHandler,
   changeUserRoleHandler,
+  changeUserPasswordHandler,
   toggleUserActiveHandler,
   deleteUsuarioHandler,
   saveFirmaConfigHandler,
@@ -86,6 +87,37 @@ describe("Handlers de Usuarios", () => {
 
       try {
         await changeUserRoleHandler("ADMIN_USER", "EDITOR", { onError });
+      } catch {
+        // Error esperado
+      }
+
+      expect(onError).toHaveBeenCalled();
+    });
+  });
+
+  describe("changeUserPasswordHandler", () => {
+    it("debería cambiar la contraseña de otro usuario", async () => {
+      const onSuccess = vi.fn();
+      vi.mocked(api).mockResolvedValue({});
+
+      await changeUserPasswordHandler("USR123", "NuevaClave123", { onSuccess });
+
+      expect(vi.mocked(api)).toHaveBeenCalledWith(
+        "/api/usuarios/USR123",
+        expect.objectContaining({
+          method: "PUT",
+          body: JSON.stringify({ password: "NuevaClave123" }),
+        })
+      );
+      expect(onSuccess).toHaveBeenCalled();
+    });
+
+    it("debería propagar errores de validación de contraseña", async () => {
+      const onError = vi.fn();
+      vi.mocked(api).mockRejectedValue(new Error("contrasena invalida. Minimo 8 caracteres."));
+
+      try {
+        await changeUserPasswordHandler("USR123", "short", { onError });
       } catch {
         // Error esperado
       }

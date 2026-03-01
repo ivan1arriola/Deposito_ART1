@@ -14,9 +14,7 @@
     "prisma:generate": "prisma generate",
     "db:rebuild": "prisma db execute --schema prisma/schema.prisma --file prisma/schema-base.sql && prisma generate",
     "prisma:studio": "prisma studio",
-    "user:create": "node scripts/create-user.mjs",
-    "personal:import": "node scripts/import-personal.mjs --file scripts/data/personal-import.tsv",
-    "movimientos:import": "node scripts/import-movimientos.mjs --file scripts/data/movimientos-import.tsv"
+    "user:create": "node scripts/create-user.mjs"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

@@ -49,6 +49,25 @@ export async function changeUserRoleHandler(
   }
 }
 
+export async function changeUserPasswordHandler(
+  usuarioId: string,
+  password: string,
+  callbacks: CallbackProps
+) {
+  try {
+    await api(`/api/usuarios/${usuarioId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    callbacks.onSuccess?.();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo actualizar la contraseña.";
+    callbacks.onError?.(message);
+    throw error;
+  }
+}
+
 export async function toggleUserActiveHandler(
   usuarioId: string,
   newActive: boolean,

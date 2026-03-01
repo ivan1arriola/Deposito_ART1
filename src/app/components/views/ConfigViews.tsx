@@ -94,6 +94,7 @@ interface ConfigViewsProps {
   onNewRoleChange: (role: Role) => void;
   onCreateUsuario: (event: FormEvent<HTMLFormElement>) => void;
   onChangeUserRole: (usuario: UsuarioAdmin) => void;
+  onChangeUserPassword: (usuario: UsuarioAdmin) => void;
   onToggleUserActive: (usuario: UsuarioAdmin) => void;
   onDeleteUsuario: (usuario: UsuarioAdmin) => void;
   // Firma config callbacks
@@ -495,9 +496,14 @@ export function ConfigViews(props: ConfigViewsProps) {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <SmallActionButton
-                      text="Rol"
+                      text="Editar rol"
                       tone="edit"
                       onClick={() => props.onChangeUserRole(usuario)}
+                    />
+                    <SmallActionButton
+                      text="Contraseña"
+                      tone="edit"
+                      onClick={() => props.onChangeUserPassword(usuario)}
                     />
                     <SmallActionButton
                       text={usuario.activo ? "Desactivar" : "Activar"}

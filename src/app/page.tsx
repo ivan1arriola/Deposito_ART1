@@ -95,6 +95,7 @@ import {
 import {
   createUsuarioHandler,
   changeUserRoleHandler,
+  changeUserPasswordHandler,
   toggleUserActiveHandler,
   deleteUsuarioHandler,
   saveFirmaConfigHandler,
@@ -127,6 +128,13 @@ type UserRoleDialogState = {
   nextRole: Role;
 };
 
+type UserPasswordDialogState = {
+  usuarioId: string;
+  username: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
   const [loading, setLoading] = useState(true);
@@ -145,6 +153,8 @@ export default function Home() {
   const [changeLoading, setChangeLoading] = useState(false);
   const [userRoleDialog, setUserRoleDialog] = useState<UserRoleDialogState | null>(null);
   const [userRoleSaving, setUserRoleSaving] = useState(false);
+  const [userPasswordDialog, setUserPasswordDialog] = useState<UserPasswordDialogState | null>(null);
+  const [userPasswordSaving, setUserPasswordSaving] = useState(false);
 
   const [rangos, setRangos] = useState<Rango[]>([]);
   const [baterias, setBaterias] = useState<Bateria[]>([]);
@@ -1597,6 +1607,27 @@ export default function Home() {
     setUserRoleDialog(null);
   }, [userRoleSaving]);
 
+  const changeUserPassword = useCallback(
+    (usuario: UsuarioAdmin) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede cambiar contraseñas.");
+        return;
+      }
+      setUserPasswordDialog({
+        usuarioId: usuario.usuarioId,
+        username: usuario.username,
+        newPassword: "",
+        confirmPassword: "",
+      });
+    },
+    [isAdmin],
+  );
+
+  const closeUserPasswordDialog = useCallback(() => {
+    if (userPasswordSaving) return;
+    setUserPasswordDialog(null);
+  }, [userPasswordSaving]);
+
   const submitUserRoleChange = useCallback(async () => {
     if (!userRoleDialog) return;
     if (!ROLE_OPTIONS.includes(userRoleDialog.nextRole)) {
@@ -1620,6 +1651,37 @@ export default function Home() {
       setUserRoleSaving(false);
     }
   }, [userRoleDialog, loadData]);
+
+  const submitUserPasswordChange = useCallback(async () => {
+    if (!userPasswordDialog) return;
+
+    if (userPasswordDialog.newPassword.trim().length < 8) {
+      setStatus("La nueva contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+
+    if (userPasswordDialog.newPassword !== userPasswordDialog.confirmPassword) {
+      setStatus("La nueva contraseña no coincide.");
+      return;
+    }
+
+    setUserPasswordSaving(true);
+    try {
+      await changeUserPasswordHandler(userPasswordDialog.usuarioId, userPasswordDialog.newPassword, {
+        onSuccess: async () => {
+          toast.success(`Contraseña actualizada para ${userPasswordDialog.username}.`);
+          setStatus("Contraseña de usuario actualizada.");
+          setUserPasswordDialog(null);
+          await loadData();
+        },
+        onError: (message) => setStatus(message),
+      });
+    } catch {
+      // Error manejado en el handler
+    } finally {
+      setUserPasswordSaving(false);
+    }
+  }, [userPasswordDialog, loadData]);
 
   const toggleUserActive = useCallback(
     async (usuario: UsuarioAdmin) => {
@@ -2273,6 +2335,7 @@ export default function Home() {
           onNewRoleChange={setNewRole}
           onCreateUsuario={(event) => void createUsuario(event)}
           onChangeUserRole={(usuario) => void changeUserRole(usuario)}
+          onChangeUserPassword={(usuario) => void changeUserPassword(usuario)}
           onToggleUserActive={(usuario) => void toggleUserActive(usuario)}
           onDeleteUsuario={(usuario) => void deleteUsuario(usuario)}
           onFirmaConfigDraftChange={(key, value) => setFirmaConfigDraft((prev) => ({ ...prev, [key]: value }))}
@@ -3000,6 +3063,76 @@ export default function Home() {
                 className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
               >
                 {userRoleSaving ? "Guardando..." : "Guardar rol"}
+              </button>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
+      {userPasswordDialog ? (
+        <section className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3" onClick={closeUserPasswordDialog}>
+          <article
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-password-dialog-title"
+            className="w-full max-w-md rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 id="user-password-dialog-title" className="text-base font-semibold text-stone-900">
+              Cambiar contraseña de usuario
+            </h3>
+            <p className="mt-1 text-sm text-stone-600">
+              {`Usuario: ${userPasswordDialog.username}`}
+            </p>
+            <p className="mt-1 text-xs text-stone-500">
+              Define una nueva contraseña para la cuenta seleccionada.
+            </p>
+
+            <div className="mt-4 space-y-2">
+              <input
+                value={userPasswordDialog.newPassword}
+                onChange={(event) =>
+                  setUserPasswordDialog((current) =>
+                    current ? { ...current, newPassword: event.target.value } : current
+                  )
+                }
+                placeholder="Nueva contraseña"
+                type="password"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+              <input
+                value={userPasswordDialog.confirmPassword}
+                onChange={(event) =>
+                  setUserPasswordDialog((current) =>
+                    current ? { ...current, confirmPassword: event.target.value } : current
+                  )
+                }
+                placeholder="Confirmar nueva contraseña"
+                type="password"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeUserPasswordDialog}
+                disabled={userPasswordSaving}
+                className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void submitUserPasswordChange()}
+                disabled={
+                  userPasswordSaving ||
+                  userPasswordDialog.newPassword.trim() === "" ||
+                  userPasswordDialog.confirmPassword.trim() === ""
+                }
+                className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {userPasswordSaving ? "Guardando..." : "Guardar contraseña"}
               </button>
             </div>
           </article>
