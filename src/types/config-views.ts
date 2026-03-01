@@ -37,6 +37,7 @@ export type AuditoriaRecord = {
   entidad: string;
   entidadId: string | null;
   detalle: unknown;
+  ciReferencias?: Record<string, string>;
   createdAt: string;
 };
 
@@ -99,7 +100,7 @@ export interface EquipoConfigState {
   equiposActivos: EquipoConfig[];
   equiposInactivos: EquipoConfig[];
   equiposActivosEnPantalla: EquipoConfig[];
-  draggedEquipoId: string | null;
+  hasEquipoOrderDraftChanges: boolean;
 }
 
 export interface EquipoConfigCallbacks {
@@ -116,8 +117,9 @@ export interface EquipoConfigCallbacks {
   onUpdateEquipo: (itemId: string) => void;
   onToggleEquipoActivo: (item: EquipoConfig) => void;
   onDeleteEquipo: (itemId: string) => void;
-  onStartEquipoDrag: (itemId: string) => void;
-  renderEquipoCard: (item: EquipoConfig, options?: { draggableInActiveList?: boolean }) => ReactNode;
+  onSaveEquipoOrder: () => void;
+  onResetEquipoOrderDraft: () => void;
+  renderEquipoCard: (item: EquipoConfig, options?: { reorderableInActiveList?: boolean; orderIndex?: number; orderCount?: number }) => ReactNode;
 }
 
 // Usuarios Admin

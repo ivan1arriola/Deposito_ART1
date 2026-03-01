@@ -2,6 +2,7 @@
 
 import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
 import { rangoLabel } from "@/lib/formatters";
+import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import type { Bateria, Rango } from "@/types/entities";
 import type { PersonalForm } from "@/types/forms";
 
@@ -24,12 +25,27 @@ export function PersonalInlineEditForm({
   onChange,
   onSave,
 }: PersonalInlineEditFormProps) {
+  const telefonoContactoLooksValid =
+    editPersonal.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(editPersonal.telefonoContacto);
+
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
       <input value={editPersonal.apellido1} onChange={(event) => onChange("apellido1", event.target.value)} placeholder="Apellido 1" className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
       <input value={editPersonal.apellido2} onChange={(event) => onChange("apellido2", event.target.value)} placeholder="Apellido 2" className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
       <input value={editPersonal.nombre1} onChange={(event) => onChange("nombre1", event.target.value)} placeholder="Nombre 1" className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
       <input value={editPersonal.nombre2} onChange={(event) => onChange("nombre2", event.target.value)} placeholder="Nombre 2" className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+      <div className="sm:col-span-2 lg:col-span-2">
+        <input
+          value={editPersonal.telefonoContacto}
+          onChange={(event) => onChange("telefonoContacto", event.target.value)}
+          placeholder="Celular de contacto"
+          inputMode="tel"
+          className={`w-full rounded-lg border px-3 py-2 text-sm ${telefonoContactoLooksValid ? "border-stone-300" : "border-rose-600 bg-rose-50"}`}
+        />
+        <p className={`mt-1 text-[11px] ${telefonoContactoLooksValid ? "text-stone-500" : "font-medium text-rose-700"}`}>
+          {telefonoContactoLooksValid ? "Opcional. Formato uruguayo." : "Ingresa un celular uruguayo valido."}
+        </p>
+      </div>
       <input
         type="date"
         value={editPersonal.fechaIngreso}

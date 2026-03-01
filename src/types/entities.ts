@@ -47,6 +47,7 @@ export type Personal = {
   apellido2: string | null;
   nombre1: string;
   nombre2: string | null;
+  telefonoContacto: string | null;
   fechaIngreso: string | null;
   rangoId: number;
   bateriaId: number | null;
@@ -101,6 +102,7 @@ export type AuditoriaRecord = {
   entidad: string;
   entidadId: string | null;
   detalle: unknown;
+  ciReferencias?: Record<string, string>;
   createdAt: string;
 };
 

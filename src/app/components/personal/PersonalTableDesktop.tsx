@@ -1,9 +1,10 @@
 "use client";
 
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { apellidosLabel, nombresLabel, tallasEntries } from "@/lib/formatters";
 import { tallasMap } from "@/lib/form-mappers";
+import { formatUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import type { Personal } from "@/types/entities";
 import { PersonalActions } from "./PersonalActions";
 import { PersonalTallasPanel } from "./PersonalTallasPanel";
@@ -37,6 +38,8 @@ export function PersonalTableDesktop({
   onOpenSheet,
   renderInlineEditForm,
 }: PersonalTableDesktopProps) {
+  const [expandedPhoneByCi, setExpandedPhoneByCi] = useState<Record<string, boolean>>({});
+
   return (
     <div className="mt-3 hidden md:block">
       <table className="w-full table-fixed text-left text-sm">
@@ -46,7 +49,7 @@ export function PersonalTableDesktop({
             <th className="w-[15%] px-3 py-2">Grado del Personal</th>
             <th className="w-[18%] px-3 py-2">Apellidos</th>
             <th className="w-[18%] px-3 py-2">Nombres</th>
-            <th className="w-[13%] px-3 py-2">Batería</th>
+            <th className="w-[13%] px-3 py-2">Bateria</th>
             <th className="w-[9%] px-3 py-2">Detalles</th>
             <th className="w-[16%] px-3 py-2">Acciones</th>
           </tr>
@@ -55,6 +58,7 @@ export function PersonalTableDesktop({
           {personas.map((persona, index) => {
             const tallas = tallasMap(persona.tallas);
             const ciValida = isValidUruguayanCi(persona.ci);
+            const phoneOpen = expandedPhoneByCi[persona.ci] === true;
             const tallasOpen = expandedTallasByCi[persona.ci] === true;
             const editing = editPersonalCi === persona.ci;
             const isEven = index % 2 === 0;
@@ -72,16 +76,36 @@ export function PersonalTableDesktop({
                     <span className="font-bold">{persona.rango.nombreCompleto}</span>
                   </td>
                   <td className="px-3 py-2 text-stone-900">{apellidosLabel(persona)}</td>
-                  <td className="px-3 py-2 text-stone-900">{nombresLabel(persona)}</td>
-                  <td className="px-3 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin batería"}</td>
+                  <td className="px-3 py-2 text-stone-900">
+                    <div>{nombresLabel(persona)}</div>
+                    {persona.telefonoContacto ? (
+                      <div className="mt-1 text-xs text-stone-500">{`Contacto: ${formatUruguayanMobileNumber(persona.telefonoContacto)}`}</div>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin bateria"}</td>
                   <td className="px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => onToggleTallas(persona.ci)}
-                      className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700 transition-all duration-200 hover:border-stone-400 hover:bg-stone-50 hover:shadow-sm active:scale-95"
-                    >
-                      {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
-                    </button>
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedPhoneByCi((prev) => ({
+                            ...prev,
+                            [persona.ci]: !prev[persona.ci],
+                          }))
+                        }
+                        disabled={!persona.telefonoContacto}
+                        className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700 transition-all duration-200 hover:border-stone-400 hover:bg-stone-50 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-stone-300 disabled:hover:bg-white disabled:hover:shadow-none"
+                      >
+                        {!persona.telefonoContacto ? "Sin celular" : phoneOpen ? "Ocultar celular" : "Ver celular"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onToggleTallas(persona.ci)}
+                        className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700 transition-all duration-200 hover:border-stone-400 hover:bg-stone-50 hover:shadow-sm active:scale-95"
+                      >
+                        {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
+                      </button>
+                    </div>
                   </td>
                   <td className="px-2 py-2 align-top">
                     <PersonalActions
@@ -99,6 +123,16 @@ export function PersonalTableDesktop({
                     />
                   </td>
                 </tr>
+                {phoneOpen && persona.telefonoContacto ? (
+                  <tr className="bg-stone-50/80">
+                    <td colSpan={7} className="px-3 py-2">
+                      <div className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Celular de contacto</p>
+                        <p className="mt-1 text-sm font-semibold text-stone-900">{formatUruguayanMobileNumber(persona.telefonoContacto)}</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : null}
                 {tallasOpen ? (
                   <tr className="bg-stone-50/80">
                     <td colSpan={7} className="px-3 py-2">

@@ -26,6 +26,7 @@ describe("Handlers de Personal", () => {
     apellido2: "García",
     nombre1: "Juan",
     nombre2: "Carlos",
+    telefonoContacto: "099123456",
     fechaIngreso: "2023-01-15",
     rangoId: "1",
     bateriaId: "1",

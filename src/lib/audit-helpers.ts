@@ -3,9 +3,10 @@
  */
 
 import { createElement, type ReactNode } from "react";
-import { formatUruguayanCi } from "@/lib/ci";
+import { formatUruguayanCi, normalizeCi } from "@/lib/ci";
 
 type AuditDetailObject = Record<string, unknown>;
+export type AuditCiReferences = Record<string, string>;
 
 function isObject(value: unknown): value is AuditDetailObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -34,6 +35,17 @@ function buildLine(key: string, label: string, value: string) {
   );
 }
 
+function resolveCiOwner(ci: string, ciReferences?: AuditCiReferences) {
+  return ciReferences?.[normalizeCi(ci)]?.trim() || "";
+}
+
+export function formatAuditCi(ci: string, ciReferences?: AuditCiReferences) {
+  const owner = resolveCiOwner(ci, ciReferences);
+  const normalized = normalizeCi(ci);
+  const formattedCi = normalized.length >= 7 && normalized.length <= 8 ? formatUruguayanCi(ci) : ci.trim();
+  return owner ? `${formattedCi} - ${owner}` : formattedCi;
+}
+
 function extractEquipos(value: unknown) {
   if (!Array.isArray(value)) return [] as string[];
 
@@ -46,7 +58,7 @@ function extractEquipos(value: unknown) {
     });
 }
 
-function renderMovimientoDetalle(info: AuditDetailObject): ReactNode {
+function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCiReferences): ReactNode {
   const lines: ReactNode[] = [];
   const personal = isObject(info.personal) ? info.personal : null;
 
@@ -55,12 +67,14 @@ function renderMovimientoDetalle(info: AuditDetailObject): ReactNode {
     const grado = asText(personal.grado);
     const bateria = asText(personal.bateria);
     const ci = asText(personal.ci);
-    const personalParts = [grado, nombre, ci ? `CI ${formatUruguayanCi(ci)}` : "", bateria ? `Batería ${bateria}` : ""].filter(Boolean);
+    const personalParts = [grado, nombre, ci ? `CI ${formatAuditCi(ci, ciReferences)}` : "", bateria ? `Bateria ${bateria}` : ""].filter(
+      Boolean,
+    );
     if (personalParts.length > 0) {
       lines.push(buildLine("personal", "Personal", personalParts.join(" - ")));
     }
   } else if (asText(info.ci)) {
-    lines.push(buildLine("ci", "CI", formatUruguayanCi(asText(info.ci))));
+    lines.push(buildLine("ci", "CI", formatAuditCi(asText(info.ci), ciReferences)));
   }
 
   const tipoAnterior = asText(info.tipoAnterior);
@@ -139,8 +153,8 @@ export function auditActionLabel(accion: string): string {
     CREATE: "Creo",
     UPDATE: "Actualizo",
     DELETE: "Elimino",
-    LOGIN: "Inició sesión",
-    LOGOUT: "Cerró sesión",
+    LOGIN: "Inicio sesion",
+    LOGOUT: "Cerro sesion",
   };
   return labels[accion] || accion;
 }
@@ -155,16 +169,22 @@ export function auditEntityLabel(entidad: string): string {
     BATERIA: "bateria",
     ITEM: "item",
     FIRMAS_CONFIG: "firmas institucionales",
+    OBSERVACION: "observacion",
   };
   return labels[entidad] || entidad.toLowerCase();
 }
 
-export function renderAuditDetalle(detalle: unknown): ReactNode {
+export function formatAuditEntityId(entidadId: string | null, ciReferences?: AuditCiReferences) {
+  if (!entidadId) return "Entidad sin ID";
+  return `Entidad ID: ${formatAuditCi(entidadId, ciReferences)}`;
+}
+
+export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiReferences): ReactNode {
   if (!isObject(detalle)) return "";
 
   const evento = asText(detalle.evento);
   if (evento.startsWith("MOVIMIENTO_")) {
-    return renderMovimientoDetalle(detalle);
+    return renderMovimientoDetalle(detalle, ciReferences);
   }
 
   const keys = Object.keys(detalle).filter((key) => {
@@ -177,7 +197,13 @@ export function renderAuditDetalle(detalle: unknown): ReactNode {
   return createElement(
     "div",
     { className: "mt-2 space-y-1" },
-    ...keys.map((key) => buildLine(key, key, asText(detalle[key]))),
+    ...keys.map((key) =>
+      buildLine(
+        key,
+        key.toLowerCase() === "ci" ? "CI" : key,
+        key.toLowerCase() === "ci" ? formatAuditCi(asText(detalle[key]), ciReferences) : asText(detalle[key]),
+      ),
+    ),
   );
 }
 

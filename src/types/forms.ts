@@ -10,6 +10,7 @@ export type PersonalForm = {
   apellido2: string;
   nombre1: string;
   nombre2: string;
+  telefonoContacto: string;
   fechaIngreso: string;
   rangoId: string;
   bateriaId: string;
@@ -60,6 +61,7 @@ export const EMPTY_PERSONAL_FORM: PersonalForm = {
   apellido2: "",
   nombre1: "",
   nombre2: "",
+  telefonoContacto: "",
   fechaIngreso: "",
   rangoId: "",
   bateriaId: "",

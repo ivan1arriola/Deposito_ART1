@@ -130,12 +130,14 @@ CREATE TABLE "personal" (
   "apellido2" TEXT,
   "nombre1" TEXT NOT NULL,
   "nombre2" TEXT,
+  "telefono_contacto" TEXT,
   "fecha_ingreso" DATE,
   "grado_id" SMALLINT NOT NULL REFERENCES "grado"("grado_id"),
   "bateria_id" SMALLINT REFERENCES "bateria"("bateria_id"),
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   CONSTRAINT "personal_ci_uruguaya_valida_chk" CHECK (public.es_ci_uruguaya_valida("ci")),
+  CONSTRAINT "personal_telefono_contacto_uy_chk" CHECK ("telefono_contacto" IS NULL OR "telefono_contacto" ~ '^09[0-9]{7}$'),
   CONSTRAINT "personal_fecha_ingreso_hoy_chk" CHECK ("fecha_ingreso" IS NULL OR "fecha_ingreso" <= CURRENT_DATE)
 );
 

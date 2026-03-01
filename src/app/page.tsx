@@ -5,11 +5,9 @@ import {
   FormEvent,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { formatUruguayanCi, generatePlaceholderUruguayanCi, isValidUruguayanCi, normalizeCi } from "@/lib/ci";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
@@ -73,6 +71,7 @@ import {
 } from "@/lib/form-mappers";
 import { normalizeSearchTerm } from "@/lib/search";
 import { moveIdInOrder, compareTallaOptions } from "@/lib/array-utils";
+import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 
 // Importar handlers de operaciones
 import {
@@ -197,12 +196,7 @@ export default function Home() {
   const [newEquipo, setNewEquipo] = useState<EquipoForm>(EMPTY_EQUIPO_FORM);
   const [editEquipoId, setEditEquipoId] = useState<string | null>(null);
   const [editEquipo, setEditEquipo] = useState<EquipoForm>(EMPTY_EQUIPO_FORM);
-  const [draggedEquipoId, setDraggedEquipoId] = useState<string | null>(null);
-  const [dragOrderEquipoIds, setDragOrderEquipoIds] = useState<string[] | null>(null);
-  const draggedEquipoIdRef = useRef<string | null>(null);
-  const dragOrderEquipoIdsRef = useRef<string[] | null>(null);
-  const equipoCardRefs = useRef(new Map<string, HTMLDivElement>());
-  const previousEquipoRectsRef = useRef(new Map<string, DOMRect>());
+  const [equipoOrderDraftIds, setEquipoOrderDraftIds] = useState<string[] | null>(null);
 
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
@@ -246,6 +240,8 @@ export default function Home() {
   }, [normalizedNewCi, personal]);
   const ciAlreadyExists = duplicatePersonal !== null;
   const ciLooksValid = newPersonal.ci.trim() === "" || isValidUruguayanCi(newPersonal.ci);
+  const newPersonalPhoneLooksValid =
+    newPersonal.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(newPersonal.telefonoContacto);
   const ciHasError = !ciLooksValid || ciAlreadyExists;
   const requiredPersonalFields = [
     newPersonal.ci.trim() !== "" && isValidUruguayanCi(newPersonal.ci) && !ciAlreadyExists,
@@ -254,7 +250,11 @@ export default function Home() {
     Number(newPersonal.rangoId) > 0,
   ];
   const requiredPersonalCompleted = requiredPersonalFields.filter(Boolean).length;
-  const canSubmitPersonal = canRegisterPersonal && requiredPersonalCompleted === requiredPersonalFields.length && !creatingPersonal;
+  const canSubmitPersonal =
+    canRegisterPersonal &&
+    requiredPersonalCompleted === requiredPersonalFields.length &&
+    newPersonalPhoneLooksValid &&
+    !creatingPersonal;
   const maxFechaIngreso = getTodayDateInput();
   const equiposOrdenados = useMemo(
     () => [...equipos].sort((a, b) => a.ordenPdf - b.ordenPdf || a.nombre.localeCompare(b.nombre, "es")),
@@ -302,12 +302,18 @@ export default function Home() {
     return auditoriaFiltrada.slice(start, start + auditPageSize);
   }, [auditoriaFiltrada, auditPageSafe, auditPageSize]);
   const equiposActivosEnPantalla = useMemo(() => {
-    if (!dragOrderEquipoIds) return equiposActivos;
+    if (!equipoOrderDraftIds) return equiposActivos;
     const activeById = new Map(equiposActivos.map((item) => [item.itemId, item]));
-    return dragOrderEquipoIds
+    return equipoOrderDraftIds
       .map((itemId) => activeById.get(itemId))
       .filter((item): item is Equipo => item !== undefined);
-  }, [equiposActivos, dragOrderEquipoIds]);
+  }, [equiposActivos, equipoOrderDraftIds]);
+  const hasEquipoOrderDraftChanges = useMemo(() => {
+    if (!equipoOrderDraftIds) return false;
+    const currentActiveIds = equiposActivos.map((item) => item.itemId);
+    if (equipoOrderDraftIds.length !== currentActiveIds.length) return true;
+    return equipoOrderDraftIds.some((itemId, index) => itemId !== currentActiveIds[index]);
+  }, [equiposActivos, equipoOrderDraftIds]);
   const personalOrdenado = useMemo(() => [...personal].sort(comparePersonalByHierarchy), [personal]);
   const searchCedulaDigits = normalizeCi(searchCedula.trim());
   const searchNombresText = normalizeSearchTerm(searchNombres);
@@ -447,48 +453,13 @@ export default function Home() {
   }, [currentUser, status]);
 
   useEffect(() => {
-    if (!dragOrderEquipoIds) return;
+    if (!equipoOrderDraftIds) return;
     const currentActiveIds = new Set(equiposActivos.map((item) => item.itemId));
-    const dragStateIsValid =
-      dragOrderEquipoIds.length === equiposActivos.length && dragOrderEquipoIds.every((itemId) => currentActiveIds.has(itemId));
-    if (dragStateIsValid) return;
-    setDraggedEquipoId(null);
-    setDragOrderEquipoIds(null);
-    draggedEquipoIdRef.current = null;
-    dragOrderEquipoIdsRef.current = null;
-  }, [dragOrderEquipoIds, equiposActivos]);
-
-  useLayoutEffect(() => {
-    const nextRects = new Map<string, DOMRect>();
-
-    for (const equipo of equiposActivosEnPantalla) {
-      const node = equipoCardRefs.current.get(equipo.itemId);
-      if (!node) continue;
-
-      const nextRect = node.getBoundingClientRect();
-      nextRects.set(equipo.itemId, nextRect);
-
-      const previousRect = previousEquipoRectsRef.current.get(equipo.itemId);
-      if (!previousRect) continue;
-
-      const deltaX = previousRect.left - nextRect.left;
-      const deltaY = previousRect.top - nextRect.top;
-      if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) continue;
-
-      node.animate(
-        [
-          { transform: `translate(${deltaX}px, ${deltaY}px) scale(0.985)` },
-          { transform: "translate(0px, 0px) scale(1)" },
-        ],
-        {
-          duration: draggedEquipoId ? 220 : 320,
-          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-        },
-      );
-    }
-
-    previousEquipoRectsRef.current = nextRects;
-  }, [equiposActivosEnPantalla, draggedEquipoId]);
+    const draftIsValid =
+      equipoOrderDraftIds.length === equiposActivos.length && equipoOrderDraftIds.every((itemId) => currentActiveIds.has(itemId));
+    if (draftIsValid) return;
+    setEquipoOrderDraftIds(null);
+  }, [equipoOrderDraftIds, equiposActivos]);
 
   useEffect(() => {
     if (!showConfigViews) return;
@@ -543,12 +514,7 @@ export default function Home() {
     setPersonalPageSize(25);
     setAuditPage(1);
     setAuditPageSize(25);
-    setDraggedEquipoId(null);
-    setDragOrderEquipoIds(null);
-    draggedEquipoIdRef.current = null;
-    dragOrderEquipoIdsRef.current = null;
-    equipoCardRefs.current.clear();
-    previousEquipoRectsRef.current.clear();
+    setEquipoOrderDraftIds(null);
   }
   useEffect(() => {
     if (activeView !== "hoja_matrix") return;
@@ -835,6 +801,7 @@ export default function Home() {
       try {
         await updateMultipleItemOrdersHandler(updates, {
           onSuccess: async () => {
+            setEquipoOrderDraftIds(null);
             setStatus("Orden de PDF actualizado.");
             await loadData();
           },
@@ -846,67 +813,47 @@ export default function Home() {
     },
     [canWrite, equiposActivos, loadData],
   );
-
-  function startEquipoDrag(itemId: string, event: ReactPointerEvent<HTMLButtonElement>) {
-    if (!canWrite) {
-      setStatus("No tienes permisos para editar.");
-      return;
-    }
-
-    event.preventDefault();
-    const orderedIds = equiposActivos.map((item) => item.itemId);
-    if (!orderedIds.includes(itemId)) return;
-
-    setDraggedEquipoId(itemId);
-    setDragOrderEquipoIds(orderedIds);
-    draggedEquipoIdRef.current = itemId;
-    dragOrderEquipoIdsRef.current = orderedIds;
-  }
-
-  useEffect(() => {
-    if (!draggedEquipoId) return;
-
-    const handlePointerMove = (event: PointerEvent) => {
-      const target = document.elementFromPoint(event.clientX, event.clientY);
-      if (!(target instanceof HTMLElement)) return;
-      const targetCard = target.closest<HTMLElement>("[data-equipo-drag-id]");
-      const targetEquipoId = targetCard?.dataset.equipoDragId;
-      const currentDraggedEquipoId = draggedEquipoIdRef.current;
-      const currentOrder = dragOrderEquipoIdsRef.current;
-
-      if (!targetEquipoId || !currentDraggedEquipoId || !currentOrder) return;
-
-      const currentIndex = currentOrder.indexOf(currentDraggedEquipoId);
-      const targetIndex = currentOrder.indexOf(targetEquipoId);
-      if (currentIndex < 0 || targetIndex < 0 || currentIndex === targetIndex) return;
-
-      const nextOrder = moveIdInOrder(currentOrder, currentIndex, targetIndex);
-      dragOrderEquipoIdsRef.current = nextOrder;
-      setDragOrderEquipoIds(nextOrder);
-    };
-
-    const finishDrag = () => {
-      const finalOrder = dragOrderEquipoIdsRef.current;
-      setDraggedEquipoId(null);
-      setDragOrderEquipoIds(null);
-      draggedEquipoIdRef.current = null;
-      dragOrderEquipoIdsRef.current = null;
-
-      if (finalOrder) {
-        void saveActiveEquiposOrder(finalOrder);
+  const updateEquipoOrderDraft = useCallback(
+    (updater: (currentOrder: string[]) => string[]) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para editar.");
+        return;
       }
-    };
 
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", finishDrag);
-    window.addEventListener("pointercancel", finishDrag);
+      setEquipoOrderDraftIds((currentDraft) => {
+        const baseOrder = currentDraft ?? equiposActivos.map((item) => item.itemId);
+        return updater(baseOrder);
+      });
+    },
+    [canWrite, equiposActivos],
+  );
 
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", finishDrag);
-      window.removeEventListener("pointercancel", finishDrag);
-    };
-  }, [draggedEquipoId, saveActiveEquiposOrder]);
+  const moveEquipoInDraft = useCallback(
+    (itemId: string, direction: "up" | "down") => {
+      updateEquipoOrderDraft((currentOrder) => {
+        const currentIndex = currentOrder.indexOf(itemId);
+        if (currentIndex < 0) return currentOrder;
+        const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+        if (targetIndex < 0 || targetIndex >= currentOrder.length) return currentOrder;
+        return moveIdInOrder(currentOrder, currentIndex, targetIndex);
+      });
+    },
+    [updateEquipoOrderDraft],
+  );
+
+  const setEquipoDraftPosition = useCallback(
+    (itemId: string, nextPosition: number) => {
+      updateEquipoOrderDraft((currentOrder) => {
+        const currentIndex = currentOrder.indexOf(itemId);
+        const targetIndex = nextPosition - 1;
+        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentOrder.length || currentIndex === targetIndex) {
+          return currentOrder;
+        }
+        return moveIdInOrder(currentOrder, currentIndex, targetIndex);
+      });
+    },
+    [updateEquipoOrderDraft],
+  );
 
   const deleteEquipo = useCallback(
     (itemId: string) => {
@@ -954,6 +901,10 @@ export default function Home() {
         setStatus("CI uruguaya invalida. Revisa digito verificador.");
         return;
       }
+      if (!newPersonalPhoneLooksValid) {
+        setStatus("El celular de contacto debe tener formato uruguayo valido.");
+        return;
+      }
 
       setCreatingPersonal(true);
       try {
@@ -975,7 +926,7 @@ export default function Home() {
         setCreatingPersonal(false);
       }
     },
-    [canRegisterPersonal, ciAlreadyExists, creatingPersonal, newPersonal, loadData],
+    [canRegisterPersonal, ciAlreadyExists, creatingPersonal, newPersonal, newPersonalPhoneLooksValid, loadData],
   );
 
   const updateNewPersonalField = useCallback((field: keyof PersonalForm, value: string) => {
@@ -986,6 +937,10 @@ export default function Home() {
     async (ci: string) => {
       if (!canWrite) {
         setStatus("No tienes permisos para editar.");
+        return;
+      }
+      if (editPersonal.telefonoContacto.trim() !== "" && !isValidUruguayanMobileNumber(editPersonal.telefonoContacto)) {
+        setStatus("El celular de contacto debe tener formato uruguayo valido.");
         return;
       }
       try {
@@ -1932,9 +1887,14 @@ export default function Home() {
 
   // Las funciones de auditería se importan directamente desde lib/audit-helpers
 
-  function renderEquipoCard(equipo: Equipo, options?: { draggableInActiveList?: boolean }) {
-    const draggableInActiveList = options?.draggableInActiveList === true;
-    const isDraggingThisItem = draggedEquipoId === equipo.itemId;
+  function renderEquipoCard(
+    equipo: Equipo,
+    options?: { reorderableInActiveList?: boolean; orderIndex?: number; orderCount?: number },
+  ) {
+    const reorderableInActiveList = options?.reorderableInActiveList === true;
+    const orderIndex = options?.orderIndex ?? -1;
+    const orderCount = options?.orderCount ?? 0;
+    const currentOrderLabel = reorderableInActiveList && orderIndex >= 0 ? orderIndex + 1 : equipo.ordenPdf;
     const updateEditEquipoCodigo = (index: number, key: keyof EquipoCodigoForm, value: string) => {
       setEditEquipo((prev) => ({
         ...prev,
@@ -1959,20 +1919,7 @@ export default function Home() {
     return (
       <div
         key={equipo.itemId}
-        ref={(node) => {
-          if (!draggableInActiveList) return;
-          if (node) {
-            equipoCardRefs.current.set(equipo.itemId, node);
-            return;
-          }
-          equipoCardRefs.current.delete(equipo.itemId);
-        }}
-        data-equipo-drag-id={draggableInActiveList ? equipo.itemId : undefined}
-        className={`rounded-2xl border bg-white/95 p-4 shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-300 ease-out ${
-          isDraggingThisItem
-            ? "border-lime-400 bg-lime-50/80 shadow-xl shadow-lime-950/15 ring-1 ring-lime-300/80 -translate-y-1 scale-[1.01]"
-            : "border-stone-200 hover:-translate-y-0.5 hover:shadow-md"
-        }`}
+        className="rounded-2xl border border-stone-200 bg-white/95 p-4 shadow-sm transition-[box-shadow,border-color,background-color] duration-200 hover:shadow-md"
       >
         {editEquipoId === equipo.itemId ? (
           <div className="space-y-3">
@@ -2073,7 +2020,9 @@ export default function Home() {
                   {equipo.activo ? "Activo" : "Inactivo"}
                 </span>
               </div>
-              <p className="text-xs text-stone-500 mt-1">Orden PDF: {equipo.ordenPdf}</p>
+              <p className="text-xs text-stone-500 mt-1">
+                {reorderableInActiveList ? `Posicion actual en hoja: ${currentOrderLabel}` : `Orden PDF: ${equipo.ordenPdf}`}
+              </p>
               {equipo.codigos.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {equipo.codigos.map((codigo) => (
@@ -2091,28 +2040,51 @@ export default function Home() {
             </div>
 
             <div className="flex flex-wrap gap-2 items-center">
-              {draggableInActiveList ? (
-                <button
-                  type="button"
-                  onPointerDown={(event) => startEquipoDrag(equipo.itemId, event)}
-                  disabled={!canWrite}
-                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200 touch-none disabled:opacity-50 ${
-                    isDraggingThisItem
-                      ? "bg-lime-700 text-white shadow-lg shadow-lime-950/20"
-                      : "bg-stone-200 text-stone-700 hover:bg-stone-300 active:bg-stone-400"
-                  }`}
-                  title="Arrastra para reordenar"
-                >
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                    <circle cx="9" cy="5" r="1.5" />
-                    <circle cx="9" cy="12" r="1.5" />
-                    <circle cx="9" cy="19" r="1.5" />
-                    <circle cx="15" cy="5" r="1.5" />
-                    <circle cx="15" cy="12" r="1.5" />
-                    <circle cx="15" cy="19" r="1.5" />
-                  </svg>
-                  Reordenar
-                </button>
+              {reorderableInActiveList ? (
+                <div className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-stone-50 px-2 py-2">
+                  <span className="inline-flex min-w-8 items-center justify-center rounded-xl bg-stone-900 px-2 py-1 text-xs font-semibold text-white">
+                    {currentOrderLabel}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveEquipoInDraft(equipo.itemId, "up")}
+                      disabled={!canWrite || orderIndex <= 0}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-300 bg-white text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      title="Subir una posicion"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveEquipoInDraft(equipo.itemId, "down")}
+                      disabled={!canWrite || orderIndex < 0 || orderIndex >= orderCount - 1}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-300 bg-white text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      title="Bajar una posicion"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                  <label className="flex items-center gap-2 rounded-xl bg-white px-2 py-1 text-xs text-stone-600">
+                    <span>Ir a</span>
+                    <select
+                      value={currentOrderLabel}
+                      onChange={(event) => setEquipoDraftPosition(equipo.itemId, Number(event.target.value))}
+                      disabled={!canWrite}
+                      className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 outline-none"
+                    >
+                      {Array.from({ length: orderCount }, (_, index) => index + 1).map((position) => (
+                        <option key={`${equipo.itemId}-position-${position}`} value={position}>
+                          {position}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               ) : null}
 
                 <ActionMenu
@@ -2287,7 +2259,7 @@ export default function Home() {
           equiposActivos={equiposActivos}
           equiposInactivos={equiposInactivos}
           equiposActivosEnPantalla={equiposActivosEnPantalla}
-          draggedEquipoId={draggedEquipoId}
+          hasEquipoOrderDraftChanges={hasEquipoOrderDraftChanges}
           usuarios={usuarios}
           newGrado={newGrado}
           newNombre={newNombre}
@@ -2335,7 +2307,11 @@ export default function Home() {
           onUpdateEquipo={(itemId) => void updateEquipo(itemId)}
           onToggleEquipoActivo={(item) => void toggleEquipoActivo(item)}
           onDeleteEquipo={(itemId) => void deleteEquipo(itemId)}
-          onStartEquipoDrag={() => {}}
+          onSaveEquipoOrder={() => {
+            if (!equipoOrderDraftIds) return;
+            void saveActiveEquiposOrder(equipoOrderDraftIds);
+          }}
+          onResetEquipoOrderDraft={() => setEquipoOrderDraftIds(null)}
           renderEquipoCard={renderEquipoCard}
           onNewGradoChange={setNewGrado}
           onNewNombreChange={setNewNombre}

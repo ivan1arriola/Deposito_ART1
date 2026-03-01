@@ -5,6 +5,7 @@ import { logAudit } from "@/lib/audit";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
+import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 
 type PersonalPayload = {
   ci: string;
@@ -12,6 +13,7 @@ type PersonalPayload = {
   apellido2?: string;
   nombre1: string;
   nombre2?: string;
+  telefonoContacto?: string;
   fechaIngreso?: string;
   rangoId: number | string;
   bateriaId?: number | string | null;
@@ -37,11 +39,13 @@ function isValidPayload(body: unknown): body is PersonalPayload {
 
   const rangoId = Number(candidate.rangoId);
   if (!Number.isInteger(rangoId) || rangoId <= 0) return false;
+  if (candidate.telefonoContacto !== undefined && typeof candidate.telefonoContacto !== "string") return false;
 
   const bateriaRaw = candidate.bateriaId;
   if (bateriaRaw === undefined || bateriaRaw === null || String(bateriaRaw).trim() === "") return true;
   const bateriaId = Number(bateriaRaw);
-  return Number.isInteger(bateriaId) && bateriaId > 0;
+  if (!Number.isInteger(bateriaId) || bateriaId <= 0) return false;
+  return true;
 }
 
 function normalizeNullableText(value: string | undefined) {
@@ -136,6 +140,10 @@ export async function POST(req: Request) {
     );
   }
   const bateriaId = parseOptionalBateriaId(body.bateriaId);
+  const telefonoContacto = normalizeOptionalUruguayanMobileNumber(body.telefonoContacto);
+  if ((body.telefonoContacto?.trim() ?? "") !== "" && !telefonoContacto) {
+    return NextResponse.json({ error: "telefonoContacto debe ser un celular uruguayo valido." }, { status: 400 });
+  }
 
   const fechaIngresoRaw = body.fechaIngreso?.trim();
   const fechaIngreso = fechaIngresoRaw ? new Date(fechaIngresoRaw) : null;
@@ -179,6 +187,7 @@ export async function POST(req: Request) {
           apellido2: normalizeNullableText(body.apellido2),
           nombre1: body.nombre1.trim(),
           nombre2: normalizeNullableText(body.nombre2),
+          telefonoContacto,
           fechaIngreso,
           rangoId: Number(body.rangoId),
           bateriaId,
@@ -217,6 +226,7 @@ export async function POST(req: Request) {
         ci: created?.ci ?? null,
         rangoId: Number(body.rangoId),
         bateriaId,
+        telefonoContacto,
       },
     });
 

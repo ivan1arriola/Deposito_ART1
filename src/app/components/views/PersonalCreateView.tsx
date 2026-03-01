@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
+import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import type { Bateria, Personal, Rango } from "@/types/entities";
 import type { PersonalForm } from "@/types/forms";
 
@@ -47,6 +48,9 @@ export function PersonalCreateView({
   onSubmit,
   onPersonalChange,
 }: PersonalCreateViewProps) {
+  const telefonoContactoLooksValid =
+    newPersonal.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(newPersonal.telefonoContacto);
+
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
@@ -138,6 +142,20 @@ export function PersonalCreateView({
                       placeholder="Segundo nombre"
                       className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                     />
+                  </label>
+
+                  <label className="sm:col-span-2 xl:col-span-4">
+                    <span className="block text-xs font-medium text-stone-700">Celular de contacto</span>
+                    <input
+                      value={newPersonal.telefonoContacto}
+                      onChange={(event) => onPersonalChange("telefonoContacto", event.target.value)}
+                      placeholder="099123456 o +59899123456"
+                      inputMode="tel"
+                      className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${telefonoContactoLooksValid ? "border-stone-300 bg-white" : "border-rose-600 bg-rose-50"}`}
+                    />
+                    <span className={`mt-1 block text-[11px] ${telefonoContactoLooksValid ? "text-stone-500" : "font-medium text-rose-700"}`}>
+                      {telefonoContactoLooksValid ? "Opcional. Se guarda normalizado como celular uruguayo." : "Ingresa un celular uruguayo valido."}
+                    </span>
                   </label>
                 </div>
               </fieldset>
@@ -244,6 +262,7 @@ export function PersonalCreateView({
                   <p>{`Apellido 1: ${requiredPersonalFields[1] ? "Completo" : "Falta"}`}</p>
                   <p>{`Nombre 1: ${requiredPersonalFields[2] ? "Completo" : "Falta"}`}</p>
                   <p>{`Grado: ${requiredPersonalFields[3] ? "Seleccionado" : "Falta"}`}</p>
+                  <p>{`Celular: ${newPersonal.telefonoContacto.trim() === "" ? "Opcional" : telefonoContactoLooksValid ? "Valido" : "Invalido"}`}</p>
                   <p>{`Batería: ${Number(newPersonal.bateriaId) > 0 ? "Completa" : "Pendiente"}`}</p>
                   <p>{`Fecha de ingreso: ${newPersonal.fechaIngreso ? "Completa" : "Pendiente"}`}</p>
                 </div>

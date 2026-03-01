@@ -141,6 +141,7 @@ model Personal {
   apellido2     String?
   nombre1       String
   nombre2       String?
+  telefonoContacto String?      @map("telefono_contacto")
   fechaIngreso  DateTime?       @map("fecha_ingreso") @db.Date
   rangoId       Int             @map("grado_id") @db.SmallInt
   bateriaId     Int?            @map("bateria_id") @db.SmallInt

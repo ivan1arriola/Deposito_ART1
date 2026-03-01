@@ -1,10 +1,11 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { apellidosLabel, nombresLabel, tallasEntries } from "@/lib/formatters";
 import { tallasMap } from "@/lib/form-mappers";
+import { formatUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import type { Personal } from "@/types/entities";
-import type { ReactNode } from "react";
 import { PersonalActions } from "./PersonalActions";
 import { PersonalTallasPanel } from "./PersonalTallasPanel";
 
@@ -58,7 +59,12 @@ export function PersonalCardsMobile({
             <p className="text-sm text-stone-900">
               <span className="font-semibold">Nombres:</span> {nombresLabel(persona)}
             </p>
-            <p className="mt-1 text-xs text-stone-600">{persona.bateria?.nombre ?? "Sin batería"}</p>
+            {persona.telefonoContacto ? (
+              <p className="text-sm text-stone-900">
+                <span className="font-semibold">Contacto:</span> {formatUruguayanMobileNumber(persona.telefonoContacto)}
+              </p>
+            ) : null}
+            <p className="mt-1 text-xs text-stone-600">{persona.bateria?.nombre ?? "Sin baterÃ­a"}</p>
 
             <div className="mt-2">
               <PersonalActions

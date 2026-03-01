@@ -4,12 +4,14 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
+import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 
 type PersonalUpdatePayload = {
   apellido1: string;
   apellido2?: string;
   nombre1: string;
   nombre2?: string;
+  telefonoContacto?: string;
   fechaIngreso?: string;
   rangoId: number | string;
   bateriaId?: number | string | null;
@@ -36,6 +38,7 @@ function isValidPayload(body: unknown): body is PersonalUpdatePayload {
   if (!Number.isInteger(rangoId) || rangoId <= 0) return false;
 
   const bateriaRaw = candidate.bateriaId;
+  if (candidate.telefonoContacto !== undefined && typeof candidate.telefonoContacto !== "string") return false;
   if (bateriaRaw === undefined || bateriaRaw === null || String(bateriaRaw).trim() === "") return true;
   const bateriaId = Number(bateriaRaw);
   return Number.isInteger(bateriaId) && bateriaId > 0;
@@ -109,6 +112,10 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
     );
   }
   const bateriaId = parseOptionalBateriaId(body.bateriaId);
+  const telefonoContacto = normalizeOptionalUruguayanMobileNumber(body.telefonoContacto);
+  if ((body.telefonoContacto?.trim() ?? "") !== "" && !telefonoContacto) {
+    return NextResponse.json({ error: "telefonoContacto debe ser un celular uruguayo valido." }, { status: 400 });
+  }
 
   const fechaIngresoRaw = body.fechaIngreso?.trim();
   const fechaIngreso = fechaIngresoRaw ? new Date(fechaIngresoRaw) : null;
@@ -151,6 +158,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
           apellido2: normalizeNullableText(body.apellido2),
           nombre1: body.nombre1.trim(),
           nombre2: normalizeNullableText(body.nombre2),
+          telefonoContacto,
           fechaIngreso,
           rangoId: Number(body.rangoId),
           bateriaId,
@@ -193,6 +201,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         ci: ciDecoded,
         rangoId: Number(body.rangoId),
         bateriaId,
+        telefonoContacto,
       },
     });
 

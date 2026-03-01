@@ -42,9 +42,11 @@ export function PersonalActions({
         onClick={onToggleEdit}
       />
       <SmallActionButton text="Borrar" tone="delete" className={compact ? "w-full text-[11px] leading-tight" : undefined} onClick={onDelete} />
-      <button type="button" onClick={onToggleTallas} className={`${secondaryClass} ${compact ? "border border-stone-300 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50" : "bg-stone-600 hover:bg-stone-700"}`}>
-        {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
-      </button>
+      {!compact ? (
+        <button type="button" onClick={onToggleTallas} className={`${secondaryClass} bg-stone-600 hover:bg-stone-700`}>
+          {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
+        </button>
+      ) : null}
       <button type="button" onClick={onEntrega} className={`${secondaryClass} bg-emerald-700 hover:bg-emerald-800`}>
         Entrega
       </button>
