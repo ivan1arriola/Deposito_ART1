@@ -8,6 +8,9 @@ import { hasPermission, type Permission } from "@/lib/permissions";
 
 export type AuthUser = {
   usuarioId: string;
+  grado: string;
+  nombre: string;
+  apellido: string;
   username: string;
   rol: UserRole;
   activo: boolean;
@@ -33,6 +36,9 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
 
   return {
     usuarioId: usuario.usuarioId,
+    grado: usuario.grado,
+    nombre: usuario.nombre,
+    apellido: usuario.apellido,
     username: usuario.username,
     rol: usuario.rol,
     activo: usuario.activo,

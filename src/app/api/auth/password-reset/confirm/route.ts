@@ -5,7 +5,7 @@ import { logAudit } from "@/lib/audit";
 import { markResetCodeUsed, verifyResetCode } from "@/lib/password-reset";
 
 type ResetConfirmPayload = {
-  usernameOrEmail: string;
+  username: string;
   code: string;
   newPassword: string;
 };
@@ -14,8 +14,8 @@ function isValidPayload(body: unknown): body is ResetConfirmPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
   return (
-    typeof candidate.usernameOrEmail === "string" &&
-    candidate.usernameOrEmail.trim() !== "" &&
+    typeof candidate.username === "string" &&
+    candidate.username.trim() !== "" &&
     typeof candidate.code === "string" &&
     candidate.code.trim() !== "" &&
     typeof candidate.newPassword === "string" &&
@@ -29,16 +29,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Datos invalidos." }, { status: 400 });
   }
 
-  const query = body.usernameOrEmail.trim();
+  const query = body.username.trim();
   const code = body.code.trim();
 
   try {
     const usuarios = await prisma.usuario.findMany({
       where: {
         activo: true,
-        OR: [{ username: query }, { email: query }],
+        username: query,
       },
-      select: { usuarioId: true, username: true, email: true },
+      select: {
+        usuarioId: true,
+        username: true,
+        grado: true,
+        nombre: true,
+        apellido: true,
+        mailReferencia: true,
+      },
     });
 
     for (const usuario of usuarios) {
@@ -57,7 +64,13 @@ export async function POST(request: Request) {
         accion: "PASSWORD_RESET",
         entidad: "AUTH",
         entidadId: usuario.usuarioId,
-        detalle: { username: usuario.username, email: usuario.email },
+        detalle: {
+          username: usuario.username,
+          grado: usuario.grado,
+          nombre: usuario.nombre,
+          apellido: usuario.apellido,
+          mailReferencia: usuario.mailReferencia,
+        },
       });
 
       return NextResponse.json({ ok: true });
@@ -65,6 +78,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: "Codigo invalido o expirado." }, { status: 400 });
   } catch {
-    return NextResponse.json({ error: "No se pudo actualizar la contraseña." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo actualizar la contrasena." }, { status: 500 });
   }
 }

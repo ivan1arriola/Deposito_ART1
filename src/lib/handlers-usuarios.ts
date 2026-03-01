@@ -10,17 +10,32 @@ interface CallbackProps {
   onError?: (message: string) => void;
 }
 
+export type UsuarioProfileInput = {
+  grado: string;
+  nombre: string;
+  apellido: string;
+  usuario: string;
+  mailReferencia: string;
+};
+
 export async function createUsuarioHandler(
-  username: string,
-  password: string,
-  rol: Role,
-  callbacks: CallbackProps
+  input: UsuarioProfileInput & { password: string; rol: Role },
+  callbacks: CallbackProps,
 ) {
   try {
     await api("/api/usuarios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, rol, activo: true }),
+      body: JSON.stringify({
+        grado: input.grado,
+        nombre: input.nombre,
+        apellido: input.apellido,
+        usuario: input.usuario,
+        password: input.password,
+        mailReferencia: input.mailReferencia,
+        rol: input.rol,
+        activo: true,
+      }),
     });
     callbacks.onSuccess?.();
   } catch (error) {
@@ -30,10 +45,35 @@ export async function createUsuarioHandler(
   }
 }
 
+export async function updateUsuarioProfileHandler(
+  usuarioId: string,
+  input: UsuarioProfileInput,
+  callbacks: CallbackProps,
+) {
+  try {
+    await api(`/api/usuarios/${usuarioId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grado: input.grado,
+        nombre: input.nombre,
+        apellido: input.apellido,
+        usuario: input.usuario,
+        mailReferencia: input.mailReferencia,
+      }),
+    });
+    callbacks.onSuccess?.();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo actualizar el usuario.";
+    callbacks.onError?.(message);
+    throw error;
+  }
+}
+
 export async function changeUserRoleHandler(
   usuarioId: string,
   rol: Role,
-  callbacks: CallbackProps
+  callbacks: CallbackProps,
 ) {
   try {
     await api(`/api/usuarios/${usuarioId}`, {
@@ -52,7 +92,7 @@ export async function changeUserRoleHandler(
 export async function changeUserPasswordHandler(
   usuarioId: string,
   password: string,
-  callbacks: CallbackProps
+  callbacks: CallbackProps,
 ) {
   try {
     await api(`/api/usuarios/${usuarioId}`, {
@@ -62,26 +102,7 @@ export async function changeUserPasswordHandler(
     });
     callbacks.onSuccess?.();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar la contraseña.";
-    callbacks.onError?.(message);
-    throw error;
-  }
-}
-
-export async function changeUsernameHandler(
-  usuarioId: string,
-  username: string,
-  callbacks: CallbackProps
-) {
-  try {
-    await api(`/api/usuarios/${usuarioId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username }),
-    });
-    callbacks.onSuccess?.();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar el nombre de usuario.";
+    const message = error instanceof Error ? error.message : "No se pudo actualizar la contrasena.";
     callbacks.onError?.(message);
     throw error;
   }
@@ -90,7 +111,7 @@ export async function changeUsernameHandler(
 export async function toggleUserActiveHandler(
   usuarioId: string,
   newActive: boolean,
-  callbacks: CallbackProps
+  callbacks: CallbackProps,
 ) {
   try {
     await api(`/api/usuarios/${usuarioId}`, {
@@ -108,7 +129,7 @@ export async function toggleUserActiveHandler(
 
 export async function deleteUsuarioHandler(
   usuarioId: string,
-  callbacks: CallbackProps
+  callbacks: CallbackProps,
 ) {
   try {
     await api(`/api/usuarios/${usuarioId}`, { method: "DELETE" });
@@ -125,7 +146,7 @@ export async function saveFirmaConfigHandler(
   encargadoNombre: string,
   oficialRango: string,
   oficialNombre: string,
-  callbacks: CallbackProps & { onSave: (config: unknown) => void }
+  callbacks: CallbackProps & { onSave: (config: unknown) => void },
 ) {
   try {
     const updated = await api("/api/firma-config", {

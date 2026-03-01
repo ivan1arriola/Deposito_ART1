@@ -19,11 +19,19 @@ export type Bateria = {
   orden: number;
 };
 
+export type EquipoCodigo = {
+  itemCodigoId: string;
+  codigo: string;
+  aclaracion: string | null;
+  orden: number;
+};
+
 export type Equipo = {
   itemId: string;
   nombre: string;
   activo: boolean;
   ordenPdf: number;
+  codigos: EquipoCodigo[];
 };
 
 export type Item = Equipo;
@@ -57,6 +65,9 @@ export type PersonalObservacion = {
 
 export type CurrentUser = {
   usuarioId: string;
+  grado: string;
+  nombre: string;
+  apellido: string;
   username: string;
   rol: Role;
 };
@@ -71,7 +82,11 @@ export type FirmaConfig = {
 
 export type UsuarioAdmin = {
   usuarioId: string;
+  grado: string;
+  nombre: string;
+  apellido: string;
   username: string;
+  mailReferencia: string | null;
   rol: Role;
   activo: boolean;
   createdAt: string;

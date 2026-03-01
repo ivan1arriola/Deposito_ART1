@@ -55,7 +55,7 @@ function renderMovimientoDetalle(info: AuditDetailObject): ReactNode {
     const grado = asText(personal.grado);
     const bateria = asText(personal.bateria);
     const ci = asText(personal.ci);
-    const personalParts = [grado, nombre, ci ? `CI ${formatUruguayanCi(ci)}` : "", bateria ? `Bateria ${bateria}` : ""].filter(Boolean);
+    const personalParts = [grado, nombre, ci ? `CI ${formatUruguayanCi(ci)}` : "", bateria ? `Batería ${bateria}` : ""].filter(Boolean);
     if (personalParts.length > 0) {
       lines.push(buildLine("personal", "Personal", personalParts.join(" - ")));
     }
@@ -139,8 +139,8 @@ export function auditActionLabel(accion: string): string {
     CREATE: "Creo",
     UPDATE: "Actualizo",
     DELETE: "Elimino",
-    LOGIN: "Inicio sesion",
-    LOGOUT: "Cerro sesion",
+    LOGIN: "Inició sesión",
+    LOGOUT: "Cerró sesión",
   };
   return labels[accion] || accion;
 }

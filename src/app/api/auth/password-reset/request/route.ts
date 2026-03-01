@@ -5,13 +5,13 @@ import { getUserFromRequest } from "@/lib/auth";
 import { createResetCode } from "@/lib/password-reset";
 
 type ResetRequestPayload = {
-  usernameOrEmail: string;
+  username: string;
 };
 
 function isValidPayload(body: unknown): body is ResetRequestPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  return typeof candidate.usernameOrEmail === "string" && candidate.usernameOrEmail.trim() !== "";
+  return typeof candidate.username === "string" && candidate.username.trim() !== "";
 }
 
 export async function POST(request: Request) {
@@ -25,18 +25,26 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "username o email es obligatorio." }, { status: 400 });
+    return NextResponse.json({ error: "Usuario es obligatorio." }, { status: 400 });
   }
 
-  const query = body.usernameOrEmail.trim();
+  const query = body.username.trim();
 
   try {
     const usuario = await prisma.usuario.findFirst({
       where: {
         activo: true,
-        OR: [{ username: query }, { email: query }],
+        username: query,
       },
-      select: { usuarioId: true, username: true, email: true, rol: true },
+      select: {
+        usuarioId: true,
+        username: true,
+        grado: true,
+        nombre: true,
+        apellido: true,
+        mailReferencia: true,
+        rol: true,
+      },
     });
 
     if (usuario) {
@@ -49,7 +57,10 @@ export async function POST(request: Request) {
         detalle: {
           actorUsername: actor.username,
           username: usuario.username,
-          email: usuario.email,
+          grado: usuario.grado,
+          nombre: usuario.nombre,
+          apellido: usuario.apellido,
+          mailReferencia: usuario.mailReferencia,
           expiresAt,
           delivery: "DIRECT_CODE",
         },
@@ -65,6 +76,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, code: null, expiresAt: null, username: null });
   } catch {
-    return NextResponse.json({ error: "No se pudo generar el código." }, { status: 503 });
+    return NextResponse.json({ error: "No se pudo generar el codigo." }, { status: 503 });
   }
 }

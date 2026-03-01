@@ -224,9 +224,9 @@ export async function POST(req: Request) {
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2002") return NextResponse.json({ error: "La cedula ya existe." }, { status: 409 });
+      if (code === "P2002") return NextResponse.json({ error: "La cédula ya existe." }, { status: 409 });
       if (code === "P2003") {
-        return NextResponse.json({ error: "rangoId (grado del personal) o bateriaId invalido." }, { status: 400 });
+        return NextResponse.json({ error: "rangoId (grado del personal) o bateriaId inválido." }, { status: 400 });
       }
     }
 

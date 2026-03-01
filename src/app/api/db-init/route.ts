@@ -1,49 +1,54 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import { buildInternalUserEmail } from "@/lib/internal-user-email";
 
 /**
- * Endpoint para inicializar la base de datos con un usuario administrador por defecto
- * Se ejecuta una sola vez cuando no hay usuarios en el sistema
- * No requiere autenticación
+ * Endpoint para inicializar la base de datos con un usuario administrador por defecto.
+ * Se ejecuta una sola vez cuando no hay usuarios en el sistema.
+ * No requiere autenticación.
  */
 export async function POST() {
   try {
-    // Contar usuarios existentes
     const userCount = await prisma.usuario.count();
 
     if (userCount > 0) {
       return Response.json({ initialized: false, message: "Ya existe usuario en el sistema." }, { status: 200 });
     }
 
-    // Crear usuario administrador por defecto
     const defaultPassword = "Admin@123456";
     const passwordHash = await hashPassword(defaultPassword);
 
     const defaultUser = await prisma.usuario.create({
       data: {
+        grado: "S/D",
+        nombre: "Administrador",
+        apellido: "Sistema",
         username: "admin",
-        email: buildInternalUserEmail("admin"),
         passwordHash,
+        mailReferencia: null,
         rol: "ADMIN",
         activo: true,
       },
       select: {
         usuarioId: true,
+        grado: true,
+        nombre: true,
+        apellido: true,
         username: true,
         rol: true,
       },
     });
 
-    // Registrar en auditoría
     await logAudit({
       usuarioId: defaultUser.usuarioId,
       accion: "DB_INIT",
       entidad: "ADMIN",
       entidadId: defaultUser.usuarioId,
       detalle: {
-        mensaje: "Usuario administrador por defecto creado automáticamente",
+        mensaje: "Usuario administrador por defecto creado automaticamente",
+        grado: defaultUser.grado,
+        nombre: defaultUser.nombre,
+        apellido: defaultUser.apellido,
         username: defaultUser.username,
       },
     });
@@ -58,7 +63,7 @@ export async function POST() {
           password: defaultPassword,
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Error desconocido";
@@ -67,7 +72,7 @@ export async function POST() {
 }
 
 /**
- * Endpoint GET para verificar si la BD necesita inicialización
+ * Endpoint GET para verificar si la BD necesita inicialización.
  */
 export async function GET() {
   try {

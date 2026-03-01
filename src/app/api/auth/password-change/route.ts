@@ -27,13 +27,21 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
+    return NextResponse.json({ error: "Datos invalidos." }, { status: 400 });
   }
 
   try {
     const usuario = await prisma.usuario.findUnique({
       where: { usuarioId: user.usuarioId },
-      select: { usuarioId: true, username: true, email: true, passwordHash: true },
+      select: {
+        usuarioId: true,
+        username: true,
+        grado: true,
+        nombre: true,
+        apellido: true,
+        mailReferencia: true,
+        passwordHash: true,
+      },
     });
 
     if (!usuario) {
@@ -42,7 +50,7 @@ export async function POST(request: Request) {
 
     const ok = await verifyPassword(body.currentPassword, usuario.passwordHash);
     if (!ok) {
-      return NextResponse.json({ error: "Contraseña actual inválida." }, { status: 400 });
+      return NextResponse.json({ error: "Contrasena actual invalida." }, { status: 400 });
     }
 
     const passwordHash = await hashPassword(body.newPassword);
@@ -56,11 +64,17 @@ export async function POST(request: Request) {
       accion: "PASSWORD_CHANGE",
       entidad: "AUTH",
       entidadId: usuario.usuarioId,
-      detalle: { username: usuario.username, email: usuario.email },
+      detalle: {
+        username: usuario.username,
+        grado: usuario.grado,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        mailReferencia: usuario.mailReferencia,
+      },
     });
 
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "No se pudo actualizar la contraseña." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo actualizar la contrasena." }, { status: 500 });
   }
 }

@@ -9,15 +9,15 @@ export type FirmaConfig = {
 };
 
 const DEFAULT_FIRMA_CONFIG: FirmaConfig = {
-  encargadoRango: 'Sgto.',
-  encargadoNombre: 'Wilson Lara',
-  oficialRango: '-Tte.2º',
-  oficialNombre: 'Gerardo Otero',
+  encargadoRango: "Sgto.",
+  encargadoNombre: "Wilson Lara",
+  oficialRango: "-Tte.2º",
+  oficialNombre: "Gerardo Otero",
   updatedAt: null,
 };
 
-export const TEXTO_ENCARGADO = 'El Encargado del Deposito General del Grp. "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1.';
-export const TEXTO_OFICIAL = 'El Oficial de Administracion del Grp. "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1.';
+export const TEXTO_ENCARGADO = 'El Encargado del Depósito General del Grp. "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1.';
+export const TEXTO_OFICIAL = 'El Oficial de Administración del Grp. "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1.';
 
 type FirmaRow = {
   encargado_rango: string;
@@ -70,8 +70,8 @@ export async function getFirmaConfig(): Promise<FirmaConfig> {
   return fromRow(rows[0]);
 }
 
-export async function updateFirmaConfig(input: { 
-  encargadoRango: string; 
+export async function updateFirmaConfig(input: {
+  encargadoRango: string;
   encargadoNombre: string;
   oficialRango: string;
   oficialNombre: string;

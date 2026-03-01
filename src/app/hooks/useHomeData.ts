@@ -1,0 +1,241 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { checkDbInitHandler, initializeDatabaseHandler } from "@/lib/handlers-auth";
+import type {
+  AuditoriaRecord,
+  Bateria,
+  CurrentUser,
+  DbStatus,
+  Equipo,
+  FirmaConfig,
+  Personal,
+  Rango,
+  UsuarioAdmin,
+} from "@/types/entities";
+import type { HojaMatrixData } from "@/types/views";
+
+type UseHomeDataOptions = {
+  onStatusChange: (message: string) => void;
+};
+
+export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
+  const [loading, setLoading] = useState(true);
+  const [initMessage, setInitMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
+  const [showInitCredentials, setShowInitCredentials] = useState(false);
+  const [initCredentials, setInitCredentials] = useState<{ username: string; password: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [rangos, setRangos] = useState<Rango[]>([]);
+  const [baterias, setBaterias] = useState<Bateria[]>([]);
+  const [equipos, setEquipos] = useState<Equipo[]>([]);
+  const [personal, setPersonal] = useState<Personal[]>([]);
+  const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([]);
+  const [auditoria, setAuditoria] = useState<AuditoriaRecord[]>([]);
+  const [firmaConfig, setFirmaConfig] = useState<FirmaConfig | null>(null);
+  const [firmaConfigDraft, setFirmaConfigDraft] = useState({
+    encargadoRango: "",
+    encargadoNombre: "",
+    oficialRango: "",
+    oficialNombre: "",
+  });
+  const [firmaConfigLoading, setFirmaConfigLoading] = useState(false);
+  const [firmaConfigSaving, setFirmaConfigSaving] = useState(false);
+  const [firmaConfigError, setFirmaConfigError] = useState<string | null>(null);
+  const [movimientosTotal, setMovimientosTotal] = useState(0);
+  const [hojaMatrixData, setHojaMatrixData] = useState<HojaMatrixData | null>(null);
+  const [hojaMatrixLoading, setHojaMatrixLoading] = useState(false);
+  const [hojaMatrixError, setHojaMatrixError] = useState<string | null>(null);
+
+  const clearLoadedData = useCallback(() => {
+    setRangos([]);
+    setBaterias([]);
+    setEquipos([]);
+    setPersonal([]);
+    setUsuarios([]);
+    setAuditoria([]);
+    setFirmaConfig(null);
+    setFirmaConfigDraft({ encargadoRango: "", encargadoNombre: "", oficialRango: "", oficialNombre: "" });
+    setFirmaConfigLoading(false);
+    setFirmaConfigSaving(false);
+    setFirmaConfigError(null);
+    setMovimientosTotal(0);
+    setHojaMatrixData(null);
+    setHojaMatrixLoading(false);
+    setHojaMatrixError(null);
+  }, []);
+
+  const loadData = useCallback(
+    async (showSpinner = false) => {
+      if (showSpinner) setLoading(true);
+
+      try {
+        const me = await api<{ user: CurrentUser }>("/api/auth/me");
+        setCurrentUser(me.user);
+
+        await api<DbStatus>("/api/db-status");
+
+        const [rangosData, bateriasData, equiposData, personalData, movimientosSummary] = await Promise.all([
+          api<Rango[]>("/api/rangos"),
+          api<Bateria[]>("/api/baterias"),
+          api<Equipo[]>("/api/items"),
+          api<Personal[]>("/api/personal"),
+          api<{ total: number }>("/api/registros?summary=1").catch(() => ({ total: 0 })),
+        ]);
+
+        setRangos(rangosData);
+        setBaterias(bateriasData);
+        setEquipos(equiposData);
+        setPersonal(personalData);
+        setMovimientosTotal(movimientosSummary.total);
+
+        if (me.user.rol === "ADMIN") {
+          setFirmaConfigLoading(true);
+          const [usuariosData, auditoriaData, firmaConfigResult] = await Promise.all([
+            api<UsuarioAdmin[]>("/api/usuarios"),
+            api<AuditoriaRecord[]>("/api/auditoria?limit=200"),
+            api<FirmaConfig>("/api/firma-config")
+              .then((config) => ({ config, error: null as string | null }))
+              .catch((error: unknown) => ({
+                config: null,
+                error: error instanceof Error ? error.message : "No se pudo cargar la configuracion de firmas.",
+              })),
+          ]);
+          setUsuarios(usuariosData);
+          setAuditoria(auditoriaData);
+          setFirmaConfig(firmaConfigResult.config);
+          setFirmaConfigDraft({
+            encargadoRango: firmaConfigResult.config?.encargadoRango ?? "",
+            encargadoNombre: firmaConfigResult.config?.encargadoNombre ?? "",
+            oficialRango: firmaConfigResult.config?.oficialRango ?? "",
+            oficialNombre: firmaConfigResult.config?.oficialNombre ?? "",
+          });
+          setFirmaConfigError(firmaConfigResult.error);
+          setFirmaConfigLoading(false);
+        } else {
+          setUsuarios([]);
+          setAuditoria([]);
+          setFirmaConfig(null);
+          setFirmaConfigDraft({ encargadoRango: "", encargadoNombre: "", oficialRango: "", oficialNombre: "" });
+          setFirmaConfigLoading(false);
+          setFirmaConfigError(null);
+        }
+
+        setHojaMatrixData(null);
+        setHojaMatrixError(null);
+        onStatusChange("Datos actualizados.");
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "No se pudo cargar la informacion.";
+        if (message === "No autenticado.") {
+          setCurrentUser(null);
+          clearLoadedData();
+          onStatusChange("Ingresa tus credenciales.");
+          return;
+        }
+        if (message.toLowerCase().includes("base de datos")) {
+          clearLoadedData();
+          onStatusChange(`Error de base de datos: ${message}`);
+          return;
+        }
+        onStatusChange(message);
+      } finally {
+        setFirmaConfigLoading(false);
+        setLoading(false);
+      }
+    },
+    [clearLoadedData, onStatusChange],
+  );
+
+  const loadHojaMatrix = useCallback(async () => {
+    setHojaMatrixLoading(true);
+    setHojaMatrixError(null);
+    try {
+      const data = await api<HojaMatrixData>("/api/hoja-matrix");
+      setHojaMatrixData(data);
+    } catch (error: unknown) {
+      setHojaMatrixError(error instanceof Error ? error.message : "No se pudo cargar la Hoja Matriz.");
+    } finally {
+      setHojaMatrixLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const initDb = async () => {
+      try {
+        const status = await checkDbInitHandler();
+        if (status.needsInit) {
+          setInitMessage({ type: "info", text: "Inicializando base de datos..." });
+          await initializeDatabaseHandler({
+            onSuccess: (result: unknown) => {
+              const data = result as {
+                initialized: boolean;
+                message: string;
+                credentials?: { username: string; password: string };
+              };
+              if (data.credentials) {
+                setInitCredentials(data.credentials);
+              }
+              setInitMessage({ type: "success", text: data.message });
+              setShowInitCredentials(true);
+            },
+            onError: (message) => {
+              setInitMessage({ type: "info", text: `Error al inicializar: ${message}` });
+            },
+          });
+        }
+      } catch {
+        // La base ya estaba inicializada o el chequeo no aplica.
+      }
+    };
+
+    void initDb();
+  }, []);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      void loadData(true);
+    }, 0);
+    return () => window.clearTimeout(timerId);
+  }, [loadData]);
+
+  return {
+    loading,
+    setLoading,
+    initMessage,
+    showInitCredentials,
+    setShowInitCredentials,
+    initCredentials,
+    currentUser,
+    setCurrentUser,
+    rangos,
+    baterias,
+    equipos,
+    personal,
+    usuarios,
+    auditoria,
+    firmaConfig,
+    firmaConfigDraft,
+    setFirmaConfigDraft,
+    firmaConfigLoading,
+    firmaConfigSaving,
+    setFirmaConfigSaving,
+    firmaConfigError,
+    setFirmaConfigError,
+    movimientosTotal,
+    hojaMatrixData,
+    setHojaMatrixData,
+    hojaMatrixLoading,
+    hojaMatrixError,
+    setHojaMatrixError,
+    loadData,
+    loadHojaMatrix,
+    clearLoadedData,
+    setRangos,
+    setBaterias,
+    setEquipos,
+    setPersonal,
+    setUsuarios,
+    setAuditoria,
+    setFirmaConfig,
+  };
+}

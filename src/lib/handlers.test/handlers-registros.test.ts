@@ -128,7 +128,7 @@ describe("Handlers de Registros", () => {
       }
 
       expect(onError).toHaveBeenCalledWith(
-        "No puedes repetir items en un mismo movimiento."
+        "No puedes repetir equipos en un mismo movimiento."
       );
     });
 

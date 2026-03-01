@@ -24,9 +24,15 @@ export type EquipoForm = {
   nombre: string;
   activo: boolean;
   ordenPdf: number;
+  codigos: EquipoCodigoForm[];
 };
 
 export type ItemForm = EquipoForm;
+
+export type EquipoCodigoForm = {
+  codigo: string;
+  aclaracion: string;
+};
 
 export type RegistroDraftEquipo = {
   itemId: string;
@@ -68,6 +74,7 @@ export const EMPTY_EQUIPO_FORM: EquipoForm = {
   nombre: "",
   activo: true,
   ordenPdf: 1,
+  codigos: [],
 };
 
 export const EMPTY_ITEM_FORM: ItemForm = EMPTY_EQUIPO_FORM;

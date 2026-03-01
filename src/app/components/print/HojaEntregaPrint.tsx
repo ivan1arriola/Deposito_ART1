@@ -322,7 +322,7 @@ export function HojaEntregaPrintSheet({
         <tbody>
           <tr>
             <td colSpan={15} className="center bold" style={{ fontSize: "9px" }}>
-              Grupo &quot;Brig.Gral.Manuel Oribe&quot; de Artilleria 105mm No.1.-
+              Grupo &quot;Brig.Gral.Manuel Oribe&quot; de Artillería 105mm No.1.-
             </td>
           </tr>
           <tr>
@@ -356,7 +356,7 @@ export function HojaEntregaPrintSheet({
                   <span className="header-info-label">Camisaco:</span> {data.persona.tallas.CAMISACO}
                 </div>
                 <div className="info-grid-item info-grid-item-compact">
-                  <span className="header-info-label">Pantalon:</span> {data.persona.tallas.PANTALON}
+                  <span className="header-info-label">Pantalón:</span> {data.persona.tallas.PANTALON}
                 </div>
                 <div className="info-grid-item info-grid-item-compact">
                   <span className="header-info-label">Kepi:</span> {data.persona.tallas.KEPI}
@@ -375,7 +375,7 @@ export function HojaEntregaPrintSheet({
                   {ciFormateado}
                 </div>
                 <div className="info-grid-item info-grid-item-compact">
-                  <span className="header-info-label">Bateria:</span> {data.persona.bateria || "Cdo. y Serv."}
+                  <span className="header-info-label">Batería:</span> {data.persona.bateria || "Cdo. y Serv."}
                 </div>
                 <div className="info-grid-item info-grid-item-compact">
                   <span className="header-info-label">Fecha Ingreso:</span>{" "}
@@ -384,7 +384,7 @@ export function HojaEntregaPrintSheet({
                     : "-"}
                 </div>
                 <div className="info-grid-item info-grid-item-compact">
-                  <span className="header-info-label">Fecha de emision:</span> {fechaEmision}
+                  <span className="header-info-label">Fecha de emisión:</span> {fechaEmision}
                 </div>
               </div>
             </td>

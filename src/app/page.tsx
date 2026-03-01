@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import {
-  Fragment,
   FormEvent,
   useCallback,
   useEffect,
@@ -21,12 +20,18 @@ import {
   type TallaKey,
   normalizeTallaValue,
 } from "@/lib/tallas";
+import { DashboardHero } from "./components/home/DashboardHero";
+import { FormulariosPlaceholder } from "./components/home/FormulariosPlaceholder";
+import { MainNavigation } from "./components/home/MainNavigation";
+import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
+import { PersonalSection } from "./components/personal/PersonalSection";
 import { ConfigViews } from "./components/views/ConfigViews";
 import { HojaDeEntregaView } from "./components/views/HojaDeEntregaView";
 import { HojaMatrixView } from "./components/views/HojaMatrixView";
 import { PersonalCreateView } from "./components/views/PersonalCreateView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
-import { SmallActionButton, PaginationControls, ActionMenu, toast } from "./components/shared";
+import { SmallActionButton, ActionMenu, toast } from "./components/shared";
+import { useHomeData } from "./hooks/useHomeData";
 
 // Importar tipos desde archivos de tipos organizados
 import type {
@@ -36,15 +41,13 @@ import type {
   Equipo,
   Personal,
   PersonalObservacion,
-  CurrentUser,
   FirmaConfig,
   UsuarioAdmin,
-  AuditoriaRecord,
-  DbStatus,
 } from "@/types/entities";
 import type {
   PersonalForm,
   EquipoForm,
+  EquipoCodigoForm,
   RegistroDraftEquipo,
   RegistroDraft,
 } from "@/types/forms";
@@ -53,18 +56,17 @@ import type {
   RegistroTipo,
   RegistroView,
   RegistroViewerState,
-  HojaMatrixData,
   ConfirmDialogState,
   AuditFilter,
 } from "@/types/views";
 import { ROLE_OPTIONS } from "@/types/entities";
 import { EMPTY_PERSONAL_FORM, EMPTY_EQUIPO_FORM } from "@/types/forms";
+import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDialogState, UserRoleDialogState } from "./types/home";
 
 // Importar utilidades desde archivos organizados
 import { api } from "@/lib/api";
-import { apellidosLabel, nombresLabel, roleDescription, roleLabel, roleScope, rangoLabel, tallasEntries } from "@/lib/formatters";
+import { apellidosLabel, nombresLabel, roleDescription, roleLabel, roleScope, rangoLabel } from "@/lib/formatters";
 import {
-  tallasMap,
   getTodayDateInput,
   personalPayload,
   toEditablePersonal,
@@ -96,7 +98,7 @@ import {
 } from "@/lib/handlers-personal";
 import {
   createUsuarioHandler,
-  changeUsernameHandler,
+  updateUsuarioProfileHandler,
   changeUserRoleHandler,
   changeUserPasswordHandler,
   toggleUserActiveHandler,
@@ -111,48 +113,48 @@ import {
 
 // Importar utilidades de helpers
 import { auditActionLabel, auditEntityLabel, renderAuditDetalle } from "@/lib/audit-helpers";
-import { checkDbInitHandler, initializeDatabaseHandler } from "@/lib/handlers-auth";
 
-type PersonalObservacionDraft = {
-  ci: string;
-  nombre: string;
-  observacionId: string | null;
-  fecha: string;
-  texto: string;
-  observaciones: PersonalObservacion[];
-  loading: boolean;
-  error: string | null;
-};
-
-type UserRoleDialogState = {
-  usuarioId: string;
-  username: string;
-  currentRole: Role;
-  nextRole: Role;
-};
-
-type UserPasswordDialogState = {
-  usuarioId: string;
-  username: string;
-  newPassword: string;
-  confirmPassword: string;
-};
-
-type UsernameDialogState = {
-  usuarioId: string;
-  username: string;
-  title: string;
-  description: string;
-};
+function mapEquipoCodigosToForm(codigos: Equipo["codigos"]): EquipoCodigoForm[] {
+  return codigos.map((codigo) => ({
+    codigo: codigo.codigo,
+    aclaracion: codigo.aclaracion ?? "",
+  }));
+}
 
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
-  const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("Verificando sesión...");
-  const [initMessage, setInitMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
-  const [showInitCredentials, setShowInitCredentials] = useState(false);
-  const [initCredentials, setInitCredentials] = useState<{ username: string; password: string } | null>(null);
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const {
+    loading,
+    initMessage,
+    showInitCredentials,
+    setShowInitCredentials,
+    initCredentials,
+    currentUser,
+    setCurrentUser,
+    rangos,
+    baterias,
+    equipos,
+    personal,
+    usuarios,
+    auditoria,
+    firmaConfig,
+    setFirmaConfig,
+    firmaConfigDraft,
+    setFirmaConfigDraft,
+    firmaConfigLoading,
+    firmaConfigSaving,
+    setFirmaConfigSaving,
+    firmaConfigError,
+    setFirmaConfigError,
+    movimientosTotal,
+    hojaMatrixData,
+    hojaMatrixLoading,
+    hojaMatrixError,
+    loadData,
+    loadHojaMatrix,
+    clearLoadedData: clearLoadedDataState,
+  } = useHomeData({ onStatusChange: setStatus });
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -165,30 +167,17 @@ export default function Home() {
   const [userRoleSaving, setUserRoleSaving] = useState(false);
   const [userPasswordDialog, setUserPasswordDialog] = useState<UserPasswordDialogState | null>(null);
   const [userPasswordSaving, setUserPasswordSaving] = useState(false);
-  const [usernameDialog, setUsernameDialog] = useState<UsernameDialogState | null>(null);
+  const [usernameDialog, setUsernameDialog] = useState<UserProfileDialogState | null>(null);
   const [usernameSaving, setUsernameSaving] = useState(false);
 
-  const [rangos, setRangos] = useState<Rango[]>([]);
-  const [baterias, setBaterias] = useState<Bateria[]>([]);
-  const [equipos, setEquipos] = useState<Equipo[]>([]);
-  const [personal, setPersonal] = useState<Personal[]>([]);
-  const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([]);
-  const [auditoria, setAuditoria] = useState<AuditoriaRecord[]>([]);
-  const [firmaConfig, setFirmaConfig] = useState<FirmaConfig | null>(null);
-  const [firmaConfigDraft, setFirmaConfigDraft] = useState({
-    encargadoRango: "",
-    encargadoNombre: "",
-    oficialRango: "",
-    oficialNombre: "",
-  });
-  const [firmaConfigLoading, setFirmaConfigLoading] = useState(false);
-  const [firmaConfigSaving, setFirmaConfigSaving] = useState(false);
-  const [firmaConfigError, setFirmaConfigError] = useState<string | null>(null);
-  const [movimientosTotal, setMovimientosTotal] = useState(0);
 
+  const [newGrado, setNewGrado] = useState("");
+  const [newNombre, setNewNombre] = useState("");
+  const [newApellido, setNewApellido] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [newMailReferencia, setNewMailReferencia] = useState("");
   const [newRole, setNewRole] = useState<Role>("EDITOR");
 
   const [newRangoAbreviacion, setNewRangoAbreviacion] = useState("");
@@ -234,9 +223,6 @@ export default function Home() {
   const [fichaViewingCi, setFichaViewingCi] = useState<string | null>(null);
   const [showConfigViews, setShowConfigViews] = useState(false);
   const configMenuRef = useRef<HTMLDivElement | null>(null);
-  const [hojaMatrixData, setHojaMatrixData] = useState<HojaMatrixData | null>(null);
-  const [hojaMatrixLoading, setHojaMatrixLoading] = useState(false);
-  const [hojaMatrixError, setHojaMatrixError] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const [confirmDialogBusy, setConfirmDialogBusy] = useState(false);
   const [creatingPersonal, setCreatingPersonal] = useState(false);
@@ -541,18 +527,7 @@ export default function Home() {
   }, [confirmDialog, confirmDialogBusy]);
 
   function clearLoadedData() {
-    setRangos([]);
-    setBaterias([]);
-    setEquipos([]);
-    setPersonal([]);
-    setUsuarios([]);
-    setAuditoria([]);
-    setFirmaConfig(null);
-    setFirmaConfigDraft({ encargadoRango: "", encargadoNombre: "", oficialRango: "", oficialNombre: "" });
-    setFirmaConfigLoading(false);
-    setFirmaConfigSaving(false);
-    setFirmaConfigError(null);
-    setMovimientosTotal(0);
+    clearLoadedDataState();
     setEditPersonalCi(null);
     setEditPersonal(EMPTY_PERSONAL_FORM);
     setExpandedTallasByCi({});
@@ -562,9 +537,6 @@ export default function Home() {
     setPersonalObservacionSaving(false);
     setRegistroViewerPage(1);
     setRegistroViewerPageSize(20);
-    setHojaMatrixData(null);
-    setHojaMatrixLoading(false);
-    setHojaMatrixError(null);
     setConfirmDialog(null);
     setConfirmDialogBusy(false);
     setPersonalPage(1);
@@ -578,136 +550,6 @@ export default function Home() {
     equipoCardRefs.current.clear();
     previousEquipoRectsRef.current.clear();
   }
-
-  const loadData = useCallback(async (showSpinner = false) => {
-    if (showSpinner) setLoading(true);
-
-    try {
-      const me = await api<{ user: CurrentUser }>("/api/auth/me");
-      setCurrentUser(me.user);
-
-      await api<DbStatus>("/api/db-status");
-
-      const [rangosData, bateriasData, equiposData, personalData, movimientosSummary] = await Promise.all([
-        api<Rango[]>("/api/rangos"),
-        api<Bateria[]>("/api/baterias"),
-        api<Equipo[]>("/api/items"),
-        api<Personal[]>("/api/personal"),
-        api<{ total: number }>("/api/registros?summary=1").catch(() => ({ total: 0 })),
-      ]);
-
-      setRangos(rangosData);
-      setBaterias(bateriasData);
-      setEquipos(equiposData);
-      setPersonal(personalData);
-      setMovimientosTotal(movimientosSummary.total);
-
-      if (me.user.rol === "ADMIN") {
-        setFirmaConfigLoading(true);
-        const [usuariosData, auditoriaData, firmaConfigResult] = await Promise.all([
-          api<UsuarioAdmin[]>("/api/usuarios"),
-          api<AuditoriaRecord[]>("/api/auditoria?limit=200"),
-          api<FirmaConfig>("/api/firma-config")
-            .then((config) => ({ config, error: null as string | null }))
-            .catch((error: unknown) => ({
-              config: null,
-              error: error instanceof Error ? error.message : "No se pudo cargar la configuracion de firmas.",
-            })),
-        ]);
-        setUsuarios(usuariosData);
-        setAuditoria(auditoriaData);
-        setFirmaConfig(firmaConfigResult.config);
-        setFirmaConfigDraft({
-          encargadoRango: firmaConfigResult.config?.encargadoRango ?? "",
-          encargadoNombre: firmaConfigResult.config?.encargadoNombre ?? "",
-          oficialRango: firmaConfigResult.config?.oficialRango ?? "",
-          oficialNombre: firmaConfigResult.config?.oficialNombre ?? "",
-        });
-        setFirmaConfigError(firmaConfigResult.error);
-        setFirmaConfigLoading(false);
-      } else {
-        setUsuarios([]);
-        setAuditoria([]);
-        setFirmaConfig(null);
-        setFirmaConfigDraft({ encargadoRango: "", encargadoNombre: "", oficialRango: "", oficialNombre: "" });
-        setFirmaConfigLoading(false);
-        setFirmaConfigError(null);
-      }
-
-      setHojaMatrixData(null);
-      setHojaMatrixError(null);
-      setStatus("Datos actualizados.");
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo cargar la informacion.";
-      if (message === "No autenticado.") {
-        setCurrentUser(null);
-        clearLoadedData();
-        setStatus("Ingresa tus credenciales.");
-        return;
-      }
-      if (message.toLowerCase().includes("base de datos")) {
-        clearLoadedData();
-        setStatus(`Error de base de datos: ${message}`);
-        return;
-      }
-      setStatus(message);
-    } finally {
-      setFirmaConfigLoading(false);
-      setLoading(false);
-    }
-  }, []);
-
-  const loadHojaMatrix = useCallback(async () => {
-    setHojaMatrixLoading(true);
-    setHojaMatrixError(null);
-    try {
-      const data = await api<HojaMatrixData>("/api/hoja-matrix");
-      setHojaMatrixData(data);
-    } catch (error: unknown) {
-      setHojaMatrixError(error instanceof Error ? error.message : "No se pudo cargar la Hoja Matriz.");
-    } finally {
-      setHojaMatrixLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const initDb = async () => {
-      try {
-        const status = await checkDbInitHandler();
-        if (status.needsInit) {
-          setInitMessage({ type: "info", text: "Inicializando base de datos..." });
-          await initializeDatabaseHandler({
-            onSuccess: (result: unknown) => {
-              const data = result as {
-                initialized: boolean;
-                message: string;
-                credentials?: { username: string; password: string };
-              };
-              if (data.credentials) {
-                setInitCredentials(data.credentials);
-              }
-              setInitMessage({ type: "success", text: data.message });
-              setShowInitCredentials(true);
-            },
-            onError: (message) => {
-              setInitMessage({ type: "info", text: `Error al inicializar: ${message}` });
-            },
-          });
-        }
-      } catch {
-        // Silent fail, la BD ya está inicializada
-      }
-    };
-    void initDb();
-  }, []);
-
-  useEffect(() => {
-    const timerId = window.setTimeout(() => {
-      void loadData(true);
-    }, 0);
-    return () => window.clearTimeout(timerId);
-  }, [loadData]);
-
   useEffect(() => {
     if (activeView !== "hoja_matrix") return;
     if (hojaMatrixLoading) return;
@@ -881,6 +723,27 @@ export default function Home() {
     [canDelete, baterias, loadData],
   );
 
+  const updateNewEquipoCodigo = useCallback((index: number, key: keyof EquipoCodigoForm, value: string) => {
+    setNewEquipo((prev) => ({
+      ...prev,
+      codigos: prev.codigos.map((codigo, codigoIndex) => (codigoIndex === index ? { ...codigo, [key]: value } : codigo)),
+    }));
+  }, []);
+
+  const addNewEquipoCodigo = useCallback(() => {
+    setNewEquipo((prev) => ({
+      ...prev,
+      codigos: [...prev.codigos, { codigo: "", aclaracion: "" }],
+    }));
+  }, []);
+
+  const removeNewEquipoCodigo = useCallback((index: number) => {
+    setNewEquipo((prev) => ({
+      ...prev,
+      codigos: prev.codigos.filter((_, codigoIndex) => codigoIndex !== index),
+    }));
+  }, []);
+
   const createEquipo = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -890,7 +753,7 @@ export default function Home() {
       }
 
       try {
-        await createItemHandler(newEquipo.nombre, newEquipo.activo, {
+        await createItemHandler(newEquipo.nombre, newEquipo.activo, newEquipo.codigos, {
           onSuccess: async () => {
             setNewEquipo(EMPTY_EQUIPO_FORM);
             setStatus("Equipo creado.");
@@ -912,7 +775,7 @@ export default function Home() {
         return;
       }
       try {
-        await updateItemHandler(itemId, editEquipo.nombre, editEquipo.activo, editEquipo.ordenPdf ?? 0, {
+        await updateItemHandler(itemId, editEquipo.nombre, editEquipo.activo, editEquipo.ordenPdf ?? 0, editEquipo.codigos, {
           onSuccess: async () => {
             setEditEquipoId(null);
             setEditEquipo(EMPTY_EQUIPO_FORM);
@@ -936,7 +799,7 @@ export default function Home() {
       }
 
       try {
-        await updateItemHandler(equipo.itemId, equipo.nombre, !equipo.activo, equipo.ordenPdf, {
+        await updateItemHandler(equipo.itemId, equipo.nombre, !equipo.activo, equipo.ordenPdf, undefined, {
           onSuccess: async () => {
             setStatus(`Equipo ${!equipo.activo ? "activado" : "desactivado"}.`);
             await loadData();
@@ -1084,7 +947,7 @@ export default function Home() {
         return;
       }
       if (ciAlreadyExists) {
-        setStatus("La cedula ya existe.");
+        setStatus("La cédula ya existe.");
         return;
       }
       if (!isValidUruguayanCi(newPersonal.ci)) {
@@ -1402,8 +1265,8 @@ export default function Home() {
       });
       setStatus(
         isRectificacion
-          ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolucion"} rectificada para ${formatUruguayanCi(registroDraft.ci)}.`
-          : `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolucion"} registrada para ${formatUruguayanCi(registroDraft.ci)}.`,
+          ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} rectificada para ${formatUruguayanCi(registroDraft.ci)}.`
+          : `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} registrada para ${formatUruguayanCi(registroDraft.ci)}.`,
       );
       setRegistroDraft(null);
       await loadData();
@@ -1473,7 +1336,7 @@ export default function Home() {
           : prev,
       );
       setStatus(
-        `${isEditing ? "Observacion actualizada" : "Observacion registrada"} para ${formatUruguayanCi(personalObservacionDraft.ci)}.`,
+        `${isEditing ? "Observación actualizada" : "Observación registrada"} para ${formatUruguayanCi(personalObservacionDraft.ci)}.`,
       );
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : isEditing ? "No se pudo actualizar la observacion." : "No se pudo registrar la observacion.");
@@ -1507,7 +1370,7 @@ export default function Home() {
                 }
               : prev,
           );
-          setStatus(`Observacion eliminada para ${formatUruguayanCi(observacion.ci)}.`);
+          setStatus(`Observación eliminada para ${formatUruguayanCi(observacion.ci)}.`);
         } catch {
           // Error manejado en el handler
         }
@@ -1565,7 +1428,7 @@ export default function Home() {
           onChange={(event) => setEditPersonal((prev) => ({ ...prev, bateriaId: event.target.value }))}
           className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
         >
-          <option value="">Sin bateria (pendiente)</option>
+          <option value="">Sin batería (pendiente)</option>
           {baterias.map((bateria) => (
             <option key={bateria.bateriaId} value={bateria.bateriaId}>
               {bateria.nombre}
@@ -1680,9 +1543,13 @@ export default function Home() {
         return;
       }
 
+      const trimmedGrado = newGrado.trim();
+      const trimmedNombre = newNombre.trim();
+      const trimmedApellido = newApellido.trim();
       const trimmedUsername = newUsername.trim();
-      if (trimmedUsername === "") {
-        setStatus("El nombre de usuario es obligatorio.");
+      const trimmedMailReferencia = newMailReferencia.trim();
+      if (!trimmedGrado || !trimmedNombre || !trimmedApellido || !trimmedUsername) {
+        setStatus("Grado, nombre, apellido y usuario son obligatorios.");
         return;
       }
 
@@ -1697,11 +1564,23 @@ export default function Home() {
       }
 
       try {
-        await createUsuarioHandler(trimmedUsername, newPassword, newRole, {
+        await createUsuarioHandler({
+          grado: trimmedGrado,
+          nombre: trimmedNombre,
+          apellido: trimmedApellido,
+          usuario: trimmedUsername,
+          password: newPassword,
+          mailReferencia: trimmedMailReferencia,
+          rol: newRole,
+        }, {
           onSuccess: async () => {
+            setNewGrado("");
+            setNewNombre("");
+            setNewApellido("");
             setNewUsername("");
             setNewPassword("");
             setNewPasswordConfirm("");
+            setNewMailReferencia("");
             setNewRole("EDITOR");
             setStatus("Usuario creado.");
             await loadData();
@@ -1712,7 +1591,7 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [isAdmin, newUsername, newPassword, newPasswordConfirm, newRole, loadData],
+    [isAdmin, newGrado, newNombre, newApellido, newUsername, newPassword, newPasswordConfirm, newMailReferencia, newRole, loadData],
   );
 
   const changeUserRole = useCallback(
@@ -1759,29 +1638,40 @@ export default function Home() {
 
   const openUsernameDialog = useCallback(
     (
-      usuario: { usuarioId: string; username: string },
+      usuario: {
+        usuarioId: string;
+        grado?: string;
+        nombre?: string;
+        apellido?: string;
+        username: string;
+        mailReferencia?: string | null;
+      },
       options?: { title?: string; description?: string },
     ) => {
       setUsernameDialog({
         usuarioId: usuario.usuarioId,
+        grado: usuario.grado ?? "",
+        nombre: usuario.nombre ?? "",
+        apellido: usuario.apellido ?? "",
         username: usuario.username,
-        title: options?.title ?? "Cambiar nombre de usuario",
-        description: options?.description ?? "Actualiza el nombre con el que esta cuenta inicia sesion.",
+        mailReferencia: usuario.mailReferencia ?? "",
+        title: options?.title ?? "Editar usuario",
+        description: options?.description ?? "Actualiza el nombre con el que esta cuenta inicia sesión.",
       });
     },
     [],
   );
 
-  const changeUsername = useCallback(
+  const editUsuario = useCallback(
     (usuario: UsuarioAdmin) => {
       if (!isAdmin) {
-        setStatus("Solo el administrador puede cambiar nombres de usuario ajenos.");
+        setStatus("Solo el administrador puede editar usuarios ajenos.");
         return;
       }
 
       openUsernameDialog(usuario, {
-        title: "Cambiar nombre de usuario",
-        description: `Actualiza el acceso de ${usuario.username}.`,
+        title: "Editar usuario",
+        description: `Actualiza los datos de ${usuario.username}.`,
       });
     },
     [isAdmin, openUsernameDialog],
@@ -1791,8 +1681,8 @@ export default function Home() {
     if (!currentUser) return;
 
     openUsernameDialog(currentUser, {
-      title: "Cambiar mi usuario",
-      description: "Actualiza el nombre de acceso de la cuenta activa.",
+      title: "Editar mi usuario",
+      description: "Actualiza tus datos principales de acceso.",
     });
   }, [currentUser, openUsernameDialog]);
 
@@ -1858,15 +1748,25 @@ export default function Home() {
   const submitUsernameChange = useCallback(async () => {
     if (!usernameDialog) return;
 
+    const nextGrado = usernameDialog.grado.trim();
+    const nextNombre = usernameDialog.nombre.trim();
+    const nextApellido = usernameDialog.apellido.trim();
     const nextUsername = usernameDialog.username.trim();
-    if (nextUsername === "") {
-      setStatus("El nombre de usuario es obligatorio.");
+    const nextMailReferencia = usernameDialog.mailReferencia.trim();
+    if (!nextGrado || !nextNombre || !nextApellido || !nextUsername) {
+      setStatus("Grado, nombre, apellido y usuario son obligatorios.");
       return;
     }
 
     setUsernameSaving(true);
     try {
-      await changeUsernameHandler(usernameDialog.usuarioId, nextUsername, {
+      await updateUsuarioProfileHandler(usernameDialog.usuarioId, {
+        grado: nextGrado,
+        nombre: nextNombre,
+        apellido: nextApellido,
+        usuario: nextUsername,
+        mailReferencia: nextMailReferencia,
+      }, {
         onSuccess: async () => {
           const isSelfUpdate = currentUser?.usuarioId === usernameDialog.usuarioId;
           setStatus(isSelfUpdate ? `Tu usuario ahora es ${nextUsername}.` : `Usuario actualizado a ${nextUsername}.`);
@@ -1985,25 +1885,6 @@ export default function Home() {
     [isAdmin, firmaConfigDraft],
   );
 
-  function viewButtonClass(view: MainView) {
-    const selected = activeView === view;
-    return selected
-      ? "ej-view-active rounded-lg px-3 py-2 text-sm font-semibold"
-      : "ej-view-idle rounded-lg px-3 py-2 text-sm font-semibold";
-  }
-
-  function configOptionClass(view: Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">) {
-    const selected = activeView === view;
-    return selected
-      ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
-      : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-100 hover:border-stone-400";
-  }
-
-  function selectConfigView(view: Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">) {
-    setActiveView(view);
-    setShowConfigViews(false);
-  }
-
   function openConfirmDialog(options: Omit<ConfirmDialogState, "cancelText" | "tone"> & Partial<Pick<ConfirmDialogState, "cancelText" | "tone">>) {
     setConfirmDialog({
       title: options.title,
@@ -2054,6 +1935,26 @@ export default function Home() {
   function renderEquipoCard(equipo: Equipo, options?: { draggableInActiveList?: boolean }) {
     const draggableInActiveList = options?.draggableInActiveList === true;
     const isDraggingThisItem = draggedEquipoId === equipo.itemId;
+    const updateEditEquipoCodigo = (index: number, key: keyof EquipoCodigoForm, value: string) => {
+      setEditEquipo((prev) => ({
+        ...prev,
+        codigos: prev.codigos.map((codigo, codigoIndex) => (codigoIndex === index ? { ...codigo, [key]: value } : codigo)),
+      }));
+    };
+
+    const addEditEquipoCodigo = () => {
+      setEditEquipo((prev) => ({
+        ...prev,
+        codigos: [...prev.codigos, { codigo: "", aclaracion: "" }],
+      }));
+    };
+
+    const removeEditEquipoCodigo = (index: number) => {
+      setEditEquipo((prev) => ({
+        ...prev,
+        codigos: prev.codigos.filter((_, codigoIndex) => codigoIndex !== index),
+      }));
+    };
 
     return (
       <div
@@ -2103,6 +2004,50 @@ export default function Home() {
               />
               <span className="font-medium text-stone-700">Activo</span>
             </label>
+            <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">Codigos unicos</p>
+                  <p className="text-xs text-stone-500">Opcional. Cada codigo puede llevar una aclaracion.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addEditEquipoCodigo}
+                  className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+                >
+                  Agregar codigo
+                </button>
+              </div>
+              {editEquipo.codigos.length === 0 ? (
+                <p className="mt-3 text-xs text-stone-500">Sin codigos cargados.</p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {editEquipo.codigos.map((codigo, index) => (
+                    <div key={`${equipo.itemId}-codigo-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[180px_minmax(0,1fr)_auto]">
+                      <input
+                        value={codigo.codigo}
+                        onChange={(event) => updateEditEquipoCodigo(index, "codigo", event.target.value)}
+                        placeholder="Codigo unico"
+                        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <input
+                        value={codigo.aclaracion}
+                        onChange={(event) => updateEditEquipoCodigo(index, "aclaracion", event.target.value)}
+                        placeholder="Aclaracion opcional"
+                        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeEditEquipoCodigo(index)}
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="flex gap-2 pt-2">
               <SmallActionButton text="Guardar" tone="ok" onClick={() => void updateEquipo(equipo.itemId)} />
               <SmallActionButton
@@ -2129,6 +2074,20 @@ export default function Home() {
                 </span>
               </div>
               <p className="text-xs text-stone-500 mt-1">Orden PDF: {equipo.ordenPdf}</p>
+              {equipo.codigos.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {equipo.codigos.map((codigo) => (
+                    <span
+                      key={codigo.itemCodigoId}
+                      className="inline-flex items-center rounded-full border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-medium text-stone-700"
+                    >
+                      {codigo.aclaracion ? `${codigo.codigo} · ${codigo.aclaracion}` : codigo.codigo}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-stone-400">Sin codigos asociados.</p>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-2 items-center">
@@ -2175,6 +2134,7 @@ export default function Home() {
                         nombre: equipo.nombre,
                         activo: equipo.activo,
                         ordenPdf: equipo.ordenPdf,
+                        codigos: mapEquipoCodigosToForm(equipo.codigos),
                       });
                     },
                   },
@@ -2265,298 +2225,41 @@ export default function Home() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
-      <section className="ej-hero relative overflow-hidden rounded-[32px] border border-white/10 px-5 py-6 shadow-[0_28px_80px_rgba(15,23,42,0.28)] sm:px-7 sm:py-8">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,204,0,0.22),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(31,103,40,0.34),transparent_36%)]" />
-        <div className="pointer-events-none absolute -right-16 top-6 h-48 w-48 rounded-full border border-white/10 bg-white/5 blur-2xl" />
-        <div className="pointer-events-none absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-[#0f3b17]/45 blur-3xl" />
 
-        <div className="relative grid gap-5 xl:grid-cols-[220px_minmax(0,1.15fr)_320px]">
-          <div className="flex flex-col gap-4">
-            <Image
-              src="/assets/logo-artilleria.jpg"
-              alt="Logo Artilleria"
-              width={220}
-              height={150}
-              priority
-              className="h-auto w-[160px] rounded-2xl border border-[#FFCC00]/60 bg-white/95 object-contain p-1.5 shadow-lg sm:w-[200px]"
-            />
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#FFCC00]">Unidad</p>
-              <p className="mt-2 text-sm font-semibold leading-relaxed text-white">
-                {'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1'}
-              </p>
-            </div>
-          </div>
+      <DashboardHero
+        loading={loading}
+        currentUser={currentUser}
+        personalCount={personal.length}
+        rangosCount={rangos.length}
+        bateriasCount={baterias.length}
+        equiposActivosCount={equiposActivos.length}
+        movimientosTotal={movimientosTotal}
+        roleLabel={roleLabel}
+        onReload={() => void loadData(true)}
+        onEditOwnUser={changeOwnUsername}
+        onChangePassword={() => {
+          setChangeCurrentPassword("");
+          setChangeNewPassword("");
+          setChangeConfirmPassword("");
+          setShowChangePassword(true);
+        }}
+        onLogout={() => void logout()}
+      />
 
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#FFCC00]">
-              Plataforma operativa de deposito
-            </p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-5xl">
-              Deposito General
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/82 sm:text-base">
-              Centraliza personal, equipos, movimientos y documentos con una vista rapida del estado operativo y acceso directo a las tareas criticas del dia.
-            </p>
+      <MainNavigation
+        activeView={activeView}
+        canWrite={canWrite}
+        isAdmin={isAdmin}
+        showConfigViews={showConfigViews}
+        isConfigView={isConfigView}
+        configMenuRef={configMenuRef}
+        onSelectView={(view) => {
+          setActiveView(view);
+          setShowConfigViews(false);
+        }}
+        onToggleConfigViews={() => setShowConfigViews((prev) => !prev)}
+      />
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className="rounded-full border border-emerald-300/25 bg-emerald-500/20 px-3 py-1 text-[11px] font-semibold text-emerald-50">
-                {loading ? "Sincronizando datos" : "Sistema operativo"}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-medium text-white/85">
-                {roleScope(currentUser?.rol)}
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-medium text-white/85">
-                Flujo SPA centralizado
-              </span>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <article className="rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#FFCC00]">Tu alcance</p>
-                <p className="mt-2 text-base font-semibold text-white">{roleLabel(currentUser?.rol)}</p>
-                <p className="mt-1 text-sm leading-5 text-white/75">{roleDescription(currentUser?.rol)}</p>
-              </article>
-              <article className="rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#FFCC00]">Situacion</p>
-                <p className="mt-2 text-base font-semibold text-white">
-                  {equiposActivos.length} equipos activos y {movimientosTotal} movimientos
-                </p>
-                <p className="mt-1 text-sm leading-5 text-white/75">
-                  El panel queda listo para registrar entregas, devoluciones y ajustes sin salir de la vista principal.
-                </p>
-              </article>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <article className="rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#FFCC00]">Cuenta activa</p>
-              <p className="mt-2 text-lg font-semibold text-white">{currentUser.username}</p>
-              <p className="mt-1 text-sm text-white/78">{roleLabel(currentUser.rol)}</p>
-            </article>
-
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-              <button
-                type="button"
-                onClick={() => void loadData(true)}
-                className="ej-button-muted rounded-2xl px-3 py-3 text-sm font-semibold"
-              >
-                Recargar panel
-              </button>
-              <button
-                type="button"
-                onClick={changeOwnUsername}
-                className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
-              >
-                Cambiar usuario
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setChangeCurrentPassword("");
-                  setChangeNewPassword("");
-                  setChangeConfirmPassword("");
-                  setShowChangePassword(true);
-                }}
-                className="rounded-2xl border border-[#FFCC00]/35 bg-black/30 px-3 py-3 text-sm font-semibold text-white transition hover:bg-black/40"
-              >
-                Cambiar contrasena
-              </button>
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className="ej-button-danger rounded-2xl px-3 py-3 text-sm font-semibold"
-              >
-                Cerrar sesion
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Personal</p>
-            <p className="text-lg font-bold text-white">{personal.length}</p>
-          </div>
-          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Grados</p>
-            <p className="text-lg font-bold text-white">{rangos.length}</p>
-          </div>
-          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Bater?as</p>
-            <p className="text-lg font-bold text-white">{baterias.length}</p>
-          </div>
-          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Equipos activos</p>
-            <p className="text-lg font-bold text-white">{equiposActivos.length}</p>
-          </div>
-          <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Movimientos</p>
-            <p className="text-lg font-bold text-white">{movimientosTotal}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="ej-card relative z-40 mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Navegación</p>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveView("personal");
-              setShowConfigViews(false);
-            }}
-            className={`${viewButtonClass("personal")} group relative flex-1 overflow-hidden transition-all`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span>Personal</span>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveView("hoja_matrix");
-              setShowConfigViews(false);
-            }}
-            className={`${viewButtonClass("hoja_matrix")} group relative flex-1 overflow-hidden transition-all`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-              </svg>
-              <span>Hoja Matriz</span>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveView("personal_nuevo");
-              setShowConfigViews(false);
-            }}
-            disabled={!canWrite}
-            className={`${viewButtonClass("personal_nuevo")} group relative flex-1 overflow-hidden transition-all disabled:cursor-not-allowed disabled:opacity-50`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Alta Personal</span>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveView("formularios");
-              setShowConfigViews(false);
-            }}
-            className={`${viewButtonClass("formularios")} group relative flex-1 overflow-hidden transition-all`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M9 8h6m-9 12h12a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>Formularios</span>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveView("tallas_resumen");
-              setShowConfigViews(false);
-            }}
-            className={`${viewButtonClass("tallas_resumen")} group relative flex-1 overflow-hidden transition-all`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <span className="hidden sm:inline">Resumen Tallas</span>
-              <span className="sm:hidden">Tallas</span>
-            </div>
-          </button>
-          <div ref={configMenuRef} className="relative z-50 flex-1">
-            <button
-              type="button"
-              onClick={() => setShowConfigViews((prev) => !prev)}
-              aria-haspopup="menu"
-              aria-expanded={showConfigViews}
-              aria-controls="menu-configuracion"
-              className={`
-                group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all
-                ${
-                  isConfigView || showConfigViews
-                    ? "ej-view-active"
-                    : "ej-view-idle"
-                }
-              `}
-            >
-              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span>Configuración</span>
-              <svg className={`h-3 w-3 transition-transform ${showConfigViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {showConfigViews ? (
-              <div
-                id="menu-configuracion"
-                role="menu"
-                className="absolute right-0 z-[60] mt-2 w-full min-w-[290px] rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-[360px]"
-              >
-                <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de configuracion</p>
-                <div className="grid grid-cols-1 gap-1.5">
-                  <button type="button" onClick={() => selectConfigView("grados")} className={configOptionClass("grados")}>
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                    </svg>
-                    Registrar Grados
-                  </button>
-                  <button type="button" onClick={() => selectConfigView("baterias")} className={configOptionClass("baterias")}>
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    Registrar Baterías
-                  </button>
-                  <button type="button" onClick={() => selectConfigView("equipos")} className={configOptionClass("equipos")}>
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                    Registrar Equipos
-                  </button>
-                  {isAdmin ? (
-                    <>
-                      <button type="button" onClick={() => selectConfigView("firmas")} className={configOptionClass("firmas")}>
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h2m10 0V6a3 3 0 10-6 0v2m6 0H7" />
-                        </svg>
-                        Firmas institucionales
-                      </button>
-                      <button type="button" onClick={() => selectConfigView("usuarios")} className={configOptionClass("usuarios")}>
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Usuarios
-                      </button>
-                      <button type="button" onClick={() => selectConfigView("auditoria")} className={configOptionClass("auditoria")}>
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m4 6V7m4 10v-3M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        Auditoria detallada
-                      </button>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </section>
 
       {inCatalogView || (isAdmin && inAdminConfigView) ? (
         <ConfigViews
@@ -2586,9 +2289,13 @@ export default function Home() {
           equiposActivosEnPantalla={equiposActivosEnPantalla}
           draggedEquipoId={draggedEquipoId}
           usuarios={usuarios}
+          newGrado={newGrado}
+          newNombre={newNombre}
+          newApellido={newApellido}
           newUsername={newUsername}
           newPassword={newPassword}
           newPasswordConfirm={newPasswordConfirm}
+          newMailReferencia={newMailReferencia}
           newRole={newRole}
           firmaConfig={firmaConfig}
           firmaConfigDraft={firmaConfigDraft}
@@ -2619,6 +2326,9 @@ export default function Home() {
           onUpdateBateria={(bateriaId) => void updateBateria(bateriaId)}
           onDeleteBateria={(bateriaId) => void deleteBateria(bateriaId)}
           onNewEquipoChange={(value, key) => setNewEquipo((prev) => ({ ...prev, [key]: value }))}
+          onNewEquipoCodigoChange={updateNewEquipoCodigo}
+          onAddNewEquipoCodigo={addNewEquipoCodigo}
+          onRemoveNewEquipoCodigo={removeNewEquipoCodigo}
           onEditEquipoIdChange={setEditEquipoId}
           onEditEquipoChange={(value, key) => setEditEquipo((prev) => ({ ...prev, [key]: value }))}
           onCreateEquipo={(event) => void createEquipo(event)}
@@ -2627,12 +2337,16 @@ export default function Home() {
           onDeleteEquipo={(itemId) => void deleteEquipo(itemId)}
           onStartEquipoDrag={() => {}}
           renderEquipoCard={renderEquipoCard}
+          onNewGradoChange={setNewGrado}
+          onNewNombreChange={setNewNombre}
+          onNewApellidoChange={setNewApellido}
           onNewUsernameChange={setNewUsername}
           onNewPasswordChange={setNewPassword}
           onNewPasswordConfirmChange={setNewPasswordConfirm}
+          onNewMailReferenciaChange={setNewMailReferencia}
           onNewRoleChange={setNewRole}
           onCreateUsuario={(event) => void createUsuario(event)}
-          onChangeUsername={(usuario) => void changeUsername(usuario)}
+          onEditUsuario={(usuario) => void editUsuario(usuario)}
           onChangeUserRole={(usuario) => void changeUserRole(usuario)}
           onChangeUserPassword={(usuario) => void changeUserPassword(usuario)}
           onToggleUserActive={(usuario) => void toggleUserActive(usuario)}
@@ -2676,355 +2390,56 @@ export default function Home() {
       ) : null}
 
       {activeView === "personal" ? (
-        <section className="ej-card mt-6 rounded-2xl p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-stone-900">Personal</h2>
-              <p className="mt-1 text-xs text-stone-600">Orden: Grado del Personal, Apellidos y Nombres.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={printAllDeliverySheets}
-                disabled={personal.length === 0}
-                className="rounded-lg bg-indigo-700 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Imprimir todas las hojas
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveView("personal_nuevo");
-                }}
-                disabled={!canWrite}
-                className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
-              >
-                Registrar nuevo
-              </button>
-            </div>
-          </div>
-          <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
-            <input
-              value={searchCedula}
-              onChange={(event) => setSearchCedula(event.target.value)}
-              placeholder="Buscar por cedula"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              value={searchApellidos}
-              onChange={(event) => setSearchApellidos(event.target.value)}
-              placeholder="Buscar por apellidos"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              value={searchNombres}
-              onChange={(event) => setSearchNombres(event.target.value)}
-              placeholder="Buscar por nombres"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <select
-              value={bateriaFilter}
-              onChange={(event) => setBateriaFilter(event.target.value)}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            >
-              <option value="ALL">Todas las baterias</option>
-              <option value="NONE">Sin bateria</option>
-              {baterias.map((bateria) => (
-                <option key={bateria.bateriaId} value={String(bateria.bateriaId)}>
-                  {bateria.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-          {hasPersonalFilters ? (
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchCedula("");
-                  setSearchNombres("");
-                  setSearchApellidos("");
-                  setBateriaFilter("ALL");
-                }}
-                className="rounded bg-stone-600 px-3 py-2 text-xs font-semibold text-white"
-              >
-                Limpiar filtros
-              </button>
-            </div>
-          ) : null}
-
-          <PaginationControls
-            page={personalPage}
-            pageSize={personalPageSize}
-            totalItems={personalFiltrado.length}
-            itemLabel="personas"
-            onPageChange={setPersonalPage}
-            onPageSizeChange={setPersonalPageSize}
-          />
-
-          <div className="mt-3 space-y-3 md:hidden">
-            {personalFiltradoPaginado.map((persona) => {
-              const tallas = tallasMap(persona.tallas);
-              const ciValida = isValidUruguayanCi(persona.ci);
-              const tallasOpen = expandedTallasByCi[persona.ci] === true;
-              const editing = editPersonalCi === persona.ci;
-              return (
-                <article
-                  key={persona.ci}
-                  className={`rounded-xl border p-3 ${ciValida ? "border-stone-200 bg-stone-50/80" : "border-red-300 bg-red-50/70"}`}
-                >
-                  <p className={`text-xs font-mono ${ciValida ? "text-stone-600" : "font-semibold text-red-700"}`}>
-                    {formatUruguayanCi(persona.ci)}
-                    {!ciValida ? <span className="ml-1 text-red-700">(con error)</span> : null}
-                  </p>
-                  <p className="mt-2 text-sm font-bold text-stone-900">{persona.rango.nombreCompleto}</p>
-                  <p className="mt-2 text-sm text-stone-900">
-                    <span className="font-semibold">Apellidos:</span> {apellidosLabel(persona)}
-                  </p>
-                  <p className="text-sm text-stone-900">
-                    <span className="font-semibold">Nombres:</span> {nombresLabel(persona)}
-                  </p>
-                  <p className="mt-1 text-xs text-stone-600">{persona.bateria?.nombre ?? "Sin bateria"}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <SmallActionButton
-                      text={editing ? "Cancelar" : "Editar"}
-                      tone={editing ? "neutral" : "edit"}
-                      onClick={() => {
-                        if (editing) {
-                          setEditPersonalCi(null);
-                          setEditPersonal(EMPTY_PERSONAL_FORM);
-                          return;
-                        }
-                        startEditPersonal(persona);
-                      }}
-                    />
-                    <SmallActionButton text="Borrar" tone="delete" onClick={() => void deletePersonal(persona.ci)} />
-                    <button
-                      type="button"
-                      onClick={() => toggleTallas(persona.ci)}
-                      className="rounded bg-stone-600 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-stone-700 hover:shadow-md active:scale-95"
-                    >
-                      {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openRegistro(persona.ci, "ENTREGA")}
-                      className="rounded bg-emerald-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-emerald-800 hover:shadow-md active:scale-95"
-                    >
-                      Entrega
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openRegistro(persona.ci, "DEVOLUCION")}
-                      className="rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-amber-800 hover:shadow-md active:scale-95"
-                    >
-                      Devolucion
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void openPersonalObservacion(persona)}
-                      className="rounded bg-teal-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-teal-800 hover:shadow-md active:scale-95"
-                    >
-                      Observacion
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void openRegistroViewer(persona)}
-                      className="rounded bg-sky-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-sky-800 hover:shadow-md active:scale-95"
-                    >
-                      Ver movimientos
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveView("hoja-de-entrega");
-                        setFichaViewingCi(persona.ci);
-                      }}
-                      className="rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-indigo-800 hover:shadow-md active:scale-95"
-                    >
-                      Hoja de Entrega
-                    </button>
-                  </div>
-                  {tallasOpen ? (
-                    <div className="mt-2 rounded-lg border border-stone-200 bg-white p-3">
-                      <div className="grid grid-cols-2 gap-2">
-                        {tallasEntries(tallas).map((entry) => (
-                          <div key={entry.key} className="rounded-md border border-stone-200 bg-stone-50 px-2 py-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">{entry.label}</p>
-                            <p className="mt-1 text-sm font-bold text-stone-900">{entry.value}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                  {editing ? <div className="mt-3 rounded-lg border border-stone-200 bg-white p-3">{renderInlineEditForm(persona.ci)}</div> : null}
-                </article>
-              );
-            })}
-            {personalFiltrado.length === 0 ? <p className="text-sm text-stone-500">Sin resultados con los filtros actuales.</p> : null}
-          </div>
-
-          <div className="mt-3 md:hidden">
-            <PaginationControls
-              page={personalPage}
-              pageSize={personalPageSize}
-              totalItems={personalFiltrado.length}
-              itemLabel="personas"
-              onPageChange={setPersonalPage}
-              onPageSizeChange={setPersonalPageSize}
-            />
-          </div>
-
-          <div className="mt-3 hidden md:block">
-            <table className="w-full table-fixed text-left text-sm">
-              <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-600">
-                <tr>
-                  <th className="w-[11%] px-3 py-2">CI</th>
-                  <th className="w-[15%] px-3 py-2">Grado del Personal</th>
-                  <th className="w-[18%] px-3 py-2">Apellidos</th>
-                  <th className="w-[18%] px-3 py-2">Nombres</th>
-                  <th className="w-[13%] px-3 py-2">Bateria</th>
-                  <th className="w-[9%] px-3 py-2">Detalles</th>
-                  <th className="w-[16%] px-3 py-2">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-300">
-                {personalFiltradoPaginado.map((persona, index) => {
-                  const tallas = tallasMap(persona.tallas);
-                  const ciValida = isValidUruguayanCi(persona.ci);
-                  const tallasOpen = expandedTallasByCi[persona.ci] === true;
-                  const editing = editPersonalCi === persona.ci;
-                  const isEven = index % 2 === 0;
-                  return (
-                    <Fragment key={persona.ci}>
-                      <tr className={!ciValida ? "bg-red-50/60" : isEven ? "bg-white" : "bg-stone-100"}>
-                        <td className={`px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-bold text-red-700"}`}>
-                          <div>
-                            {formatUruguayanCi(persona.ci)}
-                            {!ciValida ? <span className="ml-1 text-red-700">(con error)</span> : null}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 text-stone-900">
-                          <span className="font-bold">{persona.rango.nombreCompleto}</span>
-                        </td>
-                        <td className="px-3 py-2 text-stone-900">{apellidosLabel(persona)}</td>
-                        <td className="px-3 py-2 text-stone-900">{nombresLabel(persona)}</td>
-                        <td className="px-3 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin bateria"}</td>
-                        <td className="px-3 py-2">
-                          <button
-                            type="button"
-                            onClick={() => toggleTallas(persona.ci)}
-                            className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700 transition-all duration-200 hover:bg-stone-50 hover:border-stone-400 hover:shadow-sm active:scale-95"
-                          >
-                            {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
-                          </button>
-                        </td>
-                        <td className="px-2 py-2 align-top">
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <SmallActionButton
-                              text={editing ? "Cancelar" : "Editar"}
-                              tone={editing ? "neutral" : "edit"}
-                              className="w-full text-[11px] leading-tight"
-                              onClick={() => {
-                                if (editing) {
-                                  setEditPersonalCi(null);
-                                  setEditPersonal(EMPTY_PERSONAL_FORM);
-                                  return;
-                                }
-                                startEditPersonal(persona);
-                              }}
-                            />
-                            <SmallActionButton
-                              text="Borrar"
-                              tone="delete"
-                              className="w-full text-[11px] leading-tight"
-                              onClick={() => void deletePersonal(persona.ci)}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => openRegistro(persona.ci, "ENTREGA")}
-                              className="w-full rounded bg-emerald-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-emerald-800 hover:shadow-md active:scale-95"
-                            >
-                              Entrega
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => openRegistro(persona.ci, "DEVOLUCION")}
-                              className="w-full rounded bg-amber-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-amber-800 hover:shadow-md active:scale-95"
-                            >
-                              Devolucion
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void openPersonalObservacion(persona)}
-                              className="w-full rounded bg-teal-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-teal-800 hover:shadow-md active:scale-95"
-                            >
-                              Observacion
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void openRegistroViewer(persona)}
-                              className="w-full rounded bg-sky-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-sky-800 hover:shadow-md active:scale-95"
-                            >
-                              Ver movimientos
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveView("hoja-de-entrega");
-                                setFichaViewingCi(persona.ci);
-                              }}
-                              className="col-span-2 w-full rounded bg-indigo-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-indigo-800 hover:shadow-md active:scale-95"
-                              >
-                              Hoja de Entrega
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {tallasOpen ? (
-                        <tr className="bg-stone-50/80">
-                          <td colSpan={7} className="px-3 py-2">
-                            <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
-                              {tallasEntries(tallas).map((entry) => (
-                                <div key={entry.key} className="rounded-md border border-stone-200 bg-white px-2 py-2">
-                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">{entry.label}</p>
-                                  <p className="mt-1 text-sm font-bold text-stone-900">{entry.value}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      ) : null}
-                      {editing ? (
-                        <tr className="bg-white">
-                          <td colSpan={7} className="px-3 py-3">
-                            {renderInlineEditForm(persona.ci)}
-                          </td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
-                  );
-                })}
-                {personalFiltrado.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-4 text-sm text-stone-500">
-                      Sin resultados con los filtros actuales.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-
-          <PaginationControls
-            page={personalPage}
-            pageSize={personalPageSize}
-            totalItems={personalFiltrado.length}
-            itemLabel="personas"
-            onPageChange={setPersonalPage}
-            onPageSizeChange={setPersonalPageSize}
-          />
-        </section>
+        <PersonalSection
+          personal={personal}
+          personalFiltrado={personalFiltrado}
+          personalFiltradoPaginado={personalFiltradoPaginado}
+          baterias={baterias}
+          rangos={rangos}
+          canWrite={canWrite}
+          searchCedula={searchCedula}
+          searchApellidos={searchApellidos}
+          searchNombres={searchNombres}
+          bateriaFilter={bateriaFilter}
+          hasPersonalFilters={hasPersonalFilters}
+          personalPage={personalPage}
+          personalPageSize={personalPageSize}
+          expandedTallasByCi={expandedTallasByCi}
+          editPersonalCi={editPersonalCi}
+          editPersonal={editPersonal}
+          tallaOptionsByKey={tallaOptionsByKey}
+          maxFechaIngreso={maxFechaIngreso}
+          onSearchCedulaChange={setSearchCedula}
+          onSearchApellidosChange={setSearchApellidos}
+          onSearchNombresChange={setSearchNombres}
+          onBateriaFilterChange={setBateriaFilter}
+          onClearFilters={() => {
+            setSearchCedula("");
+            setSearchNombres("");
+            setSearchApellidos("");
+            setBateriaFilter("ALL");
+          }}
+          onPersonalPageChange={setPersonalPage}
+          onPersonalPageSizeChange={setPersonalPageSize}
+          onPrintAllDeliverySheets={printAllDeliverySheets}
+          onOpenCreate={() => setActiveView("personal_nuevo")}
+          onToggleTallas={toggleTallas}
+          onDeletePersonal={(ci) => void deletePersonal(ci)}
+          onOpenRegistro={(ci, tipo) => openRegistro(ci, tipo)}
+          onOpenPersonalObservacion={(persona) => void openPersonalObservacion(persona)}
+          onOpenRegistroViewer={(persona) => void openRegistroViewer(persona)}
+          onOpenDeliverySheet={(ci) => {
+            setActiveView("hoja-de-entrega");
+            setFichaViewingCi(ci);
+          }}
+          onStartEditPersonal={startEditPersonal}
+          onCancelEditPersonal={() => {
+            setEditPersonalCi(null);
+            setEditPersonal(EMPTY_PERSONAL_FORM);
+          }}
+          onEditPersonalChange={(field, value) => setEditPersonal((prev) => ({ ...prev, [field]: value }))}
+          onSaveEditPersonal={(ci) => void updatePersonal(ci)}
+        />
       ) : null}
 
       {activeView === "hoja_matrix" ? (
@@ -3036,715 +2451,91 @@ export default function Home() {
         />
       ) : null}
 
-      {activeView === "formularios" ? (
-        <section className="mt-6">
-          <article className="ej-card overflow-hidden rounded-3xl p-0">
-            <div className="border-b border-stone-200 bg-[linear-gradient(135deg,#f8fafc_0%,#fff7ed_55%,#fef3c7_100%)] px-5 py-5 sm:px-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">Proxima vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-stone-900">Formularios</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
-                Este espacio queda reservado para futuros formularios operativos y administrativos.
-              </p>
-            </div>
-
-            <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/80 p-5">
-                <p className="text-sm font-semibold text-stone-900">Modulo en preparacion</p>
-                <p className="mt-2 text-sm leading-6 text-stone-600">
-                  Cuando se implemente, aca podras centralizar formularios especiales sin mezclarlos con personal,
-                  equipos o configuracion.
-                </p>
-              </div>
-
-              <aside className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">Pendiente</p>
-                <p className="mt-3 text-sm font-semibold text-stone-900">Vista reservada para desarrollo futuro</p>
-                <p className="mt-2 text-sm leading-6 text-stone-600">
-                  El boton ya forma parte de la navegacion de la SPA. La logica funcional se puede agregar despues sin
-                  volver a tocar la estructura principal.
-                </p>
-              </aside>
-            </div>
-          </article>
-        </section>
-      ) : null}
+      {activeView === "formularios" ? <FormulariosPlaceholder /> : null}
 
       {activeView === "tallas_resumen" ? (
         <TallasResumenView personal={personal} baterias={baterias} />
       ) : null}
 
-      {showChangePassword ? (
-        <section className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3" onClick={() => setShowChangePassword(false)}>
-          <article
-            role="dialog"
-            aria-modal="true"
-            className="w-full max-w-md rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 className="text-base font-semibold text-stone-900">Cambiar contraseña</h3>
-            <p className="mt-1 text-xs text-stone-600">Ingresa tu contraseña actual y la nueva contraseña.</p>
-
-            <div className="mt-3 space-y-2">
-              <input
-                value={changeCurrentPassword}
-                onChange={(event) => setChangeCurrentPassword(event.target.value)}
-                placeholder="Contraseña actual"
-                type="password"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-
-              <input
-                value={changeNewPassword}
-                onChange={(event) => setChangeNewPassword(event.target.value)}
-                placeholder="Nueva contraseña"
-                type="password"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-              <input
-                value={changeConfirmPassword}
-                onChange={(event) => setChangeConfirmPassword(event.target.value)}
-                placeholder="Confirmar contraseña"
-                type="password"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </div>
-
-            <div className="mt-4 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowChangePassword(false)}
-                className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={changeLoading}
-                onClick={() => void submitChangePassword()}
-                className="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-              >
-                {changeLoading ? "Procesando..." : "Guardar"}
-              </button>
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {userRoleDialog ? (
-        <section className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3" onClick={closeUserRoleDialog}>
-          <article
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="user-role-dialog-title"
-            className="w-full max-w-md rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 id="user-role-dialog-title" className="text-base font-semibold text-stone-900">
-              Cambiar rol de usuario
-            </h3>
-            <p className="mt-1 text-sm text-stone-600">
-              {`Usuario: ${userRoleDialog.username}`}
-            </p>
-            <p className="mt-1 text-xs text-stone-500">
-              {`Rol actual: ${roleLabel(userRoleDialog.currentRole)}`}
-            </p>
-
-            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {ROLE_OPTIONS.map((role) => {
-                const selected = userRoleDialog.nextRole === role;
-                return (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() =>
-                      setUserRoleDialog((current) => (current ? { ...current, nextRole: role } : current))
-                    }
-                    className={`rounded-xl border px-3 py-3 text-left transition ${
-                      selected
-                        ? "border-stone-900 bg-stone-900 text-white"
-                        : "border-stone-300 bg-white text-stone-800 hover:border-stone-500"
-                    }`}
-                  >
-                    <p className="text-sm font-semibold">{roleLabel(role)}</p>
-                    <p className={`mt-1 text-xs ${selected ? "text-stone-200" : "text-stone-500"}`}>
-                      {roleDescription(role)}
-                    </p>
-                    <p className={`mt-2 text-[11px] font-medium uppercase tracking-wide ${selected ? "text-stone-300" : "text-stone-400"}`}>
-                      {roleScope(role)}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeUserRoleDialog}
-                disabled={userRoleSaving}
-                className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 disabled:opacity-60"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => void submitUserRoleChange()}
-                disabled={userRoleSaving || userRoleDialog.nextRole === userRoleDialog.currentRole}
-                className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-              >
-                {userRoleSaving ? "Guardando..." : "Guardar rol"}
-              </button>
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {userPasswordDialog ? (
-        <section className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3" onClick={closeUserPasswordDialog}>
-          <article
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="user-password-dialog-title"
-            className="w-full max-w-md rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 id="user-password-dialog-title" className="text-base font-semibold text-stone-900">
-              Cambiar contraseña de usuario
-            </h3>
-            <p className="mt-1 text-sm text-stone-600">
-              {`Usuario: ${userPasswordDialog.username}`}
-            </p>
-            <p className="mt-1 text-xs text-stone-500">
-              Define una nueva contraseña para la cuenta seleccionada.
-            </p>
-
-            <div className="mt-4 space-y-2">
-              <input
-                value={userPasswordDialog.newPassword}
-                onChange={(event) =>
-                  setUserPasswordDialog((current) =>
-                    current ? { ...current, newPassword: event.target.value } : current
-                  )
-                }
-                placeholder="Nueva contraseña"
-                type="password"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-              <input
-                value={userPasswordDialog.confirmPassword}
-                onChange={(event) =>
-                  setUserPasswordDialog((current) =>
-                    current ? { ...current, confirmPassword: event.target.value } : current
-                  )
-                }
-                placeholder="Confirmar nueva contraseña"
-                type="password"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </div>
-
-            <div className="mt-4 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeUserPasswordDialog}
-                disabled={userPasswordSaving}
-                className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 disabled:opacity-60"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => void submitUserPasswordChange()}
-                disabled={
-                  userPasswordSaving ||
-                  userPasswordDialog.newPassword.trim() === "" ||
-                  userPasswordDialog.confirmPassword.trim() === ""
-                }
-                className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-              >
-                {userPasswordSaving ? "Guardando..." : "Guardar contraseña"}
-              </button>
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {usernameDialog ? (
-        <section className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3" onClick={closeUsernameDialog}>
-          <article
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="username-dialog-title"
-            className="w-full max-w-md rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 id="username-dialog-title" className="text-base font-semibold text-stone-900">
-              {usernameDialog.title}
-            </h3>
-            <p className="mt-1 text-sm text-stone-600">{usernameDialog.description}</p>
-
-            <div className="mt-4 space-y-2">
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Usuario</span>
-                <input
-                  value={usernameDialog.username}
-                  onChange={(event) =>
-                    setUsernameDialog((current) =>
-                      current ? { ...current, username: event.target.value } : current,
-                    )
-                  }
-                  placeholder="Nombre de usuario"
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              </label>
-            </div>
-
-            <div className="mt-4 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeUsernameDialog}
-                disabled={usernameSaving}
-                className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 disabled:opacity-60"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => void submitUsernameChange()}
-                disabled={usernameSaving || usernameDialog.username.trim() === ""}
-                className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-              >
-                {usernameSaving ? "Guardando..." : "Guardar usuario"}
-              </button>
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {confirmDialog ? (
-        <section className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3" onClick={closeConfirmDialog}>
-          <article
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="confirm-dialog-title"
-            className="w-full max-w-md rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 id="confirm-dialog-title" className="text-base font-semibold text-stone-900">
-              {confirmDialog.title}
-            </h3>
-            <p className="mt-2 text-sm text-stone-700">{confirmDialog.message}</p>
-            <div className="mt-4 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeConfirmDialog}
-                disabled={confirmDialogBusy}
-                className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {confirmDialog.cancelText}
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmDialogAccept()}
-                disabled={confirmDialogBusy}
-                className={`rounded px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${
-                  confirmDialog.tone === "danger" ? "bg-rose-700 hover:bg-rose-800" : "bg-stone-700 hover:bg-stone-800"
-                }`}
-              >
-                {confirmDialogBusy ? "Procesando..." : confirmDialog.confirmText}
-              </button>
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {registroViewer ? (
-        <section className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-3">
-          <article className="w-full max-w-3xl rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-base font-semibold text-stone-900">Visualizador de Entregas / Devoluciones</h3>
-                <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(registroViewer.ci)}`}</p>
-                <p className="text-xs font-medium text-stone-700">{`Personal: ${registroViewer.nombre}`}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setRegistroViewer(null)}
-                className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white"
-              >
-                Cerrar
-              </button>
-            </div>
-
-            <div className="mt-3 max-h-[60vh] space-y-2 overflow-auto pr-1">
-              {registroViewer.loading ? <p className="text-sm text-stone-600">Cargando movimientos...</p> : null}
-              {!registroViewer.loading && registroViewer.error ? (
-                <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{registroViewer.error}</p>
-              ) : null}
-              {!registroViewer.loading && !registroViewer.error && registroViewerRows.length === 0 ? (
-                <p className="text-sm text-stone-600">No hay movimientos registrados para esta persona.</p>
-              ) : null}
-              {!registroViewer.loading && !registroViewer.error
-                  ? registroViewerRowsPaginados.map((registro) => (
-                      <div key={registro.registroId} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-stone-900">{new Date(registro.fecha).toLocaleDateString("es-UY")}</p>
-                          <div className="flex items-center gap-2">
-                            {canWrite && registro.tipo !== "AJUSTE" ? (
-                              <button
-                                type="button"
-                                onClick={() => rectifyRegistro(registro)}
-                                className="rounded bg-sky-700 px-2 py-1 text-[11px] font-semibold text-white"
-                              >
-                                Rectificar
-                              </button>
-                            ) : null}
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                                registro.tipo === "ENTREGA"
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : registro.tipo === "DEVOLUCION"
-                                    ? "bg-amber-100 text-amber-800"
-                                    : "bg-sky-100 text-sky-800"
-                              }`}
-                            >
-                              {registro.tipo}
-                            </span>
-                          </div>
-                        </div>
-                        {registro.auditoria ? (
-                          <p className="mt-1 text-xs text-stone-700">
-                            {`${registro.auditoria.accion === "UPDATE" ? "Rectificado por" : "Registrado por"}: ${
-                              registro.auditoria.usuario?.username ?? "Sistema"
-                            } (${roleLabel(registro.auditoria.usuario?.rol ?? null)}) - Auditoria BD #${registro.auditoria.auditoriaId}`}
-                          </p>
-                        ) : (
-                          <p className="mt-1 text-xs text-stone-500">Sin referencia de auditoria para este movimiento.</p>
-                        )}
-                      {registro.comentarios ? <p className="mt-1 text-xs text-stone-700">{registro.comentarios}</p> : null}
-                      <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
-                        {registro.items.map((item) => (
-                          <p key={`${registro.registroId}-${item.itemId}`} className="text-xs text-stone-700">
-                            <span className="font-semibold">{item.cantidad}x</span> {item.nombre}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                : null}
-            </div>
-            {!registroViewer.loading && !registroViewer.error && registroViewerRows.length > 0 ? (
-              <PaginationControls
-                page={registroViewerPage}
-                pageSize={registroViewerPageSize}
-                totalItems={registroViewerRows.length}
-                itemLabel="movimientos"
-                onPageChange={setRegistroViewerPage}
-                onPageSizeChange={setRegistroViewerPageSize}
-                className="mt-3"
-              />
-            ) : null}
-          </article>
-        </section>
-      ) : null}
-
-      {registroDraft ? (
-        <section className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-3">
-          <article className="w-full max-w-2xl rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-base font-semibold text-stone-900">
-                  {registroDraft.modo === "rectificar"
-                    ? registroDraft.tipo === "ENTREGA"
-                      ? "Rectificar Entrega"
-                      : "Rectificar Devolucion"
-                    : registroDraft.tipo === "ENTREGA"
-                      ? "Registrar Entrega"
-                      : "Registrar Devolucion"}
-                </h3>
-                <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(registroDraft.ci)}`}</p>
-                {registroDraft.modo === "rectificar" && registroDraft.registroId ? (
-                  <p className="text-xs text-stone-600">{`Registro #${registroDraft.registroId}`}</p>
-                ) : null}
-                {personaRegistro ? (
-                  <p className="text-xs font-medium text-stone-700">{`Personal: ${apellidosLabel(personaRegistro)}, ${nombresLabel(personaRegistro)}`}</p>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                onClick={() => setRegistroDraft(null)}
-                disabled={registroSaving}
-                className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Cerrar
-              </button>
-            </div>
-
-            {registroSaving ? (
-              <p className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800">
-                Actualizando movimiento...
-              </p>
-            ) : null}
-
-            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <label className="text-xs text-stone-700">
-                Fecha
-                <input
-                  type="date"
-                  max={maxFechaIngreso}
-                  value={registroDraft.fecha}
-                  disabled={registroSaving}
-                  onChange={(event) => setRegistroDraft((prev) => (prev ? { ...prev, fecha: event.target.value } : prev))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="text-xs text-stone-700">
-                Comentarios (opcional)
-                <input
-                  value={registroDraft.comentarios}
-                  disabled={registroSaving}
-                  onChange={(event) => setRegistroDraft((prev) => (prev ? { ...prev, comentarios: event.target.value } : prev))}
-                  placeholder="Detalle breve"
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              </label>
-            </div>
-
-            <div className="mt-3 space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos del movimiento</p>
-              {registroDraft.items.map((item, index) => (
-                <div key={`reg-item-${index}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
-                  <select
-                    value={item.itemId}
-                    disabled={registroSaving}
-                    onChange={(event) => updateRegistroItem(index, "itemId", event.target.value)}
-                    className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  >
-                    <option value="">Seleccionar equipo</option>
-                    {equiposOrdenados
-                      .filter((catalogItem) => {
-                        if (!catalogItem.activo && catalogItem.itemId !== item.itemId) return false;
-                        if (catalogItem.itemId === item.itemId) return true;
-                        return !registroDraft.items.some(
-                          (selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId,
-                        );
-                      })
-                      .map((catalogItem) => (
-                        <option key={catalogItem.itemId} value={catalogItem.itemId}>
-                          {catalogItem.nombre}
-                        </option>
-                      ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={1}
-                    value={item.cantidad}
-                    disabled={registroSaving}
-                    onChange={(event) => updateRegistroItem(index, "cantidad", event.target.value)}
-                    className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeRegistroItem(index)}
-                    disabled={registroSaving || registroDraft.items.length <= 1}
-                    className="rounded bg-rose-700 px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
-                  >
-                    Quitar
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 flex flex-wrap justify-between gap-2">
-              <button
-                type="button"
-                onClick={addRegistroItem}
-                disabled={registroSaving}
-                className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Agregar equipo
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveRegistro()}
-                disabled={registroSaving}
-                className="rounded bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {registroSaving
-                  ? registroDraft.modo === "rectificar"
-                    ? "Guardando rectificacion..."
-                    : "Guardando movimiento..."
-                  : registroDraft.modo === "rectificar"
-                    ? "Guardar rectificacion"
-                    : "Guardar movimiento"}
-              </button>
-            </div>
-          </article>
-        </section>
-      ) : null}
-
-      {personalObservacionDraft ? (
-        <section className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-3">
-          <article className="w-full max-w-2xl rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-base font-semibold text-stone-900">
-                  {personalObservacionDraft.observacionId ? "Editar Observacion" : "Registrar Observacion"}
-                </h3>
-                <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(personalObservacionDraft.ci)}`}</p>
-                <p className="text-xs font-medium text-stone-700">{`Personal: ${personalObservacionDraft.nombre}`}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPersonalObservacionDraft(null)}
-                disabled={personalObservacionSaving}
-                className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Cerrar
-              </button>
-            </div>
-
-            {personalObservacionSaving || personalObservacionDraft.loading ? (
-              <p className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800">
-                {personalObservacionSaving ? "Guardando observacion..." : "Cargando observaciones..."}
-              </p>
-            ) : null}
-
-            {personalObservacionDraft.error ? (
-              <p className="mt-2 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800">
-                {personalObservacionDraft.error}
-              </p>
-            ) : null}
-
-            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Observaciones registradas</p>
-                  {personalObservacionDraft.observacionId ? (
-                    <button
-                      type="button"
-                      onClick={resetPersonalObservacionForm}
-                      disabled={personalObservacionSaving}
-                      className="rounded border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Nueva observacion
-                    </button>
-                  ) : null}
-                </div>
-                <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
-                  {!personalObservacionDraft.loading && personalObservacionDraft.observaciones.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-4 text-sm text-stone-500">
-                      Sin observaciones registradas.
-                    </div>
-                  ) : null}
-                  {personalObservacionDraft.observaciones.map((observacion) => (
-                    <article key={observacion.observacionId} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold text-stone-700">
-                            {new Date(observacion.fecha).toLocaleDateString("es-UY")}
-                          </p>
-                          <p className="mt-1 whitespace-pre-wrap text-sm text-stone-900">{observacion.texto}</p>
-                        </div>
-                        <div className="flex flex-wrap justify-end gap-1.5">
-                          <SmallActionButton
-                            text="Editar"
-                            tone="edit"
-                            onClick={() => editPersonalObservacion(observacion)}
-                          />
-                          <SmallActionButton
-                            text="Borrar"
-                            tone="delete"
-                            onClick={() => deletePersonalObservacion(observacion)}
-                          />
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-stone-200 bg-white p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
-                    {personalObservacionDraft.observacionId ? "Editar" : "Nueva"} observacion
-                  </p>
-                  {personalObservacionDraft.observacionId ? (
-                    <button
-                      type="button"
-                      onClick={resetPersonalObservacionForm}
-                      disabled={personalObservacionSaving}
-                      className="rounded border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Cancelar edicion
-                    </button>
-                  ) : null}
-                </div>
-
-                <div className="mt-3 space-y-3">
-                  <label className="block text-xs text-stone-700">
-                    Fecha
-                    <input
-                      type="date"
-                      max={maxFechaIngreso}
-                      value={personalObservacionDraft.fecha}
-                      disabled={personalObservacionSaving}
-                      onChange={(event) =>
-                        setPersonalObservacionDraft((prev) => (prev ? { ...prev, fecha: event.target.value } : prev))
-                      }
-                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                    />
-                  </label>
-                  <label className="block text-xs text-stone-700">
-                    Observacion
-                    <textarea
-                      rows={7}
-                      value={personalObservacionDraft.texto}
-                      disabled={personalObservacionSaving}
-                      onChange={(event) =>
-                        setPersonalObservacionDraft((prev) => (prev ? { ...prev, texto: event.target.value } : prev))
-                      }
-                      placeholder="Detalle asociado a la persona"
-                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                    />
-                  </label>
-                </div>
-
-                <div className="mt-3 flex flex-wrap justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPersonalObservacionDraft(null)}
-                    disabled={personalObservacionSaving}
-                    className="rounded border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Cerrar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void savePersonalObservacion()}
-                    disabled={personalObservacionSaving}
-                    className="rounded bg-teal-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {personalObservacionSaving
-                      ? "Guardando..."
-                      : personalObservacionDraft.observacionId
-                        ? "Guardar cambios"
-                        : "Guardar observacion"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </article>
-        </section>
-      ) : null}
+      
+      <HomeDialogsLayer
+        showChangePassword={showChangePassword}
+        changeCurrentPassword={changeCurrentPassword}
+        changeNewPassword={changeNewPassword}
+        changeConfirmPassword={changeConfirmPassword}
+        changeLoading={changeLoading}
+        onChangeCurrentPassword={setChangeCurrentPassword}
+        onChangeNewPassword={setChangeNewPassword}
+        onChangeConfirmPassword={setChangeConfirmPassword}
+        onCloseChangePassword={() => setShowChangePassword(false)}
+        onSubmitChangePassword={() => void submitChangePassword()}
+        userRoleDialog={userRoleDialog}
+        userRoleSaving={userRoleSaving}
+        onUserRoleChange={(role) =>
+          setUserRoleDialog((current) => (current ? { ...current, nextRole: role } : current))
+        }
+        onCloseUserRole={closeUserRoleDialog}
+        onSubmitUserRole={() => void submitUserRoleChange()}
+        userPasswordDialog={userPasswordDialog}
+        userPasswordSaving={userPasswordSaving}
+        onUserPasswordChange={(field, value) =>
+          setUserPasswordDialog((current) => (current ? { ...current, [field]: value } : current))
+        }
+        onCloseUserPassword={closeUserPasswordDialog}
+        onSubmitUserPassword={() => void submitUserPasswordChange()}
+        usernameDialog={usernameDialog}
+        usernameSaving={usernameSaving}
+        onUsernameDialogChange={(field, value) =>
+          setUsernameDialog((current) => (current ? { ...current, [field]: value } : current))
+        }
+        onCloseUsernameDialog={closeUsernameDialog}
+        onSubmitUsernameDialog={() => void submitUsernameChange()}
+        confirmDialog={confirmDialog}
+        confirmDialogBusy={confirmDialogBusy}
+        onCloseConfirmDialog={closeConfirmDialog}
+        onConfirmDialogAccept={() => void confirmDialogAccept()}
+        registroViewer={registroViewer}
+        registroViewerRowsPaginados={registroViewerRowsPaginados}
+        registroViewerPage={registroViewerPage}
+        registroViewerPageSize={registroViewerPageSize}
+        canWrite={canWrite}
+        onRectifyRegistro={rectifyRegistro}
+        onRegistroViewerPageChange={setRegistroViewerPage}
+        onRegistroViewerPageSizeChange={setRegistroViewerPageSize}
+        onCloseRegistroViewer={() => setRegistroViewer(null)}
+        registroDraft={registroDraft}
+        personaRegistro={personaRegistro}
+        equiposOrdenados={equiposOrdenados}
+        maxFechaIngreso={maxFechaIngreso}
+        registroSaving={registroSaving}
+        onCloseRegistroEditor={() => setRegistroDraft(null)}
+        onRegistroDraftChange={(field, value) => setRegistroDraft((prev) => (prev ? { ...prev, [field]: value } : prev))}
+        onRegistroItemChange={updateRegistroItem}
+        onAddRegistroItem={addRegistroItem}
+        onRemoveRegistroItem={removeRegistroItem}
+        onSubmitRegistro={() => void saveRegistro()}
+        personalObservacionDraft={personalObservacionDraft}
+        personalObservacionSaving={personalObservacionSaving}
+        onClosePersonalObservacion={() => setPersonalObservacionDraft(null)}
+        onResetPersonalObservacion={resetPersonalObservacionForm}
+        onEditPersonalObservacion={editPersonalObservacion}
+        onDeletePersonalObservacion={deletePersonalObservacion}
+        onPersonalObservacionDateChange={(value) =>
+          setPersonalObservacionDraft((prev) => (prev ? { ...prev, fecha: value } : prev))
+        }
+        onPersonalObservacionTextChange={(value) =>
+          setPersonalObservacionDraft((prev) => (prev ? { ...prev, texto: value } : prev))
+        }
+        onSubmitPersonalObservacion={() => void savePersonalObservacion()}
+      />
 
       {activeView === "hoja-de-entrega" && fichaViewingCi ? (
+
         <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
       ) : null}
 
       {loading ? <p className="mt-4 text-xs text-stone-600">Actualizando informacion...</p> : null}
-      
+      
     </main>
   );
 }
-

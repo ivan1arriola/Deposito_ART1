@@ -7,11 +7,16 @@ import { ReactNode, FormEvent } from "react";
 export type Role = "ADMIN" | "EDITOR";
 export type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
 export type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
-export type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
+export type EquipoCodigoConfig = { itemCodigoId: string; codigo: string; aclaracion: string | null; orden: number };
+export type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number; codigos: EquipoCodigoConfig[] };
 export type ItemConfig = EquipoConfig;
 export type UsuarioAdmin = {
   usuarioId: string;
+  grado: string;
+  nombre: string;
+  apellido: string;
   username: string;
+  mailReferencia: string | null;
   rol: Role;
   activo: boolean;
   createdAt: string;
@@ -88,9 +93,9 @@ export interface BateriaConfigCallbacks {
 // Equipos
 export interface EquipoConfigState {
   equipos: EquipoConfig[];
-  newEquipo: { nombre: string; activo: boolean; ordenPdf: number };
+  newEquipo: { nombre: string; activo: boolean; ordenPdf: number; codigos: Array<{ codigo: string; aclaracion: string }> };
   editEquipoId: string | null;
-  editEquipo: { nombre: string; activo: boolean; ordenPdf: number };
+  editEquipo: { nombre: string; activo: boolean; ordenPdf: number; codigos: Array<{ codigo: string; aclaracion: string }> };
   equiposActivos: EquipoConfig[];
   equiposInactivos: EquipoConfig[];
   equiposActivosEnPantalla: EquipoConfig[];
@@ -99,6 +104,9 @@ export interface EquipoConfigState {
 
 export interface EquipoConfigCallbacks {
   onNewEquipoChange: (value: string | boolean, key: keyof Pick<EquipoConfig, "nombre" | "activo">) => void;
+  onNewEquipoCodigoChange: (index: number, key: "codigo" | "aclaracion", value: string) => void;
+  onAddNewEquipoCodigo: () => void;
+  onRemoveNewEquipoCodigo: (index: number) => void;
   onEditEquipoIdChange: (id: string | null) => void;
   onEditEquipoChange: (
     value: string | boolean | number,
@@ -115,19 +123,27 @@ export interface EquipoConfigCallbacks {
 // Usuarios Admin
 export interface UsuarioConfigState {
   usuarios: UsuarioAdmin[];
+  newGrado: string;
+  newNombre: string;
+  newApellido: string;
   newUsername: string;
   newPassword: string;
   newPasswordConfirm: string;
+  newMailReferencia: string;
   newRole: Role;
 }
 
 export interface UsuarioConfigCallbacks {
+  onNewGradoChange: (value: string) => void;
+  onNewNombreChange: (value: string) => void;
+  onNewApellidoChange: (value: string) => void;
   onNewUsernameChange: (value: string) => void;
   onNewPasswordChange: (value: string) => void;
   onNewPasswordConfirmChange: (value: string) => void;
+  onNewMailReferenciaChange: (value: string) => void;
   onNewRoleChange: (role: Role) => void;
   onCreateUsuario: (event: FormEvent<HTMLFormElement>) => void;
-  onChangeUsername: (usuario: UsuarioAdmin) => void;
+  onEditUsuario: (usuario: UsuarioAdmin) => void;
   onChangeUserRole: (usuario: UsuarioAdmin) => void;
   onChangeUserPassword: (usuario: UsuarioAdmin) => void;
   onToggleUserActive: (usuario: UsuarioAdmin) => void;

@@ -1,7 +1,8 @@
 // Tipos de entidades principales
 export type Rango = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
 export type Bateria = { bateriaId: number; nombre: string; orden: number };
-export type Equipo = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
+export type EquipoCodigo = { itemCodigoId: string; codigo: string; aclaracion: string | null; orden: number };
+export type Equipo = { itemId: string; nombre: string; activo: boolean; ordenPdf: number; codigos: EquipoCodigo[] };
 export type Item = Equipo;
 export type Talla = { tallaTipo: { nombre: string }; tallaValor: string };
 
@@ -40,14 +41,23 @@ export type EquipoForm = {
   nombre: string;
   activo: boolean;
   ordenPdf: number;
+  codigos: EquipoCodigoForm[];
 };
 export type ItemForm = EquipoForm;
+
+export type EquipoCodigoForm = {
+  codigo: string;
+  aclaracion: string;
+};
 
 // Tipos de autenticación y permisos
 export type Role = "ADMIN" | "EDITOR";
 
 export type CurrentUser = {
   usuarioId: string;
+  grado: string;
+  nombre: string;
+  apellido: string;
   username: string;
   rol: Role;
 };
@@ -116,7 +126,11 @@ export type FirmaConfig = {
 
 export type UsuarioAdmin = {
   usuarioId: string;
+  grado: string;
+  nombre: string;
+  apellido: string;
   username: string;
+  mailReferencia: string | null;
   rol: Role;
   activo: boolean;
   createdAt: string;

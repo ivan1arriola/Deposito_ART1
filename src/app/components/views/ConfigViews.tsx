@@ -6,8 +6,20 @@ import { SmallActionButton, PaginationControls } from "../shared";
 type Role = "ADMIN" | "EDITOR";
 type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
 type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
-type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
-type UsuarioAdmin = { usuarioId: string; username: string; rol: Role; activo: boolean; createdAt: string; updatedAt: string };
+type EquipoCodigoConfig = { itemCodigoId: string; codigo: string; aclaracion: string | null; orden: number };
+type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number; codigos: EquipoCodigoConfig[] };
+type UsuarioAdmin = {
+  usuarioId: string;
+  grado: string;
+  nombre: string;
+  apellido: string;
+  username: string;
+  mailReferencia: string | null;
+  rol: Role;
+  activo: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
 type FirmaConfig = { encargadoRango: string; encargadoNombre: string; oficialRango: string; oficialNombre: string; updatedAt: string | null };
 type AuditoriaRecord = {
   auditoriaId: string;
@@ -42,18 +54,22 @@ interface ConfigViewsProps {
   editBateriaOrden: string;
   // Equipos state
   equipos: EquipoConfig[];
-  newEquipo: { nombre: string; activo: boolean; ordenPdf: number };
+  newEquipo: { nombre: string; activo: boolean; ordenPdf: number; codigos: Array<{ codigo: string; aclaracion: string }> };
   editEquipoId: string | null;
-  editEquipo: { nombre: string; activo: boolean; ordenPdf: number };
+  editEquipo: { nombre: string; activo: boolean; ordenPdf: number; codigos: Array<{ codigo: string; aclaracion: string }> };
   equiposActivos: EquipoConfig[];
   equiposInactivos: EquipoConfig[];
   equiposActivosEnPantalla: EquipoConfig[];
   draggedEquipoId: string | null;
   // Usuarios state
   usuarios: UsuarioAdmin[];
+  newGrado: string;
+  newNombre: string;
+  newApellido: string;
   newUsername: string;
   newPassword: string;
   newPasswordConfirm: string;
+  newMailReferencia: string;
   newRole: Role;
   // Firma config state
   firmaConfig: FirmaConfig | null;
@@ -89,6 +105,9 @@ interface ConfigViewsProps {
   onDeleteBateria: (bateriaId: number) => void;
   // Equipos callbacks
   onNewEquipoChange: (value: string | boolean, key: keyof Pick<EquipoConfig, "nombre" | "activo">) => void;
+  onNewEquipoCodigoChange: (index: number, key: "codigo" | "aclaracion", value: string) => void;
+  onAddNewEquipoCodigo: () => void;
+  onRemoveNewEquipoCodigo: (index: number) => void;
   onEditEquipoIdChange: (id: string | null) => void;
   onEditEquipoChange: (
     value: string | boolean | number,
@@ -101,12 +120,16 @@ interface ConfigViewsProps {
   onStartEquipoDrag: (itemId: string) => void;
   renderEquipoCard: (equipo: EquipoConfig, options?: { draggableInActiveList?: boolean }) => ReactNode;
   // Usuarios callbacks
+  onNewGradoChange: (value: string) => void;
+  onNewNombreChange: (value: string) => void;
+  onNewApellidoChange: (value: string) => void;
   onNewUsernameChange: (value: string) => void;
   onNewPasswordChange: (value: string) => void;
   onNewPasswordConfirmChange: (value: string) => void;
+  onNewMailReferenciaChange: (value: string) => void;
   onNewRoleChange: (role: Role) => void;
   onCreateUsuario: (event: FormEvent<HTMLFormElement>) => void;
-  onChangeUsername: (usuario: UsuarioAdmin) => void;
+  onEditUsuario: (usuario: UsuarioAdmin) => void;
   onChangeUserRole: (usuario: UsuarioAdmin) => void;
   onChangeUserPassword: (usuario: UsuarioAdmin) => void;
   onToggleUserActive: (usuario: UsuarioAdmin) => void;
@@ -248,17 +271,17 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Baterias</h2>
+          <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Baterías</h2>
           {!props.isAdmin ? (
             <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
-              Modo solo lectura: solo el administrador puede crear, editar o eliminar baterias.
+              Modo solo lectura: solo el administrador puede crear, editar o eliminar baterías.
             </p>
           ) : null}
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_96px_auto]">
             <input
               value={props.newBateria}
               onChange={(event) => props.onNewBateriaChange(event.target.value)}
-              placeholder="Nueva bateria"
+              placeholder="Nueva batería"
               className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               disabled={!props.isAdmin}
             />
@@ -360,6 +383,50 @@ export function ConfigViews(props: ConfigViewsProps) {
                 Activo
               </label>
             </div>
+            <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">Codigos unicos</p>
+                  <p className="text-xs text-stone-500">Opcional. Puedes cargar varios y agregar una aclaracion por cada uno.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={props.onAddNewEquipoCodigo}
+                  className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+                >
+                  Agregar codigo
+                </button>
+              </div>
+              {props.newEquipo.codigos.length === 0 ? (
+                <p className="mt-3 text-xs text-stone-500">Sin codigos cargados.</p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {props.newEquipo.codigos.map((codigo, index) => (
+                    <div key={`nuevo-codigo-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[180px_minmax(0,1fr)_auto]">
+                      <input
+                        value={codigo.codigo}
+                        onChange={(event) => props.onNewEquipoCodigoChange(index, "codigo", event.target.value)}
+                        placeholder="Codigo unico"
+                        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={codigo.aclaracion ?? ""}
+                        onChange={(event) => props.onNewEquipoCodigoChange(index, "aclaracion", event.target.value)}
+                        placeholder="Aclaracion opcional"
+                        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => props.onRemoveNewEquipoCodigo(index)}
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               type="submit"
               disabled={!props.canWrite}
@@ -430,19 +497,19 @@ export function ConfigViews(props: ConfigViewsProps) {
         <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Firmas institucionales (solo administrador)</h2>
           <p className="mt-1 text-xs text-stone-600">
-            Esta seccion controla los datos de quienes firman la hoja de entrega. Los textos institucionales son fijos.
+            Esta sección controla los datos de quienes firman la hoja de entrega. Los textos institucionales son fijos.
           </p>
           <div className="mt-3 space-y-2 rounded-lg border border-stone-200 bg-stone-50 p-3">
             <p className="text-xs font-semibold text-stone-700">Textos institucionales (fijos):</p>
             <p className="text-xs text-stone-600">
-              • Encargado: El Encargado del Deposito General del Grp. &quot;Brig. Gral. Manuel Oribe&quot; de Artilleria 105mm No. 1.
+              • Encargado: El Encargado del Depósito General del Grp. &quot;Brig. Gral. Manuel Oribe&quot; de Artillería 105mm No. 1.
             </p>
             <p className="text-xs text-stone-600">
-              • Oficial: El Oficial de Administracion del Grp. &quot;Brig. Gral. Manuel Oribe&quot; de Artilleria 105mm No. 1.
+              • Oficial: El Oficial de Administración del Grp. &quot;Brig. Gral. Manuel Oribe&quot; de Artillería 105mm No. 1.
             </p>
           </div>
           {props.firmaConfigLoading ? (
-            <p className="mt-3 text-sm text-stone-600">Cargando configuracion de firmas...</p>
+            <p className="mt-3 text-sm text-stone-600">Cargando configuración de firmas...</p>
           ) : (
             <form onSubmit={props.onSaveFirmaConfig} className="mt-3 space-y-4">
               <div className="space-y-2">
@@ -502,8 +569,8 @@ export function ConfigViews(props: ConfigViewsProps) {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs text-stone-600">
                   {props.firmaConfig?.updatedAt
-                    ? `Ultima actualizacion: ${new Date(props.firmaConfig.updatedAt).toLocaleString("es-UY")}`
-                    : "Sin actualizaciones registradas todavia."}
+                    ? `Última actualización: ${new Date(props.firmaConfig.updatedAt).toLocaleString("es-UY")}`
+                    : "Sin actualizaciones registradas todavía."}
                 </p>
                 <button
                   type="submit"
@@ -527,28 +594,54 @@ export function ConfigViews(props: ConfigViewsProps) {
         <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Usuarios y privilegios</h2>
           <form onSubmit={props.onCreateUsuario} className="mt-3 space-y-3">
-            <input
-              value={props.newUsername}
-              onChange={(event) => props.onNewUsernameChange(event.target.value)}
-              placeholder="Nombre de usuario"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <input
+                value={props.newGrado}
+                onChange={(event) => props.onNewGradoChange(event.target.value)}
+                placeholder="Grado"
+                className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+              <input
+                value={props.newNombre}
+                onChange={(event) => props.onNewNombreChange(event.target.value)}
+                placeholder="Nombre"
+                className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+              <input
+                value={props.newApellido}
+                onChange={(event) => props.onNewApellidoChange(event.target.value)}
+                placeholder="Apellido"
+                className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+              <input
+                value={props.newUsername}
+                onChange={(event) => props.onNewUsernameChange(event.target.value)}
+                placeholder="Usuario"
+                className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <input
                 value={props.newPassword}
                 onChange={(event) => props.onNewPasswordChange(event.target.value)}
-                placeholder="Contrasena (min 8)"
+                placeholder="Contraseña (mín. 8)"
                 className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 type="password"
               />
               <input
                 value={props.newPasswordConfirm}
                 onChange={(event) => props.onNewPasswordConfirmChange(event.target.value)}
-                placeholder="Repetir contrasena"
+                placeholder="Repetir contraseña"
                 className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 type="password"
               />
             </div>
+            <input
+              value={props.newMailReferencia}
+              onChange={(event) => props.onNewMailReferenciaChange(event.target.value)}
+              placeholder="Mail de referencia (opcional)"
+              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {ROLE_OPTIONS.map((role) => {
                 const selected = props.newRole === role;
@@ -588,17 +681,19 @@ export function ConfigViews(props: ConfigViewsProps) {
               <div key={usuario.usuarioId} className="rounded-lg bg-stone-100/80 p-2">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm font-medium text-stone-900">
-                      {usuario.username} ({props.roleLabel(usuario.rol)})
+                    <p className="text-sm font-medium text-stone-900">{`${usuario.grado} ${usuario.apellido}, ${usuario.nombre}`}</p>
+                    <p className="mt-1 text-xs text-stone-600">{`Usuario: ${usuario.username}`}</p>
+                    <p className="text-xs text-stone-600">
+                      {usuario.mailReferencia ? `Mail de referencia: ${usuario.mailReferencia}` : "Mail de referencia: sin dato"}
                     </p>
                     <p className="mt-1 text-xs text-stone-500">{props.roleDescription(usuario.rol)}</p>
                     <p className="text-xs text-stone-600">{usuario.activo ? "Activo" : "Inactivo"}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <SmallActionButton
-                      text="Usuario"
+                      text="Datos"
                       tone="edit"
-                      onClick={() => props.onChangeUsername(usuario)}
+                      onClick={() => props.onEditUsuario(usuario)}
                     />
                     <SmallActionButton
                       text="Editar rol"
@@ -606,7 +701,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       onClick={() => props.onChangeUserRole(usuario)}
                     />
                     <SmallActionButton
-                      text="Contrasena"
+                      text="Contraseña"
                       tone="edit"
                       onClick={() => props.onChangeUserPassword(usuario)}
                     />

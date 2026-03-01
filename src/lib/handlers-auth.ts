@@ -56,14 +56,14 @@ export async function logoutHandler(callbacks: CallbackProps) {
 }
 
 export async function requestPasswordResetHandler(
-  usernameOrEmail: string,
+  username: string,
   callbacks: CallbackProps,
 ) {
   try {
     const result = await api<PasswordResetRequestResponse>("/api/auth/password-reset/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ usernameOrEmail }),
+      body: JSON.stringify({ username }),
     });
     callbacks.onSuccess?.(result);
     return result;

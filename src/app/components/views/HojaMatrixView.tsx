@@ -21,7 +21,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
     if (!data) return [] as string[];
     const labels = new Map<string, number | null>();
     for (const row of data.rows) {
-      const label = row.bateria ?? "Sin bateria";
+      const label = row.bateria ?? "Sin batería";
       const current = labels.get(label);
       if (current === undefined || compareOptionalOrder(row.bateriaOrden, current) < 0) {
         labels.set(label, row.bateriaOrden);
@@ -116,14 +116,14 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
                 : "border border-stone-300 bg-white text-stone-700"
             }`}
           >
-            Ver por bateria
+            Ver por batería
           </button>
         </div>
 
         {viewMode === "battery" ? (
           <div className="mt-3 flex flex-wrap gap-2">
             {bateriaOptions.length === 0 ? (
-              <span className="text-xs text-stone-500">Cargue los datos para ver las baterias disponibles.</span>
+              <span className="text-xs text-stone-500">Cargue los datos para ver las baterías disponibles.</span>
             ) : (
               bateriaOptions.map((label) => (
                 <button
@@ -151,7 +151,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
       {loading && !data ? <p className="mt-3 text-sm text-stone-600">Cargando Hoja Matriz...</p> : null}
 
       {hasRequested && viewMode === "battery" && !selectedBattery && data ? (
-        <p className="mt-3 text-xs font-semibold text-stone-600">Seleccione una bateria para mostrar la matriz.</p>
+        <p className="mt-3 text-xs font-semibold text-stone-600">Seleccione una batería para mostrar la matriz.</p>
       ) : null}
 
       {!hasRequested && !loading ? (

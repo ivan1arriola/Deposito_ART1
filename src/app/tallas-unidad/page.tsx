@@ -6,7 +6,7 @@ import { comparePersonalByHierarchy } from "@/lib/rank-order";
 
 export const revalidate = 0;
 
-const SIN_BATERIA_LABEL = "Sin bateria";
+const SIN_BATERIA_LABEL = "Sin batería";
 
 function buildApellidos(persona: { apellido1: string; apellido2: string | null }) {
   return `${persona.apellido1} ${persona.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
@@ -200,10 +200,10 @@ export default async function TallasUnidadPage({
                 <th>Grado</th>
                 <th>Apellidos</th>
                 <th>Nombres</th>
-                <th>Bateria</th>
+                <th>Batería</th>
                 <th>Parka</th>
                 <th>Camisaco</th>
-                <th>Pantalon</th>
+                <th>Pantalón</th>
                 <th>Kepi</th>
                 <th>Calzado</th>
               </tr>

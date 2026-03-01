@@ -83,7 +83,7 @@ export function PersonalCreateView({
                 <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Identidad</legend>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <label className="sm:col-span-2 xl:col-span-4">
-                    <span className="block text-xs font-medium text-stone-700">Cedula de identidad *</span>
+                    <span className="block text-xs font-medium text-stone-700">Cédula de identidad *</span>
                     <input
                       value={newPersonal.ci}
                       onChange={(event) => onPersonalChange("ci", event.target.value)}
@@ -93,7 +93,7 @@ export function PersonalCreateView({
                     />
                     {ciAlreadyExists && duplicatePersonal ? (
                       <span className="mt-1 block text-[11px] font-medium text-rose-700">
-                        {`Cedula repetida: ${apellidosLabel(duplicatePersonal)}, ${nombresLabel(duplicatePersonal)}.`}
+                        {`Cédula repetida: ${apellidosLabel(duplicatePersonal)}, ${nombresLabel(duplicatePersonal)}.`}
                       </span>
                     ) : (
                       <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
@@ -162,13 +162,13 @@ export function PersonalCreateView({
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">Bateria</span>
+                    <span className="block text-xs font-medium text-stone-700">Batería</span>
                     <select
                       value={newPersonal.bateriaId}
                       onChange={(event) => onPersonalChange("bateriaId", event.target.value)}
                       className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                     >
-                      <option value="">Sin bateria</option>
+                      <option value="">Sin batería</option>
                       {baterias.map((bateria) => (
                         <option key={bateria.bateriaId} value={String(bateria.bateriaId)}>
                           {bateria.nombre}
@@ -229,22 +229,22 @@ export function PersonalCreateView({
 
                 {!ciLooksValid ? (
                   <p className="mt-3 rounded-xl border border-rose-300/80 bg-rose-50 px-3 py-2 text-xs text-rose-800">
-                    La cedula ingresada no es valida.
+                    La cédula ingresada no es válida.
                   </p>
                 ) : null}
 
                 {ciAlreadyExists && duplicatePersonal ? (
                   <p className="mt-3 rounded-xl border border-rose-300/80 bg-rose-50 px-3 py-2 text-xs text-rose-800">
-                    {`Cedula repetida detectada: ${apellidosLabel(duplicatePersonal)}, ${nombresLabel(duplicatePersonal)}.`}
+                    {`Cédula repetida detectada: ${apellidosLabel(duplicatePersonal)}, ${nombresLabel(duplicatePersonal)}.`}
                   </p>
                 ) : null}
 
                 <div className="mt-4 space-y-2 text-xs text-stone-600">
-                  <p>{`Cedula valida: ${requiredPersonalFields[0] ? "Si" : "No"}`}</p>
+                  <p>{`Cédula válida: ${requiredPersonalFields[0] ? "Sí" : "No"}`}</p>
                   <p>{`Apellido 1: ${requiredPersonalFields[1] ? "Completo" : "Falta"}`}</p>
                   <p>{`Nombre 1: ${requiredPersonalFields[2] ? "Completo" : "Falta"}`}</p>
                   <p>{`Grado: ${requiredPersonalFields[3] ? "Seleccionado" : "Falta"}`}</p>
-                  <p>{`Bateria: ${Number(newPersonal.bateriaId) > 0 ? "Completa" : "Pendiente"}`}</p>
+                  <p>{`Batería: ${Number(newPersonal.bateriaId) > 0 ? "Completa" : "Pendiente"}`}</p>
                   <p>{`Fecha de ingreso: ${newPersonal.fechaIngreso ? "Completa" : "Pendiente"}`}</p>
                 </div>
               </article>
@@ -252,7 +252,7 @@ export function PersonalCreateView({
               <article className="rounded-2xl border border-stone-200 bg-stone-950 p-4 text-white shadow-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lime-300">Alta inmediata</p>
                 <p className="mt-3 text-sm leading-6 text-white/80">
-                  Al confirmar, la ficha se incorpora al listado general y ya puede recibir movimientos de entrega o devolucion.
+                  Al confirmar, la ficha se incorpora al listado general y ya puede recibir movimientos de entrega o devolución.
                 </p>
 
                 <button

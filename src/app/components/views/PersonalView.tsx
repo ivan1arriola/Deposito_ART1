@@ -94,7 +94,7 @@ export function PersonalView({
         <input
           value={searchCedula}
           onChange={(event) => onSearchCedulaChange(event.target.value)}
-          placeholder="Buscar por cedula"
+          placeholder="Buscar por cédula"
           className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
         />
         <input
@@ -114,8 +114,8 @@ export function PersonalView({
           onChange={(event) => onBateriaFilterChange(event.target.value)}
           className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
         >
-          <option value="ALL">Todas las baterias</option>
-          <option value="NONE">Sin bateria</option>
+          <option value="ALL">Todas las baterías</option>
+          <option value="NONE">Sin batería</option>
           {baterias.map((bateria) => (
             <option key={bateria.bateriaId} value={String(bateria.bateriaId)}>
               {bateria.nombre}
@@ -169,7 +169,7 @@ export function PersonalView({
               <p className="text-sm text-stone-900">
                 <span className="font-semibold">Nombres:</span> {nombresLabel(persona)}
               </p>
-              <p className="mt-1 text-xs text-stone-600">{persona.bateria?.nombre ?? "Sin bateria"}</p>
+              <p className="mt-1 text-xs text-stone-600">{persona.bateria?.nombre ?? "Sin batería"}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <SmallActionButton
                   text={editing ? "Cancelar" : "Editar"}
@@ -247,7 +247,7 @@ export function PersonalView({
               <th className="w-[15%] px-3 py-2">Grado del Personal</th>
               <th className="w-[18%] px-3 py-2">Apellidos</th>
               <th className="w-[18%] px-3 py-2">Nombres</th>
-              <th className="w-[13%] px-3 py-2">Bateria</th>
+              <th className="w-[13%] px-3 py-2">Batería</th>
               <th className="w-[9%] px-3 py-2">Detalles</th>
               <th className="w-[16%] px-3 py-2">Acciones</th>
             </tr>
@@ -272,7 +272,7 @@ export function PersonalView({
                     </td>
                     <td className="px-3 py-2 text-stone-900">{apellidosLabel(persona)}</td>
                     <td className="px-3 py-2 text-stone-900">{nombresLabel(persona)}</td>
-                    <td className="px-3 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin bateria"}</td>
+                    <td className="px-3 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin batería"}</td>
                     <td className="px-3 py-2">
                       <button
                         type="button"

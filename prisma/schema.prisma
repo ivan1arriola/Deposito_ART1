@@ -23,17 +23,20 @@ enum UserRole {
 }
 
 model Usuario {
-  usuarioId    String              @id @default(cuid()) @map("usuario_id")
-  username     String              @unique
-  email        String              @map("email")
-  passwordHash String              @map("password_hash")
-  rol          UserRole            @default(EDITOR)
-  activo       Boolean             @default(true)
-  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  sesiones     Sesion[]
-  auditorias   Auditoria[]
-  resetCodes   PasswordResetCode[]
+  usuarioId      String              @id @default(cuid()) @map("usuario_id")
+  grado          String
+  nombre         String
+  apellido       String
+  username       String              @unique @map("usuario")
+  passwordHash   String              @map("password_hash")
+  mailReferencia String?             @map("mail_referencia")
+  rol            UserRole            @default(EDITOR)
+  activo         Boolean             @default(true)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  sesiones       Sesion[]
+  auditorias     Auditoria[]
+  resetCodes     PasswordResetCode[]
 
   @@map("usuario")
 }
@@ -114,9 +117,22 @@ model Item {
   nombre        String         @unique
   activo        Boolean        @default(true)
   ordenPdf      Int            @map("orden_pdf")
+  codigos       ItemCodigo[]
   registroItems RegistroItem[]
 
   @@map("item")
+}
+
+model ItemCodigo {
+  itemCodigoId BigInt  @id @default(autoincrement()) @map("item_codigo_id")
+  itemId       BigInt  @map("item_id")
+  codigo       String  @unique
+  aclaracion   String?
+  orden        Int
+  item         Item    @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+
+  @@index([itemId, orden])
+  @@map("item_codigo")
 }
 
 model Personal {

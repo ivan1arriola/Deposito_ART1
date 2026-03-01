@@ -88,6 +88,16 @@ CREATE TABLE "item" (
 
 CREATE INDEX "item_orden_pdf_nombre_idx" ON "item"("orden_pdf", "nombre");
 
+CREATE TABLE "item_codigo" (
+  "item_codigo_id" BIGSERIAL PRIMARY KEY,
+  "item_id" BIGINT NOT NULL REFERENCES "item"("item_id") ON DELETE CASCADE,
+  "codigo" TEXT NOT NULL UNIQUE,
+  "aclaracion" TEXT,
+  "orden" INTEGER NOT NULL
+);
+
+CREATE INDEX "item_codigo_item_orden_idx" ON "item_codigo"("item_id", "orden");
+
 INSERT INTO "item" ("nombre", "activo", "orden_pdf") VALUES
 ('Buzo Verde M/C', TRUE, 1),
 ('Buzo M/L V/Oliva', TRUE, 2),
@@ -177,9 +187,12 @@ CREATE INDEX "observacion_ci_fecha_idx" ON "observacion"("ci", "fecha" DESC);
 
 CREATE TABLE "usuario" (
   "usuario_id" TEXT PRIMARY KEY,
-  "username" TEXT NOT NULL UNIQUE,
-  "email" TEXT NOT NULL,
+  "grado" TEXT NOT NULL,
+  "nombre" TEXT NOT NULL,
+  "apellido" TEXT NOT NULL,
+  "usuario" TEXT NOT NULL UNIQUE,
   "password_hash" TEXT NOT NULL,
+  "mail_referencia" TEXT,
   "rol" "user_role" NOT NULL DEFAULT 'EDITOR',
   "activo" BOOLEAN NOT NULL DEFAULT TRUE,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),

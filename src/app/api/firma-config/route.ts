@@ -74,4 +74,3 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "No se pudo guardar la configuracion de firmas." }, { status: 500 });
   }
 }
-

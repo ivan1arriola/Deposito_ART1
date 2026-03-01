@@ -41,6 +41,9 @@ export const authOptions = {
           entidadId: user.usuarioId,
           detalle: {
             username: user.username,
+            grado: user.grado,
+            nombre: user.nombre,
+            apellido: user.apellido,
             rol: user.rol,
           },
         });
@@ -48,7 +51,7 @@ export const authOptions = {
         return {
           id: user.usuarioId,
           name: user.username,
-          email: user.email,
+          email: user.mailReferencia ?? undefined,
           role: user.rol,
         };
       },

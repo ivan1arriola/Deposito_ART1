@@ -171,7 +171,7 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
                     <thead>
                       <tr className="bg-stone-100">
                         <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
-                          {resumen.length === 1 ? "Unidad" : "Bateria"}
+                          {resumen.length === 1 ? "Unidad" : "Batería"}
                         </th>
                         {showTotal ? (
                           <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
@@ -240,7 +240,7 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
     <section className="mt-6 space-y-4">
       <article className="ej-card flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-stone-900">Impresion de talles</h2>
+          <h2 className="text-base font-semibold text-stone-900">Impresión de talles</h2>
           <p className="mt-1 text-xs text-stone-600">
             Genera una hoja nominal de talles o un resumen con cantidades absolutas por prenda para toda la unidad.
           </p>
@@ -271,8 +271,8 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
       )}
       {renderResumen(
         resumenTallasPorBateria,
-        "Resumen de Tallas por Bateria",
-        "Cantidades absolutas por prenda y bateria. Incluye el grupo Sin bateria cuando corresponde."
+        "Resumen de Tallas por Batería",
+        "Cantidades absolutas por prenda y batería. Incluye el grupo Sin batería cuando corresponde."
       )}
     </section>
   );

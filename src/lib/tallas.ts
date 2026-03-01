@@ -4,7 +4,7 @@ export type TallaKey = (typeof TALLA_KEYS)[number];
 export const TALLA_LABELS: Record<TallaKey, string> = {
   PARKA: "Parka",
   CAMISACO: "Camisaco",
-  PANTALON: "Pantalon",
+  PANTALON: "Pantalón",
   KEPI: "Kepi",
   CALZADO: "Calzado",
 };
@@ -59,7 +59,7 @@ export function validateAndNormalizeTallas(values: Partial<Record<TallaKey, stri
     if (!hasValidDynamicFormat(key, normalized)) {
       return {
         ok: false as const,
-        error: `Talla ${TALLA_LABELS[key]} invalida. Formato no permitido.`,
+        error: `Talla ${TALLA_LABELS[key]} inválida. Formato no permitido.`,
       };
     }
 
