@@ -108,7 +108,7 @@ export async function initializeDatabaseHandler(callbacks: CallbackProps) {
     const result = await api<{
       initialized: boolean;
       message: string;
-      credentials?: { username: string; password: string; email: string };
+      credentials?: { username: string; password: string };
     }>("/api/db-init", { method: "POST" });
     callbacks.onSuccess?.(result);
   } catch (error) {

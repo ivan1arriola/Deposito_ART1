@@ -10,13 +10,13 @@ function getArg(name, fallback = "") {
 }
 
 const username = getArg("username");
-const email = getArg("email");
 const password = getArg("password");
 const roleInput = getArg("role", "ADMIN").toUpperCase();
 const role = ["ADMIN", "EDITOR"].includes(roleInput) ? roleInput : "ADMIN";
+const email = `${username.trim().toLowerCase().replace(/\s+/g, ".")}@usuarios.local`;
 
-if (!username || !email || !password || password.length < 8) {
-  console.error("Uso: npm run user:create -- --username admin --email user@dominio --password <min8> [--role ADMIN|EDITOR]");
+if (!username || !password || password.length < 8) {
+  console.error("Uso: npm run user:create -- --username admin --password <min8> [--role ADMIN|EDITOR]");
   process.exit(1);
 }
 

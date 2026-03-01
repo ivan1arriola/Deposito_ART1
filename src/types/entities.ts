@@ -68,7 +68,6 @@ export type FirmaConfig = {
 export type UsuarioAdmin = {
   usuarioId: string;
   username: string;
-  email: string;
   rol: Role;
   activo: boolean;
   createdAt: string;

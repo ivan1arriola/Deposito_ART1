@@ -8,7 +8,6 @@ import {
   createUsuarioHandler,
   changeUserRoleHandler,
   toggleUserActiveHandler,
-  resetUserPasswordHandler,
   deleteUsuarioHandler,
   saveFirmaConfigHandler,
 } from "@/lib/handlers-usuarios";
@@ -17,7 +16,6 @@ vi.mock("@/lib/api", () => ({
   api: vi.fn(),
 }));
 
-declare const api: any;
 describe("Handlers de Usuarios", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -28,7 +26,7 @@ describe("Handlers de Usuarios", () => {
       const onSuccess = vi.fn();
       vi.mocked(api).mockResolvedValue({ usuarioId: "USR123" });
 
-      await createUsuarioHandler("newuser", "newuser@mail.local", "password123", "EDITOR", {
+      await createUsuarioHandler("newuser", "password123", "EDITOR", {
         onSuccess,
       });
 
@@ -38,7 +36,6 @@ describe("Handlers de Usuarios", () => {
           method: "POST",
           body: JSON.stringify({
             username: "newuser",
-            email: "newuser@mail.local",
             password: "password123",
             rol: "EDITOR",
             activo: true,
@@ -55,7 +52,7 @@ describe("Handlers de Usuarios", () => {
       );
 
       try {
-        await createUsuarioHandler("newuser", "newuser@mail.local", "short", "EDITOR", { onError });
+        await createUsuarioHandler("newuser", "short", "EDITOR", { onError });
       } catch {
         // Error esperado
       }
@@ -113,40 +110,6 @@ describe("Handlers de Usuarios", () => {
         })
       );
       expect(onSuccess).toHaveBeenCalled();
-    });
-  });
-
-  describe("resetUserPasswordHandler", () => {
-    it("debería resetear contraseña", async () => {
-      const onSuccess = vi.fn();
-      vi.mocked(api).mockResolvedValue({});
-
-      await resetUserPasswordHandler("USR123", "newPassword123", { onSuccess });
-
-      expect(vi.mocked(api)).toHaveBeenCalledWith(
-        "/api/usuarios/USR123",
-        expect.objectContaining({
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password: "newPassword123" }),
-        })
-      );
-      expect(onSuccess).toHaveBeenCalled();
-    });
-
-    it("debería validar longitud de contraseña", async () => {
-      const onError = vi.fn();
-      vi.mocked(api).mockRejectedValue(
-        new Error("Contraseña muy corta")
-      );
-
-      try {
-        await resetUserPasswordHandler("USR123", "short", { onError });
-      } catch {
-        // Error esperado
-      }
-
-      expect(onError).toHaveBeenCalled();
     });
   });
 

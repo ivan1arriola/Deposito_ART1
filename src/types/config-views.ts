@@ -113,9 +113,8 @@ export interface UsuarioConfigCallbacks {
   onNewPasswordChange: (value: string) => void;
   onNewRoleChange: (role: Role) => void;
   onCreateUsuario: (event: FormEvent<HTMLFormElement>) => void;
-  onChangeUserRole: (usuarioId: string, currentRole: Role) => void;
+  onChangeUserRole: (usuario: UsuarioAdmin) => void;
   onToggleUserActive: (usuario: UsuarioAdmin) => void;
-  onResetUserPassword: (usuario: UsuarioAdmin) => void;
   onDeleteUsuario: (usuario: UsuarioAdmin) => void;
 }
 

@@ -102,7 +102,6 @@ import {
 import {
   loginHandler,
   logoutHandler,
-  requestPasswordResetHandler,
   changePasswordHandler,
 } from "@/lib/handlers-auth";
 
@@ -121,13 +120,20 @@ type PersonalObservacionDraft = {
   error: string | null;
 };
 
+type UserRoleDialogState = {
+  usuarioId: string;
+  username: string;
+  currentRole: Role;
+  nextRole: Role;
+};
+
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("Verificando sesión...");
   const [initMessage, setInitMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
   const [showInitCredentials, setShowInitCredentials] = useState(false);
-  const [initCredentials, setInitCredentials] = useState<{ username: string; password: string; email: string } | null>(null);
+  const [initCredentials, setInitCredentials] = useState<{ username: string; password: string } | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -137,6 +143,8 @@ export default function Home() {
   const [changeNewPassword, setChangeNewPassword] = useState("");
   const [changeConfirmPassword, setChangeConfirmPassword] = useState("");
   const [changeLoading, setChangeLoading] = useState(false);
+  const [userRoleDialog, setUserRoleDialog] = useState<UserRoleDialogState | null>(null);
+  const [userRoleSaving, setUserRoleSaving] = useState(false);
 
   const [rangos, setRangos] = useState<Rango[]>([]);
   const [baterias, setBaterias] = useState<Bateria[]>([]);
@@ -157,7 +165,6 @@ export default function Home() {
   const [movimientosTotal, setMovimientosTotal] = useState(0);
 
   const [newUsername, setNewUsername] = useState("");
-  const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<Role>("EDITOR");
 
@@ -573,7 +580,7 @@ export default function Home() {
               const data = result as {
                 initialized: boolean;
                 message: string;
-                credentials?: { username: string; password: string; email: string };
+                credentials?: { username: string; password: string };
               };
               if (data.credentials) {
                 setInitCredentials(data.credentials);
@@ -1552,10 +1559,9 @@ export default function Home() {
         return;
       }
       try {
-        await createUsuarioHandler(newUsername, newEmail, newPassword, newRole, {
+        await createUsuarioHandler(newUsername, newPassword, newRole, {
           onSuccess: async () => {
             setNewUsername("");
-            setNewEmail("");
             setNewPassword("");
             setNewRole("EDITOR");
             setStatus("Usuario creado.");
@@ -1567,37 +1573,53 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [isAdmin, newUsername, newEmail, newPassword, newRole, loadData],
+    [isAdmin, newUsername, newPassword, newRole, loadData],
   );
 
   const changeUserRole = useCallback(
-    async (usuarioId: string, currentRole: Role) => {
+    (usuario: UsuarioAdmin) => {
       if (!isAdmin) {
         setStatus("Solo el administrador puede cambiar roles.");
         return;
       }
-      const nextRole = window.prompt("Nuevo rol (ADMIN/EDITOR)", currentRole);
-      if (!nextRole) return;
-      const normalized = nextRole.toUpperCase();
-      if (!ROLE_OPTIONS.includes(normalized as Role)) {
-        setStatus("Rol invalido.");
-        return;
-      }
-
-      try {
-        await changeUserRoleHandler(usuarioId, normalized as Role, {
-          onSuccess: async () => {
-            setStatus("Rol actualizado.");
-            await loadData();
-          },
-          onError: (message) => setStatus(message),
-        });
-      } catch {
-        // Error manejado en el handler
-      }
+      setUserRoleDialog({
+        usuarioId: usuario.usuarioId,
+        username: usuario.username,
+        currentRole: usuario.rol,
+        nextRole: usuario.rol,
+      });
     },
-    [isAdmin, loadData],
+    [isAdmin],
   );
+
+  const closeUserRoleDialog = useCallback(() => {
+    if (userRoleSaving) return;
+    setUserRoleDialog(null);
+  }, [userRoleSaving]);
+
+  const submitUserRoleChange = useCallback(async () => {
+    if (!userRoleDialog) return;
+    if (!ROLE_OPTIONS.includes(userRoleDialog.nextRole)) {
+      setStatus("Rol invalido.");
+      return;
+    }
+
+    setUserRoleSaving(true);
+    try {
+      await changeUserRoleHandler(userRoleDialog.usuarioId, userRoleDialog.nextRole, {
+        onSuccess: async () => {
+          setStatus("Rol actualizado.");
+          setUserRoleDialog(null);
+          await loadData();
+        },
+        onError: (message) => setStatus(message),
+      });
+    } catch {
+      // Error manejado en el handler
+    } finally {
+      setUserRoleSaving(false);
+    }
+  }, [userRoleDialog, loadData]);
 
   const toggleUserActive = useCallback(
     async (usuario: UsuarioAdmin) => {
@@ -1618,40 +1640,6 @@ export default function Home() {
       }
     },
     [isAdmin, loadData],
-  );
-
-  const resetUserPassword = useCallback(
-    async (usuario: UsuarioAdmin) => {
-      if (!isAdmin) {
-        setStatus("Solo el administrador puede restablecer contraseñas.");
-        return;
-      }
-
-      try {
-        const result = await requestPasswordResetHandler(usuario.username, {
-          onError: (message) => setStatus(message),
-        });
-        if (!result.code || !result.expiresAt) {
-          setStatus(`No se pudo generar código para ${usuario.username}.`);
-          return;
-        }
-
-        const expiresAt = new Date(result.expiresAt).toLocaleString("es-UY");
-        const message = `Código para ${usuario.username}: ${result.code}. Vence: ${expiresAt}.`;
-        setStatus(message);
-        toast.success(`Código generado para ${usuario.username}: ${result.code}`);
-
-        try {
-          await navigator.clipboard.writeText(result.code);
-          toast.info("Código copiado al portapapeles.");
-        } catch {
-          // Si el navegador no permite copiar, el código sigue visible en el estado.
-        }
-      } catch {
-        // Error manejado en el handler
-      }
-    },
-    [isAdmin],
   );
 
   const deleteUsuario = useCallback(
@@ -1961,7 +1949,6 @@ export default function Home() {
               <div className="mt-3 space-y-1 rounded border border-current/20 bg-white/50 p-2 text-xs">
                 <p><strong>Usuario:</strong> <code className="font-mono">{initCredentials.username}</code></p>
                 <p><strong>Contraseña:</strong> <code className="font-mono">{initCredentials.password}</code></p>
-                <p><strong>Email:</strong> <code className="font-mono">{initCredentials.email}</code></p>
               </div>
               <p className="mt-2 text-xs italic">Guarda estas credenciales en un lugar seguro.</p>
               <button
@@ -2246,7 +2233,6 @@ export default function Home() {
           draggedItemId={draggedItemId}
           usuarios={usuarios}
           newUsername={newUsername}
-          newEmail={newEmail}
           newPassword={newPassword}
           newRole={newRole}
           firmaConfig={firmaConfig}
@@ -2283,13 +2269,11 @@ export default function Home() {
           onStartItemDrag={() => {}}
           renderItemCard={renderItemCard}
           onNewUsernameChange={setNewUsername}
-          onNewEmailChange={setNewEmail}
           onNewPasswordChange={setNewPassword}
           onNewRoleChange={setNewRole}
           onCreateUsuario={(event) => void createUsuario(event)}
-          onChangeUserRole={(usuarioId, currentRole) => void changeUserRole(usuarioId, currentRole)}
+          onChangeUserRole={(usuario) => void changeUserRole(usuario)}
           onToggleUserActive={(usuario) => void toggleUserActive(usuario)}
-          onResetUserPassword={(usuario) => void resetUserPassword(usuario)}
           onDeleteUsuario={(usuario) => void deleteUsuario(usuario)}
           onFirmaConfigDraftChange={(key, value) => setFirmaConfigDraft((prev) => ({ ...prev, [key]: value }))}
           onSaveFirmaConfig={(event) => void saveFirmaConfig(event)}
@@ -2952,6 +2936,70 @@ export default function Home() {
                 className="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
               >
                 {changeLoading ? "Procesando..." : "Guardar"}
+              </button>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
+      {userRoleDialog ? (
+        <section className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3" onClick={closeUserRoleDialog}>
+          <article
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-role-dialog-title"
+            className="w-full max-w-md rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 id="user-role-dialog-title" className="text-base font-semibold text-stone-900">
+              Cambiar rol de usuario
+            </h3>
+            <p className="mt-1 text-sm text-stone-600">
+              {`Usuario: ${userRoleDialog.username}`}
+            </p>
+            <p className="mt-1 text-xs text-stone-500">
+              {`Rol actual: ${roleLabel(userRoleDialog.currentRole)}`}
+            </p>
+
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {ROLE_OPTIONS.map((role) => {
+                const selected = userRoleDialog.nextRole === role;
+                return (
+                  <button
+                    key={role}
+                    type="button"
+                    onClick={() =>
+                      setUserRoleDialog((current) => (current ? { ...current, nextRole: role } : current))
+                    }
+                    className={`rounded-xl border px-3 py-3 text-left transition ${
+                      selected
+                        ? "border-stone-900 bg-stone-900 text-white"
+                        : "border-stone-300 bg-white text-stone-800 hover:border-stone-500"
+                    }`}
+                  >
+                    <p className="text-sm font-semibold">{roleLabel(role)}</p>
+                    <p className={`mt-1 text-xs ${selected ? "text-stone-200" : "text-stone-500"}`}>{role}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeUserRoleDialog}
+                disabled={userRoleSaving}
+                className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void submitUserRoleChange()}
+                disabled={userRoleSaving || userRoleDialog.nextRole === userRoleDialog.currentRole}
+                className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {userRoleSaving ? "Guardando..." : "Guardar rol"}
               </button>
             </div>
           </article>

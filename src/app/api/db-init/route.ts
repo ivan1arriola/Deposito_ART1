@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { buildInternalUserEmail } from "@/lib/internal-user-email";
 
 /**
  * Endpoint para inicializar la base de datos con un usuario administrador por defecto
  * Se ejecuta una sola vez cuando no hay usuarios en el sistema
  * No requiere autenticación
  */
-export async function POST(request: Request) {
+export async function POST() {
   try {
     // Contar usuarios existentes
     const userCount = await prisma.usuario.count();
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
     const defaultUser = await prisma.usuario.create({
       data: {
         username: "admin",
-        email: "admin@app.local",
+        email: buildInternalUserEmail("admin"),
         passwordHash,
         rol: "ADMIN",
         activo: true,
@@ -31,7 +32,6 @@ export async function POST(request: Request) {
       select: {
         usuarioId: true,
         username: true,
-        email: true,
         rol: true,
       },
     });
@@ -45,7 +45,6 @@ export async function POST(request: Request) {
       detalle: {
         mensaje: "Usuario administrador por defecto creado automáticamente",
         username: defaultUser.username,
-        email: defaultUser.email,
       },
     });
 
@@ -57,7 +56,6 @@ export async function POST(request: Request) {
         credentials: {
           username: "admin",
           password: defaultPassword,
-          email: "admin@app.local",
         },
       },
       { status: 201 }

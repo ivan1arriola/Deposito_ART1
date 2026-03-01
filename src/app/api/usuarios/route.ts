@@ -3,25 +3,19 @@ import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { buildInternalUserEmail } from "@/lib/internal-user-email";
 
 type UsuarioPayload = {
   username: string;
-  email: string;
   password: string;
   rol?: UserRole;
   activo?: boolean;
 };
 
-function isValidEmail(value: string) {
-  return value.includes("@");
-}
-
 function isValidPayload(body: unknown): body is UsuarioPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
   if (typeof candidate.username !== "string" || candidate.username.trim() === "") return false;
-  if (typeof candidate.email !== "string" || candidate.email.trim() === "") return false;
-  if (!isValidEmail(candidate.email.trim())) return false;
   if (typeof candidate.password !== "string" || candidate.password.length < 8) return false;
   if (candidate.rol && typeof candidate.rol !== "string") return false;
   return true;
@@ -41,7 +35,6 @@ export async function GET(request: Request) {
     select: {
       usuarioId: true,
       username: true,
-      email: true,
       rol: true,
       activo: true,
       createdAt: true,
@@ -59,20 +52,19 @@ export async function POST(request: Request) {
   const body = await request.json();
   if (!isValidPayload(body)) {
     return NextResponse.json(
-      { error: "Payload invalido. username, email y contrasena (min 8 caracteres) son obligatorios." },
+      { error: "Payload invalido. username y contrasena (min 8 caracteres) son obligatorios." },
       { status: 400 },
     );
   }
 
   const username = body.username.trim();
-  const email = body.email.trim();
   const passwordHash = await hashPassword(body.password);
 
   try {
     const created = await prisma.usuario.create({
       data: {
         username,
-        email,
+        email: buildInternalUserEmail(username),
         passwordHash,
         rol: roleFromValue(body.rol),
         activo: body.activo === undefined ? true : Boolean(body.activo),
@@ -80,7 +72,6 @@ export async function POST(request: Request) {
       select: {
         usuarioId: true,
         username: true,
-        email: true,
         rol: true,
         activo: true,
         createdAt: true,

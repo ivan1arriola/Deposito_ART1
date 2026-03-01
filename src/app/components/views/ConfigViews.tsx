@@ -7,7 +7,7 @@ type Role = "ADMIN" | "EDITOR";
 type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string };
 type BateriaConfig = { bateriaId: number; nombre: string };
 type ItemConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
-type UsuarioAdmin = { usuarioId: string; username: string; email: string; rol: Role; activo: boolean; createdAt: string; updatedAt: string };
+type UsuarioAdmin = { usuarioId: string; username: string; rol: Role; activo: boolean; createdAt: string; updatedAt: string };
 type FirmaConfig = { encargadoRango: string; encargadoNombre: string; oficialRango: string; oficialNombre: string; updatedAt: string | null };
 type AuditoriaRecord = {
   auditoriaId: string;
@@ -49,7 +49,6 @@ interface ConfigViewsProps {
   usuarios: UsuarioAdmin[];
   newUsername: string;
   newPassword: string;
-  newEmail: string;
   newRole: Role;
   // Firma config state
   firmaConfig: FirmaConfig | null;
@@ -92,12 +91,10 @@ interface ConfigViewsProps {
   // Usuarios callbacks
   onNewUsernameChange: (value: string) => void;
   onNewPasswordChange: (value: string) => void;
-  onNewEmailChange: (value: string) => void;
   onNewRoleChange: (role: Role) => void;
   onCreateUsuario: (event: FormEvent<HTMLFormElement>) => void;
-  onChangeUserRole: (usuarioId: string, currentRole: Role) => void;
+  onChangeUserRole: (usuario: UsuarioAdmin) => void;
   onToggleUserActive: (usuario: UsuarioAdmin) => void;
-  onResetUserPassword: (usuario: UsuarioAdmin) => void;
   onDeleteUsuario: (usuario: UsuarioAdmin) => void;
   // Firma config callbacks
   onFirmaConfigDraftChange: (key: keyof Omit<FirmaConfig, "updatedAt">, value: string) => void;
@@ -460,13 +457,6 @@ export function ConfigViews(props: ConfigViewsProps) {
               className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
             />
             <input
-              value={props.newEmail}
-              onChange={(event) => props.onNewEmailChange(event.target.value)}
-              placeholder="Email"
-              type="email"
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
               value={props.newPassword}
               onChange={(event) => props.onNewPasswordChange(event.target.value)}
               placeholder="Contraseña (min 8)"
@@ -501,21 +491,19 @@ export function ConfigViews(props: ConfigViewsProps) {
                     <p className="text-sm font-medium text-stone-900">
                       {usuario.username} ({props.roleLabel(usuario.rol)})
                     </p>
-                    <p className="text-xs text-stone-600">{usuario.email}</p>
                     <p className="text-xs text-stone-600">{usuario.activo ? "Activo" : "Inactivo"}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <SmallActionButton
                       text="Rol"
                       tone="edit"
-                      onClick={() => props.onChangeUserRole(usuario.usuarioId, usuario.rol)}
+                      onClick={() => props.onChangeUserRole(usuario)}
                     />
                     <SmallActionButton
                       text={usuario.activo ? "Desactivar" : "Activar"}
                       tone="neutral"
                       onClick={() => props.onToggleUserActive(usuario)}
                     />
-                    <SmallActionButton text="Codigo" tone="ok" onClick={() => props.onResetUserPassword(usuario)} />
                     <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteUsuario(usuario)} />
                   </div>
                 </div>

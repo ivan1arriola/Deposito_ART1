@@ -12,7 +12,6 @@ interface CallbackProps {
 
 export async function createUsuarioHandler(
   username: string,
-  email: string,
   password: string,
   rol: Role,
   callbacks: CallbackProps
@@ -21,7 +20,7 @@ export async function createUsuarioHandler(
     await api("/api/usuarios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password, rol, activo: true }),
+      body: JSON.stringify({ username, password, rol, activo: true }),
     });
     callbacks.onSuccess?.();
   } catch (error) {
@@ -69,25 +68,6 @@ export async function toggleUserActiveHandler(
   }
 }
 
-export async function resetUserPasswordHandler(
-  usuarioId: string,
-  password: string,
-  callbacks: CallbackProps
-) {
-  try {
-    await api(`/api/usuarios/${usuarioId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    callbacks.onSuccess?.();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar la contraseña.";
-    callbacks.onError?.(message);
-    throw error;
-  }
-}
-
 export async function deleteUsuarioHandler(
   usuarioId: string,
   callbacks: CallbackProps
@@ -123,7 +103,7 @@ export async function saveFirmaConfigHandler(
     callbacks.onSave(updated);
     callbacks.onSuccess?.();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo guardar la configuración.";
+    const message = error instanceof Error ? error.message : "No se pudo guardar la configuracion.";
     callbacks.onError?.(message);
     throw error;
   }

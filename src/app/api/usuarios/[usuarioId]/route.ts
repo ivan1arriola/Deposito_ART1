@@ -3,10 +3,10 @@ import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { buildInternalUserEmail } from "@/lib/internal-user-email";
 
 type UsuarioUpdatePayload = {
   username?: string;
-  email?: string;
   password?: string;
   rol?: UserRole;
   activo?: boolean;
@@ -23,6 +23,21 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
 
   const { usuarioId } = await context.params;
   const body = (await request.json()) as UsuarioUpdatePayload;
+  const existing = await prisma.usuario.findUnique({
+    where: { usuarioId },
+    select: {
+      usuarioId: true,
+      username: true,
+      rol: true,
+      activo: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });
+  }
 
   const data: {
     username?: string;
@@ -37,13 +52,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       return NextResponse.json({ error: "username invalido." }, { status: 400 });
     }
     data.username = body.username.trim();
-  }
-
-  if (body.email !== undefined) {
-    if (typeof body.email !== "string" || body.email.trim() === "" || !body.email.includes("@")) {
-      return NextResponse.json({ error: "email invalido." }, { status: 400 });
-    }
-    data.email = body.email.trim();
+    data.email = buildInternalUserEmail(data.username);
   }
 
   if (body.password !== undefined) {
@@ -67,6 +76,23 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     return NextResponse.json({ error: "No hay campos para actualizar." }, { status: 400 });
   }
 
+  const nextRole = data.rol ?? existing.rol;
+  const nextActive = data.activo ?? existing.activo;
+
+  if (existing.rol === "ADMIN" && nextRole !== "ADMIN") {
+    const adminCount = await prisma.usuario.count({ where: { rol: "ADMIN" } });
+    if (adminCount <= 1) {
+      return NextResponse.json({ error: "Debe existir al menos un usuario administrador." }, { status: 409 });
+    }
+  }
+
+  if (existing.activo && !nextActive) {
+    const activeUsersCount = await prisma.usuario.count({ where: { activo: true } });
+    if (activeUsersCount <= 1) {
+      return NextResponse.json({ error: "Debe existir al menos un usuario activo." }, { status: 409 });
+    }
+  }
+
   try {
     const updated = await prisma.usuario.update({
       where: { usuarioId },
@@ -74,7 +100,6 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       select: {
         usuarioId: true,
         username: true,
-        email: true,
         rol: true,
         activo: true,
         createdAt: true,
@@ -89,7 +114,6 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       entidadId: updated.usuarioId,
       detalle: {
         username: updated.username,
-        email: updated.email,
         rol: updated.rol,
         activo: updated.activo,
         updatedFields: Object.keys(data),
@@ -100,7 +124,6 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });
       if (code === "P2002") return NextResponse.json({ error: "El username ya existe." }, { status: 409 });
     }
     return NextResponse.json({ error: "No se pudo actualizar el usuario." }, { status: 500 });
@@ -119,7 +142,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
 
   const target = await prisma.usuario.findUnique({
     where: { usuarioId },
-    select: { usuarioId: true, rol: true, username: true },
+    select: { usuarioId: true, rol: true, username: true, activo: true },
   });
 
   if (!target) {
@@ -127,9 +150,16 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
   }
 
   if (target.rol === "ADMIN") {
-    const admins = await prisma.usuario.count({ where: { rol: "ADMIN", activo: true } });
+    const admins = await prisma.usuario.count({ where: { rol: "ADMIN" } });
     if (admins <= 1) {
-      return NextResponse.json({ error: "No puedes eliminar el ultimo admin activo." }, { status: 409 });
+      return NextResponse.json({ error: "Debe existir al menos un usuario administrador." }, { status: 409 });
+    }
+  }
+
+  if (target.activo) {
+    const activeUsers = await prisma.usuario.count({ where: { activo: true } });
+    if (activeUsers <= 1) {
+      return NextResponse.json({ error: "Debe existir al menos un usuario activo." }, { status: 409 });
     }
   }
 

@@ -238,6 +238,22 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
 
   return (
     <section className="mt-6 space-y-4">
+      <article className="ej-card flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-stone-900">Tabla imprimible de talles</h2>
+          <p className="mt-1 text-xs text-stone-600">
+            Genera una hoja con todo el personal de la unidad y sus talles en formato de tabla.
+          </p>
+        </div>
+        <a
+          href="/tallas-unidad?autoprint=1"
+          target="_blank"
+          rel="noreferrer"
+          className="ej-button inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold"
+        >
+          Imprimir talles de la unidad
+        </a>
+      </article>
       {renderResumen(
         [resumenUnidad],
         "Resumen de Tallas de la Unidad",
