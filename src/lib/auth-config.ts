@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 
-export const authOptions: NextAuthOptions = {
+const authSecret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET;
+type ExtendedNextAuthOptions = NextAuthOptions & { trustHost?: boolean };
+
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -25,16 +28,12 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Credenciales inválidas");
         }
 
-        const validPassword = await verifyPassword(
-          credentials.password,
-          user.passwordHash
-        );
+        const validPassword = await verifyPassword(credentials.password, user.passwordHash);
 
         if (!validPassword) {
           throw new Error("Credenciales inválidas");
         }
 
-        // Log de auditoría
         await logAudit({
           usuarioId: user.usuarioId,
           accion: "LOGIN",
@@ -77,7 +76,8 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 días
+    maxAge: 30 * 24 * 60 * 60,
   },
-  secret: process.env.NEXTAUTH_SECRET,
-};
+  trustHost: true,
+  secret: authSecret,
+} satisfies ExtendedNextAuthOptions;

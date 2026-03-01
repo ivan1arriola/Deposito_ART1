@@ -1,13 +1,10 @@
-/**
- * Hook personalizado para manejar operaciones de autenticación
- */
+"use client";
 
 import { useCallback } from "react";
-import { api } from "@/lib/api";
-import type { CurrentUser } from "@/types/entities";
+import { signIn, signOut } from "next-auth/react";
 
 interface UseAuthHandlersProps {
-  onLoginSuccess: (user: CurrentUser) => void;
+  onLoginSuccess: () => void;
   onLoginError: (message: string) => void;
   onLogoutSuccess: () => void;
 }
@@ -16,27 +13,34 @@ export function useAuthHandlers({ onLoginSuccess, onLoginError, onLogoutSuccess 
   const handleLogin = useCallback(
     async (username: string, password: string) => {
       try {
-        const result = await api<CurrentUser>("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
+        const result = await signIn("credentials", {
+          username,
+          password,
+          redirect: false,
         });
-        onLoginSuccess(result);
+
+        if (result?.error) {
+          const message = result.error === "CredentialsSignin" ? "Credenciales invalidas" : result.error;
+          onLoginError(message);
+          throw new Error(message);
+        }
+
+        if (result?.ok) {
+          onLoginSuccess();
+        }
       } catch (error) {
-        const message = error instanceof Error ? error.message : "No se pudo iniciar sesión.";
+        const message = error instanceof Error ? error.message : "No se pudo iniciar sesion.";
         onLoginError(message);
         throw error;
       }
     },
-    [onLoginSuccess, onLoginError]
+    [onLoginError, onLoginSuccess],
   );
 
   const handleLogout = useCallback(async () => {
     try {
-      await api("/api/auth/logout", { method: "POST" });
-      onLogoutSuccess();
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      await signOut({ redirect: false });
+    } finally {
       onLogoutSuccess();
     }
   }, [onLogoutSuccess]);

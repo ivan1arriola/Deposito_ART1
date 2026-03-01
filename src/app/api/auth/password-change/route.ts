@@ -2,36 +2,32 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest, hashPassword, verifyPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import { markResetCodeUsed, verifyResetCode } from "@/lib/password-reset";
 
 type PasswordChangePayload = {
-  currentPassword?: string;
-  code?: string;
+  currentPassword: string;
   newPassword: string;
 };
 
 function isValidPayload(body: unknown): body is PasswordChangePayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  return typeof candidate.newPassword === "string" && candidate.newPassword.length >= 8;
+  return (
+    typeof candidate.currentPassword === "string" &&
+    candidate.currentPassword.trim() !== "" &&
+    typeof candidate.newPassword === "string" &&
+    candidate.newPassword.length >= 8
+  );
 }
 
 export async function POST(request: Request) {
-  const user = await getUserFromRequest(request);
+  const user = await getUserFromRequest();
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
 
   const body = await request.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Datos invalidos." }, { status: 400 });
-  }
-
-  const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : null;
-  const code = typeof body.code === "string" ? body.code.trim() : null;
-
-  if (!currentPassword && !code) {
-    return NextResponse.json({ error: "Debe ingresar la contraseña anterior o un codigo." }, { status: 400 });
+    return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
   }
 
   try {
@@ -44,17 +40,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });
     }
 
-    if (currentPassword) {
-      const ok = await verifyPassword(currentPassword, usuario.passwordHash);
-      if (!ok) {
-        return NextResponse.json({ error: "Contraseña anterior invalida." }, { status: 400 });
-      }
-    } else if (code) {
-      const record = await verifyResetCode(usuario.usuarioId, code);
-      if (!record) {
-        return NextResponse.json({ error: "Codigo invalido o expirado." }, { status: 400 });
-      }
-      await markResetCodeUsed(record.resetId);
+    const ok = await verifyPassword(body.currentPassword, usuario.passwordHash);
+    if (!ok) {
+      return NextResponse.json({ error: "Contraseña actual inválida." }, { status: 400 });
     }
 
     const passwordHash = await hashPassword(body.newPassword);

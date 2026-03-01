@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import { getUserFromRequest } from "@/lib/auth";
 import { createResetCode } from "@/lib/password-reset";
-import { sendPasswordResetEmail } from "@/lib/mailer";
 
 type ResetRequestPayload = {
   usernameOrEmail: string;
@@ -15,6 +15,14 @@ function isValidPayload(body: unknown): body is ResetRequestPayload {
 }
 
 export async function POST(request: Request) {
+  const actor = await getUserFromRequest();
+  if (!actor) {
+    return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+  if (actor.rol !== "ADMIN") {
+    return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+  }
+
   const body = await request.json();
   if (!isValidPayload(body)) {
     return NextResponse.json({ error: "username o email es obligatorio." }, { status: 400 });
@@ -23,7 +31,7 @@ export async function POST(request: Request) {
   const query = body.usernameOrEmail.trim();
 
   try {
-    const usuarios = await prisma.usuario.findMany({
+    const usuario = await prisma.usuario.findFirst({
       where: {
         activo: true,
         OR: [{ username: query }, { email: query }],
@@ -31,21 +39,32 @@ export async function POST(request: Request) {
       select: { usuarioId: true, username: true, email: true, rol: true },
     });
 
-    for (const usuario of usuarios) {
+    if (usuario) {
       const { code, expiresAt } = await createResetCode(usuario.usuarioId);
-      await sendPasswordResetEmail(usuario.email, code);
-
       await logAudit({
-        usuarioId: usuario.usuarioId,
+        usuarioId: actor.usuarioId,
         accion: "PASSWORD_RESET_REQUEST",
         entidad: "AUTH",
         entidadId: usuario.usuarioId,
-        detalle: { username: usuario.username, email: usuario.email, expiresAt },
+        detalle: {
+          actorUsername: actor.username,
+          username: usuario.username,
+          email: usuario.email,
+          expiresAt,
+          delivery: "DIRECT_CODE",
+        },
+      });
+
+      return NextResponse.json({
+        ok: true,
+        code,
+        expiresAt: expiresAt.toISOString(),
+        username: usuario.username,
       });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, code: null, expiresAt: null, username: null });
   } catch {
-    return NextResponse.json({ error: "No se pudo enviar el correo." }, { status: 503 });
+    return NextResponse.json({ error: "No se pudo generar el código." }, { status: 503 });
   }
 }

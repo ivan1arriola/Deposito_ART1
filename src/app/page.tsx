@@ -103,7 +103,6 @@ import {
   loginHandler,
   logoutHandler,
   requestPasswordResetHandler,
-  confirmPasswordResetHandler,
   changePasswordHandler,
 } from "@/lib/handlers-auth";
 
@@ -133,16 +132,8 @@ export default function Home() {
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
-  const [showResetForm, setShowResetForm] = useState(false);
-  const [resetUsernameOrEmail, setResetUsernameOrEmail] = useState("");
-  const [resetCode, setResetCode] = useState("");
-  const [resetNewPassword, setResetNewPassword] = useState("");
-  const [resetLoading, setResetLoading] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [changeMode, setChangeMode] = useState<"current" | "code">("current");
-  const [changeUsernameOrEmail, setChangeUsernameOrEmail] = useState("");
   const [changeCurrentPassword, setChangeCurrentPassword] = useState("");
-  const [changeCode, setChangeCode] = useState("");
   const [changeNewPassword, setChangeNewPassword] = useState("");
   const [changeConfirmPassword, setChangeConfirmPassword] = useState("");
   const [changeLoading, setChangeLoading] = useState(false);
@@ -1502,105 +1493,35 @@ export default function Home() {
     [loginUsername, loginPassword, loadData],
   );
 
-  const requestResetCode = useCallback(async () => {
-    if (resetUsernameOrEmail.trim() === "") {
-      setStatus("Ingresa usuario o email para enviar el codigo.");
-      return;
-    }
-    setResetLoading(true);
-    try {
-      await requestPasswordResetHandler(resetUsernameOrEmail.trim(), {
-        onSuccess: () => toast.info("Si el usuario existe, enviamos un codigo al mail."),
-        onError: (message) => setStatus(message),
-      });
-    } finally {
-      setResetLoading(false);
-    }
-  }, [resetUsernameOrEmail]);
-
-  const confirmResetPassword = useCallback(async () => {
-    if (resetUsernameOrEmail.trim() === "" || resetCode.trim() === "" || resetNewPassword.trim() === "") {
-      setStatus("Completa usuario/email, codigo y nueva contraseña.");
-      return;
-    }
-    setResetLoading(true);
-    try {
-      await confirmPasswordResetHandler(resetUsernameOrEmail.trim(), resetCode.trim(), resetNewPassword, {
-        onSuccess: () => {
-          toast.success("Contraseña actualizada.");
-          setResetCode("");
-          setResetNewPassword("");
-        },
-        onError: (message) => setStatus(message),
-      });
-    } finally {
-      setResetLoading(false);
-    }
-  }, [resetUsernameOrEmail, resetCode, resetNewPassword]);
-
   const submitChangePassword = useCallback(async () => {
     if (changeNewPassword.trim() === "" || changeNewPassword !== changeConfirmPassword) {
       setStatus("La nueva contraseña no coincide.");
       return;
     }
-    if (changeMode === "current" && changeCurrentPassword.trim() === "") {
-      setStatus("Ingresa la contraseña anterior.");
-      return;
-    }
-    if (changeMode === "code" && (changeUsernameOrEmail.trim() === "" || changeCode.trim() === "")) {
-      setStatus("Ingresa usuario/email y el codigo.");
+    if (changeCurrentPassword.trim() === "") {
+      setStatus("Ingresa la contraseña actual.");
       return;
     }
 
     setChangeLoading(true);
     try {
-      if (changeMode === "current") {
-        await changePasswordHandler(
-          { currentPassword: changeCurrentPassword, newPassword: changeNewPassword },
-          {
-            onSuccess: () => {
-              toast.success("Contraseña actualizada.");
-              setShowChangePassword(false);
-            },
-            onError: (message) => setStatus(message),
-          },
-        );
-      } else {
-        await confirmPasswordResetHandler(changeUsernameOrEmail.trim(), changeCode.trim(), changeNewPassword, {
+      await changePasswordHandler(
+        { currentPassword: changeCurrentPassword, newPassword: changeNewPassword },
+        {
           onSuccess: () => {
             toast.success("Contraseña actualizada.");
+            setChangeCurrentPassword("");
+            setChangeNewPassword("");
+            setChangeConfirmPassword("");
             setShowChangePassword(false);
           },
           onError: (message) => setStatus(message),
-        });
-      }
+        },
+      );
     } finally {
       setChangeLoading(false);
     }
-  }, [
-    changeMode,
-    changeCurrentPassword,
-    changeNewPassword,
-    changeConfirmPassword,
-    changeUsernameOrEmail,
-    changeCode,
-  ]);
-
-  const sendChangeCode = useCallback(async () => {
-    if (changeUsernameOrEmail.trim() === "") {
-      setStatus("Ingresa usuario o email para enviar el codigo.");
-      return;
-    }
-    setChangeLoading(true);
-    try {
-      await requestPasswordResetHandler(changeUsernameOrEmail.trim(), {
-        onSuccess: () => toast.info("Si el usuario existe, enviamos un codigo al mail."),
-        onError: (message) => setStatus(message),
-      });
-    } finally {
-      setChangeLoading(false);
-    }
-  }, [changeUsernameOrEmail]);
+  }, [changeCurrentPassword, changeNewPassword, changeConfirmPassword]);
 
   const logout = useCallback(async () => {
     try {
@@ -1705,16 +1626,27 @@ export default function Home() {
         setStatus("Solo el administrador puede restablecer contraseñas.");
         return;
       }
-      if (!usuario.email) {
-        setStatus("El usuario no tiene email registrado.");
-        return;
-      }
 
       try {
-        await requestPasswordResetHandler(usuario.email, {
-          onSuccess: () => setStatus("Codigo enviado al mail del usuario."),
+        const result = await requestPasswordResetHandler(usuario.username, {
           onError: (message) => setStatus(message),
         });
+        if (!result.code || !result.expiresAt) {
+          setStatus(`No se pudo generar código para ${usuario.username}.`);
+          return;
+        }
+
+        const expiresAt = new Date(result.expiresAt).toLocaleString("es-UY");
+        const message = `Código para ${usuario.username}: ${result.code}. Vence: ${expiresAt}.`;
+        setStatus(message);
+        toast.success(`Código generado para ${usuario.username}: ${result.code}`);
+
+        try {
+          await navigator.clipboard.writeText(result.code);
+          toast.info("Código copiado al portapapeles.");
+        } catch {
+          // Si el navegador no permite copiar, el código sigue visible en el estado.
+        }
       } catch {
         // Error manejado en el handler
       }
@@ -2065,55 +1997,6 @@ export default function Home() {
             </button>
           </form>
 
-          <button
-            type="button"
-            onClick={() => setShowResetForm((prev) => !prev)}
-            className="mt-3 w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-semibold text-stone-700"
-          >
-            {showResetForm ? "Ocultar recuperacion" : "Olvide mi contraseña"}
-          </button>
-
-          {showResetForm ? (
-            <div className="mt-3 space-y-2 rounded-xl border border-stone-200 bg-stone-50/70 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Recuperar contraseña</p>
-              <input
-                value={resetUsernameOrEmail}
-                onChange={(event) => setResetUsernameOrEmail(event.target.value)}
-                placeholder="Usuario o email"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-              <button
-                type="button"
-                disabled={resetLoading}
-                onClick={() => void requestResetCode()}
-                className="w-full rounded-lg bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
-              >
-                {resetLoading ? "Enviando..." : "Enviar codigo"}
-              </button>
-              <input
-                value={resetCode}
-                onChange={(event) => setResetCode(event.target.value)}
-                placeholder="Codigo (6 digitos)"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-              <input
-                value={resetNewPassword}
-                onChange={(event) => setResetNewPassword(event.target.value)}
-                placeholder="Nueva contraseña"
-                type="password"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-              <button
-                type="button"
-                disabled={resetLoading}
-                onClick={() => void confirmResetPassword()}
-                className="w-full rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
-              >
-                {resetLoading ? "Procesando..." : "Cambiar contraseña"}
-              </button>
-              <p className="text-[11px] text-stone-500">El codigo vence en 5 minutos.</p>
-            </div>
-          ) : null}
         </section>
       </main>
     );
@@ -2166,7 +2049,9 @@ export default function Home() {
             <button
               type="button"
               onClick={() => {
-                setChangeUsernameOrEmail(currentUser?.username ?? "");
+                setChangeCurrentPassword("");
+                setChangeNewPassword("");
+                setChangeConfirmPassword("");
                 setShowChangePassword(true);
               }}
               className="rounded-xl border border-[#FFCC00]/45 bg-black/35 px-3 py-2 text-sm font-semibold text-white"
@@ -3025,66 +2910,16 @@ export default function Home() {
             onClick={(event) => event.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-stone-900">Cambiar contraseña</h3>
-            <p className="mt-1 text-xs text-stone-600">Usa tu contraseña anterior o un codigo enviado al mail.</p>
-
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setChangeMode("current")}
-                className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                  changeMode === "current"
-                    ? "bg-stone-900 text-white"
-                    : "border border-stone-300 bg-white text-stone-700"
-                }`}
-              >
-                Con contraseña anterior
-              </button>
-              <button
-                type="button"
-                onClick={() => setChangeMode("code")}
-                className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                  changeMode === "code"
-                    ? "bg-stone-900 text-white"
-                    : "border border-stone-300 bg-white text-stone-700"
-                }`}
-              >
-                Con codigo
-              </button>
-            </div>
+            <p className="mt-1 text-xs text-stone-600">Ingresa tu contraseña actual y la nueva contraseña.</p>
 
             <div className="mt-3 space-y-2">
-              {changeMode === "code" ? (
-                <>
-                  <input
-                    value={changeUsernameOrEmail}
-                    onChange={(event) => setChangeUsernameOrEmail(event.target.value)}
-                    placeholder="Usuario o email"
-                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  />
-                  <button
-                    type="button"
-                    disabled={changeLoading}
-                    onClick={() => void sendChangeCode()}
-                    className="w-full rounded-lg bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
-                  >
-                    {changeLoading ? "Enviando..." : "Enviar codigo"}
-                  </button>
-                  <input
-                    value={changeCode}
-                    onChange={(event) => setChangeCode(event.target.value)}
-                    placeholder="Codigo"
-                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  />
-                </>
-              ) : (
-                <input
-                  value={changeCurrentPassword}
-                  onChange={(event) => setChangeCurrentPassword(event.target.value)}
-                  placeholder="Contraseña anterior"
-                  type="password"
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              )}
+              <input
+                value={changeCurrentPassword}
+                onChange={(event) => setChangeCurrentPassword(event.target.value)}
+                placeholder="Contraseña actual"
+                type="password"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
 
               <input
                 value={changeNewPassword}

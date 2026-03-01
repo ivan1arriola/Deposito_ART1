@@ -4,17 +4,23 @@
 
 import { signIn, signOut } from "next-auth/react";
 import { api } from "@/lib/api";
-import type { CurrentUser } from "@/types/entities";
 
 interface CallbackProps {
   onSuccess?: (data?: unknown) => void;
   onError?: (message: string) => void;
 }
 
+export type PasswordResetRequestResponse = {
+  ok: true;
+  code: string | null;
+  expiresAt: string | null;
+  username: string | null;
+};
+
 export async function loginHandler(
   username: string,
   password: string,
-  callbacks: CallbackProps
+  callbacks: CallbackProps,
 ) {
   try {
     const result = await signIn("credentials", {
@@ -24,9 +30,7 @@ export async function loginHandler(
     });
 
     if (result?.error) {
-      const message = result.error === "CredentialsSignin" 
-        ? "Credenciales inválidas" 
-        : result.error;
+      const message = result.error === "CredentialsSignin" ? "Credenciales inválidas" : result.error;
       callbacks.onError?.(message);
       throw new Error(message);
     }
@@ -53,45 +57,26 @@ export async function logoutHandler(callbacks: CallbackProps) {
 
 export async function requestPasswordResetHandler(
   usernameOrEmail: string,
-  callbacks: CallbackProps
+  callbacks: CallbackProps,
 ) {
   try {
-    await api("/api/auth/password-reset/request", {
+    const result = await api<PasswordResetRequestResponse>("/api/auth/password-reset/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ usernameOrEmail }),
     });
-    callbacks.onSuccess?.();
+    callbacks.onSuccess?.(result);
+    return result;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo enviar el codigo.";
-    callbacks.onError?.(message);
-    throw error;
-  }
-}
-
-export async function confirmPasswordResetHandler(
-  usernameOrEmail: string,
-  code: string,
-  newPassword: string,
-  callbacks: CallbackProps
-) {
-  try {
-    await api("/api/auth/password-reset/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ usernameOrEmail, code, newPassword }),
-    });
-    callbacks.onSuccess?.();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo cambiar la contraseña.";
+    const message = error instanceof Error ? error.message : "No se pudo generar el código.";
     callbacks.onError?.(message);
     throw error;
   }
 }
 
 export async function changePasswordHandler(
-  payload: { currentPassword?: string; code?: string; newPassword: string },
-  callbacks: CallbackProps
+  payload: { currentPassword: string; newPassword: string },
+  callbacks: CallbackProps,
 ) {
   try {
     await api("/api/auth/password-change", {
