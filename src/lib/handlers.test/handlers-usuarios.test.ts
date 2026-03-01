@@ -8,6 +8,7 @@ import {
   createUsuarioHandler,
   changeUserRoleHandler,
   changeUserPasswordHandler,
+  changeUsernameHandler,
   toggleUserActiveHandler,
   deleteUsuarioHandler,
   saveFirmaConfigHandler,
@@ -123,6 +124,24 @@ describe("Handlers de Usuarios", () => {
       }
 
       expect(onError).toHaveBeenCalled();
+    });
+  });
+
+  describe("changeUsernameHandler", () => {
+    it("debería cambiar el nombre de usuario", async () => {
+      const onSuccess = vi.fn();
+      vi.mocked(api).mockResolvedValue({});
+
+      await changeUsernameHandler("USR123", "nuevo.usuario", { onSuccess });
+
+      expect(vi.mocked(api)).toHaveBeenCalledWith(
+        "/api/usuarios/USR123",
+        expect.objectContaining({
+          method: "PUT",
+          body: JSON.stringify({ username: "nuevo.usuario" }),
+        })
+      );
+      expect(onSuccess).toHaveBeenCalled();
     });
   });
 

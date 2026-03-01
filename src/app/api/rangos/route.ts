@@ -2,22 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import { compareRankAbbreviation } from "@/lib/rank-order";
+import { moveCatalogId } from "@/lib/catalog-order";
 
-type RangoPayload = {
-  abreviacion: string;
-  nombreCompleto: string;
-};
-
-function isValidPayload(body: unknown): body is RangoPayload {
-  if (!body || typeof body !== "object") return false;
-  const candidate = body as Record<string, unknown>;
-  return (
-    typeof candidate.abreviacion === "string" &&
-    candidate.abreviacion.trim() !== "" &&
-    typeof candidate.nombreCompleto === "string" &&
-    candidate.nombreCompleto.trim() !== ""
-  );
+function parseOptionalOrden(value: unknown) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  return parsed;
 }
 
 export async function GET(request: Request) {
@@ -25,10 +16,8 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const rangos = await prisma.rango.findMany({
-    orderBy: { rangoId: "asc" },
+    orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
   });
-
-  rangos.sort((a, b) => compareRankAbbreviation(a.abreviacion, b.abreviacion));
 
   return NextResponse.json(rangos);
 }
@@ -38,20 +27,41 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response;
 
   const body = await req.json();
+  const candidate = body as Record<string, unknown>;
+  const abreviacion = typeof candidate?.abreviacion === "string" ? candidate.abreviacion.trim() : "";
+  const nombreCompleto = typeof candidate?.nombreCompleto === "string" ? candidate.nombreCompleto.trim() : "";
+  const orden = parseOptionalOrden(candidate?.orden);
 
-  if (!isValidPayload(body)) {
+  if (!abreviacion || !nombreCompleto || orden === null) {
     return NextResponse.json(
-      { error: "Payload invalido. 'abreviacion' y 'nombreCompleto' son obligatorios." },
+      { error: "Payload invalido. 'abreviacion' y 'nombreCompleto' son obligatorios; 'orden' debe ser entero positivo." },
       { status: 400 },
     );
   }
 
   try {
-    const created = await prisma.rango.create({
-      data: {
-        abreviacion: body.abreviacion.trim(),
-        nombreCompleto: body.nombreCompleto.trim(),
-      },
+    const created = await prisma.$transaction(async (tx) => {
+      const existing = await tx.rango.findMany({
+        orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
+        select: { rangoId: true },
+      });
+      const createdRango = await tx.rango.create({
+        data: {
+          abreviacion,
+          nombreCompleto,
+          orden: existing.length + 1,
+        },
+      });
+      const orderedIds = moveCatalogId(existing.map((entry) => entry.rangoId), createdRango.rangoId, orden ?? existing.length + 1);
+
+      for (const [index, rangoId] of orderedIds.entries()) {
+        await tx.rango.update({
+          where: { rangoId },
+          data: { orden: index + 1 },
+        });
+      }
+
+      return tx.rango.findUniqueOrThrow({ where: { rangoId: createdRango.rangoId } });
     });
 
     await logAudit({
@@ -59,7 +69,7 @@ export async function POST(req: Request) {
       accion: "CREATE",
       entidad: "GRADO_PERSONAL",
       entidadId: String(created.rangoId),
-      detalle: { abreviacion: created.abreviacion, nombreCompleto: created.nombreCompleto },
+      detalle: { abreviacion: created.abreviacion, nombreCompleto: created.nombreCompleto, orden: created.orden },
     });
 
     return NextResponse.json(created, { status: 201 });

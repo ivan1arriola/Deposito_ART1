@@ -1,6 +1,7 @@
 import { TipoRegistro } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { compareRankAbbreviation } from "@/lib/rank-order";
+import { compareOptionalOrder } from "@/lib/catalog-order";
+import { compareRanks } from "@/lib/rank-order";
 import type { HojaMatrixData, HojaMatrixRow } from "@/types/views";
 
 export const SIN_BATERIA_LABEL = "Sin bateria";
@@ -21,14 +22,20 @@ function normalizeBatteryFilter(value: string | null | undefined) {
 }
 
 function compareMatrixRows(a: HojaMatrixRow, b: HojaMatrixRow) {
+  const byGrado = compareRanks(
+    { abreviacion: a.gradoAbreviacion, orden: a.gradoOrden },
+    { abreviacion: b.gradoAbreviacion, orden: b.gradoOrden },
+  );
+  if (byGrado !== 0) return byGrado;
+
+  const byBateriaOrden = compareOptionalOrder(a.bateriaOrden, b.bateriaOrden);
+  if (byBateriaOrden !== 0) return byBateriaOrden;
+
   if (a.bateria && !b.bateria) return -1;
   if (!a.bateria && b.bateria) return 1;
 
   const byBateria = (a.bateria ?? "").localeCompare(b.bateria ?? "", "es", { sensitivity: "base" });
   if (byBateria !== 0) return byBateria;
-
-  const byGrado = compareRankAbbreviation(a.gradoAbreviacion, b.gradoAbreviacion);
-  if (byGrado !== 0) return byGrado;
 
   const byApellido1 = a.apellido1.localeCompare(b.apellido1, "es", { sensitivity: "base" });
   if (byApellido1 !== 0) return byApellido1;
@@ -66,10 +73,10 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
           : { bateria: { nombre: bateria } },
     include: {
       rango: {
-        select: { abreviacion: true, nombreCompleto: true },
+        select: { abreviacion: true, nombreCompleto: true, orden: true },
       },
       bateria: {
-        select: { nombre: true },
+        select: { nombre: true, orden: true },
       },
       registros: {
         include: {
@@ -106,7 +113,9 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
       nombre1: persona.nombre1,
       nombre2: persona.nombre2,
       bateria: persona.bateria?.nombre ?? null,
+      bateriaOrden: persona.bateria?.orden ?? null,
       grado: persona.rango.nombreCompleto,
+      gradoOrden: persona.rango.orden,
       gradoAbreviacion: persona.rango.abreviacion,
       totales,
       totalGeneral,

@@ -34,13 +34,13 @@ function buildLine(key: string, label: string, value: string) {
   );
 }
 
-function extractItems(value: unknown) {
+function extractEquipos(value: unknown) {
   if (!Array.isArray(value)) return [] as string[];
 
   return value
     .filter((item) => isObject(item))
     .map((item) => {
-      const nombre = asText(item.nombre) || "Item sin nombre";
+      const nombre = asText(item.nombre) || "Equipo sin nombre";
       const cantidad = asText(item.cantidad) || "0";
       return `${nombre} (${cantidad}x)`;
     });
@@ -96,17 +96,17 @@ function renderMovimientoDetalle(info: AuditDetailObject): ReactNode {
     lines.push(buildLine("comentarios", "Comentarios", comentarios));
   }
 
-  const items = extractItems(info.items);
-  const itemsAnteriores = extractItems(info.itemsAnteriores);
-  const itemsNuevos = extractItems(info.itemsNuevos);
+  const items = extractEquipos(info.items);
+  const itemsAnteriores = extractEquipos(info.itemsAnteriores);
+  const itemsNuevos = extractEquipos(info.itemsNuevos);
   if (items.length > 0) {
-    lines.push(buildLine("items", "Items", items.join(", ")));
+    lines.push(buildLine("items", "Equipos", items.join(", ")));
   }
   if (itemsAnteriores.length > 0) {
-    lines.push(buildLine("items-anteriores", "Items anteriores", itemsAnteriores.join(", ")));
+    lines.push(buildLine("items-anteriores", "Equipos anteriores", itemsAnteriores.join(", ")));
   }
   if (itemsNuevos.length > 0) {
-    lines.push(buildLine("items-nuevos", "Items nuevos", itemsNuevos.join(", ")));
+    lines.push(buildLine("items-nuevos", "Equipos nuevos", itemsNuevos.join(", ")));
   }
 
   const totalUnidades = asText(info.totalUnidades);
@@ -181,9 +181,9 @@ export function renderAuditDetalle(detalle: unknown): ReactNode {
   );
 }
 
-export function renderAuditDetalleItems(detalle: unknown): string[] | null {
+export function renderAuditDetalleEquipos(detalle: unknown): string[] | null {
   if (!isObject(detalle)) return null;
 
-  const items = extractItems(detalle.items);
+  const items = extractEquipos(detalle.items);
   return items.length > 0 ? items : null;
 }

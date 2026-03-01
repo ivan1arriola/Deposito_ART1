@@ -1,7 +1,8 @@
 // Tipos de entidades principales
-export type Rango = { rangoId: number; abreviacion: string; nombreCompleto: string };
-export type Bateria = { bateriaId: number; nombre: string };
-export type Item = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
+export type Rango = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
+export type Bateria = { bateriaId: number; nombre: string; orden: number };
+export type Equipo = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
+export type Item = Equipo;
 export type Talla = { tallaTipo: { nombre: string }; tallaValor: string };
 
 export type Personal = {
@@ -35,11 +36,12 @@ export type PersonalForm = {
   CALZADO: string;
 };
 
-export type ItemForm = {
+export type EquipoForm = {
   nombre: string;
   activo: boolean;
   ordenPdf: number;
 };
+export type ItemForm = EquipoForm;
 
 // Tipos de autenticación y permisos
 export type Role = "ADMIN" | "EDITOR";
@@ -51,16 +53,17 @@ export type CurrentUser = {
 };
 
 // Tipos de vistas
-export type MainView = "personal" | "hoja_matrix" | "tallas_resumen" | "grados" | "baterias" | "items" | "firmas" | "usuarios" | "auditoria";
+export type MainView = "personal" | "personal_nuevo" | "formularios" | "hoja_matrix" | "tallas_resumen" | "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
 
 // Tipos de registros
 export type RegistroTipo = "ENTREGA" | "DEVOLUCION";
 export type RegistroViewTipo = RegistroTipo | "AJUSTE";
 
-export type RegistroDraftItem = {
+export type RegistroDraftEquipo = {
   itemId: string;
   cantidad: string;
 };
+export type RegistroDraftItem = RegistroDraftEquipo;
 
 export type RegistroDraft = {
   modo: "crear" | "rectificar";
@@ -69,7 +72,7 @@ export type RegistroDraft = {
   tipo: RegistroTipo;
   fecha: string;
   comentarios: string;
-  items: RegistroDraftItem[];
+  items: RegistroDraftEquipo[];
 };
 
 export type RegistroView = {
@@ -140,10 +143,11 @@ export type DbStatus = {
 };
 
 // Tipos de hojas
-export type HojaMatrixItem = {
+export type HojaMatrixEquipo = {
   itemId: string;
   nombre: string;
 };
+export type HojaMatrixItem = HojaMatrixEquipo;
 
 export type HojaMatrixRow = {
   ci: string;
@@ -152,14 +156,17 @@ export type HojaMatrixRow = {
   nombre1: string;
   nombre2: string | null;
   bateria: string | null;
+  bateriaOrden: number | null;
   grado: string;
+  gradoOrden: number;
+  gradoAbreviacion: string;
   totales: number[];
   totalGeneral: number;
 };
 
 export type HojaMatrixData = {
   generatedAt: string;
-  items: HojaMatrixItem[];
+  items: HojaMatrixEquipo[];
   rows: HojaMatrixRow[];
 };
 

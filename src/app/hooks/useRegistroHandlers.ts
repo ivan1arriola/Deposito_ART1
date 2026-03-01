@@ -63,21 +63,21 @@ export function useRegistroHandlers(
     ) => {
       if (registroSaving) return;
 
-      const payloadItems = registroDraft.items
+      const payloadEquipos = registroDraft.items
         .map((item) => ({
           itemId: item.itemId.trim(),
           cantidad: Number(item.cantidad),
         }))
         .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
 
-      if (payloadItems.length === 0) {
-        onStatusUpdate("Debes agregar al menos un item con cantidad valida.");
+      if (payloadEquipos.length === 0) {
+        onStatusUpdate("Debes agregar al menos un equipo con cantidad valida.");
         return;
       }
 
-      const uniqueItemIds = new Set(payloadItems.map((item) => item.itemId));
-      if (uniqueItemIds.size !== payloadItems.length) {
-        onStatusUpdate("No puedes repetir items en un mismo movimiento.");
+      const uniqueItemIds = new Set(payloadEquipos.map((item) => item.itemId));
+      if (uniqueItemIds.size !== payloadEquipos.length) {
+        onStatusUpdate("No puedes repetir equipos en un mismo movimiento.");
         return;
       }
 
@@ -91,7 +91,7 @@ export function useRegistroHandlers(
             tipo: registroDraft.tipo,
             fecha: registroDraft.fecha,
             comentarios: registroDraft.comentarios.trim() || undefined,
-            items: payloadItems,
+            items: payloadEquipos,
           },
           registroDraft.registroId,
           {
@@ -135,7 +135,7 @@ export function useRegistroHandlers(
           (item, itemIndex) => itemIndex !== index && item.itemId === value
         )
       ) {
-        onStatusUpdate("Ese item ya fue seleccionado en este movimiento.");
+        onStatusUpdate("Ese equipo ya fue seleccionado en este movimiento.");
         return registroDraft;
       }
 

@@ -20,16 +20,20 @@ export type PersonalForm = {
   CALZADO: string;
 };
 
-export type ItemForm = {
+export type EquipoForm = {
   nombre: string;
   activo: boolean;
   ordenPdf: number;
 };
 
-export type RegistroDraftItem = {
+export type ItemForm = EquipoForm;
+
+export type RegistroDraftEquipo = {
   itemId: string;
   cantidad: string;
 };
+
+export type RegistroDraftItem = RegistroDraftEquipo;
 
 export type RegistroDraft = {
   modo: "crear" | "rectificar";
@@ -38,7 +42,7 @@ export type RegistroDraft = {
   tipo: RegistroTipo;
   fecha: string;
   comentarios: string;
-  items: RegistroDraftItem[];
+  items: RegistroDraftEquipo[];
 };
 
 /**
@@ -60,8 +64,10 @@ export const EMPTY_PERSONAL_FORM: PersonalForm = {
   CALZADO: "",
 };
 
-export const EMPTY_ITEM_FORM: ItemForm = {
+export const EMPTY_EQUIPO_FORM: EquipoForm = {
   nombre: "",
   activo: true,
   ordenPdf: 1,
 };
+
+export const EMPTY_ITEM_FORM: ItemForm = EMPTY_EQUIPO_FORM;

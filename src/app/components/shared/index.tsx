@@ -1,10 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
+export { toast } from "sonner";
 export { ActionMenu } from "./ActionMenu";
 export type { ActionMenuItem } from "./ActionMenu";
 export { ConfirmDialog } from "./ConfirmDialog";
-export { ToastContainer, toast } from "./Toast";
 export { Input, Select, Textarea } from "./FormInputs";
 export { Card, CardHeader, StatCard, EmptyState, Badge } from "./Cards";
 

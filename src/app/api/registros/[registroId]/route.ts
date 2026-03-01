@@ -98,7 +98,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
   const body = await req.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. Revisa tipo, fecha e items." }, { status: 400 });
+    return NextResponse.json({ error: "Payload invalido. Revisa tipo, fecha y equipos." }, { status: 400 });
   }
 
   const tipo = parseTipoRegistro(body.tipo);
@@ -113,21 +113,21 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
-  const parsedItems = body.items
+  const parsedEquipos = body.items
     .map((item) => ({
       itemId: parseBigIntId(item.itemId),
       cantidad: parseCantidad(item.cantidad),
     }))
     .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{ itemId: bigint; cantidad: number }>;
 
-  if (parsedItems.length === 0) {
-    return NextResponse.json({ error: "Debes enviar al menos un item valido." }, { status: 400 });
+  if (parsedEquipos.length === 0) {
+    return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
   }
 
-  const dedupedItems = new Map<string, number>();
-  for (const item of parsedItems) {
+  const dedupedEquipos = new Map<string, number>();
+  for (const item of parsedEquipos) {
     const key = item.itemId.toString();
-    dedupedItems.set(key, (dedupedItems.get(key) ?? 0) + item.cantidad);
+    dedupedEquipos.set(key, (dedupedEquipos.get(key) ?? 0) + item.cantidad);
   }
 
   const existing = await prisma.registro.findUnique({
@@ -163,20 +163,20 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({ error: "Los ajustes no se rectifican desde esta vista." }, { status: 409 });
   }
 
-  const itemIds = Array.from(dedupedItems.keys()).map((itemId) => BigInt(itemId));
+  const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
   const itemsFound = await prisma.item.findMany({
     where: { itemId: { in: itemIds }, activo: true },
     select: { itemId: true, nombre: true },
   });
   if (itemsFound.length !== itemIds.length) {
-    return NextResponse.json({ error: "Uno o mas items no existen o estan inactivos." }, { status: 400 });
+    return NextResponse.json({ error: "Uno o mas equipos no existen o estan inactivos." }, { status: 400 });
   }
 
   const comentarios = body.comentarios?.trim() || null;
   const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
-  const itemsNuevos = Array.from(dedupedItems.entries()).map(([itemId, cantidad]) => ({
+  const itemsNuevos = Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
     itemId,
-    nombre: itemNombrePorId.get(itemId) ?? "Item sin nombre",
+    nombre: itemNombrePorId.get(itemId) ?? "Equipo sin nombre",
     cantidad,
   }));
   const itemsAnteriores = existing.items.map((detail) => ({
@@ -204,7 +204,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       });
 
       await tx.registroItem.createMany({
-        data: Array.from(dedupedItems.entries()).map(([itemId, cantidad]) => ({
+        data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
           registroId: existing.registroId,
           itemId: BigInt(itemId),
           cantidad,
@@ -227,9 +227,9 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
         fechaNueva: fecha.toISOString().slice(0, 10),
         comentariosAnterior: existing.comentarios,
         comentariosNuevo: comentarios,
-        totalItemsAnterior: itemsAnteriores.length,
+        totalEquiposAnterior: itemsAnteriores.length,
         totalUnidadesAnterior,
-        totalItemsNuevo: itemsNuevos.length,
+        totalEquiposNuevo: itemsNuevos.length,
         totalUnidadesNuevo,
         itemsAnteriores,
         itemsNuevos,

@@ -10,6 +10,17 @@ const ROLE_LABELS: Record<Role, string> = {
   EDITOR: "Editor",
 };
 
+export const ROLE_DETAILS: Record<Role, { description: string; scope: string }> = {
+  ADMIN: {
+    description: "Gestiona usuarios, firmas, auditoría y toda la operación del sistema.",
+    scope: "Acceso total de configuración y administración.",
+  },
+  EDITOR: {
+    description: "Opera personal, movimientos y catálogos operativos, sin administración de usuarios.",
+    scope: "Acceso operativo sin privilegios de seguridad.",
+  },
+};
+
 /**
  * Formatea los apellidos de una persona
  */
@@ -30,6 +41,16 @@ export function nombresLabel(persona: Personal): string {
 export function roleLabel(role: Role | null | undefined): string {
   if (!role) return "Sin rol";
   return ROLE_LABELS[role] ?? role;
+}
+
+export function roleDescription(role: Role | null | undefined): string {
+  if (!role) return "Sin permisos asignados.";
+  return ROLE_DETAILS[role]?.description ?? role;
+}
+
+export function roleScope(role: Role | null | undefined): string {
+  if (!role) return "";
+  return ROLE_DETAILS[role]?.scope ?? "";
 }
 
 /**

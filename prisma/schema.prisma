@@ -84,16 +84,20 @@ model Rango {
   rangoId        Int        @id @default(autoincrement()) @map("grado_id") @db.SmallInt
   abreviacion    String     @unique
   nombreCompleto String     @unique @map("nombre_completo")
+  orden          Int        @map("orden") @db.SmallInt
   personal       Personal[]
 
+  @@index([orden])
   @@map("grado")
 }
 
 model Bateria {
   bateriaId Int        @id @default(autoincrement()) @map("bateria_id") @db.SmallInt
   nombre    String     @unique
+  orden     Int        @map("orden") @db.SmallInt
   personal  Personal[]
 
+  @@index([orden])
   @@map("bateria")
 }
 

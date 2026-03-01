@@ -68,6 +68,25 @@ export async function changeUserPasswordHandler(
   }
 }
 
+export async function changeUsernameHandler(
+  usuarioId: string,
+  username: string,
+  callbacks: CallbackProps
+) {
+  try {
+    await api(`/api/usuarios/${usuarioId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username }),
+    });
+    callbacks.onSuccess?.();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo actualizar el nombre de usuario.";
+    callbacks.onError?.(message);
+    throw error;
+  }
+}
+
 export async function toggleUserActiveHandler(
   usuarioId: string,
   newActive: boolean,

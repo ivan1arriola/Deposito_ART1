@@ -5,9 +5,10 @@
 import { ReactNode, FormEvent } from "react";
 
 export type Role = "ADMIN" | "EDITOR";
-export type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string };
-export type BateriaConfig = { bateriaId: number; nombre: string };
-export type ItemConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
+export type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
+export type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
+export type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
+export type ItemConfig = EquipoConfig;
 export type UsuarioAdmin = {
   usuarioId: string;
   username: string;
@@ -43,17 +44,21 @@ export interface RangoConfigState {
   rangos: RangoConfig[];
   newAbreviacion: string;
   newNombreCompleto: string;
+  newOrden: string;
   editId: number | null;
   editAbreviacion: string;
   editNombreCompleto: string;
+  editOrden: string;
 }
 
 export interface RangoConfigCallbacks {
   onNewAbreviacionChange: (value: string) => void;
   onNewNombreCompletoChange: (value: string) => void;
+  onNewOrdenChange: (value: string) => void;
   onEditIdChange: (id: number | null) => void;
   onEditAbreviacionChange: (value: string) => void;
   onEditNombreCompletoChange: (value: string) => void;
+  onEditOrdenChange: (value: string) => void;
   onCreate: () => void;
   onUpdate: (rangoId: number) => void;
   onDelete: (rangoId: number) => void;
@@ -63,41 +68,48 @@ export interface RangoConfigCallbacks {
 export interface BateriaConfigState {
   baterias: BateriaConfig[];
   newNombre: string;
+  newOrden: string;
   editId: number | null;
   editNombre: string;
+  editOrden: string;
 }
 
 export interface BateriaConfigCallbacks {
   onNewNombreChange: (value: string) => void;
+  onNewOrdenChange: (value: string) => void;
   onEditIdChange: (id: number | null) => void;
   onEditNombreChange: (value: string) => void;
+  onEditOrdenChange: (value: string) => void;
   onCreate: () => void;
   onUpdate: (bateriaId: number) => void;
   onDelete: (bateriaId: number) => void;
 }
 
-// Items
-export interface ItemConfigState {
-  items: ItemConfig[];
-  newItem: { nombre: string; activo: boolean; ordenPdf: number };
-  editItemId: string | null;
-  editItem: { nombre: string; activo: boolean; ordenPdf: number };
-  itemsActivos: ItemConfig[];
-  itemsInactivos: ItemConfig[];
-  itemsActivosEnPantalla: ItemConfig[];
-  draggedItemId: string | null;
+// Equipos
+export interface EquipoConfigState {
+  equipos: EquipoConfig[];
+  newEquipo: { nombre: string; activo: boolean; ordenPdf: number };
+  editEquipoId: string | null;
+  editEquipo: { nombre: string; activo: boolean; ordenPdf: number };
+  equiposActivos: EquipoConfig[];
+  equiposInactivos: EquipoConfig[];
+  equiposActivosEnPantalla: EquipoConfig[];
+  draggedEquipoId: string | null;
 }
 
-export interface ItemConfigCallbacks {
-  onNewItemChange: (value: Partial<ItemConfig>, key: keyof Omit<ItemConfig, "itemId" | "ordenPdf">) => void;
-  onEditItemIdChange: (id: string | null) => void;
-  onEditItemChange: (value: Partial<ItemConfig>, key: keyof Omit<ItemConfig, "itemId">) => void;
-  onCreateItem: (event: FormEvent<HTMLFormElement>) => void;
-  onUpdateItem: (itemId: string) => void;
-  onToggleItemActivo: (item: ItemConfig) => void;
-  onDeleteItem: (itemId: string) => void;
-  onStartItemDrag: (itemId: string) => void;
-  renderItemCard: (item: ItemConfig, options?: { draggableInActiveList?: boolean }) => ReactNode;
+export interface EquipoConfigCallbacks {
+  onNewEquipoChange: (value: string | boolean, key: keyof Pick<EquipoConfig, "nombre" | "activo">) => void;
+  onEditEquipoIdChange: (id: string | null) => void;
+  onEditEquipoChange: (
+    value: string | boolean | number,
+    key: keyof Pick<EquipoConfig, "nombre" | "activo" | "ordenPdf">
+  ) => void;
+  onCreateEquipo: (event: FormEvent<HTMLFormElement>) => void;
+  onUpdateEquipo: (itemId: string) => void;
+  onToggleEquipoActivo: (item: EquipoConfig) => void;
+  onDeleteEquipo: (itemId: string) => void;
+  onStartEquipoDrag: (itemId: string) => void;
+  renderEquipoCard: (item: EquipoConfig, options?: { draggableInActiveList?: boolean }) => ReactNode;
 }
 
 // Usuarios Admin
@@ -105,15 +117,19 @@ export interface UsuarioConfigState {
   usuarios: UsuarioAdmin[];
   newUsername: string;
   newPassword: string;
+  newPasswordConfirm: string;
   newRole: Role;
 }
 
 export interface UsuarioConfigCallbacks {
   onNewUsernameChange: (value: string) => void;
   onNewPasswordChange: (value: string) => void;
+  onNewPasswordConfirmChange: (value: string) => void;
   onNewRoleChange: (role: Role) => void;
   onCreateUsuario: (event: FormEvent<HTMLFormElement>) => void;
+  onChangeUsername: (usuario: UsuarioAdmin) => void;
   onChangeUserRole: (usuario: UsuarioAdmin) => void;
+  onChangeUserPassword: (usuario: UsuarioAdmin) => void;
   onToggleUserActive: (usuario: UsuarioAdmin) => void;
   onDeleteUsuario: (usuario: UsuarioAdmin) => void;
 }
@@ -150,6 +166,8 @@ export interface AuditoriaConfigCallbacks {
 // Utilidades compartidas
 export interface UtilityFunctions {
   roleLabel: (role: Role | null | undefined) => string;
+  roleDescription: (role: Role | null | undefined) => string;
+  roleScope: (role: Role | null | undefined) => string;
   rangoLabel: (rango: RangoConfig) => string;
   auditActionLabel: (accion: string) => string;
   auditEntityLabel: (entidad: string) => string;
@@ -160,7 +178,7 @@ export interface UtilityFunctions {
  * Props principales del componente ConfigViews
  */
 export interface ConfigViewsProps {
-  activeView: "grados" | "baterias" | "items" | "firmas" | "usuarios" | "auditoria";
+  activeView: "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
   isAdmin: boolean;
   canWrite: boolean;
 
@@ -171,8 +189,8 @@ export interface ConfigViewsProps {
   bateria: BateriaConfigState;
   bateriaCallbacks: BateriaConfigCallbacks;
 
-  items: ItemConfigState;
-  itemCallbacks: ItemConfigCallbacks;
+  items: EquipoConfigState;
+  itemCallbacks: EquipoConfigCallbacks;
 
   usuario: UsuarioConfigState;
   usuarioCallbacks: UsuarioConfigCallbacks;

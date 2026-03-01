@@ -44,26 +44,32 @@ $$;
 CREATE TABLE "grado" (
   "grado_id" SMALLSERIAL PRIMARY KEY,
   "abreviacion" TEXT NOT NULL UNIQUE,
-  "nombre_completo" TEXT NOT NULL UNIQUE
+  "nombre_completo" TEXT NOT NULL UNIQUE,
+  "orden" SMALLINT NOT NULL
 );
 
-INSERT INTO "grado" ("abreviacion", "nombre_completo") VALUES
-('Sgto', 'Sargento'),
-(U&'Cabo 1\00B0', 'Cabo Primero'),
-(U&'Cabo 2\00B0', 'Cabo Segundo'),
-(U&'Sdo 1\00B0', 'Soldado Primero'),
-(U&'Sdo 1\00B0 C/CIRR', 'Soldado Primero Cursando CIRR'),
-(U&'Sdo 1\00B0 S/CIRR', 'Soldado Primero Sin CIRR');
+CREATE INDEX "grado_orden_idx" ON "grado"("orden");
+
+INSERT INTO "grado" ("abreviacion", "nombre_completo", "orden") VALUES
+('Sgto', 'Sargento', 1),
+(U&'Cabo 1\00B0', 'Cabo Primero', 2),
+(U&'Cabo 2\00B0', 'Cabo Segundo', 3),
+(U&'Sdo 1\00B0', 'Soldado Primero', 4),
+(U&'Sdo 1\00B0 C/CIRR', 'Soldado Primero Cursando CIRR', 5),
+(U&'Sdo 1\00B0 S/CIRR', 'Soldado Primero Sin CIRR', 6);
 
 CREATE TABLE "bateria" (
   "bateria_id" SMALLSERIAL PRIMARY KEY,
-  "nombre" TEXT NOT NULL UNIQUE
+  "nombre" TEXT NOT NULL UNIQUE,
+  "orden" SMALLINT NOT NULL
 );
 
-INSERT INTO "bateria" ("nombre") VALUES
-('Cdo. y Serv.'),
-('Ba. Obus. "A"'),
-('Ba. Obus. "B"');
+CREATE INDEX "bateria_orden_idx" ON "bateria"("orden");
+
+INSERT INTO "bateria" ("nombre", "orden") VALUES
+('Cdo. y Serv.', 1),
+('Ba. Obus. "A"', 2),
+('Ba. Obus. "B"', 3);
 
 CREATE TABLE "talla_tipo" (
   "talla_tipo_id" SMALLSERIAL PRIMARY KEY,

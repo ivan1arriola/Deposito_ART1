@@ -183,7 +183,7 @@ export async function POST(req: Request) {
   const body = await req.json();
   const requestMeta = readRequestMeta(req);
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. Revisa ci, tipo e items." }, { status: 400 });
+    return NextResponse.json({ error: "Payload invalido. Revisa ci, tipo y equipos." }, { status: 400 });
   }
 
   const ci = body.ci.trim();
@@ -199,24 +199,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
-  const parsedItems = body.items
+  const parsedEquipos = body.items
     .map((item) => ({
       itemId: parseBigIntId(item.itemId),
       cantidad: parseCantidad(item.cantidad),
     }))
     .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{ itemId: bigint; cantidad: number }>;
 
-  if (parsedItems.length === 0) {
-    return NextResponse.json({ error: "Debes enviar al menos un item valido." }, { status: 400 });
+  if (parsedEquipos.length === 0) {
+    return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
   }
 
-  const dedupedItems = new Map<string, number>();
-  for (const item of parsedItems) {
+  const dedupedEquipos = new Map<string, number>();
+  for (const item of parsedEquipos) {
     const key = item.itemId.toString();
-    dedupedItems.set(key, (dedupedItems.get(key) ?? 0) + item.cantidad);
+    dedupedEquipos.set(key, (dedupedEquipos.get(key) ?? 0) + item.cantidad);
   }
 
-  const itemIds = Array.from(dedupedItems.keys()).map((itemId) => BigInt(itemId));
+  const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
   const [personalRecord, itemsFound] = await Promise.all([
     prisma.personal.findUnique({
       where: { ci },
@@ -244,14 +244,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No existe personal para la CI indicada." }, { status: 404 });
   }
   if (itemsFound.length !== itemIds.length) {
-    return NextResponse.json({ error: "Uno o mas items no existen o estan inactivos." }, { status: 400 });
+    return NextResponse.json({ error: "Uno o mas equipos no existen o estan inactivos." }, { status: 400 });
   }
 
   const comentarios = body.comentarios?.trim() || null;
   const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
-  const itemsDetallados = Array.from(dedupedItems.entries()).map(([itemId, cantidad]) => ({
+  const itemsDetallados = Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
     itemId,
-    nombre: itemNombrePorId.get(itemId) ?? "Item sin nombre",
+    nombre: itemNombrePorId.get(itemId) ?? "Equipo sin nombre",
     cantidad,
   }));
   const totalUnidades = itemsDetallados.reduce((acumulado, item) => acumulado + item.cantidad, 0);
@@ -269,7 +269,7 @@ export async function POST(req: Request) {
       });
 
       await tx.registroItem.createMany({
-        data: Array.from(dedupedItems.entries()).map(([itemId, cantidad]) => ({
+        data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
           registroId: registro.registroId,
           itemId: BigInt(itemId),
           cantidad,
@@ -291,7 +291,7 @@ export async function POST(req: Request) {
         tipo,
         fechaMovimiento: fecha.toISOString().slice(0, 10),
         comentarios,
-        totalItems: itemsDetallados.length,
+        totalEquipos: itemsDetallados.length,
         totalUnidades,
         items: itemsDetallados,
         ip: requestMeta.ip,

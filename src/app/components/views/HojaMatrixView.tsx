@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { compareOptionalOrder } from "@/lib/catalog-order";
 import type { HojaMatrixData } from "@/types/views";
 
 export interface HojaMatrixViewProps {
@@ -18,11 +19,21 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
 
   const bateriaOptions = useMemo(() => {
     if (!data) return [] as string[];
-    const labels = new Set<string>();
+    const labels = new Map<string, number | null>();
     for (const row of data.rows) {
-      labels.add(row.bateria ?? "Sin bateria");
+      const label = row.bateria ?? "Sin bateria";
+      const current = labels.get(label);
+      if (current === undefined || compareOptionalOrder(row.bateriaOrden, current) < 0) {
+        labels.set(label, row.bateriaOrden);
+      }
     }
-    return Array.from(labels).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+    return Array.from(labels.entries())
+      .sort((a, b) => {
+        const byOrder = compareOptionalOrder(a[1], b[1]);
+        if (byOrder !== 0) return byOrder;
+        return a[0].localeCompare(b[0], "es", { sensitivity: "base" });
+      })
+      .map(([label]) => label);
   }, [data]);
 
   const handleLoad = async () => {

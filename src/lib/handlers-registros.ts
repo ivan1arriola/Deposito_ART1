@@ -120,7 +120,7 @@ export async function saveRegistroHandler(
     // Validar items
     const uniqueItemIds = new Set(payload.items.map((item) => item.itemId));
     if (uniqueItemIds.size !== payload.items.length) {
-      const message = "No puedes repetir items en un mismo movimiento.";
+      const message = "No puedes repetir equipos en un mismo movimiento.";
       callbacks.onError?.(message);
       throw new Error(message);
     }

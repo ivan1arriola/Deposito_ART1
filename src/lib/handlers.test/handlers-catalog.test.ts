@@ -32,7 +32,7 @@ describe("Handlers de Catálogos - Rangos", () => {
       const onError = vi.fn();
       vi.mocked(api).mockResolvedValue({ rangoId: 1 });
 
-      await createRangoHandler("Ten.", "Teniente", {
+      await createRangoHandler("Ten.", "Teniente", 2, {
         onSuccess,
         onError,
       });
@@ -48,7 +48,7 @@ describe("Handlers de Catálogos - Rangos", () => {
       vi.mocked(api).mockRejectedValue(new Error(errorMessage));
 
       try {
-        await createRangoHandler("Ten.", "Teniente", {
+        await createRangoHandler("Ten.", "Teniente", 2, {
           onSuccess,
           onError,
         });
@@ -65,11 +65,14 @@ describe("Handlers de Catálogos - Rangos", () => {
       const onError = vi.fn();
       vi.mocked(api).mockResolvedValue({});
 
-      await createRangoHandler("Ten.", "Teniente", { onSuccess, onError });
+      await createRangoHandler("Ten.", "Teniente", 2, { onSuccess, onError });
 
       expect(vi.mocked(api)).toHaveBeenCalledWith("/api/rangos", expect.objectContaining({
         method: "POST",
         headers: { "Content-Type": "application/json" },
+      }));
+      expect(vi.mocked(api)).toHaveBeenCalledWith("/api/rangos", expect.objectContaining({
+        body: JSON.stringify({ abreviacion: "Ten.", nombreCompleto: "Teniente", orden: 2 }),
       }));
     });
   });
@@ -80,7 +83,7 @@ describe("Handlers de Catálogos - Rangos", () => {
       const onError = vi.fn();
       vi.mocked(api).mockResolvedValue({});
 
-      await updateRangoHandler(1, "Ten.", "Teniente", { onSuccess, onError });
+      await updateRangoHandler(1, "Ten.", "Teniente", 3, { onSuccess, onError });
 
       expect(vi.mocked(api)).toHaveBeenCalledWith("/api/rangos/1", expect.objectContaining({
         method: "PUT",
@@ -92,7 +95,7 @@ describe("Handlers de Catálogos - Rangos", () => {
       vi.mocked(api).mockRejectedValue(new Error("No encontrado"));
 
       try {
-        await updateRangoHandler(999, "Ten.", "Teniente", { onError });
+        await updateRangoHandler(999, "Ten.", "Teniente", 3, { onError });
       } catch {
         // Error esperado
       }

@@ -6,6 +6,7 @@ import {
   FormEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -23,15 +24,16 @@ import {
 import { ConfigViews } from "./components/views/ConfigViews";
 import { HojaDeEntregaView } from "./components/views/HojaDeEntregaView";
 import { HojaMatrixView } from "./components/views/HojaMatrixView";
+import { PersonalCreateView } from "./components/views/PersonalCreateView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
-import { SmallActionButton, PaginationControls, ActionMenu, ToastContainer, toast } from "./components/shared";
+import { SmallActionButton, PaginationControls, ActionMenu, toast } from "./components/shared";
 
 // Importar tipos desde archivos de tipos organizados
 import type {
   Role,
   Rango,
   Bateria,
-  Item,
+  Equipo,
   Personal,
   PersonalObservacion,
   CurrentUser,
@@ -42,8 +44,8 @@ import type {
 } from "@/types/entities";
 import type {
   PersonalForm,
-  ItemForm,
-  RegistroDraftItem,
+  EquipoForm,
+  RegistroDraftEquipo,
   RegistroDraft,
 } from "@/types/forms";
 import type {
@@ -56,11 +58,11 @@ import type {
   AuditFilter,
 } from "@/types/views";
 import { ROLE_OPTIONS } from "@/types/entities";
-import { EMPTY_PERSONAL_FORM, EMPTY_ITEM_FORM } from "@/types/forms";
+import { EMPTY_PERSONAL_FORM, EMPTY_EQUIPO_FORM } from "@/types/forms";
 
 // Importar utilidades desde archivos organizados
 import { api } from "@/lib/api";
-import { apellidosLabel, nombresLabel, roleLabel, rangoLabel, tallasEntries } from "@/lib/formatters";
+import { apellidosLabel, nombresLabel, roleDescription, roleLabel, roleScope, rangoLabel, tallasEntries } from "@/lib/formatters";
 import {
   tallasMap,
   getTodayDateInput,
@@ -94,6 +96,7 @@ import {
 } from "@/lib/handlers-personal";
 import {
   createUsuarioHandler,
+  changeUsernameHandler,
   changeUserRoleHandler,
   changeUserPasswordHandler,
   toggleUserActiveHandler,
@@ -135,6 +138,13 @@ type UserPasswordDialogState = {
   confirmPassword: string;
 };
 
+type UsernameDialogState = {
+  usuarioId: string;
+  username: string;
+  title: string;
+  description: string;
+};
+
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
   const [loading, setLoading] = useState(true);
@@ -155,10 +165,12 @@ export default function Home() {
   const [userRoleSaving, setUserRoleSaving] = useState(false);
   const [userPasswordDialog, setUserPasswordDialog] = useState<UserPasswordDialogState | null>(null);
   const [userPasswordSaving, setUserPasswordSaving] = useState(false);
+  const [usernameDialog, setUsernameDialog] = useState<UsernameDialogState | null>(null);
+  const [usernameSaving, setUsernameSaving] = useState(false);
 
   const [rangos, setRangos] = useState<Rango[]>([]);
   const [baterias, setBaterias] = useState<Bateria[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
+  const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaRecord[]>([]);
@@ -176,25 +188,32 @@ export default function Home() {
 
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
   const [newRole, setNewRole] = useState<Role>("EDITOR");
 
   const [newRangoAbreviacion, setNewRangoAbreviacion] = useState("");
   const [newRangoNombreCompleto, setNewRangoNombreCompleto] = useState("");
+  const [newRangoOrden, setNewRangoOrden] = useState("");
   const [editRangoId, setEditRangoId] = useState<number | null>(null);
   const [editRangoAbreviacion, setEditRangoAbreviacion] = useState("");
   const [editRangoNombreCompleto, setEditRangoNombreCompleto] = useState("");
+  const [editRangoOrden, setEditRangoOrden] = useState("");
 
   const [newBateria, setNewBateria] = useState("");
+  const [newBateriaOrden, setNewBateriaOrden] = useState("");
   const [editBateriaId, setEditBateriaId] = useState<number | null>(null);
   const [editBateriaNombre, setEditBateriaNombre] = useState("");
+  const [editBateriaOrden, setEditBateriaOrden] = useState("");
 
-  const [newItem, setNewItem] = useState<ItemForm>(EMPTY_ITEM_FORM);
-  const [editItemId, setEditItemId] = useState<string | null>(null);
-  const [editItem, setEditItem] = useState<ItemForm>(EMPTY_ITEM_FORM);
-  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
-  const [dragOrderItemIds, setDragOrderItemIds] = useState<string[] | null>(null);
-  const draggedItemIdRef = useRef<string | null>(null);
-  const dragOrderItemIdsRef = useRef<string[] | null>(null);
+  const [newEquipo, setNewEquipo] = useState<EquipoForm>(EMPTY_EQUIPO_FORM);
+  const [editEquipoId, setEditEquipoId] = useState<string | null>(null);
+  const [editEquipo, setEditEquipo] = useState<EquipoForm>(EMPTY_EQUIPO_FORM);
+  const [draggedEquipoId, setDraggedEquipoId] = useState<string | null>(null);
+  const [dragOrderEquipoIds, setDragOrderEquipoIds] = useState<string[] | null>(null);
+  const draggedEquipoIdRef = useRef<string | null>(null);
+  const dragOrderEquipoIdsRef = useRef<string[] | null>(null);
+  const equipoCardRefs = useRef(new Map<string, HTMLDivElement>());
+  const previousEquipoRectsRef = useRef(new Map<string, DOMRect>());
 
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
@@ -220,20 +239,19 @@ export default function Home() {
   const [hojaMatrixError, setHojaMatrixError] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const [confirmDialogBusy, setConfirmDialogBusy] = useState(false);
-  const [showCreatePersonalForm, setShowCreatePersonalForm] = useState(false);
   const [creatingPersonal, setCreatingPersonal] = useState(false);
-  const [createPersonalNotice, setCreatePersonalNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [auditFilter, setAuditFilter] = useState<AuditFilter>("TODOS");
   const [personalPage, setPersonalPage] = useState(1);
   const [personalPageSize, setPersonalPageSize] = useState(25);
   const [auditPage, setAuditPage] = useState(1);
   const [auditPageSize, setAuditPageSize] = useState(25);
+  const lastToastStatusRef = useRef<string | null>(null);
 
   const isAdmin = currentUser?.rol === "ADMIN";
   const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
   const canDelete = canWrite;
   const canRegisterPersonal = canWrite && rangos.length > 0;
-  const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "items";
+  const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "equipos";
   const inAdminConfigView = activeView === "firmas" || activeView === "usuarios" || activeView === "auditoria";
   const normalizedNewCi = normalizeCi(newPersonal.ci.trim());
   const duplicatePersonal = useMemo(() => {
@@ -252,12 +270,12 @@ export default function Home() {
   const requiredPersonalCompleted = requiredPersonalFields.filter(Boolean).length;
   const canSubmitPersonal = canRegisterPersonal && requiredPersonalCompleted === requiredPersonalFields.length && !creatingPersonal;
   const maxFechaIngreso = getTodayDateInput();
-  const itemsOrdenados = useMemo(
-    () => [...items].sort((a, b) => a.ordenPdf - b.ordenPdf || a.nombre.localeCompare(b.nombre, "es")),
-    [items],
+  const equiposOrdenados = useMemo(
+    () => [...equipos].sort((a, b) => a.ordenPdf - b.ordenPdf || a.nombre.localeCompare(b.nombre, "es")),
+    [equipos],
   );
-  const itemsActivos = useMemo(() => itemsOrdenados.filter((item) => item.activo), [itemsOrdenados]);
-  const itemsInactivos = useMemo(() => itemsOrdenados.filter((item) => !item.activo), [itemsOrdenados]);
+  const equiposActivos = useMemo(() => equiposOrdenados.filter((item) => item.activo), [equiposOrdenados]);
+  const equiposInactivos = useMemo(() => equiposOrdenados.filter((item) => !item.activo), [equiposOrdenados]);
   const tallaOptionsByKey = useMemo(() => {
     const dynamic = {} as Record<TallaKey, string[]>;
 
@@ -297,13 +315,13 @@ export default function Home() {
     const start = (auditPageSafe - 1) * auditPageSize;
     return auditoriaFiltrada.slice(start, start + auditPageSize);
   }, [auditoriaFiltrada, auditPageSafe, auditPageSize]);
-  const itemsActivosEnPantalla = useMemo(() => {
-    if (!dragOrderItemIds) return itemsActivos;
-    const activeById = new Map(itemsActivos.map((item) => [item.itemId, item]));
-    return dragOrderItemIds
+  const equiposActivosEnPantalla = useMemo(() => {
+    if (!dragOrderEquipoIds) return equiposActivos;
+    const activeById = new Map(equiposActivos.map((item) => [item.itemId, item]));
+    return dragOrderEquipoIds
       .map((itemId) => activeById.get(itemId))
-      .filter((item): item is Item => item !== undefined);
-  }, [itemsActivos, dragOrderItemIds]);
+      .filter((item): item is Equipo => item !== undefined);
+  }, [equiposActivos, dragOrderEquipoIds]);
   const personalOrdenado = useMemo(() => [...personal].sort(comparePersonalByHierarchy), [personal]);
   const searchCedulaDigits = normalizeCi(searchCedula.trim());
   const searchNombresText = normalizeSearchTerm(searchNombres);
@@ -364,15 +382,10 @@ export default function Home() {
   }, [inAdminConfigView, isAdmin]);
 
   useEffect(() => {
-    if (activeView !== "personal" && showCreatePersonalForm) {
-      setShowCreatePersonalForm(false);
+    if (activeView === "personal_nuevo" && !canWrite) {
+      setActiveView("personal");
     }
-  }, [activeView, showCreatePersonalForm]);
-
-  useEffect(() => {
-    if (!showCreatePersonalForm) return;
-    setCreatePersonalNotice((prev) => (prev?.type === "error" ? null : prev));
-  }, [newPersonal, showCreatePersonalForm]);
+  }, [activeView, canWrite]);
 
   useEffect(() => {
     setPersonalPage(1);
@@ -403,16 +416,93 @@ export default function Home() {
   }, [auditPage, auditTotalPages]);
 
   useEffect(() => {
-    if (!dragOrderItemIds) return;
-    const currentActiveIds = new Set(itemsActivos.map((item) => item.itemId));
+    if (!currentUser) {
+      lastToastStatusRef.current = null;
+      return;
+    }
+
+    if (!status || status === lastToastStatusRef.current) return;
+    lastToastStatusRef.current = status;
+
+    const normalized = status.toLowerCase();
+    const shouldIgnore =
+      status === "Datos actualizados." ||
+      status === "Verificando sesión..." ||
+      status === "Iniciando sesión..." ||
+      status === "Ingresa tus credenciales." ||
+      status === "Sesion cerrada. Ingresa tus credenciales." ||
+      normalized.startsWith("actualizando ") ||
+      normalized.startsWith("guardando ");
+
+    if (shouldIgnore) return;
+
+    const isError =
+      normalized.includes("no se pudo") ||
+      normalized.includes("error") ||
+      normalized.includes("inval") ||
+      normalized.includes("no tienes permisos") ||
+      normalized.includes("solo el administrador") ||
+      normalized.includes("no autorizado") ||
+      normalized.includes("debes ") ||
+      normalized.includes("repetida") ||
+      normalized.includes("repetido") ||
+      normalized.includes("obligatorio") ||
+      normalized.includes("no existe") ||
+      normalized.includes("falta");
+
+    if (isError) {
+      toast.error(status);
+      return;
+    }
+
+    if (normalized.endsWith("...")) return;
+
+    toast.success(status);
+  }, [currentUser, status]);
+
+  useEffect(() => {
+    if (!dragOrderEquipoIds) return;
+    const currentActiveIds = new Set(equiposActivos.map((item) => item.itemId));
     const dragStateIsValid =
-      dragOrderItemIds.length === itemsActivos.length && dragOrderItemIds.every((itemId) => currentActiveIds.has(itemId));
+      dragOrderEquipoIds.length === equiposActivos.length && dragOrderEquipoIds.every((itemId) => currentActiveIds.has(itemId));
     if (dragStateIsValid) return;
-    setDraggedItemId(null);
-    setDragOrderItemIds(null);
-    draggedItemIdRef.current = null;
-    dragOrderItemIdsRef.current = null;
-  }, [dragOrderItemIds, itemsActivos]);
+    setDraggedEquipoId(null);
+    setDragOrderEquipoIds(null);
+    draggedEquipoIdRef.current = null;
+    dragOrderEquipoIdsRef.current = null;
+  }, [dragOrderEquipoIds, equiposActivos]);
+
+  useLayoutEffect(() => {
+    const nextRects = new Map<string, DOMRect>();
+
+    for (const equipo of equiposActivosEnPantalla) {
+      const node = equipoCardRefs.current.get(equipo.itemId);
+      if (!node) continue;
+
+      const nextRect = node.getBoundingClientRect();
+      nextRects.set(equipo.itemId, nextRect);
+
+      const previousRect = previousEquipoRectsRef.current.get(equipo.itemId);
+      if (!previousRect) continue;
+
+      const deltaX = previousRect.left - nextRect.left;
+      const deltaY = previousRect.top - nextRect.top;
+      if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) continue;
+
+      node.animate(
+        [
+          { transform: `translate(${deltaX}px, ${deltaY}px) scale(0.985)` },
+          { transform: "translate(0px, 0px) scale(1)" },
+        ],
+        {
+          duration: draggedEquipoId ? 220 : 320,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        },
+      );
+    }
+
+    previousEquipoRectsRef.current = nextRects;
+  }, [equiposActivosEnPantalla, draggedEquipoId]);
 
   useEffect(() => {
     if (!showConfigViews) return;
@@ -453,7 +543,7 @@ export default function Home() {
   function clearLoadedData() {
     setRangos([]);
     setBaterias([]);
-    setItems([]);
+    setEquipos([]);
     setPersonal([]);
     setUsuarios([]);
     setAuditoria([]);
@@ -477,15 +567,16 @@ export default function Home() {
     setHojaMatrixError(null);
     setConfirmDialog(null);
     setConfirmDialogBusy(false);
-    setShowCreatePersonalForm(false);
     setPersonalPage(1);
     setPersonalPageSize(25);
     setAuditPage(1);
     setAuditPageSize(25);
-    setDraggedItemId(null);
-    setDragOrderItemIds(null);
-    draggedItemIdRef.current = null;
-    dragOrderItemIdsRef.current = null;
+    setDraggedEquipoId(null);
+    setDragOrderEquipoIds(null);
+    draggedEquipoIdRef.current = null;
+    dragOrderEquipoIdsRef.current = null;
+    equipoCardRefs.current.clear();
+    previousEquipoRectsRef.current.clear();
   }
 
   const loadData = useCallback(async (showSpinner = false) => {
@@ -497,17 +588,17 @@ export default function Home() {
 
       await api<DbStatus>("/api/db-status");
 
-      const [rangosData, bateriasData, itemsData, personalData, movimientosSummary] = await Promise.all([
+      const [rangosData, bateriasData, equiposData, personalData, movimientosSummary] = await Promise.all([
         api<Rango[]>("/api/rangos"),
         api<Bateria[]>("/api/baterias"),
-        api<Item[]>("/api/items"),
+        api<Equipo[]>("/api/items"),
         api<Personal[]>("/api/personal"),
         api<{ total: number }>("/api/registros?summary=1").catch(() => ({ total: 0 })),
       ]);
 
       setRangos(rangosData);
       setBaterias(bateriasData);
-      setItems(itemsData);
+      setEquipos(equiposData);
       setPersonal(personalData);
       setMovimientosTotal(movimientosSummary.total);
 
@@ -630,19 +721,25 @@ export default function Home() {
       return;
     }
     try {
-      await createRangoHandler(newRangoAbreviacion, newRangoNombreCompleto, {
-        onSuccess: async () => {
-          setNewRangoAbreviacion("");
-          setNewRangoNombreCompleto("");
-          setStatus("Grado del personal creado.");
-          await loadData();
+      await createRangoHandler(
+        newRangoAbreviacion,
+        newRangoNombreCompleto,
+        newRangoOrden.trim() === "" ? undefined : Number(newRangoOrden),
+        {
+          onSuccess: async () => {
+            setNewRangoAbreviacion("");
+            setNewRangoNombreCompleto("");
+            setNewRangoOrden("");
+            setStatus("Grado del personal creado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
         },
-        onError: (message) => setStatus(message),
-      });
+      );
     } catch {
       // Error manejado en el handler
     }
-  }, [isAdmin, newRangoAbreviacion, newRangoNombreCompleto, loadData]);
+  }, [isAdmin, newRangoAbreviacion, newRangoNombreCompleto, newRangoOrden, loadData]);
 
   const updateRango = useCallback(
     async (rangoId: number) => {
@@ -651,21 +748,28 @@ export default function Home() {
         return;
       }
       try {
-        await updateRangoHandler(rangoId, editRangoAbreviacion, editRangoNombreCompleto, {
-          onSuccess: async () => {
-            setEditRangoId(null);
-            setEditRangoAbreviacion("");
-            setEditRangoNombreCompleto("");
-            setStatus("Grado del personal actualizado.");
-            await loadData();
+        await updateRangoHandler(
+          rangoId,
+          editRangoAbreviacion,
+          editRangoNombreCompleto,
+          editRangoOrden.trim() === "" ? undefined : Number(editRangoOrden),
+          {
+            onSuccess: async () => {
+              setEditRangoId(null);
+              setEditRangoAbreviacion("");
+              setEditRangoNombreCompleto("");
+              setEditRangoOrden("");
+              setStatus("Grado del personal actualizado.");
+              await loadData();
+            },
+            onError: (message) => setStatus(message),
           },
-          onError: (message) => setStatus(message),
-        });
+        );
       } catch {
         // Error manejado en el handler
       }
     },
-    [isAdmin, editRangoAbreviacion, editRangoNombreCompleto, loadData],
+    [isAdmin, editRangoAbreviacion, editRangoNombreCompleto, editRangoOrden, loadData],
   );
 
   const deleteRango = useCallback(
@@ -704,9 +808,10 @@ export default function Home() {
       return;
     }
     try {
-      await createBateriaHandler(newBateria, {
+      await createBateriaHandler(newBateria, newBateriaOrden.trim() === "" ? undefined : Number(newBateriaOrden), {
         onSuccess: async () => {
           setNewBateria("");
+          setNewBateriaOrden("");
           setStatus("Bateria creada.");
           await loadData();
         },
@@ -715,7 +820,7 @@ export default function Home() {
     } catch {
       // Error manejado en el handler
     }
-  }, [isAdmin, newBateria, loadData]);
+  }, [isAdmin, newBateria, newBateriaOrden, loadData]);
 
   const updateBateria = useCallback(
     async (bateriaId: number) => {
@@ -724,20 +829,26 @@ export default function Home() {
         return;
       }
       try {
-        await updateBateriaHandler(bateriaId, editBateriaNombre, {
-          onSuccess: async () => {
-            setEditBateriaId(null);
-            setEditBateriaNombre("");
-            setStatus("Bateria actualizada.");
-            await loadData();
+        await updateBateriaHandler(
+          bateriaId,
+          editBateriaNombre,
+          editBateriaOrden.trim() === "" ? undefined : Number(editBateriaOrden),
+          {
+            onSuccess: async () => {
+              setEditBateriaId(null);
+              setEditBateriaNombre("");
+              setEditBateriaOrden("");
+              setStatus("Bateria actualizada.");
+              await loadData();
+            },
+            onError: (message) => setStatus(message),
           },
-          onError: (message) => setStatus(message),
-        });
+        );
       } catch {
         // Error manejado en el handler
       }
     },
-    [canWrite, editBateriaNombre, loadData],
+    [canWrite, editBateriaNombre, editBateriaOrden, loadData],
   );
 
   const deleteBateria = useCallback(
@@ -770,7 +881,7 @@ export default function Home() {
     [canDelete, baterias, loadData],
   );
 
-  const createItem = useCallback(
+  const createEquipo = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (!canWrite) {
@@ -779,10 +890,10 @@ export default function Home() {
       }
 
       try {
-        await createItemHandler(newItem.nombre, newItem.activo, {
+        await createItemHandler(newEquipo.nombre, newEquipo.activo, {
           onSuccess: async () => {
-            setNewItem(EMPTY_ITEM_FORM);
-            setStatus("Item creado.");
+            setNewEquipo(EMPTY_EQUIPO_FORM);
+            setStatus("Equipo creado.");
             await loadData();
           },
           onError: (message) => setStatus(message),
@@ -791,21 +902,21 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [canWrite, newItem, loadData],
+    [canWrite, newEquipo, loadData],
   );
 
-  const updateItem = useCallback(
+  const updateEquipo = useCallback(
     async (itemId: string) => {
       if (!canWrite) {
         setStatus("No tienes permisos para editar.");
         return;
       }
       try {
-        await updateItemHandler(itemId, editItem.nombre, editItem.activo, editItem.ordenPdf ?? 0, {
+        await updateItemHandler(itemId, editEquipo.nombre, editEquipo.activo, editEquipo.ordenPdf ?? 0, {
           onSuccess: async () => {
-            setEditItemId(null);
-            setEditItem(EMPTY_ITEM_FORM);
-            setStatus("Item actualizado.");
+            setEditEquipoId(null);
+            setEditEquipo(EMPTY_EQUIPO_FORM);
+            setStatus("Equipo actualizado.");
             await loadData();
           },
           onError: (message) => setStatus(message),
@@ -814,20 +925,20 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [canWrite, editItem, loadData],
+    [canWrite, editEquipo, loadData],
   );
 
-  const toggleItemActivo = useCallback(
-    async (item: Item) => {
+  const toggleEquipoActivo = useCallback(
+    async (equipo: Equipo) => {
       if (!canWrite) {
         setStatus("No tienes permisos para editar.");
         return;
       }
 
       try {
-        await updateItemHandler(item.itemId, item.nombre, !item.activo, item.ordenPdf, {
+        await updateItemHandler(equipo.itemId, equipo.nombre, !equipo.activo, equipo.ordenPdf, {
           onSuccess: async () => {
-            setStatus(`Item ${!item.activo ? "activado" : "desactivado"}.`);
+            setStatus(`Equipo ${!equipo.activo ? "activado" : "desactivado"}.`);
             await loadData();
           },
           onError: (message) => setStatus(message),
@@ -839,14 +950,14 @@ export default function Home() {
     [canWrite, loadData],
   );
 
-  const saveActiveItemsOrder = useCallback(
+  const saveActiveEquiposOrder = useCallback(
     async (orderedItemIds: string[]) => {
       if (!canWrite) {
         setStatus("No tienes permisos para editar.");
         return;
       }
 
-      const itemById = new Map(itemsActivos.map((item) => [item.itemId, item]));
+      const itemById = new Map(equiposActivos.map((item) => [item.itemId, item]));
       const updates = orderedItemIds
         .map((itemId, idx) => {
           const item = itemById.get(itemId);
@@ -870,56 +981,56 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [canWrite, itemsActivos, loadData],
+    [canWrite, equiposActivos, loadData],
   );
 
-  function startItemDrag(itemId: string, event: ReactPointerEvent<HTMLButtonElement>) {
+  function startEquipoDrag(itemId: string, event: ReactPointerEvent<HTMLButtonElement>) {
     if (!canWrite) {
       setStatus("No tienes permisos para editar.");
       return;
     }
 
     event.preventDefault();
-    const orderedIds = itemsActivos.map((item) => item.itemId);
+    const orderedIds = equiposActivos.map((item) => item.itemId);
     if (!orderedIds.includes(itemId)) return;
 
-    setDraggedItemId(itemId);
-    setDragOrderItemIds(orderedIds);
-    draggedItemIdRef.current = itemId;
-    dragOrderItemIdsRef.current = orderedIds;
+    setDraggedEquipoId(itemId);
+    setDragOrderEquipoIds(orderedIds);
+    draggedEquipoIdRef.current = itemId;
+    dragOrderEquipoIdsRef.current = orderedIds;
   }
 
   useEffect(() => {
-    if (!draggedItemId) return;
+    if (!draggedEquipoId) return;
 
     const handlePointerMove = (event: PointerEvent) => {
       const target = document.elementFromPoint(event.clientX, event.clientY);
       if (!(target instanceof HTMLElement)) return;
-      const targetCard = target.closest<HTMLElement>("[data-item-drag-id]");
-      const targetItemId = targetCard?.dataset.itemDragId;
-      const currentDraggedItemId = draggedItemIdRef.current;
-      const currentOrder = dragOrderItemIdsRef.current;
+      const targetCard = target.closest<HTMLElement>("[data-equipo-drag-id]");
+      const targetEquipoId = targetCard?.dataset.equipoDragId;
+      const currentDraggedEquipoId = draggedEquipoIdRef.current;
+      const currentOrder = dragOrderEquipoIdsRef.current;
 
-      if (!targetItemId || !currentDraggedItemId || !currentOrder) return;
+      if (!targetEquipoId || !currentDraggedEquipoId || !currentOrder) return;
 
-      const currentIndex = currentOrder.indexOf(currentDraggedItemId);
-      const targetIndex = currentOrder.indexOf(targetItemId);
+      const currentIndex = currentOrder.indexOf(currentDraggedEquipoId);
+      const targetIndex = currentOrder.indexOf(targetEquipoId);
       if (currentIndex < 0 || targetIndex < 0 || currentIndex === targetIndex) return;
 
       const nextOrder = moveIdInOrder(currentOrder, currentIndex, targetIndex);
-      dragOrderItemIdsRef.current = nextOrder;
-      setDragOrderItemIds(nextOrder);
+      dragOrderEquipoIdsRef.current = nextOrder;
+      setDragOrderEquipoIds(nextOrder);
     };
 
     const finishDrag = () => {
-      const finalOrder = dragOrderItemIdsRef.current;
-      setDraggedItemId(null);
-      setDragOrderItemIds(null);
-      draggedItemIdRef.current = null;
-      dragOrderItemIdsRef.current = null;
+      const finalOrder = dragOrderEquipoIdsRef.current;
+      setDraggedEquipoId(null);
+      setDragOrderEquipoIds(null);
+      draggedEquipoIdRef.current = null;
+      dragOrderEquipoIdsRef.current = null;
 
       if (finalOrder) {
-        void saveActiveItemsOrder(finalOrder);
+        void saveActiveEquiposOrder(finalOrder);
       }
     };
 
@@ -932,25 +1043,25 @@ export default function Home() {
       window.removeEventListener("pointerup", finishDrag);
       window.removeEventListener("pointercancel", finishDrag);
     };
-  }, [draggedItemId, saveActiveItemsOrder]);
+  }, [draggedEquipoId, saveActiveEquiposOrder]);
 
-  const deleteItem = useCallback(
+  const deleteEquipo = useCallback(
     (itemId: string) => {
       if (!canDelete) {
         setStatus("No tienes permisos para eliminar.");
         return;
       }
-      const item = items.find((entry) => entry.itemId === itemId);
+      const item = equipos.find((entry) => entry.itemId === itemId);
       openConfirmDialog({
-        title: "Eliminar item",
-        message: `Se eliminara ${item?.nombre ?? "este item"} del catalogo.`,
-        confirmText: "Eliminar item",
+        title: "Eliminar equipo",
+        message: `Se eliminara ${item?.nombre ?? "este equipo"} del catalogo.`,
+        confirmText: "Eliminar equipo",
         tone: "danger",
         onConfirm: async () => {
           try {
             await deleteItemHandler(itemId, {
               onSuccess: async () => {
-                setStatus("Item eliminado.");
+                setStatus("Equipo eliminado.");
                 await loadData();
               },
               onError: (message) => setStatus(message),
@@ -961,7 +1072,7 @@ export default function Home() {
         },
       });
     },
-    [canDelete, items, loadData],
+    [canDelete, equipos, loadData],
   );
 
   const createPersonal = useCallback(
@@ -970,34 +1081,32 @@ export default function Home() {
       if (creatingPersonal) return;
       if (!canRegisterPersonal) {
         setStatus("No se puede registrar personal sin registrar Grados previamente.");
-        setCreatePersonalNotice({ type: "error", message: "No se puede registrar personal sin registrar grados previamente." });
         return;
       }
       if (ciAlreadyExists) {
         setStatus("La cedula ya existe.");
-        setCreatePersonalNotice({ type: "error", message: "La cedula ya existe en el sistema." });
         return;
       }
       if (!isValidUruguayanCi(newPersonal.ci)) {
         setStatus("CI uruguaya invalida. Revisa digito verificador.");
-        setCreatePersonalNotice({ type: "error", message: "CI uruguaya invalida. Revisa digito verificador." });
         return;
       }
 
       setCreatingPersonal(true);
-      setCreatePersonalNotice(null);
       try {
         await createPersonalHandler(personalPayload(newPersonal, true), {
           onSuccess: async () => {
+            const nombreCompleto = `${newPersonal.apellido1.trim()}, ${newPersonal.nombre1.trim()}`.replace(/\s+/g, " ").trim();
             setNewPersonal(EMPTY_PERSONAL_FORM);
-            setStatus("Personal creado.");
-            setCreatePersonalNotice({ type: "success", message: "Personal registrado correctamente." });
+            setActiveView("personal");
+            setPersonalPage(1);
+            toast.success("Personal registrado correctamente", {
+              description: `${nombreCompleto} ya figura en el listado general y puede recibir movimientos.`,
+              duration: 5000,
+            });
             await loadData();
           },
-          onError: (message) => {
-            setStatus(message);
-            setCreatePersonalNotice({ type: "error", message });
-          },
+          onError: (message) => setStatus(message),
         });
       } finally {
         setCreatingPersonal(false);
@@ -1005,6 +1114,10 @@ export default function Home() {
     },
     [canRegisterPersonal, ciAlreadyExists, creatingPersonal, newPersonal, loadData],
   );
+
+  const updateNewPersonalField = useCallback((field: keyof PersonalForm, value: string) => {
+    setNewPersonal((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
   const updatePersonal = useCallback(
     async (ci: string) => {
@@ -1226,11 +1339,11 @@ export default function Home() {
     });
   }
 
-  function updateRegistroItem(index: number, field: keyof RegistroDraftItem, value: string) {
+  function updateRegistroItem(index: number, field: keyof RegistroDraftEquipo, value: string) {
     setRegistroDraft((prev) => {
       if (!prev) return prev;
       if (field === "itemId" && value !== "" && prev.items.some((item, itemIndex) => itemIndex !== index && item.itemId === value)) {
-        setStatus("Ese item ya fue seleccionado en este movimiento.");
+        setStatus("Ese equipo ya fue seleccionado en este movimiento.");
         return prev;
       }
       const items = prev.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item));
@@ -1256,20 +1369,20 @@ export default function Home() {
   async function saveRegistro() {
     if (!registroDraft || registroSaving) return;
     const isRectificacion = registroDraft.modo === "rectificar" && registroDraft.registroId !== null;
-    const payloadItems = registroDraft.items
+    const payloadEquipos = registroDraft.items
       .map((item) => ({
         itemId: item.itemId.trim(),
         cantidad: Number(item.cantidad),
       }))
       .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
 
-    if (payloadItems.length === 0) {
-      setStatus("Debes agregar al menos un item con cantidad valida.");
+    if (payloadEquipos.length === 0) {
+      setStatus("Debes agregar al menos un equipo con cantidad valida.");
       return;
     }
-    const uniqueItemIds = new Set(payloadItems.map((item) => item.itemId));
-    if (uniqueItemIds.size !== payloadItems.length) {
-      setStatus("No puedes repetir items en un mismo movimiento.");
+    const uniqueItemIds = new Set(payloadEquipos.map((item) => item.itemId));
+    if (uniqueItemIds.size !== payloadEquipos.length) {
+      setStatus("No puedes repetir equipos en un mismo movimiento.");
       return;
     }
 
@@ -1284,7 +1397,7 @@ export default function Home() {
           tipo: registroDraft.tipo,
           fecha: registroDraft.fecha,
           comentarios: registroDraft.comentarios.trim() || undefined,
-          items: payloadItems,
+          items: payloadEquipos,
         }),
       });
       setStatus(
@@ -1362,7 +1475,6 @@ export default function Home() {
       setStatus(
         `${isEditing ? "Observacion actualizada" : "Observacion registrada"} para ${formatUruguayanCi(personalObservacionDraft.ci)}.`,
       );
-      toast.success(isEditing ? "Observacion actualizada." : "Observacion registrada.");
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : isEditing ? "No se pudo actualizar la observacion." : "No se pudo registrar la observacion.");
     } finally {
@@ -1396,7 +1508,6 @@ export default function Home() {
               : prev,
           );
           setStatus(`Observacion eliminada para ${formatUruguayanCi(observacion.ci)}.`);
-          toast.success("Observacion eliminada.");
         } catch {
           // Error manejado en el handler
         }
@@ -1526,7 +1637,7 @@ export default function Home() {
         { currentPassword: changeCurrentPassword, newPassword: changeNewPassword },
         {
           onSuccess: () => {
-            toast.success("Contraseña actualizada.");
+            setStatus("Contrasena actualizada.");
             setChangeCurrentPassword("");
             setChangeNewPassword("");
             setChangeConfirmPassword("");
@@ -1568,11 +1679,29 @@ export default function Home() {
         setStatus("Solo el administrador puede crear usuarios.");
         return;
       }
+
+      const trimmedUsername = newUsername.trim();
+      if (trimmedUsername === "") {
+        setStatus("El nombre de usuario es obligatorio.");
+        return;
+      }
+
+      if (newPassword.trim().length < 8) {
+        setStatus("La contraseña debe tener al menos 8 caracteres.");
+        return;
+      }
+
+      if (newPassword !== newPasswordConfirm) {
+        setStatus("Las contraseñas no coinciden.");
+        return;
+      }
+
       try {
-        await createUsuarioHandler(newUsername, newPassword, newRole, {
+        await createUsuarioHandler(trimmedUsername, newPassword, newRole, {
           onSuccess: async () => {
             setNewUsername("");
             setNewPassword("");
+            setNewPasswordConfirm("");
             setNewRole("EDITOR");
             setStatus("Usuario creado.");
             await loadData();
@@ -1583,7 +1712,7 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [isAdmin, newUsername, newPassword, newRole, loadData],
+    [isAdmin, newUsername, newPassword, newPasswordConfirm, newRole, loadData],
   );
 
   const changeUserRole = useCallback(
@@ -1628,6 +1757,50 @@ export default function Home() {
     setUserPasswordDialog(null);
   }, [userPasswordSaving]);
 
+  const openUsernameDialog = useCallback(
+    (
+      usuario: { usuarioId: string; username: string },
+      options?: { title?: string; description?: string },
+    ) => {
+      setUsernameDialog({
+        usuarioId: usuario.usuarioId,
+        username: usuario.username,
+        title: options?.title ?? "Cambiar nombre de usuario",
+        description: options?.description ?? "Actualiza el nombre con el que esta cuenta inicia sesion.",
+      });
+    },
+    [],
+  );
+
+  const changeUsername = useCallback(
+    (usuario: UsuarioAdmin) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede cambiar nombres de usuario ajenos.");
+        return;
+      }
+
+      openUsernameDialog(usuario, {
+        title: "Cambiar nombre de usuario",
+        description: `Actualiza el acceso de ${usuario.username}.`,
+      });
+    },
+    [isAdmin, openUsernameDialog],
+  );
+
+  const changeOwnUsername = useCallback(() => {
+    if (!currentUser) return;
+
+    openUsernameDialog(currentUser, {
+      title: "Cambiar mi usuario",
+      description: "Actualiza el nombre de acceso de la cuenta activa.",
+    });
+  }, [currentUser, openUsernameDialog]);
+
+  const closeUsernameDialog = useCallback(() => {
+    if (usernameSaving) return;
+    setUsernameDialog(null);
+  }, [usernameSaving]);
+
   const submitUserRoleChange = useCallback(async () => {
     if (!userRoleDialog) return;
     if (!ROLE_OPTIONS.includes(userRoleDialog.nextRole)) {
@@ -1669,7 +1842,6 @@ export default function Home() {
     try {
       await changeUserPasswordHandler(userPasswordDialog.usuarioId, userPasswordDialog.newPassword, {
         onSuccess: async () => {
-          toast.success(`Contraseña actualizada para ${userPasswordDialog.username}.`);
           setStatus("Contraseña de usuario actualizada.");
           setUserPasswordDialog(null);
           await loadData();
@@ -1682,6 +1854,33 @@ export default function Home() {
       setUserPasswordSaving(false);
     }
   }, [userPasswordDialog, loadData]);
+
+  const submitUsernameChange = useCallback(async () => {
+    if (!usernameDialog) return;
+
+    const nextUsername = usernameDialog.username.trim();
+    if (nextUsername === "") {
+      setStatus("El nombre de usuario es obligatorio.");
+      return;
+    }
+
+    setUsernameSaving(true);
+    try {
+      await changeUsernameHandler(usernameDialog.usuarioId, nextUsername, {
+        onSuccess: async () => {
+          const isSelfUpdate = currentUser?.usuarioId === usernameDialog.usuarioId;
+          setStatus(isSelfUpdate ? `Tu usuario ahora es ${nextUsername}.` : `Usuario actualizado a ${nextUsername}.`);
+          setUsernameDialog(null);
+          await loadData(isSelfUpdate);
+        },
+        onError: (message) => setStatus(message),
+      });
+    } catch {
+      // Error manejado en el handler
+    } finally {
+      setUsernameSaving(false);
+    }
+  }, [usernameDialog, currentUser, loadData]);
 
   const toggleUserActive = useCallback(
     async (usuario: UsuarioAdmin) => {
@@ -1793,14 +1992,14 @@ export default function Home() {
       : "ej-view-idle rounded-lg px-3 py-2 text-sm font-semibold";
   }
 
-  function configOptionClass(view: Extract<MainView, "grados" | "baterias" | "items" | "firmas" | "usuarios" | "auditoria">) {
+  function configOptionClass(view: Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">) {
     const selected = activeView === view;
     return selected
       ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
       : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-100 hover:border-stone-400";
   }
 
-  function selectConfigView(view: Extract<MainView, "grados" | "baterias" | "items" | "firmas" | "usuarios" | "auditoria">) {
+  function selectConfigView(view: Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">) {
     setActiveView(view);
     setShowConfigViews(false);
   }
@@ -1832,7 +2031,6 @@ export default function Home() {
     if (!popup) {
       const message = "Permite ventanas emergentes para imprimir todas las hojas de entrega.";
       setStatus(message);
-      toast.error(message);
       return;
     }
 
@@ -1853,25 +2051,35 @@ export default function Home() {
 
   // Las funciones de auditería se importan directamente desde lib/audit-helpers
 
-  function renderItemCard(item: Item, options?: { draggableInActiveList?: boolean }) {
+  function renderEquipoCard(equipo: Equipo, options?: { draggableInActiveList?: boolean }) {
     const draggableInActiveList = options?.draggableInActiveList === true;
-    const isDraggingThisItem = draggedItemId === item.itemId;
+    const isDraggingThisItem = draggedEquipoId === equipo.itemId;
 
     return (
       <div
-        key={item.itemId}
-        data-item-drag-id={draggableInActiveList ? item.itemId : undefined}
-        className={`rounded-lg border-2 border-transparent bg-white p-4 shadow-sm transition-all ${
-          isDraggingThisItem ? "border-lime-400 shadow-md" : "border-stone-200 hover:shadow-md"
+        key={equipo.itemId}
+        ref={(node) => {
+          if (!draggableInActiveList) return;
+          if (node) {
+            equipoCardRefs.current.set(equipo.itemId, node);
+            return;
+          }
+          equipoCardRefs.current.delete(equipo.itemId);
+        }}
+        data-equipo-drag-id={draggableInActiveList ? equipo.itemId : undefined}
+        className={`rounded-2xl border bg-white/95 p-4 shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-300 ease-out ${
+          isDraggingThisItem
+            ? "border-lime-400 bg-lime-50/80 shadow-xl shadow-lime-950/15 ring-1 ring-lime-300/80 -translate-y-1 scale-[1.01]"
+            : "border-stone-200 hover:-translate-y-0.5 hover:shadow-md"
         }`}
       >
-        {editItemId === item.itemId ? (
+        {editEquipoId === equipo.itemId ? (
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wide text-stone-700 mb-1">Nombre</label>
               <input
-                value={editItem.nombre}
-                onChange={(event) => setEditItem((prev) => ({ ...prev, nombre: event.target.value }))}
+                value={editEquipo.nombre}
+                onChange={(event) => setEditEquipo((prev) => ({ ...prev, nombre: event.target.value }))}
                 className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
@@ -1881,28 +2089,28 @@ export default function Home() {
                 type="number"
                 min={1}
                 step={1}
-                value={editItem.ordenPdf}
-                onChange={(event) => setEditItem((prev) => ({ ...prev, ordenPdf: Math.max(1, Number(event.target.value) || 1) }))}
+                value={editEquipo.ordenPdf}
+                onChange={(event) => setEditEquipo((prev) => ({ ...prev, ordenPdf: Math.max(1, Number(event.target.value) || 1) }))}
                 className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-stone-50 p-2 rounded-lg">
               <input
                 type="checkbox"
-                checked={editItem.activo}
-                onChange={(event) => setEditItem((prev) => ({ ...prev, activo: event.target.checked }))}
+                checked={editEquipo.activo}
+                onChange={(event) => setEditEquipo((prev) => ({ ...prev, activo: event.target.checked }))}
                 className="w-4 h-4 rounded border-stone-300"
               />
               <span className="font-medium text-stone-700">Activo</span>
             </label>
             <div className="flex gap-2 pt-2">
-              <SmallActionButton text="Guardar" tone="ok" onClick={() => void updateItem(item.itemId)} />
+              <SmallActionButton text="Guardar" tone="ok" onClick={() => void updateEquipo(equipo.itemId)} />
               <SmallActionButton
                 text="Cancelar"
                 tone="neutral"
                 onClick={() => {
-                  setEditItemId(null);
-                  setEditItem(EMPTY_ITEM_FORM);
+                  setEditEquipoId(null);
+                  setEditEquipo(EMPTY_EQUIPO_FORM);
                 }}
               />
             </div>
@@ -1911,25 +2119,29 @@ export default function Home() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-stone-900">{item.nombre}</h3>
+                <h3 className="font-semibold text-stone-900">{equipo.nombre}</h3>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  item.activo 
-                    ? "bg-green-100 text-green-700" 
+                  equipo.activo
+                    ? "bg-green-100 text-green-700"
                     : "bg-gray-100 text-gray-700"
                 }`}>
-                  {item.activo ? "Activo" : "Inactivo"}
+                  {equipo.activo ? "Activo" : "Inactivo"}
                 </span>
               </div>
-              <p className="text-xs text-stone-500 mt-1">Orden PDF: {item.ordenPdf}</p>
+              <p className="text-xs text-stone-500 mt-1">Orden PDF: {equipo.ordenPdf}</p>
             </div>
 
             <div className="flex flex-wrap gap-2 items-center">
               {draggableInActiveList ? (
                 <button
                   type="button"
-                  onPointerDown={(event) => startItemDrag(item.itemId, event)}
+                  onPointerDown={(event) => startEquipoDrag(equipo.itemId, event)}
                   disabled={!canWrite}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400 transition-all duration-200 touch-none disabled:opacity-50"
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200 touch-none disabled:opacity-50 ${
+                    isDraggingThisItem
+                      ? "bg-lime-700 text-white shadow-lg shadow-lime-950/20"
+                      : "bg-stone-200 text-stone-700 hover:bg-stone-300 active:bg-stone-400"
+                  }`}
                   title="Arrastra para reordenar"
                 >
                   <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
@@ -1944,25 +2156,25 @@ export default function Home() {
                 </button>
               ) : null}
 
-              <ActionMenu
-                buttonLabel="Acciones"
-                actions={[
-                  {
-                    label: item.activo ? "Desactivar" : "Activar",
-                    icon: item.activo ? "x" : "check",
-                    tone: item.activo ? "danger" : "success",
-                    onClick: () => void toggleItemActivo(item),
+                <ActionMenu
+                  buttonLabel="Acciones"
+                  actions={[
+                    {
+                    label: equipo.activo ? "Desactivar" : "Activar",
+                    icon: equipo.activo ? "x" : "check",
+                    tone: equipo.activo ? "danger" : "success",
+                    onClick: () => void toggleEquipoActivo(equipo),
                   },
                   {
                     label: "Editar",
                     icon: "edit",
                     tone: "primary",
                     onClick: () => {
-                      setEditItemId(item.itemId);
-                      setEditItem({
-                        nombre: item.nombre,
-                        activo: item.activo,
-                        ordenPdf: item.ordenPdf,
+                      setEditEquipoId(equipo.itemId);
+                      setEditEquipo({
+                        nombre: equipo.nombre,
+                        activo: equipo.activo,
+                        ordenPdf: equipo.ordenPdf,
                       });
                     },
                   },
@@ -1970,7 +2182,7 @@ export default function Home() {
                     label: "Eliminar",
                     icon: "trash",
                     tone: "danger",
-                    onClick: () => void deleteItem(item.itemId),
+                    onClick: () => void deleteEquipo(equipo.itemId),
                   },
                 ]}
               />
@@ -2053,71 +2265,116 @@ export default function Home() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
-      <section className="ej-hero relative overflow-hidden rounded-3xl p-5 shadow-lg sm:p-7">
-        <div className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full bg-[#FFCC00]/30 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-[#1F6728]/30 blur-3xl" />
+      <section className="ej-hero relative overflow-hidden rounded-[32px] border border-white/10 px-5 py-6 shadow-[0_28px_80px_rgba(15,23,42,0.28)] sm:px-7 sm:py-8">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,204,0,0.22),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(31,103,40,0.34),transparent_36%)]" />
+        <div className="pointer-events-none absolute -right-16 top-6 h-48 w-48 rounded-full border border-white/10 bg-white/5 blur-2xl" />
+        <div className="pointer-events-none absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-[#0f3b17]/45 blur-3xl" />
 
-        <div className="relative flex flex-col gap-4 lg:grid lg:grid-cols-[220px_minmax(0,1fr)_auto] lg:items-start">
-          <div className="order-1">
+        <div className="relative grid gap-5 xl:grid-cols-[220px_minmax(0,1.15fr)_320px]">
+          <div className="flex flex-col gap-4">
             <Image
               src="/assets/logo-artilleria.jpg"
-                alt="Logo Artillería"
+              alt="Logo Artilleria"
               width={220}
               height={150}
               priority
-              className="h-auto w-[160px] rounded-lg border border-[#FFCC00]/60 bg-white/95 object-contain p-1 shadow-sm sm:w-[200px]"
+              className="h-auto w-[160px] rounded-2xl border border-[#FFCC00]/60 bg-white/95 object-contain p-1.5 shadow-lg sm:w-[200px]"
             />
-          </div>
-
-          <div className="order-3 min-w-0 text-center lg:order-2 lg:flex lg:min-h-[200px] lg:flex-col lg:items-center lg:justify-center">
-            <p className="text-[11px] font-medium tracking-wide text-[#FFCC00] sm:text-xs">
-              {'Grupo "Brig.Gral Manuel Oribe" de Artillería 105mm No.1.'}
-            </p>
-            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Depósito General</h1>
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-              <span className="rounded-full border border-[#1F6728]/60 bg-[#1F6728]/55 px-2.5 py-1 text-[11px] font-semibold text-white">
-                {loading ? "Sincronizando" : "Sistema activo"}
-              </span>
-              <span className="rounded-full border border-[#FFCC00]/45 bg-black/35 px-2.5 py-1 text-[11px] text-[#FFCC00]">
-                {status}
-              </span>
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#FFCC00]">Unidad</p>
+              <p className="mt-2 text-sm font-semibold leading-relaxed text-white">
+                {'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1'}
+              </p>
             </div>
           </div>
 
-          <div className="order-2 flex flex-wrap items-center gap-2 self-start lg:order-3 lg:justify-end">
-            <span className="rounded-xl border border-[#FFCC00]/45 bg-black/35 px-3 py-2 text-xs font-semibold text-white">
-              {currentUser ? `${currentUser.username} (${roleLabel(currentUser.rol)})` : "Sin sesión iniciada"}
-            </span>
-            <button
-              type="button"
-              onClick={() => void loadData(true)}
-              className="ej-button-muted rounded-xl px-3 py-2 text-sm font-semibold"
-            >
-              Recargar
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setChangeCurrentPassword("");
-                setChangeNewPassword("");
-                setChangeConfirmPassword("");
-                setShowChangePassword(true);
-              }}
-              className="rounded-xl border border-[#FFCC00]/45 bg-black/35 px-3 py-2 text-sm font-semibold text-white"
-            >
-              Cambiar contraseña
-            </button>
-            <button
-              type="button"
-              onClick={() => void logout()}
-              className="ej-button-danger rounded-xl px-3 py-2 text-sm font-semibold"
-            >
-              Salir
-            </button>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#FFCC00]">
+              Plataforma operativa de deposito
+            </p>
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-5xl">
+              Deposito General
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/82 sm:text-base">
+              Centraliza personal, equipos, movimientos y documentos con una vista rapida del estado operativo y acceso directo a las tareas criticas del dia.
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="rounded-full border border-emerald-300/25 bg-emerald-500/20 px-3 py-1 text-[11px] font-semibold text-emerald-50">
+                {loading ? "Sincronizando datos" : "Sistema operativo"}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-medium text-white/85">
+                {roleScope(currentUser?.rol)}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-medium text-white/85">
+                Flujo SPA centralizado
+              </span>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <article className="rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#FFCC00]">Tu alcance</p>
+                <p className="mt-2 text-base font-semibold text-white">{roleLabel(currentUser?.rol)}</p>
+                <p className="mt-1 text-sm leading-5 text-white/75">{roleDescription(currentUser?.rol)}</p>
+              </article>
+              <article className="rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#FFCC00]">Situacion</p>
+                <p className="mt-2 text-base font-semibold text-white">
+                  {equiposActivos.length} equipos activos y {movimientosTotal} movimientos
+                </p>
+                <p className="mt-1 text-sm leading-5 text-white/75">
+                  El panel queda listo para registrar entregas, devoluciones y ajustes sin salir de la vista principal.
+                </p>
+              </article>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <article className="rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#FFCC00]">Cuenta activa</p>
+              <p className="mt-2 text-lg font-semibold text-white">{currentUser.username}</p>
+              <p className="mt-1 text-sm text-white/78">{roleLabel(currentUser.rol)}</p>
+            </article>
+
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              <button
+                type="button"
+                onClick={() => void loadData(true)}
+                className="ej-button-muted rounded-2xl px-3 py-3 text-sm font-semibold"
+              >
+                Recargar panel
+              </button>
+              <button
+                type="button"
+                onClick={changeOwnUsername}
+                className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+              >
+                Cambiar usuario
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setChangeCurrentPassword("");
+                  setChangeNewPassword("");
+                  setChangeConfirmPassword("");
+                  setShowChangePassword(true);
+                }}
+                className="rounded-2xl border border-[#FFCC00]/35 bg-black/30 px-3 py-3 text-sm font-semibold text-white transition hover:bg-black/40"
+              >
+                Cambiar contrasena
+              </button>
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className="ej-button-danger rounded-2xl px-3 py-3 text-sm font-semibold"
+              >
+                Cerrar sesion
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
           <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
             <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Personal</p>
             <p className="text-lg font-bold text-white">{personal.length}</p>
@@ -2127,12 +2384,12 @@ export default function Home() {
             <p className="text-lg font-bold text-white">{rangos.length}</p>
           </div>
           <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Baterías</p>
+            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Bater?as</p>
             <p className="text-lg font-bold text-white">{baterias.length}</p>
           </div>
           <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Items activos</p>
-            <p className="text-lg font-bold text-white">{itemsActivos.length}</p>
+            <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Equipos activos</p>
+            <p className="text-lg font-bold text-white">{equiposActivos.length}</p>
           </div>
           <div className="rounded-xl border border-[#FFCC00]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
             <p className="text-[10px] uppercase tracking-wider text-[#FFCC00]">Movimientos</p>
@@ -2172,6 +2429,37 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
               </svg>
               <span>Hoja Matriz</span>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveView("personal_nuevo");
+              setShowConfigViews(false);
+            }}
+            disabled={!canWrite}
+            className={`${viewButtonClass("personal_nuevo")} group relative flex-1 overflow-hidden transition-all disabled:cursor-not-allowed disabled:opacity-50`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Alta Personal</span>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveView("formularios");
+              setShowConfigViews(false);
+            }}
+            className={`${viewButtonClass("formularios")} group relative flex-1 overflow-hidden transition-all`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M9 8h6m-9 12h12a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Formularios</span>
             </div>
           </button>
           <button
@@ -2235,11 +2523,11 @@ export default function Home() {
                     </svg>
                     Registrar Baterías
                   </button>
-                  <button type="button" onClick={() => selectConfigView("items")} className={configOptionClass("items")}>
+                  <button type="button" onClick={() => selectConfigView("equipos")} className={configOptionClass("equipos")}>
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
-                    Registrar Items
+                    Registrar Equipos
                   </button>
                   {isAdmin ? (
                     <>
@@ -2272,30 +2560,35 @@ export default function Home() {
 
       {inCatalogView || (isAdmin && inAdminConfigView) ? (
         <ConfigViews
-          activeView={activeView as "grados" | "baterias" | "items" | "firmas" | "usuarios" | "auditoria"}
+          activeView={activeView as "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria"}
           isAdmin={isAdmin}
           canWrite={canWrite}
           rangos={rangos}
           newRangoAbreviacion={newRangoAbreviacion}
           newRangoNombreCompleto={newRangoNombreCompleto}
+          newRangoOrden={newRangoOrden}
           editRangoId={editRangoId}
           editRangoAbreviacion={editRangoAbreviacion}
           editRangoNombreCompleto={editRangoNombreCompleto}
+          editRangoOrden={editRangoOrden}
           baterias={baterias}
           newBateria={newBateria}
+          newBateriaOrden={newBateriaOrden}
           editBateriaId={editBateriaId}
           editBateriaNombre={editBateriaNombre}
-          items={items}
-          newItem={newItem}
-          editItemId={editItemId}
-          editItem={editItem}
-          itemsActivos={itemsActivos}
-          itemsInactivos={itemsInactivos}
-          itemsActivosEnPantalla={itemsActivosEnPantalla}
-          draggedItemId={draggedItemId}
+          editBateriaOrden={editBateriaOrden}
+          equipos={equipos}
+          newEquipo={newEquipo}
+          editEquipoId={editEquipoId}
+          editEquipo={editEquipo}
+          equiposActivos={equiposActivos}
+          equiposInactivos={equiposInactivos}
+          equiposActivosEnPantalla={equiposActivosEnPantalla}
+          draggedEquipoId={draggedEquipoId}
           usuarios={usuarios}
           newUsername={newUsername}
           newPassword={newPassword}
+          newPasswordConfirm={newPasswordConfirm}
           newRole={newRole}
           firmaConfig={firmaConfig}
           firmaConfigDraft={firmaConfigDraft}
@@ -2309,31 +2602,37 @@ export default function Home() {
           auditoriaFiltrada={auditoriaFiltrada}
           onNewRangoAbreviacionChange={setNewRangoAbreviacion}
           onNewRangoNombreCompletoChange={setNewRangoNombreCompleto}
+          onNewRangoOrdenChange={setNewRangoOrden}
           onEditRangoIdChange={setEditRangoId}
           onEditRangoAbreviacionChange={setEditRangoAbreviacion}
           onEditRangoNombreCompletoChange={setEditRangoNombreCompleto}
+          onEditRangoOrdenChange={setEditRangoOrden}
           onCreateRango={() => void createRango()}
           onUpdateRango={(rangoId) => void updateRango(rangoId)}
           onDeleteRango={(rangoId) => void deleteRango(rangoId)}
           onNewBateriaChange={setNewBateria}
+          onNewBateriaOrdenChange={setNewBateriaOrden}
           onEditBateriaIdChange={setEditBateriaId}
           onEditBateriaNombreChange={setEditBateriaNombre}
+          onEditBateriaOrdenChange={setEditBateriaOrden}
           onCreateBateria={() => void createBateria()}
           onUpdateBateria={(bateriaId) => void updateBateria(bateriaId)}
           onDeleteBateria={(bateriaId) => void deleteBateria(bateriaId)}
-          onNewItemChange={(value, key) => setNewItem((prev) => ({ ...prev, [key]: value }))}
-          onEditItemIdChange={setEditItemId}
-          onEditItemChange={(value, key) => setEditItem((prev) => ({ ...prev, [key]: value }))}
-          onCreateItem={(event) => void createItem(event)}
-          onUpdateItem={(itemId) => void updateItem(itemId)}
-          onToggleItemActivo={(item) => void toggleItemActivo(item)}
-          onDeleteItem={(itemId) => void deleteItem(itemId)}
-          onStartItemDrag={() => {}}
-          renderItemCard={renderItemCard}
+          onNewEquipoChange={(value, key) => setNewEquipo((prev) => ({ ...prev, [key]: value }))}
+          onEditEquipoIdChange={setEditEquipoId}
+          onEditEquipoChange={(value, key) => setEditEquipo((prev) => ({ ...prev, [key]: value }))}
+          onCreateEquipo={(event) => void createEquipo(event)}
+          onUpdateEquipo={(itemId) => void updateEquipo(itemId)}
+          onToggleEquipoActivo={(item) => void toggleEquipoActivo(item)}
+          onDeleteEquipo={(itemId) => void deleteEquipo(itemId)}
+          onStartEquipoDrag={() => {}}
+          renderEquipoCard={renderEquipoCard}
           onNewUsernameChange={setNewUsername}
           onNewPasswordChange={setNewPassword}
+          onNewPasswordConfirmChange={setNewPasswordConfirm}
           onNewRoleChange={setNewRole}
           onCreateUsuario={(event) => void createUsuario(event)}
+          onChangeUsername={(usuario) => void changeUsername(usuario)}
           onChangeUserRole={(usuario) => void changeUserRole(usuario)}
           onChangeUserPassword={(usuario) => void changeUserPassword(usuario)}
           onToggleUserActive={(usuario) => void toggleUserActive(usuario)}
@@ -2344,6 +2643,8 @@ export default function Home() {
           onAuditPageChange={setAuditPage}
           onAuditPageSizeChange={setAuditPageSize}
           roleLabel={roleLabel}
+          roleDescription={roleDescription}
+          roleScope={roleScope}
           rangoLabel={rangoLabel}
           auditActionLabel={auditActionLabel}
           auditEntityLabel={auditEntityLabel}
@@ -2351,235 +2652,27 @@ export default function Home() {
         />
       ) : null}
 
-      {showCreatePersonalForm ? (
-        <section className="fixed inset-0 z-50 flex items-start justify-center bg-black/35 px-3 py-4 sm:items-center sm:py-6">
-          <article className="ej-card max-h-[92vh] w-full max-w-6xl overflow-auto rounded-2xl">
-          <div className="border-b border-stone-200 bg-gradient-to-r from-stone-50 to-lime-50/60 px-4 py-4 sm:px-5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-stone-900">Registrar Personal</h2>
-                <p className="mt-1 text-sm text-stone-600">
-                  Carga datos personales, destino y talles en una sola ficha.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center rounded-full border border-lime-700/25 bg-lime-100/70 px-3 py-1 text-xs font-semibold text-lime-900">
-                  {`Campos obligatorios: ${requiredPersonalCompleted}/5`}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (creatingPersonal) return;
-                    setShowCreatePersonalForm(false);
-                    setCreatePersonalNotice(null);
-                  }}
-                  disabled={creatingPersonal}
-                  className="rounded bg-stone-700 px-2 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <form onSubmit={createPersonal} className="px-4 py-4 sm:px-5 sm:py-5">
-            {createPersonalNotice ? (
-              <p
-                className={`mb-3 rounded-lg border px-3 py-2 text-sm ${
-                  createPersonalNotice.type === "success"
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-                    : "border-rose-300 bg-rose-50 text-rose-800"
-                }`}
-              >
-                {createPersonalNotice.message}
-              </p>
-            ) : null}
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-              <div className="space-y-4">
-                <fieldset className="rounded-xl border border-stone-200 bg-stone-50/55 p-4">
-                  <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Identidad</legend>
-                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <label className="sm:col-span-2 xl:col-span-4">
-                      <span className="block text-xs font-medium text-stone-700">Cedula de identidad *</span>
-                      <input
-                        value={newPersonal.ci}
-                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, ci: event.target.value }))}
-                        placeholder={ciPlaceholder}
-                        inputMode="numeric"
-                        className={`mt-1 w-full rounded-lg border px-3 py-2.5 text-sm ${ciHasError ? "border-rose-600 bg-rose-50" : "border-stone-300"}`}
-                      />
-                      {ciAlreadyExists && duplicatePersonal ? (
-                        <span className="mt-1 block text-[11px] font-medium text-rose-700">
-                          {`Cedula repetida: ${apellidosLabel(duplicatePersonal)}, ${nombresLabel(duplicatePersonal)}.`}
-                        </span>
-                      ) : (
-                        <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
-                      )}
-                    </label>
-
-                    <label>
-                      <span className="block text-xs font-medium text-stone-700">Apellido 1 *</span>
-                      <input
-                        value={newPersonal.apellido1}
-                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, apellido1: event.target.value }))}
-                        placeholder="Apellido principal"
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
-                      />
-                    </label>
-
-                    <label>
-                      <span className="block text-xs font-medium text-stone-700">Apellido 2</span>
-                      <input
-                        value={newPersonal.apellido2}
-                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, apellido2: event.target.value }))}
-                        placeholder="Apellido secundario"
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
-                      />
-                    </label>
-
-                    <label>
-                      <span className="block text-xs font-medium text-stone-700">Nombre 1 *</span>
-                      <input
-                        value={newPersonal.nombre1}
-                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, nombre1: event.target.value }))}
-                        placeholder="Primer nombre"
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
-                      />
-                    </label>
-
-                    <label>
-                      <span className="block text-xs font-medium text-stone-700">Nombre 2</span>
-                      <input
-                        value={newPersonal.nombre2}
-                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, nombre2: event.target.value }))}
-                        placeholder="Segundo nombre"
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
-                      />
-                    </label>
-                  </div>
-                </fieldset>
-
-                <fieldset className="rounded-xl border border-stone-200 bg-stone-50/55 p-4">
-                  <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Datos de servicio</legend>
-                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    <label>
-                      <span className="block text-xs font-medium text-stone-700">Grado del personal *</span>
-                      <select
-                        value={newPersonal.rangoId}
-                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, rangoId: event.target.value }))}
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
-                      >
-                        <option value="">Seleccionar grado</option>
-                        {rangos.map((rango) => (
-                          <option key={rango.rangoId} value={rango.rangoId}>
-                            {rangoLabel(rango)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label>
-                      <span className="block text-xs font-medium text-stone-700">Bateria (importante)</span>
-                      <select
-                        value={newPersonal.bateriaId}
-                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, bateriaId: event.target.value }))}
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
-                      >
-                        <option value="">Sin bateria (pendiente)</option>
-                        {baterias.map((bateria) => (
-                          <option key={bateria.bateriaId} value={bateria.bateriaId}>
-                            {bateria.nombre}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label>
-                      <span className="block text-xs font-medium text-stone-700">Fecha de ingreso (importante)</span>
-                      <input
-                        type="date"
-                        value={newPersonal.fechaIngreso}
-                        onChange={(event) => setNewPersonal((prev) => ({ ...prev, fechaIngreso: event.target.value }))}
-                        max={maxFechaIngreso}
-                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
-                      />
-                    </label>
-                  </div>
-                </fieldset>
-
-                <fieldset className="rounded-xl border border-stone-200 bg-stone-50/55 p-4">
-                  <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Talles reglamentarios</legend>
-                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                    {TALLA_KEYS.map((key) => (
-                      <label key={key}>
-                        <span className="block text-xs font-medium text-stone-700">{`Talla ${TALLA_LABELS[key]}`}</span>
-                        <select
-                          value={newPersonal[key]}
-                          onChange={(event) => setNewPersonal((prev) => ({ ...prev, [key]: event.target.value }))}
-                          className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
-                        >
-                          <option value="">Seleccionar</option>
-                          {tallaOptionsByKey[key].map((option) => (
-                            <option key={`${key}-${option}`} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              </div>
-
-              <aside className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-stone-900">Estado del formulario</h3>
-                <p className="mt-1 text-xs text-stone-600">Completa los campos obligatorios para habilitar el registro.</p>
-
-                {!canRegisterPersonal ? (
-                  <p className="mt-3 rounded-lg border border-amber-300/80 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                    Primero debes registrar Grados.
-                  </p>
-                ) : null}
-
-                {!ciLooksValid ? (
-                  <p className="mt-3 rounded-lg border border-rose-300/80 bg-rose-50 px-3 py-2 text-xs text-rose-800">
-                    La cedula ingresada no es valida.
-                  </p>
-                ) : null}
-                {ciAlreadyExists && duplicatePersonal ? (
-                  <p className="mt-3 rounded-lg border border-rose-300/80 bg-rose-50 px-3 py-2 text-xs text-rose-800">
-                    {`Cedula repetida detectada: ${apellidosLabel(duplicatePersonal)}, ${nombresLabel(duplicatePersonal)}.`}
-                  </p>
-                ) : null}
-
-                <div className="mt-4 space-y-2 text-xs text-stone-600">
-                  <p>{`Cedula valida: ${requiredPersonalFields[0] ? "Si" : "No"}`}</p>
-                  <p>{`Apellido 1: ${requiredPersonalFields[1] ? "Completo" : "Falta"}`}</p>
-                  <p>{`Nombre 1: ${requiredPersonalFields[2] ? "Completo" : "Falta"}`}</p>
-                  <p>{`Grado: ${requiredPersonalFields[3] ? "Seleccionado" : "Falta"}`}</p>
-                  <p>{`Bateria (importante): ${Number(newPersonal.bateriaId) > 0 ? "Completa" : "Pendiente"}`}</p>
-                  <p>{`Fecha de ingreso (importante): ${newPersonal.fechaIngreso ? "Completa" : "Pendiente"}`}</p>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!canSubmitPersonal}
-                  className="ej-button mt-5 flex w-full items-center justify-center rounded-lg px-3 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {creatingPersonal ? (
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white" />
-                      Registrando...
-                    </span>
-                  ) : (
-                    "Registrar Personal"
-                  )}
-                </button>
-              </aside>
-            </div>
-          </form>
-          </article>
-        </section>
+      {activeView === "personal_nuevo" ? (
+        <PersonalCreateView
+          ciPlaceholder={ciPlaceholder}
+          newPersonal={newPersonal}
+          duplicatePersonal={duplicatePersonal}
+          ciHasError={ciHasError}
+          ciLooksValid={ciLooksValid}
+          ciAlreadyExists={ciAlreadyExists}
+          canRegisterPersonal={canRegisterPersonal}
+          requiredPersonalCompleted={requiredPersonalCompleted}
+          requiredPersonalFields={requiredPersonalFields}
+          canSubmitPersonal={canSubmitPersonal}
+          creatingPersonal={creatingPersonal}
+          rangos={rangos}
+          baterias={baterias}
+          tallaOptionsByKey={tallaOptionsByKey}
+          maxFechaIngreso={maxFechaIngreso}
+          onBack={() => setActiveView("personal")}
+          onSubmit={(event) => void createPersonal(event)}
+          onPersonalChange={updateNewPersonalField}
+        />
       ) : null}
 
       {activeView === "personal" ? (
@@ -2601,8 +2694,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => {
-                  setCreatePersonalNotice(null);
-                  setShowCreatePersonalForm(true);
+                  setActiveView("personal_nuevo");
                 }}
                 disabled={!canWrite}
                 className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
@@ -2944,6 +3036,39 @@ export default function Home() {
         />
       ) : null}
 
+      {activeView === "formularios" ? (
+        <section className="mt-6">
+          <article className="ej-card overflow-hidden rounded-3xl p-0">
+            <div className="border-b border-stone-200 bg-[linear-gradient(135deg,#f8fafc_0%,#fff7ed_55%,#fef3c7_100%)] px-5 py-5 sm:px-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">Proxima vista</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-stone-900">Formularios</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
+                Este espacio queda reservado para futuros formularios operativos y administrativos.
+              </p>
+            </div>
+
+            <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/80 p-5">
+                <p className="text-sm font-semibold text-stone-900">Modulo en preparacion</p>
+                <p className="mt-2 text-sm leading-6 text-stone-600">
+                  Cuando se implemente, aca podras centralizar formularios especiales sin mezclarlos con personal,
+                  equipos o configuracion.
+                </p>
+              </div>
+
+              <aside className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">Pendiente</p>
+                <p className="mt-3 text-sm font-semibold text-stone-900">Vista reservada para desarrollo futuro</p>
+                <p className="mt-2 text-sm leading-6 text-stone-600">
+                  El boton ya forma parte de la navegacion de la SPA. La logica funcional se puede agregar despues sin
+                  volver a tocar la estructura principal.
+                </p>
+              </aside>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
       {activeView === "tallas_resumen" ? (
         <TallasResumenView personal={personal} baterias={baterias} />
       ) : null}
@@ -3041,7 +3166,12 @@ export default function Home() {
                     }`}
                   >
                     <p className="text-sm font-semibold">{roleLabel(role)}</p>
-                    <p className={`mt-1 text-xs ${selected ? "text-stone-200" : "text-stone-500"}`}>{role}</p>
+                    <p className={`mt-1 text-xs ${selected ? "text-stone-200" : "text-stone-500"}`}>
+                      {roleDescription(role)}
+                    </p>
+                    <p className={`mt-2 text-[11px] font-medium uppercase tracking-wide ${selected ? "text-stone-300" : "text-stone-400"}`}>
+                      {roleScope(role)}
+                    </p>
                   </button>
                 );
               })}
@@ -3133,6 +3263,58 @@ export default function Home() {
                 className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
               >
                 {userPasswordSaving ? "Guardando..." : "Guardar contraseña"}
+              </button>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
+      {usernameDialog ? (
+        <section className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3" onClick={closeUsernameDialog}>
+          <article
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="username-dialog-title"
+            className="w-full max-w-md rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 id="username-dialog-title" className="text-base font-semibold text-stone-900">
+              {usernameDialog.title}
+            </h3>
+            <p className="mt-1 text-sm text-stone-600">{usernameDialog.description}</p>
+
+            <div className="mt-4 space-y-2">
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Usuario</span>
+                <input
+                  value={usernameDialog.username}
+                  onChange={(event) =>
+                    setUsernameDialog((current) =>
+                      current ? { ...current, username: event.target.value } : current,
+                    )
+                  }
+                  placeholder="Nombre de usuario"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeUsernameDialog}
+                disabled={usernameSaving}
+                className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void submitUsernameChange()}
+                disabled={usernameSaving || usernameDialog.username.trim() === ""}
+                className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {usernameSaving ? "Guardando..." : "Guardar usuario"}
               </button>
             </div>
           </article>
@@ -3329,7 +3511,7 @@ export default function Home() {
             </div>
 
             <div className="mt-3 space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items del movimiento</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos del movimiento</p>
               {registroDraft.items.map((item, index) => (
                 <div key={`reg-item-${index}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
                   <select
@@ -3338,8 +3520,8 @@ export default function Home() {
                     onChange={(event) => updateRegistroItem(index, "itemId", event.target.value)}
                     className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   >
-                    <option value="">Seleccionar item</option>
-                    {itemsOrdenados
+                    <option value="">Seleccionar equipo</option>
+                    {equiposOrdenados
                       .filter((catalogItem) => {
                         if (!catalogItem.activo && catalogItem.itemId !== item.itemId) return false;
                         if (catalogItem.itemId === item.itemId) return true;
@@ -3380,7 +3562,7 @@ export default function Home() {
                 disabled={registroSaving}
                 className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Agregar item
+                Agregar equipo
               </button>
               <button
                 type="button"
@@ -3561,8 +3743,7 @@ export default function Home() {
       ) : null}
 
       {loading ? <p className="mt-4 text-xs text-stone-600">Actualizando informacion...</p> : null}
-      
-      <ToastContainer />
+      
     </main>
   );
 }

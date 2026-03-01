@@ -10,19 +10,23 @@ export type Rango = {
   rangoId: number;
   abreviacion: string;
   nombreCompleto: string;
+  orden: number;
 };
 
 export type Bateria = {
   bateriaId: number;
   nombre: string;
+  orden: number;
 };
 
-export type Item = {
+export type Equipo = {
   itemId: string;
   nombre: string;
   activo: boolean;
   ordenPdf: number;
 };
+
+export type Item = Equipo;
 
 export type Talla = {
   tallaTipo: { nombre: string };

@@ -86,9 +86,9 @@ export async function POST(req: Request) {
     return NextResponse.json(serializeItem(created), { status: 201 });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-      return NextResponse.json({ error: "El item ya existe." }, { status: 409 });
+      return NextResponse.json({ error: "El equipo ya existe." }, { status: 409 });
     }
 
-    return NextResponse.json({ error: "No se pudo crear el item." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo crear el equipo." }, { status: 500 });
   }
 }

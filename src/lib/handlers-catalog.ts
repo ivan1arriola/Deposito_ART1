@@ -1,5 +1,5 @@
 /**
- * Handler functions para operaciones de catálogos (Rangos, Baterías, Items)
+ * Handler functions para operaciones de catálogos (Rangos, Baterías, Equipos)
  * Estas funciones contienen la lógica de negocio envuelta con API y side effects
  */
 
@@ -16,13 +16,14 @@ interface CallbackProps {
 export async function createRangoHandler(
   abreviacion: string,
   nombreCompleto: string,
+  orden: number | undefined,
   callbacks: CallbackProps
 ) {
   try {
     await api("/api/rangos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ abreviacion, nombreCompleto }),
+      body: JSON.stringify({ abreviacion, nombreCompleto, orden }),
     });
     callbacks.onSuccess();
   } catch (error) {
@@ -36,13 +37,14 @@ export async function updateRangoHandler(
   rangoId: number,
   abreviacion: string,
   nombreCompleto: string,
+  orden: number | undefined,
   callbacks: CallbackProps
 ) {
   try {
     await api(`/api/rangos/${rangoId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ abreviacion, nombreCompleto }),
+      body: JSON.stringify({ abreviacion, nombreCompleto, orden }),
     });
     callbacks.onSuccess();
   } catch (error) {
@@ -65,12 +67,12 @@ export async function deleteRangoHandler(rangoId: number, callbacks: CallbackPro
 
 // ==================== BATERIAS ====================
 
-export async function createBateriaHandler(nombre: string, callbacks: CallbackProps) {
+export async function createBateriaHandler(nombre: string, orden: number | undefined, callbacks: CallbackProps) {
   try {
     await api("/api/baterias", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre }),
+      body: JSON.stringify({ nombre, orden }),
     });
     callbacks.onSuccess();
   } catch (error) {
@@ -83,13 +85,14 @@ export async function createBateriaHandler(nombre: string, callbacks: CallbackPr
 export async function updateBateriaHandler(
   bateriaId: number,
   nombre: string,
+  orden: number | undefined,
   callbacks: CallbackProps
 ) {
   try {
     await api(`/api/baterias/${bateriaId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre }),
+      body: JSON.stringify({ nombre, orden }),
     });
     callbacks.onSuccess();
   } catch (error) {
@@ -125,7 +128,7 @@ export async function createItemHandler(
     });
     callbacks.onSuccess();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo crear el item.";
+    const message = error instanceof Error ? error.message : "No se pudo crear el equipo.";
     callbacks.onError(message);
     throw error;
   }
@@ -146,7 +149,7 @@ export async function updateItemHandler(
     });
     callbacks.onSuccess();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar el item.";
+    const message = error instanceof Error ? error.message : "No se pudo actualizar el equipo.";
     callbacks.onError(message);
     throw error;
   }
@@ -157,7 +160,7 @@ export async function deleteItemHandler(itemId: string, callbacks: CallbackProps
     await api(`/api/items/${itemId}`, { method: "DELETE" });
     callbacks.onSuccess();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo eliminar el item.";
+    const message = error instanceof Error ? error.message : "No se pudo eliminar el equipo.";
     callbacks.onError(message);
     throw error;
   }

@@ -113,7 +113,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
       if (code === "P2002") return NextResponse.json({ error: "El nombre ya existe." }, { status: 409 });
     }
 
-    return NextResponse.json({ error: "No se pudo actualizar el item." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo actualizar el equipo." }, { status: 500 });
   }
 }
 
@@ -164,12 +164,12 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
       if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
       if (code === "P2003") {
         return NextResponse.json(
-          { error: "No se puede eliminar el item porque tiene registros asociados." },
+          { error: "No se puede eliminar el equipo porque tiene registros asociados." },
           { status: 409 },
         );
       }
     }
 
-    return NextResponse.json({ error: "No se pudo eliminar el item." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo eliminar el equipo." }, { status: 500 });
   }
 }

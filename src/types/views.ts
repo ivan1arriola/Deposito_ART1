@@ -6,11 +6,13 @@ import type { Role } from "./entities";
 
 export type MainView =
   | "personal"
+  | "personal_nuevo"
+  | "formularios"
   | "hoja_matrix"
   | "tallas_resumen"
   | "grados"
   | "baterias"
-  | "items"
+  | "equipos"
   | "firmas"
   | "usuarios"
   | "auditoria"
@@ -52,10 +54,12 @@ export type RegistroViewerState = {
   registros: RegistroView[];
 };
 
-export type HojaMatrixItem = {
+export type HojaMatrixEquipo = {
   itemId: string;
   nombre: string;
 };
+
+export type HojaMatrixItem = HojaMatrixEquipo;
 
 export type HojaMatrixRow = {
   ci: string;
@@ -64,7 +68,9 @@ export type HojaMatrixRow = {
   nombre1: string;
   nombre2: string | null;
   bateria: string | null;
+  bateriaOrden: number | null;
   grado: string;
+  gradoOrden: number;
   gradoAbreviacion: string;
   totales: number[];
   totalGeneral: number;
@@ -72,7 +78,7 @@ export type HojaMatrixRow = {
 
 export type HojaMatrixData = {
   generatedAt: string;
-  items: HojaMatrixItem[];
+  items: HojaMatrixEquipo[];
   rows: HojaMatrixRow[];
 };
 

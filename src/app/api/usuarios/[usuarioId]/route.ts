@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { authorizeRequest, hashPassword } from "@/lib/auth";
+import { authorizeRequest, getUserFromRequest, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { buildInternalUserEmail } from "@/lib/internal-user-email";
 
@@ -18,10 +18,18 @@ function roleFromValue(value: unknown): UserRole | null {
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ usuarioId: string }> }) {
-  const auth = await authorizeRequest(request, "manage_users");
-  if (!auth.ok) return auth.response;
-
   const { usuarioId } = await context.params;
+  const actor = await getUserFromRequest();
+  if (!actor) {
+    return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
+  const isSelfUpdate = actor.usuarioId === usuarioId;
+  const isAdmin = actor.rol === "ADMIN";
+  if (!isAdmin && !isSelfUpdate) {
+    return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+  }
+
   const body = (await request.json()) as UsuarioUpdatePayload;
   const existing = await prisma.usuario.findUnique({
     where: { usuarioId },
@@ -37,6 +45,13 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
 
   if (!existing) {
     return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });
+  }
+
+  if (!isAdmin && (body.rol !== undefined || body.activo !== undefined || body.password !== undefined)) {
+    return NextResponse.json(
+      { error: "Solo el administrador puede cambiar rol, estado o contraseñas ajenas." },
+      { status: 403 },
+    );
   }
 
   const data: {
@@ -108,7 +123,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     });
 
     await logAudit({
-      usuarioId: auth.user.usuarioId,
+      usuarioId: actor.usuarioId,
       accion: "UPDATE",
       entidad: "USUARIO",
       entidadId: updated.usuarioId,

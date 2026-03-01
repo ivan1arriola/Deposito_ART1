@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
-import { compareRankAbbreviation } from "@/lib/rank-order";
+import { compareOptionalOrder } from "@/lib/catalog-order";
+import { compareRanks } from "@/lib/rank-order";
 import { SIN_BATERIA_LABEL, getHojaMatrixData } from "@/lib/hoja-matrix";
 import type { HojaMatrixRow } from "@/types/views";
 
@@ -47,15 +48,24 @@ function compareRowsByIdentity(a: HojaMatrixRow, b: HojaMatrixRow) {
 }
 
 function compareRowsByGrade(a: HojaMatrixRow, b: HojaMatrixRow) {
-  const byGrado = compareRankAbbreviation(a.gradoAbreviacion, b.gradoAbreviacion);
+  const byGrado = compareRanks(
+    { abreviacion: a.gradoAbreviacion, orden: a.gradoOrden },
+    { abreviacion: b.gradoAbreviacion, orden: b.gradoOrden },
+  );
   if (byGrado !== 0) return byGrado;
 
   return compareRowsByIdentity(a, b);
 }
 
 function compareRowsByGradeAndBattery(a: HojaMatrixRow, b: HojaMatrixRow) {
-  const byGrado = compareRankAbbreviation(a.gradoAbreviacion, b.gradoAbreviacion);
+  const byGrado = compareRanks(
+    { abreviacion: a.gradoAbreviacion, orden: a.gradoOrden },
+    { abreviacion: b.gradoAbreviacion, orden: b.gradoOrden },
+  );
   if (byGrado !== 0) return byGrado;
+
+  const byBateriaOrden = compareOptionalOrder(a.bateriaOrden, b.bateriaOrden);
+  if (byBateriaOrden !== 0) return byBateriaOrden;
 
   if (a.bateria && !b.bateria) return -1;
   if (!a.bateria && b.bateria) return 1;

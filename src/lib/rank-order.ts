@@ -1,3 +1,5 @@
+import { compareOptionalOrder } from "@/lib/catalog-order";
+
 function normalizeRank(value: string) {
   return value
     .normalize("NFD")
@@ -24,6 +26,17 @@ export function compareRankAbbreviation(a: string, b: string) {
   return a.localeCompare(b, "es", { sensitivity: "base" });
 }
 
+type RankLike = {
+  abreviacion: string;
+  orden?: number | null;
+};
+
+export function compareRanks(a: RankLike, b: RankLike) {
+  const byOrder = compareOptionalOrder(a.orden, b.orden);
+  if (byOrder !== 0) return byOrder;
+  return compareRankAbbreviation(a.abreviacion, b.abreviacion);
+}
+
 type PersonalLike = {
   ci: string;
   apellido1: string;
@@ -32,11 +45,12 @@ type PersonalLike = {
   nombre2: string | null;
   rango: {
     abreviacion: string;
+    orden?: number | null;
   };
 };
 
 export function comparePersonalByHierarchy(a: PersonalLike, b: PersonalLike) {
-  const byRank = compareRankAbbreviation(a.rango.abreviacion, b.rango.abreviacion);
+  const byRank = compareRanks(a.rango, b.rango);
   if (byRank !== 0) return byRank;
 
   const byApellido1 = a.apellido1.localeCompare(b.apellido1, "es", { sensitivity: "base" });
@@ -53,4 +67,3 @@ export function comparePersonalByHierarchy(a: PersonalLike, b: PersonalLike) {
 
   return a.ci.localeCompare(b.ci, "es", { sensitivity: "base" });
 }
-
