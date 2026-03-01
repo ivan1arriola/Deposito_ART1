@@ -5,15 +5,16 @@ import { SIN_BATERIA_LABEL, getHojaMatrixData } from "@/lib/hoja-matrix";
 import type { HojaMatrixRow } from "@/types/views";
 
 export const revalidate = 0;
-export const metadata = {
-  title: "Hoja Matriz",
-};
 
-const LEFT_COLUMNS_WIDTH_MM = 76;
+const LEFT_COLUMNS_WIDTH_MM = 68;
 
 type PrintableRow =
   | {
       kind: "grade";
+      label: string;
+    }
+  | {
+      kind: "battery";
       label: string;
     }
   | {
@@ -25,14 +26,11 @@ type PrintableRow =
     };
 
 type PrintableSection = {
-  batteryLabel: string;
+  headingLabel: string;
   rows: PrintableRow[];
 };
 
-function compareRowsByGrade(a: HojaMatrixRow, b: HojaMatrixRow) {
-  const byGrado = compareRankAbbreviation(a.gradoAbreviacion, b.gradoAbreviacion);
-  if (byGrado !== 0) return byGrado;
-
+function compareRowsByIdentity(a: HojaMatrixRow, b: HojaMatrixRow) {
   const byApellido1 = a.apellido1.localeCompare(b.apellido1, "es", { sensitivity: "base" });
   if (byApellido1 !== 0) return byApellido1;
 
@@ -48,22 +46,56 @@ function compareRowsByGrade(a: HojaMatrixRow, b: HojaMatrixRow) {
   return a.ci.localeCompare(b.ci, "es", { sensitivity: "base" });
 }
 
+function compareRowsByGrade(a: HojaMatrixRow, b: HojaMatrixRow) {
+  const byGrado = compareRankAbbreviation(a.gradoAbreviacion, b.gradoAbreviacion);
+  if (byGrado !== 0) return byGrado;
+
+  return compareRowsByIdentity(a, b);
+}
+
+function compareRowsByGradeAndBattery(a: HojaMatrixRow, b: HojaMatrixRow) {
+  const byGrado = compareRankAbbreviation(a.gradoAbreviacion, b.gradoAbreviacion);
+  if (byGrado !== 0) return byGrado;
+
+  if (a.bateria && !b.bateria) return -1;
+  if (!a.bateria && b.bateria) return 1;
+
+  const byBateria = (a.bateria ?? SIN_BATERIA_LABEL).localeCompare(b.bateria ?? SIN_BATERIA_LABEL, "es", {
+    sensitivity: "base",
+  });
+  if (byBateria !== 0) return byBateria;
+
+  return compareRowsByIdentity(a, b);
+}
+
 function buildDisplayName(row: HojaMatrixRow) {
   return [row.nombre1, row.apellido1].filter(Boolean).join(" ").trim();
 }
 
-function buildPrintableRows(rows: HojaMatrixRow[]) {
-  const sorted = [...rows].sort(compareRowsByGrade);
+function buildPrintableRows(rows: HojaMatrixRow[], includeBatterySeparators: boolean) {
+  const sorted = [...rows].sort(includeBatterySeparators ? compareRowsByGradeAndBattery : compareRowsByGrade);
   const printableRows: PrintableRow[] = [];
   let currentGrade = "";
+  let currentBattery = "";
   let counter = 0;
 
   for (const row of sorted) {
+    const batteryLabel = row.bateria ?? SIN_BATERIA_LABEL;
+
     if (row.gradoAbreviacion !== currentGrade) {
       currentGrade = row.gradoAbreviacion;
+      currentBattery = "";
       printableRows.push({
         kind: "grade",
         label: row.gradoAbreviacion.toUpperCase(),
+      });
+    }
+
+    if (includeBatterySeparators && batteryLabel !== currentBattery) {
+      currentBattery = batteryLabel;
+      printableRows.push({
+        kind: "battery",
+        label: batteryLabel,
       });
     }
 
@@ -84,27 +116,18 @@ function buildSections(rows: HojaMatrixRow[], selectedBattery: string | null) {
   if (selectedBattery) {
     return [
       {
-        batteryLabel: selectedBattery,
-        rows: buildPrintableRows(rows),
+        headingLabel: selectedBattery,
+        rows: buildPrintableRows(rows, false),
       },
     ] satisfies PrintableSection[];
   }
 
-  const grouped = new Map<string, HojaMatrixRow[]>();
-  for (const row of rows) {
-    const label = row.bateria ?? SIN_BATERIA_LABEL;
-    const sectionRows = grouped.get(label);
-    if (sectionRows) {
-      sectionRows.push(row);
-      continue;
-    }
-    grouped.set(label, [row]);
-  }
-
-  return Array.from(grouped.entries()).map(([batteryLabel, batteryRows]) => ({
-    batteryLabel,
-    rows: buildPrintableRows(batteryRows),
-  }));
+  return [
+    {
+      headingLabel: "HOJA MATRIZ UNIDAD",
+      rows: buildPrintableRows(rows, true),
+    },
+  ] satisfies PrintableSection[];
 }
 
 function buildGrandTotals(rows: HojaMatrixRow[], itemCount: number) {
@@ -115,6 +138,19 @@ function buildGrandTotals(rows: HojaMatrixRow[], itemCount: number) {
     });
   }
   return totals;
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: Promise<{ bateria?: string }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const selectedBattery = resolvedSearchParams?.bateria?.trim() || null;
+
+  return {
+    title: selectedBattery ? `Hoja Matriz - ${selectedBattery}` : "Hoja Matriz Unidad",
+  };
 }
 
 export default async function HojaMatrizPage({
@@ -157,7 +193,7 @@ export default async function HojaMatrizPage({
           .matrix-document {
             width: 210mm;
             margin: 0 auto;
-            padding: 6mm 5mm 8mm;
+            padding: 6mm 4mm 8mm;
             background: #fff;
           }
 
@@ -176,15 +212,15 @@ export default async function HojaMatrizPage({
           }
 
           .matrix-table col.col-number {
-            width: 10mm;
+            width: 8mm;
           }
 
           .matrix-table col.col-grade {
-            width: 18mm;
+            width: 16mm;
           }
 
           .matrix-table col.col-name {
-            width: 48mm;
+            width: 44mm;
           }
 
           .matrix-table th,
@@ -277,6 +313,15 @@ export default async function HojaMatrizPage({
             height: 10mm;
           }
 
+          .battery-separator td {
+            background: #eef3fb;
+            text-align: left;
+            font-size: 11pt;
+            font-weight: 700;
+            padding: 1.6mm 3mm;
+            height: 7mm;
+          }
+
           .person-row td {
             height: 8mm;
             font-size: 8.75pt;
@@ -343,7 +388,7 @@ export default async function HojaMatrizPage({
 
           @page {
             size: A4 portrait;
-            margin: 6mm 5mm;
+            margin: 6mm 4mm;
           }
 
           @media print {
@@ -378,7 +423,7 @@ export default async function HojaMatrizPage({
       ) : (
         <main className="matrix-document">
           {sections.map((section, sectionIndex) => (
-            <section key={section.batteryLabel} className="matrix-sheet">
+            <section key={section.headingLabel} className="matrix-sheet">
               <table className="matrix-table">
                 <colgroup>
                   <col className="col-number" />
@@ -401,7 +446,7 @@ export default async function HojaMatrizPage({
                           unoptimized
                         />
                         <div className="identity-group">{'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No.1.-'}</div>
-                        <div className="identity-battery">{section.batteryLabel}</div>
+                        <div className="identity-battery">{section.headingLabel}</div>
                       </div>
                     </th>
                     {data.items.map((item) => (
@@ -422,17 +467,21 @@ export default async function HojaMatrizPage({
                 <tbody>
                   {section.rows.map((row, index) =>
                     row.kind === "grade" ? (
-                      <tr key={`${section.batteryLabel}-grade-${row.label}-${index}`} className="grade-separator">
+                      <tr key={`${section.headingLabel}-grade-${row.label}-${index}`} className="grade-separator">
+                        <td colSpan={3 + data.items.length}>{row.label}</td>
+                      </tr>
+                    ) : row.kind === "battery" ? (
+                      <tr key={`${section.headingLabel}-battery-${row.label}-${index}`} className="battery-separator">
                         <td colSpan={3 + data.items.length}>{row.label}</td>
                       </tr>
                     ) : (
-                      <tr key={`${section.batteryLabel}-person-${row.number}`} className="person-row">
+                      <tr key={`${section.headingLabel}-person-${row.number}`} className="person-row">
                         <td className="number-cell">{row.number}</td>
                         <td className="grade-cell">{row.grade}</td>
                         <td className="name-cell">{row.name}</td>
                         {row.totales.map((value, valueIndex) => (
                           <td
-                            key={`${section.batteryLabel}-${row.number}-${valueIndex}`}
+                            key={`${section.headingLabel}-${row.number}-${valueIndex}`}
                             className={`value-cell ${value < 0 ? "negative" : ""}`.trim()}
                           >
                             {value}

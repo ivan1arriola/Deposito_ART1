@@ -68,6 +68,24 @@ function readRequestMeta(request: Request) {
   return { ip, userAgent };
 }
 
+function buildPersonalAuditDetail(personal: {
+  ci: string;
+  apellido1: string;
+  apellido2: string | null;
+  nombre1: string;
+  nombre2: string | null;
+  rango: { nombreCompleto: string; abreviacion: string };
+  bateria: { nombre: string } | null;
+}) {
+  return {
+    ci: personal.ci,
+    nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
+    grado: personal.rango.nombreCompleto,
+    gradoAbreviacion: personal.rango.abreviacion,
+    bateria: personal.bateria?.nombre ?? null,
+  };
+}
+
 export async function PUT(req: Request, context: { params: Promise<{ registroId: string }> }) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
@@ -115,6 +133,21 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   const existing = await prisma.registro.findUnique({
     where: { registroId },
     include: {
+      personal: {
+        select: {
+          ci: true,
+          apellido1: true,
+          apellido2: true,
+          nombre1: true,
+          nombre2: true,
+          rango: {
+            select: { nombreCompleto: true, abreviacion: true },
+          },
+          bateria: {
+            select: { nombre: true },
+          },
+        },
+      },
       items: {
         include: { item: true },
         orderBy: { item: { ordenPdf: "asc" } },
@@ -187,6 +220,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       detalle: {
         evento: "MOVIMIENTO_VESTUARIO_RECTIFICADO",
         ci: existing.ci,
+        personal: buildPersonalAuditDetail(existing.personal),
         tipoAnterior: existing.tipo,
         tipoNuevo: tipo,
         fechaAnterior: existing.fecha.toISOString().slice(0, 10),

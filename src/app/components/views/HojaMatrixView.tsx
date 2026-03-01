@@ -14,6 +14,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
   const [viewMode, setViewMode] = useState<"all" | "battery">("all");
   const [selectedBattery, setSelectedBattery] = useState<string | null>(null);
   const [hasRequested, setHasRequested] = useState(Boolean(data));
+  const title = viewMode === "all" ? "Hoja Matriz Unidad" : "Hoja Matriz por Batería";
 
   const bateriaOptions = useMemo(() => {
     if (!data) return [] as string[];
@@ -53,9 +54,9 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
     <section className="mt-6 rounded-2xl border border-stone-300 bg-white p-4 shadow-none">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-stone-900">Hoja Matriz</h2>
+          <h2 className="text-base font-semibold text-stone-900">{title}</h2>
           <p className="mt-1 text-xs text-stone-600">
-            Vista matricial por personal. Ordenada por bateria, grado y apellido. Totales por item segun registros.
+            En unidad se ordena por grado, batería y apellido. En batería se ordena por grado y apellido.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -150,7 +151,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
         <div className="mt-4 overflow-hidden rounded-2xl border border-stone-300 bg-stone-100">
           <iframe
             key={previewHref}
-            title="Vista previa de hoja matriz"
+            title={viewMode === "all" ? "Vista previa de hoja matriz unidad" : "Vista previa de hoja matriz por batería"}
             src={previewHref}
             className="h-[80vh] min-h-[900px] w-full bg-white"
           />

@@ -55,6 +55,24 @@ function readRequestMeta(request: Request) {
   return { ip, userAgent };
 }
 
+function buildPersonalAuditDetail(personal: {
+  ci: string;
+  apellido1: string;
+  apellido2: string | null;
+  nombre1: string;
+  nombre2: string | null;
+  rango: { nombreCompleto: string; abreviacion: string };
+  bateria: { nombre: string } | null;
+}) {
+  return {
+    ci: personal.ci,
+    nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
+    grado: personal.rango.nombreCompleto,
+    gradoAbreviacion: personal.rango.abreviacion,
+    bateria: personal.bateria?.nombre ?? null,
+  };
+}
+
 function isValidPayload(body: unknown): body is RegistroPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
@@ -199,15 +217,30 @@ export async function POST(req: Request) {
   }
 
   const itemIds = Array.from(dedupedItems.keys()).map((itemId) => BigInt(itemId));
-  const [personalExists, itemsFound] = await Promise.all([
-    prisma.personal.findUnique({ where: { ci }, select: { ci: true } }),
+  const [personalRecord, itemsFound] = await Promise.all([
+    prisma.personal.findUnique({
+      where: { ci },
+      select: {
+        ci: true,
+        apellido1: true,
+        apellido2: true,
+        nombre1: true,
+        nombre2: true,
+        rango: {
+          select: { nombreCompleto: true, abreviacion: true },
+        },
+        bateria: {
+          select: { nombre: true },
+        },
+      },
+    }),
     prisma.item.findMany({
       where: { itemId: { in: itemIds }, activo: true },
       select: { itemId: true, nombre: true },
     }),
   ]);
 
-  if (!personalExists) {
+  if (!personalRecord) {
     return NextResponse.json({ error: "No existe personal para la CI indicada." }, { status: 404 });
   }
   if (itemsFound.length !== itemIds.length) {
@@ -254,6 +287,7 @@ export async function POST(req: Request) {
       detalle: {
         evento: "MOVIMIENTO_VESTUARIO",
         ci,
+        personal: buildPersonalAuditDetail(personalRecord),
         tipo,
         fechaMovimiento: fecha.toISOString().slice(0, 10),
         comentarios,
