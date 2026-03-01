@@ -2,9 +2,9 @@
  * Tipos de entidades de dominio - Datos principales de la aplicación
  */
 
-export type Role = "ADMIN" | "EDITOR" | "VIEWER";
+export type Role = "ADMIN" | "EDITOR";
 
-export const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "VIEWER"];
+export const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR"];
 
 export type Rango = {
   rangoId: number;
@@ -43,6 +43,14 @@ export type Personal = {
   tallas: Talla[];
 };
 
+export type PersonalObservacion = {
+  observacionId: string;
+  ci: string;
+  fecha: string;
+  texto: string;
+  createdAt: string;
+};
+
 export type CurrentUser = {
   usuarioId: string;
   username: string;
@@ -60,6 +68,7 @@ export type FirmaConfig = {
 export type UsuarioAdmin = {
   usuarioId: string;
   username: string;
+  email: string;
   rol: Role;
   activo: boolean;
   createdAt: string;

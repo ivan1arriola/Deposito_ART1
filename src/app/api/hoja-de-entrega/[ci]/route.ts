@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { TipoRegistro } from "@prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { getFirmaConfig, TEXTO_ENCARGADO, TEXTO_OFICIAL } from "@/lib/firma-config";
+import { buildHojaObservaciones } from "@/lib/hoja-entrega-observaciones";
 import { prisma } from "@/lib/prisma";
 import { isValidUruguayanCi } from "@/lib/ci";
 
@@ -166,7 +167,8 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       nombre1: persona.nombre1,
       nombre2: persona.nombre2,
       fechaIngreso: persona.fechaIngreso ? persona.fechaIngreso.toISOString() : null,
-      gradoPersonal: persona.rango.abreviacion,
+      gradoPersonal: persona.rango.nombreCompleto,
+      gradoPersonalAbreviado: persona.rango.abreviacion,
       bateria: persona.bateria?.nombre ?? null,
       tallas: {
         PARKA: tallas.PARKA ?? "",
@@ -188,9 +190,6 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       oficialRango: firmas.oficialRango,
       oficialNombre: firmas.oficialNombre,
     },
-    observaciones: persona.observaciones.map((obs) => ({
-      fecha: obs.fecha.toISOString(),
-      texto: obs.texto,
-    })),
+    observaciones: buildHojaObservaciones(persona.observaciones, persona.registros),
   });
 }

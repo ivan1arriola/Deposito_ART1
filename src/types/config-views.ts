@@ -4,7 +4,7 @@
 
 import { ReactNode, FormEvent } from "react";
 
-export type Role = "ADMIN" | "EDITOR" | "VIEWER";
+export type Role = "ADMIN" | "EDITOR";
 export type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string };
 export type BateriaConfig = { bateriaId: number; nombre: string };
 export type ItemConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };

@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { UserRole } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-config";
 import { prisma } from "@/lib/prisma";
 import { hasPermission, type Permission } from "@/lib/permissions";
 
@@ -74,40 +76,27 @@ export function clearSessionCookie(response: NextResponse) {
 }
 
 export async function getUserFromRequest(request: Request): Promise<AuthUser | null> {
-  const sessionToken = getCookie(request, SESSION_COOKIE_NAME);
-  if (!sessionToken) return null;
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user) return null;
 
-  const tokenHash = hashToken(sessionToken);
-  const session = await prisma.sesion.findUnique({
-    where: { tokenHash },
-    include: { usuario: true },
+  // Obtener datos completos del usuario desde la base de datos
+  const usuario = await prisma.usuario.findUnique({
+    where: { usuarioId: session.user.id },
   });
 
-  if (!session) return null;
-
-  if (session.expiresAt <= new Date()) {
-    await prisma.sesion.delete({ where: { sesionId: session.sesionId } }).catch(() => null);
-    return null;
-  }
-
-  if (!session.usuario.activo) return null;
+  if (!usuario || !usuario.activo) return null;
 
   return {
-    usuarioId: session.usuario.usuarioId,
-    username: session.usuario.username,
-    rol: session.usuario.rol,
-    activo: session.usuario.activo,
+    usuarioId: usuario.usuarioId,
+    username: usuario.username,
+    rol: usuario.rol,
+    activo: usuario.activo,
   };
 }
 
 export async function deleteSessionFromRequest(request: Request) {
-  const sessionToken = getCookie(request, SESSION_COOKIE_NAME);
-  if (!sessionToken) return;
-
-  const tokenHash = hashToken(sessionToken);
-  await prisma.sesion.deleteMany({
-    where: { tokenHash },
-  });
+  // NextAuth maneja la eliminación de sesiones automáticamente
+  return;
 }
 
 export async function authorizeRequest(

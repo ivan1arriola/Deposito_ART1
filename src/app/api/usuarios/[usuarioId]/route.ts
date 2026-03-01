@@ -6,6 +6,7 @@ import { logAudit } from "@/lib/audit";
 
 type UsuarioUpdatePayload = {
   username?: string;
+  email?: string;
   password?: string;
   rol?: UserRole;
   activo?: boolean;
@@ -25,6 +26,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
 
   const data: {
     username?: string;
+    email?: string;
     passwordHash?: string;
     rol?: UserRole;
     activo?: boolean;
@@ -35,6 +37,13 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       return NextResponse.json({ error: "username invalido." }, { status: 400 });
     }
     data.username = body.username.trim();
+  }
+
+  if (body.email !== undefined) {
+    if (typeof body.email !== "string" || body.email.trim() === "" || !body.email.includes("@")) {
+      return NextResponse.json({ error: "email invalido." }, { status: 400 });
+    }
+    data.email = body.email.trim();
   }
 
   if (body.password !== undefined) {
@@ -65,6 +74,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       select: {
         usuarioId: true,
         username: true,
+        email: true,
         rol: true,
         activo: true,
         createdAt: true,
@@ -79,6 +89,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       entidadId: updated.usuarioId,
       detalle: {
         username: updated.username,
+        email: updated.email,
         rol: updated.rol,
         activo: updated.activo,
         updatedFields: Object.keys(data),

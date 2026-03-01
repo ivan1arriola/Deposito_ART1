@@ -10,12 +10,13 @@ function getArg(name, fallback = "") {
 }
 
 const username = getArg("username");
+const email = getArg("email");
 const password = getArg("password");
 const roleInput = getArg("role", "ADMIN").toUpperCase();
-const role = ["ADMIN", "EDITOR", "VIEWER"].includes(roleInput) ? roleInput : "VIEWER";
+const role = ["ADMIN", "EDITOR"].includes(roleInput) ? roleInput : "ADMIN";
 
-if (!username || !password || password.length < 8) {
-  console.error("Uso: npm run user:create -- --username admin --password <min8> [--role ADMIN|EDITOR|VIEWER]");
+if (!username || !email || !password || password.length < 8) {
+  console.error("Uso: npm run user:create -- --username admin --email user@dominio --password <min8> [--role ADMIN|EDITOR]");
   process.exit(1);
 }
 
@@ -26,13 +27,13 @@ try {
   if (existing) {
     const updated = await prisma.usuario.update({
       where: { username },
-      data: { passwordHash, rol: role, activo: true },
+      data: { email, passwordHash, rol: role, activo: true },
       select: { usuarioId: true, username: true, rol: true, activo: true },
     });
     console.log("Usuario actualizado:", updated);
   } else {
     const created = await prisma.usuario.create({
-      data: { username, passwordHash, rol: role, activo: true },
+      data: { username, email, passwordHash, rol: role, activo: true },
       select: { usuarioId: true, username: true, rol: true, activo: true },
     });
     console.log("Usuario creado:", created);

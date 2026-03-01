@@ -9,6 +9,25 @@ const TALLA_KEYS = ["PARKA", "CAMISACO", "PANTALON", "KEPI", "CALZADO"];
 const ROPA_TALLES = new Set(["XS", "S", "M", "L", "XL", "XXL", "XXXL"]);
 const KEPI_TALLES = new Set(["54", "55", "56", "57", "58", "59", "60", "61", "62", "63"]);
 const CALZADO_TALLES = new Set(["34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47"]);
+const CDO_SERV_BATTERY_NAME = "Cdo. y Serv.";
+const CIRR_GRADE_BY_LEGACY_BATTERY = {
+  "S/ CIRR": {
+    abreviacion: "Sdo 1° S/CIRR",
+    nombreCompleto: "Soldado Primero Sin CIRR",
+  },
+  "Cursando CIRR": {
+    abreviacion: "Sdo 1° C/CIRR",
+    nombreCompleto: "Soldado Primero Cursando CIRR",
+  },
+};
+const RANGO_FULLNAME_BY_ABBR = {
+  Sgto: "Sargento",
+  "Cabo 1°": "Cabo Primero",
+  "Cabo 2°": "Cabo Segundo",
+  "Sdo 1°": "Soldado Primero",
+  "Sdo 1° C/CIRR": "Soldado Primero Cursando CIRR",
+  "Sdo 1° S/CIRR": "Soldado Primero Sin CIRR",
+};
 
 function getArg(name, fallback = "") {
   const index = process.argv.indexOf(`--${name}`);
@@ -77,11 +96,31 @@ function normalizeBateriaNombre(value) {
     "CDO. Y SERV.": "Cdo. y Serv.",
     'BA. OBUS. "A"': 'Ba. Obus. "A"',
     'BA. OBUS. "B"': 'Ba. Obus. "B"',
-    "S/ CIRR": "S/ CIRR",
-    "CURSANDO CIRR": "Cursando CIRR",
   };
 
   return map[key] ?? base;
+}
+
+function resolveCirrClassification(rangoAbreviacion, bateriaNombre) {
+  if (!bateriaNombre) {
+    return {
+      rangoAbreviacion,
+      bateriaNombre,
+    };
+  }
+
+  const cirrGrade = CIRR_GRADE_BY_LEGACY_BATTERY[bateriaNombre];
+  if (!cirrGrade) {
+    return {
+      rangoAbreviacion,
+      bateriaNombre,
+    };
+  }
+
+  return {
+    rangoAbreviacion: cirrGrade.abreviacion,
+    bateriaNombre: CDO_SERV_BATTERY_NAME,
+  };
 }
 
 function normalizeTallaRopa(value) {
@@ -163,6 +202,9 @@ function parseRow(line, lineNumber) {
     return { error: `Linea ${lineNumber}: fecha de ingreso invalida (${fechaIngreso}).` };
   }
 
+  const normalizedBateriaNombre = normalizeBateriaNombre(bateria);
+  const classification = resolveCirrClassification(normalizeRangoAbreviacion(rango), normalizedBateriaNombre);
+
   return {
     value: {
       ci,
@@ -171,8 +213,8 @@ function parseRow(line, lineNumber) {
       nombre1: nombre1Value,
       nombre2: normalizeText(nombre2),
       fechaIngreso: parsedDate,
-      rangoAbreviacion: normalizeRangoAbreviacion(rango),
-      bateriaNombre: normalizeBateriaNombre(bateria),
+      rangoAbreviacion: classification.rangoAbreviacion,
+      bateriaNombre: classification.bateriaNombre,
       tallas: {
         PARKA: parkaValue,
         CAMISACO: camisacoValue,
@@ -231,9 +273,27 @@ async function main() {
 
   for (const row of rows) {
     const rangoId = rangoIdByAbrev.get(row.rangoAbreviacion);
-    if (!rangoId) {
-      errors.push(`CI ${row.ci}: grado no encontrado (${row.rangoAbreviacion}).`);
-      continue;
+    let ensuredRangoId = rangoId ?? null;
+    if (!ensuredRangoId) {
+      const nombreCompleto = RANGO_FULLNAME_BY_ABBR[row.rangoAbreviacion];
+      if (!nombreCompleto) {
+        errors.push(`CI ${row.ci}: grado no encontrado (${row.rangoAbreviacion}).`);
+        continue;
+      }
+
+      const createdRango = await prisma.rango.create({
+        data: {
+          abreviacion: row.rangoAbreviacion,
+          nombreCompleto,
+        },
+        select: {
+          rangoId: true,
+          abreviacion: true,
+        },
+      });
+
+      ensuredRangoId = createdRango.rangoId;
+      rangoIdByAbrev.set(createdRango.abreviacion, createdRango.rangoId);
     }
 
     let bateriaId = null;
@@ -264,7 +324,7 @@ async function main() {
           nombre1: row.nombre1,
           nombre2: row.nombre2,
           fechaIngreso: row.fechaIngreso,
-          rangoId,
+          rangoId: ensuredRangoId,
           bateriaId,
         },
         update: {
@@ -273,7 +333,7 @@ async function main() {
           nombre1: row.nombre1,
           nombre2: row.nombre2,
           fechaIngreso: row.fechaIngreso,
-          rangoId,
+          rangoId: ensuredRangoId,
           bateriaId,
         },
       });

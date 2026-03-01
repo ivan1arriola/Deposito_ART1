@@ -4,7 +4,7 @@ import { PrismaClient, TipoRegistro } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-const COMMENT_TAG = "Importacion movimientos inicial";
+const COMMENT_TAG = "Importacion de datos anteriores ";
 
 const CATALOGO_ITEMS = [
   "Buzo Verde M/C Escote Redondo",
@@ -105,7 +105,6 @@ async function ensureCatalogItems() {
         data: {
           nombre,
           activo: true,
-          requiereTalle: false,
         },
       });
     }

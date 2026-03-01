@@ -21,8 +21,10 @@ import {
   normalizeTallaValue,
 } from "@/lib/tallas";
 import { ConfigViews } from "./components/views/ConfigViews";
-import { FichaView } from "./components/views/FichaView";
-import { SmallActionButton, PaginationControls, ActionMenu, ConfirmDialog, ToastContainer, toast } from "./components/shared";
+import { HojaDeEntregaView } from "./components/views/HojaDeEntregaView";
+import { HojaMatrixView } from "./components/views/HojaMatrixView";
+import { TallasResumenView } from "./components/views/TallasResumenView";
+import { SmallActionButton, PaginationControls, ActionMenu, ToastContainer, toast } from "./components/shared";
 
 // Importar tipos desde archivos de tipos organizados
 import type {
@@ -31,6 +33,7 @@ import type {
   Bateria,
   Item,
   Personal,
+  PersonalObservacion,
   CurrentUser,
   FirmaConfig,
   UsuarioAdmin,
@@ -84,34 +87,65 @@ import {
   createPersonalHandler,
   updatePersonalHandler,
   deletePersonalHandler,
+  createPersonalObservacionHandler,
+  loadPersonalObservacionesHandler,
+  updatePersonalObservacionHandler,
+  deletePersonalObservacionHandler,
 } from "@/lib/handlers-personal";
-import {
-  createRegistroHandler,
-  updateRegistroHandler,
-  loadRegistrosHandler,
-} from "@/lib/handlers-registros";
 import {
   createUsuarioHandler,
   changeUserRoleHandler,
   toggleUserActiveHandler,
-  resetUserPasswordHandler,
   deleteUsuarioHandler,
   saveFirmaConfigHandler,
 } from "@/lib/handlers-usuarios";
-import { loginHandler, logoutHandler } from "@/lib/handlers-auth";
+import {
+  loginHandler,
+  logoutHandler,
+  requestPasswordResetHandler,
+  confirmPasswordResetHandler,
+  changePasswordHandler,
+} from "@/lib/handlers-auth";
 
 // Importar utilidades de helpers
 import { auditActionLabel, auditEntityLabel, renderAuditDetalle } from "@/lib/audit-helpers";
-import { getDatePart } from "@/lib/date-helpers";
+import { checkDbInitHandler, initializeDatabaseHandler } from "@/lib/handlers-auth";
+
+type PersonalObservacionDraft = {
+  ci: string;
+  nombre: string;
+  observacionId: string | null;
+  fecha: string;
+  texto: string;
+  observaciones: PersonalObservacion[];
+  loading: boolean;
+  error: string | null;
+};
 
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("Verificando sesión...");
+  const [initMessage, setInitMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
+  const [showInitCredentials, setShowInitCredentials] = useState(false);
+  const [initCredentials, setInitCredentials] = useState<{ username: string; password: string; email: string } | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [showResetForm, setShowResetForm] = useState(false);
+  const [resetUsernameOrEmail, setResetUsernameOrEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [changeMode, setChangeMode] = useState<"current" | "code">("current");
+  const [changeUsernameOrEmail, setChangeUsernameOrEmail] = useState("");
+  const [changeCurrentPassword, setChangeCurrentPassword] = useState("");
+  const [changeCode, setChangeCode] = useState("");
+  const [changeNewPassword, setChangeNewPassword] = useState("");
+  const [changeConfirmPassword, setChangeConfirmPassword] = useState("");
+  const [changeLoading, setChangeLoading] = useState(false);
 
   const [rangos, setRangos] = useState<Rango[]>([]);
   const [baterias, setBaterias] = useState<Bateria[]>([]);
@@ -132,8 +166,9 @@ export default function Home() {
   const [movimientosTotal, setMovimientosTotal] = useState(0);
 
   const [newUsername, setNewUsername] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState<Role>("VIEWER");
+  const [newRole, setNewRole] = useState<Role>("EDITOR");
 
   const [newRangoAbreviacion, setNewRangoAbreviacion] = useState("");
   const [newRangoNombreCompleto, setNewRangoNombreCompleto] = useState("");
@@ -163,6 +198,8 @@ export default function Home() {
   const [expandedTallasByCi, setExpandedTallasByCi] = useState<Record<string, boolean>>({});
   const [registroDraft, setRegistroDraft] = useState<RegistroDraft | null>(null);
   const [registroSaving, setRegistroSaving] = useState(false);
+  const [personalObservacionDraft, setPersonalObservacionDraft] = useState<PersonalObservacionDraft | null>(null);
+  const [personalObservacionSaving, setPersonalObservacionSaving] = useState(false);
   const [registroViewer, setRegistroViewer] = useState<RegistroViewerState | null>(null);
   const [registroViewerPage, setRegistroViewerPage] = useState(1);
   const [registroViewerPageSize, setRegistroViewerPageSize] = useState(20);
@@ -298,72 +335,6 @@ export default function Home() {
     const start = (personalPageSafe - 1) * personalPageSize;
     return personalFiltrado.slice(start, start + personalPageSize);
   }, [personalFiltrado, personalPageSafe, personalPageSize]);
-  const resumenTallasPorBateria = useMemo(() => {
-    type ResumenTalla = { key: TallaKey; label: string; values: Array<{ talla: string; cantidad: number }>; sinDato: number };
-    type ResumenBateria = { key: string; nombre: string; total: number; tallas: ResumenTalla[] };
-
-    const bateriasConEtiqueta = [
-      ...baterias
-        .map((bateria) => ({ key: String(bateria.bateriaId), nombre: bateria.nombre }))
-        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })),
-      { key: "NONE", nombre: "Sin bateria" },
-    ];
-
-    const personalPorBateria = new Map<string, Personal[]>();
-    for (const bateria of bateriasConEtiqueta) {
-      personalPorBateria.set(bateria.key, []);
-    }
-
-    for (const persona of personalOrdenado) {
-      const key = persona.bateriaId == null ? "NONE" : String(persona.bateriaId);
-      const bucket = personalPorBateria.get(key);
-      if (bucket) {
-        bucket.push(persona);
-        continue;
-      }
-      personalPorBateria.set(key, [persona]);
-    }
-
-    const resumen: ResumenBateria[] = [];
-
-    for (const bateria of bateriasConEtiqueta) {
-      const personas = personalPorBateria.get(bateria.key) ?? [];
-      const tallas: ResumenTalla[] = TALLA_KEYS.map((key) => {
-        const counter = new Map<string, number>();
-
-        for (const persona of personas) {
-          const tallasPersona = tallasMap(persona.tallas);
-          const raw = tallasPersona[key];
-          const value = raw && raw !== "-" ? raw : "Sin dato";
-          counter.set(value, (counter.get(value) ?? 0) + 1);
-        }
-
-        const values = Array.from(counter.entries())
-          .map(([talla, cantidad]) => ({ talla, cantidad }))
-          .sort((a, b) => {
-            if (a.talla === "Sin dato") return 1;
-            if (b.talla === "Sin dato") return -1;
-            return a.talla.localeCompare(b.talla, "es", { sensitivity: "base", numeric: true });
-          });
-
-        return {
-          key,
-          label: TALLA_LABELS[key],
-          values,
-          sinDato: counter.get("Sin dato") ?? 0,
-        };
-      });
-
-      resumen.push({
-        key: bateria.key,
-        nombre: bateria.nombre,
-        total: personas.length,
-        tallas,
-      });
-    }
-
-    return resumen;
-  }, [baterias, personalOrdenado]);
   const isConfigView = activeView === "grados" || activeView === "baterias" || activeView === "items" || activeView === "admin";
   const personaRegistro = useMemo(() => {
     if (!registroDraft) return null;
@@ -488,6 +459,8 @@ export default function Home() {
     setExpandedTallasByCi({});
     setRegistroDraft(null);
     setRegistroSaving(false);
+    setPersonalObservacionDraft(null);
+    setPersonalObservacionSaving(false);
     setRegistroViewerPage(1);
     setRegistroViewerPageSize(20);
     setHojaMatrixData(null);
@@ -595,6 +568,37 @@ export default function Home() {
     } finally {
       setHojaMatrixLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const initDb = async () => {
+      try {
+        const status = await checkDbInitHandler();
+        if (status.needsInit) {
+          setInitMessage({ type: "info", text: "Inicializando base de datos..." });
+          await initializeDatabaseHandler({
+            onSuccess: (result: unknown) => {
+              const data = result as {
+                initialized: boolean;
+                message: string;
+                credentials?: { username: string; password: string; email: string };
+              };
+              if (data.credentials) {
+                setInitCredentials(data.credentials);
+              }
+              setInitMessage({ type: "success", text: data.message });
+              setShowInitCredentials(true);
+            },
+            onError: (message) => {
+              setInitMessage({ type: "info", text: `Error al inicializar: ${message}` });
+            },
+          });
+        }
+      } catch {
+        // Silent fail, la BD ya está inicializada
+      }
+    };
+    void initDb();
   }, []);
 
   useEffect(() => {
@@ -1110,6 +1114,85 @@ export default function Home() {
     });
   }
 
+  async function refreshPersonalObservaciones(ci: string) {
+    const observaciones = await loadPersonalObservacionesHandler(ci, {
+      onError: (message) => setStatus(message),
+    });
+    return observaciones as PersonalObservacion[];
+  }
+
+  async function openPersonalObservacion(persona: Personal) {
+    if (!canWrite) {
+      setStatus("No tienes permisos para registrar observaciones.");
+      return;
+    }
+
+    const nombre = `${apellidosLabel(persona)}, ${nombresLabel(persona)}`;
+    setPersonalObservacionDraft({
+      ci: persona.ci,
+      nombre,
+      observacionId: null,
+      fecha: getTodayDateInput(),
+      texto: "",
+      observaciones: [],
+      loading: true,
+      error: null,
+    });
+
+    try {
+      const observaciones = await refreshPersonalObservaciones(persona.ci);
+      setPersonalObservacionDraft((prev) =>
+        prev && prev.ci === persona.ci
+          ? {
+              ...prev,
+              observaciones,
+              loading: false,
+              error: null,
+            }
+          : prev,
+      );
+    } catch (error: unknown) {
+      setPersonalObservacionDraft((prev) =>
+        prev && prev.ci === persona.ci
+          ? {
+              ...prev,
+              observaciones: [],
+              loading: false,
+              error: error instanceof Error ? error.message : "No se pudieron cargar las observaciones.",
+            }
+          : prev,
+      );
+    }
+  }
+
+  function resetPersonalObservacionForm() {
+    setPersonalObservacionDraft((prev) =>
+      prev
+        ? {
+            ...prev,
+            observacionId: null,
+            fecha: getTodayDateInput(),
+            texto: "",
+            error: null,
+          }
+        : prev,
+    );
+  }
+
+  function editPersonalObservacion(observacion: PersonalObservacion) {
+    setPersonalObservacionDraft((prev) =>
+      prev
+        ? {
+            ...prev,
+            observacionId: observacion.observacionId,
+            fecha: observacion.fecha.slice(0, 10),
+            texto: observacion.texto,
+            error: null,
+          }
+        : prev,
+    );
+  }
+
   function rectifyRegistro(registro: RegistroView) {
     if (!canWrite) {
       setStatus("No tienes permisos para rectificar movimientos.");
@@ -1210,6 +1293,106 @@ export default function Home() {
     } finally {
       setRegistroSaving(false);
     }
+  }
+
+  async function savePersonalObservacion() {
+    if (!personalObservacionDraft || personalObservacionSaving) return;
+    const isEditing = personalObservacionDraft.observacionId !== null;
+
+    if (!personalObservacionDraft.fecha) {
+      setStatus("Selecciona la fecha de la observacion.");
+      return;
+    }
+    if (!personalObservacionDraft.texto.trim()) {
+      setStatus("Ingresa el texto de la observacion.");
+      return;
+    }
+
+    setPersonalObservacionSaving(true);
+    setStatus(isEditing ? "Actualizando observacion..." : "Guardando observacion...");
+    try {
+      if (isEditing && personalObservacionDraft.observacionId) {
+        await updatePersonalObservacionHandler(
+          personalObservacionDraft.ci,
+          personalObservacionDraft.observacionId,
+          {
+            fecha: personalObservacionDraft.fecha,
+            texto: personalObservacionDraft.texto.trim(),
+          },
+          {
+            onError: (message) => setStatus(message),
+          },
+        );
+      } else {
+        await createPersonalObservacionHandler(
+          personalObservacionDraft.ci,
+          {
+            fecha: personalObservacionDraft.fecha,
+            texto: personalObservacionDraft.texto.trim(),
+          },
+          {
+            onError: (message) => setStatus(message),
+          },
+        );
+      }
+
+      const observaciones = await refreshPersonalObservaciones(personalObservacionDraft.ci);
+      setPersonalObservacionDraft((prev) =>
+        prev
+          ? {
+              ...prev,
+              observaciones,
+              observacionId: null,
+              fecha: getTodayDateInput(),
+              texto: "",
+              loading: false,
+              error: null,
+            }
+          : prev,
+      );
+      setStatus(
+        `${isEditing ? "Observacion actualizada" : "Observacion registrada"} para ${formatUruguayanCi(personalObservacionDraft.ci)}.`,
+      );
+      toast.success(isEditing ? "Observacion actualizada." : "Observacion registrada.");
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : isEditing ? "No se pudo actualizar la observacion." : "No se pudo registrar la observacion.");
+    } finally {
+      setPersonalObservacionSaving(false);
+    }
+  }
+
+  function deletePersonalObservacion(observacion: PersonalObservacion) {
+    openConfirmDialog({
+      title: "Eliminar observacion",
+      message: `Se eliminara la observacion del ${new Date(observacion.fecha).toLocaleDateString("es-UY")}.`,
+      confirmText: "Eliminar",
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          await deletePersonalObservacionHandler(observacion.ci, observacion.observacionId, {
+            onError: (message) => setStatus(message),
+          });
+
+          const observaciones = await refreshPersonalObservaciones(observacion.ci);
+          setPersonalObservacionDraft((prev) =>
+            prev && prev.ci === observacion.ci
+              ? {
+                  ...prev,
+                  observaciones,
+                  observacionId: prev.observacionId === observacion.observacionId ? null : prev.observacionId,
+                  fecha: prev.observacionId === observacion.observacionId ? getTodayDateInput() : prev.fecha,
+                  texto: prev.observacionId === observacion.observacionId ? "" : prev.texto,
+                  error: null,
+                }
+              : prev,
+          );
+          setStatus(`Observacion eliminada para ${formatUruguayanCi(observacion.ci)}.`);
+          toast.success("Observacion eliminada.");
+        } catch {
+          // Error manejado en el handler
+        }
+      },
+    });
   }
 
   function renderInlineEditForm(ci: string) {
@@ -1318,6 +1501,106 @@ export default function Home() {
     [loginUsername, loginPassword, loadData],
   );
 
+  const requestResetCode = useCallback(async () => {
+    if (resetUsernameOrEmail.trim() === "") {
+      setStatus("Ingresa usuario o email para enviar el codigo.");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await requestPasswordResetHandler(resetUsernameOrEmail.trim(), {
+        onSuccess: () => toast.info("Si el usuario existe, enviamos un codigo al mail."),
+        onError: (message) => setStatus(message),
+      });
+    } finally {
+      setResetLoading(false);
+    }
+  }, [resetUsernameOrEmail]);
+
+  const confirmResetPassword = useCallback(async () => {
+    if (resetUsernameOrEmail.trim() === "" || resetCode.trim() === "" || resetNewPassword.trim() === "") {
+      setStatus("Completa usuario/email, codigo y nueva contraseña.");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await confirmPasswordResetHandler(resetUsernameOrEmail.trim(), resetCode.trim(), resetNewPassword, {
+        onSuccess: () => {
+          toast.success("Contraseña actualizada.");
+          setResetCode("");
+          setResetNewPassword("");
+        },
+        onError: (message) => setStatus(message),
+      });
+    } finally {
+      setResetLoading(false);
+    }
+  }, [resetUsernameOrEmail, resetCode, resetNewPassword]);
+
+  const submitChangePassword = useCallback(async () => {
+    if (changeNewPassword.trim() === "" || changeNewPassword !== changeConfirmPassword) {
+      setStatus("La nueva contraseña no coincide.");
+      return;
+    }
+    if (changeMode === "current" && changeCurrentPassword.trim() === "") {
+      setStatus("Ingresa la contraseña anterior.");
+      return;
+    }
+    if (changeMode === "code" && (changeUsernameOrEmail.trim() === "" || changeCode.trim() === "")) {
+      setStatus("Ingresa usuario/email y el codigo.");
+      return;
+    }
+
+    setChangeLoading(true);
+    try {
+      if (changeMode === "current") {
+        await changePasswordHandler(
+          { currentPassword: changeCurrentPassword, newPassword: changeNewPassword },
+          {
+            onSuccess: () => {
+              toast.success("Contraseña actualizada.");
+              setShowChangePassword(false);
+            },
+            onError: (message) => setStatus(message),
+          },
+        );
+      } else {
+        await confirmPasswordResetHandler(changeUsernameOrEmail.trim(), changeCode.trim(), changeNewPassword, {
+          onSuccess: () => {
+            toast.success("Contraseña actualizada.");
+            setShowChangePassword(false);
+          },
+          onError: (message) => setStatus(message),
+        });
+      }
+    } finally {
+      setChangeLoading(false);
+    }
+  }, [
+    changeMode,
+    changeCurrentPassword,
+    changeNewPassword,
+    changeConfirmPassword,
+    changeUsernameOrEmail,
+    changeCode,
+  ]);
+
+  const sendChangeCode = useCallback(async () => {
+    if (changeUsernameOrEmail.trim() === "") {
+      setStatus("Ingresa usuario o email para enviar el codigo.");
+      return;
+    }
+    setChangeLoading(true);
+    try {
+      await requestPasswordResetHandler(changeUsernameOrEmail.trim(), {
+        onSuccess: () => toast.info("Si el usuario existe, enviamos un codigo al mail."),
+        onError: (message) => setStatus(message),
+      });
+    } finally {
+      setChangeLoading(false);
+    }
+  }, [changeUsernameOrEmail]);
+
   const logout = useCallback(async () => {
     try {
       await logoutHandler({
@@ -1347,9 +1630,10 @@ export default function Home() {
         return;
       }
       try {
-        await createUsuarioHandler(newUsername, newPassword, newRole, {
+        await createUsuarioHandler(newUsername, newEmail, newPassword, newRole, {
           onSuccess: async () => {
             setNewUsername("");
+            setNewEmail("");
             setNewPassword("");
             setNewRole("VIEWER");
             setStatus("Usuario creado.");
@@ -1361,7 +1645,7 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [isAdmin, newUsername, newPassword, newRole, loadData],
+    [isAdmin, newUsername, newEmail, newPassword, newRole, loadData],
   );
 
   const changeUserRole = useCallback(
@@ -1420,22 +1704,21 @@ export default function Home() {
         setStatus("Solo el administrador puede restablecer contraseñas.");
         return;
       }
-      const password = window.prompt(`Nueva contraseña para ${usuario.username} (min 8 caracteres)`, "");
-      if (!password) return;
+      if (!usuario.email) {
+        setStatus("El usuario no tiene email registrado.");
+        return;
+      }
 
       try {
-        await resetUserPasswordHandler(usuario.usuarioId, password, {
-          onSuccess: async () => {
-            setStatus("Contraseña actualizada.");
-            await loadData();
-          },
+        await requestPasswordResetHandler(usuario.email, {
+          onSuccess: () => setStatus("Codigo enviado al mail del usuario."),
           onError: (message) => setStatus(message),
         });
       } catch {
         // Error manejado en el handler
       }
     },
-    [isAdmin, loadData],
+    [isAdmin],
   );
 
   const deleteUsuario = useCallback(
@@ -1716,6 +1999,29 @@ export default function Home() {
           <h1 className="mt-2 text-2xl font-bold text-stone-900">Iniciar sesión</h1>
           <p className="mt-2 text-sm text-stone-600">{status}</p>
 
+          {initMessage && showInitCredentials && initCredentials && (
+            <div className={`mt-4 rounded-lg border px-3 py-2 text-sm ${
+              initMessage.type === "success"
+                ? "border-green-300/70 bg-green-50/80 text-green-900"
+                : "border-blue-300/70 bg-blue-50/80 text-blue-900"
+            }`}>
+              <p className="font-semibold">{initMessage.text}</p>
+              <div className="mt-3 space-y-1 rounded border border-current/20 bg-white/50 p-2 text-xs">
+                <p><strong>Usuario:</strong> <code className="font-mono">{initCredentials.username}</code></p>
+                <p><strong>Contraseña:</strong> <code className="font-mono">{initCredentials.password}</code></p>
+                <p><strong>Email:</strong> <code className="font-mono">{initCredentials.email}</code></p>
+              </div>
+              <p className="mt-2 text-xs italic">Guarda estas credenciales en un lugar seguro.</p>
+              <button
+                type="button"
+                onClick={() => setShowInitCredentials(false)}
+                className="mt-2 w-full rounded px-2 py-1 text-xs font-semibold hover:bg-current/10"
+              >
+                Entendido
+              </button>
+            </div>
+          )}
+
           <form onSubmit={login} className="mt-4 space-y-3">
             <input
               value={loginUsername}
@@ -1738,6 +2044,56 @@ export default function Home() {
               {loading || loginLoading ? "Ingresando..." : "Entrar"}
             </button>
           </form>
+
+          <button
+            type="button"
+            onClick={() => setShowResetForm((prev) => !prev)}
+            className="mt-3 w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-semibold text-stone-700"
+          >
+            {showResetForm ? "Ocultar recuperacion" : "Olvide mi contraseña"}
+          </button>
+
+          {showResetForm ? (
+            <div className="mt-3 space-y-2 rounded-xl border border-stone-200 bg-stone-50/70 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Recuperar contraseña</p>
+              <input
+                value={resetUsernameOrEmail}
+                onChange={(event) => setResetUsernameOrEmail(event.target.value)}
+                placeholder="Usuario o email"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                disabled={resetLoading}
+                onClick={() => void requestResetCode()}
+                className="w-full rounded-lg bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {resetLoading ? "Enviando..." : "Enviar codigo"}
+              </button>
+              <input
+                value={resetCode}
+                onChange={(event) => setResetCode(event.target.value)}
+                placeholder="Codigo (6 digitos)"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+              <input
+                value={resetNewPassword}
+                onChange={(event) => setResetNewPassword(event.target.value)}
+                placeholder="Nueva contraseña"
+                type="password"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                disabled={resetLoading}
+                onClick={() => void confirmResetPassword()}
+                className="w-full rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {resetLoading ? "Procesando..." : "Cambiar contraseña"}
+              </button>
+              <p className="text-[11px] text-stone-500">El codigo vence en 5 minutos.</p>
+            </div>
+          ) : null}
         </section>
       </main>
     );
@@ -1786,6 +2142,16 @@ export default function Home() {
               className="ej-button-muted rounded-xl px-3 py-2 text-sm font-semibold"
             >
               Recargar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setChangeUsernameOrEmail(currentUser?.username ?? "");
+                setShowChangePassword(true);
+              }}
+              className="rounded-xl border border-[#FFCC00]/45 bg-black/35 px-3 py-2 text-sm font-semibold text-white"
+            >
+              Cambiar contraseña
             </button>
             <button
               type="button"
@@ -1961,6 +2327,7 @@ export default function Home() {
           draggedItemId={draggedItemId}
           usuarios={usuarios}
           newUsername={newUsername}
+          newEmail={newEmail}
           newPassword={newPassword}
           newRole={newRole}
           firmaConfig={firmaConfig}
@@ -1997,6 +2364,7 @@ export default function Home() {
           onStartItemDrag={() => {}}
           renderItemCard={renderItemCard}
           onNewUsernameChange={setNewUsername}
+          onNewEmailChange={setNewEmail}
           onNewPasswordChange={setNewPassword}
           onNewRoleChange={setNewRole}
           onCreateUsuario={(event) => void createUsuario(event)}
@@ -2386,6 +2754,13 @@ export default function Home() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => void openPersonalObservacion(persona)}
+                      className="rounded bg-teal-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-teal-800 hover:shadow-md active:scale-95"
+                    >
+                      Observacion
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => void openRegistroViewer(persona)}
                       className="rounded bg-sky-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-sky-800 hover:shadow-md active:scale-95"
                     >
@@ -2394,12 +2769,12 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => {
-                        setActiveView("ficha");
+                        setActiveView("hoja-de-entrega");
                         setFichaViewingCi(persona.ci);
                       }}
                       className="rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white transition-all duration-200 hover:bg-indigo-800 hover:shadow-md active:scale-95"
                     >
-                      Ficha
+                      Hoja de Entrega
                     </button>
                   </div>
                   {tallasOpen ? (
@@ -2445,7 +2820,7 @@ export default function Home() {
                   <th className="w-[16%] px-3 py-2">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
+              <tbody className="divide-y divide-stone-300">
                 {personalFiltradoPaginado.map((persona, index) => {
                   const tallas = tallasMap(persona.tallas);
                   const ciValida = isValidUruguayanCi(persona.ci);
@@ -2454,7 +2829,7 @@ export default function Home() {
                   const isEven = index % 2 === 0;
                   return (
                     <Fragment key={persona.ci}>
-                      <tr className={!ciValida ? "bg-red-50/60" : isEven ? "bg-white" : "bg-stone-50/40"}>
+                      <tr className={!ciValida ? "bg-red-50/60" : isEven ? "bg-white" : "bg-stone-100"}>
                         <td className={`px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-bold text-red-700"}`}>
                           <div>
                             {formatUruguayanCi(persona.ci)}
@@ -2513,6 +2888,13 @@ export default function Home() {
                             </button>
                             <button
                               type="button"
+                              onClick={() => void openPersonalObservacion(persona)}
+                              className="w-full rounded bg-teal-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-teal-800 hover:shadow-md active:scale-95"
+                            >
+                              Observacion
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => void openRegistroViewer(persona)}
                               className="w-full rounded bg-sky-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-sky-800 hover:shadow-md active:scale-95"
                             >
@@ -2521,12 +2903,12 @@ export default function Home() {
                             <button
                               type="button"
                               onClick={() => {
-                                setActiveView("ficha");
+                                setActiveView("hoja-de-entrega");
                                 setFichaViewingCi(persona.ci);
                               }}
-                              className="w-full rounded bg-indigo-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-indigo-800 hover:shadow-md active:scale-95"
-                            >
-                              Ficha
+                              className="col-span-2 w-full rounded bg-indigo-700 px-2 py-1 text-[11px] font-medium leading-tight text-white transition-all duration-200 hover:bg-indigo-800 hover:shadow-md active:scale-95"
+                              >
+                              Hoja de Entrega
                             </button>
                           </div>
                         </td>
@@ -2578,180 +2960,122 @@ export default function Home() {
       ) : null}
 
       {activeView === "hoja_matrix" ? (
-        <section className="ej-card mt-6 rounded-2xl p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-stone-900">Hoja Matriz</h2>
-              <p className="mt-1 text-xs text-stone-600">
-                Vista matricial por personal. Ordenada por bateria, grado y apellido. Totales por item segun registros.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => void loadHojaMatrix()}
-                disabled={hojaMatrixLoading}
-                className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
-              >
-                {hojaMatrixLoading ? "Actualizando..." : "Actualizar Matriz"}
-              </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="rounded bg-indigo-700 px-3 py-2 text-xs font-semibold text-white"
-              >
-                Imprimir / Guardar PDF
-              </button>
-            </div>
-          </div>
-
-          {hojaMatrixError ? (
-            <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{hojaMatrixError}</p>
-          ) : null}
-
-          {hojaMatrixLoading && !hojaMatrixData ? <p className="mt-3 text-sm text-stone-600">Cargando Hoja Matriz...</p> : null}
-
-          {hojaMatrixData ? (
-            <div className="mt-3 space-y-2">
-              <p className="text-xs text-stone-600">{`Generado: ${new Date(hojaMatrixData.generatedAt).toLocaleString("es-UY")}`}</p>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-xs">
-                  <thead className="bg-stone-100 text-[11px] uppercase tracking-wide text-stone-700">
-                    <tr>
-                      <th className="px-2 py-2">Bateria</th>
-                      <th className="px-2 py-2">Grado</th>
-                      <th className="px-2 py-2">Apellidos</th>
-                      <th className="px-2 py-2">Nombres</th>
-                      <th className="px-2 py-2">CI</th>
-                      {hojaMatrixData.items.map((item) => (
-                        <th key={item.itemId} className="px-2 py-2 text-right">
-                          {item.nombre}
-                        </th>
-                      ))}
-                      <th className="px-2 py-2 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100">
-                    {hojaMatrixData.rows.map((row) => (
-                      <tr key={row.ci}>
-                        <td className="whitespace-nowrap px-2 py-2 text-stone-700">{row.bateria ?? "Sin bateria"}</td>
-                        <td className="whitespace-nowrap px-2 py-2 font-semibold text-stone-900">{row.grado}</td>
-                        <td className="whitespace-nowrap px-2 py-2 text-stone-900">{`${row.apellido1} ${row.apellido2 ?? ""}`.replace(/\s+/g, " ").trim()}</td>
-                        <td className="whitespace-nowrap px-2 py-2 text-stone-900">{`${row.nombre1} ${row.nombre2 ?? ""}`.replace(/\s+/g, " ").trim()}</td>
-                        <td className="whitespace-nowrap px-2 py-2 font-mono text-stone-700">{formatUruguayanCi(row.ci)}</td>
-                        {row.totales.map((cantidad, index) => (
-                          <td
-                            key={`${row.ci}-${hojaMatrixData.items[index]?.itemId ?? index}`}
-                            className={`px-2 py-2 text-right font-semibold ${cantidad < 0 ? "text-rose-700" : "text-stone-900"}`}
-                          >
-                            {cantidad}
-                          </td>
-                        ))}
-                        <td className={`px-2 py-2 text-right font-bold ${row.totalGeneral < 0 ? "text-rose-700" : "text-stone-900"}`}>
-                          {row.totalGeneral}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : null}
-        </section>
+        <HojaMatrixView
+          data={hojaMatrixData}
+          loading={hojaMatrixLoading}
+          error={hojaMatrixError}
+          onReload={loadHojaMatrix}
+        />
       ) : null}
 
       {activeView === "tallas_resumen" ? (
-        <section className="mt-6 space-y-4">
-          <article className="ej-card rounded-2xl p-4">
-            <h2 className="text-base font-semibold text-stone-900">Resumen de Tallas por Bateria</h2>
-            <p className="mt-1 text-xs text-stone-600">
-              Conteo de tallas por bateria y tipo de prenda. Incluye el grupo Sin bateria cuando corresponde.
-            </p>
-          </article>
+        <TallasResumenView personal={personal} baterias={baterias} />
+      ) : null}
 
-          <article className="ej-card rounded-2xl p-4">
-            <div className="flex flex-wrap items-end justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold text-stone-900">Matriz completa de tallas por bateria</h3>
-                <p className="mt-1 text-xs text-stone-600">Tabla horizontal con bateria y total fijos para facilitar lectura.</p>
-              </div>
-              <p className="rounded-full border border-stone-300 bg-stone-100 px-2 py-1 text-[11px] font-semibold text-stone-700">
-                Desliza lateralmente para ver todas las prendas
-              </p>
+      {showChangePassword ? (
+        <section className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-3" onClick={() => setShowChangePassword(false)}>
+          <article
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-md rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-stone-900">Cambiar contraseña</h3>
+            <p className="mt-1 text-xs text-stone-600">Usa tu contraseña anterior o un codigo enviado al mail.</p>
+
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setChangeMode("current")}
+                className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                  changeMode === "current"
+                    ? "bg-stone-900 text-white"
+                    : "border border-stone-300 bg-white text-stone-700"
+                }`}
+              >
+                Con contraseña anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => setChangeMode("code")}
+                className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                  changeMode === "code"
+                    ? "bg-stone-900 text-white"
+                    : "border border-stone-300 bg-white text-stone-700"
+                }`}
+              >
+                Con codigo
+              </button>
             </div>
-            <div className="mt-3 max-h-[70vh] overflow-auto rounded-xl border border-stone-200">
-              <table className="min-w-[1280px] border-separate border-spacing-0 text-left text-xs">
-                <thead className="sticky top-0 z-20 bg-stone-100 text-[11px] uppercase tracking-wide text-stone-600">
-                  <tr>
-                    <th className="sticky left-0 z-30 w-[220px] min-w-[220px] border-b border-r border-stone-200 bg-stone-100 px-3 py-2">
-                      Bateria
-                    </th>
-                    <th className="sticky left-[220px] z-30 w-[130px] min-w-[130px] border-b border-r border-stone-200 bg-stone-100 px-3 py-2">
-                      Total personal
-                    </th>
-                    {TALLA_KEYS.map((key) => (
-                      <th key={`matriz-head-${key}`} className="w-[220px] min-w-[220px] border-b border-stone-200 px-3 py-2">
-                        {TALLA_LABELS[key]}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {resumenTallasPorBateria.map((bateria, rowIndex) => (
-                    <tr key={`matriz-row-${bateria.key}`} className={`align-top ${rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}`}>
-                      <td className="sticky left-0 z-10 whitespace-nowrap border-b border-r border-stone-200 bg-inherit px-3 py-3 text-sm font-semibold text-stone-900">
-                        {bateria.nombre}
-                      </td>
-                      <td className="sticky left-[220px] z-10 border-b border-r border-stone-200 bg-inherit px-3 py-3">
-                        <span
-                          className={`inline-flex min-w-[2.5rem] justify-center rounded-full px-2 py-0.5 text-sm font-bold ${
-                            bateria.total > 0 ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-600"
-                          }`}
-                        >
-                          {bateria.total}
-                        </span>
-                      </td>
-                      {TALLA_KEYS.map((key) => {
-                        const talla = bateria.tallas.find((entry) => entry.key === key);
-                        if (!talla || talla.values.length === 0) {
-                          return (
-                            <td key={`matriz-cell-${bateria.key}-${key}`} className="border-b border-stone-200 px-3 py-3">
-                              <span className="inline-flex rounded-md border border-stone-300 bg-stone-100 px-2 py-1 text-[11px] font-medium text-stone-500">
-                                Sin datos
-                              </span>
-                            </td>
-                          );
-                        }
 
-                        const maxCantidad = talla.values.reduce((max, value) => (value.cantidad > max ? value.cantidad : max), 0);
-                        return (
-                          <td key={`matriz-cell-${bateria.key}-${key}`} className="border-b border-stone-200 px-3 py-3">
-                            <div className="flex flex-wrap gap-1.5">
-                              {talla.values.map((value) => {
-                                const isTop = maxCantidad > 0 && value.cantidad === maxCantidad;
-                                return (
-                                  <span
-                                    key={`matriz-chip-${bateria.key}-${key}-${value.talla}`}
-                                    className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold ${
-                                      isTop ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-stone-300 bg-white text-stone-700"
-                                    }`}
-                                  >
-                                    <span>{value.talla}</span>
-                                    <span className="rounded-sm bg-black/5 px-1">{value.cantidad}</span>
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="mt-3 space-y-2">
+              {changeMode === "code" ? (
+                <>
+                  <input
+                    value={changeUsernameOrEmail}
+                    onChange={(event) => setChangeUsernameOrEmail(event.target.value)}
+                    placeholder="Usuario o email"
+                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    disabled={changeLoading}
+                    onClick={() => void sendChangeCode()}
+                    className="w-full rounded-lg bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                  >
+                    {changeLoading ? "Enviando..." : "Enviar codigo"}
+                  </button>
+                  <input
+                    value={changeCode}
+                    onChange={(event) => setChangeCode(event.target.value)}
+                    placeholder="Codigo"
+                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                </>
+              ) : (
+                <input
+                  value={changeCurrentPassword}
+                  onChange={(event) => setChangeCurrentPassword(event.target.value)}
+                  placeholder="Contraseña anterior"
+                  type="password"
+                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              )}
+
+              <input
+                value={changeNewPassword}
+                onChange={(event) => setChangeNewPassword(event.target.value)}
+                placeholder="Nueva contraseña"
+                type="password"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+              <input
+                value={changeConfirmPassword}
+                onChange={(event) => setChangeConfirmPassword(event.target.value)}
+                placeholder="Confirmar contraseña"
+                type="password"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowChangePassword(false)}
+                className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={changeLoading}
+                onClick={() => void submitChangePassword()}
+                className="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {changeLoading ? "Procesando..." : "Guardar"}
+              </button>
             </div>
           </article>
-
         </section>
       ) : null}
 
@@ -3017,8 +3341,163 @@ export default function Home() {
         </section>
       ) : null}
 
-      {activeView === "ficha" && fichaViewingCi ? (
-        <FichaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
+      {personalObservacionDraft ? (
+        <section className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-3">
+          <article className="w-full max-w-2xl rounded-2xl border border-stone-300 bg-white p-4 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-stone-900">
+                  {personalObservacionDraft.observacionId ? "Editar Observacion" : "Registrar Observacion"}
+                </h3>
+                <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(personalObservacionDraft.ci)}`}</p>
+                <p className="text-xs font-medium text-stone-700">{`Personal: ${personalObservacionDraft.nombre}`}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPersonalObservacionDraft(null)}
+                disabled={personalObservacionSaving}
+                className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            {personalObservacionSaving || personalObservacionDraft.loading ? (
+              <p className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800">
+                {personalObservacionSaving ? "Guardando observacion..." : "Cargando observaciones..."}
+              </p>
+            ) : null}
+
+            {personalObservacionDraft.error ? (
+              <p className="mt-2 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800">
+                {personalObservacionDraft.error}
+              </p>
+            ) : null}
+
+            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Observaciones registradas</p>
+                  {personalObservacionDraft.observacionId ? (
+                    <button
+                      type="button"
+                      onClick={resetPersonalObservacionForm}
+                      disabled={personalObservacionSaving}
+                      className="rounded border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Nueva observacion
+                    </button>
+                  ) : null}
+                </div>
+                <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+                  {!personalObservacionDraft.loading && personalObservacionDraft.observaciones.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-4 text-sm text-stone-500">
+                      Sin observaciones registradas.
+                    </div>
+                  ) : null}
+                  {personalObservacionDraft.observaciones.map((observacion) => (
+                    <article key={observacion.observacionId} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold text-stone-700">
+                            {new Date(observacion.fecha).toLocaleDateString("es-UY")}
+                          </p>
+                          <p className="mt-1 whitespace-pre-wrap text-sm text-stone-900">{observacion.texto}</p>
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          <SmallActionButton
+                            text="Editar"
+                            tone="edit"
+                            onClick={() => editPersonalObservacion(observacion)}
+                          />
+                          <SmallActionButton
+                            text="Borrar"
+                            tone="delete"
+                            onClick={() => deletePersonalObservacion(observacion)}
+                          />
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-stone-200 bg-white p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+                    {personalObservacionDraft.observacionId ? "Editar" : "Nueva"} observacion
+                  </p>
+                  {personalObservacionDraft.observacionId ? (
+                    <button
+                      type="button"
+                      onClick={resetPersonalObservacionForm}
+                      disabled={personalObservacionSaving}
+                      className="rounded border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Cancelar edicion
+                    </button>
+                  ) : null}
+                </div>
+
+                <div className="mt-3 space-y-3">
+                  <label className="block text-xs text-stone-700">
+                    Fecha
+                    <input
+                      type="date"
+                      max={maxFechaIngreso}
+                      value={personalObservacionDraft.fecha}
+                      disabled={personalObservacionSaving}
+                      onChange={(event) =>
+                        setPersonalObservacionDraft((prev) => (prev ? { ...prev, fecha: event.target.value } : prev))
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block text-xs text-stone-700">
+                    Observacion
+                    <textarea
+                      rows={7}
+                      value={personalObservacionDraft.texto}
+                      disabled={personalObservacionSaving}
+                      onChange={(event) =>
+                        setPersonalObservacionDraft((prev) => (prev ? { ...prev, texto: event.target.value } : prev))
+                      }
+                      placeholder="Detalle asociado a la persona"
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+
+                <div className="mt-3 flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPersonalObservacionDraft(null)}
+                    disabled={personalObservacionSaving}
+                    className="rounded border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void savePersonalObservacion()}
+                    disabled={personalObservacionSaving}
+                    className="rounded bg-teal-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {personalObservacionSaving
+                      ? "Guardando..."
+                      : personalObservacionDraft.observacionId
+                        ? "Guardar cambios"
+                        : "Guardar observacion"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
+      {activeView === "hoja-de-entrega" && fichaViewingCi ? (
+        <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
       ) : null}
 
       {loading ? <p className="mt-4 text-xs text-stone-600">Actualizando informacion...</p> : null}

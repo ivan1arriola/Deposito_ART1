@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { LEGACY_CIRR_BATTERY_NAMES } from "@/lib/cirr-classification";
 
 type BateriaPayload = {
   nombre: string;
@@ -18,6 +19,11 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const baterias = await prisma.bateria.findMany({
+    where: {
+      nombre: {
+        notIn: [...LEGACY_CIRR_BATTERY_NAMES],
+      },
+    },
     orderBy: { nombre: "asc" },
   });
 
@@ -35,6 +41,10 @@ export async function POST(req: Request) {
 
   if (!isValidPayload(body)) {
     return NextResponse.json({ error: "Payload invalido. 'nombre' es obligatorio." }, { status: 400 });
+  }
+
+  if (LEGACY_CIRR_BATTERY_NAMES.includes(body.nombre.trim() as (typeof LEGACY_CIRR_BATTERY_NAMES)[number])) {
+    return NextResponse.json({ error: "Esa categoria corresponde a un grado, no a una bateria." }, { status: 400 });
   }
 
   try {

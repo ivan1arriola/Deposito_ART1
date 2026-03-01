@@ -4,7 +4,7 @@ GRANT ALL ON SCHEMA public TO CURRENT_USER;
 GRANT USAGE ON SCHEMA public TO PUBLIC;
 
 CREATE TYPE "tipo_registro" AS ENUM ('ENTREGA', 'DEVOLUCION', 'AJUSTE');
-CREATE TYPE "user_role" AS ENUM ('ADMIN', 'EDITOR', 'VIEWER');
+CREATE TYPE "user_role" AS ENUM ('ADMIN', 'EDITOR');
 
 CREATE OR REPLACE FUNCTION public.es_ci_uruguaya_valida(ci_text TEXT)
 RETURNS BOOLEAN
@@ -51,7 +51,9 @@ INSERT INTO "grado" ("abreviacion", "nombre_completo") VALUES
 ('Sgto', 'Sargento'),
 (U&'Cabo 1\00B0', 'Cabo Primero'),
 (U&'Cabo 2\00B0', 'Cabo Segundo'),
-(U&'Sdo 1\00B0', 'Soldado Primero');
+(U&'Sdo 1\00B0', 'Soldado Primero'),
+(U&'Sdo 1\00B0 C/CIRR', 'Soldado Primero Cursando CIRR'),
+(U&'Sdo 1\00B0 S/CIRR', 'Soldado Primero Sin CIRR');
 
 CREATE TABLE "bateria" (
   "bateria_id" SMALLSERIAL PRIMARY KEY,
@@ -61,9 +63,7 @@ CREATE TABLE "bateria" (
 INSERT INTO "bateria" ("nombre") VALUES
 ('Cdo. y Serv.'),
 ('Ba. Obus. "A"'),
-('Ba. Obus. "B"'),
-('S/ CIRR'),
-('Cursando CIRR');
+('Ba. Obus. "B"');
 
 CREATE TABLE "talla_tipo" (
   "talla_tipo_id" SMALLSERIAL PRIMARY KEY,
@@ -146,12 +146,25 @@ CREATE INDEX "observacion_ci_fecha_idx" ON "observacion"("ci", "fecha" DESC);
 CREATE TABLE "usuario" (
   "usuario_id" TEXT PRIMARY KEY,
   "username" TEXT NOT NULL UNIQUE,
+  "email" TEXT NOT NULL,
   "password_hash" TEXT NOT NULL,
-  "rol" "user_role" NOT NULL DEFAULT 'VIEWER',
+  "rol" "user_role" NOT NULL DEFAULT 'EDITOR',
   "activo" BOOLEAN NOT NULL DEFAULT TRUE,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
 );
+
+CREATE TABLE "password_reset" (
+  "reset_id" TEXT PRIMARY KEY,
+  "usuario_id" TEXT NOT NULL REFERENCES "usuario"("usuario_id") ON DELETE CASCADE,
+  "code_hash" TEXT NOT NULL,
+  "expires_at" TIMESTAMPTZ(6) NOT NULL,
+  "used_at" TIMESTAMPTZ(6),
+  "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
+);
+
+CREATE INDEX "password_reset_usuario_id_idx" ON "password_reset"("usuario_id");
+CREATE INDEX "password_reset_expires_at_idx" ON "password_reset"("expires_at");
 
 CREATE TABLE "sesion" (
   "sesion_id" TEXT PRIMARY KEY,

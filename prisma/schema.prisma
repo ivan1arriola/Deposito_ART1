@@ -18,23 +18,38 @@ enum TipoRegistro {
 enum UserRole {
   ADMIN
   EDITOR
-  VIEWER
 
   @@map("user_role")
 }
 
 model Usuario {
-  usuarioId    String      @id @default(cuid()) @map("usuario_id")
-  username     String      @unique
-  passwordHash String      @map("password_hash")
-  rol          UserRole    @default(VIEWER)
-  activo       Boolean     @default(true)
-  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  usuarioId    String              @id @default(cuid()) @map("usuario_id")
+  username     String              @unique
+  email        String              @map("email")
+  passwordHash String              @map("password_hash")
+  rol          UserRole            @default(EDITOR)
+  activo       Boolean             @default(true)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   sesiones     Sesion[]
   auditorias   Auditoria[]
+  resetCodes   PasswordResetCode[]
 
   @@map("usuario")
+}
+
+model PasswordResetCode {
+  resetId   String   @id @default(cuid()) @map("reset_id")
+  usuarioId String   @map("usuario_id")
+  codeHash  String   @map("code_hash")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  usuario   Usuario  @relation(fields: [usuarioId], references: [usuarioId], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([expiresAt])
+  @@map("password_reset")
 }
 
 model Sesion {

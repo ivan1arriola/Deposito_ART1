@@ -3,7 +3,6 @@
  */
 
 import { api } from "@/lib/api";
-import type { PersonalForm } from "@/types/forms";
 
 interface CallbackProps {
   onSuccess?: (data?: unknown) => void;
@@ -56,6 +55,79 @@ export async function deletePersonalHandler(
     callbacks.onSuccess?.();
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo eliminar el personal.";
+    callbacks.onError?.(message);
+    throw error;
+  }
+}
+
+export async function createPersonalObservacionHandler(
+  ci: string,
+  payload: unknown,
+  callbacks: CallbackProps
+) {
+  try {
+    const data = await api(`/api/personal/${encodeURIComponent(ci)}/observaciones`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    callbacks.onSuccess?.(data);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo registrar la observacion.";
+    callbacks.onError?.(message);
+    throw error;
+  }
+}
+
+export async function loadPersonalObservacionesHandler(
+  ci: string,
+  callbacks: CallbackProps
+) {
+  try {
+    const data = await api(`/api/personal/${encodeURIComponent(ci)}/observaciones`);
+    callbacks.onSuccess?.(data);
+    return data;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudieron cargar las observaciones.";
+    callbacks.onError?.(message);
+    throw error;
+  }
+}
+
+export async function updatePersonalObservacionHandler(
+  ci: string,
+  observacionId: string,
+  payload: unknown,
+  callbacks: CallbackProps
+) {
+  try {
+    const data = await api(`/api/personal/${encodeURIComponent(ci)}/observaciones/${encodeURIComponent(observacionId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    callbacks.onSuccess?.(data);
+    return data;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo actualizar la observacion.";
+    callbacks.onError?.(message);
+    throw error;
+  }
+}
+
+export async function deletePersonalObservacionHandler(
+  ci: string,
+  observacionId: string,
+  callbacks: CallbackProps
+) {
+  try {
+    const data = await api(`/api/personal/${encodeURIComponent(ci)}/observaciones/${encodeURIComponent(observacionId)}`, {
+      method: "DELETE",
+    });
+    callbacks.onSuccess?.(data);
+    return data;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo eliminar la observacion.";
     callbacks.onError?.(message);
     throw error;
   }

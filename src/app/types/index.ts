@@ -42,7 +42,7 @@ export type ItemForm = {
 };
 
 // Tipos de autenticación y permisos
-export type Role = "ADMIN" | "EDITOR" | "VIEWER";
+export type Role = "ADMIN" | "EDITOR";
 
 export type CurrentUser = {
   usuarioId: string;

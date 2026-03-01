@@ -12,6 +12,7 @@ interface CallbackProps {
 
 export async function createUsuarioHandler(
   username: string,
+  email: string,
   password: string,
   rol: Role,
   callbacks: CallbackProps
@@ -20,7 +21,7 @@ export async function createUsuarioHandler(
     await api("/api/usuarios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, rol, activo: true }),
+      body: JSON.stringify({ username, email, password, rol, activo: true }),
     });
     callbacks.onSuccess?.();
   } catch (error) {

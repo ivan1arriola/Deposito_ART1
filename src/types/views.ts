@@ -4,7 +4,7 @@
 
 import type { Role } from "./entities";
 
-export type MainView = "personal" | "hoja_matrix" | "tallas_resumen" | "grados" | "baterias" | "items" | "admin" | "ficha";
+export type MainView = "personal" | "hoja_matrix" | "tallas_resumen" | "grados" | "baterias" | "items" | "admin" | "hoja-de-entrega";
 
 export type RegistroTipo = "ENTREGA" | "DEVOLUCION";
 
@@ -55,6 +55,7 @@ export type HojaMatrixRow = {
   nombre2: string | null;
   bateria: string | null;
   grado: string;
+  gradoAbreviacion: string;
   totales: number[];
   totalGeneral: number;
 };

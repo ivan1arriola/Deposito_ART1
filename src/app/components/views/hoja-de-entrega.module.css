@@ -1,0 +1,641 @@
+/* ficha.module.css - Optimizado para PDF A4 */
+
+/* ===== VARIABLES ===== */
+:root {
+  --color-primary: #1f6728;
+  --color-primary-dark: #185321;
+  --color-secondary: #003885;
+  --color-secondary-dark: #002a63;
+  --color-background: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-border: #000000;
+  --color-header-bg: #e5e7eb;
+  --color-total-bg: #f3f4f6;
+  --color-text: #000000;
+  --color-text-light: #6b7280;
+  --font-family-mono: "Courier New", "Liberation Mono", monospace;
+}
+
+/* ===== LAYOUT PRINCIPAL ===== */
+.page {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* ===== BARRA DE HERRAMIENTAS ===== */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-bottom: 2px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Estilos para botones */
+.button,
+.buttonSecondary {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.button:disabled,
+.buttonSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button:hover:not(:disabled),
+.buttonSecondary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.button:active:not(:disabled),
+.buttonSecondary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.button:focus-visible,
+.buttonSecondary:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 2px;
+}
+
+.button {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+.button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+}
+
+.button:active:not(:disabled) {
+  background: #166534;
+}
+
+.buttonSecondary {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+}
+
+.buttonSecondary:active:not(:disabled) {
+  background: #334155;
+}
+
+/* ===== ESTADO DE CARGA ===== */
+.statusLine {
+  padding: 0.75rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-light);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* ===== HOJA DE LA FICHA ===== */
+.sheet {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 2px auto;
+  padding: 4mm 8mm 4mm 8mm;
+  background: var(--color-surface);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 3mm;
+}
+
+.frame {
+  background: var(--color-surface);
+  padding: 3mm;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+/* ===== TABLA PRINCIPAL ===== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-family-mono);
+  font-size: 9px;
+  line-height: 1.2;
+  page-break-inside: avoid;
+  border: 2px solid var(--color-border);
+  background: white;
+  table-layout: fixed;
+}
+
+.table th,
+.table td {
+  border: 0.8px solid var(--color-border);
+  padding: 2px 3px;
+  vertical-align: middle;
+  text-align: center;
+  font-size: 7.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemColumn {
+  width: 26%;
+}
+
+/* Columnas de datos (6 entregas + T + 6 devoluciones + T = 14 columnas) */
+.dataColumn {
+  width: 5.2857%;
+}
+
+.table th {
+  background: #e8e8e8;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Encabezados principales con colspan */
+.table td[colspan] {
+  padding: 4px 6px;
+}
+
+/* Encabezados de secciones VESTUARIO/DISTRIBUCIÓN/ENTREGA */
+.table tr td.bold[rowspan],
+.table tr td.center.bold {
+  background: #d4d4d4;
+  font-weight: bold;
+  padding: 5px 4px;
+  font-size: 8.5px;
+}
+
+/* Fila antes de la tabla de vestuario */
+.table tr:has(td[rowspan]) {
+  border-top: 2px solid #000;
+}
+
+/* Encabezados del documento */
+.table td[colspan="15"].center.bold {
+  background: #f8f8f8;
+  font-size: 9px;
+  padding: 5px 6px;
+  font-weight: bold;
+}
+
+/* Fila de datos personales */
+.table td[colspan="15"].left.bold {
+  background: #fafafa;
+  padding: 4px 8px;
+  border-top: 2px solid #000;
+  border-bottom: 1px solid #666;
+}
+
+.headerInfoTop td {
+  border-top: 2px solid #000;
+}
+
+.headerInfoBottom td {
+  border-bottom: 1px solid #666;
+}
+
+.headerInfoCell {
+  background: #fff;
+  padding: 4px 8px !important;
+  text-align: left !important;
+}
+
+.headerInfoCellCompact {
+  padding: 3px 6px !important;
+}
+
+.headerInfoLabel {
+  font-weight: 700;
+}
+
+.legacyHeaderRow {
+  display: none;
+}
+
+.infoGridShell {
+  padding: 0 !important;
+  background: #fff;
+}
+
+.infoGridShellTop {
+  border-top: 2px solid #000;
+}
+
+.infoGridShellBottom {
+  border-bottom: 1px solid #666;
+}
+
+.infoGrid {
+  display: grid;
+  width: 100%;
+}
+
+.infoGrid3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.infoGrid4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.infoGrid5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.infoGridItem {
+  min-width: 0;
+  padding: 4px 10px;
+  text-align: left;
+  background: #fff;
+  border-right: 0.8px solid var(--color-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.infoGridItemCompact {
+  padding: 3px 8px;
+}
+
+.infoGridItem:last-child {
+  border-right: none;
+}
+
+/* ===== UTILIDADES ===== */
+.center {
+  text-align: center !important;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.small {
+  font-size: 8px;
+}
+
+.left {
+  text-align: left !important;
+}
+
+.personalInfoRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: center;
+}
+
+.personalInfoItem {
+  white-space: nowrap;
+}
+
+.dateRow td {
+  background: #e3e3e3;
+}
+
+.dateLabel {
+  background: #e3e3e3;
+  font-weight: 700;
+  text-align: center;
+  font-size: 7px;
+  padding: 2px;
+}
+
+.itemRow td {
+  background: #fff;
+  text-align: center;
+}
+
+.itemRow td:first-child {
+  background: #fff;
+  text-align: left;
+  padding-left: 6px;
+  font-size: 7px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Columnas de totales */
+.itemRow td.bold {
+  background: #dcdcdc;
+  font-weight: bold;
+}
+
+/* Años en encabezado */
+.table td.bold[style*="font-size"] {
+  background: #e8e8e8;
+}
+
+.itemCell {
+  text-align: left;
+  padding-left: 2px;
+  width: auto;
+  max-width: 140px;
+  word-wrap: break-word;
+}
+
+.tCol {
+  background: #d7d7d7;
+  font-weight: bold;
+  text-align: center;
+  width: 32px;
+  padding: 3px 4px;
+}
+
+.vestuarioHeaderCell {
+  background: var(--color-header-bg);
+  padding: 0 !important;
+}
+
+.vestuarioHeaderStack {
+  display: grid;
+  grid-template-rows: 1.8fr 1fr 1fr 1fr;
+  min-height: 72px;
+}
+
+.vestuarioMainLabel,
+.vestuarioDateMarker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.vestuarioMainLabel {
+  padding: 4px;
+  font-size: 8.5px;
+}
+
+.vestuarioDateMarker {
+  border-top: 0.8px solid var(--color-border);
+  background: #e0e0e0;
+  font-size: 6.8px;
+  letter-spacing: 0.4px;
+}
+
+.verticalDivider {
+  border-left: 1px solid var(--color-border) !important;
+}
+
+/* ===== OBSERVACIONES ===== */
+/* Sección de observaciones */
+.observacionesCell {
+  text-align: left;
+  padding: 4px 6px;
+  background: #fafafa;
+  vertical-align: top;
+}
+
+.observacionesCell > div:first-child {
+  font-weight: bold;
+  font-size: 8px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 2px;
+}
+
+.observacionesCell > div:not(:first-child) {
+  font-size: 8px;
+  margin-bottom: 3px;
+  padding-left: 4px;
+  line-height: 1.4;
+}
+
+.obsLine {
+  text-align: left;
+  padding: 2px 2px;
+  min-height: 100px;
+  vertical-align: top;
+  font-size: 8px;
+  line-height: 1.3;
+}
+
+/* ===== SECCIÓN DE FIRMAS ===== */
+.firmaSection {
+  margin-top: 0;
+  padding: 0 1mm;
+  display: flex;
+  flex-direction: column;
+  gap: 4.5mm;
+  page-break-inside: avoid;
+}
+
+.firmaBlock {
+  font-size: 8px;
+  font-family: var(--font-family-mono);
+  page-break-inside: avoid;
+  line-height: 1.25;
+}
+
+.firmaLevel0 {
+  margin-left: 0;
+}
+
+.firmaLevel1 {
+  margin-left: 8mm;
+}
+
+.firmaLevel2 {
+  margin-left: 16mm;
+}
+
+.firmaTitle {
+  margin-bottom: 1px;
+}
+
+.firmaRole {
+  font-weight: bold;
+}
+
+.firmaName {
+  font-size: 8px;
+}
+
+.firmaInlineRow {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 12mm;
+  align-items: baseline;
+}
+
+.firmaInlineName {
+  min-width: 0;
+}
+
+.firmaInlineRow .firmaLevel1,
+.firmaInlineRow .firmaLevel2 {
+  margin-left: 0;
+}
+
+
+/* ===== ESTILOS DE IMPRESIÓN Y PDF ===== */
+@media screen {
+  .sheet {
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .frame {
+    background: var(--color-surface);
+    border-radius: 2px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .toolbar,
+  .statusLine {
+    display: none !important;
+  }
+
+  .page {
+    background: var(--color-surface);
+    margin: 0;
+    padding: 0;
+  }
+
+  .sheet {
+    margin: 0;
+    padding: 4mm 8mm 4mm 8mm;
+    max-width: none;
+    width: 210mm;
+    min-height: 297mm;
+    box-shadow: none;
+    border: none;
+  }
+
+  .frame {
+    padding: 5mm;
+    box-shadow: none;
+    border-radius: 0;
+    page-break-inside: avoid;
+  }
+
+  .table {
+    page-break-inside: avoid;
+    width: 100%;
+    font-size: 7.5px;
+    table-layout: fixed;
+  }
+
+  .table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  .table th,
+  .table td {
+    border-color: var(--color-border) !important;
+    border-width: 0.8px !important;
+    page-break-inside: avoid;
+    padding: 2px 3px;
+  }
+
+  .sign,
+  .firmaSection {
+    margin-top: 3mm;
+    padding: 0;
+    gap: 4mm;
+  }
+
+  .signBlock,
+  .firmaBlock {
+    page-break-inside: avoid;
+  }
+}
+
+/* ===== RESPONSIVIDAD PARA PANTALLA ===== */
+@media (max-width: 1024px) {
+  .table {
+    font-size: 8px;
+  }
+
+  .sheet {
+    max-width: 100%;
+    padding: 0 8px;
+    margin: 8px auto;
+  }
+
+  .frame {
+    padding: 8px;
+  }
+
+  .obsLine {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .button,
+  .buttonSecondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sheet {
+    padding: 4px;
+    margin: 8px auto;
+  }
+
+  .frame {
+    padding: 8px;
+    overflow-x: auto;
+  }
+
+  .table {
+    font-size: 8px;
+    min-width: 600px;
+  }
+
+  .obsLine {
+    min-height: 35px;
+  }
+}
+
+/* ===== ACCESIBILIDAD ===== */
+@media (prefers-reduced-motion: reduce) {
+  .buttonBase {
+    transition: none;
+  }
+}

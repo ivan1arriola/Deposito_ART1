@@ -5,7 +5,6 @@ import type { PersonalForm } from "@/types/forms";
 const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Administrador",
   EDITOR: "Editor",
-  VIEWER: "Lector",
 };
 
 /**

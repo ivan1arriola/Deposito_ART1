@@ -8,7 +8,6 @@ import { TALLA_KEYS, TALLA_LABELS } from "./tallas";
 const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Administrador",
   EDITOR: "Editor",
-  VIEWER: "Lector",
 };
 
 /**

@@ -28,7 +28,7 @@ describe("Handlers de Usuarios", () => {
       const onSuccess = vi.fn();
       vi.mocked(api).mockResolvedValue({ usuarioId: "USR123" });
 
-      await createUsuarioHandler("newuser", "password123", "EDITOR", {
+      await createUsuarioHandler("newuser", "newuser@mail.local", "password123", "EDITOR", {
         onSuccess,
       });
 
@@ -38,6 +38,7 @@ describe("Handlers de Usuarios", () => {
           method: "POST",
           body: JSON.stringify({
             username: "newuser",
+            email: "newuser@mail.local",
             password: "password123",
             rol: "EDITOR",
             activo: true,
@@ -54,7 +55,7 @@ describe("Handlers de Usuarios", () => {
       );
 
       try {
-        await createUsuarioHandler("newuser", "short", "EDITOR", { onError });
+        await createUsuarioHandler("newuser", "newuser@mail.local", "short", "EDITOR", { onError });
       } catch {
         // Error esperado
       }
@@ -87,7 +88,7 @@ describe("Handlers de Usuarios", () => {
       );
 
       try {
-        await changeUserRoleHandler("ADMIN_USER", "VIEWER", { onError });
+        await changeUserRoleHandler("ADMIN_USER", "EDITOR", { onError });
       } catch {
         // Error esperado
       }

@@ -17,7 +17,7 @@ const DEFAULT_FIRMA_CONFIG: FirmaConfig = {
 };
 
 export const TEXTO_ENCARGADO = 'El Encargado del Deposito General del Grp. "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1.';
-export const TEXTO_OFICIAL = 'El Oficial de Administracion del Grp."Brig. "Gral. Manuel Oribe" de Artilleria 105mm No. 1.';
+export const TEXTO_OFICIAL = 'El Oficial de Administracion del Grp. "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1.';
 
 type FirmaRow = {
   encargado_rango: string;
@@ -92,4 +92,3 @@ export async function updateFirmaConfig(input: {
 
   return fromRow(rows[0]);
 }
-
