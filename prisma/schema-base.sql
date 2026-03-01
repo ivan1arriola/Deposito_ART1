@@ -173,7 +173,7 @@ INSERT INTO "config_firma" (
   1,
   'Sgto.',
   'Wilson Lara',
-  U&'-Tte.2\00BA',
+  'Tte.2',
   'Gerardo Otero'
 );
 
