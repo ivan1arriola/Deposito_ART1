@@ -29,14 +29,17 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
 
   .page {
     width: 210mm;
+    height: 297mm;
     min-height: 297mm;
-    padding: 4mm 8mm 4mm 8mm;
+    padding: 3.5mm 6mm 3.5mm 6mm;
     background: white;
     margin: 0 auto;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 3mm;
+    gap: 2mm;
+    page-break-inside: avoid;
+    break-inside: avoid-page;
   }
 
   .page + .page {
@@ -50,6 +53,8 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     margin: 0;
     background: white;
     table-layout: fixed;
+    page-break-inside: avoid;
+    break-inside: avoid-page;
   }
 
   th, td {
@@ -59,8 +64,9 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     vertical-align: middle;
     font-size: 7.5px;
     line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
   }
 
   th {
@@ -124,6 +130,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
 
   .header-info-label {
     font-weight: bold;
+    white-space: nowrap;
   }
 
   .info-grid-shell {
@@ -145,15 +152,15 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
   }
 
   .info-grid-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.05fr) minmax(0, 1.05fr);
   }
 
   .info-grid-4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr);
   }
 
   .info-grid-5 {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
   }
 
   .info-grid-item {
@@ -162,9 +169,15 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     text-align: left;
     background: #fff;
     border-right: 0.8px solid #000;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 3px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.25;
+    overflow-wrap: break-word;
   }
 
   .info-grid-item-compact {
@@ -189,7 +202,9 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     padding-left: 6px;
     font-weight: 500;
     font-size: 7px;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: break-word;
+    line-height: 1.15;
   }
 
   .item-row td.bold {
@@ -220,15 +235,21 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
   .firma-section {
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
+    justify-content: space-between;
     margin-top: 0;
     padding: 0 1mm;
-    gap: 4.5mm;
+    gap: 2mm;
+    page-break-inside: avoid;
+    break-inside: avoid-page;
   }
 
   .firma-block {
     font-size: 8px;
     font-family: "Courier New", monospace;
     line-height: 1.25;
+    page-break-inside: avoid;
+    break-inside: avoid-page;
   }
 
   .firma-level-0 {
@@ -277,7 +298,9 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
 
     .page {
       margin: 0;
-      padding: 4mm 8mm 4mm 8mm;
+      height: 297mm;
+      min-height: 297mm;
+      padding: 3.5mm 6mm 3.5mm 6mm;
       page-break-after: avoid;
     }
 
@@ -309,6 +332,7 @@ export function HojaEntregaPrintSheet({
   const ciFormateado = formatUruguayanCi(data.persona.ci);
   const ciWarningPrefix = isValidUruguayanCi(data.persona.ci) ? "" : "\u26a0 ";
   const firmaAlistadoNombre = [data.persona.nombre1, data.persona.apellido1].filter(Boolean).join(" ").trim();
+  const bottomInfoGridClassName = data.persona.esReingreso ? "info-grid info-grid-5" : "info-grid info-grid-4";
 
   return (
     <div className="page">
@@ -369,7 +393,7 @@ export function HojaEntregaPrintSheet({
           </tr>
           <tr>
             <td colSpan={15} className="info-grid-shell info-grid-shell-bottom">
-              <div className="info-grid info-grid-5">
+              <div className={bottomInfoGridClassName}>
                 <div className="info-grid-item info-grid-item-compact">
                   <span className="header-info-label">C.I:</span> {ciWarningPrefix}
                   {ciFormateado}
@@ -385,12 +409,14 @@ export function HojaEntregaPrintSheet({
                     ? `${getHojaEntregaDatePart(data.persona.fechaIngreso, "day")}/${getHojaEntregaDatePart(data.persona.fechaIngreso, "month")}/${getHojaEntregaDatePart(data.persona.fechaIngreso, "year")}`
                     : "-"}
                 </div>
-                <div className="info-grid-item info-grid-item-compact">
-                  <span className="header-info-label">{data.persona.esReingreso ? "Fecha ingreso:" : ""}</span>{" "}
-                  {data.persona.esReingreso && data.persona.fechaIngresoOriginal
-                    ? `${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "day")}/${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "month")}/${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "year")}`
-                    : ""}
-                </div>
+                {data.persona.esReingreso ? (
+                  <div className="info-grid-item info-grid-item-compact">
+                    <span className="header-info-label">Fecha ingreso:</span>
+                    {data.persona.fechaIngresoOriginal
+                      ? `${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "day")}/${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "month")}/${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "year")}`
+                      : "-"}
+                  </div>
+                ) : null}
                 <div className="info-grid-item info-grid-item-compact">
                   <span className="header-info-label">Fecha de impresion:</span> {fechaImpresion}
                 </div>

@@ -65,9 +65,6 @@ export function DashboardHero({
               {loading ? "Sincronizando datos" : "Panel en servicio"}
             </span>
             <h1 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl xl:text-6xl">Deposito General</h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-white/78">
-              Gestion de personal, stock y movimientos con una interfaz mas comoda para uso en PC y celular.
-            </p>
           </div>
 
           <div className="order-2 flex flex-col gap-3 xl:order-3">

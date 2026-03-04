@@ -121,14 +121,17 @@
 /* ===== HOJA DE LA FICHA ===== */
 .sheet {
   width: 210mm;
+  height: 297mm;
   min-height: 297mm;
   margin: 2px auto;
-  padding: 4mm 8mm 4mm 8mm;
+  padding: 3.5mm 6mm 3.5mm 6mm;
   background: var(--color-surface);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 3mm;
+  gap: 2mm;
+  page-break-inside: avoid;
+  break-inside: avoid-page;
 }
 
 .frame {
@@ -146,6 +149,7 @@
   font-size: 9px;
   line-height: 1.2;
   page-break-inside: avoid;
+  break-inside: avoid-page;
   border: 2px solid var(--color-border);
   background: white;
   table-layout: fixed;
@@ -158,8 +162,9 @@
   vertical-align: middle;
   text-align: center;
   font-size: 7.5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .itemColumn {
@@ -232,6 +237,7 @@
 
 .headerInfoLabel {
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .legacyHeaderRow {
@@ -257,15 +263,15 @@
 }
 
 .infoGrid3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.05fr) minmax(0, 1.05fr);
 }
 
 .infoGrid4 {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr);
 }
 
 .infoGrid5 {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
 }
 
 .infoGridItem {
@@ -274,9 +280,15 @@
   text-align: left;
   background: #fff;
   border-right: 0.8px solid var(--color-border);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.25;
+  overflow-wrap: break-word;
 }
 
 .infoGridItemCompact {
@@ -338,7 +350,9 @@
   padding-left: 6px;
   font-size: 7px;
   font-weight: 500;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.15;
 }
 
 /* Columnas de totales */
@@ -440,11 +454,14 @@
 /* ===== SECCIÓN DE FIRMAS ===== */
 .firmaSection {
   margin-top: 0;
+  flex: 1 1 auto;
   padding: 0 1mm;
   display: flex;
   flex-direction: column;
-  gap: 4.5mm;
+  justify-content: space-between;
+  gap: 2mm;
   page-break-inside: avoid;
+  break-inside: avoid-page;
 }
 
 .firmaBlock {
@@ -452,6 +469,7 @@
   font-family: var(--font-family-mono);
   page-break-inside: avoid;
   line-height: 1.25;
+  break-inside: avoid-page;
 }
 
 .firmaLevel0 {
@@ -532,7 +550,8 @@
 
   .sheet {
     margin: 0;
-    padding: 4mm 8mm 4mm 8mm;
+    height: 297mm;
+    padding: 3.5mm 6mm 3.5mm 6mm;
     max-width: none;
     width: 210mm;
     min-height: 297mm;
@@ -568,9 +587,9 @@
 
   .sign,
   .firmaSection {
-    margin-top: 3mm;
+    margin-top: 0;
     padding: 0;
-    gap: 4mm;
+    gap: 2mm;
   }
 
   .signBlock,

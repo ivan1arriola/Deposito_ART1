@@ -151,6 +151,8 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
   const ciValida = isValidUruguayanCi(ci);
   const ciWarningPrefix = ciValida ? "" : "\u26a0 ";
   const firmaAlistadoNombre = data ? [data.persona.nombre1, data.persona.apellido1].filter(Boolean).join(" ").trim() : "";
+  const bottomInfoGridClassName =
+    data && data.persona.esReingreso ? `${styles.infoGrid} ${styles.infoGrid5}` : `${styles.infoGrid} ${styles.infoGrid4}`;
 
   return (
     <main className={styles.page}>
@@ -232,7 +234,7 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
               </tr>
               <tr>
                 <td colSpan={15} className={`${styles.infoGridShell} ${styles.infoGridShellBottom}`}>
-                  <div className={`${styles.infoGrid} ${styles.infoGrid5}`}>
+                  <div className={bottomInfoGridClassName}>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
                       <span className={styles.headerInfoLabel}>C.I:</span> {ciWarningPrefix}
                       {formatUruguayanCi(data.persona.ci)}
@@ -246,12 +248,14 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
                         ? `${getDatePart(data.persona.fechaIngreso, "day")}/${getDatePart(data.persona.fechaIngreso, "month")}/${getDatePart(data.persona.fechaIngreso, "year")}`
                         : "-"}
                     </div>
-                    <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>{data.persona.esReingreso ? "Fecha ingreso:" : ""}</span>{" "}
-                      {data.persona.esReingreso && data.persona.fechaIngresoOriginal
-                        ? `${getDatePart(data.persona.fechaIngresoOriginal, "day")}/${getDatePart(data.persona.fechaIngresoOriginal, "month")}/${getDatePart(data.persona.fechaIngresoOriginal, "year")}`
-                        : ""}
-                    </div>
+                    {data.persona.esReingreso ? (
+                      <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
+                        <span className={styles.headerInfoLabel}>Fecha ingreso:</span>
+                        {data.persona.fechaIngresoOriginal
+                          ? `${getDatePart(data.persona.fechaIngresoOriginal, "day")}/${getDatePart(data.persona.fechaIngresoOriginal, "month")}/${getDatePart(data.persona.fechaIngresoOriginal, "year")}`
+                          : "-"}
+                      </div>
+                    ) : null}
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
                       <span className={styles.headerInfoLabel}>Fecha de impresion:</span> {fechaImpresion}
                     </div>
