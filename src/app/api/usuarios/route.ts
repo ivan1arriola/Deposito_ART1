@@ -3,6 +3,7 @@ import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 
 type UsuarioPayload = {
   grado: string;
@@ -33,6 +34,14 @@ function roleFromValue(value: unknown): UserRole {
   return "EDITOR";
 }
 
+function serializeUsuario<T extends { createdAt: Date; updatedAt: Date }>(usuario: T) {
+  return {
+    ...usuario,
+    createdAt: formatDateTimeForDisplay(usuario.createdAt),
+    updatedAt: formatDateTimeForDisplay(usuario.updatedAt),
+  };
+}
+
 export async function GET(request: Request) {
   const auth = await authorizeRequest(request, "manage_users");
   if (!auth.ok) return auth.response;
@@ -53,7 +62,7 @@ export async function GET(request: Request) {
     },
   });
 
-  return NextResponse.json(usuarios);
+  return NextResponse.json(usuarios.map(serializeUsuario));
 }
 
 export async function POST(request: Request) {
@@ -112,7 +121,7 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(created, { status: 201 });
+    return NextResponse.json(serializeUsuario(created), { status: 201 });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
       return NextResponse.json({ error: "El usuario ya existe." }, { status: 409 });

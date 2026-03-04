@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { EquipoResumenData } from "@/types/views";
 
 type EquipoResumenViewProps = {
@@ -125,7 +126,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
             </table>
           </div>
 
-          <p className="mt-3 text-xs text-stone-500">{`Generado: ${new Date(data.generatedAt).toLocaleString("es-UY")}`}</p>
+          <p className="mt-3 text-xs text-stone-500">{`Generado: ${formatDateTimeForDisplay(data.generatedAt)}`}</p>
         </article>
       ) : null}
     </section>

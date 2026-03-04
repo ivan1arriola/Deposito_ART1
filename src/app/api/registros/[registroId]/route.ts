@@ -3,6 +3,13 @@ import { TipoRegistro } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import {
+  dateInputToDate,
+  formatDateOnlyForDisplay,
+  formatDateOnlyFromDate,
+  getTodayDateInput,
+  isDateInputAfterToday,
+} from "@/lib/date-helpers";
 
 type RegistroItemPayload = {
   itemId: string | number;
@@ -48,9 +55,7 @@ function parseTipoRegistro(value: unknown) {
 function parseFecha(value: unknown) {
   const raw = String(value ?? "").trim();
   if (!raw) return null;
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
+  return dateInputToDate(raw);
 }
 
 function isValidPayload(body: unknown): body is UpdateRegistroPayload {
@@ -108,9 +113,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({ error: "tipo o fecha invalidos." }, { status: 400 });
   }
 
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  if (fecha.getTime() > today.getTime()) {
+  if (body.fecha && isDateInputAfterToday(body.fecha)) {
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
@@ -228,8 +231,8 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
         tipoNuevo: tipo,
         afectaStockAnterior: existing.afectaStock,
         afectaStockNuevo: afectaStock,
-        fechaAnterior: existing.fecha.toISOString().slice(0, 10),
-        fechaNueva: fecha.toISOString().slice(0, 10),
+        fechaAnterior: formatDateOnlyFromDate(existing.fecha),
+        fechaNueva: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
         comentariosAnterior: existing.comentarios,
         comentariosNuevo: comentarios,
         totalEquiposAnterior: itemsAnteriores.length,
@@ -243,7 +246,12 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       },
     });
 
-    return NextResponse.json({ ok: true, registroId: existing.registroId.toString(), ci: existing.ci });
+    return NextResponse.json({
+      ok: true,
+      registroId: existing.registroId.toString(),
+      ci: existing.ci,
+      fecha: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
+    });
   } catch {
     return NextResponse.json({ error: "No se pudo rectificar el movimiento." }, { status: 500 });
   }

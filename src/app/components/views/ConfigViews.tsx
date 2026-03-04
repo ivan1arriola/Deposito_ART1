@@ -2,6 +2,7 @@
 
 import { FormEvent, ReactNode } from "react";
 import { formatAuditEntityId, type AuditCiReferences } from "@/lib/audit-helpers";
+import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { SmallActionButton, PaginationControls } from "../shared";
 
 type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
@@ -537,7 +538,7 @@ export function ConfigViews(props: ConfigViewsProps) {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs text-stone-600">
                   {props.firmaConfig?.updatedAt
-                    ? `Última actualización: ${new Date(props.firmaConfig.updatedAt).toLocaleString("es-UY")}`
+                    ? `Última actualización: ${formatDateTimeForDisplay(props.firmaConfig.updatedAt)}`
                     : "Sin actualizaciones registradas todavía."}
                 </p>
                 <button
@@ -736,7 +737,7 @@ export function ConfigViews(props: ConfigViewsProps) {
           <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
             {props.auditoriaFiltradaPaginada.map((log) => (
               <div key={log.auditoriaId} className="rounded-lg border border-stone-200 bg-stone-50 p-2">
-                <p className="text-xs text-stone-600">{new Date(log.createdAt).toLocaleString("es-UY")}</p>
+                <p className="text-xs text-stone-600">{formatDateTimeForDisplay(log.createdAt)}</p>
                 <p className="text-sm font-medium text-stone-900">
                   {`${log.usuario?.username ?? "Sistema"} (${props.roleLabel(log.usuario?.rol ?? null)}) - ${props.auditActionLabel(log.accion)} ${props.auditEntityLabel(log.entidad)}`}
                 </p>

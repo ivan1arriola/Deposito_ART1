@@ -1,6 +1,8 @@
 "use client";
 
+import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { formatUruguayanCi } from "@/lib/ci";
+import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
 import { SmallActionButton } from "@/app/components/shared";
 import type { PersonalObservacion } from "@/types/entities";
 import type { PersonalObservacionDraft } from "@/app/types/home";
@@ -86,7 +88,7 @@ export function PersonalObservacionModal({
               <article key={observacion.observacionId} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold text-stone-700">{new Date(observacion.fecha).toLocaleDateString("es-UY")}</p>
+                    <p className="text-xs font-semibold text-stone-700">{formatDateOnlyForDisplay(observacion.fecha)}</p>
                     <p className="mt-1 whitespace-pre-wrap text-sm text-stone-900">{observacion.texto}</p>
                   </div>
                   <div className="flex flex-wrap justify-end gap-1.5">
@@ -119,12 +121,11 @@ export function PersonalObservacionModal({
           <div className="mt-3 space-y-3">
             <label className="block text-xs text-stone-700">
               Fecha
-              <input
-                type="date"
-                max={maxFechaIngreso}
+              <DateTextInput
                 value={draft.fecha}
                 disabled={saving}
-                onChange={(event) => onDateChange(event.target.value)}
+                onChange={onDateChange}
+                ariaLabel={`Fecha de observacion. Maximo ${maxFechaIngreso}`}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
             </label>

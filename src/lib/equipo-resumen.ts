@@ -1,4 +1,5 @@
 import { TipoRegistro } from "@prisma/client";
+import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 import { compareOptionalOrder } from "@/lib/catalog-order";
 import type { EquipoResumenData, EquipoResumenRow } from "@/types/views";
@@ -87,7 +88,7 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
   };
 
   return {
-    generatedAt: new Date().toISOString(),
+    generatedAt: formatDateTimeForDisplay(new Date()),
     items: items.map((item) => ({
       itemId: item.itemId.toString(),
       nombre: item.nombre,

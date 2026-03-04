@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, PDFPage, rgb, PDFTextField } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
+import { formatDateOnlyForDisplay, formatDateTimeForDisplay } from "@/lib/date-helpers";
 
 interface MatrixRow {
   item: string;
@@ -69,14 +70,10 @@ function sanitizeForPDF(text: string | null | undefined): string {
   return text.replace(/./g, (char) => charMap[char] || char);
 }
 
-const UY_DATE_FORMATTER = new Intl.DateTimeFormat("es-UY", {
-  timeZone: "America/Montevideo",
-});
-
 export async function POST(request: NextRequest): Promise<Response> {
   try {
     const body = (await request.json()) as FichaDataRequest;
-    const fechaImpresion = sanitizeForPDF(UY_DATE_FORMATTER.format(new Date()));
+    const fechaImpresion = sanitizeForPDF(formatDateTimeForDisplay(new Date()));
 
     if (!body.persona?.ci) {
       return NextResponse.json({ error: "CI is required" }, { status: 400 });
@@ -206,7 +203,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       ["Nombres", nombres],
       ["C.I.", sanitizeForPDF(body.persona.ci)],
       ["Bateria / Subunidad", sanitizeForPDF(body.persona.bateria) || "Pendiente"],
-      ["Fecha de ingreso", sanitizeForPDF(body.persona.fechaIngreso ? new Date(body.persona.fechaIngreso).toLocaleDateString("es-UY") : "")],
+      ["Fecha de ingreso", sanitizeForPDF(formatDateOnlyForDisplay(body.persona.fechaIngreso))],
     ];
 
     kvPairs.forEach((pair, idx) => {
@@ -270,7 +267,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       ["Pantalon", sanitizeForPDF(body.persona.tallas.PANTALON)],
       ["Kepi", sanitizeForPDF(body.persona.tallas.KEPI)],
       ["Calzado", sanitizeForPDF(body.persona.tallas.CALZADO)],
-      ["Fecha de emisi\u00f3n", fechaImpresion],
+      ["Fecha de impresion", fechaImpresion],
     ];
 
     tallasPairs.forEach((pair, idx) => {
@@ -351,4 +348,3 @@ export async function POST(request: NextRequest): Promise<Response> {
     );
   }
 }
-

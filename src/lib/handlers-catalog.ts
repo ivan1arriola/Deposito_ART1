@@ -167,19 +167,15 @@ export async function deleteItemHandler(itemId: string, callbacks: CallbackProps
 }
 
 export async function updateMultipleItemOrdersHandler(
-  updates: Array<{ itemId: string; nombre: string; activo: boolean; ordenPdf: number }>,
+  orderedItemIds: string[],
   callbacks: CallbackProps
 ) {
   try {
-    await Promise.all(
-      updates.map((item) =>
-        api(`/api/items/${item.itemId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(item),
-        })
-      )
-    );
+    await api("/api/items", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedItemIds }),
+    });
     callbacks.onSuccess();
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo actualizar el orden de PDF.";

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import { getNextItemOrder, normalizeItemOrders } from "@/lib/item-ordering";
+import { applyItemOrder, getOrderedItemIds, insertItemAtOrder } from "@/lib/item-ordering";
 
 type ItemPayload = {
   nombre: string;
@@ -67,25 +67,37 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
       });
 
       const nextActive = body.activo === undefined ? existing.activo : Boolean(body.activo);
-      const nextOrder =
-        nextActive !== existing.activo
-          ? await getNextItemOrder(tx, nextActive)
-          : body.ordenPdf === undefined
-            ? existing.ordenPdf
-            : body.ordenPdf;
+      if (nextActive !== existing.activo) {
+        const oldGroupIds = await getOrderedItemIds(tx, existing.activo, itemId);
 
-      await tx.item.update({
-        where: { itemId },
-        data: {
-          nombre,
-          activo: nextActive,
-          ordenPdf: nextOrder,
-        },
-      });
+        await tx.item.update({
+          where: { itemId },
+          data: {
+            nombre,
+            activo: nextActive,
+            ordenPdf: 1,
+          },
+        });
 
-      await normalizeItemOrders(tx, nextActive);
-      if (existing.activo !== nextActive) {
-        await normalizeItemOrders(tx, existing.activo);
+        await applyItemOrder(tx, oldGroupIds);
+
+        const newGroupIds = await getOrderedItemIds(tx, nextActive, itemId);
+        const nextOrderedIds = insertItemAtOrder(newGroupIds, itemId, body.ordenPdf ?? newGroupIds.length + 1);
+        await applyItemOrder(tx, nextOrderedIds);
+      } else {
+        const currentGroupIds = await getOrderedItemIds(tx, nextActive, itemId);
+        const nextOrderedIds = insertItemAtOrder(currentGroupIds, itemId, body.ordenPdf ?? existing.ordenPdf);
+
+        await tx.item.update({
+          where: { itemId },
+          data: {
+            nombre,
+            activo: nextActive,
+            ordenPdf: 1,
+          },
+        });
+
+        await applyItemOrder(tx, nextOrderedIds);
       }
 
       return tx.item.findUniqueOrThrow({
@@ -138,11 +150,13 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
         },
       });
 
+      const remainingIds = await getOrderedItemIds(tx, existing.activo, itemId);
+
       const removed = await tx.item.delete({
         where: { itemId },
       });
 
-      await normalizeItemOrders(tx, existing.activo);
+      await applyItemOrder(tx, remainingIds);
 
       return removed;
     });

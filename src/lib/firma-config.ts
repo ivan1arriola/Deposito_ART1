@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 
 export type FirmaConfig = {
   encargadoRango: string;
@@ -53,7 +54,7 @@ function fromRow(row: FirmaRow | undefined): FirmaConfig {
     encargadoNombre: row.encargado_nombre,
     oficialRango: row.oficial_rango,
     oficialNombre: row.oficial_nombre,
-    updatedAt: row.updated_at.toISOString(),
+    updatedAt: formatDateTimeForDisplay(row.updated_at),
   };
 }
 

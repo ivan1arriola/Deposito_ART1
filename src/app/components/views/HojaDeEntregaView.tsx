@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
+import { extractDateParts, formatDateOnlyForDisplay } from "@/lib/date-helpers";
 import styles from "./hoja-de-entrega.module.css";
 
 type FichaData = {
@@ -50,30 +51,6 @@ export interface HojaDeEntregaViewProps {
   onClose: () => void;
 }
 
-function extractDateParts(value: string | Date | null | undefined) {
-  if (!value) return null;
-
-  if (typeof value === "string") {
-    const isoLike = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (isoLike) {
-      return {
-        year: isoLike[1],
-        month: isoLike[2],
-        day: isoLike[3],
-      };
-    }
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-
-  return {
-    year: String(date.getUTCFullYear()),
-    month: String(date.getUTCMonth() + 1).padStart(2, "0"),
-    day: String(date.getUTCDate()).padStart(2, "0"),
-  };
-}
-
 function getDatePart(value: string | null | undefined, part: "day" | "month" | "year") {
   const parts = extractDateParts(value);
   if (!parts) return "";
@@ -81,9 +58,7 @@ function getDatePart(value: string | null | undefined, part: "day" | "month" | "
 }
 
 function formatDisplayDate(value: string | Date | null | undefined) {
-  const parts = extractDateParts(value);
-  if (!parts) return "-";
-  return `${parts.day}/${parts.month}/${parts.year}`;
+  return formatDateOnlyForDisplay(value, "-");
 }
 
 async function api<T>(url: string): Promise<T> {
@@ -272,13 +247,13 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
                         : "-"}
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>Fecha ingreso original:</span>{" "}
-                      {data.persona.fechaIngresoOriginal
+                      <span className={styles.headerInfoLabel}>{data.persona.esReingreso ? "Fecha ingreso:" : ""}</span>{" "}
+                      {data.persona.esReingreso && data.persona.fechaIngresoOriginal
                         ? `${getDatePart(data.persona.fechaIngresoOriginal, "day")}/${getDatePart(data.persona.fechaIngresoOriginal, "month")}/${getDatePart(data.persona.fechaIngresoOriginal, "year")}`
                         : ""}
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>{"Fecha de emisi\u00f3n:"}</span> {fechaImpresion}
+                      <span className={styles.headerInfoLabel}>Fecha de impresion:</span> {fechaImpresion}
                     </div>
                   </div>
                 </td>

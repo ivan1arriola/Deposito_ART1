@@ -2,24 +2,48 @@ import { Prisma } from "@prisma/client";
 
 type ItemOrderTx = Prisma.TransactionClient;
 
+function clampOrderPosition(order: number, size: number) {
+  if (size <= 0) return 0;
+  return Math.min(Math.max(order - 1, 0), size);
+}
+
+export async function getOrderedItemIds(tx: ItemOrderTx, activo: boolean, excludeItemId?: bigint) {
+  const items = await tx.item.findMany({
+    where: {
+      activo,
+      ...(excludeItemId ? { itemId: { not: excludeItemId } } : {}),
+    },
+    orderBy: [{ ordenPdf: "asc" }, { itemId: "asc" }],
+    select: { itemId: true },
+  });
+
+  return items.map((item) => item.itemId);
+}
+
+export function insertItemAtOrder(orderedIds: bigint[], itemId: bigint, order: number) {
+  const nextOrder = orderedIds.filter((currentId) => currentId !== itemId);
+  const targetIndex = clampOrderPosition(order, nextOrder.length);
+  nextOrder.splice(targetIndex, 0, itemId);
+  return nextOrder;
+}
+
+export async function applyItemOrder(tx: ItemOrderTx, orderedIds: bigint[]) {
+  await Promise.all(
+    orderedIds.map((itemId, index) =>
+      tx.item.update({
+        where: { itemId },
+        data: { ordenPdf: index + 1 },
+      }),
+    ),
+  );
+}
+
 export async function getNextItemOrder(tx: ItemOrderTx, activo: boolean) {
-  const count = await tx.item.count({ where: { activo } });
-  return count + 1;
+  const itemIds = await getOrderedItemIds(tx, activo);
+  return itemIds.length + 1;
 }
 
 export async function normalizeItemOrders(tx: ItemOrderTx, activo: boolean) {
-  await tx.$executeRaw`
-    WITH ordered AS (
-      SELECT
-        "item_id",
-        ROW_NUMBER() OVER (ORDER BY "orden_pdf" ASC, "nombre" ASC, "item_id" ASC) AS new_order
-      FROM "item"
-      WHERE "activo" = ${activo}
-    )
-    UPDATE "item" AS target
-    SET "orden_pdf" = ordered.new_order
-    FROM ordered
-    WHERE target."item_id" = ordered."item_id"
-      AND target."orden_pdf" <> ordered.new_order
-  `;
+  const itemIds = await getOrderedItemIds(tx, activo);
+  await applyItemOrder(tx, itemIds);
 }

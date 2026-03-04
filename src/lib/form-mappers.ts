@@ -4,7 +4,10 @@
 
 import type { Personal, Talla } from "@/types/entities";
 import type { PersonalForm } from "@/types/forms";
+import { formatDateOnlyForDisplay } from "./date-helpers";
 import { TALLA_KEYS, type TallaKey, normalizeTallaValue } from "./tallas";
+
+export { getTodayDateInput } from "./date-helpers";
 
 /**
  * Convierte un array de tallas a un objeto map
@@ -26,22 +29,10 @@ export function tallasMap(tallas: Talla[]): Record<string, string> {
 }
 
 /**
- * Convierte una fecha ISO a formato de input date (YYYY-MM-DD)
+ * Convierte una fecha del dominio a formato de input DD/MM/AAAA
  */
 export function toDateInput(dateIso: string | null): string {
-  if (!dateIso) return "";
-  return dateIso.slice(0, 10);
-}
-
-/**
- * Retorna la fecha actual en formato de input date (YYYY-MM-DD)
- */
-export function getTodayDateInput(): string {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return formatDateOnlyForDisplay(dateIso);
 }
 
 /**

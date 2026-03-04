@@ -1,6 +1,7 @@
 "use client";
 
 import { formatUruguayanCi } from "@/lib/ci";
+import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
 import { PaginationControls } from "@/app/components/shared";
 import type { Role } from "@/types/entities";
 import type { RegistroView, RegistroViewerState } from "@/types/views";
@@ -60,7 +61,7 @@ export function RegistroViewerModal({
           ? rows.map((registro) => (
               <div key={registro.registroId} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-stone-900">{new Date(registro.fecha).toLocaleDateString("es-UY")}</p>
+                  <p className="text-sm font-semibold text-stone-900">{formatDateOnlyForDisplay(registro.fecha)}</p>
                   <div className="flex items-center gap-2">
                     {canWrite && registro.tipo !== "AJUSTE" ? (
                       <button

@@ -1,5 +1,6 @@
 "use client";
 
+import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { formatUruguayanCi } from "@/lib/ci";
 import type { Equipo } from "@/types/entities";
 import type { RegistroDraft } from "@/types/forms";
@@ -74,12 +75,11 @@ export function RegistroEditorModal({
       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <label className="text-xs text-stone-700">
           Fecha
-          <input
-            type="date"
-            max={maxFechaIngreso}
+          <DateTextInput
             value={draft.fecha}
             disabled={saving}
-            onChange={(event) => onDateChange(event.target.value)}
+            onChange={onDateChange}
+            ariaLabel={`Fecha del movimiento. Maximo ${maxFechaIngreso}`}
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
           />
         </label>

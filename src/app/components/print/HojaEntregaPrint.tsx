@@ -299,10 +299,10 @@ export function HojaEntregaPrintEmptyState({ message }: { message: string }) {
 
 export function HojaEntregaPrintSheet({
   data,
-  fechaEmision,
+  fechaImpresion,
 }: {
   data: HojaEntregaSheetData;
-  fechaEmision: string;
+  fechaImpresion: string;
 }) {
   const nombreCompleto = `${data.persona.apellido1} ${data.persona.apellido2 || ""}`.trim();
   const nombresCompleto = `${data.persona.nombre1} ${data.persona.nombre2 || ""}`.trim();
@@ -386,13 +386,13 @@ export function HojaEntregaPrintSheet({
                     : "-"}
                 </div>
                 <div className="info-grid-item info-grid-item-compact">
-                  <span className="header-info-label">Fecha ingreso original:</span>{" "}
-                  {data.persona.fechaIngresoOriginal
+                  <span className="header-info-label">{data.persona.esReingreso ? "Fecha ingreso:" : ""}</span>{" "}
+                  {data.persona.esReingreso && data.persona.fechaIngresoOriginal
                     ? `${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "day")}/${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "month")}/${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "year")}`
                     : ""}
                 </div>
                 <div className="info-grid-item info-grid-item-compact">
-                  <span className="header-info-label">Fecha de emisión:</span> {fechaEmision}
+                  <span className="header-info-label">Fecha de impresion:</span> {fechaImpresion}
                 </div>
               </div>
             </td>
@@ -493,6 +493,6 @@ export function HojaEntregaPrintSheet({
   );
 }
 
-export function getCurrentHojaEntregaEmissionDate() {
+export function getCurrentHojaEntregaPrintDate() {
   return formatHojaEntregaDisplayDate(new Date());
 }

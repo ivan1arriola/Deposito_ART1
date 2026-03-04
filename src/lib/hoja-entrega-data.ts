@@ -1,5 +1,6 @@
 import { Prisma, TipoRegistro } from "@prisma/client";
 import { isValidUruguayanCi } from "@/lib/ci";
+import { extractDateParts, formatDateOnlyForDisplay, formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { getFirmaConfig, TEXTO_ENCARGADO, TEXTO_OFICIAL } from "@/lib/firma-config";
 import { buildHojaObservaciones, type HojaObservacion } from "@/lib/hoja-entrega-observaciones";
 import { prisma } from "@/lib/prisma";
@@ -110,13 +111,13 @@ function toSixColumns(records: RegistroWithItems[]): MatrixColumn[] {
     const cutoffRecord = oldRecords[oldRecords.length - 1] ?? null;
 
     columns.push({
-      fecha: cutoffRecord ? cutoffRecord.fecha.toISOString() : null,
+      fecha: cutoffRecord ? formatDateOnlyFromDate(cutoffRecord.fecha) : null,
       items: aggregateItems(oldRecords),
     });
 
     columns.push(
       ...recentRecords.map((record) => ({
-        fecha: record.fecha.toISOString(),
+        fecha: formatDateOnlyFromDate(record.fecha),
         items: record.items.map((detail) => ({
           nombre: detail.item.nombre,
           cantidad: detail.cantidad,
@@ -126,7 +127,7 @@ function toSixColumns(records: RegistroWithItems[]): MatrixColumn[] {
   } else {
     columns.push(
       ...sorted.map((record) => ({
-        fecha: record.fecha.toISOString(),
+        fecha: formatDateOnlyFromDate(record.fecha),
         items: record.items.map((detail) => ({
           nombre: detail.item.nombre,
           cantidad: detail.cantidad,
@@ -185,8 +186,8 @@ function mapPersonaToHojaEntregaData(
       nombre1: persona.nombre1,
       nombre2: persona.nombre2,
       esReingreso: persona.esReingreso,
-      fechaIngreso: persona.fechaIngreso ? persona.fechaIngreso.toISOString() : null,
-      fechaIngresoOriginal: persona.fechaIngresoOriginal ? persona.fechaIngresoOriginal.toISOString() : null,
+      fechaIngreso: formatDateOnlyFromDate(persona.fechaIngreso),
+      fechaIngresoOriginal: formatDateOnlyFromDate(persona.fechaIngresoOriginal),
       rango: persona.rango.nombreCompleto,
       rangoAbreviacion: persona.rango.abreviacion,
       bateria: persona.bateria?.nombre ?? null,
@@ -213,30 +214,6 @@ function mapPersonaToHojaEntregaData(
   };
 }
 
-function extractDateParts(value: string | Date | null | undefined) {
-  if (!value) return null;
-
-  if (typeof value === "string") {
-    const isoLike = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (isoLike) {
-      return {
-        year: isoLike[1],
-        month: isoLike[2],
-        day: isoLike[3],
-      };
-    }
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-
-  return {
-    year: String(date.getUTCFullYear()),
-    month: String(date.getUTCMonth() + 1).padStart(2, "0"),
-    day: String(date.getUTCDate()).padStart(2, "0"),
-  };
-}
-
 export function getHojaEntregaDatePart(value: string | null | undefined, part: "day" | "month" | "year"): string {
   const parts = extractDateParts(value);
   if (!parts) return "";
@@ -244,9 +221,7 @@ export function getHojaEntregaDatePart(value: string | null | undefined, part: "
 }
 
 export function formatHojaEntregaDisplayDate(value: string | Date | null | undefined) {
-  const parts = extractDateParts(value);
-  if (!parts) return "-";
-  return `${parts.day}/${parts.month}/${parts.year}`;
+  return formatDateOnlyForDisplay(value, "-");
 }
 
 export async function getHojaEntregaData(ci: string): Promise<HojaEntregaSheetData | null> {

@@ -4,6 +4,7 @@
 
 import { createElement, type ReactNode } from "react";
 import { formatUruguayanCi, normalizeCi } from "@/lib/ci";
+import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
 
 type AuditDetailObject = Record<string, unknown>;
 export type AuditCiReferences = Record<string, string>;
@@ -21,9 +22,7 @@ function asText(value: unknown) {
 function formatDate(value: unknown) {
   const text = asText(value);
   if (!text) return "";
-  const date = new Date(text);
-  if (Number.isNaN(date.getTime())) return text;
-  return date.toLocaleDateString("es-UY");
+  return formatDateOnlyForDisplay(text);
 }
 
 function buildLine(key: string, label: string, value: string) {

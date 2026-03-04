@@ -3,6 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidUruguayanCi } from "@/lib/ci";
+import {
+  dateInputToDate,
+  formatDateOnlyForDisplay,
+  formatDateOnlyFromDate,
+  isDateInputAfter,
+  isDateInputAfterToday,
+} from "@/lib/date-helpers";
 import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
 import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 
@@ -42,6 +49,7 @@ function isValidPayload(body: unknown): body is PersonalUpdatePayload {
   const bateriaRaw = candidate.bateriaId;
   if (candidate.telefonoContacto !== undefined && typeof candidate.telefonoContacto !== "string") return false;
   if (candidate.esReingreso !== undefined && typeof candidate.esReingreso !== "boolean") return false;
+  if (candidate.fechaIngreso !== undefined && typeof candidate.fechaIngreso !== "string") return false;
   if (candidate.fechaIngresoOriginal !== undefined && typeof candidate.fechaIngresoOriginal !== "string") return false;
   if (bateriaRaw === undefined || bateriaRaw === null || String(bateriaRaw).trim() === "") return true;
   const bateriaId = Number(bateriaRaw);
@@ -53,20 +61,12 @@ function normalizeNullableText(value: string | undefined) {
   return normalized ? normalized : null;
 }
 
-function isAfterToday(rawValue: string, parsedDate: Date) {
-  const datePart = rawValue.trim().slice(0, 10);
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    return datePart > today;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const ingreso = new Date(parsedDate);
-  ingreso.setHours(0, 0, 0, 0);
-  return ingreso.getTime() > today.getTime();
+function serializePersonal<T extends { fechaIngreso: Date | null; fechaIngresoOriginal: Date | null }>(persona: T) {
+  return {
+    ...persona,
+    fechaIngreso: formatDateOnlyFromDate(persona.fechaIngreso),
+    fechaIngresoOriginal: formatDateOnlyFromDate(persona.fechaIngresoOriginal),
+  };
 }
 
 function extractTallas(payload: PersonalUpdatePayload): Partial<Record<TallaKey, string>> {
@@ -123,11 +123,11 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
   const esReingreso = body.esReingreso === true;
 
   const fechaIngresoRaw = body.fechaIngreso?.trim();
-  const fechaIngreso = fechaIngresoRaw ? new Date(fechaIngresoRaw) : null;
-  if (fechaIngreso && Number.isNaN(fechaIngreso.getTime())) {
+  const fechaIngreso = fechaIngresoRaw ? dateInputToDate(fechaIngresoRaw) : null;
+  if (fechaIngresoRaw && !fechaIngreso) {
     return NextResponse.json({ error: "fechaIngreso debe ser una fecha valida." }, { status: 400 });
   }
-  if (fechaIngresoRaw && fechaIngreso && isAfterToday(fechaIngresoRaw, fechaIngreso)) {
+  if (fechaIngresoRaw && isDateInputAfterToday(fechaIngresoRaw)) {
     return NextResponse.json({ error: "fechaIngreso debe ser antes o igual a hoy." }, { status: 400 });
   }
   if (esReingreso && !fechaIngresoRaw) {
@@ -135,14 +135,14 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
   }
 
   const fechaIngresoOriginalRaw = body.fechaIngresoOriginal?.trim();
-  const fechaIngresoOriginal = esReingreso && fechaIngresoOriginalRaw ? new Date(fechaIngresoOriginalRaw) : null;
-  if (fechaIngresoOriginal && Number.isNaN(fechaIngresoOriginal.getTime())) {
+  const fechaIngresoOriginal = esReingreso && fechaIngresoOriginalRaw ? dateInputToDate(fechaIngresoOriginalRaw) : null;
+  if (fechaIngresoOriginalRaw && !fechaIngresoOriginal) {
     return NextResponse.json({ error: "fechaIngresoOriginal debe ser una fecha valida." }, { status: 400 });
   }
-  if (fechaIngresoOriginalRaw && fechaIngresoOriginal && isAfterToday(fechaIngresoOriginalRaw, fechaIngresoOriginal)) {
+  if (fechaIngresoOriginalRaw && isDateInputAfterToday(fechaIngresoOriginalRaw)) {
     return NextResponse.json({ error: "fechaIngresoOriginal debe ser antes o igual a hoy." }, { status: 400 });
   }
-  if (fechaIngreso && fechaIngresoOriginal && fechaIngresoOriginal.getTime() > fechaIngreso.getTime()) {
+  if (fechaIngresoRaw && fechaIngresoOriginalRaw && isDateInputAfter(fechaIngresoOriginalRaw, fechaIngresoRaw)) {
     return NextResponse.json({ error: "fechaIngresoOriginal no puede ser posterior a la fecha de reingreso." }, { status: 400 });
   }
 
@@ -225,12 +225,12 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         bateriaId,
         telefonoContacto,
         esReingreso,
-        fechaIngreso: fechaIngresoRaw ?? null,
-        fechaIngresoOriginal: esReingreso ? fechaIngresoOriginalRaw ?? null : null,
+        fechaIngreso: fechaIngresoRaw ? formatDateOnlyForDisplay(fechaIngresoRaw) : null,
+        fechaIngresoOriginal: esReingreso && fechaIngresoOriginalRaw ? formatDateOnlyForDisplay(fechaIngresoOriginalRaw) : null,
       },
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json(updated ? serializePersonal(updated) : updated);
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;

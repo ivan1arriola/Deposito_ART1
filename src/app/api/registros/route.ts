@@ -4,6 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidUruguayanCi } from "@/lib/ci";
+import {
+  dateInputToDate,
+  formatDateOnlyForDisplay,
+  formatDateOnlyFromDate,
+  formatDateTimeForDisplay,
+  getTodayDateInput,
+  isDateInputAfterToday,
+} from "@/lib/date-helpers";
 
 type RegistroItemPayload = {
   itemId: string | number;
@@ -41,10 +49,8 @@ function parseTipoRegistro(value: unknown) {
 
 function parseFecha(value: unknown) {
   const raw = String(value ?? "").trim();
-  if (!raw) return new Date();
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
+  if (!raw) return dateInputToDate(getTodayDateInput());
+  return dateInputToDate(raw);
 }
 
 function readRequestMeta(request: Request) {
@@ -149,7 +155,7 @@ export async function GET(req: Request) {
         if (!audit) return null;
         return {
           auditoriaId: audit.auditoriaId.toString(),
-          createdAt: audit.createdAt.toISOString(),
+          createdAt: formatDateTimeForDisplay(audit.createdAt),
           usuarioId: audit.usuarioId,
           usuario: audit.usuario
             ? {
@@ -163,11 +169,11 @@ export async function GET(req: Request) {
         };
       })(),
       ci: registro.ci,
-      fecha: registro.fecha.toISOString(),
+      fecha: formatDateOnlyFromDate(registro.fecha) ?? "",
       tipo: registro.tipo,
       afectaStock: registro.afectaStock,
       comentarios: registro.comentarios,
-      createdAt: registro.createdAt.toISOString(),
+      createdAt: formatDateTimeForDisplay(registro.createdAt),
       items: registro.items.map((detail) => ({
         itemId: detail.itemId.toString(),
         nombre: detail.item.nombre,
@@ -194,9 +200,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "tipo o fecha invalidos." }, { status: 400 });
   }
 
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  if (fecha.getTime() > today.getTime()) {
+  if (body.fecha && isDateInputAfterToday(body.fecha)) {
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
@@ -293,7 +297,7 @@ export async function POST(req: Request) {
         personal: buildPersonalAuditDetail(personalRecord),
         tipo,
         afectaStock,
-        fechaMovimiento: fecha.toISOString().slice(0, 10),
+        fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
         comentarios,
         totalEquipos: itemsDetallados.length,
         totalUnidades,

@@ -3,6 +3,7 @@ import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest, getUserFromRequest, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 
 type UsuarioUpdatePayload = {
   grado?: string;
@@ -18,6 +19,14 @@ type UsuarioUpdatePayload = {
 function roleFromValue(value: unknown): UserRole | null {
   if (value === "ADMIN" || value === "EDITOR" || value === "READ_ONLY") return value;
   return null;
+}
+
+function serializeUsuario<T extends { createdAt: Date; updatedAt: Date }>(usuario: T) {
+  return {
+    ...usuario,
+    createdAt: formatDateTimeForDisplay(usuario.createdAt),
+    updatedAt: formatDateTimeForDisplay(usuario.updatedAt),
+  };
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ usuarioId: string }> }) {
@@ -184,7 +193,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       },
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json(serializeUsuario(updated));
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;

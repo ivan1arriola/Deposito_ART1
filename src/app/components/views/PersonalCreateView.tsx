@@ -1,6 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
+import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
 import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
@@ -208,29 +209,27 @@ export function PersonalCreateView({
 
                   <label>
                     <span className="block text-xs font-medium text-stone-700">{fechaActualLabel}</span>
-                    <input
-                      type="date"
+                    <DateTextInput
                       value={newPersonal.fechaIngreso}
-                      onChange={(event) => onPersonalChange("fechaIngreso", event.target.value)}
-                      max={maxFechaIngreso}
+                      onChange={(value) => onPersonalChange("fechaIngreso", value)}
                       className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                     />
                     <span className="mt-1 block text-[11px] text-stone-500">
-                      {newPersonal.esReingreso ? "Obligatoria para personal que vuelve a ingresar." : "Opcional."}
+                      {newPersonal.esReingreso
+                        ? `Obligatoria para personal que vuelve a ingresar. Formato DD/MM/AAAA. Maxima: ${maxFechaIngreso}.`
+                        : "Opcional. Formato DD/MM/AAAA."}
                     </span>
                   </label>
 
                   {newPersonal.esReingreso ? (
                     <label>
-                      <span className="block text-xs font-medium text-stone-700">Fecha de ingreso original</span>
-                      <input
-                        type="date"
+                      <span className="block text-xs font-medium text-stone-700">Fecha de ingreso</span>
+                      <DateTextInput
                         value={newPersonal.fechaIngresoOriginal}
-                        onChange={(event) => onPersonalChange("fechaIngresoOriginal", event.target.value)}
-                        max={maxFechaIngreso}
+                        onChange={(value) => onPersonalChange("fechaIngresoOriginal", value)}
                         className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                       />
-                      <span className="mt-1 block text-[11px] text-stone-500">Opcional. Solo para casos de reingreso.</span>
+                      <span className="mt-1 block text-[11px] text-stone-500">Opcional. Solo para casos de reingreso en formato DD/MM/AAAA.</span>
                     </label>
                   ) : null}
                 </div>
@@ -294,7 +293,7 @@ export function PersonalCreateView({
                   <p>{`Celular: ${newPersonal.telefonoContacto.trim() === "" ? "Opcional" : telefonoContactoLooksValid ? "Valido" : "Invalido"}`}</p>
                   <p>{`Batería: ${Number(newPersonal.bateriaId) > 0 ? "Completa" : "Pendiente"}`}</p>
                   <p>{`${newPersonal.esReingreso ? "Fecha de re-ingreso" : "Fecha de ingreso"}: ${newPersonal.fechaIngreso ? "Completa" : "Pendiente"}`}</p>
-                  {newPersonal.esReingreso ? <p>{`Fecha de ingreso original: ${newPersonal.fechaIngresoOriginal ? "Completa" : "Opcional"}`}</p> : null}
+                  {newPersonal.esReingreso ? <p>{`Fecha de ingreso: ${newPersonal.fechaIngresoOriginal ? "Completa" : "Opcional"}`}</p> : null}
                 </div>
               </article>
 

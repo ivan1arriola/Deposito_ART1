@@ -1,4 +1,5 @@
 import { TALLA_KEYS, TALLA_LABELS, TALLA_OPTIONS, type TallaKey, normalizeTallaValue } from "@/lib/tallas";
+import { formatDateOnlyForDisplay, getTodayDateInput as getTodayDateInputHelper } from "@/lib/date-helpers";
 import type { Personal, Role, Rango, Talla } from "@/types/entities";
 import type { PersonalForm } from "@/types/forms";
 
@@ -92,22 +93,17 @@ export function rangoLabel(rango: Rango) {
 }
 
 /**
- * Convierte una fecha ISO a formato input (YYYY-MM-DD)
+ * Convierte una fecha del dominio a formato input (DD/MM/AAAA)
  */
 export function toDateInput(dateIso: string | null) {
-  if (!dateIso) return "";
-  return dateIso.slice(0, 10);
+  return formatDateOnlyForDisplay(dateIso);
 }
 
 /**
- * Obtiene la fecha de hoy en formato input (YYYY-MM-DD)
+ * Obtiene la fecha de hoy en formato input (DD/MM/AAAA)
  */
 export function getTodayDateInput() {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return getTodayDateInputHelper();
 }
 
 /**

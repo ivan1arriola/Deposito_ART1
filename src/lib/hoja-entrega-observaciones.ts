@@ -1,4 +1,5 @@
 import type { TipoRegistro } from "@prisma/client";
+import { dateInputToDate, formatDateOnlyForDisplay } from "@/lib/date-helpers";
 
 type PersonalObservacionInput = {
   fecha: string | Date;
@@ -17,14 +18,14 @@ export type HojaObservacion = {
 };
 
 function toObservationTimestamp(value: string | Date) {
-  const parsed = value instanceof Date ? value : new Date(value);
+  const parsed = value instanceof Date ? value : dateInputToDate(value) ?? new Date(value);
   const time = parsed.getTime();
   return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
 }
 
-function toObservationIso(value: string | Date) {
-  const parsed = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+function toObservationDate(value: string | Date) {
+  const formatted = formatDateOnlyForDisplay(value);
+  return formatted || null;
 }
 
 export function buildHojaObservaciones(
@@ -34,7 +35,7 @@ export function buildHojaObservaciones(
   const personal = observacionesPersonal
     .map((observacion) => {
       const texto = observacion.texto?.trim();
-      const fecha = toObservationIso(observacion.fecha);
+      const fecha = toObservationDate(observacion.fecha);
       if (!texto || !fecha) return null;
 
       return {
@@ -53,7 +54,7 @@ export function buildHojaObservaciones(
   const movimientos = registros
     .map((registro) => {
       const comentarios = registro.comentarios?.trim();
-      const fecha = toObservationIso(registro.fecha);
+      const fecha = toObservationDate(registro.fecha);
       if (!comentarios || !fecha) return null;
       if (registro.tipo !== "ENTREGA" && registro.tipo !== "DEVOLUCION") return null;
 

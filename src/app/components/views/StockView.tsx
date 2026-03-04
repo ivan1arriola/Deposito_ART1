@@ -1,5 +1,7 @@
 "use client";
 
+import { DateTextInput } from "@/app/components/shared/DateTextInput";
+import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
 import type { Equipo } from "@/types/entities";
 import type { StockOperacionDraft, StockOperacionDraftItem } from "@/types/forms";
 import type { StockDashboardData } from "@/types/views";
@@ -110,12 +112,11 @@ export function StockView({
           <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
             <label className="text-xs text-stone-700">
               Fecha
-              <input
-                type="date"
-                max={maxDate}
+              <DateTextInput
                 value={draft.fecha}
                 disabled={saving}
-                onChange={(event) => onDraftChange("fecha", event.target.value)}
+                onChange={(value) => onDraftChange("fecha", value)}
+                ariaLabel={`Fecha de stock. Maximo ${maxDate}`}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
             </label>
@@ -270,7 +271,7 @@ export function StockView({
             <div key={entry.id} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-stone-900">{new Date(entry.fecha).toLocaleDateString("es-UY")}</p>
+                  <p className="text-sm font-semibold text-stone-900">{formatDateOnlyForDisplay(entry.fecha)}</p>
                   <p className="text-xs text-stone-600">
                     {entry.origen === "MANUAL"
                       ? "Movimiento manual de stock"

@@ -1,5 +1,6 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
+import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
 import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
@@ -65,7 +66,7 @@ export default async function ResumenTallasUnidadPage({
 
   const firmas = await getFirmaConfig();
   const resumen = buildTallasResumen(personal);
-  const generatedAt = new Date().toLocaleString("es-UY");
+  const generatedAt = formatDateTimeForDisplay(new Date());
 
   return (
     <>

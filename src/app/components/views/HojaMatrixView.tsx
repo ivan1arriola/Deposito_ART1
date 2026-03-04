@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { compareOptionalOrder } from "@/lib/catalog-order";
+import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { HojaMatrixData } from "@/types/views";
 
 export interface HojaMatrixViewProps {
@@ -171,7 +172,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
 
       {data && hasRequested ? (
         <div className="mt-2">
-          <p className="text-xs text-stone-500">{`Generado: ${new Date(data.generatedAt).toLocaleString("es-UY")}`}</p>
+          <p className="text-xs text-stone-500">{`Generado: ${formatDateTimeForDisplay(data.generatedAt)}`}</p>
         </div>
       ) : null}
     </section>

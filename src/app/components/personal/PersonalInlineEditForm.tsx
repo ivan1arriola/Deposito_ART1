@@ -1,5 +1,6 @@
 "use client";
 
+import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
 import { rangoLabel } from "@/lib/formatters";
 import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
@@ -56,23 +57,19 @@ export function PersonalInlineEditForm({
         />
         <span>Es reingreso</span>
       </label>
-      <input
-        type="date"
+      <DateTextInput
         value={editPersonal.fechaIngreso}
-        onChange={(event) => onChange("fechaIngreso", event.target.value)}
-        max={maxFechaIngreso}
+        onChange={(value) => onChange("fechaIngreso", value)}
         className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        aria-label={fechaActualLabel}
+        ariaLabel={`${fechaActualLabel}. Formato ${maxFechaIngreso}`}
       />
       {editPersonal.esReingreso ? (
-        <input
-          type="date"
+        <DateTextInput
           value={editPersonal.fechaIngresoOriginal}
-          onChange={(event) => onChange("fechaIngresoOriginal", event.target.value)}
-          max={maxFechaIngreso}
-          placeholder="Fecha de ingreso original"
+          onChange={(value) => onChange("fechaIngresoOriginal", value)}
+          placeholder="DD/MM/AAAA"
           className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-          aria-label="Fecha de ingreso original"
+          ariaLabel="Fecha de ingreso"
         />
       ) : null}
       <select value={editPersonal.rangoId} onChange={(event) => onChange("rangoId", event.target.value)} className="rounded-lg border border-stone-300 px-3 py-2 text-sm">

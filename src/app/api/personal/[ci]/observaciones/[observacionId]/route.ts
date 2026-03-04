@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { logAudit } from "@/lib/audit";
+import {
+  dateInputToDate,
+  formatDateOnlyForDisplay,
+  formatDateOnlyFromDate,
+  formatDateTimeForDisplay,
+  isDateInputAfterToday,
+} from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 
 type ObservacionPayload = {
@@ -28,17 +35,7 @@ function parseObservacionId(raw: string) {
 }
 
 function parseDateOnly(value: string) {
-  const trimmed = value.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
-
-  const parsed = new Date(`${trimmed}T00:00:00.000Z`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function isFutureDate(rawValue: string) {
-  const today = new Date();
-  const todayValue = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, "0")}-${String(today.getUTCDate()).padStart(2, "0")}`;
-  return rawValue.trim() > todayValue;
+  return dateInputToDate(value);
 }
 
 export async function PUT(req: Request, context: { params: Promise<{ ci: string; observacionId: string }> }) {
@@ -61,7 +58,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string;
   if (!fecha) {
     return NextResponse.json({ error: "La fecha de la observacion es invalida." }, { status: 400 });
   }
-  if (isFutureDate(body.fecha)) {
+  if (isDateInputAfterToday(body.fecha)) {
     return NextResponse.json({ error: "La fecha de la observacion no puede ser futura." }, { status: 400 });
   }
 
@@ -93,8 +90,8 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string;
       entidadId: updated.observacionId.toString(),
       detalle: {
         ci: ciDecoded,
-        fechaAnterior: existing.fecha.toISOString().slice(0, 10),
-        fechaNueva: body.fecha.trim(),
+        fechaAnterior: formatDateOnlyFromDate(existing.fecha),
+        fechaNueva: formatDateOnlyForDisplay(body.fecha),
         textoAnterior: existing.texto,
         textoNuevo: texto,
       },
@@ -104,9 +101,9 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string;
       ok: true,
       observacionId: updated.observacionId.toString(),
       ci: updated.ci,
-      fecha: updated.fecha.toISOString(),
+      fecha: formatDateOnlyFromDate(updated.fecha),
       texto: updated.texto,
-      createdAt: updated.createdAt.toISOString(),
+      createdAt: formatDateTimeForDisplay(updated.createdAt),
     });
   } catch {
     return NextResponse.json({ error: "No se pudo actualizar la observacion." }, { status: 500 });
@@ -146,7 +143,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
       entidadId: observacionId.toString(),
       detalle: {
         ci: ciDecoded,
-        fecha: existing.fecha.toISOString().slice(0, 10),
+        fecha: formatDateOnlyFromDate(existing.fecha),
         texto: existing.texto,
       },
     });

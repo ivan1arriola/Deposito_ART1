@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
 import {
-  getCurrentHojaEntregaEmissionDate,
+  getCurrentHojaEntregaPrintDate,
   HojaEntregaPrintSheet,
   HojaEntregaPrintStyles,
 } from "@/app/components/print/HojaEntregaPrint";
@@ -34,7 +34,7 @@ export default async function HojaEntregaPage({
     <>
       {shouldAutoPrint ? <AutoPrintOnLoad /> : null}
       <HojaEntregaPrintStyles />
-      <HojaEntregaPrintSheet data={data} fechaEmision={getCurrentHojaEntregaEmissionDate()} />
+      <HojaEntregaPrintSheet data={data} fechaImpresion={getCurrentHojaEntregaPrintDate()} />
     </>
   );
 }

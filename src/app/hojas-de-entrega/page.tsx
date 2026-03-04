@@ -1,6 +1,6 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
 import {
-  getCurrentHojaEntregaEmissionDate,
+  getCurrentHojaEntregaPrintDate,
   HojaEntregaPrintEmptyState,
   HojaEntregaPrintSheet,
   HojaEntregaPrintStyles,
@@ -20,7 +20,7 @@ export default async function HojasDeEntregaPage({
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const shouldAutoPrint = resolvedSearchParams?.autoprint === "1";
   const hojas = await getAllHojasEntregaData();
-  const fechaEmision = getCurrentHojaEntregaEmissionDate();
+  const fechaImpresion = getCurrentHojaEntregaPrintDate();
 
   return (
     <>
@@ -30,7 +30,7 @@ export default async function HojasDeEntregaPage({
         <HojaEntregaPrintEmptyState message="No hay personal para generar hojas de entrega." />
       ) : (
         hojas.map((hoja) => (
-          <HojaEntregaPrintSheet key={hoja.persona.ci} data={hoja} fechaEmision={fechaEmision} />
+          <HojaEntregaPrintSheet key={hoja.persona.ci} data={hoja} fechaImpresion={fechaImpresion} />
         ))
       )}
     </>

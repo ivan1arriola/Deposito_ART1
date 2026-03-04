@@ -34,13 +34,12 @@ import { RangoCreateView } from "./components/views/RangoCreateView";
 import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
 import { SmallActionButton, ActionMenu, toast } from "./components/shared";
+import { DateTextInput } from "./components/shared/DateTextInput";
 import { useHomeData } from "./hooks/useHomeData";
 
 // Importar tipos desde archivos de tipos organizados
 import type {
   Role,
-  Rango,
-  Bateria,
   Equipo,
   Personal,
   PersonalObservacion,
@@ -74,6 +73,12 @@ import {
   personalPayload,
   toEditablePersonal,
 } from "@/lib/form-mappers";
+import {
+  formatDateOnlyForDisplay,
+  parseDateInput,
+  isDateInputAfter,
+  isDateInputAfterToday,
+} from "@/lib/date-helpers";
 import { normalizeSearchTerm } from "@/lib/search";
 import { moveIdInOrder, compareTallaOptions } from "@/lib/array-utils";
 import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
@@ -251,10 +256,18 @@ export default function Home() {
   const ciLooksValid = newPersonal.ci.trim() === "" || isValidUruguayanCi(newPersonal.ci);
   const newPersonalPhoneLooksValid =
     newPersonal.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(newPersonal.telefonoContacto);
+  const newPersonalFechaIngresoLooksValid =
+    newPersonal.fechaIngreso.trim() === "" ||
+    (parseDateInput(newPersonal.fechaIngreso).valid && !isDateInputAfterToday(newPersonal.fechaIngreso));
+  const newPersonalFechaIngresoOriginalLooksValid =
+    newPersonal.fechaIngresoOriginal.trim() === "" ||
+    (parseDateInput(newPersonal.fechaIngresoOriginal).valid && !isDateInputAfterToday(newPersonal.fechaIngresoOriginal));
   const newPersonalReentryDatesLookValid =
     !newPersonal.esReingreso ||
     (newPersonal.fechaIngreso.trim() !== "" &&
-      (newPersonal.fechaIngresoOriginal.trim() === "" || newPersonal.fechaIngresoOriginal <= newPersonal.fechaIngreso));
+      parseDateInput(newPersonal.fechaIngreso).valid &&
+      newPersonalFechaIngresoOriginalLooksValid &&
+      (newPersonal.fechaIngresoOriginal.trim() === "" || !isDateInputAfter(newPersonal.fechaIngresoOriginal, newPersonal.fechaIngreso)));
   const ciHasError = !ciLooksValid || ciAlreadyExists;
   const requiredPersonalFields = [
     newPersonal.ci.trim() !== "" && isValidUruguayanCi(newPersonal.ci) && !ciAlreadyExists,
@@ -267,6 +280,8 @@ export default function Home() {
     canRegisterPersonal &&
     requiredPersonalCompleted === requiredPersonalFields.length &&
     newPersonalPhoneLooksValid &&
+    newPersonalFechaIngresoLooksValid &&
+    newPersonalFechaIngresoOriginalLooksValid &&
     newPersonalReentryDatesLookValid &&
     !creatingPersonal;
   const maxFechaIngreso = getTodayDateInput();
@@ -816,21 +831,16 @@ export default function Home() {
         setStatus("No tienes permisos para editar.");
         return;
       }
-
-      const itemById = new Map(equiposActivos.map((item) => [item.itemId, item]));
-      const updates = orderedItemIds
-        .map((itemId, idx) => {
-          const item = itemById.get(itemId);
-          if (!item) return null;
-          const ordenPdf = idx + 1;
-          return item.ordenPdf === ordenPdf ? null : { itemId: item.itemId, nombre: item.nombre, activo: item.activo, ordenPdf };
-        })
-        .filter((entry): entry is { itemId: string; nombre: string; activo: boolean; ordenPdf: number } => entry !== null);
-
-      if (updates.length === 0) return;
+      const currentActiveIds = equiposActivos.map((item) => item.itemId);
+      if (
+        orderedItemIds.length === currentActiveIds.length &&
+        orderedItemIds.every((itemId, index) => itemId === currentActiveIds[index])
+      ) {
+        return;
+      }
 
       try {
-        await updateMultipleItemOrdersHandler(updates, {
+        await updateMultipleItemOrdersHandler(orderedItemIds, {
           onSuccess: async () => {
             setEquipoOrderDraftIds(null);
             setStatus("Orden de PDF actualizado.");
@@ -936,6 +946,22 @@ export default function Home() {
         setStatus("El celular de contacto debe tener formato uruguayo valido.");
         return;
       }
+      if (newPersonal.fechaIngreso.trim() !== "" && !parseDateInput(newPersonal.fechaIngreso).valid) {
+        setStatus("La fecha de ingreso debe estar en formato DD/MM/AAAA.");
+        return;
+      }
+      if (newPersonal.fechaIngreso.trim() !== "" && isDateInputAfterToday(newPersonal.fechaIngreso)) {
+        setStatus("La fecha de ingreso no puede ser futura.");
+        return;
+      }
+      if (newPersonal.fechaIngresoOriginal.trim() !== "" && !parseDateInput(newPersonal.fechaIngresoOriginal).valid) {
+        setStatus("La fecha de ingreso debe estar en formato DD/MM/AAAA.");
+        return;
+      }
+      if (newPersonal.fechaIngresoOriginal.trim() !== "" && isDateInputAfterToday(newPersonal.fechaIngresoOriginal)) {
+        setStatus("La fecha de ingreso no puede ser futura.");
+        return;
+      }
       if (newPersonal.esReingreso && newPersonal.fechaIngreso.trim() === "") {
         setStatus("La fecha de re-ingreso es obligatoria.");
         return;
@@ -943,9 +969,9 @@ export default function Home() {
       if (
         newPersonal.esReingreso &&
         newPersonal.fechaIngresoOriginal.trim() !== "" &&
-        newPersonal.fechaIngresoOriginal > newPersonal.fechaIngreso
+        isDateInputAfter(newPersonal.fechaIngresoOriginal, newPersonal.fechaIngreso)
       ) {
-        setStatus("La fecha de ingreso original no puede ser posterior al re-ingreso.");
+        setStatus("La fecha de ingreso no puede ser posterior al re-ingreso.");
         return;
       }
 
@@ -992,6 +1018,22 @@ export default function Home() {
         setStatus("El celular de contacto debe tener formato uruguayo valido.");
         return;
       }
+      if (editPersonal.fechaIngreso.trim() !== "" && !parseDateInput(editPersonal.fechaIngreso).valid) {
+        setStatus("La fecha de ingreso debe estar en formato DD/MM/AAAA.");
+        return;
+      }
+      if (editPersonal.fechaIngreso.trim() !== "" && isDateInputAfterToday(editPersonal.fechaIngreso)) {
+        setStatus("La fecha de ingreso no puede ser futura.");
+        return;
+      }
+      if (editPersonal.fechaIngresoOriginal.trim() !== "" && !parseDateInput(editPersonal.fechaIngresoOriginal).valid) {
+        setStatus("La fecha de ingreso debe estar en formato DD/MM/AAAA.");
+        return;
+      }
+      if (editPersonal.fechaIngresoOriginal.trim() !== "" && isDateInputAfterToday(editPersonal.fechaIngresoOriginal)) {
+        setStatus("La fecha de ingreso no puede ser futura.");
+        return;
+      }
       if (editPersonal.esReingreso && editPersonal.fechaIngreso.trim() === "") {
         setStatus("La fecha de re-ingreso es obligatoria.");
         return;
@@ -999,9 +1041,9 @@ export default function Home() {
       if (
         editPersonal.esReingreso &&
         editPersonal.fechaIngresoOriginal.trim() !== "" &&
-        editPersonal.fechaIngresoOriginal > editPersonal.fechaIngreso
+        isDateInputAfter(editPersonal.fechaIngresoOriginal, editPersonal.fechaIngreso)
       ) {
-        setStatus("La fecha de ingreso original no puede ser posterior al re-ingreso.");
+        setStatus("La fecha de ingreso no puede ser posterior al re-ingreso.");
         return;
       }
       try {
@@ -1187,7 +1229,7 @@ export default function Home() {
         ? {
             ...prev,
             observacionId: observacion.observacionId,
-            fecha: observacion.fecha.slice(0, 10),
+            fecha: formatDateOnlyForDisplay(observacion.fecha),
             texto: observacion.texto,
             error: null,
           }
@@ -1211,7 +1253,7 @@ export default function Home() {
       ci: registro.ci,
       tipo: registro.tipo,
       afectaStock: registro.afectaStock,
-      fecha: registro.fecha.slice(0, 10),
+      fecha: formatDateOnlyForDisplay(registro.fecha),
       comentarios: registro.comentarios ?? "",
       items:
         registro.items.length > 0
@@ -1250,6 +1292,14 @@ export default function Home() {
   async function saveRegistro() {
     if (!registroDraft || registroSaving) return;
     const isRectificacion = registroDraft.modo === "rectificar" && registroDraft.registroId !== null;
+    if (!parseDateInput(registroDraft.fecha).valid) {
+      setStatus("La fecha del movimiento debe estar en formato DD/MM/AAAA.");
+      return;
+    }
+    if (isDateInputAfterToday(registroDraft.fecha)) {
+      setStatus("La fecha del movimiento no puede ser futura.");
+      return;
+    }
     const payloadEquipos = registroDraft.items
       .map((item) => ({
         itemId: item.itemId.trim(),
@@ -1325,6 +1375,14 @@ export default function Home() {
 
   async function saveStockOperation() {
     if (stockSaving) return;
+    if (!parseDateInput(stockDraft.fecha).valid) {
+      setStatus("La fecha del stock debe estar en formato DD/MM/AAAA.");
+      return;
+    }
+    if (isDateInputAfterToday(stockDraft.fecha)) {
+      setStatus("La fecha del stock no puede ser futura.");
+      return;
+    }
 
     const payloadItems = stockDraft.items
       .map((item) => ({
@@ -1374,6 +1432,14 @@ export default function Home() {
 
     if (!personalObservacionDraft.fecha) {
       setStatus("Selecciona la fecha de la observacion.");
+      return;
+    }
+    if (!parseDateInput(personalObservacionDraft.fecha).valid) {
+      setStatus("La fecha de la observacion debe estar en formato DD/MM/AAAA.");
+      return;
+    }
+    if (isDateInputAfterToday(personalObservacionDraft.fecha)) {
+      setStatus("La fecha de la observacion no puede ser futura.");
       return;
     }
     if (!personalObservacionDraft.texto.trim()) {
@@ -1436,7 +1502,7 @@ export default function Home() {
   function deletePersonalObservacion(observacion: PersonalObservacion) {
     openConfirmDialog({
       title: "Eliminar observacion",
-      message: `Se eliminara la observacion del ${new Date(observacion.fecha).toLocaleDateString("es-UY")}.`,
+      message: `Se eliminara la observacion del ${formatDateOnlyForDisplay(observacion.fecha)}.`,
       confirmText: "Eliminar",
       tone: "danger",
       onConfirm: async () => {
@@ -1493,11 +1559,10 @@ export default function Home() {
           placeholder="Nombre 2"
           className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
         />
-        <input
-          type="date"
+        <DateTextInput
           value={editPersonal.fechaIngreso}
-          onChange={(event) => setEditPersonal((prev) => ({ ...prev, fechaIngreso: event.target.value }))}
-          max={maxFechaIngreso}
+          onChange={(value) => setEditPersonal((prev) => ({ ...prev, fechaIngreso: value }))}
+          ariaLabel={`Fecha de ingreso. Maximo ${maxFechaIngreso}`}
           className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
         />
         <select

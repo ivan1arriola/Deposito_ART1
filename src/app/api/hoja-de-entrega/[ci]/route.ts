@@ -5,6 +5,7 @@ import { getFirmaConfig, TEXTO_ENCARGADO, TEXTO_OFICIAL } from "@/lib/firma-conf
 import { buildHojaObservaciones } from "@/lib/hoja-entrega-observaciones";
 import { prisma } from "@/lib/prisma";
 import { isValidUruguayanCi } from "@/lib/ci";
+import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 
 type RegistroWithItems = {
   fecha: Date;
@@ -47,13 +48,13 @@ function toSixColumns(records: RegistroWithItems[]): MatrixColumn[] {
     const cutoffRecord = oldRecords[oldRecords.length - 1] ?? null;
 
     columns.push({
-      fecha: cutoffRecord ? cutoffRecord.fecha.toISOString() : null,
+      fecha: formatDateOnlyFromDate(cutoffRecord?.fecha),
       items: aggregateItems(oldRecords),
     });
 
     columns.push(
       ...recentRecords.map((record) => ({
-        fecha: record.fecha.toISOString(),
+        fecha: formatDateOnlyFromDate(record.fecha),
         items: record.items.map((detail) => ({
           nombre: detail.item.nombre,
           cantidad: detail.cantidad,
@@ -63,7 +64,7 @@ function toSixColumns(records: RegistroWithItems[]): MatrixColumn[] {
   } else {
     columns.push(
       ...sorted.map((record) => ({
-        fecha: record.fecha.toISOString(),
+        fecha: formatDateOnlyFromDate(record.fecha),
         items: record.items.map((detail) => ({
           nombre: detail.item.nombre,
           cantidad: detail.cantidad,
@@ -169,8 +170,8 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       nombre1: persona.nombre1,
       nombre2: persona.nombre2,
       esReingreso: persona.esReingreso,
-      fechaIngreso: persona.fechaIngreso ? persona.fechaIngreso.toISOString() : null,
-      fechaIngresoOriginal: persona.fechaIngresoOriginal ? persona.fechaIngresoOriginal.toISOString() : null,
+      fechaIngreso: formatDateOnlyFromDate(persona.fechaIngreso),
+      fechaIngresoOriginal: formatDateOnlyFromDate(persona.fechaIngresoOriginal),
       gradoPersonal: persona.rango.nombreCompleto,
       gradoPersonalAbreviado: persona.rango.abreviacion,
       bateria: persona.bateria?.nombre ?? null,

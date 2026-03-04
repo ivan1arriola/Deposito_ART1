@@ -1,5 +1,6 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
 import { formatUruguayanCi } from "@/lib/ci";
+import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
@@ -43,7 +44,7 @@ export default async function TallasUnidadPage({
 
   personal.sort(comparePersonalByHierarchy);
 
-  const generatedAt = new Date().toLocaleString("es-UY");
+  const generatedAt = formatDateTimeForDisplay(new Date());
 
   return (
     <>

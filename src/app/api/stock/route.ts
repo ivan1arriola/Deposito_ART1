@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { TipoStockOperacion } from "@prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import {
+  dateInputToDate,
+  formatDateOnlyForDisplay,
+  formatDateOnlyFromDate,
+  formatDateTimeForDisplay,
+  getTodayDateInput,
+  isDateInputAfterToday,
+} from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 import { buildStockByItemMap, registroStockDeltaFactor, stockOperacionDeltaFactor } from "@/lib/stock";
 import type { StockDashboardData } from "@/types/views";
@@ -16,6 +24,11 @@ type StockPayload = {
   tipo: TipoStockOperacion | string;
   comentarios?: string;
   items: StockItemPayload[];
+};
+
+type StockHistorialInternalEntry = StockDashboardData["historial"][number] & {
+  sortFecha: number;
+  sortCreatedAt: number;
 };
 
 function parseBigIntId(value: unknown) {
@@ -40,10 +53,8 @@ function parseTipoStockOperacion(value: unknown) {
 
 function parseFecha(value: unknown) {
   const raw = String(value ?? "").trim();
-  if (!raw) return new Date();
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
+  if (!raw) return dateInputToDate(getTodayDateInput());
+  return dateInputToDate(raw);
 }
 
 function readRequestMeta(request: Request) {
@@ -166,10 +177,10 @@ export async function GET(req: Request) {
     stockActual: stockByItem.get(item.itemId.toString()) ?? 0,
   }));
 
-  const historialManual = stockOperaciones.map((operacion) => ({
+  const historialManual: StockHistorialInternalEntry[] = stockOperaciones.map((operacion) => ({
     id: `manual-${operacion.stockOperacionId.toString()}`,
-    fecha: operacion.fecha.toISOString(),
-    createdAt: operacion.createdAt.toISOString(),
+    fecha: formatDateOnlyFromDate(operacion.fecha) ?? "",
+    createdAt: formatDateTimeForDisplay(operacion.createdAt),
     origen: "MANUAL" as const,
     tipo: operacion.tipo,
     afectaStock: true,
@@ -184,17 +195,19 @@ export async function GET(req: Request) {
       cantidad: item.cantidad,
       delta: item.cantidad * stockOperacionDeltaFactor(operacion.tipo),
     })),
+    sortFecha: operacion.fecha.getTime(),
+    sortCreatedAt: operacion.createdAt.getTime(),
   }));
 
-  const historialPersonal = registros
+  const historialPersonal: StockHistorialInternalEntry[] = registros
     .map((registro) => {
       if (registro.tipo !== "ENTREGA" && registro.tipo !== "DEVOLUCION") return null;
       const apellidos = `${registro.personal.apellido1} ${registro.personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
       const nombres = `${registro.personal.nombre1} ${registro.personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
       return {
         id: `personal-${registro.registroId.toString()}`,
-        fecha: registro.fecha.toISOString(),
-        createdAt: registro.createdAt.toISOString(),
+        fecha: formatDateOnlyFromDate(registro.fecha) ?? "",
+        createdAt: formatDateTimeForDisplay(registro.createdAt),
         origen: "PERSONAL" as const,
         tipo: registro.tipo,
         afectaStock: registro.afectaStock,
@@ -209,20 +222,36 @@ export async function GET(req: Request) {
           cantidad: item.cantidad,
           delta: item.cantidad * registroStockDeltaFactor(registro.tipo),
         })),
+        sortFecha: registro.fecha.getTime(),
+        sortCreatedAt: registro.createdAt.getTime(),
       };
     })
     .filter((registro): registro is NonNullable<typeof registro> => registro !== null);
 
-  const historial = [...historialManual, ...historialPersonal]
+  const historial: StockDashboardData["historial"] = [...historialManual, ...historialPersonal]
     .sort((a, b) => {
-      const timeDiff = new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+      const timeDiff = b.sortFecha - a.sortFecha;
       if (timeDiff !== 0) return timeDiff;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return b.sortCreatedAt - a.sortCreatedAt;
     })
-    .slice(0, limit);
+    .slice(0, limit)
+    .map((entry) => ({
+      id: entry.id,
+      fecha: entry.fecha,
+      createdAt: entry.createdAt,
+      origen: entry.origen,
+      tipo: entry.tipo,
+      afectaStock: entry.afectaStock,
+      comentarios: entry.comentarios,
+      totalUnidades: entry.totalUnidades,
+      ci: entry.ci,
+      persona: entry.persona,
+      registradoPor: entry.registradoPor,
+      items: entry.items,
+    }));
 
   const data: StockDashboardData = {
-    generatedAt: new Date().toISOString(),
+    generatedAt: formatDateTimeForDisplay(new Date()),
     resumen,
     historial,
   };
@@ -248,9 +277,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "tipo o fecha invalidos." }, { status: 400 });
   }
 
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  if (fecha.getTime() > today.getTime()) {
+  if (body.fecha && isDateInputAfterToday(body.fecha)) {
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
@@ -321,7 +348,7 @@ export async function POST(req: Request) {
       detalle: {
         evento: tipo === TipoStockOperacion.INGRESO ? "STOCK_INGRESO" : "STOCK_EGRESO",
         tipo,
-        fechaMovimiento: fecha.toISOString().slice(0, 10),
+        fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
         comentarios,
         totalEquipos: itemsDetallados.length,
         totalUnidades,

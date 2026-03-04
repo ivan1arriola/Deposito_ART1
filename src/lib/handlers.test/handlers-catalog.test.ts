@@ -6,6 +6,7 @@ import {
   deleteRangoHandler,
   createItemHandler,
   updateItemHandler,
+  updateMultipleItemOrdersHandler,
 } from "@/lib/handlers-catalog";
 
 vi.mock("@/lib/api", () => ({
@@ -152,6 +153,22 @@ describe("Handlers de Catalogos - Equipos", () => {
       expect.objectContaining({
         method: "PUT",
         body: JSON.stringify({ nombre: "Parka Pixelada", activo: true, ordenPdf: 4 }),
+      }),
+    );
+  });
+
+  it("deberia guardar el orden visible de hoja en una sola llamada", async () => {
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    vi.mocked(api).mockResolvedValue({});
+
+    await updateMultipleItemOrdersHandler(["12", "18", "25"], { onSuccess, onError });
+
+    expect(vi.mocked(api)).toHaveBeenCalledWith(
+      "/api/items",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ orderedItemIds: ["12", "18", "25"] }),
       }),
     );
   });

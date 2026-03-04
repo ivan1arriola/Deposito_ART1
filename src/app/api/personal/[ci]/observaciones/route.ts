@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { logAudit } from "@/lib/audit";
+import {
+  dateInputToDate,
+  formatDateOnlyForDisplay,
+  formatDateOnlyFromDate,
+  formatDateTimeForDisplay,
+  isDateInputAfterToday,
+} from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 
 type ObservacionPayload = {
@@ -22,17 +29,7 @@ function isValidPayload(body: unknown): body is ObservacionPayload {
 }
 
 function parseDateOnly(value: string) {
-  const trimmed = value.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
-
-  const parsed = new Date(`${trimmed}T00:00:00.000Z`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function isFutureDate(rawValue: string) {
-  const today = new Date();
-  const todayValue = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, "0")}-${String(today.getUTCDate()).padStart(2, "0")}`;
-  return rawValue.trim() > todayValue;
+  return dateInputToDate(value);
 }
 
 function serializeObservacion(observacion: {
@@ -45,9 +42,9 @@ function serializeObservacion(observacion: {
   return {
     observacionId: observacion.observacionId.toString(),
     ci: observacion.ci,
-    fecha: observacion.fecha.toISOString(),
+    fecha: formatDateOnlyFromDate(observacion.fecha) ?? "",
     texto: observacion.texto,
-    createdAt: observacion.createdAt.toISOString(),
+    createdAt: formatDateTimeForDisplay(observacion.createdAt),
   };
 }
 
@@ -94,7 +91,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
   if (!fecha) {
     return NextResponse.json({ error: "La fecha de la observacion es invalida." }, { status: 400 });
   }
-  if (isFutureDate(body.fecha)) {
+  if (isDateInputAfterToday(body.fecha)) {
     return NextResponse.json({ error: "La fecha de la observacion no puede ser futura." }, { status: 400 });
   }
 
@@ -124,7 +121,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
       entidadId: created.observacionId.toString(),
       detalle: {
         ci: ciDecoded,
-        fecha: body.fecha.trim(),
+        fecha: formatDateOnlyForDisplay(body.fecha),
         texto,
       },
     });
