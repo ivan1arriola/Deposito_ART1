@@ -124,7 +124,7 @@
   height: 297mm;
   min-height: 297mm;
   margin: 2px auto;
-  padding: 3.5mm 6mm 3.5mm 6mm;
+  padding: 3.5mm 6mm 7mm 6mm;
   background: var(--color-surface);
   box-sizing: border-box;
   display: flex;
@@ -148,6 +148,7 @@
   font-family: var(--font-family-mono);
   font-size: 9px;
   line-height: 1.2;
+  flex: 1 1 auto;
   page-break-inside: avoid;
   break-inside: avoid-page;
   border: 2px solid var(--color-border);
@@ -453,13 +454,11 @@
 
 /* ===== SECCIÓN DE FIRMAS ===== */
 .firmaSection {
-  margin-top: 0;
-  flex: 1 1 auto;
-  padding: 0 1mm;
+  margin-top: auto;
+  padding: 0 1mm 1.5mm 1mm;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 2mm;
+  gap: 3.5mm;
   page-break-inside: avoid;
   break-inside: avoid-page;
 }
@@ -551,7 +550,7 @@
   .sheet {
     margin: 0;
     height: 297mm;
-    padding: 3.5mm 6mm 3.5mm 6mm;
+    padding: 3.5mm 6mm 7mm 6mm;
     max-width: none;
     width: 210mm;
     min-height: 297mm;
@@ -587,9 +586,9 @@
 
   .sign,
   .firmaSection {
-    margin-top: 0;
+    margin-top: auto;
     padding: 0;
-    gap: 2mm;
+    gap: 3.5mm;
   }
 
   .signBlock,

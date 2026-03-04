@@ -232,11 +232,11 @@ function stockOptionClass(activeView: MainView, view: StockView) {
 }
 
 function menuContainerClass(isOpen: boolean) {
-  return `relative flex-1 ${isOpen ? "z-30" : "z-0"}`;
+  return `relative flex-1 ${isOpen ? "z-20" : "z-0"}`;
 }
 
 function menuPanelClass(desktopWidthClass: string) {
-  return `absolute left-0 right-0 top-full z-40 mt-2 rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:left-auto sm:right-0 ${desktopWidthClass}`;
+  return `absolute left-0 right-0 top-full z-30 mt-2 rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:left-auto sm:right-0 ${desktopWidthClass}`;
 }
 
 export function MainNavigation({
@@ -346,7 +346,7 @@ export function MainNavigation({
   }, [showSummaryViews, showCreateViews, showStockViews]);
 
   return (
-    <section className="ej-card relative isolate z-20 mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
+    <section className="ej-card relative isolate z-[220] mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Navegación</p>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <button type="button" onClick={() => handleSelectView("personal")} className={`${viewButtonClass(activeView, "personal")} group relative flex-1 overflow-hidden transition-all`}>
@@ -479,7 +479,8 @@ export function MainNavigation({
               >
                 <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Pantallas de alta</p>
                 <div className="grid grid-cols-1 gap-1.5">
-                  {createViews
+                {createViews
+                    .filter((item) => item.view !== "bateria_nueva" && item.view !== "grado_nuevo")
                     .filter((item) => (item.adminOnly ? isAdmin : true))
                     .map((item) => (
                       <button
@@ -535,6 +536,7 @@ export function MainNavigation({
               <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de configuración</p>
               <div className="grid grid-cols-1 gap-1.5">
                 {configViews
+                  .filter((item) => item.view !== "grados" && item.view !== "baterias")
                   .filter((item) => (item.adminOnly ? isAdmin : true))
                   .map((item) => (
                     <button key={item.view} type="button" onClick={() => handleSelectView(item.view)} className={configOptionClass(activeView, item.view)}>

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { applyItemOrder, getOrderedItemIds, insertItemAtOrder } from "@/lib/item-ordering";
+import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 
 type ItemPayload = {
   nombre: string;
@@ -34,6 +35,175 @@ function serializeItem(item: {
     activo: item.activo,
     ordenPdf: item.ordenPdf,
   };
+}
+
+type DeleteImpactData = {
+  impacto: {
+    item: {
+      itemId: string;
+      nombre: string;
+    };
+    resumen: {
+      totalMovimientos: number;
+      totalRegistros: number;
+      totalStock: number;
+      movimientosQueSeEliminan: number;
+      movimientosQueSeActualizan: number;
+    };
+    registros: Array<{
+      movimientoId: string;
+      fecha: string;
+      tipo: string;
+      ci: string;
+      persona: string;
+      cantidadItems: number;
+      seEliminaMovimiento: boolean;
+    }>;
+    stock: Array<{
+      movimientoId: string;
+      fecha: string;
+      tipo: string;
+      cantidadItems: number;
+      seEliminaMovimiento: boolean;
+    }>;
+  };
+  affectedRegistroIds: bigint[];
+  affectedStockOperacionIds: bigint[];
+};
+
+async function buildDeleteImpactData(
+  tx: Omit<typeof prisma, "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends">,
+  itemId: bigint,
+  itemNombre: string,
+): Promise<DeleteImpactData> {
+  const registroRefs = await tx.registroItem.findMany({
+    where: { itemId },
+    select: { registroId: true },
+  });
+  const stockRefs = await tx.stockOperacionItem.findMany({
+    where: { itemId },
+    select: { stockOperacionId: true },
+  });
+
+  const affectedRegistroIds = Array.from(new Set(registroRefs.map((ref) => ref.registroId.toString()))).map((id) => BigInt(id));
+  const affectedStockOperacionIds = Array.from(new Set(stockRefs.map((ref) => ref.stockOperacionId.toString()))).map((id) => BigInt(id));
+
+  const [registros, stockOperaciones] = await Promise.all([
+    affectedRegistroIds.length > 0
+      ? tx.registro.findMany({
+          where: { registroId: { in: affectedRegistroIds } },
+          select: {
+            registroId: true,
+            fecha: true,
+            tipo: true,
+            ci: true,
+            personal: {
+              select: {
+                apellido1: true,
+                apellido2: true,
+                nombre1: true,
+                nombre2: true,
+              },
+            },
+            _count: {
+              select: { items: true },
+            },
+          },
+        })
+      : Promise.resolve([]),
+    affectedStockOperacionIds.length > 0
+      ? tx.stockOperacion.findMany({
+          where: { stockOperacionId: { in: affectedStockOperacionIds } },
+          select: {
+            stockOperacionId: true,
+            fecha: true,
+            tipo: true,
+            _count: {
+              select: { items: true },
+            },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const normalizedRegistros = registros
+    .map((registro) => {
+      const persona = [registro.personal.apellido1, registro.personal.apellido2, registro.personal.nombre1, registro.personal.nombre2]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      return {
+        movimientoId: registro.registroId.toString(),
+        fecha: formatDateOnlyFromDate(registro.fecha) ?? "",
+        tipo: registro.tipo,
+        ci: registro.ci,
+        persona,
+        cantidadItems: registro._count.items,
+        seEliminaMovimiento: registro._count.items <= 1,
+      };
+    })
+    .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.movimientoId.localeCompare(a.movimientoId));
+
+  const normalizedStock = stockOperaciones
+    .map((stockOperacion) => ({
+      movimientoId: stockOperacion.stockOperacionId.toString(),
+      fecha: formatDateOnlyFromDate(stockOperacion.fecha) ?? "",
+      tipo: stockOperacion.tipo,
+      cantidadItems: stockOperacion._count.items,
+      seEliminaMovimiento: stockOperacion._count.items <= 1,
+    }))
+    .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.movimientoId.localeCompare(a.movimientoId));
+
+  const movimientosQueSeEliminan =
+    normalizedRegistros.filter((mov) => mov.seEliminaMovimiento).length +
+    normalizedStock.filter((mov) => mov.seEliminaMovimiento).length;
+  const totalMovimientos = normalizedRegistros.length + normalizedStock.length;
+
+  return {
+    impacto: {
+      item: {
+        itemId: itemId.toString(),
+        nombre: itemNombre,
+      },
+      resumen: {
+        totalMovimientos,
+        totalRegistros: normalizedRegistros.length,
+        totalStock: normalizedStock.length,
+        movimientosQueSeEliminan,
+        movimientosQueSeActualizan: totalMovimientos - movimientosQueSeEliminan,
+      },
+      registros: normalizedRegistros,
+      stock: normalizedStock,
+    },
+    affectedRegistroIds,
+    affectedStockOperacionIds,
+  };
+}
+
+export async function GET(req: Request, context: { params: Promise<{ itemId: string }> }) {
+  const auth = await authorizeRequest(req, "delete_data");
+  if (!auth.ok) return auth.response;
+
+  const { itemId: itemIdParam } = await context.params;
+  const itemId = parseItemId(itemIdParam);
+  if (itemId === null) {
+    return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+  }
+
+  try {
+    const item = await prisma.item.findUniqueOrThrow({
+      where: { itemId },
+      select: { itemId: true, nombre: true },
+    });
+    const { impacto } = await buildDeleteImpactData(prisma, itemId, item.nombre);
+    return NextResponse.json(impacto);
+  } catch (error: unknown) {
+    if (typeof error === "object" && error && "code" in error) {
+      const code = (error as { code: string }).code;
+      if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
+    }
+    return NextResponse.json({ error: "No se pudo calcular el impacto de borrado." }, { status: 500 });
+  }
 }
 
 export async function PUT(req: Request, context: { params: Promise<{ itemId: string }> }) {
@@ -140,7 +310,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
   }
 
   try {
-    const deleted = await prisma.$transaction(async (tx) => {
+    const deletionResult = await prisma.$transaction(async (tx) => {
       const existing = await tx.item.findUniqueOrThrow({
         where: { itemId },
         select: {
@@ -150,7 +320,33 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
         },
       });
 
+      const { impacto, affectedRegistroIds, affectedStockOperacionIds } = await buildDeleteImpactData(tx, itemId, existing.nombre);
       const remainingIds = await getOrderedItemIds(tx, existing.activo, itemId);
+
+      await tx.registroItem.deleteMany({
+        where: { itemId },
+      });
+      await tx.stockOperacionItem.deleteMany({
+        where: { itemId },
+      });
+
+      if (affectedRegistroIds.length > 0) {
+        await tx.registro.deleteMany({
+          where: {
+            registroId: { in: affectedRegistroIds },
+            items: { none: {} },
+          },
+        });
+      }
+
+      if (affectedStockOperacionIds.length > 0) {
+        await tx.stockOperacion.deleteMany({
+          where: {
+            stockOperacionId: { in: affectedStockOperacionIds },
+            items: { none: {} },
+          },
+        });
+      }
 
       const removed = await tx.item.delete({
         where: { itemId },
@@ -158,30 +354,29 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
 
       await applyItemOrder(tx, remainingIds);
 
-      return removed;
+      return {
+        removed,
+        impacto,
+      };
     });
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
       accion: "DELETE",
       entidad: "ITEM",
-      entidadId: deleted.itemId.toString(),
+      entidadId: deletionResult.removed.itemId.toString(),
       detalle: {
-        nombre: deleted.nombre,
+        nombre: deletionResult.removed.nombre,
+        impacto: deletionResult.impacto.resumen,
+        advertencia: "Accion destructiva. Se elimino el equipo y los movimientos vacios relacionados.",
       },
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, impacto: deletionResult.impacto.resumen });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
       if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
-      if (code === "P2003") {
-        return NextResponse.json(
-          { error: "No se puede eliminar el equipo porque tiene registros asociados." },
-          { status: 409 },
-        );
-      }
     }
 
     return NextResponse.json({ error: "No se pudo eliminar el equipo." }, { status: 500 });

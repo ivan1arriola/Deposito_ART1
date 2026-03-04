@@ -4,7 +4,6 @@
  */
 
 import { api } from "@/lib/api";
-import type { Rango, Bateria, Item } from "@/types/entities";
 
 interface CallbackProps {
   onSuccess: (data?: unknown) => void;
@@ -161,6 +160,48 @@ export async function deleteItemHandler(itemId: string, callbacks: CallbackProps
     callbacks.onSuccess();
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo eliminar el equipo.";
+    callbacks.onError(message);
+    throw error;
+  }
+}
+
+export type ItemDeleteImpact = {
+  item: {
+    itemId: string;
+    nombre: string;
+  };
+  resumen: {
+    totalMovimientos: number;
+    totalRegistros: number;
+    totalStock: number;
+    movimientosQueSeEliminan: number;
+    movimientosQueSeActualizan: number;
+  };
+  registros: Array<{
+    movimientoId: string;
+    fecha: string;
+    tipo: string;
+    ci: string;
+    persona: string;
+    cantidadItems: number;
+    seEliminaMovimiento: boolean;
+  }>;
+  stock: Array<{
+    movimientoId: string;
+    fecha: string;
+    tipo: string;
+    cantidadItems: number;
+    seEliminaMovimiento: boolean;
+  }>;
+};
+
+export async function loadItemDeleteImpactHandler(itemId: string, callbacks: CallbackProps) {
+  try {
+    const result = await api<ItemDeleteImpact>(`/api/items/${itemId}`, { method: "GET" });
+    callbacks.onSuccess(result);
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo calcular el impacto de borrado del equipo.";
     callbacks.onError(message);
     throw error;
   }

@@ -31,7 +31,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     width: 210mm;
     height: 297mm;
     min-height: 297mm;
-    padding: 3.5mm 6mm 3.5mm 6mm;
+    padding: 3.5mm 6mm 7mm 6mm;
     background: white;
     margin: 0 auto;
     box-sizing: border-box;
@@ -51,6 +51,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     border-collapse: collapse;
     border: 2px solid #000;
     margin: 0;
+    flex: 1 1 auto;
     background: white;
     table-layout: fixed;
     page-break-inside: avoid;
@@ -235,11 +236,9 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
   .firma-section {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
-    justify-content: space-between;
-    margin-top: 0;
-    padding: 0 1mm;
-    gap: 2mm;
+    margin-top: auto;
+    padding: 0 1mm 1.5mm 1mm;
+    gap: 3.5mm;
     page-break-inside: avoid;
     break-inside: avoid-page;
   }
@@ -300,7 +299,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
       margin: 0;
       height: 297mm;
       min-height: 297mm;
-      padding: 3.5mm 6mm 3.5mm 6mm;
+      padding: 3.5mm 6mm 7mm 6mm;
       page-break-after: avoid;
     }
 

@@ -50,10 +50,10 @@ export function SmallActionButton(props: {
   icon?: "edit" | "trash" | "check" | "x";
 }) {
   const colorClasses = {
-    edit: "bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300",
-    delete: "bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300",
-    ok: "bg-green-100 text-green-700 hover:bg-green-200 active:bg-green-300",
-    neutral: "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300",
+    edit: "border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 active:bg-blue-200",
+    delete: "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200",
+    ok: "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:bg-emerald-200",
+    neutral: "border border-stone-300 bg-stone-100 text-stone-700 hover:bg-stone-200 active:bg-stone-300",
   };
 
   const getIconSvg = () => {

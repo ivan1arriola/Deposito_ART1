@@ -1,24 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  /* Paleta oficial del Ejercito para desarrollo web */
-  --EscudoAmarillo: #FFCC00;
-  --EscudoAzul: #003885;
-  --EscudoRojo: #CF0F21;
-  --EscudoVerde: #1F6728;
-  --EscudoMarron: #4D351D;
-  --EscudoCeleste: #1B75AA;
-  --EscudoGris: #C3C3C6;
+  /* Paleta principal */
+  --brand-olive: #66704D;
+  --brand-charcoal: #37342B;
+  --brand-sand: #BAB08C;
+  --brand-moss: #8D845B;
+  --brand-cream: #E9E5D2;
+
+  /* Compatibilidad con estilos existentes */
+  --EscudoAmarillo: var(--brand-sand);
+  --EscudoAzul: var(--brand-charcoal);
+  --EscudoRojo: var(--brand-charcoal);
+  --EscudoVerde: var(--brand-olive);
+  --EscudoMarron: var(--brand-charcoal);
+  --EscudoCeleste: var(--brand-moss);
+  --EscudoGris: var(--brand-cream);
   --EscudoNegro: #000000;
-  --UniformeVerdeClaro: #dfeee4;
-  --UniformeVerdeMedio: #1b75aa;
-  --UniformeVerdeOscuro: #003885;
+  --UniformeVerdeClaro: var(--brand-cream);
+  --UniformeVerdeMedio: var(--brand-moss);
+  --UniformeVerdeOscuro: var(--brand-charcoal);
   --UniformeVerdeBeige: #f2f4f7;
   --Blanco: #FFFFFF;
   --fuentePrincipal: "Liberation Sans", sans-serif;
 
-  --background: #C3C3C6;
-  --foreground: #000000;
+  --background: var(--brand-cream);
+  --foreground: #23201A;
 }
 
 @theme inline {
@@ -38,9 +45,9 @@ body {
   color: var(--foreground);
   font-family: var(--fuentePrincipal), var(--font-geist-sans), "Segoe UI", sans-serif;
   background-image:
-    radial-gradient(circle at 12% 8%, rgb(0 56 133 / 18%) 0, transparent 32%),
-    radial-gradient(circle at 88% 14%, rgb(31 103 40 / 16%) 0, transparent 34%),
-    linear-gradient(180deg, rgb(245 246 247 / 96%) 0%, rgb(223 226 230 / 92%) 100%);
+    radial-gradient(circle at 12% 8%, rgb(141 132 91 / 18%) 0, transparent 34%),
+    radial-gradient(circle at 88% 14%, rgb(102 112 77 / 16%) 0, transparent 36%),
+    linear-gradient(180deg, rgb(244 241 228 / 96%) 0%, rgb(233 229 210 / 92%) 100%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -63,8 +70,8 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--EscudoCeleste);
-  box-shadow: 0 0 0 3px rgb(27 117 170 / 18%);
+  border-color: var(--brand-moss);
+  box-shadow: 0 0 0 3px rgb(141 132 91 / 18%);
   transform: translateY(-1px);
 }
 
@@ -97,15 +104,15 @@ input[type="radio"] {
 }
 
 .ej-hero {
-  border: 1px solid rgb(255 204 0 / 30%);
+  border: 1px solid rgb(186 176 140 / 40%);
   background:
-    linear-gradient(128deg, rgb(0 0 0 / 92%) 0%, rgb(77 53 29 / 90%) 36%, rgb(31 103 40 / 86%) 68%, rgb(0 56 133 / 84%) 100%);
+    linear-gradient(128deg, rgb(55 52 43 / 95%) 0%, rgb(102 112 77 / 90%) 58%, rgb(141 132 91 / 86%) 100%);
   color: var(--Blanco);
 }
 
 .ej-card {
-  border: 1px solid rgb(77 53 29 / 28%);
-  background: rgb(255 255 255 / 94%);
+  border: 1px solid rgb(141 132 91 / 30%);
+  background: rgb(255 255 255 / 88%);
   box-shadow: 0 8px 20px rgb(0 0 0 / 10%);
   transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
@@ -115,8 +122,8 @@ input[type="radio"] {
 }
 
 .ej-button {
-  border: 1px solid rgb(31 103 40 / 35%);
-  background: var(--EscudoVerde);
+  border: 1px solid rgb(102 112 77 / 45%);
+  background: var(--brand-olive);
   color: var(--Blanco);
   transition: all 0.2s ease;
   min-height: 44px;
@@ -124,9 +131,9 @@ input[type="radio"] {
 }
 
 .ej-button:hover:not(:disabled) {
-  background: #185321;
+  background: var(--brand-charcoal);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgb(31 103 40 / 30%);
+  box-shadow: 0 4px 12px rgb(55 52 43 / 30%);
 }
 
 .ej-button:active:not(:disabled) {
@@ -134,29 +141,29 @@ input[type="radio"] {
 }
 
 .ej-button-danger {
-  border: 1px solid rgb(207 15 33 / 28%);
-  background: #c81e31;
+  border: 1px solid rgb(55 52 43 / 40%);
+  background: var(--brand-charcoal);
   color: var(--Blanco);
   transition: all 0.2s ease;
 }
 
 .ej-button-muted {
-  border: 1px solid rgb(255 204 0 / 25%);
-  background: rgb(0 56 133 / 78%);
+  border: 1px solid rgb(141 132 91 / 45%);
+  background: rgb(141 132 91 / 90%);
   color: var(--Blanco);
   transition: all 0.2s ease;
 }
 
 .ej-button-muted:hover:not(:disabled) {
-  background: rgb(0 56 133 / 90%);
+  background: var(--brand-moss);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgb(0 56 133 / 30%);
+  box-shadow: 0 4px 12px rgb(141 132 91 / 30%);
 }
 
 .ej-button-danger:hover:not(:disabled) {
-  background: #b41224;
+  background: #2c2a22;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgb(207 15 33 / 30%);
+  box-shadow: 0 4px 12px rgb(55 52 43 / 30%);
 }
 
 .ej-button:disabled,
@@ -177,7 +184,7 @@ input[type="radio"] {
 
 /* Mejoras en tabs/vistas */
 .ej-view-active {
-  background: linear-gradient(120deg, rgb(0 0 0 / 92%) 0%, rgb(77 53 29 / 92%) 100%);
+  background: linear-gradient(120deg, rgb(55 52 43 / 95%) 0%, rgb(102 112 77 / 92%) 100%);
   color: var(--Blanco);
   font-weight: 600;
   box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
@@ -186,15 +193,15 @@ input[type="radio"] {
 }
 
 .ej-view-idle {
-  border: 1px solid rgb(77 53 29 / 35%);
-  background: rgb(255 255 255 / 90%);
-  color: rgb(37 37 37 / 96%);
+  border: 1px solid rgb(141 132 91 / 40%);
+  background: rgb(255 255 255 / 82%);
+  color: rgb(55 52 43 / 96%);
   transition: all 0.2s ease;
 }
 
 .ej-view-idle:hover {
-  background: rgb(255 255 255 / 100%);
-  border-color: rgb(77 53 29 / 50%);
+  background: rgb(255 255 255 / 92%);
+  border-color: rgb(102 112 77 / 55%);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
 }
@@ -204,19 +211,19 @@ input[type="radio"] {
 }
 
 .ej-action-edit {
-  background: var(--EscudoCeleste);
+  background: var(--brand-moss);
 }
 
 .ej-action-delete {
-  background: var(--EscudoRojo);
+  background: var(--brand-charcoal);
 }
 
 .ej-action-ok {
-  background: var(--EscudoVerde);
+  background: var(--brand-olive);
 }
 
 .ej-action-neutral {
-  background: var(--UniformeVerdeOscuro);
+  background: var(--brand-charcoal);
 }
 
 /* Responsive spacing utilities */
@@ -246,7 +253,7 @@ input[type="radio"] {
 
 /* Focus visible para accesibilidad */
 *:focus-visible {
-  outline: 2px solid var(--EscudoCeleste);
+  outline: 2px solid var(--brand-moss);
   outline-offset: 2px;
 }
 
@@ -262,12 +269,12 @@ input[type="radio"] {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(77 53 29 / 40%);
+  background: rgb(141 132 91 / 45%);
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(77 53 29 / 60%);
+  background: rgb(102 112 77 / 60%);
 }
 
 /* Toast notifications */
@@ -295,16 +302,16 @@ input[type="radio"] {
 }
 
 .toast-success {
-  background: var(--EscudoVerde);
+  background: var(--brand-olive);
   color: white;
 }
 
 .toast-error {
-  background: var(--EscudoRojo);
+  background: var(--brand-charcoal);
   color: white;
 }
 
 .toast-info {
-  background: var(--EscudoCeleste);
+  background: var(--brand-moss);
   color: white;
 }

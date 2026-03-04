@@ -23,6 +23,7 @@ import { FormulariosPlaceholder } from "./components/home/FormulariosPlaceholder
 import { MainNavigation } from "./components/home/MainNavigation";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
 import { PersonalSection } from "./components/personal/PersonalSection";
+import { DateTextInput } from "./components/shared/DateTextInput";
 import { ConfigViews } from "./components/views/ConfigViews";
 import { BateriaCreateView } from "./components/views/BateriaCreateView";
 import { EquipoResumenView } from "./components/views/EquipoResumenView";
@@ -34,7 +35,6 @@ import { RangoCreateView } from "./components/views/RangoCreateView";
 import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
 import { SmallActionButton, ActionMenu, toast } from "./components/shared";
-import { DateTextInput } from "./components/shared/DateTextInput";
 import { useHomeData } from "./hooks/useHomeData";
 
 // Importar tipos desde archivos de tipos organizados
@@ -94,6 +94,7 @@ import {
   createItemHandler,
   updateItemHandler,
   deleteItemHandler,
+  loadItemDeleteImpactHandler,
   updateMultipleItemOrdersHandler,
 } from "@/lib/handlers-catalog";
 import {
@@ -538,7 +539,7 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [confirmDialog, confirmDialogBusy]);
 
-  function clearLoadedData() {
+  const clearLoadedData = useCallback(() => {
     clearLoadedDataState();
     setEditPersonalCi(null);
     setEditPersonal(EMPTY_PERSONAL_FORM);
@@ -558,7 +559,7 @@ export default function Home() {
     setAuditPage(1);
     setAuditPageSize(25);
     setEquipoOrderDraftIds(null);
-  }
+  }, [clearLoadedDataState]);
   useEffect(() => {
     if (activeView !== "hoja_matrix") return;
     if (hojaMatrixLoading) return;
@@ -897,22 +898,58 @@ export default function Home() {
   );
 
   const deleteEquipo = useCallback(
-    (itemId: string) => {
+    async (itemId: string) => {
       if (!canDelete) {
         setStatus("No tienes permisos para eliminar.");
         return;
       }
       const item = equipos.find((entry) => entry.itemId === itemId);
+      let impacto:
+        | Awaited<ReturnType<typeof loadItemDeleteImpactHandler>>
+        | null = null;
+      try {
+        impacto = await loadItemDeleteImpactHandler(itemId, {
+          onSuccess: () => {},
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        return;
+      }
+
+      const registrosImpacto = impacto.registros.map((registro) => {
+        const accion = registro.seEliminaMovimiento ? "se elimina movimiento completo" : "solo se elimina este equipo del movimiento";
+        const fecha = formatDateOnlyForDisplay(registro.fecha, registro.fecha);
+        return `- Registro #${registro.movimientoId} | ${registro.tipo} | ${fecha} | CI ${registro.ci} | ${accion}`;
+      });
+      const stockImpacto = impacto.stock.map((stock) => {
+        const accion = stock.seEliminaMovimiento ? "se elimina movimiento completo" : "solo se elimina este equipo del movimiento";
+        const fecha = formatDateOnlyForDisplay(stock.fecha, stock.fecha);
+        return `- Stock #${stock.movimientoId} | ${stock.tipo} | ${fecha} | ${accion}`;
+      });
+      const resumen = impacto.resumen;
+      const messageLines = [
+        `Accion destructiva e irreversible: se eliminara ${item?.nombre ?? "este equipo"} y no se puede deshacer.`,
+        `Movimientos afectados: ${resumen.totalMovimientos} (registros: ${resumen.totalRegistros}, stock: ${resumen.totalStock}).`,
+        `Movimientos que quedaran vacios y se eliminaran: ${resumen.movimientosQueSeEliminan}.`,
+        `Movimientos que conservaran otros equipos: ${resumen.movimientosQueSeActualizan}.`,
+        "",
+        "Registros afectados:",
+        ...(registrosImpacto.length > 0 ? registrosImpacto : ["- Ninguno"]),
+        "",
+        "Movimientos de stock afectados:",
+        ...(stockImpacto.length > 0 ? stockImpacto : ["- Ninguno"]),
+      ];
+
       openConfirmDialog({
         title: "Eliminar equipo",
-        message: `Se eliminara ${item?.nombre ?? "este equipo"} del catalogo.`,
-        confirmText: "Eliminar equipo",
+        message: messageLines.join("\n"),
+        confirmText: "Eliminar equipo (destructivo)",
         tone: "danger",
         onConfirm: async () => {
           try {
             await deleteItemHandler(itemId, {
               onSuccess: async () => {
-                setStatus("Equipo eliminado.");
+                setStatus("Equipo eliminado con limpieza de movimientos relacionados.");
                 await loadData();
               },
               onError: (message) => setStatus(message),
@@ -1616,6 +1653,8 @@ export default function Home() {
     );
   }
 
+  void renderInlineEditForm;
+
   const login = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -1690,7 +1729,7 @@ export default function Home() {
       setActiveView("personal");
       setStatus("Sesion cerrada. Ingresa tus credenciales.");
     }
-  }, []);
+  }, [clearLoadedData, setCurrentUser]);
 
   const createUsuario = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -2047,7 +2086,7 @@ export default function Home() {
         setFirmaConfigSaving(false);
       }
     },
-    [isAdmin, firmaConfigDraft],
+    [isAdmin, firmaConfigDraft, setFirmaConfig, setFirmaConfigDraft, setFirmaConfigError, setFirmaConfigSaving],
   );
 
   function openConfirmDialog(options: Omit<ConfirmDialogState, "cancelText" | "tone"> & Partial<Pick<ConfirmDialogState, "cancelText" | "tone">>) {
@@ -2467,6 +2506,7 @@ export default function Home() {
           onAuditFilterChange={setAuditFilter}
           onAuditPageChange={setAuditPage}
           onAuditPageSizeChange={setAuditPageSize}
+          onNavigateView={(view) => setActiveView(view)}
           roleLabel={roleLabel}
           roleDescription={roleDescription}
           roleScope={roleScope}
