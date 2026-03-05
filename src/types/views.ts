@@ -10,6 +10,7 @@ export type MainView =
   | "equipo_nuevo"
   | "bateria_nueva"
   | "grado_nuevo"
+  | "usuario_nuevo"
   | "formularios"
   | "stock"
   | "stock_total"

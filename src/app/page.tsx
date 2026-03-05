@@ -35,6 +35,7 @@ import { PersonalCreateView } from "./components/views/PersonalCreateView";
 import { RangoCreateView } from "./components/views/RangoCreateView";
 import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
+import { UserCreateView } from "./components/views/UserCreateView";
 import { SmallActionButton, ActionMenu, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
 
@@ -444,6 +445,12 @@ export default function Home() {
 
   useEffect(() => {
     if ((activeView === "bateria_nueva" || activeView === "grado_nuevo") && !isAdmin) {
+      setActiveView("personal");
+    }
+  }, [activeView, isAdmin]);
+
+  useEffect(() => {
+    if (activeView === "usuario_nuevo" && !isAdmin) {
       setActiveView("personal");
     }
   }, [activeView, isAdmin]);
@@ -2775,6 +2782,33 @@ export default function Home() {
           onAbreviacionChange={setNewRangoAbreviacion}
           onNombreCompletoChange={setNewRangoNombreCompleto}
           onOrdenChange={setNewRangoOrden}
+        />
+      ) : null}
+
+      {activeView === "usuario_nuevo" ? (
+        <UserCreateView
+          isAdmin={isAdmin}
+          grado={newGrado}
+          nombre={newNombre}
+          apellido={newApellido}
+          username={newUsername}
+          password={newPassword}
+          passwordConfirm={newPasswordConfirm}
+          mailReferencia={newMailReferencia}
+          role={newRole}
+          onBack={() => setActiveView("personal")}
+          onSubmit={(event) => void createUsuario(event)}
+          onGradoChange={setNewGrado}
+          onNombreChange={setNewNombre}
+          onApellidoChange={setNewApellido}
+          onUsernameChange={setNewUsername}
+          onPasswordChange={setNewPassword}
+          onPasswordConfirmChange={setNewPasswordConfirm}
+          onMailReferenciaChange={setNewMailReferencia}
+          onRoleChange={setNewRole}
+          roleLabel={roleLabel}
+          roleDescription={roleDescription}
+          roleScope={roleScope}
         />
       ) : null}
 

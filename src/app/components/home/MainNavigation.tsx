@@ -5,7 +5,7 @@ import type { MainView } from "@/types/views";
 
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">;
 type SummaryView = Extract<MainView, "equipo_resumen" | "tallas_resumen">;
-type CreateView = Extract<MainView, "personal_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuarios">;
+type CreateView = Extract<MainView, "personal_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo">;
 type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial">;
 
 type MainNavigationProps = {
@@ -146,7 +146,7 @@ const createViews: Array<{ view: CreateView; label: string; shortLabel: string; 
     ),
   },
   {
-    view: "usuarios",
+    view: "usuario_nuevo",
     label: "Alta de usuario",
     shortLabel: "Usuario",
     adminOnly: true,
@@ -278,7 +278,7 @@ export function MainNavigation({
     activeView === "equipo_nuevo" ||
     activeView === "bateria_nueva" ||
     activeView === "grado_nuevo" ||
-    activeView === "usuarios";
+    activeView === "usuario_nuevo";
 
   function closeLocalMenus() {
     setShowSummaryViews(false);
