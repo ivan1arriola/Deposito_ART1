@@ -340,7 +340,10 @@ export function ConfigViews(props: ConfigViewsProps) {
     const activeOrderById = new Map(
       props.equiposActivosEnPantalla.map((equipo, index) => [equipo.itemId, index]),
     );
-    const mergeTargetEquipos = props.equipos.filter((equipo) => equipo.itemId !== props.mergeEquipoOrigenId);
+    const equiposOrdenadosAlfabeticamente = [...props.equipos].sort((a, b) =>
+      a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
+    );
+    const mergeTargetEquipos = equiposOrdenadosAlfabeticamente.filter((equipo) => equipo.itemId !== props.mergeEquipoOrigenId);
     const canMergeEquipos =
       props.canWrite &&
       props.equipos.length >= 2 &&
@@ -492,7 +495,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <option value="">Seleccionar equipo origen</option>
-                    {props.equipos.map((equipo) => (
+                    {equiposOrdenadosAlfabeticamente.map((equipo) => (
                       <option key={`merge-origen-${equipo.itemId}`} value={equipo.itemId}>
                         {equipo.nombre}
                       </option>

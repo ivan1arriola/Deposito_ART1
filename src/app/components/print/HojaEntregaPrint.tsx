@@ -174,15 +174,16 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     flex-wrap: wrap;
     align-items: baseline;
     gap: 3px;
+    font-size: 8.2px;
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
-    line-height: 1.25;
+    line-height: 1.2;
     overflow-wrap: break-word;
   }
 
   .info-grid-item-compact {
-    padding: 3px 8px;
+    padding: 2px 8px;
   }
 
   .info-grid-item:last-child {

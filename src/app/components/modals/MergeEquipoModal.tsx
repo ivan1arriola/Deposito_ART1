@@ -30,6 +30,7 @@ export function MergeEquipoModal({
 }: MergeEquipoModalProps) {
   if (!isOpen) return null;
 
+  const targetOptionsSorted = [...targetOptions].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
   const canSubmit = !saving && sourceName.trim() !== "" && targetItemId.trim() !== "" && targetOptions.length > 0;
 
   return (
@@ -49,7 +50,7 @@ export function MergeEquipoModal({
           className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <option value="">Seleccionar equipo destino</option>
-          {targetOptions.map((option) => (
+          {targetOptionsSorted.map((option) => (
             <option key={`merge-target-${option.itemId}`} value={option.itemId}>
               {option.nombre}
             </option>

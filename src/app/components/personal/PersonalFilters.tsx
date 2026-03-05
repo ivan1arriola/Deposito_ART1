@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Bateria } from "@/types/entities";
 
 type PersonalFiltersProps = {
@@ -31,6 +31,15 @@ export function PersonalFilters({
   onClear,
 }: PersonalFiltersProps) {
   const [showMobileFilters, setShowMobileFilters] = useState(hasFilters);
+  const bateriaOptions = useMemo(
+    () => [
+      { value: "ALL", label: "Todas las baterias" },
+      { value: "NONE", label: "Sin bateria" },
+      ...baterias.map((bateria) => ({ value: String(bateria.bateriaId), label: bateria.nombre })),
+    ],
+    [baterias],
+  );
+  const filtersVisible = showMobileFilters;
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (searchCedula.trim() !== "") count += 1;
@@ -39,12 +48,6 @@ export function PersonalFilters({
     if (bateriaFilter !== "ALL") count += 1;
     return count;
   }, [bateriaFilter, searchApellidos, searchCedula, searchNombres]);
-
-  useEffect(() => {
-    if (hasFilters) {
-      setShowMobileFilters(true);
-    }
-  }, [hasFilters]);
 
   return (
     <section className="mt-4 rounded-2xl border border-stone-200 bg-stone-50/80 p-3 sm:p-4">
@@ -68,12 +71,12 @@ export function PersonalFilters({
             onClick={() => setShowMobileFilters((current) => !current)}
             className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 md:hidden"
           >
-            {showMobileFilters ? "Ocultar filtros" : "Mostrar filtros"}
+            {filtersVisible ? "Ocultar filtros" : "Mostrar filtros"}
           </button>
         </div>
       </div>
 
-      <div className={`${showMobileFilters ? "mt-3 grid" : "hidden"} grid-cols-1 gap-3 md:mt-4 md:grid md:grid-cols-2 xl:grid-cols-4`}>
+      <div className={`${filtersVisible ? "mt-3 grid" : "hidden"} grid-cols-1 gap-3 md:mt-4 md:grid md:grid-cols-2 xl:grid-cols-4`}>
         <label className="block">
           <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Cedula</span>
           <input
@@ -101,17 +104,28 @@ export function PersonalFilters({
             className="w-full rounded-xl border border-stone-300 px-3 py-2.5 text-sm"
           />
         </label>
-        <label className="block">
+        <label className="block md:col-span-2 xl:col-span-4">
           <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Bateria</span>
-          <select value={bateriaFilter} onChange={(event) => onBateriaFilterChange(event.target.value)} className="w-full rounded-xl border border-stone-300 px-3 py-2.5 text-sm">
-            <option value="ALL">Todas las baterias</option>
-            <option value="NONE">Sin bateria</option>
-            {baterias.map((bateria) => (
-              <option key={bateria.bateriaId} value={String(bateria.bateriaId)}>
-                {bateria.nombre}
-              </option>
-            ))}
-          </select>
+          <div className="-mx-1 mt-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:px-0">
+            {bateriaOptions.map((option) => {
+              const isActive = bateriaFilter === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onBateriaFilterChange(option.value)}
+                  aria-pressed={isActive}
+                  className={`shrink-0 rounded-full border px-3 py-2 text-xs font-semibold transition sm:text-sm ${
+                    isActive
+                      ? "border-stone-800 bg-stone-800 text-white"
+                      : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
         </label>
       </div>
 

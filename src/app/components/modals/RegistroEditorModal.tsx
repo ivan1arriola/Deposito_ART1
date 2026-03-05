@@ -38,6 +38,9 @@ export function RegistroEditorModal({
   onSubmit,
 }: RegistroEditorModalProps) {
   if (!draft) return null;
+  const equiposOrdenadosAlfabeticamente = [...equiposOrdenados].sort((a, b) =>
+    a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
+  );
 
   return (
     <ModalFrame onClose={onClose} size="lg" closeOnBackdrop={false}>
@@ -116,7 +119,7 @@ export function RegistroEditorModal({
               className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
             >
               <option value="">Seleccionar equipo</option>
-              {equiposOrdenados
+              {equiposOrdenadosAlfabeticamente
                 .filter((catalogItem) => {
                   if (!catalogItem.activo && catalogItem.itemId !== item.itemId) return false;
                   if (catalogItem.itemId === item.itemId) return true;
