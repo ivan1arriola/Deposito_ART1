@@ -19,6 +19,19 @@ export function registroStockDeltaFactor(tipo: TipoRegistro | "ENTREGA" | "DEVOL
   }
 }
 
+export function registroPersonalDeltaFactor(tipo: TipoRegistro | "ENTREGA" | "DEVOLUCION" | "AJUSTE") {
+  switch (tipo) {
+    case TipoRegistro.ENTREGA:
+    case "ENTREGA":
+      return 1;
+    case TipoRegistro.DEVOLUCION:
+    case "DEVOLUCION":
+      return -1;
+    default:
+      return 0;
+  }
+}
+
 export function stockOperacionDeltaFactor(tipo: TipoStockOperacion | "INGRESO" | "EGRESO") {
   switch (tipo) {
     case TipoStockOperacion.INGRESO:
@@ -79,6 +92,37 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
   }
 
   return stockByItem;
+}
+
+export async function buildPersonalByItemMap(prisma: PrismaLike) {
+  const registros = await prisma.registro.findMany({
+    where: {
+      tipo: {
+        in: [TipoRegistro.ENTREGA, TipoRegistro.DEVOLUCION],
+      },
+    },
+    select: {
+      tipo: true,
+      items: {
+        select: {
+          itemId: true,
+          cantidad: true,
+        },
+      },
+    },
+  });
+
+  const personalByItem = new Map<string, number>();
+  for (const registro of registros) {
+    const factor = registroPersonalDeltaFactor(registro.tipo);
+    if (factor === 0) continue;
+    for (const item of registro.items) {
+      const key = item.itemId.toString();
+      personalByItem.set(key, (personalByItem.get(key) ?? 0) + item.cantidad * factor);
+    }
+  }
+
+  return personalByItem;
 }
 
 export function totalStockUnits(stockByItem: Map<string, number>) {

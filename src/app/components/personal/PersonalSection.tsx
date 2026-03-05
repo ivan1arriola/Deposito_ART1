@@ -36,6 +36,7 @@ type PersonalSectionProps = {
   onPersonalPageChange: (page: number) => void;
   onPersonalPageSizeChange: (pageSize: number) => void;
   onPrintAllDeliverySheets: () => void;
+  onPrintPersonnelByBattery: () => void;
   onOpenCreate: () => void;
   onToggleTallas: (ci: string) => void;
   onDeletePersonal: (ci: string) => void;
@@ -76,6 +77,7 @@ export function PersonalSection({
   onPersonalPageChange,
   onPersonalPageSizeChange,
   onPrintAllDeliverySheets,
+  onPrintPersonnelByBattery,
   onOpenCreate,
   onToggleTallas,
   onDeletePersonal,
@@ -126,6 +128,14 @@ export function PersonalSection({
             className="w-full rounded-xl bg-indigo-700 px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             Imprimir todas las hojas
+          </button>
+          <button
+            type="button"
+            onClick={onPrintPersonnelByBattery}
+            disabled={personal.length === 0}
+            className="w-full rounded-xl bg-sky-700 px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          >
+            Imprimir lista por bateria
           </button>
           <button
             type="button"

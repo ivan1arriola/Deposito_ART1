@@ -6,6 +6,7 @@ import {
   deleteRangoHandler,
   createItemHandler,
   updateItemHandler,
+  mergeItemHandler,
   updateMultipleItemOrdersHandler,
 } from "@/lib/handlers-catalog";
 
@@ -169,6 +170,22 @@ describe("Handlers de Catalogos - Equipos", () => {
       expect.objectContaining({
         method: "PATCH",
         body: JSON.stringify({ orderedItemIds: ["12", "18", "25"] }),
+      }),
+    );
+  });
+
+  it("deberia unificar un equipo enviando el destino seleccionado", async () => {
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    vi.mocked(api).mockResolvedValue({});
+
+    await mergeItemHandler("12", "18", { onSuccess, onError });
+
+    expect(vi.mocked(api)).toHaveBeenCalledWith(
+      "/api/items/12",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ targetItemId: "18" }),
       }),
     );
   });

@@ -22,6 +22,7 @@ import { DashboardHero } from "./components/home/DashboardHero";
 import { FormulariosPlaceholder } from "./components/home/FormulariosPlaceholder";
 import { MainNavigation } from "./components/home/MainNavigation";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
+import { MergeEquipoModal } from "./components/modals/MergeEquipoModal";
 import { PersonalSection } from "./components/personal/PersonalSection";
 import { DateTextInput } from "./components/shared/DateTextInput";
 import { ConfigViews } from "./components/views/ConfigViews";
@@ -94,6 +95,7 @@ import {
   createItemHandler,
   updateItemHandler,
   deleteItemHandler,
+  mergeItemHandler,
   loadItemDeleteImpactHandler,
   updateMultipleItemOrdersHandler,
 } from "@/lib/handlers-catalog";
@@ -209,6 +211,10 @@ export default function Home() {
   const [editEquipoId, setEditEquipoId] = useState<string | null>(null);
   const [editEquipo, setEditEquipo] = useState<EquipoForm>(EMPTY_EQUIPO_FORM);
   const [equipoOrderDraftIds, setEquipoOrderDraftIds] = useState<string[] | null>(null);
+  const [mergeEquipoOrigenId, setMergeEquipoOrigenId] = useState("");
+  const [mergeEquipoDestinoId, setMergeEquipoDestinoId] = useState("");
+  const [mergeEquipoDialog, setMergeEquipoDialog] = useState<{ sourceItemId: string; targetItemId: string } | null>(null);
+  const [mergeEquipoSaving, setMergeEquipoSaving] = useState(false);
 
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
@@ -344,6 +350,27 @@ export default function Home() {
     if (equipoOrderDraftIds.length !== currentActiveIds.length) return true;
     return equipoOrderDraftIds.some((itemId, index) => itemId !== currentActiveIds[index]);
   }, [equiposActivos, equipoOrderDraftIds]);
+  const mergeEquipoSource = useMemo(() => {
+    if (!mergeEquipoDialog) return null;
+    return equiposOrdenados.find((equipo) => equipo.itemId === mergeEquipoDialog.sourceItemId) ?? null;
+  }, [equiposOrdenados, mergeEquipoDialog]);
+  const mergeEquipoTargetOptions = useMemo(() => {
+    if (!mergeEquipoDialog) return [] as Equipo[];
+    return equiposOrdenados.filter((equipo) => equipo.itemId !== mergeEquipoDialog.sourceItemId);
+  }, [equiposOrdenados, mergeEquipoDialog]);
+  const mergeEquipoDialogTargetId = useMemo(() => {
+    if (!mergeEquipoDialog) return "";
+    if (mergeEquipoTargetOptions.some((equipo) => equipo.itemId === mergeEquipoDialog.targetItemId)) {
+      return mergeEquipoDialog.targetItemId;
+    }
+    return mergeEquipoTargetOptions[0]?.itemId ?? "";
+  }, [mergeEquipoDialog, mergeEquipoTargetOptions]);
+  useEffect(() => {
+    const ids = new Set(equipos.map((equipo) => equipo.itemId));
+
+    setMergeEquipoOrigenId((current) => (current !== "" && ids.has(current) ? current : ""));
+    setMergeEquipoDestinoId((current) => (current !== "" && ids.has(current) ? current : ""));
+  }, [equipos]);
   const personalOrdenado = useMemo(() => [...personal].sort(comparePersonalByHierarchy), [personal]);
   const searchCedulaDigits = normalizeCi(searchCedula.trim());
   const searchNombresText = normalizeSearchTerm(searchNombres);
@@ -575,7 +602,7 @@ export default function Home() {
   }, [activeView, equipoResumenData, equipoResumenLoading, loadEquipoResumen]);
 
   useEffect(() => {
-    if (!["stock", "stock_actual", "stock_alta", "stock_baja", "stock_historial"].includes(activeView)) return;
+    if (!["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial"].includes(activeView)) return;
     if (stockLoading) return;
     if (stockData) return;
     void loadStockData();
@@ -954,6 +981,145 @@ export default function Home() {
               },
               onError: (message) => setStatus(message),
             });
+          } catch {
+            // Error manejado en el handler
+          }
+        },
+      });
+    },
+    [canDelete, equipos, loadData],
+  );
+
+  const openMergeEquipoDialog = useCallback(
+    (sourceItemId: string) => {
+      if (!canDelete) {
+        setStatus("No tienes permisos para unificar equipos.");
+        return;
+      }
+
+      const source = equiposOrdenados.find((equipo) => equipo.itemId === sourceItemId);
+      if (!source) {
+        setStatus("No se encontro el equipo a reasignar.");
+        return;
+      }
+
+      const firstTarget = equiposOrdenados.find((equipo) => equipo.itemId !== sourceItemId);
+      if (!firstTarget) {
+        setStatus("Debes tener al menos dos equipos para poder reasignar.");
+        return;
+      }
+
+      setMergeEquipoDialog({
+        sourceItemId,
+        targetItemId: firstTarget.itemId,
+      });
+    },
+    [canDelete, equiposOrdenados],
+  );
+
+  const closeMergeEquipoDialog = useCallback(() => {
+    if (mergeEquipoSaving) return;
+    setMergeEquipoDialog(null);
+  }, [mergeEquipoSaving]);
+
+  const updateMergeEquipoDialogTarget = useCallback((targetItemId: string) => {
+    setMergeEquipoDialog((current) => (current ? { ...current, targetItemId } : current));
+  }, []);
+
+  const submitMergeEquipoDialog = useCallback(async () => {
+    if (!mergeEquipoDialog || mergeEquipoSaving) return;
+    if (!canDelete) {
+      setStatus("No tienes permisos para unificar equipos.");
+      return;
+    }
+
+    const source = equiposOrdenados.find((equipo) => equipo.itemId === mergeEquipoDialog.sourceItemId);
+    const targetItemId = mergeEquipoDialogTargetId;
+    const target = equiposOrdenados.find((equipo) => equipo.itemId === targetItemId);
+
+    if (!source || !target) {
+      setStatus("No se encontraron los equipos seleccionados.");
+      return;
+    }
+
+    setMergeEquipoSaving(true);
+    try {
+      const result = await mergeItemHandler(source.itemId, target.itemId, {
+        onSuccess: () => {},
+        onError: (message) => setStatus(message),
+      });
+      setStatus(
+        `Equipo unificado: ${result.sourceItem.nombre} -> ${result.targetItem.nombre}. Movimientos afectados: ${result.resumen.totalMovimientosAfectados}.`,
+      );
+      setMergeEquipoDialog(null);
+      setMergeEquipoOrigenId("");
+      setMergeEquipoDestinoId("");
+      await loadData();
+    } catch {
+      // Error manejado en el handler
+    } finally {
+      setMergeEquipoSaving(false);
+    }
+  }, [canDelete, equiposOrdenados, loadData, mergeEquipoDialog, mergeEquipoDialogTargetId, mergeEquipoSaving]);
+
+  const handleMergeEquipoOrigenChange = useCallback(
+    (nextOrigenId: string) => {
+      setMergeEquipoOrigenId(nextOrigenId);
+      if (nextOrigenId !== "" && nextOrigenId === mergeEquipoDestinoId) {
+        setMergeEquipoDestinoId("");
+      }
+    },
+    [mergeEquipoDestinoId],
+  );
+
+  const handleMergeEquipoDestinoChange = useCallback((nextDestinoId: string) => {
+    setMergeEquipoDestinoId(nextDestinoId);
+  }, []);
+
+  const mergeEquipos = useCallback(
+    (origenItemId: string, destinoItemId: string) => {
+      if (!canDelete) {
+        setStatus("No tienes permisos para unificar equipos.");
+        return;
+      }
+      if (origenItemId.trim() === "" || destinoItemId.trim() === "") {
+        setStatus("Debes seleccionar equipo origen y equipo destino.");
+        return;
+      }
+      if (origenItemId === destinoItemId) {
+        setStatus("El equipo origen y destino deben ser distintos.");
+        return;
+      }
+
+      const origen = equipos.find((equipo) => equipo.itemId === origenItemId);
+      const destino = equipos.find((equipo) => equipo.itemId === destinoItemId);
+      if (!origen || !destino) {
+        setStatus("No se encontraron los equipos seleccionados.");
+        return;
+      }
+
+      openConfirmDialog({
+        title: "Unificar equipos",
+        message: [
+          `Se reasignaran todos los movimientos de "${origen.nombre}" hacia "${destino.nombre}".`,
+          `Luego se eliminara "${origen.nombre}" del catalogo.`,
+          "",
+          "Accion destructiva e irreversible.",
+        ].join("\n"),
+        confirmText: "Unificar y eliminar origen",
+        tone: "danger",
+        onConfirm: async () => {
+          try {
+            const result = await mergeItemHandler(origenItemId, destinoItemId, {
+              onSuccess: () => {},
+              onError: (message) => setStatus(message),
+            });
+            setStatus(
+              `Equipo unificado: ${result.sourceItem.nombre} -> ${result.targetItem.nombre}. Movimientos afectados: ${result.resumen.totalMovimientosAfectados}.`,
+            );
+            setMergeEquipoOrigenId("");
+            setMergeEquipoDestinoId("");
+            await loadData();
           } catch {
             // Error manejado en el handler
           }
@@ -2123,6 +2289,24 @@ export default function Home() {
     toast.info(`Abriendo ${personal.length} hojas de entrega.`);
   }, [personal.length]);
 
+  const printPersonnelByBattery = useCallback(() => {
+    if (personal.length === 0) {
+      toast.info("No hay personal para imprimir.");
+      return;
+    }
+
+    const popup = window.open("/lista-personal?autoprint=1", "_blank", "noopener,noreferrer");
+
+    if (!popup) {
+      const message = "Permite ventanas emergentes para imprimir la lista de personal.";
+      setStatus(message);
+      return;
+    }
+
+    setStatus(`Abriendo lista de personal por bateria para ${personal.length} personas...`);
+    toast.info(`Abriendo lista por bateria (${personal.length} personas).`);
+  }, [personal.length]);
+
   async function confirmDialogAccept() {
     if (!confirmDialog) return;
     setConfirmDialogBusy(true);
@@ -2292,6 +2476,12 @@ export default function Home() {
                       },
                     },
                     {
+                      label: "Reasignar",
+                      icon: "drag",
+                      tone: "secondary",
+                      onClick: () => openMergeEquipoDialog(equipo.itemId),
+                    },
+                    {
                       label: "Eliminar",
                       icon: "trash",
                       tone: "danger",
@@ -2437,6 +2627,8 @@ export default function Home() {
           equiposInactivos={equiposInactivos}
           equiposActivosEnPantalla={equiposActivosEnPantalla}
           hasEquipoOrderDraftChanges={hasEquipoOrderDraftChanges}
+          mergeEquipoOrigenId={mergeEquipoOrigenId}
+          mergeEquipoDestinoId={mergeEquipoDestinoId}
           usuarios={usuarios}
           newGrado={newGrado}
           newNombre={newNombre}
@@ -2481,6 +2673,9 @@ export default function Home() {
           onUpdateEquipo={(itemId) => void updateEquipo(itemId)}
           onToggleEquipoActivo={(item) => void toggleEquipoActivo(item)}
           onDeleteEquipo={(itemId) => void deleteEquipo(itemId)}
+          onMergeEquipoOrigenIdChange={handleMergeEquipoOrigenChange}
+          onMergeEquipoDestinoIdChange={handleMergeEquipoDestinoChange}
+          onMergeEquipos={mergeEquipos}
           onSaveEquipoOrder={() => {
             if (!equipoOrderDraftIds) return;
             void saveActiveEquiposOrder(equipoOrderDraftIds);
@@ -2616,6 +2811,7 @@ export default function Home() {
           onPersonalPageChange={setPersonalPage}
           onPersonalPageSizeChange={setPersonalPageSize}
           onPrintAllDeliverySheets={printAllDeliverySheets}
+          onPrintPersonnelByBattery={printPersonnelByBattery}
           onOpenCreate={() => setActiveView("personal_nuevo")}
           onToggleTallas={toggleTallas}
           onDeletePersonal={(ci) => void deletePersonal(ci)}
@@ -2661,10 +2857,12 @@ export default function Home() {
         />
       ) : null}
 
-      {["stock", "stock_actual", "stock_alta", "stock_baja", "stock_historial"].includes(activeView) ? (
+      {["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial"].includes(activeView) ? (
         <StockView
           section={
-            activeView === "stock_alta"
+            activeView === "stock" || activeView === "stock_total"
+              ? "total"
+              : activeView === "stock_alta"
               ? "alta"
               : activeView === "stock_baja"
                 ? "baja"
@@ -2694,6 +2892,17 @@ export default function Home() {
       {activeView === "tallas_resumen" ? (
         <TallasResumenView personal={personal} baterias={baterias} />
       ) : null}
+
+      <MergeEquipoModal
+        isOpen={mergeEquipoDialog !== null}
+        sourceName={mergeEquipoSource?.nombre ?? ""}
+        targetItemId={mergeEquipoDialogTargetId}
+        targetOptions={mergeEquipoTargetOptions.map((equipo) => ({ itemId: equipo.itemId, nombre: equipo.nombre }))}
+        saving={mergeEquipoSaving}
+        onTargetChange={updateMergeEquipoDialogTarget}
+        onClose={closeMergeEquipoDialog}
+        onSubmit={() => void submitMergeEquipoDialog()}
+      />
 
       
       <HomeDialogsLayer

@@ -11,6 +11,10 @@ type ItemPayload = {
   ordenPdf?: number;
 };
 
+type ItemMergePayload = {
+  targetItemId?: string | number;
+};
+
 function parseItemId(raw: string) {
   try {
     return BigInt(raw);
@@ -203,6 +207,206 @@ export async function GET(req: Request, context: { params: Promise<{ itemId: str
       if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
     }
     return NextResponse.json({ error: "No se pudo calcular el impacto de borrado." }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request, context: { params: Promise<{ itemId: string }> }) {
+  const auth = await authorizeRequest(req, "delete_data");
+  if (!auth.ok) return auth.response;
+
+  const { itemId: sourceItemIdParam } = await context.params;
+  const sourceItemId = parseItemId(sourceItemIdParam);
+  if (sourceItemId === null) {
+    return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+  }
+
+  const body = (await req.json()) as ItemMergePayload;
+  const targetItemIdRaw = body?.targetItemId;
+  if (typeof targetItemIdRaw !== "string" && typeof targetItemIdRaw !== "number") {
+    return NextResponse.json({ error: "Payload invalido. targetItemId es obligatorio." }, { status: 400 });
+  }
+
+  const targetItemId = parseItemId(String(targetItemIdRaw));
+  if (targetItemId === null) {
+    return NextResponse.json({ error: "targetItemId invalido." }, { status: 400 });
+  }
+
+  if (targetItemId === sourceItemId) {
+    return NextResponse.json({ error: "Debes seleccionar dos equipos distintos para unificar." }, { status: 400 });
+  }
+
+  try {
+    const mergeResult = await prisma.$transaction(async (tx) => {
+      const [sourceItem, targetItem] = await Promise.all([
+        tx.item.findUniqueOrThrow({
+          where: { itemId: sourceItemId },
+          select: { itemId: true, nombre: true, activo: true },
+        }),
+        tx.item.findUniqueOrThrow({
+          where: { itemId: targetItemId },
+          select: { itemId: true, nombre: true, activo: true },
+        }),
+      ]);
+
+      const remainingIdsInSourceGroup = await getOrderedItemIds(tx, sourceItem.activo, sourceItemId);
+
+      const [sourceRegistroItems, sourceStockItems] = await Promise.all([
+        tx.registroItem.findMany({
+          where: { itemId: sourceItemId },
+          select: { registroId: true, cantidad: true },
+        }),
+        tx.stockOperacionItem.findMany({
+          where: { itemId: sourceItemId },
+          select: { stockOperacionId: true, cantidad: true },
+        }),
+      ]);
+
+      const [targetRegistroItems, targetStockItems] = await Promise.all([
+        sourceRegistroItems.length > 0
+          ? tx.registroItem.findMany({
+              where: {
+                itemId: targetItemId,
+                registroId: { in: sourceRegistroItems.map((entry) => entry.registroId) },
+              },
+              select: { registroId: true },
+            })
+          : Promise.resolve([]),
+        sourceStockItems.length > 0
+          ? tx.stockOperacionItem.findMany({
+              where: {
+                itemId: targetItemId,
+                stockOperacionId: { in: sourceStockItems.map((entry) => entry.stockOperacionId) },
+              },
+              select: { stockOperacionId: true },
+            })
+          : Promise.resolve([]),
+      ]);
+
+      const registroTargetIds = new Set(targetRegistroItems.map((entry) => entry.registroId.toString()));
+      const stockTargetIds = new Set(targetStockItems.map((entry) => entry.stockOperacionId.toString()));
+
+      for (const sourceRegistroItem of sourceRegistroItems) {
+        await tx.registroItem.upsert({
+          where: {
+            registroId_itemId: {
+              registroId: sourceRegistroItem.registroId,
+              itemId: targetItemId,
+            },
+          },
+          update: {
+            cantidad: { increment: sourceRegistroItem.cantidad },
+          },
+          create: {
+            registroId: sourceRegistroItem.registroId,
+            itemId: targetItemId,
+            cantidad: sourceRegistroItem.cantidad,
+          },
+        });
+
+        await tx.registroItem.delete({
+          where: {
+            registroId_itemId: {
+              registroId: sourceRegistroItem.registroId,
+              itemId: sourceItemId,
+            },
+          },
+        });
+      }
+
+      for (const sourceStockItem of sourceStockItems) {
+        await tx.stockOperacionItem.upsert({
+          where: {
+            stockOperacionId_itemId: {
+              stockOperacionId: sourceStockItem.stockOperacionId,
+              itemId: targetItemId,
+            },
+          },
+          update: {
+            cantidad: { increment: sourceStockItem.cantidad },
+          },
+          create: {
+            stockOperacionId: sourceStockItem.stockOperacionId,
+            itemId: targetItemId,
+            cantidad: sourceStockItem.cantidad,
+          },
+        });
+
+        await tx.stockOperacionItem.delete({
+          where: {
+            stockOperacionId_itemId: {
+              stockOperacionId: sourceStockItem.stockOperacionId,
+              itemId: sourceItemId,
+            },
+          },
+        });
+      }
+
+      await tx.item.delete({
+        where: { itemId: sourceItemId },
+      });
+
+      await applyItemOrder(tx, remainingIdsInSourceGroup);
+
+      const unidadesRegistrosReasignadas = sourceRegistroItems.reduce((total, entry) => total + entry.cantidad, 0);
+      const unidadesStockReasignadas = sourceStockItems.reduce((total, entry) => total + entry.cantidad, 0);
+      const registrosConsolidados = sourceRegistroItems.filter((entry) => registroTargetIds.has(entry.registroId.toString())).length;
+      const stockConsolidados = sourceStockItems.filter((entry) => stockTargetIds.has(entry.stockOperacionId.toString())).length;
+
+      return {
+        sourceItem,
+        targetItem,
+        resumen: {
+          totalRegistrosAfectados: sourceRegistroItems.length,
+          totalStockAfectados: sourceStockItems.length,
+          totalMovimientosAfectados: sourceRegistroItems.length + sourceStockItems.length,
+          registrosConsolidados,
+          stockConsolidados,
+          unidadesRegistrosReasignadas,
+          unidadesStockReasignadas,
+          unidadesTotalesReasignadas: unidadesRegistrosReasignadas + unidadesStockReasignadas,
+        },
+      };
+    });
+
+    await logAudit({
+      usuarioId: auth.user.usuarioId,
+      accion: "UPDATE",
+      entidad: "ITEM",
+      entidadId: mergeResult.targetItem.itemId.toString(),
+      detalle: {
+        evento: "ITEM_UNIFICADO",
+        itemOrigenId: mergeResult.sourceItem.itemId.toString(),
+        itemOrigen: mergeResult.sourceItem.nombre,
+        itemDestinoId: mergeResult.targetItem.itemId.toString(),
+        itemDestino: mergeResult.targetItem.nombre,
+        totalMovimientosAfectados: mergeResult.resumen.totalMovimientosAfectados,
+        totalRegistrosAfectados: mergeResult.resumen.totalRegistrosAfectados,
+        totalStockAfectados: mergeResult.resumen.totalStockAfectados,
+        registrosConsolidados: mergeResult.resumen.registrosConsolidados,
+        stockConsolidados: mergeResult.resumen.stockConsolidados,
+        unidadesTotalesReasignadas: mergeResult.resumen.unidadesTotalesReasignadas,
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      sourceItem: {
+        itemId: mergeResult.sourceItem.itemId.toString(),
+        nombre: mergeResult.sourceItem.nombre,
+      },
+      targetItem: {
+        itemId: mergeResult.targetItem.itemId.toString(),
+        nombre: mergeResult.targetItem.nombre,
+      },
+      resumen: mergeResult.resumen,
+    });
+  } catch (error: unknown) {
+    if (typeof error === "object" && error && "code" in error) {
+      const code = (error as { code: string }).code;
+      if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
+    }
+
+    return NextResponse.json({ error: "No se pudo unificar el equipo." }, { status: 500 });
   }
 }
 

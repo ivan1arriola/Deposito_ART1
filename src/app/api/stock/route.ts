@@ -11,7 +11,7 @@ import {
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
-import { buildStockByItemMap, registroStockDeltaFactor, stockOperacionDeltaFactor } from "@/lib/stock";
+import { buildPersonalByItemMap, buildStockByItemMap, registroStockDeltaFactor, stockOperacionDeltaFactor } from "@/lib/stock";
 import type { StockDashboardData } from "@/types/views";
 
 type StockItemPayload = {
@@ -91,12 +91,13 @@ export async function GET(req: Request) {
   const limitRaw = Number(new URL(req.url).searchParams.get("limit") ?? "200");
   const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 20), 400) : 200;
 
-  const [items, stockByItem, stockOperaciones, registros] = await Promise.all([
+  const [items, stockDepositoByItem, stockPersonalByItem, stockOperaciones, registros] = await Promise.all([
     prisma.item.findMany({
       orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
       select: { itemId: true, nombre: true, activo: true, ordenPdf: true },
     }),
     buildStockByItemMap(prisma),
+    buildPersonalByItemMap(prisma),
     prisma.stockOperacion.findMany({
       include: {
         items: {
@@ -174,7 +175,11 @@ export async function GET(req: Request) {
     nombre: item.nombre,
     ordenPdf: item.ordenPdf,
     apareceEnHoja: item.activo,
-    stockActual: stockByItem.get(item.itemId.toString()) ?? 0,
+    stockDeposito: stockDepositoByItem.get(item.itemId.toString()) ?? 0,
+    stockPersonal: stockPersonalByItem.get(item.itemId.toString()) ?? 0,
+    stockTotal:
+      (stockDepositoByItem.get(item.itemId.toString()) ?? 0) + (stockPersonalByItem.get(item.itemId.toString()) ?? 0),
+    stockActual: stockDepositoByItem.get(item.itemId.toString()) ?? 0,
   }));
 
   const historialManual: StockHistorialInternalEntry[] = stockOperaciones.map((operacion) => ({

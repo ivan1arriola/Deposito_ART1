@@ -165,6 +165,44 @@ export async function deleteItemHandler(itemId: string, callbacks: CallbackProps
   }
 }
 
+export type ItemMergeResult = {
+  ok: boolean;
+  sourceItem: {
+    itemId: string;
+    nombre: string;
+  };
+  targetItem: {
+    itemId: string;
+    nombre: string;
+  };
+  resumen: {
+    totalRegistrosAfectados: number;
+    totalStockAfectados: number;
+    totalMovimientosAfectados: number;
+    registrosConsolidados: number;
+    stockConsolidados: number;
+    unidadesRegistrosReasignadas: number;
+    unidadesStockReasignadas: number;
+    unidadesTotalesReasignadas: number;
+  };
+};
+
+export async function mergeItemHandler(sourceItemId: string, targetItemId: string, callbacks: CallbackProps) {
+  try {
+    const result = await api<ItemMergeResult>(`/api/items/${sourceItemId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetItemId }),
+    });
+    callbacks.onSuccess(result);
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo unificar el equipo.";
+    callbacks.onError(message);
+    throw error;
+  }
+}
+
 export type ItemDeleteImpact = {
   item: {
     itemId: string;

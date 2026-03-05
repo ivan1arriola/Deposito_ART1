@@ -6,7 +6,7 @@ import type { MainView } from "@/types/views";
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">;
 type SummaryView = Extract<MainView, "equipo_resumen" | "tallas_resumen">;
 type CreateView = Extract<MainView, "personal_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuarios">;
-type StockView = Extract<MainView, "stock" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial">;
+type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial">;
 
 type MainNavigationProps = {
   activeView: MainView;
@@ -160,9 +160,19 @@ const createViews: Array<{ view: CreateView; label: string; shortLabel: string; 
 
 const stockViews: Array<{ view: StockView; label: string; shortLabel: string; icon: JSX.Element }> = [
   {
+    view: "stock_total",
+    label: "Total de Items",
+    shortLabel: "Total",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5h16M4 12h16M4 19h16" />
+      </svg>
+    ),
+  },
+  {
     view: "stock_actual",
-    label: "Estado Actual",
-    shortLabel: "Actual",
+    label: "Deposito Interno",
+    shortLabel: "Deposito",
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
@@ -258,6 +268,7 @@ export function MainNavigation({
   const isSummaryView = activeView === "equipo_resumen" || activeView === "tallas_resumen";
   const isStockView =
     activeView === "stock" ||
+    activeView === "stock_total" ||
     activeView === "stock_actual" ||
     activeView === "stock_alta" ||
     activeView === "stock_baja" ||

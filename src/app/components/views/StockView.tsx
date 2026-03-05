@@ -7,7 +7,7 @@ import type { StockOperacionDraft, StockOperacionDraftItem } from "@/types/forms
 import type { StockDashboardData } from "@/types/views";
 
 type StockViewProps = {
-  section: "actual" | "alta" | "baja" | "historial";
+  section: "total" | "actual" | "alta" | "baja" | "historial";
   data: StockDashboardData | null;
   loading: boolean;
   error: string | null;
@@ -48,33 +48,51 @@ export function StockView({
 }: StockViewProps) {
   const resumen = data?.resumen ?? [];
   const historial = data?.historial ?? [];
-  const totalUnidades = resumen.reduce((total, item) => total + item.stockActual, 0);
-  const itemsConStock = resumen.filter((item) => item.stockActual !== 0).length;
-  const itemsNegativos = resumen.filter((item) => item.stockActual < 0).length;
-  const showSummaryCards = section === "actual";
+
+  const valueBySection = (item: (typeof resumen)[number]) => (section === "total" ? item.stockTotal : item.stockDeposito);
+  const totalUnidades = resumen.reduce((total, item) => total + valueBySection(item), 0);
+  const itemsConStock = resumen.filter((item) => valueBySection(item) !== 0).length;
+  const itemsNegativos = resumen.filter((item) => valueBySection(item) < 0).length;
+
+  const showSummaryCards = section === "total" || section === "actual";
   const showManualForm = canWrite && (section === "alta" || section === "baja");
-  const showCurrentStock = section === "actual";
+  const showStockTable = section === "total" || section === "actual";
   const showHistory = section === "historial";
-  const formTitle = section === "alta" ? "Alta de Stock" : "Baja de Stock";
+
+  const formTitle = section === "alta" ? "Alta de stock" : "Baja de stock";
   const submitLabel = saving ? "Guardando..." : section === "alta" ? "Guardar ingreso" : "Guardar egreso";
+
+  const viewTitle =
+    section === "total"
+      ? "Total de equipos en la unidad"
+      : section === "actual"
+        ? "Stock interno de deposito"
+        : section === "alta"
+          ? "Alta de stock"
+          : section === "baja"
+            ? "Baja de stock"
+            : "Historial de stock";
+
+  const description =
+    section === "total"
+      ? "Suma por item: equipos entregados al personal mas recuento interno del deposito."
+      : section === "actual"
+        ? "Recuento interno del deposito. Se altera por altas, bajas y movimientos de personal que afectan stock."
+        : "Recuento interno del deposito. Se altera por altas, bajas y movimientos de personal que afectan stock.";
+
+  const cardUnitsLabel = section === "total" ? "Total unidad" : "Total deposito";
+  const cardItemsLabel = section === "total" ? "Items con total" : "Items con stock";
+  const cardNegativeLabel = section === "total" ? "Items totales en negativo" : "Items en negativo";
+  const stockTableTitle =
+    section === "total" ? "Total por item (personal + deposito interno)" : "Stock interno de deposito por equipo";
 
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-stone-900">
-              {section === "actual"
-                ? "Stock en Depósito"
-                : section === "alta"
-                  ? "Alta de Stock"
-                  : section === "baja"
-                    ? "Baja de Stock"
-                    : "Historial de Stock"}
-            </h2>
-            <p className="mt-1 text-xs text-stone-600">
-              Refleja el equipo disponible en depósito, calculado por ingresos, egresos y movimientos de personal marcados para afectar stock.
-            </p>
+            <h2 className="text-base font-semibold text-stone-900">{viewTitle}</h2>
+            <p className="mt-1 text-xs text-stone-600">{description}</p>
           </div>
           <button
             type="button"
@@ -88,15 +106,15 @@ export function StockView({
         {showSummaryCards ? (
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total unidades</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{cardUnitsLabel}</p>
               <p className="mt-2 text-2xl font-bold text-stone-900">{totalUnidades}</p>
             </div>
             <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items con stock</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{cardItemsLabel}</p>
               <p className="mt-2 text-2xl font-bold text-stone-900">{itemsConStock}</p>
             </div>
             <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items en negativo</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{cardNegativeLabel}</p>
               <p className={`mt-2 text-2xl font-bold ${itemsNegativos > 0 ? "text-rose-700" : "text-stone-900"}`}>{itemsNegativos}</p>
             </div>
           </div>
@@ -217,92 +235,134 @@ export function StockView({
         </article>
       ) : null}
 
-      {showCurrentStock ? (
-      <article className="ej-card rounded-2xl p-4">
-        <h3 className="text-sm font-semibold text-stone-900">Stock en depósito por equipo</h3>
-        {loading ? <p className="mt-3 text-sm text-stone-600">Cargando stock...</p> : null}
-        {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
-        {!loading && !error ? (
-          <>
-            <div className="mt-3 hidden overflow-x-auto lg:block">
-              <table className="min-w-full border-separate border-spacing-0 text-sm">
-                <thead>
-                  <tr>
-                    <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Equipo</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Stock actual</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resumen.map((item) => (
-                    <tr key={item.itemId}>
-                      <td className="border-b border-stone-100 px-3 py-2 text-stone-900">{item.nombre}</td>
-                      <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${item.stockActual < 0 ? "text-rose-700" : "text-stone-900"}`}>
-                        {item.stockActual}
-                      </td>
+      {showStockTable ? (
+        <article className="ej-card rounded-2xl p-4">
+          <h3 className="text-sm font-semibold text-stone-900">{stockTableTitle}</h3>
+          {loading ? <p className="mt-3 text-sm text-stone-600">Cargando stock...</p> : null}
+          {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
+          {!loading && !error ? (
+            <>
+              <div className="mt-3 hidden overflow-x-auto lg:block">
+                <table className="min-w-full border-separate border-spacing-0 text-sm">
+                  <thead>
+                    <tr>
+                      <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Equipo</th>
+                      {section === "total" ? (
+                        <>
+                          <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Personal</th>
+                          <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Deposito</th>
+                          <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Total</th>
+                        </>
+                      ) : (
+                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Stock deposito</th>
+                      )}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {resumen.map((item) => (
+                      <tr key={item.itemId}>
+                        <td className="border-b border-stone-100 px-3 py-2 text-stone-900">{item.nombre}</td>
+                        {section === "total" ? (
+                          <>
+                            <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${item.stockPersonal < 0 ? "text-rose-700" : "text-stone-900"}`}>
+                              {item.stockPersonal}
+                            </td>
+                            <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${item.stockDeposito < 0 ? "text-rose-700" : "text-stone-900"}`}>
+                              {item.stockDeposito}
+                            </td>
+                            <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${item.stockTotal < 0 ? "text-rose-700" : "text-stone-900"}`}>
+                              {item.stockTotal}
+                            </td>
+                          </>
+                        ) : (
+                          <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${item.stockDeposito < 0 ? "text-rose-700" : "text-stone-900"}`}>
+                            {item.stockDeposito}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-2 lg:hidden">
-              {resumen.map((item) => (
-                <div key={item.itemId} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-stone-900">{item.nombre}</p>
-                    <p className={`text-lg font-bold ${item.stockActual < 0 ? "text-rose-700" : "text-stone-900"}`}>{item.stockActual}</p>
+              <div className="mt-3 grid grid-cols-1 gap-2 lg:hidden">
+                {resumen.map((item) => (
+                  <div key={item.itemId} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                    {section === "total" ? (
+                      <>
+                        <p className="font-semibold text-stone-900">{item.nombre}</p>
+                        <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                          <div className="rounded-lg bg-white px-2 py-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Personal</p>
+                            <p className={`text-sm font-bold ${item.stockPersonal < 0 ? "text-rose-700" : "text-stone-900"}`}>{item.stockPersonal}</p>
+                          </div>
+                          <div className="rounded-lg bg-white px-2 py-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Deposito</p>
+                            <p className={`text-sm font-bold ${item.stockDeposito < 0 ? "text-rose-700" : "text-stone-900"}`}>{item.stockDeposito}</p>
+                          </div>
+                          <div className="rounded-lg bg-white px-2 py-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Total</p>
+                            <p className={`text-sm font-bold ${item.stockTotal < 0 ? "text-rose-700" : "text-stone-900"}`}>{item.stockTotal}</p>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-stone-900">{item.nombre}</p>
+                        <p className={`text-lg font-bold ${item.stockDeposito < 0 ? "text-rose-700" : "text-stone-900"}`}>{item.stockDeposito}</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : null}
-      </article>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </article>
       ) : null}
 
       {showHistory ? (
-      <article className="ej-card rounded-2xl p-4">
-        <h3 className="text-sm font-semibold text-stone-900">Historial que impacta stock</h3>
-        {loading ? <p className="mt-3 text-sm text-stone-600">Cargando stock...</p> : null}
-        {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
-        <div className="mt-3 space-y-2">
-          {historial.length === 0 ? <p className="text-sm text-stone-600">No hay movimientos de stock registrados.</p> : null}
-          {historial.map((entry) => (
-            <div key={entry.id} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold text-stone-900">{formatDateOnlyForDisplay(entry.fecha)}</p>
-                  <p className="text-xs text-stone-600">
-                    {entry.origen === "MANUAL"
-                      ? "Movimiento manual de stock"
-                      : `${entry.persona ?? "Personal sin dato"}${entry.ci ? ` - CI ${entry.ci}` : ""}`}
-                  </p>
-                  <p className="text-xs text-stone-500">
-                    {entry.registradoPor ? `Registrado por: ${entry.registradoPor}` : "Registrado por: sin dato"}
-                  </p>
+        <article className="ej-card rounded-2xl p-4">
+          <h3 className="text-sm font-semibold text-stone-900">Historial que impacta stock interno</h3>
+          {loading ? <p className="mt-3 text-sm text-stone-600">Cargando stock...</p> : null}
+          {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
+          <div className="mt-3 space-y-2">
+            {historial.length === 0 ? <p className="text-sm text-stone-600">No hay movimientos de stock registrados.</p> : null}
+            {historial.map((entry) => (
+              <div key={entry.id} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-stone-900">{formatDateOnlyForDisplay(entry.fecha)}</p>
+                    <p className="text-xs text-stone-600">
+                      {entry.origen === "MANUAL"
+                        ? "Movimiento manual de stock"
+                        : `${entry.persona ?? "Personal sin dato"}${entry.ci ? ` - CI ${entry.ci}` : ""}`}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      {entry.registradoPor ? `Registrado por: ${entry.registradoPor}` : "Registrado por: sin dato"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${historyBadgeClass(entry.tipo)}`}>
+                      {entry.tipo}
+                    </span>
+                    <span className="text-xs font-semibold text-stone-600">{`${entry.totalUnidades} unidades`}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${historyBadgeClass(entry.tipo)}`}>
-                    {entry.tipo}
-                  </span>
-                  <span className="text-xs font-semibold text-stone-600">{`${entry.totalUnidades} unidades`}</span>
+                {entry.comentarios ? <p className="mt-2 text-xs text-stone-700">{entry.comentarios}</p> : null}
+                <div className="mt-2 grid grid-cols-1 gap-1 md:grid-cols-2">
+                  {entry.items.map((item) => (
+                    <p key={`${entry.id}-${item.itemId}`} className="text-xs text-stone-700">
+                      <span className={`font-semibold ${item.delta < 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                        {item.delta > 0 ? `+${item.delta}` : item.delta}
+                      </span>{" "}
+                      {item.nombre}
+                    </p>
+                  ))}
                 </div>
               </div>
-              {entry.comentarios ? <p className="mt-2 text-xs text-stone-700">{entry.comentarios}</p> : null}
-              <div className="mt-2 grid grid-cols-1 gap-1 md:grid-cols-2">
-                {entry.items.map((item) => (
-                  <p key={`${entry.id}-${item.itemId}`} className="text-xs text-stone-700">
-                    <span className={`font-semibold ${item.delta < 0 ? "text-rose-700" : "text-emerald-700"}`}>
-                      {item.delta > 0 ? `+${item.delta}` : item.delta}
-                    </span>{" "}
-                    {item.nombre}
-                  </p>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </article>
+            ))}
+          </div>
+        </article>
       ) : null}
     </section>
   );

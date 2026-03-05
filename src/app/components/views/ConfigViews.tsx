@@ -63,6 +63,8 @@ interface ConfigViewsProps {
   equiposInactivos: EquipoConfig[];
   equiposActivosEnPantalla: EquipoConfig[];
   hasEquipoOrderDraftChanges: boolean;
+  mergeEquipoOrigenId: string;
+  mergeEquipoDestinoId: string;
   // Usuarios state
   usuarios: UsuarioAdmin[];
   newGrado: string;
@@ -116,6 +118,9 @@ interface ConfigViewsProps {
   onUpdateEquipo: (itemId: string) => void;
   onToggleEquipoActivo: (equipo: EquipoConfig) => void;
   onDeleteEquipo: (itemId: string) => void;
+  onMergeEquipoOrigenIdChange: (itemId: string) => void;
+  onMergeEquipoDestinoIdChange: (itemId: string) => void;
+  onMergeEquipos: (origenItemId: string, destinoItemId: string) => void;
   onSaveEquipoOrder: () => void;
   onResetEquipoOrderDraft: () => void;
   renderEquipoCard: (equipo: EquipoConfig, options?: { reorderableInActiveList?: boolean; orderIndex?: number; orderCount?: number }) => ReactNode;
@@ -335,6 +340,13 @@ export function ConfigViews(props: ConfigViewsProps) {
     const activeOrderById = new Map(
       props.equiposActivosEnPantalla.map((equipo, index) => [equipo.itemId, index]),
     );
+    const mergeTargetEquipos = props.equipos.filter((equipo) => equipo.itemId !== props.mergeEquipoOrigenId);
+    const canMergeEquipos =
+      props.canWrite &&
+      props.equipos.length >= 2 &&
+      props.mergeEquipoOrigenId.trim() !== "" &&
+      props.mergeEquipoDestinoId.trim() !== "" &&
+      props.mergeEquipoOrigenId !== props.mergeEquipoDestinoId;
 
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
@@ -456,6 +468,66 @@ export function ConfigViews(props: ConfigViewsProps) {
                 <p className="text-sm text-stone-600">No hay equipos ocultos.</p>
               </div>
             )}
+          </div>
+
+          <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
+            <div>
+              <h3 className="text-sm font-semibold text-stone-900">Unificar equipos</h3>
+              <p className="mt-1 text-xs text-stone-600">
+                Selecciona un equipo origen y uno destino. Se reasignarán todos los movimientos al destino y luego se eliminará el equipo origen.
+              </p>
+            </div>
+            {props.equipos.length < 2 ? (
+              <div className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-xs text-stone-700">
+                Debes tener al menos 2 equipos para poder unificarlos.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Equipo origen</span>
+                  <select
+                    value={props.mergeEquipoOrigenId}
+                    onChange={(event) => props.onMergeEquipoOrigenIdChange(event.target.value)}
+                    disabled={!props.canWrite}
+                    className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value="">Seleccionar equipo origen</option>
+                    {props.equipos.map((equipo) => (
+                      <option key={`merge-origen-${equipo.itemId}`} value={equipo.itemId}>
+                        {equipo.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Equipo destino</span>
+                  <select
+                    value={props.mergeEquipoDestinoId}
+                    onChange={(event) => props.onMergeEquipoDestinoIdChange(event.target.value)}
+                    disabled={!props.canWrite || props.mergeEquipoOrigenId.trim() === ""}
+                    className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value="">Seleccionar equipo destino</option>
+                    {mergeTargetEquipos.map((equipo) => (
+                      <option key={`merge-destino-${equipo.itemId}`} value={equipo.itemId}>
+                        {equipo.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => props.onMergeEquipos(props.mergeEquipoOrigenId, props.mergeEquipoDestinoId)}
+                disabled={!canMergeEquipos}
+                className="rounded-lg bg-rose-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Unificar y eliminar origen
+              </button>
+              <p className="text-xs text-stone-500">Acción irreversible: se recomienda revisar antes de confirmar.</p>
+            </div>
           </div>
 
           {props.isAdmin ? (

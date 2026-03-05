@@ -12,6 +12,7 @@ export type MainView =
   | "grado_nuevo"
   | "formularios"
   | "stock"
+  | "stock_total"
   | "stock_actual"
   | "stock_alta"
   | "stock_baja"
@@ -71,6 +72,10 @@ export type StockResumenRow = {
   nombre: string;
   ordenPdf: number;
   apareceEnHoja: boolean;
+  stockDeposito: number;
+  stockPersonal: number;
+  stockTotal: number;
+  // Alias legado para compatibilidad con pantallas existentes.
   stockActual: number;
 };
 
