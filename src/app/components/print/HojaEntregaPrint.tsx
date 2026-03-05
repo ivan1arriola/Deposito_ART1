@@ -42,6 +42,11 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     break-inside: avoid-page;
   }
 
+  .page,
+  .page * {
+    font-size: 12px !important;
+  }
+
   .page + .page {
     margin-top: 6mm;
   }
@@ -345,12 +350,12 @@ export function HojaEntregaPrintSheet({
         </colgroup>
         <tbody>
           <tr>
-            <td colSpan={15} className="center bold" style={{ fontSize: "9px" }}>
+            <td colSpan={15} className="center bold">
               Grupo &quot;Brig.Gral.Manuel Oribe&quot; de Artillería 105mm No.1.-
             </td>
           </tr>
           <tr>
-            <td colSpan={15} className="center bold" style={{ fontSize: "9px" }}>
+            <td colSpan={15} className="center bold">
               {"ADMINISTRACION - S4"}
             </td>
           </tr>

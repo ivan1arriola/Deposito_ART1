@@ -18,7 +18,7 @@ const sizeClassMap = {
 export function ModalFrame({ children, onClose, closeOnBackdrop = true, size = "md" }: ModalFrameProps) {
   return (
     <section
-      className="fixed inset-0 z-[70] flex items-end justify-center overflow-y-auto bg-black/45 px-2 pb-2 pt-8 sm:items-center sm:px-3"
+      className="fixed inset-0 z-[500] flex items-end justify-center overflow-y-auto bg-black/45 px-2 pb-2 pt-8 sm:items-center sm:px-3"
       onClick={closeOnBackdrop ? onClose : undefined}
     >
       <article

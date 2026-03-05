@@ -186,12 +186,12 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
             </colgroup>
             <tbody>
               <tr>
-                <td colSpan={15} className={`${styles.center} ${styles.bold}`} style={{ fontSize: "9px" }}>
+                <td colSpan={15} className={`${styles.center} ${styles.bold}`}>
                   Grupo &quot;Brig.Gral.Manuel Oribe&quot; de Artiller\u00eda 105mm No.1.-
                 </td>
               </tr>
               <tr>
-                <td colSpan={15} className={`${styles.center} ${styles.bold}`} style={{ fontSize: "9px" }}>
+                <td colSpan={15} className={`${styles.center} ${styles.bold}`}>
                   {"ADMINISTRACI\u00d3N - S4"}
                 </td>
               </tr>

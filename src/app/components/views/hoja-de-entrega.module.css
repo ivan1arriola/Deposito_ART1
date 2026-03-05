@@ -134,6 +134,11 @@
   break-inside: avoid-page;
 }
 
+.sheet,
+.sheet * {
+  font-size: 12px !important;
+}
+
 .frame {
   background: var(--color-surface);
   padding: 3mm;
