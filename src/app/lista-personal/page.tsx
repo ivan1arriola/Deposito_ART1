@@ -224,6 +224,16 @@ export default async function ListaPersonalPage({
             box-shadow: none;
             padding: 0;
           }
+
+          .group {
+            break-before: page;
+            page-break-before: always;
+          }
+
+          .group:first-of-type {
+            break-before: auto;
+            page-break-before: auto;
+          }
         }
       `}</style>
       <main className="sheet">
