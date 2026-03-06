@@ -256,3 +256,90 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({ error: "No se pudo rectificar el movimiento." }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request, context: { params: Promise<{ registroId: string }> }) {
+  const auth = await authorizeRequest(req, "delete_data");
+  if (!auth.ok) return auth.response;
+
+  const { registroId: registroIdParam } = await context.params;
+  const registroId = parseRegistroId(registroIdParam);
+  if (!registroId) {
+    return NextResponse.json({ error: "registroId invalido." }, { status: 400 });
+  }
+
+  const existing = await prisma.registro.findUnique({
+    where: { registroId },
+    include: {
+      personal: {
+        select: {
+          ci: true,
+          apellido1: true,
+          apellido2: true,
+          nombre1: true,
+          nombre2: true,
+          rango: {
+            select: { nombreCompleto: true, abreviacion: true },
+          },
+          bateria: {
+            select: { nombre: true },
+          },
+        },
+      },
+      items: {
+        include: { item: true },
+        orderBy: { item: { ordenPdf: "asc" } },
+      },
+    },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
+  }
+
+  if (existing.tipo === TipoRegistro.AJUSTE) {
+    return NextResponse.json({ error: "Los ajustes no se eliminan desde esta vista." }, { status: 409 });
+  }
+
+  const itemsEliminados = existing.items.map((detail) => ({
+    itemId: detail.itemId.toString(),
+    nombre: detail.item.nombre,
+    cantidad: detail.cantidad,
+  }));
+  const totalUnidadesEliminadas = itemsEliminados.reduce((acc, item) => acc + item.cantidad, 0);
+  const requestMeta = readRequestMeta(req);
+
+  try {
+    await prisma.registro.delete({
+      where: { registroId: existing.registroId },
+    });
+
+    await logAudit({
+      usuarioId: auth.user.usuarioId,
+      accion: "DELETE",
+      entidad: "REGISTRO",
+      entidadId: existing.registroId.toString(),
+      detalle: {
+        evento: "MOVIMIENTO_VESTUARIO_ELIMINADO",
+        ci: existing.ci,
+        personal: buildPersonalAuditDetail(existing.personal),
+        tipo: existing.tipo,
+        afectaStock: existing.afectaStock,
+        fecha: formatDateOnlyFromDate(existing.fecha),
+        comentarios: existing.comentarios,
+        totalEquiposEliminados: itemsEliminados.length,
+        totalUnidadesEliminadas,
+        itemsEliminados,
+        ip: requestMeta.ip,
+        userAgent: requestMeta.userAgent,
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      registroId: existing.registroId.toString(),
+      ci: existing.ci,
+    });
+  } catch {
+    return NextResponse.json({ error: "No se pudo eliminar el movimiento." }, { status: 500 });
+  }
+}

@@ -12,6 +12,7 @@ type RegistroEditorModalProps = {
   equiposOrdenados: Equipo[];
   maxFechaIngreso: string;
   saving: boolean;
+  canDelete: boolean;
   onClose: () => void;
   onAfectaStockChange: (value: boolean) => void;
   onDateChange: (value: string) => void;
@@ -19,6 +20,7 @@ type RegistroEditorModalProps = {
   onItemChange: (index: number, field: "itemId" | "cantidad", value: string) => void;
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
+  onDelete: () => void;
   onSubmit: () => void;
 };
 
@@ -28,6 +30,7 @@ export function RegistroEditorModal({
   equiposOrdenados,
   maxFechaIngreso,
   saving,
+  canDelete,
   onClose,
   onAfectaStockChange,
   onDateChange,
@@ -35,6 +38,7 @@ export function RegistroEditorModal({
   onItemChange,
   onAddItem,
   onRemoveItem,
+  onDelete,
   onSubmit,
 }: RegistroEditorModalProps) {
   if (!draft) return null;
@@ -154,14 +158,26 @@ export function RegistroEditorModal({
       </div>
 
       <div className="mt-3 flex flex-wrap justify-between gap-2">
-        <button
-          type="button"
-          onClick={onAddItem}
-          disabled={saving}
-          className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Agregar equipo
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onAddItem}
+            disabled={saving}
+            className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Agregar equipo
+          </button>
+          {draft.modo === "rectificar" && draft.registroId && canDelete ? (
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={saving}
+              className="rounded bg-rose-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Eliminar movimiento
+            </button>
+          ) : null}
+        </div>
         <button
           type="button"
           onClick={onSubmit}

@@ -1559,6 +1559,47 @@ export default function Home() {
     }
   }
 
+  function deleteRegistro() {
+    if (!registroDraft || registroSaving) return;
+    if (!canDelete) {
+      setStatus("No tienes permisos para eliminar movimientos.");
+      return;
+    }
+    if (registroDraft.modo !== "rectificar" || registroDraft.registroId === null) {
+      setStatus("Solo puedes eliminar movimientos existentes desde rectificacion.");
+      return;
+    }
+
+    const draftToDelete = { ...registroDraft };
+    const tipoLabel = draftToDelete.tipo === "ENTREGA" ? "entrega" : "devolucion";
+
+    openConfirmDialog({
+      title: "Eliminar movimiento",
+      message: `Se eliminara la ${tipoLabel} del ${draftToDelete.fecha} para CI ${formatUruguayanCi(draftToDelete.ci)}. Esta accion no se puede deshacer.`,
+      confirmText: "Eliminar movimiento",
+      tone: "danger",
+      onConfirm: async () => {
+        setRegistroSaving(true);
+        setStatus("Eliminando movimiento...");
+        try {
+          await api(`/api/registros/${draftToDelete.registroId}`, {
+            method: "DELETE",
+          });
+          setRegistroDraft(null);
+          setStatus(`Movimiento eliminado para ${formatUruguayanCi(draftToDelete.ci)}.`);
+          await loadData();
+          if (registroViewer && registroViewer.ci === draftToDelete.ci) {
+            await loadRegistroViewer(registroViewer.ci, registroViewer.nombre);
+          }
+        } catch (error: unknown) {
+          setStatus(error instanceof Error ? error.message : "No se pudo eliminar el movimiento.");
+        } finally {
+          setRegistroSaving(false);
+        }
+      },
+    });
+  }
+
   function updateStockDraftItem(index: number, field: keyof RegistroDraftEquipo, value: string) {
     setStockDraft((prev) => {
       if (field === "itemId" && value !== "" && prev.items.some((item, itemIndex) => itemIndex !== index && item.itemId === value)) {
@@ -2980,6 +3021,7 @@ export default function Home() {
         registroViewerPage={registroViewerPage}
         registroViewerPageSize={registroViewerPageSize}
         canWrite={canWrite}
+        canDelete={canDelete}
         onRectifyRegistro={rectifyRegistro}
         onRegistroViewerPageChange={setRegistroViewerPage}
         onRegistroViewerPageSizeChange={setRegistroViewerPageSize}
@@ -2995,6 +3037,7 @@ export default function Home() {
         onRegistroItemChange={updateRegistroItem}
         onAddRegistroItem={addRegistroItem}
         onRemoveRegistroItem={removeRegistroItem}
+        onDeleteRegistro={deleteRegistro}
         onSubmitRegistro={() => void saveRegistro()}
         personalObservacionDraft={personalObservacionDraft}
         personalObservacionSaving={personalObservacionSaving}
