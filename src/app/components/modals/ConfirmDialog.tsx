@@ -12,11 +12,17 @@ type ConfirmDialogModalProps = {
 
 export function ConfirmDialogModal({ dialog, busy, onClose, onConfirm }: ConfirmDialogModalProps) {
   if (!dialog) return null;
+  const isDestructive = dialog.tone === "danger";
 
   return (
     <ModalFrame onClose={onClose}>
       <h3 className="text-base font-semibold text-stone-900">{dialog.title}</h3>
       <p className="mt-2 max-h-[48vh] overflow-y-auto whitespace-pre-line text-sm text-stone-700">{dialog.message}</p>
+      {isDestructive ? (
+        <p className="mt-2 rounded border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-800">
+          Advertencia: esta accion es irreversible y no se puede deshacer.
+        </p>
+      ) : null}
       <div className="mt-4 flex flex-wrap justify-end gap-2">
         <button
           type="button"
@@ -31,7 +37,7 @@ export function ConfirmDialogModal({ dialog, busy, onClose, onConfirm }: Confirm
           onClick={onConfirm}
           disabled={busy}
           className={`rounded px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${
-            dialog.tone === "danger" ? "bg-rose-700 hover:bg-rose-800" : "bg-stone-700 hover:bg-stone-800"
+            isDestructive ? "bg-rose-700 hover:bg-rose-800" : "bg-stone-700 hover:bg-stone-800"
           }`}
         >
           {busy ? "Procesando..." : dialog.confirmText}
