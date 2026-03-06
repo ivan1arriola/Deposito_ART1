@@ -7,6 +7,7 @@ type ModalFrameProps = {
   onClose: () => void;
   closeOnBackdrop?: boolean;
   size?: "md" | "lg" | "xl";
+  zIndexClassName?: string;
 };
 
 const sizeClassMap = {
@@ -15,10 +16,16 @@ const sizeClassMap = {
   xl: "max-w-3xl",
 } as const;
 
-export function ModalFrame({ children, onClose, closeOnBackdrop = true, size = "md" }: ModalFrameProps) {
+export function ModalFrame({
+  children,
+  onClose,
+  closeOnBackdrop = true,
+  size = "md",
+  zIndexClassName = "z-[500]",
+}: ModalFrameProps) {
   return (
     <section
-      className="fixed inset-0 z-[500] flex items-end justify-center overflow-y-auto bg-black/45 px-2 pb-2 pt-8 sm:items-center sm:px-3"
+      className={`fixed inset-0 ${zIndexClassName} flex items-end justify-center overflow-y-auto bg-black/45 px-2 pb-2 pt-8 sm:items-center sm:px-3`}
       onClick={closeOnBackdrop ? onClose : undefined}
     >
       <article

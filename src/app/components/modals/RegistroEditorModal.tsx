@@ -159,9 +159,10 @@ export function RegistroEditorModal({
             type="button"
             onClick={onAddItem}
             disabled={saving}
-            className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Agregar equipo
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-stone-800 text-[10px] font-bold text-white">+</span>
+            Equipo
           </button>
         </div>
         <button

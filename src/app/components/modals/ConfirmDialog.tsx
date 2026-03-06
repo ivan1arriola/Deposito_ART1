@@ -15,7 +15,7 @@ export function ConfirmDialogModal({ dialog, busy, onClose, onConfirm }: Confirm
   const isDestructive = dialog.tone === "danger";
 
   return (
-    <ModalFrame onClose={onClose}>
+    <ModalFrame onClose={onClose} zIndexClassName="z-[900]">
       <h3 className="text-base font-semibold text-stone-900">{dialog.title}</h3>
       <p className="mt-2 max-h-[48vh] overflow-y-auto whitespace-pre-line text-sm text-stone-700">{dialog.message}</p>
       {isDestructive ? (
