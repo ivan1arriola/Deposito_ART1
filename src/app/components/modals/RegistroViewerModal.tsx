@@ -11,11 +11,13 @@ type RegistroViewerModalProps = {
   viewer: RegistroViewerState | null;
   rows: RegistroView[];
   canWrite: boolean;
+  canDelete: boolean;
   page: number;
   pageSize: number;
   totalItems: number;
   roleLabel: (role: Role | null | undefined) => string;
   onRectify: (registro: RegistroView) => void;
+  onDelete: (registro: RegistroView) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   onClose: () => void;
@@ -25,11 +27,13 @@ export function RegistroViewerModal({
   viewer,
   rows,
   canWrite,
+  canDelete,
   page,
   pageSize,
   totalItems,
   roleLabel,
   onRectify,
+  onDelete,
   onPageChange,
   onPageSizeChange,
   onClose,
@@ -70,6 +74,15 @@ export function RegistroViewerModal({
                         className="rounded bg-sky-700 px-2 py-1 text-[11px] font-semibold text-white"
                       >
                         Rectificar
+                      </button>
+                    ) : null}
+                    {canDelete && registro.tipo !== "AJUSTE" ? (
+                      <button
+                        type="button"
+                        onClick={() => onDelete(registro)}
+                        className="rounded bg-rose-700 px-2 py-1 text-[11px] font-semibold text-white"
+                      >
+                        Eliminar
                       </button>
                     ) : null}
                     <span

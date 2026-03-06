@@ -54,6 +54,7 @@ type HomeDialogsLayerProps = {
   canWrite: boolean;
   canDelete: boolean;
   onRectifyRegistro: (registro: RegistroView) => void;
+  onDeleteRegistro: (registro: RegistroView) => void;
   onRegistroViewerPageChange: (page: number) => void;
   onRegistroViewerPageSizeChange: (pageSize: number) => void;
   onCloseRegistroViewer: () => void;
@@ -68,7 +69,6 @@ type HomeDialogsLayerProps = {
   onRegistroItemChange: (index: number, field: keyof RegistroDraftEquipo, value: string) => void;
   onAddRegistroItem: () => void;
   onRemoveRegistroItem: (index: number) => void;
-  onDeleteRegistro: () => void;
   onSubmitRegistro: () => void;
   personalObservacionDraft: PersonalObservacionDraft | null;
   personalObservacionSaving: boolean;
@@ -118,6 +118,7 @@ export function HomeDialogsLayer({
   canWrite,
   canDelete,
   onRectifyRegistro,
+  onDeleteRegistro,
   onRegistroViewerPageChange,
   onRegistroViewerPageSizeChange,
   onCloseRegistroViewer,
@@ -132,7 +133,6 @@ export function HomeDialogsLayer({
   onRegistroItemChange,
   onAddRegistroItem,
   onRemoveRegistroItem,
-  onDeleteRegistro,
   onSubmitRegistro,
   personalObservacionDraft,
   personalObservacionSaving,
@@ -198,6 +198,8 @@ export function HomeDialogsLayer({
         totalItems={registroViewer?.registros.length ?? 0}
         roleLabel={roleLabel}
         onRectify={onRectifyRegistro}
+        canDelete={canDelete}
+        onDelete={onDeleteRegistro}
         onPageChange={onRegistroViewerPageChange}
         onPageSizeChange={onRegistroViewerPageSizeChange}
         onClose={onCloseRegistroViewer}
@@ -209,7 +211,6 @@ export function HomeDialogsLayer({
         equiposOrdenados={equiposOrdenados}
         maxFechaIngreso={maxFechaIngreso}
         saving={registroSaving}
-        canDelete={canDelete}
         onClose={onCloseRegistroEditor}
         onAfectaStockChange={onAfectaStockChange}
         onDateChange={(value) => onRegistroDraftChange("fecha", value)}
@@ -217,7 +218,6 @@ export function HomeDialogsLayer({
         onItemChange={onRegistroItemChange}
         onAddItem={onAddRegistroItem}
         onRemoveItem={onRemoveRegistroItem}
-        onDelete={onDeleteRegistro}
         onSubmit={onSubmitRegistro}
       />
 

@@ -1559,42 +1559,38 @@ export default function Home() {
     }
   }
 
-  function deleteRegistro() {
-    if (!registroDraft || registroSaving) return;
+  function deleteRegistro(registro: RegistroView) {
     if (!canDelete) {
       setStatus("No tienes permisos para eliminar movimientos.");
       return;
     }
-    if (registroDraft.modo !== "rectificar" || registroDraft.registroId === null) {
-      setStatus("Solo puedes eliminar movimientos existentes desde rectificación.");
+    if (registro.tipo === "AJUSTE") {
+      setStatus("Los ajustes no se eliminan desde esta vista.");
       return;
     }
 
-    const draftToDelete = { ...registroDraft };
-    const tipoLabel = draftToDelete.tipo === "ENTREGA" ? "entrega" : "devolución";
+    const fechaLabel = formatDateOnlyForDisplay(registro.fecha);
+    const tipoLabel = registro.tipo === "ENTREGA" ? "entrega" : "devolución";
 
     openConfirmDialog({
       title: "Eliminar movimiento",
-      message: `Se eliminará la ${tipoLabel} del ${draftToDelete.fecha} para CI ${formatUruguayanCi(draftToDelete.ci)}. Esta acción no se puede deshacer.`,
+      message: `Se eliminará la ${tipoLabel} del ${fechaLabel} para CI ${formatUruguayanCi(registro.ci)}. Esta acción no se puede deshacer.`,
       confirmText: "Eliminar movimiento",
       tone: "danger",
       onConfirm: async () => {
-        setRegistroSaving(true);
         setStatus("Eliminando movimiento...");
         try {
-          await api(`/api/registros/${draftToDelete.registroId}`, {
+          await api(`/api/registros/${registro.registroId}`, {
             method: "DELETE",
           });
-          setRegistroDraft(null);
-          setStatus(`Movimiento eliminado para ${formatUruguayanCi(draftToDelete.ci)}.`);
+          setRegistroDraft((prev) => (prev && prev.registroId === registro.registroId ? null : prev));
+          setStatus(`Movimiento eliminado para ${formatUruguayanCi(registro.ci)}.`);
           await loadData();
-          if (registroViewer && registroViewer.ci === draftToDelete.ci) {
+          if (registroViewer && registroViewer.ci === registro.ci) {
             await loadRegistroViewer(registroViewer.ci, registroViewer.nombre);
           }
         } catch (error: unknown) {
           setStatus(error instanceof Error ? error.message : "No se pudo eliminar el movimiento.");
-        } finally {
-          setRegistroSaving(false);
         }
       },
     });
