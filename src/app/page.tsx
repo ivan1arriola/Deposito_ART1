@@ -219,8 +219,9 @@ export default function Home() {
   const [mergeEquipoSaving, setMergeEquipoSaving] = useState(false);
 
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
-  const [newPersonalWithMovimientos, setNewPersonalWithMovimientos] = useState(false);
   const [newPersonalMovimientos, setNewPersonalMovimientos] = useState<PersonalAltaMovimientoForm[]>([]);
+  const [newPersonalMovimientoDraft, setNewPersonalMovimientoDraft] = useState<PersonalAltaMovimientoForm | null>(null);
+  const [newPersonalMovimientoEditIndex, setNewPersonalMovimientoEditIndex] = useState<number | null>(null);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
   const [editPersonal, setEditPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [searchCedula, setSearchCedula] = useState("");
@@ -1147,83 +1148,115 @@ export default function Home() {
     };
   }, []);
 
-  const toggleNewPersonalMovimientos = useCallback(
-    (enabled: boolean) => {
-      setNewPersonalWithMovimientos(enabled);
-      setNewPersonalMovimientos((prev) => {
-        if (!enabled) return [];
-        if (prev.length > 0) return prev;
-        return [createEmptyAltaMovimiento()];
-      });
-    },
-    [createEmptyAltaMovimiento],
-  );
-
-  const addNewPersonalMovimiento = useCallback(() => {
-    setNewPersonalMovimientos((prev) => [...prev, createEmptyAltaMovimiento()]);
+  const openNewPersonalMovimientoModal = useCallback(() => {
+    setNewPersonalMovimientoEditIndex(null);
+    setNewPersonalMovimientoDraft(createEmptyAltaMovimiento());
   }, [createEmptyAltaMovimiento]);
+
+  const editNewPersonalMovimiento = useCallback((movimientoIndex: number) => {
+    const target = newPersonalMovimientos[movimientoIndex];
+    if (!target) return;
+    setNewPersonalMovimientoEditIndex(movimientoIndex);
+    setNewPersonalMovimientoDraft({
+      ...target,
+      items: target.items.map((item) => ({ ...item })),
+    });
+  }, [newPersonalMovimientos]);
+
+  const closeNewPersonalMovimientoModal = useCallback(() => {
+    setNewPersonalMovimientoDraft(null);
+    setNewPersonalMovimientoEditIndex(null);
+  }, []);
 
   const removeNewPersonalMovimiento = useCallback((movimientoIndex: number) => {
     setNewPersonalMovimientos((prev) => prev.filter((_, index) => index !== movimientoIndex));
   }, []);
 
-  const updateNewPersonalMovimiento = useCallback(
-    (movimientoIndex: number, field: keyof Omit<PersonalAltaMovimientoForm, "items">, value: string | boolean) => {
-      setNewPersonalMovimientos((prev) =>
-        prev.map((movimiento, index) => {
-          if (index !== movimientoIndex) return movimiento;
-          return { ...movimiento, [field]: value } as PersonalAltaMovimientoForm;
-        }),
-      );
+  const updateNewPersonalMovimientoDraft = useCallback(
+    (field: keyof Omit<PersonalAltaMovimientoForm, "items">, value: string | boolean) => {
+      setNewPersonalMovimientoDraft((prev) => (prev ? ({ ...prev, [field]: value } as PersonalAltaMovimientoForm) : prev));
     },
     [],
   );
 
-  const updateNewPersonalMovimientoItem = useCallback(
-    (movimientoIndex: number, itemIndex: number, field: "itemId" | "cantidad", value: string) => {
-      setNewPersonalMovimientos((prev) =>
-        prev.map((movimiento, currentMovimientoIndex) => {
-          if (currentMovimientoIndex !== movimientoIndex) return movimiento;
-          if (
-            field === "itemId" &&
-            value !== "" &&
-            movimiento.items.some((item, currentItemIndex) => currentItemIndex !== itemIndex && item.itemId === value)
-          ) {
-            setStatus("Ese equipo ya fue seleccionado en este movimiento.");
-            return movimiento;
+  const updateNewPersonalMovimientoDraftItem = useCallback((itemIndex: number, field: "itemId" | "cantidad", value: string) => {
+    setNewPersonalMovimientoDraft((prev) => {
+      if (!prev) return prev;
+      if (
+        field === "itemId" &&
+        value !== "" &&
+        prev.items.some((item, currentItemIndex) => currentItemIndex !== itemIndex && item.itemId === value)
+      ) {
+        setStatus("Ese equipo ya fue seleccionado en este movimiento.");
+        return prev;
+      }
+      return {
+        ...prev,
+        items: prev.items.map((item, currentItemIndex) => (currentItemIndex === itemIndex ? { ...item, [field]: value } : item)),
+      };
+    });
+  }, []);
+
+  const addNewPersonalMovimientoDraftItem = useCallback(() => {
+    setNewPersonalMovimientoDraft((prev) =>
+      prev
+        ? {
+            ...prev,
+            items: [...prev.items, { itemId: "", cantidad: "1" }],
           }
-          return {
-            ...movimiento,
-            items: movimiento.items.map((item, currentItemIndex) =>
-              currentItemIndex === itemIndex ? { ...item, [field]: value } : item,
-            ),
-          };
-        }),
-      );
-    },
-    [],
-  );
-
-  const addNewPersonalMovimientoItem = useCallback((movimientoIndex: number) => {
-    setNewPersonalMovimientos((prev) =>
-      prev.map((movimiento, index) =>
-        index === movimientoIndex ? { ...movimiento, items: [...movimiento.items, { itemId: "", cantidad: "1" }] } : movimiento,
-      ),
+        : prev,
     );
   }, []);
 
-  const removeNewPersonalMovimientoItem = useCallback((movimientoIndex: number, itemIndex: number) => {
-    setNewPersonalMovimientos((prev) =>
-      prev.map((movimiento, index) => {
-        if (index !== movimientoIndex) return movimiento;
-        if (movimiento.items.length <= 1) return movimiento;
-        return {
-          ...movimiento,
-          items: movimiento.items.filter((_, currentItemIndex) => currentItemIndex !== itemIndex),
-        };
-      }),
-    );
+  const removeNewPersonalMovimientoDraftItem = useCallback((itemIndex: number) => {
+    setNewPersonalMovimientoDraft((prev) => {
+      if (!prev) return prev;
+      if (prev.items.length <= 1) return prev;
+      return {
+        ...prev,
+        items: prev.items.filter((_, currentItemIndex) => currentItemIndex !== itemIndex),
+      };
+    });
   }, []);
+
+  const saveNewPersonalMovimientoFromModal = useCallback(() => {
+    if (!newPersonalMovimientoDraft) return;
+    if (!parseDateInput(newPersonalMovimientoDraft.fecha).valid) {
+      setStatus("La fecha del movimiento debe estar en formato DD/MM/AAAA.");
+      return;
+    }
+    if (isDateInputAfterToday(newPersonalMovimientoDraft.fecha)) {
+      setStatus("La fecha del movimiento no puede ser futura.");
+      return;
+    }
+
+    const parsedItems = newPersonalMovimientoDraft.items
+      .map((item) => ({ itemId: item.itemId.trim(), cantidad: Number(item.cantidad) }))
+      .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
+
+    if (parsedItems.length === 0) {
+      setStatus("Debes agregar al menos un equipo con cantidad válida.");
+      return;
+    }
+
+    const uniqueItemIds = new Set(parsedItems.map((item) => item.itemId));
+    if (uniqueItemIds.size !== parsedItems.length) {
+      setStatus("No puedes repetir equipos en un mismo movimiento.");
+      return;
+    }
+
+    const sanitizedDraft: PersonalAltaMovimientoForm = {
+      ...newPersonalMovimientoDraft,
+      comentarios: newPersonalMovimientoDraft.comentarios.trim(),
+      items: parsedItems.map((item) => ({ itemId: item.itemId, cantidad: String(item.cantidad) })),
+    };
+
+    setNewPersonalMovimientos((prev) => {
+      if (newPersonalMovimientoEditIndex === null) return [...prev, sanitizedDraft];
+      return prev.map((movimiento, index) => (index === newPersonalMovimientoEditIndex ? sanitizedDraft : movimiento));
+    });
+    closeNewPersonalMovimientoModal();
+  }, [newPersonalMovimientoDraft, newPersonalMovimientoEditIndex, closeNewPersonalMovimientoModal]);
 
   const createPersonal = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -1282,13 +1315,7 @@ export default function Home() {
         items: Array<{ itemId: string; cantidad: number }>;
       }>;
 
-      if (newPersonalWithMovimientos) {
-        if (newPersonalMovimientos.length === 0) {
-          setStatus("Agrega al menos un movimiento inicial o desactiva la opción de movimientos.");
-          return;
-        }
-
-        for (const [movimientoIndex, movimiento] of newPersonalMovimientos.entries()) {
+      for (const [movimientoIndex, movimiento] of newPersonalMovimientos.entries()) {
           if (!parseDateInput(movimiento.fecha).valid) {
             setStatus(`La fecha del movimiento #${movimientoIndex + 1} debe estar en formato DD/MM/AAAA.`);
             return;
@@ -1313,14 +1340,13 @@ export default function Home() {
             return;
           }
 
-          movimientosPayload.push({
-            tipo: movimiento.tipo,
-            afectaStock: movimiento.afectaStock,
-            fecha: movimiento.fecha,
-            comentarios: movimiento.comentarios.trim() || undefined,
-            items: parsedItems,
-          });
-        }
+        movimientosPayload.push({
+          tipo: movimiento.tipo,
+          afectaStock: movimiento.afectaStock,
+          fecha: movimiento.fecha,
+          comentarios: movimiento.comentarios.trim() || undefined,
+          items: parsedItems,
+        });
       }
 
       const payload = {
@@ -1334,8 +1360,9 @@ export default function Home() {
           onSuccess: async () => {
             const nombreCompleto = `${newPersonal.apellido1.trim()}, ${newPersonal.nombre1.trim()}`.replace(/\s+/g, " ").trim();
             setNewPersonal(EMPTY_PERSONAL_FORM);
-            setNewPersonalWithMovimientos(false);
             setNewPersonalMovimientos([]);
+            setNewPersonalMovimientoDraft(null);
+            setNewPersonalMovimientoEditIndex(null);
             setActiveView("personal");
             setPersonalPage(1);
             toast.success("Personal registrado correctamente", {
@@ -1360,7 +1387,6 @@ export default function Home() {
       newPersonal,
       newPersonalPhoneLooksValid,
       newPersonalMovimientos,
-      newPersonalWithMovimientos,
       loadData,
     ],
   );
@@ -2931,18 +2957,21 @@ export default function Home() {
           equiposActivos={equiposActivos}
           tallaOptionsByKey={tallaOptionsByKey}
           maxFechaIngreso={maxFechaIngreso}
-          movimientosEnabled={newPersonalWithMovimientos}
           movimientos={newPersonalMovimientos}
+          movimientoDraft={newPersonalMovimientoDraft}
+          movimientoModalEditing={newPersonalMovimientoEditIndex !== null}
           onBack={() => setActiveView("personal")}
           onSubmit={(event) => void createPersonal(event)}
           onPersonalChange={updateNewPersonalField}
-          onMovimientosEnabledChange={toggleNewPersonalMovimientos}
-          onAddMovimiento={addNewPersonalMovimiento}
+          onOpenMovimientoModal={openNewPersonalMovimientoModal}
+          onCloseMovimientoModal={closeNewPersonalMovimientoModal}
+          onSubmitMovimientoDraft={saveNewPersonalMovimientoFromModal}
+          onEditMovimiento={editNewPersonalMovimiento}
           onRemoveMovimiento={removeNewPersonalMovimiento}
-          onMovimientoChange={updateNewPersonalMovimiento}
-          onMovimientoItemChange={updateNewPersonalMovimientoItem}
-          onAddMovimientoItem={addNewPersonalMovimientoItem}
-          onRemoveMovimientoItem={removeNewPersonalMovimientoItem}
+          onMovimientoDraftChange={updateNewPersonalMovimientoDraft}
+          onMovimientoDraftItemChange={updateNewPersonalMovimientoDraftItem}
+          onAddMovimientoDraftItem={addNewPersonalMovimientoDraftItem}
+          onRemoveMovimientoDraftItem={removeNewPersonalMovimientoDraftItem}
         />
       ) : null}
 
