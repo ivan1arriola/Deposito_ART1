@@ -1543,6 +1543,29 @@ export default function Home() {
       modo: "crear",
       registroId: null,
       ci,
+      ciList: [ci],
+      tipo,
+      afectaStock: true,
+      fecha: getTodayDateInput(),
+      comentarios: "",
+      items: [{ itemId: "", cantidad: "1" }],
+    });
+  }
+
+  function openMassRegistro(tipo: RegistroTipo) {
+    if (!canWrite) {
+      setStatus("No tienes permisos para registrar movimientos.");
+      return;
+    }
+    if (personalFiltrado.length === 0) {
+      setStatus("No hay personal disponible para registrar una entrega masiva.");
+      return;
+    }
+    setRegistroDraft({
+      modo: "crear",
+      registroId: null,
+      ci: "",
+      ciList: [],
       tipo,
       afectaStock: true,
       fecha: getTodayDateInput(),
@@ -1644,6 +1667,7 @@ export default function Home() {
       modo: "rectificar",
       registroId: registro.registroId,
       ci: registro.ci,
+      ciList: [registro.ci],
       tipo: registro.tipo,
       afectaStock: registro.afectaStock,
       fecha: formatDateOnlyForDisplay(registro.fecha),
@@ -1682,6 +1706,44 @@ export default function Home() {
     });
   }
 
+  function toggleRegistroDestinatario(ci: string) {
+    setRegistroDraft((prev) => {
+      if (!prev || prev.modo !== "crear") return prev;
+      const targetCi = ci.trim();
+      if (targetCi === "") return prev;
+      const exists = prev.ciList.includes(targetCi);
+      const nextCiList = exists ? prev.ciList.filter((entry) => entry !== targetCi) : [...prev.ciList, targetCi];
+      return {
+        ...prev,
+        ciList: nextCiList,
+        ci: nextCiList[0] ?? "",
+      };
+    });
+  }
+
+  function selectAllRegistroDestinatarios() {
+    setRegistroDraft((prev) => {
+      if (!prev || prev.modo !== "crear") return prev;
+      const ciList = Array.from(new Set(personalFiltrado.map((persona) => persona.ci)));
+      return {
+        ...prev,
+        ciList,
+        ci: ciList[0] ?? "",
+      };
+    });
+  }
+
+  function clearRegistroDestinatarios() {
+    setRegistroDraft((prev) => {
+      if (!prev || prev.modo !== "crear") return prev;
+      return {
+        ...prev,
+        ciList: [],
+        ci: "",
+      };
+    });
+  }
+
   async function saveRegistro() {
     if (!registroDraft || registroSaving) return;
     const isRectificacion = registroDraft.modo === "rectificar" && registroDraft.registroId !== null;
@@ -1710,14 +1772,23 @@ export default function Home() {
       return;
     }
 
+    const targetCis = isRectificacion
+      ? [registroDraft.ci]
+      : Array.from(new Set(registroDraft.ciList.map((ci) => ci.trim()).filter((ci) => ci !== "")));
+    if (targetCis.length === 0) {
+      setStatus("Debes seleccionar al menos una persona para registrar el movimiento.");
+      return;
+    }
+
     setRegistroSaving(true);
-    setStatus(isRectificacion ? "Actualizando rectificación..." : "Actualizando movimiento...");
+    setStatus(isRectificacion ? "Actualizando rectificación..." : "Guardando movimiento...");
     try {
       await api(isRectificacion ? `/api/registros/${registroDraft.registroId}` : "/api/registros", {
         method: isRectificacion ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ci: registroDraft.ci,
+          ci: targetCis[0],
+          ciList: targetCis,
           tipo: registroDraft.tipo,
           afectaStock: registroDraft.afectaStock,
           fecha: registroDraft.fecha,
@@ -1728,11 +1799,13 @@ export default function Home() {
       setStatus(
         isRectificacion
           ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} rectificada para ${formatUruguayanCi(registroDraft.ci)}.`
-          : `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} registrada para ${formatUruguayanCi(registroDraft.ci)}.`,
+          : targetCis.length === 1
+            ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} registrada para ${formatUruguayanCi(targetCis[0])}.`
+            : `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} masiva registrada para ${targetCis.length} personas.`,
       );
       setRegistroDraft(null);
       await loadData();
-      if (registroViewer && registroViewer.ci === registroDraft.ci) {
+      if (registroViewer && targetCis.includes(registroViewer.ci)) {
         await loadRegistroViewer(registroViewer.ci, registroViewer.nombre);
       }
     } catch (error: unknown) {
@@ -3079,6 +3152,7 @@ export default function Home() {
           onPersonalPageSizeChange={setPersonalPageSize}
           onPrintAllDeliverySheets={printAllDeliverySheets}
           onPrintPersonnelByBattery={printPersonnelByBattery}
+          onOpenMassEntrega={() => openMassRegistro("ENTREGA")}
           onOpenCreate={() => setActiveView("personal_nuevo")}
           onToggleTallas={toggleTallas}
           onDeletePersonal={(ci) => void deletePersonal(ci)}
@@ -3220,12 +3294,16 @@ export default function Home() {
         onCloseRegistroViewer={() => setRegistroViewer(null)}
         registroDraft={registroDraft}
         personaRegistro={personaRegistro}
+        personalFiltrado={personalFiltrado}
         equiposOrdenados={equiposOrdenados}
         maxFechaIngreso={maxFechaIngreso}
         registroSaving={registroSaving}
         onCloseRegistroEditor={() => setRegistroDraft(null)}
         onAfectaStockChange={(value) => setRegistroDraft((prev) => (prev ? { ...prev, afectaStock: value } : prev))}
         onRegistroDraftChange={(field, value) => setRegistroDraft((prev) => (prev ? { ...prev, [field]: value } : prev))}
+        onToggleRegistroDestinatario={toggleRegistroDestinatario}
+        onSelectAllRegistroDestinatarios={selectAllRegistroDestinatarios}
+        onClearRegistroDestinatarios={clearRegistroDestinatarios}
         onRegistroItemChange={updateRegistroItem}
         onAddRegistroItem={addRegistroItem}
         onRemoveRegistroItem={removeRegistroItem}

@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { formatUruguayanCi } from "@/lib/ci";
-import type { Equipo } from "@/types/entities";
+import { apellidosLabel, nombresLabel } from "@/lib/formatters";
+import type { Equipo, Personal } from "@/types/entities";
 import type { RegistroDraft } from "@/types/forms";
 import { ModalFrame } from "./ModalFrame";
 
 type RegistroEditorModalProps = {
   draft: RegistroDraft | null;
   personaLabel: string | null;
+  personalFiltrado: Personal[];
   equiposOrdenados: Equipo[];
   maxFechaIngreso: string;
   saving: boolean;
@@ -16,6 +19,9 @@ type RegistroEditorModalProps = {
   onAfectaStockChange: (value: boolean) => void;
   onDateChange: (value: string) => void;
   onComentariosChange: (value: string) => void;
+  onToggleDestinatario: (ci: string) => void;
+  onSelectAllDestinatarios: () => void;
+  onClearDestinatarios: () => void;
   onItemChange: (index: number, field: "itemId" | "cantidad", value: string) => void;
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
@@ -25,6 +31,7 @@ type RegistroEditorModalProps = {
 export function RegistroEditorModal({
   draft,
   personaLabel,
+  personalFiltrado,
   equiposOrdenados,
   maxFechaIngreso,
   saving,
@@ -32,12 +39,39 @@ export function RegistroEditorModal({
   onAfectaStockChange,
   onDateChange,
   onComentariosChange,
+  onToggleDestinatario,
+  onSelectAllDestinatarios,
+  onClearDestinatarios,
   onItemChange,
   onAddItem,
   onRemoveItem,
   onSubmit,
 }: RegistroEditorModalProps) {
+  const [destinatarioSearch, setDestinatarioSearch] = useState("");
+
   if (!draft) return null;
+  const isRectificacion = draft.modo === "rectificar";
+  const selectedCis =
+    draft.ciList.length > 0 ? Array.from(new Set(draft.ciList)) : draft.ci.trim() !== "" ? [draft.ci.trim()] : [];
+  const selectedCiSet = new Set(selectedCis);
+  const personalFiltradoOrdenado = [...personalFiltrado].sort((a, b) =>
+    `${apellidosLabel(a)} ${nombresLabel(a)}`.localeCompare(`${apellidosLabel(b)} ${nombresLabel(b)}`, "es", {
+      sensitivity: "base",
+    }),
+  );
+  const destinatarioSearchNormalized = destinatarioSearch.trim().toLowerCase();
+  const personalVisible =
+    destinatarioSearchNormalized === ""
+      ? personalFiltradoOrdenado
+      : personalFiltradoOrdenado.filter((persona) => {
+          const label = `${apellidosLabel(persona)} ${nombresLabel(persona)}`.toLowerCase();
+          const formattedCi = formatUruguayanCi(persona.ci).toLowerCase();
+          return (
+            persona.ci.toLowerCase().includes(destinatarioSearchNormalized) ||
+            formattedCi.includes(destinatarioSearchNormalized) ||
+            label.includes(destinatarioSearchNormalized)
+          );
+        });
   const equiposOrdenadosAlfabeticamente = [...equiposOrdenados].sort((a, b) =>
     a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
   );
@@ -50,12 +84,15 @@ export function RegistroEditorModal({
             {draft.modo === "rectificar"
               ? draft.tipo === "ENTREGA"
                 ? "Rectificar Entrega"
-                : "Rectificar Devolución"
+                : "Rectificar Devolucion"
               : draft.tipo === "ENTREGA"
                 ? "Registrar Entrega"
-                : "Registrar Devolución"}
+                : "Registrar Devolucion"}
           </h3>
-          <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(draft.ci)}`}</p>
+          {isRectificacion ? <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(draft.ci)}`}</p> : null}
+          {!isRectificacion ? (
+            <p className="text-xs text-stone-600">{`Destinatarios seleccionados: ${selectedCis.length}`}</p>
+          ) : null}
           {draft.modo === "rectificar" && draft.registroId ? <p className="text-xs text-stone-600">{`Registro #${draft.registroId}`}</p> : null}
           {personaLabel ? <p className="text-xs font-medium text-stone-700">{`Personal: ${personaLabel}`}</p> : null}
         </div>
@@ -82,7 +119,7 @@ export function RegistroEditorModal({
             value={draft.fecha}
             disabled={saving}
             onChange={onDateChange}
-            ariaLabel={`Fecha del movimiento. Máximo ${maxFechaIngreso}`}
+            ariaLabel={`Fecha del movimiento. Maximo ${maxFechaIngreso}`}
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
           />
         </label>
@@ -97,6 +134,65 @@ export function RegistroEditorModal({
           />
         </label>
       </div>
+
+      {!isRectificacion ? (
+        <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">Destinatarios</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={onSelectAllDestinatarios}
+                disabled={saving || personalFiltradoOrdenado.length === 0}
+                className="rounded border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Seleccionar todos
+              </button>
+              <button
+                type="button"
+                onClick={onClearDestinatarios}
+                disabled={saving || selectedCis.length === 0}
+                className="rounded border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Limpiar
+              </button>
+            </div>
+          </div>
+          <input
+            value={destinatarioSearch}
+            disabled={saving}
+            onChange={(event) => setDestinatarioSearch(event.target.value)}
+            placeholder="Buscar por CI, apellidos o nombres"
+            className="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+          />
+          <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-stone-200 bg-white p-2">
+            {personalVisible.length === 0 ? (
+              <p className="px-2 py-2 text-xs text-stone-500">No hay personal para el filtro actual.</p>
+            ) : (
+              personalVisible.map((persona) => {
+                const checked = selectedCiSet.has(persona.ci);
+                return (
+                  <label
+                    key={persona.ci}
+                    className={`flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs ${
+                      checked ? "bg-emerald-50 text-emerald-900" : "hover:bg-stone-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={saving}
+                      onChange={() => onToggleDestinatario(persona.ci)}
+                    />
+                    <span className="font-mono text-[11px] text-stone-600">{formatUruguayanCi(persona.ci)}</span>
+                    <span className="text-stone-800">{`${apellidosLabel(persona)}, ${nombresLabel(persona)}`}</span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </div>
+      ) : null}
 
       <label className="mt-3 flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700">
         <input
@@ -173,13 +269,14 @@ export function RegistroEditorModal({
         >
           {saving
             ? draft.modo === "rectificar"
-              ? "Guardando rectificación..."
+              ? "Guardando rectificacion..."
               : "Guardando movimiento..."
             : draft.modo === "rectificar"
-              ? "Guardar rectificación"
+              ? "Guardar rectificacion"
               : "Guardar movimiento"}
         </button>
       </div>
     </ModalFrame>
   );
 }
+

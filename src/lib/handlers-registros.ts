@@ -11,7 +11,8 @@ interface CallbackProps {
 }
 
 interface RegistroPayload {
-  ci: string;
+  ci?: string;
+  ciList?: string[];
   tipo: "ENTREGA" | "DEVOLUCION" | "AJUSTE";
   afectaStock?: boolean;
   fecha: string;

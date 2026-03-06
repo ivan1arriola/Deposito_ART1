@@ -37,6 +37,7 @@ type PersonalSectionProps = {
   onPersonalPageSizeChange: (pageSize: number) => void;
   onPrintAllDeliverySheets: () => void;
   onPrintPersonnelByBattery: () => void;
+  onOpenMassEntrega: () => void;
   onOpenCreate: () => void;
   onToggleTallas: (ci: string) => void;
   onDeletePersonal: (ci: string) => void;
@@ -78,6 +79,7 @@ export function PersonalSection({
   onPersonalPageSizeChange,
   onPrintAllDeliverySheets,
   onPrintPersonnelByBattery,
+  onOpenMassEntrega,
   onOpenCreate,
   onToggleTallas,
   onDeletePersonal,
@@ -121,6 +123,16 @@ export function PersonalSection({
           </div>
         </div>
         <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+          {canWrite ? (
+            <button
+              type="button"
+              onClick={onOpenMassEntrega}
+              disabled={personalFiltrado.length === 0}
+              className="w-full rounded-xl bg-emerald-700 px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              Entrega masiva
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onPrintAllDeliverySheets}

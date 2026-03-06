@@ -60,12 +60,16 @@ type HomeDialogsLayerProps = {
   onCloseRegistroViewer: () => void;
   registroDraft: RegistroDraft | null;
   personaRegistro: Personal | null;
+  personalFiltrado: Personal[];
   equiposOrdenados: Equipo[];
   maxFechaIngreso: string;
   registroSaving: boolean;
   onCloseRegistroEditor: () => void;
   onAfectaStockChange: (value: boolean) => void;
   onRegistroDraftChange: (field: "fecha" | "comentarios", value: string) => void;
+  onToggleRegistroDestinatario: (ci: string) => void;
+  onSelectAllRegistroDestinatarios: () => void;
+  onClearRegistroDestinatarios: () => void;
   onRegistroItemChange: (index: number, field: keyof RegistroDraftEquipo, value: string) => void;
   onAddRegistroItem: () => void;
   onRemoveRegistroItem: (index: number) => void;
@@ -124,12 +128,16 @@ export function HomeDialogsLayer({
   onCloseRegistroViewer,
   registroDraft,
   personaRegistro,
+  personalFiltrado,
   equiposOrdenados,
   maxFechaIngreso,
   registroSaving,
   onCloseRegistroEditor,
   onAfectaStockChange,
   onRegistroDraftChange,
+  onToggleRegistroDestinatario,
+  onSelectAllRegistroDestinatarios,
+  onClearRegistroDestinatarios,
   onRegistroItemChange,
   onAddRegistroItem,
   onRemoveRegistroItem,
@@ -208,6 +216,7 @@ export function HomeDialogsLayer({
       <RegistroEditorModal
         draft={registroDraft}
         personaLabel={personaRegistro ? `${apellidosLabel(personaRegistro)}, ${nombresLabel(personaRegistro)}` : null}
+        personalFiltrado={personalFiltrado}
         equiposOrdenados={equiposOrdenados}
         maxFechaIngreso={maxFechaIngreso}
         saving={registroSaving}
@@ -215,6 +224,9 @@ export function HomeDialogsLayer({
         onAfectaStockChange={onAfectaStockChange}
         onDateChange={(value) => onRegistroDraftChange("fecha", value)}
         onComentariosChange={(value) => onRegistroDraftChange("comentarios", value)}
+        onToggleDestinatario={onToggleRegistroDestinatario}
+        onSelectAllDestinatarios={onSelectAllRegistroDestinatarios}
+        onClearDestinatarios={onClearRegistroDestinatarios}
         onItemChange={onRegistroItemChange}
         onAddItem={onAddRegistroItem}
         onRemoveItem={onRemoveRegistroItem}

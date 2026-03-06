@@ -78,6 +78,7 @@ export type RegistroDraft = {
   modo: "crear" | "rectificar";
   registroId: string | null;
   ci: string;
+  ciList: string[];
   tipo: RegistroTipo;
   afectaStock: boolean;
   fecha: string;

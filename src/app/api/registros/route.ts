@@ -19,7 +19,8 @@ type RegistroItemPayload = {
 };
 
 type RegistroPayload = {
-  ci: string;
+  ci?: string;
+  ciList?: string[];
   fecha?: string;
   tipo: TipoRegistro | string;
   afectaStock?: boolean;
@@ -53,6 +54,25 @@ function parseFecha(value: unknown) {
   return dateInputToDate(raw);
 }
 
+function parseTargetCiList(ciValue: unknown, ciListValue: unknown) {
+  const candidates: string[] = [];
+  if (typeof ciValue === "string" && ciValue.trim() !== "") {
+    candidates.push(ciValue.trim());
+  }
+  if (Array.isArray(ciListValue)) {
+    for (const value of ciListValue) {
+      if (typeof value === "string" && value.trim() !== "") {
+        candidates.push(value.trim());
+      }
+    }
+  }
+
+  const deduped = Array.from(new Set(candidates));
+  if (deduped.length === 0) return null;
+  if (!deduped.every((ci) => isValidUruguayanCi(ci))) return null;
+  return deduped;
+}
+
 function readRequestMeta(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   const realIp = request.headers.get("x-real-ip");
@@ -82,7 +102,7 @@ function buildPersonalAuditDetail(personal: {
 function isValidPayload(body: unknown): body is RegistroPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  if (typeof candidate.ci !== "string" || !isValidUruguayanCi(candidate.ci)) return false;
+  if (!parseTargetCiList(candidate.ci, candidate.ciList)) return false;
   if (!parseTipoRegistro(candidate.tipo)) return false;
   if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
   return true;
@@ -190,10 +210,14 @@ export async function POST(req: Request) {
   const body = await req.json();
   const requestMeta = readRequestMeta(req);
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. Revisa ci, tipo y equipos." }, { status: 400 });
+    return NextResponse.json({ error: "Payload invalido. Revisa destinatarios, tipo y equipos." }, { status: 400 });
   }
 
-  const ci = body.ci.trim();
+  const targetCis = parseTargetCiList(body.ci, body.ciList);
+  if (!targetCis) {
+    return NextResponse.json({ error: "Debes enviar al menos una CI valida." }, { status: 400 });
+  }
+
   const tipo = parseTipoRegistro(body.tipo);
   const fecha = parseFecha(body.fecha);
   if (!tipo || !fecha) {
@@ -222,9 +246,9 @@ export async function POST(req: Request) {
   }
 
   const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
-  const [personalRecord, itemsFound] = await Promise.all([
-    prisma.personal.findUnique({
-      where: { ci },
+  const [personalRecords, itemsFound] = await Promise.all([
+    prisma.personal.findMany({
+      where: { ci: { in: targetCis } },
       select: {
         ci: true,
         apellido1: true,
@@ -245,8 +269,12 @@ export async function POST(req: Request) {
     }),
   ]);
 
-  if (!personalRecord) {
-    return NextResponse.json({ error: "No existe personal para la CI indicada." }, { status: 404 });
+  const personalByCi = new Map(personalRecords.map((personalRecord) => [personalRecord.ci, personalRecord]));
+  const missingCis = targetCis.filter((ci) => !personalByCi.has(ci));
+  if (missingCis.length > 0) {
+    const preview = missingCis.slice(0, 3).join(", ");
+    const suffix = missingCis.length > 3 ? "..." : "";
+    return NextResponse.json({ error: `No existe personal para las CIs: ${preview}${suffix}` }, { status: 404 });
   }
   if (itemsFound.length !== itemIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos no existen o estan inactivos." }, { status: 400 });
@@ -263,51 +291,75 @@ export async function POST(req: Request) {
   const totalUnidades = itemsDetallados.reduce((acumulado, item) => acumulado + item.cantidad, 0);
 
   try {
-    const created = await prisma.$transaction(async (tx) => {
-      const registro = await tx.registro.create({
-        data: {
-          ci,
-          fecha,
-          tipo,
-          afectaStock,
-          comentarios,
-        },
-        select: { registroId: true },
-      });
+    const createdRegistros = await prisma.$transaction(async (tx) => {
+      const created: Array<{ registroId: bigint; ci: string }> = [];
+      for (const ci of targetCis) {
+        const registro = await tx.registro.create({
+          data: {
+            ci,
+            fecha,
+            tipo,
+            afectaStock,
+            comentarios,
+          },
+          select: { registroId: true, ci: true },
+        });
 
-      await tx.registroItem.createMany({
-        data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
-          registroId: registro.registroId,
-          itemId: BigInt(itemId),
-          cantidad,
-        })),
-      });
+        await tx.registroItem.createMany({
+          data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
+            registroId: registro.registroId,
+            itemId: BigInt(itemId),
+            cantidad,
+          })),
+        });
 
-      return registro;
+        created.push(registro);
+      }
+      return created;
     });
 
-    await logAudit({
-      usuarioId: auth.user.usuarioId,
-      accion: "CREATE",
-      entidad: "REGISTRO",
-      entidadId: created.registroId.toString(),
-      detalle: {
-        evento: "MOVIMIENTO_VESTUARIO",
-        ci,
-        personal: buildPersonalAuditDetail(personalRecord),
-        tipo,
-        afectaStock,
-        fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
-        comentarios,
-        totalEquipos: itemsDetallados.length,
-        totalUnidades,
-        items: itemsDetallados,
-        ip: requestMeta.ip,
-        userAgent: requestMeta.userAgent,
+    await Promise.all(
+      createdRegistros.map(async (createdRegistro) => {
+        const personalRecord = personalByCi.get(createdRegistro.ci);
+        if (!personalRecord) return;
+
+        await logAudit({
+          usuarioId: auth.user.usuarioId,
+          accion: "CREATE",
+          entidad: "REGISTRO",
+          entidadId: createdRegistro.registroId.toString(),
+          detalle: {
+            evento: "MOVIMIENTO_VESTUARIO",
+            ci: createdRegistro.ci,
+            personal: buildPersonalAuditDetail(personalRecord),
+            tipo,
+            afectaStock,
+            fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
+            comentarios,
+            totalEquipos: itemsDetallados.length,
+            totalUnidades,
+            totalDestinatarios: targetCis.length,
+            items: itemsDetallados,
+            ip: requestMeta.ip,
+            userAgent: requestMeta.userAgent,
+          },
+        });
+      }),
+    );
+
+    if (createdRegistros.length === 1) {
+      return NextResponse.json({ ok: true, registroId: createdRegistros[0].registroId.toString(), createdCount: 1 }, { status: 201 });
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        createdCount: createdRegistros.length,
+        registroIds: createdRegistros.map((registro) => registro.registroId.toString()),
+        ciList: targetCis,
       },
-    });
-
-    return NextResponse.json({ ok: true, registroId: created.registroId.toString() }, { status: 201 });
+      { status: 201 },
+    );
   } catch {
     return NextResponse.json({ error: "No se pudo registrar el movimiento." }, { status: 500 });
   }
