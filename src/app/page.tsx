@@ -50,6 +50,7 @@ import type {
 } from "@/types/entities";
 import type {
   PersonalForm,
+  PersonalAltaMovimientoForm,
   EquipoForm,
   RegistroDraftEquipo,
   RegistroDraft,
@@ -64,7 +65,7 @@ import type {
   AuditFilter,
 } from "@/types/views";
 import { ROLE_OPTIONS } from "@/types/entities";
-import { EMPTY_PERSONAL_FORM, EMPTY_EQUIPO_FORM, EMPTY_STOCK_OPERACION_DRAFT } from "@/types/forms";
+import { EMPTY_PERSONAL_FORM, EMPTY_EQUIPO_FORM, EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM, EMPTY_STOCK_OPERACION_DRAFT } from "@/types/forms";
 import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDialogState, UserRoleDialogState } from "./types/home";
 
 // Importar utilidades desde archivos organizados
@@ -218,6 +219,8 @@ export default function Home() {
   const [mergeEquipoSaving, setMergeEquipoSaving] = useState(false);
 
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
+  const [newPersonalWithMovimientos, setNewPersonalWithMovimientos] = useState(false);
+  const [newPersonalMovimientos, setNewPersonalMovimientos] = useState<PersonalAltaMovimientoForm[]>([]);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
   const [editPersonal, setEditPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [searchCedula, setSearchCedula] = useState("");
@@ -1136,6 +1139,92 @@ export default function Home() {
     [canDelete, equipos, loadData],
   );
 
+  const createEmptyAltaMovimiento = useCallback((): PersonalAltaMovimientoForm => {
+    return {
+      ...EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM,
+      fecha: getTodayDateInput(),
+      items: [{ itemId: "", cantidad: "1" }],
+    };
+  }, []);
+
+  const toggleNewPersonalMovimientos = useCallback(
+    (enabled: boolean) => {
+      setNewPersonalWithMovimientos(enabled);
+      setNewPersonalMovimientos((prev) => {
+        if (!enabled) return [];
+        if (prev.length > 0) return prev;
+        return [createEmptyAltaMovimiento()];
+      });
+    },
+    [createEmptyAltaMovimiento],
+  );
+
+  const addNewPersonalMovimiento = useCallback(() => {
+    setNewPersonalMovimientos((prev) => [...prev, createEmptyAltaMovimiento()]);
+  }, [createEmptyAltaMovimiento]);
+
+  const removeNewPersonalMovimiento = useCallback((movimientoIndex: number) => {
+    setNewPersonalMovimientos((prev) => prev.filter((_, index) => index !== movimientoIndex));
+  }, []);
+
+  const updateNewPersonalMovimiento = useCallback(
+    (movimientoIndex: number, field: keyof Omit<PersonalAltaMovimientoForm, "items">, value: string | boolean) => {
+      setNewPersonalMovimientos((prev) =>
+        prev.map((movimiento, index) => {
+          if (index !== movimientoIndex) return movimiento;
+          return { ...movimiento, [field]: value } as PersonalAltaMovimientoForm;
+        }),
+      );
+    },
+    [],
+  );
+
+  const updateNewPersonalMovimientoItem = useCallback(
+    (movimientoIndex: number, itemIndex: number, field: "itemId" | "cantidad", value: string) => {
+      setNewPersonalMovimientos((prev) =>
+        prev.map((movimiento, currentMovimientoIndex) => {
+          if (currentMovimientoIndex !== movimientoIndex) return movimiento;
+          if (
+            field === "itemId" &&
+            value !== "" &&
+            movimiento.items.some((item, currentItemIndex) => currentItemIndex !== itemIndex && item.itemId === value)
+          ) {
+            setStatus("Ese equipo ya fue seleccionado en este movimiento.");
+            return movimiento;
+          }
+          return {
+            ...movimiento,
+            items: movimiento.items.map((item, currentItemIndex) =>
+              currentItemIndex === itemIndex ? { ...item, [field]: value } : item,
+            ),
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  const addNewPersonalMovimientoItem = useCallback((movimientoIndex: number) => {
+    setNewPersonalMovimientos((prev) =>
+      prev.map((movimiento, index) =>
+        index === movimientoIndex ? { ...movimiento, items: [...movimiento.items, { itemId: "", cantidad: "1" }] } : movimiento,
+      ),
+    );
+  }, []);
+
+  const removeNewPersonalMovimientoItem = useCallback((movimientoIndex: number, itemIndex: number) => {
+    setNewPersonalMovimientos((prev) =>
+      prev.map((movimiento, index) => {
+        if (index !== movimientoIndex) return movimiento;
+        if (movimiento.items.length <= 1) return movimiento;
+        return {
+          ...movimiento,
+          items: movimiento.items.filter((_, currentItemIndex) => currentItemIndex !== itemIndex),
+        };
+      }),
+    );
+  }, []);
+
   const createPersonal = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -1185,16 +1274,75 @@ export default function Home() {
         return;
       }
 
+      const movimientosPayload = [] as Array<{
+        tipo: "ENTREGA" | "DEVOLUCION";
+        afectaStock: boolean;
+        fecha: string;
+        comentarios?: string;
+        items: Array<{ itemId: string; cantidad: number }>;
+      }>;
+
+      if (newPersonalWithMovimientos) {
+        if (newPersonalMovimientos.length === 0) {
+          setStatus("Agrega al menos un movimiento inicial o desactiva la opción de movimientos.");
+          return;
+        }
+
+        for (const [movimientoIndex, movimiento] of newPersonalMovimientos.entries()) {
+          if (!parseDateInput(movimiento.fecha).valid) {
+            setStatus(`La fecha del movimiento #${movimientoIndex + 1} debe estar en formato DD/MM/AAAA.`);
+            return;
+          }
+          if (isDateInputAfterToday(movimiento.fecha)) {
+            setStatus(`La fecha del movimiento #${movimientoIndex + 1} no puede ser futura.`);
+            return;
+          }
+
+          const parsedItems = movimiento.items
+            .map((item) => ({ itemId: item.itemId.trim(), cantidad: Number(item.cantidad) }))
+            .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
+
+          if (parsedItems.length === 0) {
+            setStatus(`Debes agregar al menos un equipo con cantidad válida en el movimiento #${movimientoIndex + 1}.`);
+            return;
+          }
+
+          const uniqueItemIds = new Set(parsedItems.map((item) => item.itemId));
+          if (uniqueItemIds.size !== parsedItems.length) {
+            setStatus(`No puedes repetir equipos en el movimiento #${movimientoIndex + 1}.`);
+            return;
+          }
+
+          movimientosPayload.push({
+            tipo: movimiento.tipo,
+            afectaStock: movimiento.afectaStock,
+            fecha: movimiento.fecha,
+            comentarios: movimiento.comentarios.trim() || undefined,
+            items: parsedItems,
+          });
+        }
+      }
+
+      const payload = {
+        ...personalPayload(newPersonal, true),
+        movimientos: movimientosPayload.length > 0 ? movimientosPayload : undefined,
+      };
+
       setCreatingPersonal(true);
       try {
-        await createPersonalHandler(personalPayload(newPersonal, true), {
+        await createPersonalHandler(payload, {
           onSuccess: async () => {
             const nombreCompleto = `${newPersonal.apellido1.trim()}, ${newPersonal.nombre1.trim()}`.replace(/\s+/g, " ").trim();
             setNewPersonal(EMPTY_PERSONAL_FORM);
+            setNewPersonalWithMovimientos(false);
+            setNewPersonalMovimientos([]);
             setActiveView("personal");
             setPersonalPage(1);
             toast.success("Personal registrado correctamente", {
-              description: `${nombreCompleto} ya figura en el listado general y puede recibir movimientos.`,
+              description:
+                movimientosPayload.length > 0
+                  ? `${nombreCompleto} y ${movimientosPayload.length} movimiento(s) inicial(es) fueron registrados.`
+                  : `${nombreCompleto} ya figura en el listado general y puede recibir movimientos.`,
               duration: 5000,
             });
             await loadData();
@@ -1205,7 +1353,16 @@ export default function Home() {
         setCreatingPersonal(false);
       }
     },
-    [canRegisterPersonal, ciAlreadyExists, creatingPersonal, newPersonal, newPersonalPhoneLooksValid, loadData],
+    [
+      canRegisterPersonal,
+      ciAlreadyExists,
+      creatingPersonal,
+      newPersonal,
+      newPersonalPhoneLooksValid,
+      newPersonalMovimientos,
+      newPersonalWithMovimientos,
+      loadData,
+    ],
   );
 
   const updateNewPersonalField = useCallback((field: keyof PersonalForm, value: string | boolean) => {
@@ -2771,11 +2928,21 @@ export default function Home() {
           creatingPersonal={creatingPersonal}
           rangos={rangos}
           baterias={baterias}
+          equiposActivos={equiposActivos}
           tallaOptionsByKey={tallaOptionsByKey}
           maxFechaIngreso={maxFechaIngreso}
+          movimientosEnabled={newPersonalWithMovimientos}
+          movimientos={newPersonalMovimientos}
           onBack={() => setActiveView("personal")}
           onSubmit={(event) => void createPersonal(event)}
           onPersonalChange={updateNewPersonalField}
+          onMovimientosEnabledChange={toggleNewPersonalMovimientos}
+          onAddMovimiento={addNewPersonalMovimiento}
+          onRemoveMovimiento={removeNewPersonalMovimiento}
+          onMovimientoChange={updateNewPersonalMovimiento}
+          onMovimientoItemChange={updateNewPersonalMovimientoItem}
+          onAddMovimientoItem={addNewPersonalMovimientoItem}
+          onRemoveMovimientoItem={removeNewPersonalMovimientoItem}
         />
       ) : null}
 

@@ -25,6 +25,19 @@ export type PersonalForm = {
   CALZADO: string;
 };
 
+export type PersonalAltaMovimientoItemForm = {
+  itemId: string;
+  cantidad: string;
+};
+
+export type PersonalAltaMovimientoForm = {
+  tipo: RegistroTipo;
+  afectaStock: boolean;
+  fecha: string;
+  comentarios: string;
+  items: PersonalAltaMovimientoItemForm[];
+};
+
 export type EquipoForm = {
   nombre: string;
   activo: boolean;
@@ -95,6 +108,14 @@ export const EMPTY_ITEM_FORM: ItemForm = EMPTY_EQUIPO_FORM;
 
 export const EMPTY_STOCK_OPERACION_DRAFT: StockOperacionDraft = {
   tipo: "INGRESO",
+  fecha: "",
+  comentarios: "",
+  items: [{ itemId: "", cantidad: "1" }],
+};
+
+export const EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM: PersonalAltaMovimientoForm = {
+  tipo: "ENTREGA",
+  afectaStock: true,
   fecha: "",
   comentarios: "",
   items: [{ itemId: "", cantidad: "1" }],
