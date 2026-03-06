@@ -203,7 +203,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
     try {
       data = JSON.parse(rawBody);
     } catch {
-      throw new Error("El servidor devolvio una respuesta invalida.");
+      throw new Error("El servidor devolvió una respuesta inválida.");
     }
   }
 
@@ -216,7 +216,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
   }
 
   if (data === null) {
-    throw new Error("El servidor no devolvio datos. No se pudo completar la lectura.");
+    throw new Error("El servidor no devolvió datos. No se pudo completar la lectura.");
   }
 
   return data as T;

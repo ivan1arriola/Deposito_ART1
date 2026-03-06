@@ -45,7 +45,7 @@ export function PersonalInlineEditForm({
           className={`w-full rounded-lg border px-3 py-2 text-sm ${telefonoContactoLooksValid ? "border-stone-300" : "border-rose-600 bg-rose-50"}`}
         />
         <p className={`mt-1 text-[11px] ${telefonoContactoLooksValid ? "text-stone-500" : "font-medium text-rose-700"}`}>
-          {telefonoContactoLooksValid ? "Opcional. Formato uruguayo." : "Ingresa un celular uruguayo valido."}
+          {telefonoContactoLooksValid ? "Opcional. Formato uruguayo." : "Ingresa un celular uruguayo válido."}
         </p>
       </div>
       <label className="flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm sm:col-span-2 lg:col-span-1">

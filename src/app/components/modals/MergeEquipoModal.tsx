@@ -37,9 +37,9 @@ export function MergeEquipoModal({
     <ModalFrame onClose={onClose} size="md">
       <h3 className="text-base font-semibold text-stone-900">Reasignar movimientos de equipo</h3>
       <p className="mt-2 text-sm text-stone-700">
-        Se moveran todos los movimientos de <strong>{sourceName}</strong> al equipo que selecciones abajo.
+        Se moverán todos los movimientos de <strong>{sourceName}</strong> al equipo que selecciones abajo.
       </p>
-      <p className="mt-1 text-xs text-rose-700">Accion irreversible: luego se eliminara el equipo original.</p>
+      <p className="mt-1 text-xs text-rose-700">Acción irreversible: luego se eliminará el equipo original.</p>
 
       <label className="mt-4 block">
         <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Equipo destino</span>

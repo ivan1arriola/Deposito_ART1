@@ -66,7 +66,7 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
     const grado = asText(personal.grado);
     const bateria = asText(personal.bateria);
     const ci = asText(personal.ci);
-    const personalParts = [grado, nombre, ci ? `CI ${formatAuditCi(ci, ciReferences)}` : "", bateria ? `Bateria ${bateria}` : ""].filter(
+    const personalParts = [grado, nombre, ci ? `CI ${formatAuditCi(ci, ciReferences)}` : "", bateria ? `Batería ${bateria}` : ""].filter(
       Boolean,
     );
     if (personalParts.length > 0) {
@@ -164,26 +164,26 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
 
 export function auditActionLabel(accion: string): string {
   const labels: Record<string, string> = {
-    CREATE: "Creo",
-    UPDATE: "Actualizo",
-    DELETE: "Elimino",
-    LOGIN: "Inicio sesion",
-    LOGOUT: "Cerro sesion",
+    CREATE: "Creó",
+    UPDATE: "Actualizó",
+    DELETE: "Eliminó",
+    LOGIN: "Inició sesión",
+    LOGOUT: "Cerró sesión",
   };
   return labels[accion] || accion;
 }
 
 export function auditEntityLabel(entidad: string): string {
   const labels: Record<string, string> = {
-    AUTH: "autenticacion",
+    AUTH: "autenticación",
     REGISTRO: "movimiento",
     PERSONAL: "personal",
     USUARIO: "usuario",
     RANGO: "grado",
-    BATERIA: "bateria",
+    BATERIA: "batería",
     ITEM: "item",
     FIRMAS_CONFIG: "firmas institucionales",
-    OBSERVACION: "observacion",
+    OBSERVACION: "observación",
     STOCK: "stock",
   };
   return labels[entidad] || entidad.toLowerCase();

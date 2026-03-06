@@ -55,7 +55,7 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
       ...baterias
         .map((bateria) => ({ key: String(bateria.bateriaId), nombre: bateria.nombre }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })),
-      { key: "NONE", nombre: "Sin bateria" },
+      { key: "NONE", nombre: "Sin batería" },
     ];
 
     const personalPorBateria = new Map<string, Personal[]>();

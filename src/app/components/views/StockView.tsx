@@ -67,7 +67,7 @@ export function StockView({
     section === "total"
       ? "Total de equipos en la unidad"
       : section === "actual"
-        ? "Stock interno de deposito"
+        ? "Stock interno de depósito"
         : section === "alta"
           ? "Alta de stock"
           : section === "baja"
@@ -76,16 +76,16 @@ export function StockView({
 
   const description =
     section === "total"
-      ? "Suma por item: equipos entregados al personal mas recuento interno del deposito."
+      ? "Suma por item: equipos entregados al personal más recuento interno del depósito."
       : section === "actual"
-        ? "Recuento interno del deposito. Se altera por altas, bajas y movimientos de personal que afectan stock."
-        : "Recuento interno del deposito. Se altera por altas, bajas y movimientos de personal que afectan stock.";
+        ? "Recuento interno del depósito. Se altera por altas, bajas y movimientos de personal que afectan stock."
+        : "Recuento interno del depósito. Se altera por altas, bajas y movimientos de personal que afectan stock.";
 
-  const cardUnitsLabel = section === "total" ? "Total unidad" : "Total deposito";
+  const cardUnitsLabel = section === "total" ? "Total unidad" : "Total depósito";
   const cardItemsLabel = section === "total" ? "Items con total" : "Items con stock";
   const cardNegativeLabel = section === "total" ? "Items totales en negativo" : "Items en negativo";
   const stockTableTitle =
-    section === "total" ? "Total por item (personal + deposito interno)" : "Stock interno de deposito por equipo";
+    section === "total" ? "Total por item (personal + depósito interno)" : "Stock interno de depósito por equipo";
 
   return (
     <section className="mt-6 space-y-4">
@@ -135,7 +135,7 @@ export function StockView({
                 value={draft.fecha}
                 disabled={saving}
                 onChange={(value) => onDraftChange("fecha", value)}
-                ariaLabel={`Fecha de stock. Maximo ${maxDate}`}
+                ariaLabel={`Fecha de stock. Máximo ${maxDate}`}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
             </label>
@@ -251,11 +251,11 @@ export function StockView({
                       {section === "total" ? (
                         <>
                           <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Personal</th>
-                          <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Deposito</th>
+                          <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Depósito</th>
                           <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Total</th>
                         </>
                       ) : (
-                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Stock deposito</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Stock depósito</th>
                       )}
                     </tr>
                   </thead>
@@ -298,7 +298,7 @@ export function StockView({
                             <p className={`text-sm font-bold ${item.stockPersonal < 0 ? "text-rose-700" : "text-stone-900"}`}>{item.stockPersonal}</p>
                           </div>
                           <div className="rounded-lg bg-white px-2 py-2">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Deposito</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Depósito</p>
                             <p className={`text-sm font-bold ${item.stockDeposito < 0 ? "text-rose-700" : "text-stone-900"}`}>{item.stockDeposito}</p>
                           </div>
                           <div className="rounded-lg bg-white px-2 py-2">

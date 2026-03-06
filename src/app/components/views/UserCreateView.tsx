@@ -128,7 +128,7 @@ export function UserCreateView({
               <input
                 value={passwordConfirm}
                 onChange={(event) => onPasswordConfirmChange(event.target.value)}
-                placeholder="Repetir contrasena *"
+                placeholder="Repetir contraseña *"
                 className="rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                 type="password"
                 disabled={!isAdmin}
@@ -172,7 +172,7 @@ export function UserCreateView({
           <aside className="rounded-2xl border border-stone-200 bg-stone-950 p-4 text-white shadow-sm">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lime-300">Seguridad</p>
             <p className="mt-3 text-sm leading-6 text-white/80">
-              El nuevo usuario podra iniciar sesion de inmediato con el rol seleccionado.
+              El nuevo usuario podrá iniciar sesión de inmediato con el rol seleccionado.
             </p>
             <button
               type="submit"

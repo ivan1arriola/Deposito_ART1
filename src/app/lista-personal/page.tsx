@@ -6,7 +6,7 @@ import { comparePersonalByHierarchy } from "@/lib/rank-order";
 
 export const revalidate = 0;
 export const metadata = {
-  title: "Lista de Personal por Bateria",
+  title: "Lista de Personal por Batería",
 };
 
 function buildApellidos(persona: { apellido1: string; apellido2: string | null }) {
@@ -74,7 +74,7 @@ export default async function ListaPersonalPage({
     if (!group) {
       grupos.set(key, {
         key,
-        nombre: persona.bateria?.nombre ?? "Sin bateria",
+        nombre: persona.bateria?.nombre ?? "Sin batería",
         orden: persona.bateria?.orden ?? null,
         personal: [persona],
       });
@@ -237,7 +237,7 @@ export default async function ListaPersonalPage({
         }
       `}</style>
       <main className="sheet">
-        <h1 className="title">Lista de Personal por Bateria</h1>
+        <h1 className="title">Lista de Personal por Batería</h1>
         <p className="meta">{`Generado: ${generatedAt} | Total personal: ${personal.length}`}</p>
 
         {grouped.length === 0 ? (

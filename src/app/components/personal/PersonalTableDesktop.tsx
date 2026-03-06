@@ -51,7 +51,7 @@ export function PersonalTableDesktop({
             <th className="w-[15%] px-3 py-2">Grado del Personal</th>
             <th className="w-[18%] px-3 py-2">Apellidos</th>
             <th className="w-[18%] px-3 py-2">Nombres</th>
-            <th className="w-[13%] px-3 py-2">Bateria</th>
+            <th className="w-[13%] px-3 py-2">Batería</th>
             <th className="w-[9%] px-3 py-2">Detalles</th>
             <th className="w-[16%] px-3 py-2">Acciones</th>
           </tr>
@@ -84,7 +84,7 @@ export function PersonalTableDesktop({
                       <div className="mt-1 text-xs text-stone-500">{`Contacto: ${formatUruguayanMobileNumber(persona.telefonoContacto)}`}</div>
                     ) : null}
                   </td>
-                  <td className="px-3 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin bateria"}</td>
+                  <td className="px-3 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin batería"}</td>
                   <td className="px-3 py-2">
                     <div className="space-y-2">
                       <button

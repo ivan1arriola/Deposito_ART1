@@ -202,7 +202,7 @@ export function PersonalView({
                   onClick={() => onDevolucion(persona.ci)}
                   className="rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white"
                 >
-                  Devolucion
+                  Devolución
                 </button>
                 <button
                   type="button"
@@ -314,7 +314,7 @@ export function PersonalView({
                           onClick={() => onDevolucion(persona.ci)}
                           className="w-full rounded bg-amber-700 px-2 py-1 text-[11px] font-medium leading-tight text-white"
                         >
-                          Devolucion
+                          Devolución
                         </button>
                         <button
                           type="button"

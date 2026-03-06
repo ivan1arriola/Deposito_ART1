@@ -813,9 +813,9 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-stone-900">Auditoria detallada (interfaz y base de datos)</h2>
+          <h2 className="text-base font-semibold text-stone-900">Auditoría detallada (interfaz y base de datos)</h2>
           <p className="mt-1 text-xs text-stone-600">
-            Cada registro muestra quien hizo la accion, sobre que entidad y el detalle guardado en la tabla de auditoria.
+            Cada registro muestra quién hizo la acción, sobre qué entidad y el detalle guardado en la tabla de auditoría.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -847,7 +847,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                   : "border border-stone-300 bg-white text-stone-700"
               }`}
             >
-              Solo autenticacion
+              Solo autenticación
             </button>
           </div>
           <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
@@ -857,7 +857,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                 <p className="text-sm font-medium text-stone-900">
                   {`${log.usuario?.username ?? "Sistema"} (${props.roleLabel(log.usuario?.rol ?? null)}) - ${props.auditActionLabel(log.accion)} ${props.auditEntityLabel(log.entidad)}`}
                 </p>
-                <p className="text-xs text-stone-600">{`Auditoria BD #${log.auditoriaId}`}</p>
+                <p className="text-xs text-stone-600">{`Auditoría BD #${log.auditoriaId}`}</p>
                 <p className="text-xs text-stone-600">{formatAuditEntityId(log.entidadId, log.ciReferencias)}</p>
                 {props.renderAuditDetalle(log.detalle, log.ciReferencias)}
               </div>

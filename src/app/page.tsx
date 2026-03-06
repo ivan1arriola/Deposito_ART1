@@ -691,7 +691,7 @@ export default function Home() {
       const rango = rangos.find((entry) => entry.rangoId === rangoId);
       openConfirmDialog({
         title: "Eliminar grado",
-        message: `Se eliminara ${rango?.nombreCompleto ?? "este grado del personal"}.`,
+        message: `Se eliminará ${rango?.nombreCompleto ?? "este grado del personal"}.`,
         confirmText: "Eliminar grado",
         tone: "danger",
         onConfirm: async () => {
@@ -714,7 +714,7 @@ export default function Home() {
 
   const createBateria = useCallback(async () => {
     if (!isAdmin) {
-      setStatus("Solo el administrador puede registrar baterias.");
+      setStatus("Solo el administrador puede registrar baterías.");
       return;
     }
     try {
@@ -722,7 +722,7 @@ export default function Home() {
         onSuccess: async () => {
           setNewBateria("");
           setNewBateriaOrden("");
-          setStatus("Bateria creada.");
+          setStatus("Batería creada.");
           await loadData();
         },
         onError: (message) => setStatus(message),
@@ -748,7 +748,7 @@ export default function Home() {
               setEditBateriaId(null);
               setEditBateriaNombre("");
               setEditBateriaOrden("");
-              setStatus("Bateria actualizada.");
+              setStatus("Batería actualizada.");
               await loadData();
             },
             onError: (message) => setStatus(message),
@@ -769,15 +769,15 @@ export default function Home() {
       }
       const bateria = baterias.find((entry) => entry.bateriaId === bateriaId);
       openConfirmDialog({
-        title: "Eliminar bateria",
-        message: `Se eliminara ${bateria?.nombre ?? "esta bateria"}.`,
-        confirmText: "Eliminar bateria",
+        title: "Eliminar batería",
+        message: `Se eliminará ${bateria?.nombre ?? "esta batería"}.`,
+        confirmText: "Eliminar batería",
         tone: "danger",
         onConfirm: async () => {
           try {
             await deleteBateriaHandler(bateriaId, {
               onSuccess: async () => {
-                setStatus("Bateria eliminada.");
+                setStatus("Batería eliminada.");
                 await loadData();
               },
               onError: (message) => setStatus(message),
@@ -962,10 +962,10 @@ export default function Home() {
       });
       const resumen = impacto.resumen;
       const messageLines = [
-        `Accion destructiva e irreversible: se eliminara ${item?.nombre ?? "este equipo"} y no se puede deshacer.`,
+        `Acción destructiva e irreversible: se eliminará ${item?.nombre ?? "este equipo"} y no se puede deshacer.`,
         `Movimientos afectados: ${resumen.totalMovimientos} (registros: ${resumen.totalRegistros}, stock: ${resumen.totalStock}).`,
-        `Movimientos que quedaran vacios y se eliminaran: ${resumen.movimientosQueSeEliminan}.`,
-        `Movimientos que conservaran otros equipos: ${resumen.movimientosQueSeActualizan}.`,
+        `Movimientos que quedarán vacíos y se eliminarán: ${resumen.movimientosQueSeEliminan}.`,
+        `Movimientos que conservarán otros equipos: ${resumen.movimientosQueSeActualizan}.`,
         "",
         "Registros afectados:",
         ...(registrosImpacto.length > 0 ? registrosImpacto : ["- Ninguno"]),
@@ -1109,9 +1109,9 @@ export default function Home() {
         title: "Unificar equipos",
         message: [
           `Se reasignaran todos los movimientos de "${origen.nombre}" hacia "${destino.nombre}".`,
-          `Luego se eliminara "${origen.nombre}" del catalogo.`,
+          `Luego se eliminará "${origen.nombre}" del catálogo.`,
           "",
-          "Accion destructiva e irreversible.",
+          "Acción destructiva e irreversible.",
         ].join("\n"),
         confirmText: "Unificar y eliminar origen",
         tone: "danger",
@@ -1149,11 +1149,11 @@ export default function Home() {
         return;
       }
       if (!isValidUruguayanCi(newPersonal.ci)) {
-        setStatus("CI uruguaya invalida. Revisa digito verificador.");
+        setStatus("CI uruguaya inválida. Revisa dígito verificador.");
         return;
       }
       if (!newPersonalPhoneLooksValid) {
-        setStatus("El celular de contacto debe tener formato uruguayo valido.");
+        setStatus("El celular de contacto debe tener formato uruguayo válido.");
         return;
       }
       if (newPersonal.fechaIngreso.trim() !== "" && !parseDateInput(newPersonal.fechaIngreso).valid) {
@@ -1225,7 +1225,7 @@ export default function Home() {
         return;
       }
       if (editPersonal.telefonoContacto.trim() !== "" && !isValidUruguayanMobileNumber(editPersonal.telefonoContacto)) {
-        setStatus("El celular de contacto debe tener formato uruguayo valido.");
+        setStatus("El celular de contacto debe tener formato uruguayo válido.");
         return;
       }
       if (editPersonal.fechaIngreso.trim() !== "" && !parseDateInput(editPersonal.fechaIngreso).valid) {
@@ -1283,8 +1283,8 @@ export default function Home() {
       openConfirmDialog({
         title: "Eliminar personal",
         message: persona
-          ? `Se eliminara ${apellidosLabel(persona)}, ${nombresLabel(persona)} (${formatUruguayanCi(ci)}).`
-          : `Se eliminara el personal con CI ${formatUruguayanCi(ci)}.`,
+          ? `Se eliminará ${apellidosLabel(persona)}, ${nombresLabel(persona)} (${formatUruguayanCi(ci)}).`
+          : `Se eliminará el personal con CI ${formatUruguayanCi(ci)}.`,
         confirmText: "Eliminar personal",
         tone: "danger",
         onConfirm: async () => {
@@ -1518,7 +1518,7 @@ export default function Home() {
       .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
 
     if (payloadEquipos.length === 0) {
-      setStatus("Debes agregar al menos un equipo con cantidad valida.");
+      setStatus("Debes agregar al menos un equipo con cantidad válida.");
       return;
     }
     const uniqueItemIds = new Set(payloadEquipos.map((item) => item.itemId));
@@ -1528,7 +1528,7 @@ export default function Home() {
     }
 
     setRegistroSaving(true);
-    setStatus(isRectificacion ? "Actualizando rectificacion..." : "Actualizando movimiento...");
+    setStatus(isRectificacion ? "Actualizando rectificación..." : "Actualizando movimiento...");
     try {
       await api(isRectificacion ? `/api/registros/${registroDraft.registroId}` : "/api/registros", {
         method: isRectificacion ? "PUT" : "POST",
@@ -1566,16 +1566,16 @@ export default function Home() {
       return;
     }
     if (registroDraft.modo !== "rectificar" || registroDraft.registroId === null) {
-      setStatus("Solo puedes eliminar movimientos existentes desde rectificacion.");
+      setStatus("Solo puedes eliminar movimientos existentes desde rectificación.");
       return;
     }
 
     const draftToDelete = { ...registroDraft };
-    const tipoLabel = draftToDelete.tipo === "ENTREGA" ? "entrega" : "devolucion";
+    const tipoLabel = draftToDelete.tipo === "ENTREGA" ? "entrega" : "devolución";
 
     openConfirmDialog({
       title: "Eliminar movimiento",
-      message: `Se eliminara la ${tipoLabel} del ${draftToDelete.fecha} para CI ${formatUruguayanCi(draftToDelete.ci)}. Esta accion no se puede deshacer.`,
+      message: `Se eliminará la ${tipoLabel} del ${draftToDelete.fecha} para CI ${formatUruguayanCi(draftToDelete.ci)}. Esta acción no se puede deshacer.`,
       confirmText: "Eliminar movimiento",
       tone: "danger",
       onConfirm: async () => {
@@ -1643,7 +1643,7 @@ export default function Home() {
       .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
 
     if (payloadItems.length === 0) {
-      setStatus("Debes agregar al menos un equipo con cantidad valida.");
+      setStatus("Debes agregar al menos un equipo con cantidad válida.");
       return;
     }
 
@@ -1682,24 +1682,24 @@ export default function Home() {
     const isEditing = personalObservacionDraft.observacionId !== null;
 
     if (!personalObservacionDraft.fecha) {
-      setStatus("Selecciona la fecha de la observacion.");
+      setStatus("Selecciona la fecha de la observación.");
       return;
     }
     if (!parseDateInput(personalObservacionDraft.fecha).valid) {
-      setStatus("La fecha de la observacion debe estar en formato DD/MM/AAAA.");
+      setStatus("La fecha de la observación debe estar en formato DD/MM/AAAA.");
       return;
     }
     if (isDateInputAfterToday(personalObservacionDraft.fecha)) {
-      setStatus("La fecha de la observacion no puede ser futura.");
+      setStatus("La fecha de la observación no puede ser futura.");
       return;
     }
     if (!personalObservacionDraft.texto.trim()) {
-      setStatus("Ingresa el texto de la observacion.");
+      setStatus("Ingresa el texto de la observación.");
       return;
     }
 
     setPersonalObservacionSaving(true);
-    setStatus(isEditing ? "Actualizando observacion..." : "Guardando observacion...");
+    setStatus(isEditing ? "Actualizando observación..." : "Guardando observación...");
     try {
       if (isEditing && personalObservacionDraft.observacionId) {
         await updatePersonalObservacionHandler(
@@ -1744,7 +1744,7 @@ export default function Home() {
         `${isEditing ? "Observación actualizada" : "Observación registrada"} para ${formatUruguayanCi(personalObservacionDraft.ci)}.`,
       );
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : isEditing ? "No se pudo actualizar la observacion." : "No se pudo registrar la observacion.");
+      setStatus(error instanceof Error ? error.message : isEditing ? "No se pudo actualizar la observación." : "No se pudo registrar la observación.");
     } finally {
       setPersonalObservacionSaving(false);
     }
@@ -1752,8 +1752,8 @@ export default function Home() {
 
   function deletePersonalObservacion(observacion: PersonalObservacion) {
     openConfirmDialog({
-      title: "Eliminar observacion",
-      message: `Se eliminara la observacion del ${formatDateOnlyForDisplay(observacion.fecha)}.`,
+      title: "Eliminar observación",
+      message: `Se eliminará la observación del ${formatDateOnlyForDisplay(observacion.fecha)}.`,
       confirmText: "Eliminar",
       tone: "danger",
       onConfirm: async () => {
@@ -1813,7 +1813,7 @@ export default function Home() {
         <DateTextInput
           value={editPersonal.fechaIngreso}
           onChange={(value) => setEditPersonal((prev) => ({ ...prev, fechaIngreso: value }))}
-          ariaLabel={`Fecha de ingreso. Maximo ${maxFechaIngreso}`}
+          ariaLabel={`Fecha de ingreso. Máximo ${maxFechaIngreso}`}
           className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
         />
         <select
@@ -2108,7 +2108,7 @@ export default function Home() {
   const submitUserRoleChange = useCallback(async () => {
     if (!userRoleDialog) return;
     if (!ROLE_OPTIONS.includes(userRoleDialog.nextRole)) {
-      setStatus("Rol invalido.");
+      setStatus("Rol inválido.");
       return;
     }
 
@@ -2229,7 +2229,7 @@ export default function Home() {
       }
       openConfirmDialog({
         title: "Eliminar usuario",
-        message: `Se eliminara la cuenta ${usuario.username}.`,
+        message: `Se eliminará la cuenta ${usuario.username}.`,
         confirmText: "Eliminar usuario",
         tone: "danger",
         onConfirm: async () => {
@@ -2351,8 +2351,8 @@ export default function Home() {
       return;
     }
 
-    setStatus(`Abriendo lista de personal por bateria para ${personal.length} personas...`);
-    toast.info(`Abriendo lista por bateria (${personal.length} personas).`);
+    setStatus(`Abriendo lista de personal por batería para ${personal.length} personas...`);
+    toast.info(`Abriendo lista por batería (${personal.length} personas).`);
   }, [personal.length]);
 
   async function confirmDialogAccept() {
@@ -3059,7 +3059,7 @@ export default function Home() {
         <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
       ) : null}
 
-      {loading ? <p className="mt-4 text-xs text-stone-600">Actualizando informacion...</p> : null}
+      {loading ? <p className="mt-4 text-xs text-stone-600">Actualizando información...</p> : null}
       
     </main>
   );

@@ -60,7 +60,7 @@ export function buildHojaObservaciones(
 
       return {
         fecha,
-        texto: `${registro.tipo === "ENTREGA" ? "Entrega" : "Devolucion"}: ${comentarios}`,
+        texto: `${registro.tipo === "ENTREGA" ? "Entrega" : "Devolución"}: ${comentarios}`,
         sortOrder: registro.tipo === "ENTREGA" ? 1 : 2,
         sortTime: toObservationTimestamp(registro.fecha),
       };

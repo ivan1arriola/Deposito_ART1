@@ -93,7 +93,7 @@ export function DashboardHero({
                 disabled={!canManageAccount}
                 className="w-full rounded-2xl border border-[#BAB08C]/35 bg-black/30 px-3 py-3 text-sm font-semibold text-white transition hover:bg-black/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Cambiar contrasena
+                Cambiar contraseña
               </button>
               {!canManageAccount ? (
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white/80 sm:col-span-2 xl:col-span-1">
@@ -101,7 +101,7 @@ export function DashboardHero({
                 </div>
               ) : null}
               <button type="button" onClick={onLogout} className="ej-button-danger w-full rounded-2xl px-3 py-3 text-sm font-semibold sm:col-span-2 xl:col-span-1">
-                Cerrar sesion
+                Cerrar sesión
               </button>
             </div>
           </div>

@@ -33,8 +33,8 @@ export function PersonalFilters({
   const [showMobileFilters, setShowMobileFilters] = useState(hasFilters);
   const bateriaOptions = useMemo(
     () => [
-      { value: "ALL", label: "Todas las baterias" },
-      { value: "NONE", label: "Sin bateria" },
+      { value: "ALL", label: "Todas las baterías" },
+      { value: "NONE", label: "Sin batería" },
       ...baterias.map((bateria) => ({ value: String(bateria.bateriaId), label: bateria.nombre })),
     ],
     [baterias],
@@ -53,11 +53,11 @@ export function PersonalFilters({
     <section className="mt-4 rounded-2xl border border-stone-200 bg-stone-50/80 p-3 sm:p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-stone-900">Filtros de busqueda</p>
+          <p className="text-sm font-semibold text-stone-900">Filtros de búsqueda</p>
           <p className="mt-1 text-xs text-stone-600">
             {activeFilterCount > 0
               ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}`
-              : "Busca rapido por cedula, apellidos, nombres o bateria."}
+              : "Busca rápido por cédula, apellidos, nombres o batería."}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -78,7 +78,7 @@ export function PersonalFilters({
 
       <div className={`${filtersVisible ? "mt-3 grid" : "hidden"} grid-cols-1 gap-3 md:mt-4 md:grid md:grid-cols-2 xl:grid-cols-4`}>
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Cedula</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Cédula</span>
           <input
             value={searchCedula}
             onChange={(event) => onSearchCedulaChange(event.target.value)}
@@ -105,7 +105,7 @@ export function PersonalFilters({
           />
         </label>
         <label className="block md:col-span-2 xl:col-span-4">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Bateria</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Batería</span>
           <div className="-mx-1 mt-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:px-0">
             {bateriaOptions.map((option) => {
               const isActive = bateriaFilter === option.value;
@@ -136,7 +136,7 @@ export function PersonalFilters({
           {searchNombres.trim() !== "" ? <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-stone-700">Nombres: {searchNombres.trim()}</span> : null}
           {bateriaFilter !== "ALL" ? (
             <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-stone-700">
-              {bateriaFilter === "NONE" ? "Sin bateria" : `Bateria: ${baterias.find((bateria) => String(bateria.bateriaId) === bateriaFilter)?.nombre ?? bateriaFilter}`}
+              {bateriaFilter === "NONE" ? "Sin batería" : `Batería: ${baterias.find((bateria) => String(bateria.bateriaId) === bateriaFilter)?.nombre ?? bateriaFilter}`}
             </span>
           ) : null}
         </div>

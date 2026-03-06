@@ -73,7 +73,7 @@ export async function createPersonalObservacionHandler(
     });
     callbacks.onSuccess?.(data);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo registrar la observacion.";
+    const message = error instanceof Error ? error.message : "No se pudo registrar la observación.";
     callbacks.onError?.(message);
     throw error;
   }
@@ -109,7 +109,7 @@ export async function updatePersonalObservacionHandler(
     callbacks.onSuccess?.(data);
     return data;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar la observacion.";
+    const message = error instanceof Error ? error.message : "No se pudo actualizar la observación.";
     callbacks.onError?.(message);
     throw error;
   }
@@ -127,7 +127,7 @@ export async function deletePersonalObservacionHandler(
     callbacks.onSuccess?.(data);
     return data;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo eliminar la observacion.";
+    const message = error instanceof Error ? error.message : "No se pudo eliminar la observación.";
     callbacks.onError?.(message);
     throw error;
   }

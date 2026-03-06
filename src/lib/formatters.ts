@@ -13,16 +13,16 @@ const ROLE_LABELS: Record<Role, string> = {
 
 export const ROLE_DETAILS: Record<Role, { description: string; scope: string }> = {
   ADMIN: {
-    description: "Gestiona usuarios, firmas, auditoria y toda la operacion del sistema.",
-    scope: "Acceso total de configuracion y administracion.",
+    description: "Gestiona usuarios, firmas, auditoría y toda la operación del sistema.",
+    scope: "Acceso total de configuración y administración.",
   },
   EDITOR: {
-    description: "Opera personal, movimientos y catalogos operativos, sin administracion de usuarios.",
+    description: "Opera personal, movimientos y catálogos operativos, sin administración de usuarios.",
     scope: "Acceso operativo sin privilegios de seguridad.",
   },
   READ_ONLY: {
     description: "Consulta datos e imprime documentos sin poder modificar registros ni configuraciones.",
-    scope: "Acceso de visualizacion e impresion.",
+    scope: "Acceso de visualización e impresión.",
   },
 };
 

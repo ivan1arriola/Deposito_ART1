@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { compareOptionalOrder } from "@/lib/catalog-order";
 import type { EquipoResumenData, EquipoResumenRow } from "@/types/views";
 
-const SIN_BATERIA_LABEL = "Sin bateria";
+const SIN_BATERIA_LABEL = "Sin batería";
 
 function registroFactor(tipo: TipoRegistro) {
   if (tipo === TipoRegistro.DEVOLUCION) return -1;

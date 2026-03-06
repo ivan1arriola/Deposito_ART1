@@ -135,7 +135,7 @@ export function PersonalSection({
             disabled={personal.length === 0}
             className="w-full rounded-xl bg-sky-700 px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
-            Imprimir lista por bateria
+            Imprimir lista por batería
           </button>
           <button
             type="button"

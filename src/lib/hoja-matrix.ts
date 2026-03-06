@@ -5,7 +5,7 @@ import { compareOptionalOrder } from "@/lib/catalog-order";
 import { compareRanks } from "@/lib/rank-order";
 import type { HojaMatrixData, HojaMatrixRow } from "@/types/views";
 
-export const SIN_BATERIA_LABEL = "Sin bateria";
+export const SIN_BATERIA_LABEL = "Sin batería";
 
 type GetHojaMatrixOptions = {
   bateria?: string | null;

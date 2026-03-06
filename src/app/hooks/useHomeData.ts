@@ -110,7 +110,7 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
               .then((config) => ({ config, error: null as string | null }))
               .catch((error: unknown) => ({
                 config: null,
-                error: error instanceof Error ? error.message : "No se pudo cargar la configuracion de firmas.",
+                error: error instanceof Error ? error.message : "No se pudo cargar la configuración de firmas.",
               })),
           ]);
           setUsuarios(usuariosData);
@@ -141,7 +141,7 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
         setStockError(null);
         onStatusChange("Datos actualizados.");
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "No se pudo cargar la informacion.";
+        const message = error instanceof Error ? error.message : "No se pudo cargar la información.";
         if (message === "No autenticado.") {
           setCurrentUser(null);
           clearLoadedData();

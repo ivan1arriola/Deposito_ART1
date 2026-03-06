@@ -20,7 +20,7 @@ export function ConfirmDialogModal({ dialog, busy, onClose, onConfirm }: Confirm
       <p className="mt-2 max-h-[48vh] overflow-y-auto whitespace-pre-line text-sm text-stone-700">{dialog.message}</p>
       {isDestructive ? (
         <p className="mt-2 rounded border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-800">
-          Advertencia: esta accion es irreversible y no se puede deshacer.
+          Advertencia: esta acción es irreversible y no se puede deshacer.
         </p>
       ) : null}
       <div className="mt-4 flex flex-wrap justify-end gap-2">

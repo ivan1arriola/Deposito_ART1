@@ -70,7 +70,7 @@ async function api<T>(url: string): Promise<T> {
     try {
       data = JSON.parse(rawBody);
     } catch {
-      throw new Error("El servidor devolvio una respuesta invalida.");
+      throw new Error("El servidor devolvió una respuesta inválida.");
     }
   }
 
@@ -83,7 +83,7 @@ async function api<T>(url: string): Promise<T> {
   }
 
   if (data === null) {
-    throw new Error("El servidor no devolvio datos.");
+    throw new Error("El servidor no devolvió datos.");
   }
 
   return data as T;

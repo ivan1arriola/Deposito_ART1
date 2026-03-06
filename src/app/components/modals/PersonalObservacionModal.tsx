@@ -125,7 +125,7 @@ export function PersonalObservacionModal({
                 value={draft.fecha}
                 disabled={saving}
                 onChange={onDateChange}
-                ariaLabel={`Fecha de observacion. Maximo ${maxFechaIngreso}`}
+                ariaLabel={`Fecha de observación. Máximo ${maxFechaIngreso}`}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
             </label>

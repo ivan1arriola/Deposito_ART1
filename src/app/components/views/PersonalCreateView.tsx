@@ -102,7 +102,7 @@ export function PersonalCreateView({
                         {`Cédula repetida: ${apellidosLabel(duplicatePersonal)}, ${nombresLabel(duplicatePersonal)}.`}
                       </span>
                     ) : (
-                      <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
+                    <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
                     )}
                   </label>
 
@@ -156,7 +156,7 @@ export function PersonalCreateView({
                       className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${telefonoContactoLooksValid ? "border-stone-300 bg-white" : "border-rose-600 bg-rose-50"}`}
                     />
                     <span className={`mt-1 block text-[11px] ${telefonoContactoLooksValid ? "text-stone-500" : "font-medium text-rose-700"}`}>
-                      {telefonoContactoLooksValid ? "Opcional. Se guarda normalizado como celular uruguayo." : "Ingresa un celular uruguayo valido."}
+                      {telefonoContactoLooksValid ? "Opcional. Se guarda normalizado como celular uruguayo." : "Ingresa un celular uruguayo válido."}
                     </span>
                   </label>
                 </div>
@@ -216,7 +216,7 @@ export function PersonalCreateView({
                     />
                     <span className="mt-1 block text-[11px] text-stone-500">
                       {newPersonal.esReingreso
-                        ? `Obligatoria para personal que vuelve a ingresar. Formato DD/MM/AAAA. Maxima: ${maxFechaIngreso}.`
+                        ? `Obligatoria para personal que vuelve a ingresar. Formato DD/MM/AAAA. Máxima: ${maxFechaIngreso}.`
                         : "Opcional. Formato DD/MM/AAAA."}
                     </span>
                   </label>
@@ -289,8 +289,8 @@ export function PersonalCreateView({
                   <p>{`Apellido 1: ${requiredPersonalFields[1] ? "Completo" : "Falta"}`}</p>
                   <p>{`Nombre 1: ${requiredPersonalFields[2] ? "Completo" : "Falta"}`}</p>
                   <p>{`Grado: ${requiredPersonalFields[3] ? "Seleccionado" : "Falta"}`}</p>
-                  <p>{`Condicion: ${newPersonal.esReingreso ? "Reingreso" : "Ingreso inicial"}`}</p>
-                  <p>{`Celular: ${newPersonal.telefonoContacto.trim() === "" ? "Opcional" : telefonoContactoLooksValid ? "Valido" : "Invalido"}`}</p>
+                  <p>{`Condición: ${newPersonal.esReingreso ? "Reingreso" : "Ingreso inicial"}`}</p>
+                  <p>{`Celular: ${newPersonal.telefonoContacto.trim() === "" ? "Opcional" : telefonoContactoLooksValid ? "Válido" : "Inválido"}`}</p>
                   <p>{`Batería: ${Number(newPersonal.bateriaId) > 0 ? "Completa" : "Pendiente"}`}</p>
                   <p>{`${newPersonal.esReingreso ? "Fecha de re-ingreso" : "Fecha de ingreso"}: ${newPersonal.fechaIngreso ? "Completa" : "Pendiente"}`}</p>
                   {newPersonal.esReingreso ? <p>{`Fecha de ingreso: ${newPersonal.fechaIngresoOriginal ? "Completa" : "Opcional"}`}</p> : null}

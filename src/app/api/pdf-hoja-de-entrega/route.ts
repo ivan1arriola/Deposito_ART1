@@ -202,7 +202,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       ["Apellidos", apellidos],
       ["Nombres", nombres],
       ["C.I.", sanitizeForPDF(body.persona.ci)],
-      ["Bateria / Subunidad", sanitizeForPDF(body.persona.bateria) || "Pendiente"],
+      ["Batería / Subunidad", sanitizeForPDF(body.persona.bateria) || "Pendiente"],
       ["Fecha de ingreso", sanitizeForPDF(formatDateOnlyForDisplay(body.persona.fechaIngreso))],
     ];
 

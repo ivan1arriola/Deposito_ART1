@@ -86,7 +86,7 @@ export function RegistroEditorModal({
             value={draft.fecha}
             disabled={saving}
             onChange={onDateChange}
-            ariaLabel={`Fecha del movimiento. Maximo ${maxFechaIngreso}`}
+            ariaLabel={`Fecha del movimiento. Máximo ${maxFechaIngreso}`}
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
           />
         </label>

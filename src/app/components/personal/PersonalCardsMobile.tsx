@@ -59,7 +59,7 @@ export function PersonalCardsMobile({
                 <p className="mt-2 text-sm font-bold text-stone-900">{persona.rango.nombreCompleto}</p>
               </div>
               <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-semibold text-stone-700">
-                {persona.bateria?.nombre ?? "Sin bateria"}
+                {persona.bateria?.nombre ?? "Sin batería"}
               </span>
             </div>
 

@@ -20,7 +20,7 @@ export function useAuthHandlers({ onLoginSuccess, onLoginError, onLogoutSuccess 
         });
 
         if (result?.error) {
-          const message = result.error === "CredentialsSignin" ? "Credenciales invalidas" : result.error;
+          const message = result.error === "CredentialsSignin" ? "Credenciales inválidas" : result.error;
           onLoginError(message);
           throw new Error(message);
         }
@@ -29,7 +29,7 @@ export function useAuthHandlers({ onLoginSuccess, onLoginError, onLogoutSuccess 
           onLoginSuccess();
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : "No se pudo iniciar sesion.";
+        const message = error instanceof Error ? error.message : "No se pudo iniciar sesión.";
         onLoginError(message);
         throw error;
       }

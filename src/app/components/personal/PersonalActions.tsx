@@ -73,13 +73,13 @@ export function PersonalActions({
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
             </svg>
-            Devolucion
+            Devolución
           </button>
           <button type="button" onClick={onObservacion} className={`${actionWithIconClass} border-cyan-600 bg-cyan-700 hover:bg-cyan-800`}>
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8m-8 4h5M7 5h10a2 2 0 012 2v8a2 2 0 01-2 2H9l-4 3v-3H7a2 2 0 01-2-2V7a2 2 0 012-2z" />
             </svg>
-            Observacion
+            Observación
           </button>
         </>
       ) : null}

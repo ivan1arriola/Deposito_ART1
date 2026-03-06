@@ -102,7 +102,7 @@ export async function changeUserPasswordHandler(
     });
     callbacks.onSuccess?.();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar la contrasena.";
+    const message = error instanceof Error ? error.message : "No se pudo actualizar la contraseña.";
     callbacks.onError?.(message);
     throw error;
   }
@@ -162,7 +162,7 @@ export async function saveFirmaConfigHandler(
     callbacks.onSave(updated);
     callbacks.onSuccess?.();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo guardar la configuracion.";
+    const message = error instanceof Error ? error.message : "No se pudo guardar la configuración.";
     callbacks.onError?.(message);
     throw error;
   }

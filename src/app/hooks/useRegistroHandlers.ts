@@ -71,7 +71,7 @@ export function useRegistroHandlers(
         .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
 
       if (payloadEquipos.length === 0) {
-        onStatusUpdate("Debes agregar al menos un equipo con cantidad valida.");
+        onStatusUpdate("Debes agregar al menos un equipo con cantidad válida.");
         return;
       }
 
@@ -83,7 +83,7 @@ export function useRegistroHandlers(
 
       try {
         const isRectificacion = registroDraft.modo === "rectificar" && registroDraft.registroId !== null;
-        onStatusUpdate(isRectificacion ? "Actualizando rectificacion..." : "Registrando movimiento...");
+        onStatusUpdate(isRectificacion ? "Actualizando rectificación..." : "Registrando movimiento...");
 
         await saveRegistroHandler(
           {
