@@ -1,96 +1,109 @@
 # Deposito ART1
 
-Next.js + Prisma + PostgreSQL (Neon), con modelo en 3FN.
+Sistema web para la gestion del Deposito General del Grupo de Artilleria 105mm No. 1.
+Construido con Next.js, Prisma y PostgreSQL.
 
-## Modelo de datos (3FN)
+## Estado del Proyecto
 
-Tablas principales:
+- Nombre del paquete: `deposito-art1`
+- Version actual: `1.3.1`
+- Licencia del proyecto: `Apache-2.0`
 
-- `personal` (`ci` como PK)
-- `grado` (catalogo)
-- `bateria` (catalogo)
-- `talla_tipo` (catalogo: PARKA, CAMISACO, PANTALON, KEPI, CALZADO)
-- `personal_talla` (PK compuesta `ci + talla_tipo_id`)
-- `item` (catalogo)
-- `registro` (cabecera de ENTREGA/DEVOLUCION/AJUSTE)
-- `registro_item` (detalle por item)
-- `observacion` (texto por persona/fecha)
-- `usuario` (usuarios de la app con rol)
-- `sesion` (sesiones activas por cookie httpOnly)
-- `auditoria` (registro de acciones por usuario)
+## Stack Tecnologico
 
-## Variables de entorno
+- Next.js 16
+- React 19
+- Prisma ORM
+- PostgreSQL
+- NextAuth
+- Tailwind CSS 4
+- Vitest
 
-Configura en `.env`:
+## Requisitos
 
-- `DATABASE_URL` (Neon pooler)
-- `DATABASE_URL_UNPOOLED` (opcional)
+- Node.js 20+
+- npm 10+
+- Base de datos PostgreSQL
 
-## Comandos
+## Configuracion Inicial
+
+1. Instalar dependencias:
 
 ```bash
 npm install
+```
+
+2. Crear archivo `.env` con al menos:
+
+```env
+DATABASE_URL="postgresql://..."
+DATABASE_URL_UNPOOLED="postgresql://..." # opcional
+```
+
+3. Generar esquema y cliente Prisma:
+
+```bash
 npm run db:rebuild
+```
+
+4. Levantar entorno de desarrollo:
+
+```bash
 npm run dev
 ```
 
-`db:rebuild` elimina y recrea todo el esquema `public` desde `prisma/schema-base.sql` (incluye tablas, FKs, indices y checks).
-La precarga base queda limitada a catalogos: grados, baterias, talla_tipo e items. No importa personal ni movimientos.
+## Scripts Disponibles
 
-Crear/actualizar un usuario (incluye primer admin):
+- `npm run dev`: inicia Next.js en desarrollo
+- `npm run build`: build de produccion
+- `npm run start`: inicia la app compilada
+- `npm run lint`: ejecuta ESLint
+- `npm run test`: ejecuta tests con Vitest
+- `npm run test:ui`: interfaz de Vitest
+- `npm run test:coverage`: cobertura de tests
+- `npm run db:rebuild`: recrea esquema `public` usando `prisma/schema-base.sql`
+- `npm run prisma:generate`: regenera cliente Prisma
+- `npm run prisma:studio`: abre Prisma Studio
+- `npm run user:create -- --username <u> --password <p> --role ADMIN|EDITOR`: crea o actualiza usuario
+
+Ejemplo:
 
 ```bash
 npm run user:create -- --username admin --password "Admin1234" --role ADMIN
 ```
 
-## Endpoints actuales
+## Modelo de Datos (resumen)
 
-- `GET /api/personal`
-- `POST /api/personal`
-- `PUT /api/personal/:ci`
-- `DELETE /api/personal/:ci`
-- `GET /api/rangos`
-- `POST /api/rangos`
-- `PUT /api/rangos/:rangoId`
-- `DELETE /api/rangos/:rangoId`
-- `GET /api/baterias`
-- `POST /api/baterias`
-- `PUT /api/baterias/:bateriaId`
-- `DELETE /api/baterias/:bateriaId`
-- `GET /api/items`
-- `POST /api/items`
-- `PUT /api/items/:itemId`
-- `DELETE /api/items/:itemId`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-- `GET /api/usuarios` (admin)
-- `POST /api/usuarios` (admin)
-- `PUT /api/usuarios/:usuarioId` (admin)
-- `DELETE /api/usuarios/:usuarioId` (admin)
-- `GET /api/auditoria` (admin)
+Tablas principales:
 
-### Ejemplo `POST /api/personal`
+- `personal`
+- `grado`
+- `bateria`
+- `talla_tipo`
+- `personal_talla`
+- `item`
+- `registro`
+- `registro_item`
+- `observacion`
+- `usuario`
+- `sesion`
+- `auditoria`
 
-```json
-{
-  "ci": "45907815",
-  "apellido1": "Perez",
-  "apellido2": "Gomez",
-  "nombre1": "Juan",
-  "nombre2": "Carlos",
-  "fechaIngreso": "2026-02-25",
-  "rangoId": 3,
-  "bateriaId": 1,
-  "tallas": {
-    "PARKA": "M",
-    "CAMISACO": "M",
-    "PANTALON": "34",
-    "KEPI": "58",
-    "CALZADO": "42"
-  }
-}
-```
+## Licencia y Compatibilidad
 
-Tambien se admite el formato legado de tallas:
-`tallaParka`, `tallaCamisaco`, `tallaPantalon`, `tallaKepi`, `tallaCalzado`.
+Este proyecto se distribuye bajo licencia `Apache-2.0`, que permite uso comercial, modificacion, distribucion y uso privado.
+
+Revision de compatibilidad realizada el 2026-03-08 sobre dependencias directas:
+
+- MIT
+- ISC
+- BSD-3-Clause
+- Apache-2.0
+
+Estas licencias son permisivas y compatibles con distribuir esta aplicacion bajo `Apache-2.0`.
+
+Nota: cada dependencia mantiene su propia licencia y condiciones.
+
+## Nota Legal
+
+Este README no constituye asesoria legal. Si necesitas una validacion formal para un entorno comercial regulado, consulta con asesoria juridica.

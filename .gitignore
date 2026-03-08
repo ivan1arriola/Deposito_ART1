@@ -49,3 +49,7 @@ next-env.d.ts
 
 /CODIGOVIEJO
 /DATOS VIEJOS
+
+# license reports (generated)
+licenses.json
+licenses-prod.json

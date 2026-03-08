@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PDFDocument, PDFPage, rgb, PDFTextField } from "pdf-lib";
+import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { formatDateOnlyForDisplay, formatDateTimeForDisplay } from "@/lib/date-helpers";
 
@@ -88,7 +88,6 @@ export async function POST(request: NextRequest): Promise<Response> {
     const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
 
     const pageWidth = page.getWidth() - MARGINS.left - MARGINS.right;
-    const pageHeight = page.getHeight() - MARGINS.top - MARGINS.bottom;
     let currentY = page.getHeight() - MARGINS.top;
 
     // ===== TOPBAR =====

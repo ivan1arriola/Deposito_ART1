@@ -5,7 +5,6 @@ import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import type { Bateria, Personal } from "@/types/entities";
 import { apellidosLabel, nombresLabel, tallasEntries } from "@/lib/formatters";
 import { tallasMap } from "@/lib/form-mappers";
-import { EMPTY_PERSONAL_FORM } from "@/types/forms";
 import { SmallActionButton, PaginationControls } from "../shared";
 
 export interface PersonalViewProps {

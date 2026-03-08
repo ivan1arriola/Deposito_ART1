@@ -15,7 +15,6 @@ vi.mock("@/lib/api", () => ({
   api: vi.fn(),
 }));
 
-declare const api: any;
 describe("Handlers de Registros", () => {
   beforeEach(() => {
     vi.clearAllMocks();

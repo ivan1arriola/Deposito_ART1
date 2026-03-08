@@ -14,7 +14,6 @@ vi.mock("@/lib/api", () => ({
   api: vi.fn(),
 }));
 
-declare const api: any;
 describe("Handlers de Personal", () => {
   beforeEach(() => {
     vi.clearAllMocks();

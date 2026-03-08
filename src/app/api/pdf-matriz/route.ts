@@ -75,6 +75,7 @@ function drawTableCell(
   // Texto
   const font = bold ? FONTS.bold : FONTS.default;
   doc
+    .font(font)
     .fontSize(fontSize)
     
     .fillColor("#000000")
@@ -150,7 +151,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       const rowHeight = 6 * MM_TO_PT;
 
       let currentX = topbarX;
-      let tableStartY = currentY;
+      const tableStartY = currentY;
 
       // Encabezados principales
       // Columna de datos personales
