@@ -34,7 +34,7 @@ import { RangoCreateView } from "./components/views/RangoCreateView";
 import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
 import { UserCreateView } from "./components/views/UserCreateView";
-import { SmallActionButton, ActionMenu, LoadingInline, LoadingOverlay, toast } from "./components/shared";
+import { SmallActionButton, ActionMenu, LoadingInline, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
 
 // Importar tipos desde archivos de tipos organizados
@@ -2710,25 +2710,9 @@ export default function Home() {
   const normalizedStatus = status.toLowerCase();
   const isPageBootLoading =
     !currentUser &&
+    !loginLoading &&
     (normalizedStatus.startsWith("verificando") ||
-      normalizedStatus.startsWith("iniciando") ||
-      loginLoading);
-  const isGlobalBusy =
-    loading ||
-    firmaConfigLoading ||
-    hojaMatrixLoading ||
-    equipoResumenLoading ||
-    stockLoading ||
-    creatingPersonal ||
-    mergeEquipoSaving ||
-    stockSaving ||
-    registroSaving ||
-    personalObservacionSaving ||
-    changeLoading ||
-    userRoleSaving ||
-    userPasswordSaving ||
-    usernameSaving ||
-    confirmDialogBusy;
+      normalizedStatus.startsWith("iniciando"));
 
   if (!currentUser) {
     return (
@@ -3101,7 +3085,7 @@ export default function Home() {
 
       {activeView === "personal" ? (
         <PersonalSection
-          loading={isGlobalBusy}
+          loading={loading}
           personal={personal}
           personalFiltrado={personalFiltrado}
           personalFiltradoPaginado={personalFiltradoPaginado}
@@ -3310,8 +3294,6 @@ export default function Home() {
 
         <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
       ) : null}
-
-      <LoadingOverlay visible={isGlobalBusy} label="Actualizando informacion..." />
 
     </main>
   );
