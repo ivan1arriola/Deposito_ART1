@@ -39,7 +39,7 @@ export function DashboardHero({
       <div className="relative">
         <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 backdrop-blur-sm">
           <p className="text-[10px] font-semibold uppercase leading-relaxed tracking-[0.18em] text-[#FFCC00] sm:truncate sm:text-[11px] sm:tracking-[0.24em]">
-            {'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1'}
+            {'Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1'}
           </p>
         </div>
 
@@ -49,8 +49,8 @@ export function DashboardHero({
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.14),transparent_56%)]" />
               <div className="relative flex min-h-[190px] items-center justify-center sm:min-h-[260px] xl:min-h-[320px]">
                 <Image
-                  src="/assets/logo-artilleria.jpg"
-                  alt="Logo Artilleria"
+                  src="/assets/logo-deposito.png"
+                  alt="Logo Depósito"
                   width={420}
                   height={320}
                   priority
@@ -64,7 +64,7 @@ export function DashboardHero({
             <span className="rounded-full border border-[#BAB08C]/35 bg-[#8D845B]/25 px-3 py-1 text-[11px] font-semibold text-[#F4F1E4]">
               {loading ? "Sincronizando datos" : "Panel en servicio"}
             </span>
-            <h1 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl xl:text-6xl">Deposito General</h1>
+            <h1 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl xl:text-6xl">Depósito General</h1>
           </div>
 
           <div className="order-2 flex flex-col gap-3 xl:order-3">

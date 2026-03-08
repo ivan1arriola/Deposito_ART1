@@ -502,7 +502,7 @@ export default function Home() {
       status === "Verificando sesión..." ||
       status === "Iniciando sesión..." ||
       status === "Ingresa tus credenciales." ||
-      status === "Sesion cerrada. Ingresa tus credenciales." ||
+      status === "Sesión cerrada. Ingresa tus credenciales." ||
       normalized.startsWith("actualizando ") ||
       normalized.startsWith("guardando ");
 
@@ -2184,7 +2184,7 @@ export default function Home() {
           clearLoadedData();
           setLoginPassword("");
           setActiveView("personal");
-          setStatus("Sesion cerrada. Ingresa tus credenciales.");
+          setStatus("Sesión cerrada. Ingresa tus credenciales.");
         },
       });
     } catch {
@@ -2193,7 +2193,7 @@ export default function Home() {
       clearLoadedData();
       setLoginPassword("");
       setActiveView("personal");
-      setStatus("Sesion cerrada. Ingresa tus credenciales.");
+      setStatus("Sesión cerrada. Ingresa tus credenciales.");
     }
   }, [clearLoadedData, setCurrentUser]);
 
@@ -2803,8 +2803,8 @@ export default function Home() {
         <section className="w-full rounded-2xl border border-stone-300/80 bg-white/90 p-6 shadow-sm">
           <div className="mb-4 flex justify-center">
             <Image
-              src="/assets/logo-artilleria.jpg"
-              alt="Logo Artillería"
+              src="/assets/logo-deposito.png"
+              alt="Logo Depósito"
               width={180}
               height={128}
               priority

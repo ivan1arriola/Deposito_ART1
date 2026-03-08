@@ -113,6 +113,10 @@ function hasUtf8Bom(buffer) {
 const findings = [];
 
 for (const filePath of listTrackedFiles()) {
+  if (filePath === "scripts/check-utf8.mjs") {
+    continue;
+  }
+
   if (shouldSkipFile(filePath)) {
     continue;
   }
