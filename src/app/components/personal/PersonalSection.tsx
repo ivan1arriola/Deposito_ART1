@@ -112,9 +112,13 @@ export function PersonalSection({
     onStartEditPersonal(persona);
   };
 
+  const actionGridClass = canWrite
+    ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
+    : "grid-cols-1 sm:grid-cols-3";
+
   return (
-    <section className="ej-card mt-6 rounded-2xl p-3 sm:p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+    <section className="mt-6 space-y-4">
+      <section className="ej-card rounded-2xl p-3 sm:p-4">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-stone-900">Personal</h2>
           <p className="mt-1 text-xs text-stone-600">Orden: Grado del Personal, Apellidos y Nombres.</p>
@@ -122,13 +126,13 @@ export function PersonalSection({
             {personalFiltrado.length} resultado{personalFiltrado.length === 1 ? "" : "s"}
           </div>
         </div>
-        <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+        <div className={`mt-4 grid w-full gap-2 ${actionGridClass}`}>
           {canWrite ? (
             <button
               type="button"
               onClick={onOpenMassEntrega}
               disabled={personalFiltrado.length === 0}
-              className="w-full rounded-xl bg-emerald-700 px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              className="h-11 w-full rounded-xl bg-emerald-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               Entrega masiva
             </button>
@@ -137,7 +141,7 @@ export function PersonalSection({
             type="button"
             onClick={onPrintAllDeliverySheets}
             disabled={personal.length === 0}
-            className="w-full rounded-xl bg-indigo-700 px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="h-11 w-full rounded-xl bg-indigo-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             Imprimir todas las hojas
           </button>
@@ -145,20 +149,20 @@ export function PersonalSection({
             type="button"
             onClick={onPrintPersonnelByBattery}
             disabled={personal.length === 0}
-            className="w-full rounded-xl bg-sky-700 px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="h-11 w-full rounded-xl bg-sky-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Imprimir lista por batería
+            Imprimir lista por bateria
           </button>
           <button
             type="button"
             onClick={onOpenCreate}
             disabled={!canWrite}
-            className="ej-button w-full rounded-xl px-3 py-2.5 text-sm font-semibold disabled:opacity-50 sm:w-auto"
+            className="ej-button h-11 w-full rounded-xl px-3 text-sm font-semibold disabled:opacity-50"
           >
             Registrar nuevo
           </button>
         </div>
-      </div>
+      </section>
 
       <PersonalFilters
         searchCedula={searchCedula}
@@ -174,33 +178,7 @@ export function PersonalSection({
         onClear={onClearFilters}
       />
 
-      <PaginationControls
-        page={personalPage}
-        pageSize={personalPageSize}
-        totalItems={personalFiltrado.length}
-        itemLabel="personas"
-        onPageChange={onPersonalPageChange}
-        onPageSizeChange={onPersonalPageSizeChange}
-        className="mt-4 hidden md:flex"
-      />
-
-        <PersonalCardsMobile
-          personas={personalFiltradoPaginado}
-          canWrite={canWrite}
-          expandedTallasByCi={expandedTallasByCi}
-        editPersonalCi={editPersonalCi}
-        onToggleEdit={handleToggleEdit}
-        onDelete={onDeletePersonal}
-        onToggleTallas={onToggleTallas}
-        onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
-        onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
-        onObservacion={onOpenPersonalObservacion}
-        onViewMoves={onOpenRegistroViewer}
-        onOpenSheet={onOpenDeliverySheet}
-        renderInlineEditForm={renderInlineEditForm}
-      />
-
-      <div className="mt-3 md:hidden">
+      <section className="rounded-2xl border border-stone-200 bg-white/90 p-3 sm:p-4">
         <PaginationControls
           page={personalPage}
           pageSize={personalPageSize}
@@ -208,35 +186,63 @@ export function PersonalSection({
           itemLabel="personas"
           onPageChange={onPersonalPageChange}
           onPageSizeChange={onPersonalPageSizeChange}
-          className="mt-1"
+          className="hidden md:flex"
         />
-      </div>
 
-      <PersonalTableDesktop
-        personas={personalFiltradoPaginado}
-        canWrite={canWrite}
-        expandedTallasByCi={expandedTallasByCi}
-        editPersonalCi={editPersonalCi}
-        onToggleEdit={handleToggleEdit}
-        onDelete={onDeletePersonal}
-        onToggleTallas={onToggleTallas}
-        onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
-        onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
-        onObservacion={onOpenPersonalObservacion}
-        onViewMoves={onOpenRegistroViewer}
-        onOpenSheet={onOpenDeliverySheet}
-        renderInlineEditForm={renderInlineEditForm}
-      />
+        <PersonalCardsMobile
+          personas={personalFiltradoPaginado}
+          canWrite={canWrite}
+          expandedTallasByCi={expandedTallasByCi}
+          editPersonalCi={editPersonalCi}
+          onToggleEdit={handleToggleEdit}
+          onDelete={onDeletePersonal}
+          onToggleTallas={onToggleTallas}
+          onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
+          onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
+          onObservacion={onOpenPersonalObservacion}
+          onViewMoves={onOpenRegistroViewer}
+          onOpenSheet={onOpenDeliverySheet}
+          renderInlineEditForm={renderInlineEditForm}
+        />
 
-      <PaginationControls
-        page={personalPage}
-        pageSize={personalPageSize}
-        totalItems={personalFiltrado.length}
-        itemLabel="personas"
-        onPageChange={onPersonalPageChange}
-        onPageSizeChange={onPersonalPageSizeChange}
-        className="mt-4 hidden md:flex"
-      />
+        <div className="mt-3 md:hidden">
+          <PaginationControls
+            page={personalPage}
+            pageSize={personalPageSize}
+            totalItems={personalFiltrado.length}
+            itemLabel="personas"
+            onPageChange={onPersonalPageChange}
+            onPageSizeChange={onPersonalPageSizeChange}
+            className="mt-1"
+          />
+        </div>
+
+        <PersonalTableDesktop
+          personas={personalFiltradoPaginado}
+          canWrite={canWrite}
+          expandedTallasByCi={expandedTallasByCi}
+          editPersonalCi={editPersonalCi}
+          onToggleEdit={handleToggleEdit}
+          onDelete={onDeletePersonal}
+          onToggleTallas={onToggleTallas}
+          onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
+          onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
+          onObservacion={onOpenPersonalObservacion}
+          onViewMoves={onOpenRegistroViewer}
+          onOpenSheet={onOpenDeliverySheet}
+          renderInlineEditForm={renderInlineEditForm}
+        />
+
+        <PaginationControls
+          page={personalPage}
+          pageSize={personalPageSize}
+          totalItems={personalFiltrado.length}
+          itemLabel="personas"
+          onPageChange={onPersonalPageChange}
+          onPageSizeChange={onPersonalPageSizeChange}
+          className="mt-4 hidden md:flex"
+        />
+      </section>
     </section>
   );
 }

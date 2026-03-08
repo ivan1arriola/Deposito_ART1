@@ -61,6 +61,8 @@ const COMMON_MOJIBAKE_TOKENS = [
   "â€”",
 ];
 
+const ESCAPED_LATIN1_RE = /\\u00(?:e1|e9|ed|f3|fa|f1|c1|c9|cd|d3|da|d1|bf|a1)/gi;
+
 function shouldSkipFile(filePath) {
   if (SKIP_DIRECTORIES.some((prefix) => filePath.startsWith(prefix))) {
     return true;
@@ -141,14 +143,18 @@ for (const filePath of listTrackedFiles()) {
 
   const tokenHits = COMMON_MOJIBAKE_TOKENS.filter((token) => text.includes(token));
   const hasReplacementChar = text.includes("\ufffd");
+  const escapedLatin1Hits = Array.from(new Set(text.match(ESCAPED_LATIN1_RE) ?? []));
 
-  if (hasReplacementChar || tokenHits.length > 0) {
+  if (hasReplacementChar || tokenHits.length > 0 || escapedLatin1Hits.length > 0) {
     const details = [];
     if (hasReplacementChar) {
       details.push("contiene caracter de reemplazo U+FFFD");
     }
     if (tokenHits.length > 0) {
       details.push(`tokens sospechosos: ${tokenHits.slice(0, 5).join(", ")}`);
+    }
+    if (escapedLatin1Hits.length > 0) {
+      details.push(`escapes \\u00xx no permitidos: ${escapedLatin1Hits.slice(0, 5).join(", ")}`);
     }
     findings.push(`[MOJIBAKE] ${filePath} (${details.join("; ")})`);
   }

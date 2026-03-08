@@ -2797,71 +2797,113 @@ export default function Home() {
     );
   }
 
+  const normalizedStatus = status.toLowerCase();
+  const isPageBootLoading =
+    !currentUser &&
+    (normalizedStatus.startsWith("verificando") ||
+      normalizedStatus.startsWith("iniciando") ||
+      loginLoading);
+
   if (!currentUser) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
-        <section className="w-full rounded-2xl border border-stone-300/80 bg-white/90 p-6 shadow-sm">
-          <div className="mb-4 flex justify-center">
-            <Image
-              src="/assets/logo-deposito.png"
-              alt="Logo Depósito"
-              width={180}
-              height={128}
-              priority
-              className="h-auto w-36 rounded-lg border border-stone-300 bg-white object-contain p-1 sm:w-40"
-            />
-          </div>
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">
-            {'Grupo "Brig.Gral.Manuel Oribe" de Artillería 105mm No. 1.'}
-          </p>
-          <h1 className="mt-2 text-2xl font-bold text-stone-900">Iniciar sesión</h1>
-          <p className="mt-2 text-sm text-stone-600">{status}</p>
+      <main className="relative mx-auto flex min-h-dvh w-full max-w-7xl items-center justify-center px-3 py-4 sm:px-6 sm:py-6">
+        <section className="relative grid w-full max-w-[1120px] max-h-[min(88vh,780px)] overflow-hidden rounded-[28px] border border-stone-300/70 bg-white/90 shadow-[0_24px_70px_rgba(17,24,39,0.16)] lg:grid-cols-[1fr_minmax(360px,440px)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(141,132,91,0.16),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(102,112,77,0.14),transparent_42%)]" />
 
-          {initMessage && showInitCredentials && initCredentials && (
-            <div className={`mt-4 rounded-lg border px-3 py-2 text-sm ${
-              initMessage.type === "success"
-                ? "border-green-300/70 bg-green-50/80 text-green-900"
-                : "border-blue-300/70 bg-blue-50/80 text-blue-900"
-            }`}>
-              <p className="font-semibold">{initMessage.text}</p>
-              <div className="mt-3 space-y-1 rounded border border-current/20 bg-white/50 p-2 text-xs">
-                <p><strong>Usuario:</strong> <code className="font-mono">{initCredentials.username}</code></p>
-                <p><strong>Contraseña:</strong> <code className="font-mono">{initCredentials.password}</code></p>
-              </div>
-              <p className="mt-2 text-xs italic">Guarda estas credenciales en un lugar seguro.</p>
-              <button
-                type="button"
-                onClick={() => setShowInitCredentials(false)}
-                className="mt-2 w-full rounded px-2 py-1 text-xs font-semibold hover:bg-current/10"
-              >
-                Entendido
-              </button>
+          <div className="relative hidden border-r border-stone-300/60 p-8 lg:flex lg:flex-col lg:items-center lg:justify-center lg:text-center xl:p-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+              {'Grupo "Brig.Gral.Manuel Oribe" de Artilleria 105mm No. 1.'}
+            </p>
+            <div className="mt-6 flex items-center justify-center">
+              <Image
+                src="/assets/logo-deposito.png"
+                alt="Logo Deposito"
+                width={420}
+                height={420}
+                priority
+                className="h-auto w-full max-w-[clamp(280px,34vw,420px)] object-contain drop-shadow-[0_18px_34px_rgba(17,24,39,0.22)]"
+              />
             </div>
-          )}
+            <h2 className="mt-7 text-center text-[clamp(2.2rem,4.4vw,4rem)] font-black leading-[0.92] tracking-tight text-stone-900">
+              Deposito
+              <br />
+              General
+            </h2>
+          </div>
 
-          <form onSubmit={login} className="mt-4 space-y-3">
-            <input
-              value={loginUsername}
-              onChange={(event) => setLoginUsername(event.target.value)}
-              placeholder="Usuario"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <input
-              value={loginPassword}
-              onChange={(event) => setLoginPassword(event.target.value)}
-              placeholder="Contraseña"
-              type="password"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <button
-              type="submit"
-              disabled={loading || loginLoading}
-              className="w-full rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {loading || loginLoading ? "Ingresando..." : "Entrar"}
-            </button>
-          </form>
+          <div className="relative overflow-y-auto p-5 sm:p-8 lg:flex lg:items-center lg:p-10">
+            <div className="w-full">
+              <div className="mb-4 flex justify-center lg:hidden">
+                <Image
+                  src="/assets/logo-deposito.png"
+                  alt="Logo Deposito"
+                  width={220}
+                  height={220}
+                  priority
+                  className="h-auto w-36 object-contain drop-shadow-[0_14px_28px_rgba(17,24,39,0.22)] sm:w-44"
+                />
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500 lg:hidden">
+                {'Grupo "Brig.Gral.Manuel Oribe" de Artilleria 105mm No. 1.'}
+              </p>
+              <h2 className="mt-3 text-center text-4xl font-black leading-[0.92] tracking-tight text-stone-900 lg:hidden">
+                Deposito General
+              </h2>
+              <h1 className="mt-5 text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">Iniciar sesion</h1>
+              {isPageBootLoading ? (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-stone-300 bg-stone-100/80 px-3 py-1">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-stone-400 border-t-stone-700" aria-hidden="true" />
+                  <span className="text-xs font-semibold text-stone-700">Cargando pagina...</span>
+                </div>
+              ) : null}
+              <p className="mt-2 text-sm text-stone-600">{status}</p>
 
+              {initMessage && showInitCredentials && initCredentials && (
+                <div className={`mt-4 rounded-2xl border px-3 py-2 text-sm ${
+                  initMessage.type === "success"
+                    ? "border-green-300/70 bg-green-50/80 text-green-900"
+                    : "border-blue-300/70 bg-blue-50/80 text-blue-900"
+                }`}>
+                  <p className="font-semibold">{initMessage.text}</p>
+                  <div className="mt-3 space-y-1 rounded border border-current/20 bg-white/60 p-2 text-xs">
+                    <p><strong>Usuario:</strong> <code className="font-mono">{initCredentials.username}</code></p>
+                    <p><strong>Contrasena:</strong> <code className="font-mono">{initCredentials.password}</code></p>
+                  </div>
+                  <p className="mt-2 text-xs italic">Guarda estas credenciales en un lugar seguro.</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowInitCredentials(false)}
+                    className="mt-2 w-full rounded px-2 py-1 text-xs font-semibold hover:bg-current/10"
+                  >
+                    Entendido
+                  </button>
+                </div>
+              )}
+
+              <form onSubmit={login} className="mt-5 space-y-3">
+                <input
+                  value={loginUsername}
+                  onChange={(event) => setLoginUsername(event.target.value)}
+                  placeholder="Usuario"
+                  className="w-full rounded-2xl border border-stone-300/90 bg-white/75 px-3 py-2 text-sm"
+                />
+                <input
+                  value={loginPassword}
+                  onChange={(event) => setLoginPassword(event.target.value)}
+                  placeholder="Contrasena"
+                  type="password"
+                  className="w-full rounded-2xl border border-stone-300/90 bg-white/75 px-3 py-2 text-sm"
+                />
+                <button
+                  type="submit"
+                  disabled={loading || loginLoading}
+                  className="w-full rounded-2xl bg-stone-900 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:opacity-60"
+                >
+                  {loading || loginLoading ? "Ingresando..." : "Entrar"}
+                </button>
+              </form>
+            </div>
+          </div>
         </section>
       </main>
     );
@@ -3329,7 +3371,12 @@ export default function Home() {
         <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
       ) : null}
 
-      {loading ? <p className="mt-4 text-xs text-stone-600">Actualizando información...</p> : null}
+      {loading ? (
+        <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-stone-600">
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-stone-400 border-t-stone-700" aria-hidden="true" />
+          <span>Actualizando informacion...</span>
+        </div>
+      ) : null}
       
     </main>
   );

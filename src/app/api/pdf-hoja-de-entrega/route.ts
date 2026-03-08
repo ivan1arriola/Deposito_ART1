@@ -138,7 +138,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       maxWidth: headtxtWidth,
     });
 
-    page.drawText("ADMINISTRACI\u00d3N - S4", {
+    page.drawText("ADMINISTRACIÓN - S4", {
       x: headtxtX,
       y: topbarY + 6 * MM_TO_PT,
       size: 10,

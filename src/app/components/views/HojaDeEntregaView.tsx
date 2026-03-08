@@ -187,12 +187,12 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
             <tbody>
               <tr>
                 <td colSpan={15} className={`${styles.center} ${styles.bold}`}>
-                  Grupo &quot;Brig.Gral.Manuel Oribe&quot; de Artiller\u00eda 105mm No.1.-
+                  Grupo &quot;Brig.Gral.Manuel Oribe&quot; de Artillería 105mm No.1.-
                 </td>
               </tr>
               <tr>
                 <td colSpan={15} className={`${styles.center} ${styles.bold}`}>
-                  {"ADMINISTRACI\u00d3N - S4"}
+                  {"ADMINISTRACIÓN - S4"}
                 </td>
               </tr>
 
@@ -221,10 +221,10 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
                       <span className={styles.headerInfoLabel}>Camisaco:</span> {data.persona.tallas.CAMISACO}
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>{"Pantal\u00f3n:"}</span> {data.persona.tallas.PANTALON}
+                      <span className={styles.headerInfoLabel}>{"Pantalón:"}</span> {data.persona.tallas.PANTALON}
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>{"Kep\u00ed:"}</span> {data.persona.tallas.KEPI}
+                      <span className={styles.headerInfoLabel}>{"Kepí:"}</span> {data.persona.tallas.KEPI}
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
                       <span className={styles.headerInfoLabel}>Calzado:</span> {data.persona.tallas.CALZADO}
@@ -240,7 +240,7 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
                       {formatUruguayanCi(data.persona.ci)}
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>{"Bater\u00eda:"}</span> {data.persona.bateria || "Cdo. y Serv."}
+                      <span className={styles.headerInfoLabel}>{"Batería:"}</span> {data.persona.bateria || "Cdo. y Serv."}
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
                       <span className={styles.headerInfoLabel}>{data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:"}</span>{" "}
@@ -271,7 +271,7 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
                 <td className={`${styles.center} ${styles.bold}`} rowSpan={4}>T</td>
               </tr>
               <tr className={styles.dateRow}>
-                <td className={styles.dateLabel}>{"D\u00cdA"}</td>
+                <td className={styles.dateLabel}>{"DÍA"}</td>
                 {entregaCols.map((fecha, i) => (
                   <td key={`edia-${i}`} className={styles.dateLabel}>
                     {fecha ? getDatePart(fecha, "day") : ""}
@@ -297,7 +297,7 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
                 ))}
               </tr>
               <tr className={styles.dateRow}>
-                <td className={styles.dateLabel}>{"A\u00d1O"}</td>
+                <td className={styles.dateLabel}>{"AÑO"}</td>
                 {entregaCols.map((fecha, i) => (
                   <td key={`eano-${i}`} className={styles.dateLabel}>
                     {fecha ? getDatePart(fecha, "year") : ""}
