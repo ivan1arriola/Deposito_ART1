@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo } from "react";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
@@ -103,10 +103,12 @@ export function StockView({
       }));
   }, [prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales]);
 
-  const valueBySection = (item: (typeof resumen)[number]) => (section === "total" ? item.stockTotal : item.stockDeposito);
-  const totalUnidades = resumen.reduce((total, item) => total + valueBySection(item), 0);
-  const itemsConStock = resumen.filter((item) => valueBySection(item) !== 0).length;
-  const itemsNegativos = resumen.filter((item) => valueBySection(item) < 0).length;
+  const totalSubalternos = resumen.reduce((total, item) => total + item.stockSubalternos, 0);
+  const totalPrestamo = resumen.reduce((total, item) => total + item.stockPrestamo, 0);
+  const totalDeposito = resumen.reduce((total, item) => total + item.stockDeposito, 0);
+  const totalUnidad = resumen.reduce((total, item) => total + item.stockUnidad, 0);
+  const itemsConStockDeposito = resumen.filter((item) => item.stockDeposito !== 0).length;
+  const itemsNegativosDeposito = resumen.filter((item) => item.stockDeposito < 0).length;
 
   const showSummaryCards = section === "total" || section === "actual";
   const showManualForm = canWrite && (section === "alta" || section === "baja");
@@ -127,7 +129,7 @@ export function StockView({
               ? "Prestamos de equipo"
               : "Historial de stock";
 
-  const stockTableTitle = section === "total" ? "Total por item (personal + deposito)" : "Stock interno de deposito por equipo";
+  const stockTableTitle = section === "total" ? "Totales por item (subalternos + prestamo + deposito)" : "Stock interno de deposito por equipo";
   const returnDateFallback = maxDate;
 
   return (
@@ -149,20 +151,41 @@ export function StockView({
         </div>
 
         {showSummaryCards ? (
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total unidades</p>
-              <p className="mt-2 text-2xl font-bold text-stone-900">{totalUnidades}</p>
+          section === "total" ? (
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total subalternos</p>
+                <p className="mt-2 text-2xl font-bold text-stone-900">{totalSubalternos}</p>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total prestamo</p>
+                <p className="mt-2 text-2xl font-bold text-stone-900">{totalPrestamo}</p>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total deposito</p>
+                <p className="mt-2 text-2xl font-bold text-stone-900">{totalDeposito}</p>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total unidad</p>
+                <p className="mt-2 text-2xl font-bold text-stone-900">{totalUnidad}</p>
+              </div>
             </div>
-            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items con stock</p>
-              <p className="mt-2 text-2xl font-bold text-stone-900">{itemsConStock}</p>
+          ) : (
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total unidades</p>
+                <p className="mt-2 text-2xl font-bold text-stone-900">{totalDeposito}</p>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items con stock</p>
+                <p className="mt-2 text-2xl font-bold text-stone-900">{itemsConStockDeposito}</p>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items negativos</p>
+                <p className={`mt-2 text-2xl font-bold ${itemsNegativosDeposito > 0 ? "text-rose-700" : "text-stone-900"}`}>{itemsNegativosDeposito}</p>
+              </div>
             </div>
-            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items negativos</p>
-              <p className={`mt-2 text-2xl font-bold ${itemsNegativos > 0 ? "text-rose-700" : "text-stone-900"}`}>{itemsNegativos}</p>
-            </div>
-          </div>
+          )
         ) : null}
       </article>
 
@@ -432,9 +455,10 @@ export function StockView({
                     <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Equipo</th>
                     {section === "total" ? (
                       <>
-                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Personal</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Subalternos</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Prestamo</th>
                         <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Deposito</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Total</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Unidad</th>
                       </>
                     ) : (
                       <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Stock deposito</th>
@@ -447,9 +471,10 @@ export function StockView({
                       <td className="border-b border-stone-100 px-3 py-2 text-stone-900">{item.nombre}</td>
                       {section === "total" ? (
                         <>
-                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockPersonal}</td>
+                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockSubalternos}</td>
+                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockPrestamo}</td>
                           <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockDeposito}</td>
-                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockTotal}</td>
+                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockUnidad}</td>
                         </>
                       ) : (
                         <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockDeposito}</td>

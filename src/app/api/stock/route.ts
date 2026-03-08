@@ -11,7 +11,13 @@ import {
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
-import { buildPersonalByItemMap, buildStockByItemMap, movimientoStockDeltaFactor, stockOperacionDeltaFactor } from "@/lib/stock";
+import {
+  buildPersonalByItemMap,
+  buildPrestamoActivoByItemMap,
+  buildUnidadByItemMap,
+  movimientoStockDeltaFactor,
+  stockOperacionDeltaFactor,
+} from "@/lib/stock";
 import { formatPrestamoDestinatario, prestamoInclude, serializePrestamo } from "@/lib/prestamos";
 import type { StockDashboardData } from "@/types/views";
 
@@ -103,13 +109,14 @@ export async function GET(req: Request) {
   const limitRaw = Number(new URL(req.url).searchParams.get("limit") ?? "200");
   const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 20), 400) : 200;
 
-  const [items, stockDepositoByItem, stockPersonalByItem, stockOperaciones, movimientos, prestamos] = await Promise.all([
+  const [items, stockUnidadByItem, stockPersonalByItem, stockPrestamoByItem, stockOperaciones, movimientos, prestamos] = await Promise.all([
     prisma.item.findMany({
       orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
       select: { itemId: true, nombre: true, activo: true, ordenPdf: true },
     }),
-    buildStockByItemMap(prisma),
+    buildUnidadByItemMap(prisma),
     buildPersonalByItemMap(prisma),
+    buildPrestamoActivoByItemMap(prisma),
     prisma.stockOperacion.findMany({
       include: {
         items: {
@@ -126,7 +133,6 @@ export async function GET(req: Request) {
     }),
     prisma.movimiento.findMany({
       where: {
-        afectaStock: true,
         tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
       },
       include: {
@@ -195,17 +201,28 @@ export async function GET(req: Request) {
     auditUserByEntity.set(key, userLabel ?? audit.usuario?.username ?? null);
   }
 
-  const resumen = items.map((item) => ({
-    itemId: item.itemId.toString(),
-    nombre: item.nombre,
-    ordenPdf: item.ordenPdf,
-    apareceEnHoja: item.activo,
-    stockDeposito: stockDepositoByItem.get(item.itemId.toString()) ?? 0,
-    stockPersonal: stockPersonalByItem.get(item.itemId.toString()) ?? 0,
-    stockTotal:
-      (stockDepositoByItem.get(item.itemId.toString()) ?? 0) + (stockPersonalByItem.get(item.itemId.toString()) ?? 0),
-    stockActual: stockDepositoByItem.get(item.itemId.toString()) ?? 0,
-  }));
+  const resumen = items.map((item) => {
+    const key = item.itemId.toString();
+    const stockUnidad = stockUnidadByItem.get(key) ?? 0;
+    const stockSubalternos = stockPersonalByItem.get(key) ?? 0;
+    const stockPrestamo = stockPrestamoByItem.get(key) ?? 0;
+    const stockDeposito = stockUnidad - stockSubalternos - stockPrestamo;
+
+    return {
+      itemId: key,
+      nombre: item.nombre,
+      ordenPdf: item.ordenPdf,
+      apareceEnHoja: item.activo,
+      stockSubalternos,
+      stockPrestamo,
+      stockDeposito,
+      stockUnidad,
+      // Alias legado para compatibilidad con pantallas existentes.
+      stockPersonal: stockSubalternos,
+      stockTotal: stockUnidad,
+      stockActual: stockDeposito,
+    };
+  });
 
   const historialManual: StockHistorialInternalEntry[] = stockOperaciones.map((operacion) => ({
     id: `manual-${operacion.stockOperacionId.toString()}`,
@@ -240,7 +257,7 @@ export async function GET(req: Request) {
         createdAt: formatDateTimeForDisplay(movimiento.createdAt),
         origen: "PERSONAL" as const,
         tipo: movimiento.tipo,
-        afectaStock: movimiento.afectaStock,
+        afectaStock: true,
         comentarios: movimiento.observaciones,
         totalUnidades: movimiento.items.reduce((total, item) => total + item.cantidad, 0),
         ci: movimiento.personalCi,

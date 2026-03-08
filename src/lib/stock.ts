@@ -51,7 +51,6 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
         tipo: {
           in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION],
         },
-        afectaStock: true,
         ...(options.excludeMovimientoId ? { movimientoId: { not: options.excludeMovimientoId } } : {}),
       },
       select: {
@@ -120,6 +119,31 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
   return stockByItem;
 }
 
+export async function buildUnidadByItemMap(prisma: Pick<Prisma.TransactionClient, "stockOperacion">) {
+  const operaciones = await prisma.stockOperacion.findMany({
+    select: {
+      tipo: true,
+      items: {
+        select: {
+          itemId: true,
+          cantidad: true,
+        },
+      },
+    },
+  });
+
+  const unidadByItem = new Map<string, number>();
+  for (const operacion of operaciones) {
+    const factor = stockOperacionDeltaFactor(operacion.tipo);
+    for (const item of operacion.items) {
+      const key = item.itemId.toString();
+      unidadByItem.set(key, (unidadByItem.get(key) ?? 0) + item.cantidad * factor);
+    }
+  }
+
+  return unidadByItem;
+}
+
 export async function buildPersonalByItemMap(prisma: PrismaLike) {
   const movimientos = await prisma.movimiento.findMany({
     where: {
@@ -149,6 +173,33 @@ export async function buildPersonalByItemMap(prisma: PrismaLike) {
   }
 
   return personalByItem;
+}
+
+export async function buildPrestamoActivoByItemMap(prisma: Pick<Prisma.TransactionClient, "prestamoActivo">) {
+  const prestamosActivos = await prisma.prestamoActivo.findMany({
+    select: {
+      movimiento: {
+        select: {
+          items: {
+            select: {
+              itemId: true,
+              cantidad: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const prestamoByItem = new Map<string, number>();
+  for (const prestamo of prestamosActivos) {
+    for (const item of prestamo.movimiento.items) {
+      const key = item.itemId.toString();
+      prestamoByItem.set(key, (prestamoByItem.get(key) ?? 0) + item.cantidad);
+    }
+  }
+
+  return prestamoByItem;
 }
 
 export function totalStockUnits(stockByItem: Map<string, number>) {
