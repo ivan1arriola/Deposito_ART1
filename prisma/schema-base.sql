@@ -61,18 +61,18 @@ CREATE INDEX "grado_orden_idx" ON "grado"("orden");
 INSERT INTO "grado" ("tipo", "abreviacion", "nombre_completo", "orden") VALUES
 ('OFICIAL', 'Tte. Cnel.', 'Teniente Coronel', 1),
 ('OFICIAL', 'May.', 'Mayor', 2),
-('OFICIAL', 'Cap.', 'Capitan', 3),
+('OFICIAL', 'Cap.', U&'Capit\00E1n', 3),
 ('OFICIAL', U&'Tte. 1\00B0', 'Teniente Primero', 4),
 ('OFICIAL', U&'Tte. 2\00B0', 'Teniente Segundo', 5),
-('OFICIAL', 'Alf.', 'Alferez', 6),
+('OFICIAL', 'Alf.', U&'Alf\00E9rez', 6),
 ('SUBOFICIAL', 'S.O.M', 'Sub Oficial Mayor', 1),
 ('SUBOFICIAL', U&'Sgto. 1\00B0', 'Sargento Primero', 2),
 ('SUBALTERNO', 'Sgto.', 'Sargento', 1),
 ('SUBALTERNO', U&'Cabo 1\00B0', 'Cabo de Primera', 2),
 ('SUBALTERNO', U&'Cabo 2\00B0', 'Cabo de Segunda', 3),
 ('SUBALTERNO', U&'Sdo. 1\00B0', 'Soldado de Primera', 4),
-('SUBALTERNO', U&'Sdo. 1\00B0 C/CIRR', 'Soldado de Primera Cursando CIRR', 5),
-('SUBALTERNO', U&'Sdo. 1\00B0 S/CIRR', 'Soldado de Primera Sin CIRR', 6);
+('SUBALTERNO', U&'Sdo. 1\00B0 C/ CIRR', 'Soldado de Primera Cursando CIRR', 5),
+('SUBALTERNO', U&'Sdo. 1\00B0 S/ CIRR', 'Soldado de Primera Sin CIRR', 6);
 
 CREATE TABLE "bateria" (
   "bateria_id" SMALLSERIAL PRIMARY KEY,
@@ -370,7 +370,7 @@ CREATE TABLE "movimiento" (
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   CONSTRAINT "movimiento_fecha_hoy_chk" CHECK ("fecha" <= CURRENT_DATE),
-  CONSTRAINT "movimiento_prestamo_afecta_stock_chk" CHECK ("tipo" <> 'PRESTAMO' OR "afecta_stock" = TRUE)
+  CONSTRAINT "movimiento_prestamo_afecta_stock_chk" CHECK ("afecta_stock" = TRUE)
 );
 
 CREATE INDEX "movimiento_personal_ci_fecha_idx" ON "movimiento"("personal_ci", "fecha" DESC);
@@ -432,8 +432,8 @@ BEGIN
     RAISE EXCEPTION 'Las % solo aplican a subalternos. CI % es tipo %.', NEW."tipo", NEW."personal_ci", destino_tipo;
   END IF;
 
-  IF NEW."tipo" = 'PRESTAMO' AND NEW."afecta_stock" <> TRUE THEN
-    RAISE EXCEPTION 'Los prestamos siempre afectan stock.';
+  IF NEW."afecta_stock" <> TRUE THEN
+    RAISE EXCEPTION 'Todos los movimientos deben afectar stock.';
   END IF;
 
   RETURN NEW;

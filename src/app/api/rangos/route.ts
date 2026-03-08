@@ -12,12 +12,28 @@ function parseOptionalOrden(value: unknown) {
   return parsed;
 }
 
+function parseTipoPersonal(value: string | null) {
+  if (!value) return null;
+  const normalized = value.trim().toUpperCase();
+  if (normalized === "SUBALTERNO") return TipoPersonal.SUBALTERNO;
+  if (normalized === "OFICIAL") return TipoPersonal.OFICIAL;
+  if (normalized === "SUBOFICIAL") return TipoPersonal.SUBOFICIAL;
+  return undefined;
+}
+
 export async function GET(request: Request) {
   const auth = await authorizeRequest(request, "read_data");
   if (!auth.ok) return auth.response;
 
+  const url = new URL(request.url);
+  const parsedTipo = parseTipoPersonal(url.searchParams.get("tipo"));
+  if (parsedTipo === undefined) {
+    return NextResponse.json({ error: "Tipo de personal invalido. Usa SUBALTERNO, OFICIAL o SUBOFICIAL." }, { status: 400 });
+  }
+  const tipo = parsedTipo ?? TipoPersonal.SUBALTERNO;
+
   const rangos = await prisma.rango.findMany({
-    where: { tipo: TipoPersonal.SUBALTERNO },
+    where: { tipo },
     orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
   });
 

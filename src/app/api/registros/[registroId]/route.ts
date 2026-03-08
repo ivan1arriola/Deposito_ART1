@@ -19,7 +19,6 @@ type MovimientoItemPayload = {
 type UpdateMovimientoPayload = {
   fecha?: string;
   tipo: TipoMovimiento | string;
-  afectaStock?: boolean;
   comentarios?: string;
   items: MovimientoItemPayload[];
 };
@@ -169,15 +168,15 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
   const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
   const itemsFound = await prisma.item.findMany({
-    where: { itemId: { in: itemIds }, activo: true },
+    where: { itemId: { in: itemIds } },
     select: { itemId: true, nombre: true },
   });
   if (itemsFound.length !== itemIds.length) {
-    return NextResponse.json({ error: "Uno o mas equipos no existen o estan inactivos." }, { status: 400 });
+    return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
 
   const comentarios = body.comentarios?.trim() || null;
-  const afectaStock = body.afectaStock !== false;
+  const afectaStock = true;
   const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
   const itemsNuevos = Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
     itemId,

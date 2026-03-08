@@ -4,7 +4,7 @@ export type TallaKey = (typeof TALLA_KEYS)[number];
 export const TALLA_LABELS: Record<TallaKey, string> = {
   PARKA: "Parka",
   CAMISACO: "Camisaco",
-  PANTALON: "Pantalón",
+  PANTALON: "Pantalon",
   KEPI: "Kepi",
   CALZADO: "Calzado",
 };
@@ -45,8 +45,18 @@ function hasValidDynamicFormat(key: TallaKey, value: string) {
     return /^\d{1,3}$/.test(value);
   }
 
-  // Ropa: permite talles alfabeticos y mixtos (ej. XL, XXXL, 3XL, M/L).
+  // Ropa: solo letras/numeros y separadores simples.
   return /^[A-Z0-9.\-\/ ]{1,20}$/.test(value);
+}
+
+function allowedValuesLabel(key: TallaKey) {
+  if (key === "PARKA" || key === "CAMISACO" || key === "PANTALON") {
+    return "XS, S, M, L, XL, XXL, XXXL";
+  }
+  if (key === "KEPI") {
+    return "54 a 63";
+  }
+  return "34 a 47";
 }
 
 export function validateAndNormalizeTallas(values: Partial<Record<TallaKey, string>>) {
@@ -59,7 +69,13 @@ export function validateAndNormalizeTallas(values: Partial<Record<TallaKey, stri
     if (!hasValidDynamicFormat(key, normalized)) {
       return {
         ok: false as const,
-        error: `Talla ${TALLA_LABELS[key]} inválida. Formato no permitido.`,
+        error: `Talla ${TALLA_LABELS[key]} invalida. Formato no permitido.`,
+      };
+    }
+    if (!isAllowedTallaValue(key, normalized)) {
+      return {
+        ok: false as const,
+        error: `Talla ${TALLA_LABELS[key]} invalida. Valores permitidos: ${allowedValuesLabel(key)}.`,
       };
     }
 

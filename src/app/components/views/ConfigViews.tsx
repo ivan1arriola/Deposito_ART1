@@ -7,7 +7,8 @@ import type { MainView } from "@/types/views";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 
 type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
-type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
+type RangoTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
+type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number; tipo?: RangoTipo };
 type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
 type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
 type UsuarioAdmin = {
@@ -158,6 +159,11 @@ interface ConfigViewsProps {
 }
 
 const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "READ_ONLY"];
+const RANGO_TIPO_LABEL: Record<RangoTipo, string> = {
+  SUBALTERNO: "Personal Subalterno",
+  OFICIAL: "Senores Oficiales",
+  SUBOFICIAL: "Sub Oficiales",
+};
 
 export function ConfigViews(props: ConfigViewsProps) {
   if (props.activeView === "grados") {
@@ -165,7 +171,8 @@ export function ConfigViews(props: ConfigViewsProps) {
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Grados registrados</h2>
-          <p className="mt-1 text-xs text-stone-600">Desde esta vista puedes editar o eliminar grados existentes. El acceso está en Configuración → Equipos, bloque de mantenimiento ocasional.</p>
+          <p className="mt-1 text-xs text-stone-600">Desde esta vista se muestran los grados de oficiales, suboficiales y subalternos con su orden actual.</p>
+          <p className="mt-1 text-xs text-stone-600">La edicion/eliminacion desde esta pantalla aplica solo para grados de personal subalterno.</p>
           {!props.isAdmin ? (
             <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
               Modo solo lectura: solo el administrador puede editar o eliminar grados.
@@ -173,68 +180,81 @@ export function ConfigViews(props: ConfigViewsProps) {
           ) : null}
 
           <div className="mt-3 space-y-2">
-            {props.rangos.map((rango) => (
-              <div key={rango.rangoId} className="rounded-lg bg-stone-100/80 p-2">
-                {props.editRangoId === rango.rangoId ? (
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-[140px_1fr_96px_auto]">
-                    <input
-                      value={props.editRangoAbreviacion}
-                      onChange={(event) => props.onEditRangoAbreviacionChange(event.target.value)}
-                      className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-                    />
-                    <input
-                      value={props.editRangoNombreCompleto}
-                      onChange={(event) => props.onEditRangoNombreCompletoChange(event.target.value)}
-                      className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-                    />
-                    <input
-                      type="number"
-                      min="1"
-                      value={props.editRangoOrden}
-                      onChange={(event) => props.onEditRangoOrdenChange(event.target.value)}
-                      className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-                    />
-                    {props.isAdmin ? (
-                      <div className="flex gap-2">
-                        <SmallActionButton text="Ok" tone="ok" onClick={() => props.onUpdateRango(rango.rangoId)} />
-                        <SmallActionButton
-                          text="Cancelar"
-                          tone="neutral"
-                          onClick={() => {
-                            props.onEditRangoIdChange(null);
-                            props.onEditRangoAbreviacionChange("");
-                            props.onEditRangoNombreCompletoChange("");
-                            props.onEditRangoOrdenChange("");
-                          }}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <span className="text-sm font-medium text-stone-800">{props.rangoLabel(rango)}</span>
-                      <p className="mt-1 text-xs text-stone-500">{`Orden ${rango.orden}`}</p>
+            {props.rangos.map((rango) => {
+              const canEditRango = rango.tipo === undefined || rango.tipo === "SUBALTERNO";
+
+              return (
+                <div key={rango.rangoId} className="rounded-lg bg-stone-100/80 p-2">
+                  {props.editRangoId === rango.rangoId && canEditRango ? (
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-[140px_1fr_96px_auto]">
+                      <input
+                        value={props.editRangoAbreviacion}
+                        onChange={(event) => props.onEditRangoAbreviacionChange(event.target.value)}
+                        className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+                      />
+                      <input
+                        value={props.editRangoNombreCompleto}
+                        onChange={(event) => props.onEditRangoNombreCompletoChange(event.target.value)}
+                        className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+                      />
+                      <input
+                        type="number"
+                        min="1"
+                        value={props.editRangoOrden}
+                        onChange={(event) => props.onEditRangoOrdenChange(event.target.value)}
+                        className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+                      />
+                      {props.isAdmin ? (
+                        <div className="flex gap-2">
+                          <SmallActionButton text="Ok" tone="ok" onClick={() => props.onUpdateRango(rango.rangoId)} />
+                          <SmallActionButton
+                            text="Cancelar"
+                            tone="neutral"
+                            onClick={() => {
+                              props.onEditRangoIdChange(null);
+                              props.onEditRangoAbreviacionChange("");
+                              props.onEditRangoNombreCompletoChange("");
+                              props.onEditRangoOrdenChange("");
+                            }}
+                          />
+                        </div>
+                      ) : null}
                     </div>
-                    {props.isAdmin ? (
-                      <div className="flex gap-2">
-                        <SmallActionButton
-                          text="Editar"
-                          tone="edit"
-                          onClick={() => {
-                            props.onEditRangoIdChange(rango.rangoId);
-                            props.onEditRangoAbreviacionChange(rango.abreviacion);
-                            props.onEditRangoNombreCompletoChange(rango.nombreCompleto);
-                            props.onEditRangoOrdenChange(String(rango.orden));
-                          }}
-                        />
-                        <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteRango(rango.rangoId)} />
+                  ) : (
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium text-stone-800">{props.rangoLabel(rango)}</span>
+                          {rango.tipo ? (
+                            <span className="inline-flex items-center rounded-full border border-stone-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                              {RANGO_TIPO_LABEL[rango.tipo]}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-xs text-stone-500">{`Orden ${rango.orden}`}</p>
                       </div>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            ))}
+                      {props.isAdmin && canEditRango ? (
+                        <div className="flex gap-2">
+                          <SmallActionButton
+                            text="Editar"
+                            tone="edit"
+                            onClick={() => {
+                              props.onEditRangoIdChange(rango.rangoId);
+                              props.onEditRangoAbreviacionChange(rango.abreviacion);
+                              props.onEditRangoNombreCompletoChange(rango.nombreCompleto);
+                              props.onEditRangoOrdenChange(String(rango.orden));
+                            }}
+                          />
+                          <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteRango(rango.rangoId)} />
+                        </div>
+                      ) : props.isAdmin ? (
+                        <span className="text-xs font-medium text-stone-500">Solo lectura</span>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </article>
       </section>

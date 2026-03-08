@@ -65,7 +65,6 @@ type HomeDialogsLayerProps = {
   maxFechaIngreso: string;
   registroSaving: boolean;
   onCloseRegistroEditor: () => void;
-  onAfectaStockChange: (value: boolean) => void;
   onRegistroDraftChange: (field: "fecha" | "comentarios", value: string) => void;
   onToggleRegistroDestinatario: (ci: string) => void;
   onSelectAllRegistroDestinatarios: () => void;
@@ -133,7 +132,6 @@ export function HomeDialogsLayer({
   maxFechaIngreso,
   registroSaving,
   onCloseRegistroEditor,
-  onAfectaStockChange,
   onRegistroDraftChange,
   onToggleRegistroDestinatario,
   onSelectAllRegistroDestinatarios,
@@ -221,7 +219,6 @@ export function HomeDialogsLayer({
         maxFechaIngreso={maxFechaIngreso}
         saving={registroSaving}
         onClose={onCloseRegistroEditor}
-        onAfectaStockChange={onAfectaStockChange}
         onDateChange={(value) => onRegistroDraftChange("fecha", value)}
         onComentariosChange={(value) => onRegistroDraftChange("comentarios", value)}
         onToggleDestinatario={onToggleRegistroDestinatario}

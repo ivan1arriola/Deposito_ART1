@@ -28,6 +28,8 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
   const [initCredentials, setInitCredentials] = useState<{ username: string; password: string } | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [rangos, setRangos] = useState<Rango[]>([]);
+  const [rangosOficiales, setRangosOficiales] = useState<Rango[]>([]);
+  const [rangosSuboficiales, setRangosSuboficiales] = useState<Rango[]>([]);
   const [baterias, setBaterias] = useState<Bateria[]>([]);
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [personal, setPersonal] = useState<Personal[]>([]);
@@ -57,6 +59,8 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
 
   const clearLoadedData = useCallback(() => {
     setRangos([]);
+    setRangosOficiales([]);
+    setRangosSuboficiales([]);
     setBaterias([]);
     setEquipos([]);
     setPersonal([]);
@@ -90,8 +94,19 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
 
         await api<DbStatus>("/api/db-status");
 
-        const [rangosData, bateriasData, equiposData, personalData, oficialesSuboficialesData, movimientosSummary] = await Promise.all([
+        const [
+          rangosData,
+          rangosOficialesData,
+          rangosSuboficialesData,
+          bateriasData,
+          equiposData,
+          personalData,
+          oficialesSuboficialesData,
+          movimientosSummary,
+        ] = await Promise.all([
           api<Rango[]>("/api/rangos"),
+          api<Rango[]>("/api/rangos?tipo=OFICIAL"),
+          api<Rango[]>("/api/rangos?tipo=SUBOFICIAL"),
           api<Bateria[]>("/api/baterias"),
           api<Equipo[]>("/api/items"),
           api<Personal[]>("/api/personal"),
@@ -100,6 +115,8 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
         ]);
 
         setRangos(rangosData);
+        setRangosOficiales(rangosOficialesData);
+        setRangosSuboficiales(rangosSuboficialesData);
         setBaterias(bateriasData);
         setEquipos(equiposData);
         setPersonal(personalData);
@@ -255,6 +272,8 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     currentUser,
     setCurrentUser,
     rangos,
+    rangosOficiales,
+    rangosSuboficiales,
     baterias,
     equipos,
     personal,
@@ -291,6 +310,8 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     loadStockData,
     clearLoadedData,
     setRangos,
+    setRangosOficiales,
+    setRangosSuboficiales,
     setBaterias,
     setEquipos,
     setPersonal,

@@ -13,6 +13,7 @@ import {
 } from "@/lib/date-helpers";
 import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
 import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
+import { getPrismaErrorCode, hasConstraintName } from "@/lib/prisma-errors";
 
 type PersonalUpdatePayload = {
   apellido1: string;
@@ -310,11 +311,16 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
 
     return NextResponse.json(serializePersonal(updated as PersonalWithRelations));
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error) {
-      const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
-      if (code === "P2003") return NextResponse.json({ error: "rangoId o bateriaId invalido." }, { status: 400 });
+    if (hasConstraintName(error, "personal_talla_valor_permitido_chk")) {
+      return NextResponse.json(
+        { error: "Talles invalidos. Parka/Camisaco/Pantalon: XS a XXXL; Kepi: 54 a 63; Calzado: 34 a 47." },
+        { status: 400 },
+      );
     }
+
+    const code = getPrismaErrorCode(error);
+    if (code === "P2025") return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
+    if (code === "P2003") return NextResponse.json({ error: "rangoId o bateriaId invalido." }, { status: 400 });
     return NextResponse.json({ error: "No se pudo actualizar el registro." }, { status: 500 });
   }
 }

@@ -15,6 +15,7 @@ import {
 import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
 import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
+import { getPrismaErrorCode, hasConstraintName } from "@/lib/prisma-errors";
 
 type PersonalPayload = {
   ci: string;
@@ -44,7 +45,6 @@ type MovimientoItemPayload = {
 
 type MovimientoPayload = {
   tipo: TipoMovimiento | string;
-  afectaStock?: boolean;
   fecha?: string;
   comentarios?: string;
   items: MovimientoItemPayload[];
@@ -52,7 +52,6 @@ type MovimientoPayload = {
 
 type ParsedMovimiento = {
   tipo: TipoMovimiento;
-  afectaStock: boolean;
   fecha: Date;
   fechaInput: string;
   comentarios: string | null;
@@ -119,7 +118,6 @@ function isValidPayload(body: unknown): body is PersonalPayload {
       if (!parseTipoMovimiento(candidateMovimiento.tipo)) return false;
       if (candidateMovimiento.fecha !== undefined && typeof candidateMovimiento.fecha !== "string") return false;
       if (candidateMovimiento.comentarios !== undefined && typeof candidateMovimiento.comentarios !== "string") return false;
-      if (candidateMovimiento.afectaStock !== undefined && typeof candidateMovimiento.afectaStock !== "boolean") return false;
       if (!Array.isArray(candidateMovimiento.items) || candidateMovimiento.items.length === 0) return false;
 
       const hasAtLeastOneItem = candidateMovimiento.items.some((item) => {
@@ -390,7 +388,6 @@ export async function POST(req: Request) {
 
     movimientosParsed.push({
       tipo,
-      afectaStock: movimientoRaw.afectaStock !== false,
       fecha,
       fechaInput,
       comentarios: movimientoRaw.comentarios?.trim() || null,
@@ -405,13 +402,13 @@ export async function POST(req: Request) {
   if (movimientoItemIds.size > 0) {
     const itemIds = Array.from(movimientoItemIds.values()).map((itemId) => BigInt(itemId));
     const itemsFound = await prisma.item.findMany({
-      where: { itemId: { in: itemIds }, activo: true },
+      where: { itemId: { in: itemIds } },
       select: { itemId: true, nombre: true },
     });
 
     if (itemsFound.length !== itemIds.length) {
       return NextResponse.json(
-        { error: "Uno o mas equipos de los movimientos iniciales no existen o estan inactivos." },
+        { error: "Uno o mas equipos de los movimientos iniciales no existen." },
         { status: 400 },
       );
     }
@@ -464,7 +461,7 @@ export async function POST(req: Request) {
             usuarioEntregaId: auth.user.usuarioId,
             fecha: movimiento.fecha,
             tipo: movimiento.tipo,
-            afectaStock: movimiento.afectaStock,
+            afectaStock: true,
             observaciones: movimiento.comentarios,
           },
           select: { movimientoId: true },
@@ -539,7 +536,7 @@ export async function POST(req: Request) {
             ci: created.ci,
             personal: buildPersonalAuditDetail(created as PersonalWithRelations),
             tipo: movimiento.tipo,
-            afectaStock: movimiento.afectaStock,
+            afectaStock: true,
             fechaMovimiento: formatDateOnlyForDisplay(movimiento.fechaInput),
             comentarios: movimiento.comentarios,
             totalEquipos: itemsDetallados.length,
@@ -560,12 +557,20 @@ export async function POST(req: Request) {
       { status: 201 },
     );
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error) {
-      const code = (error as { code: string }).code;
-      if (code === "P2002") return NextResponse.json({ error: "La cédula ya existe." }, { status: 409 });
-      if (code === "P2003") {
-        return NextResponse.json({ error: "rangoId (grado del personal) o bateriaId inválido." }, { status: 400 });
-      }
+    if (hasConstraintName(error, "personal_talla_valor_permitido_chk")) {
+      return NextResponse.json(
+        { error: "Talles invalidos. Parka/Camisaco/Pantalon: XS a XXXL; Kepi: 54 a 63; Calzado: 34 a 47." },
+        { status: 400 },
+      );
+    }
+    if (hasConstraintName(error, "personal_ci_uruguaya_valida_chk")) {
+      return NextResponse.json({ error: "La cedula ingresada no es valida." }, { status: 400 });
+    }
+
+    const code = getPrismaErrorCode(error);
+    if (code === "P2002") return NextResponse.json({ error: "La cedula ya existe." }, { status: 409 });
+    if (code === "P2003") {
+      return NextResponse.json({ error: "rangoId (grado del personal) o bateriaId invalido." }, { status: 400 });
     }
 
     return NextResponse.json({ error: "No se pudo crear el registro." }, { status: 500 });

@@ -37,7 +37,7 @@ type PersonalCreateViewProps = {
   onSubmitMovimientoDraft: () => void;
   onEditMovimiento: (index: number) => void;
   onRemoveMovimiento: (index: number) => void;
-  onMovimientoDraftChange: (field: keyof Omit<PersonalAltaMovimientoForm, "items">, value: string | boolean) => void;
+  onMovimientoDraftChange: (field: keyof Omit<PersonalAltaMovimientoForm, "items">, value: string) => void;
   onMovimientoDraftItemChange: (itemIndex: number, field: "itemId" | "cantidad", value: string) => void;
   onAddMovimientoDraftItem: () => void;
   onRemoveMovimientoDraftItem: (itemIndex: number) => void;
@@ -313,7 +313,7 @@ export function PersonalCreateView({
                           <div className="space-y-1">
                             <p className="text-xs font-semibold text-stone-800">{`Movimiento #${movimientoIndex + 1}`}</p>
                             <p className="text-xs text-stone-600">
-                              {`${movimiento.tipo === "ENTREGA" ? "Entrega" : "Devolución"} | Fecha: ${movimiento.fecha || "Sin fecha"} | ${movimiento.afectaStock ? "Afecta stock" : "No afecta stock"}`}
+                              {`${movimiento.tipo === "ENTREGA" ? "Entrega" : "Devolución"} | Fecha: ${movimiento.fecha || "Sin fecha"}`}
                             </p>
                             {movimiento.comentarios.trim() !== "" ? <p className="text-xs text-stone-600">{movimiento.comentarios}</p> : null}
                           </div>
@@ -453,16 +453,6 @@ export function PersonalCreateView({
                 />
               </label>
             </div>
-
-            <label className="inline-flex items-center gap-2 text-sm text-stone-700">
-              <input
-                type="checkbox"
-                checked={movimientoDraft.afectaStock}
-                onChange={(event) => onMovimientoDraftChange("afectaStock", event.target.checked)}
-                className="h-4 w-4 rounded border-stone-300"
-              />
-              Afecta stock
-            </label>
 
             <section className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-stone-600">Equipos</p>

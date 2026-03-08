@@ -3,6 +3,7 @@
  */
 
 import type { RegistroTipo } from "./views";
+import type { TipoOficialSuboficial } from "./entities";
 
 export type StockOperacionTipo = "INGRESO" | "EGRESO";
 export type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL_SUBOFICIAL";
@@ -26,6 +27,22 @@ export type PersonalForm = {
   CALZADO: string;
 };
 
+export type OficialSuboficialForm = {
+  ci: string;
+  tipo: TipoOficialSuboficial;
+  apellido1: string;
+  apellido2: string;
+  nombre1: string;
+  nombre2: string;
+  telefonoContacto: string;
+  rangoId: string;
+  PARKA: string;
+  CAMISACO: string;
+  PANTALON: string;
+  KEPI: string;
+  CALZADO: string;
+};
+
 export type PersonalAltaMovimientoItemForm = {
   itemId: string;
   cantidad: string;
@@ -33,7 +50,6 @@ export type PersonalAltaMovimientoItemForm = {
 
 export type PersonalAltaMovimientoForm = {
   tipo: RegistroTipo;
-  afectaStock: boolean;
   fecha: string;
   comentarios: string;
   items: PersonalAltaMovimientoItemForm[];
@@ -60,7 +76,6 @@ export type RegistroDraft = {
   ci: string;
   ciList: string[];
   tipo: RegistroTipo;
-  afectaStock: boolean;
   fecha: string;
   comentarios: string;
   items: RegistroDraftEquipo[];
@@ -113,6 +128,22 @@ export const EMPTY_PERSONAL_FORM: PersonalForm = {
   CALZADO: "",
 };
 
+export const EMPTY_OFICIAL_SUBOFICIAL_FORM: OficialSuboficialForm = {
+  ci: "",
+  tipo: "OFICIAL",
+  apellido1: "",
+  apellido2: "",
+  nombre1: "",
+  nombre2: "",
+  telefonoContacto: "",
+  rangoId: "",
+  PARKA: "",
+  CAMISACO: "",
+  PANTALON: "",
+  KEPI: "",
+  CALZADO: "",
+};
+
 export const EMPTY_EQUIPO_FORM: EquipoForm = {
   nombre: "",
   activo: true,
@@ -138,7 +169,6 @@ export const EMPTY_PRESTAMO_DRAFT: PrestamoDraft = {
 
 export const EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM: PersonalAltaMovimientoForm = {
   tipo: "ENTREGA",
-  afectaStock: true,
   fecha: "",
   comentarios: "",
   items: [{ itemId: "", cantidad: "1" }],

@@ -31,7 +31,10 @@ export type StockResumen = {
   nombre: string;
   ordenPdf: number;
   apareceEnHoja: boolean;
+  stockSubalternos: number;
+  stockPrestamo: number;
   stockDeposito: number;
+  stockUnidad: number;
   stockPersonal: number;
   stockTotal: number;
   // Alias legado para compatibilidad con código existente.

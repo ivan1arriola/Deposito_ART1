@@ -23,7 +23,6 @@ type MovimientoPayload = {
   ciList?: string[];
   fecha?: string;
   tipo: TipoMovimiento | string;
-  afectaStock?: boolean;
   comentarios?: string;
   items: MovimientoItemPayload[];
 };
@@ -194,7 +193,7 @@ export async function GET(req: Request) {
       ci: movimiento.personalCi,
       fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
       tipo: movimiento.tipo,
-      afectaStock: movimiento.afectaStock,
+      afectaStock: true,
       comentarios: movimiento.observaciones,
       createdAt: formatDateTimeForDisplay(movimiento.createdAt),
       items: movimiento.items.map((detail) => ({
@@ -271,7 +270,7 @@ export async function POST(req: Request) {
       },
     }),
     prisma.item.findMany({
-      where: { itemId: { in: itemIds }, activo: true },
+      where: { itemId: { in: itemIds } },
       select: { itemId: true, nombre: true },
     }),
   ]);
@@ -284,11 +283,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `No existe personal para las CIs: ${preview}${suffix}` }, { status: 404 });
   }
   if (itemsFound.length !== itemIds.length) {
-    return NextResponse.json({ error: "Uno o mas equipos no existen o estan inactivos." }, { status: 400 });
+    return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
 
   const comentarios = body.comentarios?.trim() || null;
-  const afectaStock = body.afectaStock !== false;
+  const afectaStock = true;
   const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
   const itemsDetallados = Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
     itemId,

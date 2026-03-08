@@ -3,7 +3,7 @@
  */
 
 import type { Personal, Talla } from "@/types/entities";
-import type { PersonalForm } from "@/types/forms";
+import type { OficialSuboficialForm, PersonalForm } from "@/types/forms";
 import { formatDateOnlyForDisplay } from "./date-helpers";
 import { TALLA_KEYS, type TallaKey, normalizeTallaValue } from "./tallas";
 
@@ -43,17 +43,23 @@ export function toFormTallaValue(key: TallaKey, value: string): string {
   return normalizeTallaValue(key, value) ?? "";
 }
 
-/**
- * Convierte un formulario de personal a payload para la API
- */
-export function personalPayload(form: PersonalForm, includeCi: boolean) {
-  const tallas = TALLA_KEYS.reduce(
+type TallasFormValues = Record<TallaKey, string>;
+
+function tallasPayloadFromForm(form: TallasFormValues) {
+  return TALLA_KEYS.reduce(
     (acc, key) => {
       acc[key] = normalizeTallaValue(key, form[key]) ?? "";
       return acc;
     },
     {} as Record<TallaKey, string>,
   );
+}
+
+/**
+ * Convierte un formulario de personal a payload para la API
+ */
+export function personalPayload(form: PersonalForm, includeCi: boolean) {
+  const tallas = tallasPayloadFromForm(form);
 
   return {
     ...(includeCi ? { ci: form.ci.trim() } : {}),
@@ -67,6 +73,22 @@ export function personalPayload(form: PersonalForm, includeCi: boolean) {
     fechaIngresoOriginal: form.esReingreso ? form.fechaIngresoOriginal || undefined : undefined,
     rangoId: Number(form.rangoId),
     bateriaId: form.bateriaId ? Number(form.bateriaId) : undefined,
+    tallas,
+  };
+}
+
+export function oficialSuboficialPayload(form: OficialSuboficialForm, includeCi: boolean) {
+  const tallas = tallasPayloadFromForm(form);
+
+  return {
+    ...(includeCi ? { ci: form.ci.trim() } : {}),
+    tipo: form.tipo,
+    apellido1: form.apellido1.trim(),
+    apellido2: form.apellido2.trim(),
+    nombre1: form.nombre1.trim(),
+    nombre2: form.nombre2.trim(),
+    telefonoContacto: form.telefonoContacto.trim(),
+    rangoId: Number(form.rangoId),
     tallas,
   };
 }

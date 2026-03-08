@@ -113,7 +113,7 @@ export function RegistroViewerModal({
                   <p className="mt-1 text-xs text-stone-500">Sin referencia de auditoría para este movimiento.</p>
                 )}
                 {registro.comentarios ? <p className="mt-1 text-xs text-stone-700">{registro.comentarios}</p> : null}
-                <p className="mt-1 text-xs text-stone-600">{`Afecta stock: ${registro.afectaStock ? "Si" : "No"}`}</p>
+                <p className="mt-1 text-xs text-stone-600">Afecta stock: Si</p>
                 <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
                   {registro.items.map((item) => (
                     <p key={`${registro.registroId}-${item.itemId}`} className="text-xs text-stone-700">

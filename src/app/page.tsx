@@ -15,10 +15,10 @@ import {
   TALLA_KEYS,
   TALLA_OPTIONS,
   type TallaKey,
+  isAllowedTallaValue,
   normalizeTallaValue,
 } from "@/lib/tallas";
 import { DashboardHero } from "./components/home/DashboardHero";
-import { FormulariosPlaceholder } from "./components/home/FormulariosPlaceholder";
 import { MainNavigation } from "./components/home/MainNavigation";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
 import { MergeEquipoModal } from "./components/modals/MergeEquipoModal";
@@ -29,7 +29,9 @@ import { EquipoResumenView } from "./components/views/EquipoResumenView";
 import { EquipoCreateView } from "./components/views/EquipoCreateView";
 import { HojaDeEntregaView } from "./components/views/HojaDeEntregaView";
 import { HojaMatrixView } from "./components/views/HojaMatrixView";
+import { FormulariosPrestamosView } from "./components/views/FormulariosPrestamosView";
 import { PersonalCreateView } from "./components/views/PersonalCreateView";
+import { OficialSuboficialCreateView } from "./components/views/OficialSuboficialCreateView";
 import { RangoCreateView } from "./components/views/RangoCreateView";
 import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
@@ -49,6 +51,7 @@ import type {
 } from "@/types/entities";
 import type {
   PersonalForm,
+  OficialSuboficialForm,
   PersonalAltaMovimientoForm,
   EquipoForm,
   PrestamoDraft,
@@ -67,6 +70,7 @@ import type {
 import { ROLE_OPTIONS } from "@/types/entities";
 import {
   EMPTY_PERSONAL_FORM,
+  EMPTY_OFICIAL_SUBOFICIAL_FORM,
   EMPTY_EQUIPO_FORM,
   EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM,
   EMPTY_STOCK_OPERACION_DRAFT,
@@ -79,6 +83,7 @@ import { api } from "@/lib/api";
 import { apellidosLabel, nombresLabel, roleDescription, roleLabel, roleScope, rangoLabel } from "@/lib/formatters";
 import {
   getTodayDateInput,
+  oficialSuboficialPayload,
   personalPayload,
   toEditablePersonal,
 } from "@/lib/form-mappers";
@@ -109,6 +114,7 @@ import {
 } from "@/lib/handlers-catalog";
 import {
   createPersonalHandler,
+  createOficialSuboficialHandler,
   updatePersonalHandler,
   deletePersonalHandler,
   createPersonalObservacionHandler,
@@ -146,6 +152,8 @@ export default function Home() {
     currentUser,
     setCurrentUser,
     rangos,
+    rangosOficiales,
+    rangosSuboficiales,
     baterias,
     equipos,
     personal,
@@ -226,6 +234,7 @@ export default function Home() {
   const [mergeEquipoSaving, setMergeEquipoSaving] = useState(false);
 
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
+  const [newOficialSuboficial, setNewOficialSuboficial] = useState<OficialSuboficialForm>(EMPTY_OFICIAL_SUBOFICIAL_FORM);
   const [newPersonalMovimientos, setNewPersonalMovimientos] = useState<PersonalAltaMovimientoForm[]>([]);
   const [newPersonalMovimientoDraft, setNewPersonalMovimientoDraft] = useState<PersonalAltaMovimientoForm | null>(null);
   const [newPersonalMovimientoEditIndex, setNewPersonalMovimientoEditIndex] = useState<number | null>(null);
@@ -255,6 +264,7 @@ export default function Home() {
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const [confirmDialogBusy, setConfirmDialogBusy] = useState(false);
   const [creatingPersonal, setCreatingPersonal] = useState(false);
+  const [creatingOficialSuboficial, setCreatingOficialSuboficial] = useState(false);
   const [auditFilter, setAuditFilter] = useState<AuditFilter>("TODOS");
   const [personalPage, setPersonalPage] = useState(1);
   const [personalPageSize, setPersonalPageSize] = useState(25);
@@ -267,6 +277,11 @@ export default function Home() {
   const canManageOwnAccount = canWrite;
   const canDelete = canWrite;
   const canRegisterPersonal = canWrite && rangos.length > 0;
+  const rangosOficialSuboficialDisponibles = useMemo(
+    () => (newOficialSuboficial.tipo === "OFICIAL" ? rangosOficiales : rangosSuboficiales),
+    [newOficialSuboficial.tipo, rangosOficiales, rangosSuboficiales],
+  );
+  const canRegisterOficialSuboficial = canWrite && rangosOficialSuboficialDisponibles.length > 0;
   const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "equipos";
   const inAdminConfigView = activeView === "firmas" || activeView === "usuarios" || activeView === "auditoria";
   const normalizedNewCi = normalizeCi(newPersonal.ci.trim());
@@ -306,6 +321,61 @@ export default function Home() {
     newPersonalFechaIngresoOriginalLooksValid &&
     newPersonalReentryDatesLookValid &&
     !creatingPersonal;
+
+  const normalizedNewOficialSuboficialCi = normalizeCi(newOficialSuboficial.ci.trim());
+  const duplicateOficialSuboficialLabel = useMemo(() => {
+    if (normalizedNewOficialSuboficialCi === "") return null;
+
+    const duplicateSubalterno = personal.find((persona) => normalizeCi(persona.ci) === normalizedNewOficialSuboficialCi);
+    if (duplicateSubalterno) {
+      return `${apellidosLabel(duplicateSubalterno)}, ${nombresLabel(duplicateSubalterno)}`;
+    }
+
+    const duplicateOficialSuboficial = oficialesSuboficiales.find(
+      (registro) => normalizeCi(registro.ci) === normalizedNewOficialSuboficialCi,
+    );
+    if (duplicateOficialSuboficial) {
+      return `${duplicateOficialSuboficial.apellido}, ${duplicateOficialSuboficial.nombre}`;
+    }
+
+    return null;
+  }, [normalizedNewOficialSuboficialCi, personal, oficialesSuboficiales]);
+  const oficialSuboficialCiAlreadyExists = duplicateOficialSuboficialLabel !== null;
+  const oficialSuboficialCiLooksValid =
+    newOficialSuboficial.ci.trim() === "" || isValidUruguayanCi(newOficialSuboficial.ci);
+  const newOficialSuboficialPhoneLooksValid =
+    newOficialSuboficial.telefonoContacto.trim() === "" ||
+    isValidUruguayanMobileNumber(newOficialSuboficial.telefonoContacto);
+  const oficialSuboficialRequiredFields = [
+    newOficialSuboficial.ci.trim() !== "" &&
+      isValidUruguayanCi(newOficialSuboficial.ci) &&
+      !oficialSuboficialCiAlreadyExists,
+    newOficialSuboficial.apellido1.trim() !== "",
+    newOficialSuboficial.nombre1.trim() !== "",
+    Number(newOficialSuboficial.rangoId) > 0,
+  ];
+  const oficialSuboficialRequiredCompleted = oficialSuboficialRequiredFields.filter(Boolean).length;
+  const canSubmitOficialSuboficial =
+    canRegisterOficialSuboficial &&
+    oficialSuboficialRequiredCompleted === oficialSuboficialRequiredFields.length &&
+    newOficialSuboficialPhoneLooksValid &&
+    !creatingOficialSuboficial;
+
+  const rangosConfigView = useMemo(
+    () =>
+      [
+        ...rangosOficiales.map((rango) => ({ ...rango, tipo: "OFICIAL" as const })),
+        ...rangosSuboficiales.map((rango) => ({ ...rango, tipo: "SUBOFICIAL" as const })),
+        ...rangos.map((rango) => ({ ...rango, tipo: "SUBALTERNO" as const })),
+      ].sort((a, b) => {
+        const tipoOrder = { OFICIAL: 0, SUBOFICIAL: 1, SUBALTERNO: 2 } as const;
+        if (tipoOrder[a.tipo] !== tipoOrder[b.tipo]) return tipoOrder[a.tipo] - tipoOrder[b.tipo];
+        if (a.orden !== b.orden) return a.orden - b.orden;
+        return a.rangoId - b.rangoId;
+      }),
+    [rangos, rangosOficiales, rangosSuboficiales],
+  );
+
   const maxFechaIngreso = getTodayDateInput();
   const equiposOrdenados = useMemo(
     () => [...equipos].sort((a, b) => a.ordenPdf - b.ordenPdf || a.nombre.localeCompare(b.nombre, "es")),
@@ -323,20 +393,30 @@ export default function Home() {
         for (const talla of persona.tallas) {
           if (talla.tallaTipo.nombre !== key) continue;
           const normalized = normalizeTallaValue(key, talla.tallaValor);
-          if (normalized) values.add(normalized);
+          if (normalized && isAllowedTallaValue(key, normalized)) values.add(normalized);
+        }
+      }
+
+      for (const registro of oficialesSuboficiales) {
+        for (const talla of registro.tallas) {
+          if (talla.tallaTipo.nombre !== key) continue;
+          const normalized = normalizeTallaValue(key, talla.tallaValor);
+          if (normalized && isAllowedTallaValue(key, normalized)) values.add(normalized);
         }
       }
 
       const newValue = normalizeTallaValue(key, newPersonal[key]);
+      const newOficialSuboficialValue = normalizeTallaValue(key, newOficialSuboficial[key]);
       const editValue = normalizeTallaValue(key, editPersonal[key]);
-      if (newValue) values.add(newValue);
-      if (editValue) values.add(editValue);
+      if (newValue && isAllowedTallaValue(key, newValue)) values.add(newValue);
+      if (newOficialSuboficialValue && isAllowedTallaValue(key, newOficialSuboficialValue)) values.add(newOficialSuboficialValue);
+      if (editValue && isAllowedTallaValue(key, editValue)) values.add(editValue);
 
       dynamic[key] = Array.from(values).sort((a, b) => compareTallaOptions(key, a, b));
     }
 
     return dynamic;
-  }, [personal, newPersonal, editPersonal]);
+  }, [personal, oficialesSuboficiales, newPersonal, newOficialSuboficial, editPersonal]);
   const auditoriaFiltrada = useMemo(() => {
     if (auditFilter === "MOVIMIENTOS") {
       return auditoria.filter((log) => log.entidad === "REGISTRO");
@@ -446,7 +526,7 @@ export default function Home() {
   }, [inAdminConfigView, isAdmin]);
 
   useEffect(() => {
-    if (activeView === "personal_nuevo" && !canWrite) {
+    if ((activeView === "personal_nuevo" || activeView === "oficial_suboficial_nuevo") && !canWrite) {
       setActiveView("personal");
     }
   }, [activeView, canWrite]);
@@ -621,7 +701,7 @@ export default function Home() {
   }, [activeView, equipoResumenData, equipoResumenLoading, loadEquipoResumen]);
 
   useEffect(() => {
-    if (!["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos"].includes(activeView)) return;
+    if (!["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos", "formularios"].includes(activeView)) return;
     if (stockLoading) return;
     if (stockData) return;
     void loadStockData();
@@ -1181,7 +1261,7 @@ export default function Home() {
   }, []);
 
   const updateNewPersonalMovimientoDraft = useCallback(
-    (field: keyof Omit<PersonalAltaMovimientoForm, "items">, value: string | boolean) => {
+    (field: keyof Omit<PersonalAltaMovimientoForm, "items">, value: string) => {
       setNewPersonalMovimientoDraft((prev) => (prev ? ({ ...prev, [field]: value } as PersonalAltaMovimientoForm) : prev));
     },
     [],
@@ -1317,7 +1397,6 @@ export default function Home() {
 
       const movimientosPayload = [] as Array<{
         tipo: "ENTREGA" | "DEVOLUCION";
-        afectaStock: boolean;
         fecha: string;
         comentarios?: string;
         items: Array<{ itemId: string; cantidad: number }>;
@@ -1350,7 +1429,6 @@ export default function Home() {
 
         movimientosPayload.push({
           tipo: movimiento.tipo,
-          afectaStock: movimiento.afectaStock,
           fecha: movimiento.fecha,
           comentarios: movimiento.comentarios.trim() || undefined,
           items: parsedItems,
@@ -1395,6 +1473,75 @@ export default function Home() {
       newPersonal,
       newPersonalPhoneLooksValid,
       newPersonalMovimientos,
+      loadData,
+    ],
+  );
+
+  const updateNewOficialSuboficialField = useCallback((field: keyof OficialSuboficialForm, value: string) => {
+    setNewOficialSuboficial((prev) => {
+      if (field === "tipo") {
+        return {
+          ...prev,
+          tipo: value === "SUBOFICIAL" ? "SUBOFICIAL" : "OFICIAL",
+          rangoId: "",
+        };
+      }
+      return { ...prev, [field]: value } as OficialSuboficialForm;
+    });
+  }, []);
+
+  const createOficialSuboficial = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (creatingOficialSuboficial) return;
+      if (!canRegisterOficialSuboficial) {
+        setStatus("No se puede registrar personal oficial/suboficial sin grados disponibles para el tipo elegido.");
+        return;
+      }
+      if (oficialSuboficialCiAlreadyExists) {
+        setStatus("La cedula ya existe.");
+        return;
+      }
+      if (!isValidUruguayanCi(newOficialSuboficial.ci)) {
+        setStatus("CI uruguaya invalida. Revisa digito verificador.");
+        return;
+      }
+      if (!newOficialSuboficialPhoneLooksValid) {
+        setStatus("El celular de contacto debe tener formato uruguayo valido.");
+        return;
+      }
+      if (Number(newOficialSuboficial.rangoId) <= 0) {
+        setStatus("Debes seleccionar un grado.");
+        return;
+      }
+
+      setCreatingOficialSuboficial(true);
+      try {
+        await createOficialSuboficialHandler(oficialSuboficialPayload(newOficialSuboficial, true), {
+          onSuccess: async () => {
+            const nombreCompleto = `${newOficialSuboficial.apellido1.trim()}, ${newOficialSuboficial.nombre1.trim()}`
+              .replace(/\s+/g, " ")
+              .trim();
+            setNewOficialSuboficial(EMPTY_OFICIAL_SUBOFICIAL_FORM);
+            setActiveView("ss_oo_sub_of");
+            toast.success("Personal oficial/suboficial registrado correctamente", {
+              description: `${nombreCompleto} ya figura en el listado de SS.OO y Suboficiales.`,
+              duration: 5000,
+            });
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } finally {
+        setCreatingOficialSuboficial(false);
+      }
+    },
+    [
+      creatingOficialSuboficial,
+      canRegisterOficialSuboficial,
+      oficialSuboficialCiAlreadyExists,
+      newOficialSuboficial,
+      newOficialSuboficialPhoneLooksValid,
       loadData,
     ],
   );
@@ -1553,7 +1700,6 @@ export default function Home() {
       ci,
       ciList: [ci],
       tipo,
-      afectaStock: true,
       fecha: getTodayDateInput(),
       comentarios: "",
       items: [{ itemId: "", cantidad: "1" }],
@@ -1575,7 +1721,6 @@ export default function Home() {
       ci: "",
       ciList: [],
       tipo,
-      afectaStock: true,
       fecha: getTodayDateInput(),
       comentarios: "",
       items: [{ itemId: "", cantidad: "1" }],
@@ -1677,7 +1822,6 @@ export default function Home() {
       ci: registro.ci,
       ciList: [registro.ci],
       tipo: registro.tipo,
-      afectaStock: registro.afectaStock,
       fecha: formatDateOnlyForDisplay(registro.fecha),
       comentarios: registro.comentarios ?? "",
       items:
@@ -1798,7 +1942,6 @@ export default function Home() {
           ci: targetCis[0],
           ciList: targetCis,
           tipo: registroDraft.tipo,
-          afectaStock: registroDraft.afectaStock,
           fecha: registroDraft.fecha,
           comentarios: registroDraft.comentarios.trim() || undefined,
           items: payloadEquipos,
@@ -2839,6 +2982,7 @@ export default function Home() {
       equipoResumenLoading ||
       stockLoading ||
       creatingPersonal ||
+      creatingOficialSuboficial ||
       mergeEquipoSaving ||
       stockSaving ||
       prestamoSaving ||
@@ -2975,7 +3119,7 @@ export default function Home() {
           activeView={activeView as "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria"}
           isAdmin={isAdmin}
           canWrite={canWrite}
-          rangos={rangos}
+          rangos={rangosConfigView}
           newRangoAbreviacion={newRangoAbreviacion}
           newRangoNombreCompleto={newRangoNombreCompleto}
           newRangoOrden={newRangoOrden}
@@ -3117,6 +3261,27 @@ export default function Home() {
         />
       ) : null}
 
+      {activeView === "oficial_suboficial_nuevo" ? (
+        <OficialSuboficialCreateView
+          ciPlaceholder={ciPlaceholder}
+          form={newOficialSuboficial}
+          duplicateLabel={duplicateOficialSuboficialLabel}
+          ciHasError={!oficialSuboficialCiLooksValid || oficialSuboficialCiAlreadyExists}
+          ciLooksValid={oficialSuboficialCiLooksValid}
+          ciAlreadyExists={oficialSuboficialCiAlreadyExists}
+          canRegister={canRegisterOficialSuboficial}
+          requiredCompleted={oficialSuboficialRequiredCompleted}
+          requiredFields={oficialSuboficialRequiredFields}
+          canSubmit={canSubmitOficialSuboficial}
+          saving={creatingOficialSuboficial}
+          rangosDisponibles={rangosOficialSuboficialDisponibles}
+          tallaOptionsByKey={tallaOptionsByKey}
+          onBack={() => setActiveView("ss_oo_sub_of")}
+          onSubmit={(event) => void createOficialSuboficial(event)}
+          onChange={updateNewOficialSuboficialField}
+        />
+      ) : null}
+
       {activeView === "equipo_nuevo" ? (
         <EquipoCreateView
           form={newEquipo}
@@ -3254,6 +3419,8 @@ export default function Home() {
         <OficialesSuboficialesView
           oficialesSuboficiales={oficialesSuboficiales}
           loading={loading}
+          canWrite={canWrite}
+          onOpenCreate={() => setActiveView("oficial_suboficial_nuevo")}
           onReload={() => loadData(true)}
         />
       ) : null}
@@ -3326,7 +3493,35 @@ export default function Home() {
         />
       ) : null}
 
-      {activeView === "formularios" ? <FormulariosPlaceholder /> : null}
+      {activeView === "formularios" ? (
+        <FormulariosPrestamosView
+          data={stockData}
+          loading={stockLoading}
+          error={stockError}
+          canWrite={canWrite}
+          equipos={equiposOrdenados}
+          personal={personal}
+          oficialesSuboficiales={oficialesSuboficiales}
+          prestamoDraft={prestamoDraft}
+          prestamoSaving={prestamoSaving}
+          returningPrestamoId={returningPrestamoId}
+          maxDate={maxFechaIngreso}
+          onPrestamoDraftChange={(field, value) =>
+            setPrestamoDraft((prev) => {
+              if (field === "destinatarioTipo") {
+                return { ...prev, destinatarioTipo: value as PrestamoDraft["destinatarioTipo"], destinatarioCi: "" };
+              }
+              return { ...prev, [field]: value };
+            })
+          }
+          onPrestamoItemChange={updatePrestamoDraftItem}
+          onAddPrestamoItem={addPrestamoDraftItem}
+          onRemovePrestamoItem={removePrestamoDraftItem}
+          onSubmitPrestamo={() => void savePrestamo()}
+          onReturnPrestamo={(prestamoId, fechaDevolucion) => void returnPrestamo(prestamoId, fechaDevolucion)}
+          onReload={() => void loadStockData()}
+        />
+      ) : null}
 
       {activeView === "tallas_resumen" ? (
         <TallasResumenView personal={personal} baterias={baterias} />
@@ -3397,7 +3592,6 @@ export default function Home() {
         maxFechaIngreso={maxFechaIngreso}
         registroSaving={registroSaving}
         onCloseRegistroEditor={() => setRegistroDraft(null)}
-        onAfectaStockChange={(value) => setRegistroDraft((prev) => (prev ? { ...prev, afectaStock: value } : prev))}
         onRegistroDraftChange={(field, value) => setRegistroDraft((prev) => (prev ? { ...prev, [field]: value } : prev))}
         onToggleRegistroDestinatario={toggleRegistroDestinatario}
         onSelectAllRegistroDestinatarios={selectAllRegistroDestinatarios}

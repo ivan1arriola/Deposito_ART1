@@ -136,7 +136,7 @@ export async function POST(request: Request) {
   const itemIds = Array.from(dedupedItems.keys()).map((itemId) => BigInt(itemId));
   const [itemsFound, destinatarioPersonal] = await Promise.all([
     prisma.item.findMany({
-      where: { itemId: { in: itemIds }, activo: true },
+      where: { itemId: { in: itemIds } },
       select: { itemId: true, nombre: true },
     }),
     prisma.personal.findFirst({
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
   ]);
 
   if (itemsFound.length !== itemIds.length) {
-    return NextResponse.json({ error: "Uno o mas equipos no existen o estan inactivos." }, { status: 400 });
+    return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
 
   if (!destinatarioPersonal) {

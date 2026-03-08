@@ -8,6 +8,7 @@ export type MainView =
   | "personal"
   | "ss_oo_sub_of"
   | "personal_nuevo"
+  | "oficial_suboficial_nuevo"
   | "equipo_nuevo"
   | "bateria_nueva"
   | "grado_nuevo"
@@ -76,8 +77,13 @@ export type StockResumenRow = {
   nombre: string;
   ordenPdf: number;
   apareceEnHoja: boolean;
+  stockSubalternos: number;
+  stockPrestamo: number;
   stockDeposito: number;
+  stockUnidad: number;
+  // Alias legado para compatibilidad con pantallas existentes.
   stockPersonal: number;
+  // Alias legado para compatibilidad con pantallas existentes.
   stockTotal: number;
   // Alias legado para compatibilidad con pantallas existentes.
   stockActual: number;

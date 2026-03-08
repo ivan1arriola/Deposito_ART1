@@ -10,6 +10,8 @@ import type { OficialSuboficial, TipoOficialSuboficial } from "@/types/entities"
 type OficialesSuboficialesViewProps = {
   oficialesSuboficiales: OficialSuboficial[];
   loading: boolean;
+  canWrite: boolean;
+  onOpenCreate: () => void;
   onReload: () => Promise<void>;
 };
 
@@ -21,6 +23,8 @@ const TYPE_LABEL: Record<TipoOficialSuboficial, string> = {
 export function OficialesSuboficialesView({
   oficialesSuboficiales,
   loading,
+  canWrite,
+  onOpenCreate,
   onReload,
 }: OficialesSuboficialesViewProps) {
   const grouped = useMemo(
@@ -41,23 +45,34 @@ export function OficialesSuboficialesView({
               Listado de Oficiales y Sub Oficiales con su grado y talles.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void onReload()}
-            disabled={loading}
-            className="rounded bg-stone-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
-          >
-            {loading ? (
-              <LoadingInline
-                label="Actualizando..."
-                size="xs"
-                tone="light"
-                textClassName="text-xs font-semibold text-white"
-              />
-            ) : (
-              "Actualizar listado"
-            )}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {canWrite ? (
+              <button
+                type="button"
+                onClick={onOpenCreate}
+                className="rounded bg-lime-500 px-3 py-2 text-xs font-semibold text-stone-900 transition hover:bg-lime-400"
+              >
+                Registrar SS.OO/Sub Of.
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void onReload()}
+              disabled={loading}
+              className="rounded bg-stone-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+            >
+              {loading ? (
+                <LoadingInline
+                  label="Actualizando..."
+                  size="xs"
+                  tone="light"
+                  textClassName="text-xs font-semibold text-white"
+                />
+              ) : (
+                "Actualizar listado"
+              )}
+            </button>
+          </div>
         </div>
       </article>
 

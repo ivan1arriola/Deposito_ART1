@@ -16,7 +16,6 @@ type RegistroEditorModalProps = {
   maxFechaIngreso: string;
   saving: boolean;
   onClose: () => void;
-  onAfectaStockChange: (value: boolean) => void;
   onDateChange: (value: string) => void;
   onComentariosChange: (value: string) => void;
   onToggleDestinatario: (ci: string) => void;
@@ -36,7 +35,6 @@ export function RegistroEditorModal({
   maxFechaIngreso,
   saving,
   onClose,
-  onAfectaStockChange,
   onDateChange,
   onComentariosChange,
   onToggleDestinatario,
@@ -193,16 +191,6 @@ export function RegistroEditorModal({
           </div>
         </div>
       ) : null}
-
-      <label className="mt-3 flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700">
-        <input
-          type="checkbox"
-          checked={draft.afectaStock}
-          disabled={saving}
-          onChange={(event) => onAfectaStockChange(event.target.checked)}
-        />
-        <span className="font-medium">Afecta stock</span>
-      </label>
 
       <div className="mt-3 space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos del movimiento</p>
