@@ -5,7 +5,7 @@ import type { MainView } from "@/types/views";
 
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">;
 type SummaryView = Extract<MainView, "equipo_resumen" | "tallas_resumen">;
-type CreateView = Extract<MainView, "personal_nuevo" | "oficial_suboficial_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo">;
+type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo">;
 type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos">;
 
 type MainNavigationProps = {
@@ -114,9 +114,19 @@ const createViews: Array<{ view: CreateView; label: string; shortLabel: string; 
     ),
   },
   {
-    view: "oficial_suboficial_nuevo",
-    label: "Alta SS.OO y Sub Of.",
-    shortLabel: "SS.OO/Sub Of.",
+    view: "oficial_nuevo",
+    label: "Alta de oficial",
+    shortLabel: "Oficial",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
+      </svg>
+    ),
+  },
+  {
+    view: "suboficial_nuevo",
+    label: "Alta de suboficial",
+    shortLabel: "Suboficial",
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
@@ -276,15 +286,19 @@ export function MainNavigation({
   onSetConfigViews,
 }: MainNavigationProps) {
   const [showPersonalViews, setShowPersonalViews] = useState(false);
+  const [showOficialesSuboficialesViews, setShowOficialesSuboficialesViews] = useState(false);
   const [showSummaryViews, setShowSummaryViews] = useState(false);
   const [showCreateViews, setShowCreateViews] = useState(false);
   const [showStockViews, setShowStockViews] = useState(false);
   const personalMenuRef = useRef<HTMLDivElement | null>(null);
+  const oficialesSuboficialesMenuRef = useRef<HTMLDivElement | null>(null);
   const summaryMenuRef = useRef<HTMLDivElement | null>(null);
   const createMenuRef = useRef<HTMLDivElement | null>(null);
   const stockMenuRef = useRef<HTMLDivElement | null>(null);
   const isPersonalView = activeView === "personal" || activeView === "hoja_matrix";
-  const isOficialesSuboficialesView = activeView === "ss_oo_sub_of";
+  const isOficialesView = activeView === "oficiales";
+  const isSuboficialesView = activeView === "suboficiales";
+  const isOficialesSuboficialesView = isOficialesView || isSuboficialesView;
   const isSummaryView = activeView === "equipo_resumen" || activeView === "tallas_resumen";
   const isStockView =
     activeView === "stock" ||
@@ -296,7 +310,8 @@ export function MainNavigation({
     activeView === "stock_prestamos";
   const isCreateView =
     activeView === "personal_nuevo" ||
-    activeView === "oficial_suboficial_nuevo" ||
+    activeView === "oficial_nuevo" ||
+    activeView === "suboficial_nuevo" ||
     activeView === "equipo_nuevo" ||
     activeView === "bateria_nueva" ||
     activeView === "grado_nuevo" ||
@@ -304,6 +319,7 @@ export function MainNavigation({
 
   function closeLocalMenus() {
     setShowPersonalViews(false);
+    setShowOficialesSuboficialesViews(false);
     setShowSummaryViews(false);
     setShowCreateViews(false);
     setShowStockViews(false);
@@ -323,6 +339,7 @@ export function MainNavigation({
     const next = !showStockViews;
     setShowStockViews(next);
     setShowPersonalViews(false);
+    setShowOficialesSuboficialesViews(false);
     setShowSummaryViews(false);
     setShowCreateViews(false);
     onSetConfigViews(false);
@@ -331,6 +348,17 @@ export function MainNavigation({
   function handleTogglePersonalViews() {
     const next = !showPersonalViews;
     setShowPersonalViews(next);
+    setShowStockViews(false);
+    setShowOficialesSuboficialesViews(false);
+    setShowSummaryViews(false);
+    setShowCreateViews(false);
+    onSetConfigViews(false);
+  }
+
+  function handleToggleOficialesSuboficialesViews() {
+    const next = !showOficialesSuboficialesViews;
+    setShowOficialesSuboficialesViews(next);
+    setShowPersonalViews(false);
     setShowStockViews(false);
     setShowSummaryViews(false);
     setShowCreateViews(false);
@@ -341,6 +369,7 @@ export function MainNavigation({
     const next = !showSummaryViews;
     setShowSummaryViews(next);
     setShowPersonalViews(false);
+    setShowOficialesSuboficialesViews(false);
     setShowStockViews(false);
     setShowCreateViews(false);
     onSetConfigViews(false);
@@ -350,6 +379,7 @@ export function MainNavigation({
     const next = !showCreateViews;
     setShowCreateViews(next);
     setShowPersonalViews(false);
+    setShowOficialesSuboficialesViews(false);
     setShowStockViews(false);
     setShowSummaryViews(false);
     onSetConfigViews(false);
@@ -364,6 +394,13 @@ export function MainNavigation({
     function handleOutsideClick(event: MouseEvent) {
       if (personalMenuRef.current && event.target instanceof Node && !personalMenuRef.current.contains(event.target)) {
         setShowPersonalViews(false);
+      }
+      if (
+        oficialesSuboficialesMenuRef.current &&
+        event.target instanceof Node &&
+        !oficialesSuboficialesMenuRef.current.contains(event.target)
+      ) {
+        setShowOficialesSuboficialesViews(false);
       }
       if (createMenuRef.current && event.target instanceof Node && !createMenuRef.current.contains(event.target)) {
         setShowCreateViews(false);
@@ -380,12 +417,13 @@ export function MainNavigation({
     function handleEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       setShowPersonalViews(false);
+      setShowOficialesSuboficialesViews(false);
       setShowCreateViews(false);
       setShowStockViews(false);
       setShowSummaryViews(false);
     }
 
-    if (!showPersonalViews && !showSummaryViews && !showCreateViews && !showStockViews) return;
+    if (!showPersonalViews && !showOficialesSuboficialesViews && !showSummaryViews && !showCreateViews && !showStockViews) return;
 
     document.addEventListener("mousedown", handleOutsideClick);
     document.addEventListener("keydown", handleEscape);
@@ -393,7 +431,7 @@ export function MainNavigation({
       document.removeEventListener("mousedown", handleOutsideClick);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [showPersonalViews, showSummaryViews, showCreateViews, showStockViews]);
+  }, [showPersonalViews, showOficialesSuboficialesViews, showSummaryViews, showCreateViews, showStockViews]);
 
   return (
     <section className="ej-card relative isolate z-[220] mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
@@ -442,20 +480,49 @@ export function MainNavigation({
             </div>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={() => handleSelectView("ss_oo_sub_of")}
-          className={`group relative flex-1 overflow-hidden rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
-            isOficialesSuboficialesView ? "ej-view-active" : "ej-view-idle"
-          }`}
-        >
-          <div className="flex items-center justify-center gap-2">
+        <div ref={oficialesSuboficialesMenuRef} className={menuContainerClass(showOficialesSuboficialesViews)}>
+          <button
+            type="button"
+            onClick={handleToggleOficialesSuboficialesViews}
+            aria-haspopup="menu"
+            aria-expanded={showOficialesSuboficialesViews}
+            aria-controls="menu-oficiales-suboficiales"
+            className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+              isOficialesSuboficialesView || showOficialesSuboficialesViews ? "ej-view-active" : "ej-view-idle"
+            }`}
+          >
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
             </svg>
-            <span>SS.OO y SUB OF.</span>
-          </div>
-        </button>
+            <span>Oficiales/Suboficiales</span>
+            <svg className={`h-3 w-3 transition-transform ${showOficialesSuboficialesViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showOficialesSuboficialesViews ? (
+            <div
+              id="menu-oficiales-suboficiales"
+              role="menu"
+              className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
+            >
+              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas SS.OO y Sub Of.</p>
+              <div className="grid grid-cols-1 gap-1.5">
+                <button type="button" onClick={() => handleSelectView("oficiales")} className={groupedOptionClass(activeView, "oficiales")}>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
+                  </svg>
+                  <span>Oficiales</span>
+                </button>
+                <button type="button" onClick={() => handleSelectView("suboficiales")} className={groupedOptionClass(activeView, "suboficiales")}>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
+                  </svg>
+                  <span>Suboficiales</span>
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
         <div ref={stockMenuRef} className={menuContainerClass(showStockViews)}>
           <button
             type="button"

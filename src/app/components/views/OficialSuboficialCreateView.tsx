@@ -7,6 +7,7 @@ import type { Rango } from "@/types/entities";
 import type { OficialSuboficialForm } from "@/types/forms";
 
 type OficialSuboficialCreateViewProps = {
+  mode: "create" | "edit";
   ciPlaceholder: string;
   form: OficialSuboficialForm;
   duplicateLabel: string | null;
@@ -19,6 +20,8 @@ type OficialSuboficialCreateViewProps = {
   canSubmit: boolean;
   saving: boolean;
   rangosDisponibles: Rango[];
+  lockTipo?: boolean;
+  disableCi?: boolean;
   tallaOptionsByKey: Record<TallaKey, string[]>;
   onBack: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -31,6 +34,7 @@ const TYPE_LABEL: Record<OficialSuboficialForm["tipo"], string> = {
 };
 
 export function OficialSuboficialCreateView({
+  mode,
   ciPlaceholder,
   form,
   duplicateLabel,
@@ -43,6 +47,8 @@ export function OficialSuboficialCreateView({
   canSubmit,
   saving,
   rangosDisponibles,
+  lockTipo = false,
+  disableCi = false,
   tallaOptionsByKey,
   onBack,
   onSubmit,
@@ -51,6 +57,13 @@ export function OficialSuboficialCreateView({
   const telefonoLooksValid =
     form.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(form.telefonoContacto);
 
+  const isEditMode = mode === "edit";
+  const headerTitle = isEditMode ? `Editar ${TYPE_LABEL[form.tipo].toLowerCase()}` : `Registrar ${TYPE_LABEL[form.tipo].toLowerCase()}`;
+  const headerDescription = isEditMode
+    ? "Actualiza datos personales, grado y talles del registro seleccionado."
+    : "Registra personal de SS.OO y Suboficiales con su grado y tallas.";
+  const submitLabel = isEditMode ? "Guardar cambios" : `Registrar ${TYPE_LABEL[form.tipo].toLowerCase()}`;
+
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
@@ -58,9 +71,9 @@ export function OficialSuboficialCreateView({
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">Nueva vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-stone-900">Registrar oficial/suboficial</h2>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-stone-900">{headerTitle}</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
-                Registra personal de SS.OO y Suboficiales con su grado y tallas.
+                {headerDescription}
               </p>
             </div>
 
@@ -93,6 +106,7 @@ export function OficialSuboficialCreateView({
                       onChange={(event) => onChange("ci", event.target.value)}
                       placeholder={ciPlaceholder}
                       inputMode="numeric"
+                      disabled={disableCi}
                       className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${
                         ciHasError ? "border-rose-600 bg-rose-50" : "border-stone-300 bg-white"
                       }`}
@@ -167,14 +181,20 @@ export function OficialSuboficialCreateView({
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                   <label>
                     <span className="block text-xs font-medium text-stone-700">Tipo *</span>
-                    <select
-                      value={form.tipo}
-                      onChange={(event) => onChange("tipo", event.target.value)}
-                      className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
-                    >
-                      <option value="OFICIAL">Oficial</option>
-                      <option value="SUBOFICIAL">Suboficial</option>
-                    </select>
+                    {lockTipo ? (
+                      <div className="mt-1 rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm font-semibold text-stone-900">
+                        {TYPE_LABEL[form.tipo]}
+                      </div>
+                    ) : (
+                      <select
+                        value={form.tipo}
+                        onChange={(event) => onChange("tipo", event.target.value)}
+                        className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
+                      >
+                        <option value="OFICIAL">Oficial</option>
+                        <option value="SUBOFICIAL">Suboficial</option>
+                      </select>
+                    )}
                   </label>
 
                   <label>
@@ -260,14 +280,16 @@ export function OficialSuboficialCreateView({
 
               <article className="rounded-2xl border border-stone-200 bg-stone-950 p-4 text-white shadow-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lime-300">Alta inmediata</p>
-                <p className="mt-3 text-sm leading-6 text-white/80">Al confirmar, el registro queda disponible en la vista de SS.OO y Suboficiales.</p>
+                <p className="mt-3 text-sm leading-6 text-white/80">
+                  Al confirmar, el registro queda disponible en la vista de {TYPE_LABEL[form.tipo].toLowerCase()}.
+                </p>
 
                 <button
                   type="submit"
                   disabled={!canSubmit}
                   className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-lime-400 px-4 py-3 text-sm font-bold text-stone-950 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-stone-700 disabled:text-stone-300"
                 >
-                  {saving ? "Registrando..." : "Registrar oficial/suboficial"}
+                  {saving ? (isEditMode ? "Guardando..." : "Registrando...") : submitLabel}
                 </button>
               </article>
             </aside>

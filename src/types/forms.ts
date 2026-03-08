@@ -1,12 +1,12 @@
 /**
- * Tipos de formularios y estados de edición
+ * Tipos de formularios y estados de edicion
  */
 
 import type { RegistroTipo } from "./views";
 import type { TipoOficialSuboficial } from "./entities";
 
 export type StockOperacionTipo = "INGRESO" | "EGRESO";
-export type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL_SUBOFICIAL";
+export type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
 
 export type PersonalForm = {
   ci: string;
@@ -107,7 +107,7 @@ export type PrestamoDraft = {
 };
 
 /**
- * Constantes de formularios vacíos
+ * Constantes de formularios vacios
  */
 export const EMPTY_PERSONAL_FORM: PersonalForm = {
   ci: "",
@@ -173,3 +173,4 @@ export const EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM: PersonalAltaMovimientoForm = {
   comentarios: "",
   items: [{ itemId: "", cantidad: "1" }],
 };
+

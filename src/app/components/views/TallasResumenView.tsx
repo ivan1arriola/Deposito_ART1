@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
-import type { Bateria, Personal } from "@/types/entities";
+import type { Bateria, OficialSuboficial, Personal } from "@/types/entities";
 import { tallasMap } from "@/lib/form-mappers";
 
 type ResumenTalla = { key: TallaKey; label: string; values: Array<{ talla: string; cantidad: number }>; sinDato: number };
@@ -11,9 +11,10 @@ type ResumenBateria = { key: string; nombre: string; total: number; tallas: Resu
 interface TallasResumenViewProps {
   personal: Personal[];
   baterias: Bateria[];
+  oficialesSuboficiales: OficialSuboficial[];
 }
 
-export function TallasResumenView({ personal, baterias }: TallasResumenViewProps) {
+export function TallasResumenView({ personal, baterias, oficialesSuboficiales }: TallasResumenViewProps) {
   const buildTallasResumen = (personas: Personal[]) =>
     TALLA_KEYS.map((key) => {
       const counter = new Map<string, number>();
@@ -55,7 +56,7 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
       ...baterias
         .map((bateria) => ({ key: String(bateria.bateriaId), nombre: bateria.nombre }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })),
-      { key: "NONE", nombre: "Sin batería" },
+      { key: "NONE", nombre: "Sin bateria" },
     ];
 
     const personalPorBateria = new Map<string, Personal[]>();
@@ -89,6 +90,38 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
 
     return resumen;
   }, [baterias, personal]);
+
+  const resumenOficialesSuboficiales = useMemo(
+    () =>
+      TALLA_KEYS.map((key) => {
+        const oficialesCounter = new Map<string, number>();
+        const suboficialesCounter = new Map<string, number>();
+
+        for (const registro of oficialesSuboficiales) {
+          const talles = tallasMap(registro.tallas);
+          const value = talles[key] && talles[key] !== "-" ? talles[key] : "Sin dato";
+          const counter = registro.tipo === "OFICIAL" ? oficialesCounter : suboficialesCounter;
+          counter.set(value, (counter.get(value) ?? 0) + 1);
+        }
+
+        const tallas = Array.from(new Set([...oficialesCounter.keys(), ...suboficialesCounter.keys()])).sort((a, b) => {
+          if (a === "Sin dato") return 1;
+          if (b === "Sin dato") return -1;
+          return a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
+        });
+
+        return {
+          key,
+          label: TALLA_LABELS[key],
+          rows: tallas.map((talla) => {
+            const oficiales = oficialesCounter.get(talla) ?? 0;
+            const suboficiales = suboficialesCounter.get(talla) ?? 0;
+            return { talla, oficiales, suboficiales, total: oficiales + suboficiales };
+          }),
+        };
+      }),
+    [oficialesSuboficiales],
+  );
 
   const renderResumen = (resumen: ResumenBateria[], titulo: string, descripcion: string) => (
     <article className="ej-card rounded-2xl p-4">
@@ -171,7 +204,7 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
                     <thead>
                       <tr className="bg-stone-100">
                         <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
-                          {resumen.length === 1 ? "Unidad" : "Batería"}
+                          {resumen.length === 1 ? "Unidad" : "Bateria"}
                         </th>
                         {showTotal ? (
                           <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
@@ -333,7 +366,7 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
     <section className="mt-6 space-y-4">
       <article className="ej-card flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-stone-900">Impresión de talles</h2>
+          <h2 className="text-base font-semibold text-stone-900">Impresion de talles</h2>
           <p className="mt-1 text-xs text-stone-600">
             Genera una hoja nominal de talles o un resumen con cantidades absolutas por prenda para toda la unidad.
           </p>
@@ -362,11 +395,51 @@ export function TallasResumenView({ personal, baterias }: TallasResumenViewProps
         "Resumen de Tallas de la Unidad",
         "Cantidades absolutas por prenda para toda la unidad. Incluye Sin dato cuando corresponde."
       )}
-      {renderResumen(
+            {renderResumen(
         resumenTallasPorBateria,
-        "Resumen de Tallas por Batería",
-        "Cantidades absolutas por prenda y batería. Incluye el grupo Sin batería cuando corresponde."
+        "Resumen de Tallas por Bateria",
+        "Cantidades absolutas por prenda y bateria. Incluye el grupo Sin bateria cuando corresponde."
       )}
+      <article className="ej-card rounded-2xl p-4">
+        <div className="mb-4">
+          <h2 className="text-base font-semibold text-stone-900">Resumen de Talles Oficiales y Sub Oficiales</h2>
+          <p className="mt-1 text-xs text-stone-600">Cantidades por talla en ambos grupos.</p>
+        </div>
+        <div className="space-y-4">
+          {resumenOficialesSuboficiales.map((section) => (
+            <article key={`resumen-ssoo-${section.key}`} className="rounded-xl border border-stone-200 bg-white p-3">
+              <h3 className="text-sm font-semibold text-stone-900">{section.label}</h3>
+              {section.rows.length === 0 ? (
+                <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">Sin datos.</p>
+              ) : (
+                <div className="mt-2 overflow-auto rounded-lg border border-stone-200">
+                  <table className="w-full border-collapse text-left text-xs">
+                    <thead>
+                      <tr className="bg-stone-100">
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Oficiales</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Sub Oficiales</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {section.rows.map((row, rowIndex) => (
+                        <tr key={`${section.key}-${row.talla}`} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.talla}</td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.oficiales}</td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.suboficiales}</td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.total}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      </article>
     </section>
   );
 }
+

@@ -6,9 +6,11 @@ import type { Role } from "./entities";
 
 export type MainView =
   | "personal"
-  | "ss_oo_sub_of"
+  | "oficiales"
+  | "suboficiales"
   | "personal_nuevo"
-  | "oficial_suboficial_nuevo"
+  | "oficial_nuevo"
+  | "suboficial_nuevo"
   | "equipo_nuevo"
   | "bateria_nueva"
   | "grado_nuevo"
@@ -112,7 +114,7 @@ export type StockHistorialEntry = {
 export type PrestamoStockEntry = {
   prestamoId: string;
   reciboNumero: string;
-  destinatarioTipo: "PERSONAL" | "OFICIAL_SUBOFICIAL";
+  destinatarioTipo: "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
   destinatarioCi: string;
   destinatarioNombre: string;
   destinatarioEtiqueta: string;
@@ -194,3 +196,4 @@ export type ConfirmDialogState = {
   tone: "danger" | "neutral";
   onConfirm: () => Promise<void> | void;
 };
+

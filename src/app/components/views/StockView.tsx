@@ -95,7 +95,9 @@ export function StockView({
         }));
     }
 
-    return [...oficialesSuboficiales]
+    return oficialesSuboficiales
+      .filter((registro) => (prestamoDraft.destinatarioTipo === "OFICIAL" ? registro.tipo === "OFICIAL" : registro.tipo === "SUBOFICIAL"))
+      .slice()
       .sort((a, b) => `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`, "es", { sensitivity: "base" }))
       .map((registro) => ({
         ci: registro.ci,
@@ -287,12 +289,13 @@ export function StockView({
                     value={prestamoDraft.destinatarioTipo}
                     disabled={prestamoSaving}
                     onChange={(event) => onPrestamoDraftChange("destinatarioTipo", event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  >
-                    <option value="PERSONAL">Personal</option>
-                    <option value="OFICIAL_SUBOFICIAL">Oficiales y Sub Oficiales</option>
-                  </select>
-                </label>
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                >
+                  <option value="PERSONAL">Personal</option>
+                  <option value="OFICIAL">Oficiales</option>
+                  <option value="SUBOFICIAL">Sub Oficiales</option>
+                </select>
+              </label>
                 <label className="text-xs text-stone-700">
                   Destinatario
                   <select

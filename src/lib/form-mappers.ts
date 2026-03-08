@@ -2,7 +2,7 @@
  * Funciones de mapeo entre entidades de dominio y formularios
  */
 
-import type { Personal, Talla } from "@/types/entities";
+import type { OficialSuboficial, Personal, Talla } from "@/types/entities";
 import type { OficialSuboficialForm, PersonalForm } from "@/types/forms";
 import { formatDateOnlyForDisplay } from "./date-helpers";
 import { TALLA_KEYS, type TallaKey, normalizeTallaValue } from "./tallas";
@@ -110,6 +110,25 @@ export function toEditablePersonal(persona: Personal): PersonalForm {
     fechaIngresoOriginal: toDateInput(persona.fechaIngresoOriginal),
     rangoId: String(persona.rangoId),
     bateriaId: persona.bateriaId ? String(persona.bateriaId) : "",
+    PARKA: toFormTallaValue("PARKA", tallas.PARKA),
+    CAMISACO: toFormTallaValue("CAMISACO", tallas.CAMISACO),
+    PANTALON: toFormTallaValue("PANTALON", tallas.PANTALON),
+    KEPI: toFormTallaValue("KEPI", tallas.KEPI),
+    CALZADO: toFormTallaValue("CALZADO", tallas.CALZADO),
+  };
+}
+
+export function toEditableOficialSuboficial(registro: OficialSuboficial): OficialSuboficialForm {
+  const tallas = tallasMap(registro.tallas);
+  return {
+    ci: registro.ci,
+    tipo: registro.tipo,
+    apellido1: registro.apellido1,
+    apellido2: registro.apellido2 ?? "",
+    nombre1: registro.nombre1,
+    nombre2: registro.nombre2 ?? "",
+    telefonoContacto: registro.telefonoContacto ?? "",
+    rangoId: String(registro.rangoId),
     PARKA: toFormTallaValue("PARKA", tallas.PARKA),
     CAMISACO: toFormTallaValue("CAMISACO", tallas.CAMISACO),
     PANTALON: toFormTallaValue("PANTALON", tallas.PANTALON),

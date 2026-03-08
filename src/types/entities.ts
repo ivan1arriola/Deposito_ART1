@@ -1,5 +1,5 @@
 /**
- * Tipos de entidades de dominio - Datos principales de la aplicación
+ * Tipos de entidades de dominio - Datos principales de la aplicacion
  */
 
 export type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
@@ -37,7 +37,7 @@ export type StockResumen = {
   stockUnidad: number;
   stockPersonal: number;
   stockTotal: number;
-  // Alias legado para compatibilidad con código existente.
+  // Alias legado para compatibilidad con codigo existente.
   stockActual: number;
 };
 
@@ -49,7 +49,7 @@ export type Talla = {
 };
 
 export type TipoOficialSuboficial = "OFICIAL" | "SUBOFICIAL";
-export type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL_SUBOFICIAL";
+export type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
 
 export type GradoMando = {
   gradoMandoId: number;
@@ -77,6 +77,12 @@ export type Personal = {
 
 export type OficialSuboficial = {
   ci: string;
+  apellido1: string;
+  apellido2: string | null;
+  nombre1: string;
+  nombre2: string | null;
+  telefonoContacto: string | null;
+  rangoId: number;
   nombre: string;
   apellido: string;
   tipo: TipoOficialSuboficial;
@@ -165,3 +171,4 @@ export type DbStatus = {
   dbUser: string | null;
   host: string | null;
 };
+

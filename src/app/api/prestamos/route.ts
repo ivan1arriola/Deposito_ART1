@@ -13,7 +13,7 @@ import {
 import { isValidUruguayanCi } from "@/lib/ci";
 import { prestamoInclude, serializePrestamo, totalUnidadesPrestamo } from "@/lib/prestamos";
 
-type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL_SUBOFICIAL";
+type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
 
 type PrestamoItemPayload = {
   itemId: string | number;
@@ -44,7 +44,8 @@ function parseCantidad(value: unknown) {
 function parseDestinatarioTipo(value: unknown): PrestamoDestinatarioTipo | null {
   const raw = String(value ?? "").trim().toUpperCase();
   if (raw === "PERSONAL") return "PERSONAL";
-  if (raw === "OFICIAL_SUBOFICIAL") return "OFICIAL_SUBOFICIAL";
+  if (raw === "OFICIAL") return "OFICIAL";
+  if (raw === "SUBOFICIAL") return "SUBOFICIAL";
   return null;
 }
 
@@ -145,7 +146,9 @@ export async function POST(request: Request) {
         tipo:
           destinatarioTipo === "PERSONAL"
             ? TipoPersonal.SUBALTERNO
-            : { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] },
+            : destinatarioTipo === "OFICIAL"
+              ? TipoPersonal.OFICIAL
+              : TipoPersonal.SUBOFICIAL,
       },
       select: {
         ci: true,

@@ -78,7 +78,9 @@ function formatUserLabel(user: {
 }
 
 function mapDestinatarioTipo(tipo: TipoPersonal) {
-  return tipo === "SUBALTERNO" ? "PERSONAL" : "OFICIAL_SUBOFICIAL";
+  if (tipo === "SUBALTERNO") return "PERSONAL";
+  if (tipo === "OFICIAL") return "OFICIAL";
+  return "SUBOFICIAL";
 }
 
 export function formatPrestamoDestinatario(data: Pick<PrestamoWithRelations, "personal">) {

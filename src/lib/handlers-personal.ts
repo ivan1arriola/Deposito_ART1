@@ -78,6 +78,25 @@ export async function createOficialSuboficialHandler(
   }
 }
 
+export async function updateOficialSuboficialHandler(
+  ci: string,
+  payload: unknown,
+  callbacks: CallbackProps
+) {
+  try {
+    await api(`/api/oficiales-suboficiales/${encodeURIComponent(ci)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    callbacks.onSuccess?.();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo actualizar el personal oficial/suboficial.";
+    callbacks.onError?.(message);
+    throw error;
+  }
+}
+
 export async function createPersonalObservacionHandler(
   ci: string,
   payload: unknown,

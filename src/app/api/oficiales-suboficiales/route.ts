@@ -77,6 +77,12 @@ function extractTallas(payload: Record<string, unknown>): Partial<Record<TallaKe
 function serializeOficialSuboficial(registro: OficialSuboficialRecord) {
   return {
     ci: registro.ci,
+    apellido1: registro.apellido1,
+    apellido2: registro.apellido2,
+    nombre1: registro.nombre1,
+    nombre2: registro.nombre2,
+    telefonoContacto: registro.telefonoContacto,
+    rangoId: registro.rangoId,
     nombre: [registro.nombre1, registro.nombre2].filter(Boolean).join(" ").trim(),
     apellido: [registro.apellido1, registro.apellido2].filter(Boolean).join(" ").trim(),
     tipo: registro.tipo === TipoPersonal.OFICIAL ? "OFICIAL" : "SUBOFICIAL",

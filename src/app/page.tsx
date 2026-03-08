@@ -45,6 +45,7 @@ import type {
   Role,
   Equipo,
   Personal,
+  OficialSuboficial,
   PersonalObservacion,
   FirmaConfig,
   UsuarioAdmin,
@@ -85,6 +86,7 @@ import {
   getTodayDateInput,
   oficialSuboficialPayload,
   personalPayload,
+  toEditableOficialSuboficial,
   toEditablePersonal,
 } from "@/lib/form-mappers";
 import {
@@ -115,6 +117,7 @@ import {
 import {
   createPersonalHandler,
   createOficialSuboficialHandler,
+  updateOficialSuboficialHandler,
   updatePersonalHandler,
   deletePersonalHandler,
   createPersonalObservacionHandler,
@@ -235,6 +238,7 @@ export default function Home() {
 
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [newOficialSuboficial, setNewOficialSuboficial] = useState<OficialSuboficialForm>(EMPTY_OFICIAL_SUBOFICIAL_FORM);
+  const [editingOficialSuboficialCi, setEditingOficialSuboficialCi] = useState<string | null>(null);
   const [newPersonalMovimientos, setNewPersonalMovimientos] = useState<PersonalAltaMovimientoForm[]>([]);
   const [newPersonalMovimientoDraft, setNewPersonalMovimientoDraft] = useState<PersonalAltaMovimientoForm | null>(null);
   const [newPersonalMovimientoEditIndex, setNewPersonalMovimientoEditIndex] = useState<number | null>(null);
@@ -323,8 +327,10 @@ export default function Home() {
     !creatingPersonal;
 
   const normalizedNewOficialSuboficialCi = normalizeCi(newOficialSuboficial.ci.trim());
+  const normalizedEditingOficialSuboficialCi = normalizeCi(editingOficialSuboficialCi ?? "");
   const duplicateOficialSuboficialLabel = useMemo(() => {
     if (normalizedNewOficialSuboficialCi === "") return null;
+    if (normalizedEditingOficialSuboficialCi !== "" && normalizedNewOficialSuboficialCi === normalizedEditingOficialSuboficialCi) return null;
 
     const duplicateSubalterno = personal.find((persona) => normalizeCi(persona.ci) === normalizedNewOficialSuboficialCi);
     if (duplicateSubalterno) {
@@ -339,7 +345,7 @@ export default function Home() {
     }
 
     return null;
-  }, [normalizedNewOficialSuboficialCi, personal, oficialesSuboficiales]);
+  }, [normalizedNewOficialSuboficialCi, normalizedEditingOficialSuboficialCi, personal, oficialesSuboficiales]);
   const oficialSuboficialCiAlreadyExists = duplicateOficialSuboficialLabel !== null;
   const oficialSuboficialCiLooksValid =
     newOficialSuboficial.ci.trim() === "" || isValidUruguayanCi(newOficialSuboficial.ci);
@@ -526,10 +532,21 @@ export default function Home() {
   }, [inAdminConfigView, isAdmin]);
 
   useEffect(() => {
-    if ((activeView === "personal_nuevo" || activeView === "oficial_suboficial_nuevo") && !canWrite) {
+    if ((activeView === "personal_nuevo" || activeView === "oficial_nuevo" || activeView === "suboficial_nuevo") && !canWrite) {
       setActiveView("personal");
     }
   }, [activeView, canWrite]);
+
+  useEffect(() => {
+    if (editingOficialSuboficialCi) return;
+    if (activeView === "oficial_nuevo" && newOficialSuboficial.tipo !== "OFICIAL") {
+      setNewOficialSuboficial((prev) => ({ ...prev, tipo: "OFICIAL", rangoId: "" }));
+      return;
+    }
+    if (activeView === "suboficial_nuevo" && newOficialSuboficial.tipo !== "SUBOFICIAL") {
+      setNewOficialSuboficial((prev) => ({ ...prev, tipo: "SUBOFICIAL", rangoId: "" }));
+    }
+  }, [activeView, editingOficialSuboficialCi, newOficialSuboficial.tipo]);
 
   useEffect(() => {
     if (activeView === "equipo_nuevo" && !canWrite) {
@@ -1490,7 +1507,19 @@ export default function Home() {
     });
   }, []);
 
-  const createOficialSuboficial = useCallback(
+  const openOficialSuboficialCreate = useCallback((tipo: "OFICIAL" | "SUBOFICIAL") => {
+    setEditingOficialSuboficialCi(null);
+    setNewOficialSuboficial({ ...EMPTY_OFICIAL_SUBOFICIAL_FORM, tipo, rangoId: "" });
+    setActiveView(tipo === "OFICIAL" ? "oficial_nuevo" : "suboficial_nuevo");
+  }, []);
+
+  const startEditOficialSuboficial = useCallback((registro: OficialSuboficial) => {
+    setEditingOficialSuboficialCi(registro.ci);
+    setNewOficialSuboficial(toEditableOficialSuboficial(registro));
+    setActiveView(registro.tipo === "OFICIAL" ? "oficial_nuevo" : "suboficial_nuevo");
+  }, []);
+
+  const submitOficialSuboficial = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (creatingOficialSuboficial) return;
@@ -1515,23 +1544,41 @@ export default function Home() {
         return;
       }
 
+      const isEditing = editingOficialSuboficialCi !== null;
       setCreatingOficialSuboficial(true);
       try {
-        await createOficialSuboficialHandler(oficialSuboficialPayload(newOficialSuboficial, true), {
-          onSuccess: async () => {
-            const nombreCompleto = `${newOficialSuboficial.apellido1.trim()}, ${newOficialSuboficial.nombre1.trim()}`
-              .replace(/\s+/g, " ")
-              .trim();
-            setNewOficialSuboficial(EMPTY_OFICIAL_SUBOFICIAL_FORM);
-            setActiveView("ss_oo_sub_of");
-            toast.success("Personal oficial/suboficial registrado correctamente", {
-              description: `${nombreCompleto} ya figura en el listado de SS.OO y Suboficiales.`,
-              duration: 5000,
+        const payload = oficialSuboficialPayload(newOficialSuboficial, !isEditing);
+        const action = isEditing
+          ? updateOficialSuboficialHandler(editingOficialSuboficialCi, payload, {
+              onError: (message) => setStatus(message),
+            })
+          : createOficialSuboficialHandler(payload, {
+              onError: (message) => setStatus(message),
             });
-            await loadData();
+        await action;
+
+        const nombreCompleto = `${newOficialSuboficial.apellido1.trim()}, ${newOficialSuboficial.nombre1.trim()}`
+          .replace(/\s+/g, " ")
+          .trim();
+        const viewAfterSave = newOficialSuboficial.tipo === "OFICIAL" ? "oficiales" : "suboficiales";
+
+        setEditingOficialSuboficialCi(null);
+        setNewOficialSuboficial({ ...EMPTY_OFICIAL_SUBOFICIAL_FORM, tipo: newOficialSuboficial.tipo });
+        setActiveView(viewAfterSave);
+
+        toast.success(
+          isEditing
+            ? "Personal oficial/suboficial actualizado correctamente"
+            : "Personal oficial/suboficial registrado correctamente",
+          {
+            description: isEditing
+              ? `${nombreCompleto} fue actualizado en el listado.`
+              : `${nombreCompleto} ya figura en el listado.`,
+            duration: 5000,
           },
-          onError: (message) => setStatus(message),
-        });
+        );
+
+        await loadData();
       } finally {
         setCreatingOficialSuboficial(false);
       }
@@ -1542,8 +1589,23 @@ export default function Home() {
       oficialSuboficialCiAlreadyExists,
       newOficialSuboficial,
       newOficialSuboficialPhoneLooksValid,
+      editingOficialSuboficialCi,
       loadData,
     ],
+  );
+
+  const cancelOficialSuboficialForm = useCallback(() => {
+    const tipo = newOficialSuboficial.tipo;
+    setEditingOficialSuboficialCi(null);
+    setNewOficialSuboficial({ ...EMPTY_OFICIAL_SUBOFICIAL_FORM, tipo });
+    setActiveView(tipo === "OFICIAL" ? "oficiales" : "suboficiales");
+  }, [newOficialSuboficial.tipo]);
+
+  const createOficialSuboficial = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      await submitOficialSuboficial(event);
+    },
+    [submitOficialSuboficial],
   );
 
   const updateNewPersonalField = useCallback((field: keyof PersonalForm, value: string | boolean) => {
@@ -3261,8 +3323,9 @@ export default function Home() {
         />
       ) : null}
 
-      {activeView === "oficial_suboficial_nuevo" ? (
+      {activeView === "oficial_nuevo" || activeView === "suboficial_nuevo" ? (
         <OficialSuboficialCreateView
+          mode={editingOficialSuboficialCi ? "edit" : "create"}
           ciPlaceholder={ciPlaceholder}
           form={newOficialSuboficial}
           duplicateLabel={duplicateOficialSuboficialLabel}
@@ -3275,8 +3338,10 @@ export default function Home() {
           canSubmit={canSubmitOficialSuboficial}
           saving={creatingOficialSuboficial}
           rangosDisponibles={rangosOficialSuboficialDisponibles}
+          lockTipo
+          disableCi={editingOficialSuboficialCi !== null}
           tallaOptionsByKey={tallaOptionsByKey}
-          onBack={() => setActiveView("ss_oo_sub_of")}
+          onBack={cancelOficialSuboficialForm}
           onSubmit={(event) => void createOficialSuboficial(event)}
           onChange={updateNewOficialSuboficialField}
         />
@@ -3415,12 +3480,26 @@ export default function Home() {
         />
       ) : null}
 
-      {activeView === "ss_oo_sub_of" ? (
+      {activeView === "oficiales" ? (
         <OficialesSuboficialesView
           oficialesSuboficiales={oficialesSuboficiales}
           loading={loading}
           canWrite={canWrite}
-          onOpenCreate={() => setActiveView("oficial_suboficial_nuevo")}
+          viewType="OFICIAL"
+          onOpenCreate={() => openOficialSuboficialCreate("OFICIAL")}
+          onStartEdit={startEditOficialSuboficial}
+          onReload={() => loadData(true)}
+        />
+      ) : null}
+
+      {activeView === "suboficiales" ? (
+        <OficialesSuboficialesView
+          oficialesSuboficiales={oficialesSuboficiales}
+          loading={loading}
+          canWrite={canWrite}
+          viewType="SUBOFICIAL"
+          onOpenCreate={() => openOficialSuboficialCreate("SUBOFICIAL")}
+          onStartEdit={startEditOficialSuboficial}
           onReload={() => loadData(true)}
         />
       ) : null}
@@ -3524,7 +3603,7 @@ export default function Home() {
       ) : null}
 
       {activeView === "tallas_resumen" ? (
-        <TallasResumenView personal={personal} baterias={baterias} />
+        <TallasResumenView personal={personal} baterias={baterias} oficialesSuboficiales={oficialesSuboficiales} />
       ) : null}
 
       <MergeEquipoModal
