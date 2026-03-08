@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import type { CurrentUser } from "@/types/entities";
-import { LoadingInline, LoadingSpinner } from "@/app/components/shared";
 
 type DashboardHeroProps = {
   loading: boolean;
@@ -56,11 +55,7 @@ export function DashboardHero({
         </div>
 
         <div className="order-1 flex min-w-0 flex-col items-center justify-center text-center xl:order-2">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#BAB08C]/35 bg-[#8D845B]/25 px-3 py-1 text-[11px] font-semibold text-[#F4F1E4]">
-            {loading ? <LoadingSpinner size="xs" tone="light" /> : null}
-            {loading ? "Sincronizando datos" : "Panel en servicio"}
-          </span>
-          <h1 className="mt-4 text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl xl:text-7xl">Depósito General</h1>
+          <h1 className="text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl xl:text-7xl">Depósito General</h1>
         </div>
 
         <div className="order-3 flex flex-col gap-3 xl:order-3">
@@ -77,17 +72,7 @@ export function DashboardHero({
               disabled={loading}
               className="ej-button-muted w-full rounded-2xl px-3 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? (
-                <LoadingInline
-                  label="Recargando..."
-                  size="xs"
-                  tone="light"
-                  className="justify-center"
-                  textClassName="text-sm font-semibold text-white"
-                />
-              ) : (
-                "Recargar panel"
-              )}
+              Recargar panel
             </button>
             {canManageAccount ? (
               <button
@@ -138,3 +123,6 @@ export function DashboardHero({
     </section>
   );
 }
+
+
+

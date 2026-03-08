@@ -34,7 +34,7 @@ import { RangoCreateView } from "./components/views/RangoCreateView";
 import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
 import { UserCreateView } from "./components/views/UserCreateView";
-import { SmallActionButton, ActionMenu, LoadingInline, toast } from "./components/shared";
+import { SmallActionButton, ActionMenu, LoadingOverlay, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
 
 // Importar tipos desde archivos de tipos organizados
@@ -2713,6 +2713,26 @@ export default function Home() {
     !loginLoading &&
     (normalizedStatus.startsWith("verificando") ||
       normalizedStatus.startsWith("iniciando"));
+  const isLoginGlobalBusy = !currentUser && (isPageBootLoading || loginLoading);
+  const isAppGlobalBusy =
+    !!currentUser &&
+    (
+      loading ||
+      firmaConfigLoading ||
+      hojaMatrixLoading ||
+      equipoResumenLoading ||
+      stockLoading ||
+      creatingPersonal ||
+      mergeEquipoSaving ||
+      stockSaving ||
+      registroSaving ||
+      personalObservacionSaving ||
+      changeLoading ||
+      userRoleSaving ||
+      userPasswordSaving ||
+      usernameSaving ||
+      confirmDialogBusy
+    );
 
   if (!currentUser) {
     return (
@@ -2720,29 +2740,19 @@ export default function Home() {
         <section className="relative grid w-full max-w-[1120px] max-h-[min(88vh,780px)] overflow-hidden rounded-[28px] border border-stone-300/70 bg-white/90 shadow-[0_24px_70px_rgba(17,24,39,0.16)] lg:grid-cols-[1fr_minmax(360px,440px)]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(141,132,91,0.16),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(102,112,77,0.14),transparent_42%)]" />
 
-          <div className="relative hidden border-r border-stone-300/60 p-8 lg:flex lg:flex-col lg:items-center lg:justify-center lg:text-center xl:p-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-              {'Grupo "Brig.Gral.Manuel Oribe" de Artilleria 105mm No. 1.'}
-            </p>
-            <div className="mt-6 flex items-center justify-center">
-              <Image
-                src="/assets/logo-deposito.png"
-                alt="Logo Deposito"
-                width={420}
-                height={420}
-                priority
-                className="h-auto w-full max-w-[clamp(280px,34vw,420px)] object-contain drop-shadow-[0_18px_34px_rgba(17,24,39,0.22)]"
-              />
-            </div>
-            <h2 className="mt-7 text-center text-[clamp(2.2rem,4.4vw,4rem)] font-black leading-[0.92] tracking-tight text-stone-900">
-              Deposito
-              <br />
-              General
-            </h2>
+          <div className="relative hidden border-r border-stone-300/60 p-8 lg:flex lg:items-center lg:justify-center xl:p-10">
+            <Image
+              src="/assets/logo-deposito.png"
+              alt="Logo Deposito"
+              width={420}
+              height={420}
+              priority
+              className="h-auto w-full max-w-[clamp(300px,34vw,460px)] object-contain drop-shadow-[0_18px_34px_rgba(17,24,39,0.22)]"
+            />
           </div>
 
           <div className="relative overflow-y-auto p-5 sm:p-8 lg:flex lg:items-center lg:p-10">
-            <div className="w-full">
+            <div className="w-full lg:mx-auto lg:max-w-[460px]">
               <div className="mb-4 flex justify-center lg:hidden">
                 <Image
                   src="/assets/logo-deposito.png"
@@ -2753,22 +2763,7 @@ export default function Home() {
                   className="h-auto w-36 object-contain drop-shadow-[0_14px_28px_rgba(17,24,39,0.22)] sm:w-44"
                 />
               </div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500 lg:hidden">
-                {'Grupo "Brig.Gral.Manuel Oribe" de Artilleria 105mm No. 1.'}
-              </p>
-              <h2 className="mt-3 text-center text-4xl font-black leading-[0.92] tracking-tight text-stone-900 lg:hidden">
-                Deposito General
-              </h2>
-              <h1 className="mt-5 text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">Iniciar sesion</h1>
-              {isPageBootLoading ? (
-                <div className="mt-3 inline-flex rounded-full border border-stone-300 bg-stone-100/80 px-3 py-1">
-                  <LoadingInline
-                    label="Cargando pagina..."
-                    size="sm"
-                    textClassName="text-xs font-semibold text-stone-700"
-                  />
-                </div>
-              ) : null}
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">Iniciar sesion</h1>
               <p className="mt-2 text-sm text-stone-600">{status}</p>
 
               {initMessage && showInitCredentials && initCredentials && (
@@ -2812,22 +2807,13 @@ export default function Home() {
                   disabled={loading || loginLoading}
                   className="w-full rounded-2xl bg-stone-900 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:opacity-60"
                 >
-                  {loading || loginLoading ? (
-                    <LoadingInline
-                      label="Ingresando..."
-                      size="xs"
-                      tone="light"
-                      className="justify-center"
-                      textClassName="text-sm font-semibold text-white"
-                    />
-                  ) : (
-                    "Entrar"
-                  )}
+                  {loading || loginLoading ? "Ingresando..." : "Entrar"}
                 </button>
               </form>
             </div>
           </div>
         </section>
+        <LoadingOverlay visible={isLoginGlobalBusy} label={loginLoading ? "Ingresando..." : "Cargando pagina..."} />
       </main>
     );
   }
@@ -3294,6 +3280,8 @@ export default function Home() {
 
         <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
       ) : null}
+
+      <LoadingOverlay visible={isAppGlobalBusy} label="Actualizando informacion..." />
 
     </main>
   );
