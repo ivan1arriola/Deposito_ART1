@@ -39,7 +39,7 @@
   ],
   "exclude": [
     "node_modules",
-    "_soldados_app_backup",
+    "_deposito_art1_backup",
     "vitest.config.ts",
     "src/lib/handlers.test"
   ]

@@ -1,4 +1,4 @@
-# Soldados App
+# Deposito ART1
 
 Next.js + Prisma + PostgreSQL (Neon), con modelo en 3FN.
 
