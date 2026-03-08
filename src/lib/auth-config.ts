@@ -22,6 +22,21 @@ export const authOptions = {
 
         const user = await prisma.usuario.findUnique({
           where: { username: credentials.username },
+          select: {
+            usuarioId: true,
+            username: true,
+            mailReferencia: true,
+            rol: true,
+            activo: true,
+            passwordHash: true,
+            nombre: true,
+            apellido: true,
+            rango: {
+              select: {
+                abreviacion: true,
+              },
+            },
+          },
         });
 
         if (!user || !user.activo) {
@@ -41,7 +56,7 @@ export const authOptions = {
           entidadId: user.usuarioId,
           detalle: {
             username: user.username,
-            grado: user.grado,
+            grado: user.rango.abreviacion,
             nombre: user.nombre,
             apellido: user.apellido,
             rol: user.rol,

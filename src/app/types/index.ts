@@ -1,5 +1,11 @@
 // Tipos de entidades principales
-export type Rango = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
+export type Rango = {
+  rangoId: number;
+  tipo?: "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
+  abreviacion: string;
+  nombreCompleto: string;
+  orden: number;
+};
 export type Bateria = { bateriaId: number; nombre: string; orden: number };
 export type Equipo = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
 export type Item = Equipo;
@@ -54,6 +60,7 @@ export type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
 
 export type CurrentUser = {
   usuarioId: string;
+  rangoId: number;
   grado: string;
   nombre: string;
   apellido: string;
@@ -128,6 +135,8 @@ export type FirmaConfig = {
 
 export type UsuarioAdmin = {
   usuarioId: string;
+  rangoId: number;
+  rango: Rango;
   grado: string;
   nombre: string;
   apellido: string;

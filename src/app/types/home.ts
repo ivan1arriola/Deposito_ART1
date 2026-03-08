@@ -29,7 +29,7 @@ export type UserPasswordDialogState = {
 
 export type UserProfileDialogState = {
   usuarioId: string;
-  grado: string;
+  rangoId: string;
   nombre: string;
   apellido: string;
   username: string;

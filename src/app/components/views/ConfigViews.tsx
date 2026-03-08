@@ -13,6 +13,8 @@ type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
 type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
 type UsuarioAdmin = {
   usuarioId: string;
+  rangoId: number;
+  rango: RangoConfig;
   grado: string;
   nombre: string;
   apellido: string;
@@ -68,7 +70,8 @@ interface ConfigViewsProps {
   mergeEquipoDestinoId: string;
   // Usuarios state
   usuarios: UsuarioAdmin[];
-  newGrado: string;
+  newUserRangoId: string;
+  userRangoOptions: RangoConfig[];
   newNombre: string;
   newApellido: string;
   newUsername: string;
@@ -126,7 +129,7 @@ interface ConfigViewsProps {
   onResetEquipoOrderDraft: () => void;
   renderEquipoCard: (equipo: EquipoConfig, options?: { reorderableInActiveList?: boolean; orderIndex?: number; orderCount?: number }) => ReactNode;
   // Usuarios callbacks
-  onNewGradoChange: (value: string) => void;
+  onNewUserRangoIdChange: (value: string) => void;
   onNewNombreChange: (value: string) => void;
   onNewApellidoChange: (value: string) => void;
   onNewUsernameChange: (value: string) => void;
@@ -172,7 +175,7 @@ export function ConfigViews(props: ConfigViewsProps) {
         <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Grados registrados</h2>
           <p className="mt-1 text-xs text-stone-600">Desde esta vista se muestran los grados de oficiales, suboficiales y subalternos con su orden actual.</p>
-          <p className="mt-1 text-xs text-stone-600">La edicion/eliminacion desde esta pantalla aplica solo para grados de personal subalterno.</p>
+          <p className="mt-1 text-xs text-stone-600">El administrador puede editar o eliminar cualquier grado desde esta pantalla.</p>
           {!props.isAdmin ? (
             <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
               Modo solo lectura: solo el administrador puede editar o eliminar grados.
@@ -181,7 +184,7 @@ export function ConfigViews(props: ConfigViewsProps) {
 
           <div className="mt-3 space-y-2">
             {props.rangos.map((rango) => {
-              const canEditRango = rango.tipo === undefined || rango.tipo === "SUBALTERNO";
+              const canEditRango = props.isAdmin;
 
               return (
                 <div key={rango.rangoId} className="rounded-lg bg-stone-100/80 p-2">
@@ -233,7 +236,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                         </div>
                         <p className="mt-1 text-xs text-stone-500">{`Orden ${rango.orden}`}</p>
                       </div>
-                      {props.isAdmin && canEditRango ? (
+                      {canEditRango ? (
                         <div className="flex gap-2">
                           <SmallActionButton
                             text="Editar"
@@ -247,8 +250,6 @@ export function ConfigViews(props: ConfigViewsProps) {
                           />
                           <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteRango(rango.rangoId)} />
                         </div>
-                      ) : props.isAdmin ? (
-                        <span className="text-xs font-medium text-stone-500">Solo lectura</span>
                       ) : null}
                     </div>
                   )}
@@ -716,12 +717,18 @@ export function ConfigViews(props: ConfigViewsProps) {
           </p>
           <form onSubmit={props.onCreateUsuario} className="hidden mt-3 space-y-3">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <input
-                value={props.newGrado}
-                onChange={(event) => props.onNewGradoChange(event.target.value)}
-                placeholder="Grado"
+              <select
+                value={props.newUserRangoId}
+                onChange={(event) => props.onNewUserRangoIdChange(event.target.value)}
                 className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
+              >
+                <option value="">Grado</option>
+                {props.userRangoOptions.map((rango) => (
+                  <option key={`config-user-rango-${rango.rangoId}`} value={String(rango.rangoId)}>
+                    {`${rango.abreviacion} - ${rango.nombreCompleto}`}
+                  </option>
+                ))}
+              </select>
               <input
                 value={props.newNombre}
                 onChange={(event) => props.onNewNombreChange(event.target.value)}

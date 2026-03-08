@@ -8,6 +8,7 @@ import { hasPermission, type Permission } from "@/lib/permissions";
 
 export type AuthUser = {
   usuarioId: string;
+  rangoId: number;
   grado: string;
   nombre: string;
   apellido: string;
@@ -30,13 +31,28 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
 
   const usuario = await prisma.usuario.findUnique({
     where: { usuarioId: session.user.id },
+    select: {
+      usuarioId: true,
+      rangoId: true,
+      nombre: true,
+      apellido: true,
+      username: true,
+      rol: true,
+      activo: true,
+      rango: {
+        select: {
+          abreviacion: true,
+        },
+      },
+    },
   });
 
   if (!usuario || !usuario.activo) return null;
 
   return {
     usuarioId: usuario.usuarioId,
-    grado: usuario.grado,
+    rangoId: usuario.rangoId,
+    grado: usuario.rango.abreviacion,
     nombre: usuario.nombre,
     apellido: usuario.apellido,
     username: usuario.username,

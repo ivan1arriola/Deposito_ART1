@@ -1,11 +1,12 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { ROLE_OPTIONS, type Role } from "@/types/entities";
+import { ROLE_OPTIONS, type Rango, type Role } from "@/types/entities";
 
 type UserCreateViewProps = {
   isAdmin: boolean;
-  grado: string;
+  rangoId: string;
+  rangoOptions: Rango[];
   nombre: string;
   apellido: string;
   username: string;
@@ -15,7 +16,7 @@ type UserCreateViewProps = {
   role: Role;
   onBack: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onGradoChange: (value: string) => void;
+  onRangoIdChange: (value: string) => void;
   onNombreChange: (value: string) => void;
   onApellidoChange: (value: string) => void;
   onUsernameChange: (value: string) => void;
@@ -30,7 +31,8 @@ type UserCreateViewProps = {
 
 export function UserCreateView({
   isAdmin,
-  grado,
+  rangoId,
+  rangoOptions,
   nombre,
   apellido,
   username,
@@ -40,7 +42,7 @@ export function UserCreateView({
   role,
   onBack,
   onSubmit,
-  onGradoChange,
+  onRangoIdChange,
   onNombreChange,
   onApellidoChange,
   onUsernameChange,
@@ -54,7 +56,7 @@ export function UserCreateView({
 }: UserCreateViewProps) {
   const canSubmit =
     isAdmin &&
-    grado.trim() !== "" &&
+    rangoId.trim() !== "" &&
     nombre.trim() !== "" &&
     apellido.trim() !== "" &&
     username.trim() !== "" &&
@@ -86,13 +88,19 @@ export function UserCreateView({
         <form onSubmit={onSubmit} className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-4 rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <input
-                value={grado}
-                onChange={(event) => onGradoChange(event.target.value)}
-                placeholder="Grado *"
+              <select
+                value={rangoId}
+                onChange={(event) => onRangoIdChange(event.target.value)}
                 className="rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                 disabled={!isAdmin}
-              />
+              >
+                <option value="">Grado *</option>
+                {rangoOptions.map((rango) => (
+                  <option key={`user-rango-${rango.rangoId}`} value={String(rango.rangoId)}>
+                    {`${rango.abreviacion} - ${rango.nombreCompleto}`}
+                  </option>
+                ))}
+              </select>
               <input
                 value={nombre}
                 onChange={(event) => onNombreChange(event.target.value)}

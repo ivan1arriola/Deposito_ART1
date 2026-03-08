@@ -134,21 +134,21 @@ export function PersonalCreateView({
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">Apellido 1 *</span>
+                    <span className="block text-xs font-medium text-stone-700">Primer apellido *</span>
                     <input
                       value={newPersonal.apellido1}
                       onChange={(event) => onPersonalChange("apellido1", event.target.value)}
-                      placeholder="Apellido principal"
+                      placeholder="Primer apellido"
                       className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                     />
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">Apellido 2</span>
+                    <span className="block text-xs font-medium text-stone-700">Segundo apellido</span>
                     <input
                       value={newPersonal.apellido2}
                       onChange={(event) => onPersonalChange("apellido2", event.target.value)}
-                      placeholder="Apellido secundario"
+                      placeholder="Segundo apellido"
                       className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                     />
                   </label>
@@ -380,7 +380,7 @@ export function PersonalCreateView({
 
                 <div className="mt-4 space-y-2 text-xs text-stone-600">
                   <p>{`Cédula válida: ${requiredPersonalFields[0] ? "Sí" : "No"}`}</p>
-                  <p>{`Apellido 1: ${requiredPersonalFields[1] ? "Completo" : "Falta"}`}</p>
+                  <p>{`Primer apellido: ${requiredPersonalFields[1] ? "Completo" : "Falta"}`}</p>
                   <p>{`Nombre 1: ${requiredPersonalFields[2] ? "Completo" : "Falta"}`}</p>
                   <p>{`Grado: ${requiredPersonalFields[3] ? "Seleccionado" : "Falta"}`}</p>
                   <p>{`Condición: ${newPersonal.esReingreso ? "Reingreso" : "Ingreso inicial"}`}</p>

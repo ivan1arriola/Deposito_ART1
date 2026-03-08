@@ -204,7 +204,7 @@ export default function Home() {
   const [usernameSaving, setUsernameSaving] = useState(false);
 
 
-  const [newGrado, setNewGrado] = useState("");
+  const [newUserRangoId, setNewUserRangoId] = useState("");
   const [newNombre, setNewNombre] = useState("");
   const [newApellido, setNewApellido] = useState("");
   const [newUsername, setNewUsername] = useState("");
@@ -797,7 +797,7 @@ export default function Home() {
         setStatus("Solo el administrador puede modificar grados.");
         return;
       }
-      const rango = rangos.find((entry) => entry.rangoId === rangoId);
+      const rango = rangosConfigView.find((entry) => entry.rangoId === rangoId);
       openConfirmDialog({
         title: "Eliminar grado",
         message: `Se eliminará ${rango?.nombreCompleto ?? "este grado del personal"}.`,
@@ -818,7 +818,7 @@ export default function Home() {
         },
       });
     },
-    [isAdmin, rangos, loadData],
+    [isAdmin, rangosConfigView, loadData],
   );
 
   const createBateria = useCallback(async () => {
@@ -2436,12 +2436,12 @@ export default function Home() {
         return;
       }
 
-      const trimmedGrado = newGrado.trim();
+      const parsedRangoId = Number(newUserRangoId);
       const trimmedNombre = newNombre.trim();
       const trimmedApellido = newApellido.trim();
       const trimmedUsername = newUsername.trim();
       const trimmedMailReferencia = newMailReferencia.trim();
-      if (!trimmedGrado || !trimmedNombre || !trimmedApellido || !trimmedUsername) {
+      if (!Number.isInteger(parsedRangoId) || parsedRangoId <= 0 || !trimmedNombre || !trimmedApellido || !trimmedUsername) {
         setStatus("Grado, nombre, apellido y usuario son obligatorios.");
         return;
       }
@@ -2458,7 +2458,7 @@ export default function Home() {
 
       try {
         await createUsuarioHandler({
-          grado: trimmedGrado,
+          rangoId: parsedRangoId,
           nombre: trimmedNombre,
           apellido: trimmedApellido,
           usuario: trimmedUsername,
@@ -2467,7 +2467,7 @@ export default function Home() {
           rol: newRole,
         }, {
           onSuccess: async () => {
-            setNewGrado("");
+            setNewUserRangoId("");
             setNewNombre("");
             setNewApellido("");
             setNewUsername("");
@@ -2484,7 +2484,7 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [isAdmin, newGrado, newNombre, newApellido, newUsername, newPassword, newPasswordConfirm, newMailReferencia, newRole, loadData],
+    [isAdmin, newUserRangoId, newNombre, newApellido, newUsername, newPassword, newPasswordConfirm, newMailReferencia, newRole, loadData],
   );
 
   const changeUserRole = useCallback(
@@ -2533,7 +2533,7 @@ export default function Home() {
     (
       usuario: {
         usuarioId: string;
-        grado?: string;
+        rangoId?: number;
         nombre?: string;
         apellido?: string;
         username: string;
@@ -2543,7 +2543,7 @@ export default function Home() {
     ) => {
       setUsernameDialog({
         usuarioId: usuario.usuarioId,
-        grado: usuario.grado ?? "",
+        rangoId: usuario.rangoId ? String(usuario.rangoId) : "",
         nombre: usuario.nombre ?? "",
         apellido: usuario.apellido ?? "",
         username: usuario.username,
@@ -2649,12 +2649,12 @@ export default function Home() {
       return;
     }
 
-    const nextGrado = usernameDialog.grado.trim();
+    const nextRangoId = Number(usernameDialog.rangoId);
     const nextNombre = usernameDialog.nombre.trim();
     const nextApellido = usernameDialog.apellido.trim();
     const nextUsername = usernameDialog.username.trim();
     const nextMailReferencia = usernameDialog.mailReferencia.trim();
-    if (!nextGrado || !nextNombre || !nextApellido || !nextUsername) {
+    if (!Number.isInteger(nextRangoId) || nextRangoId <= 0 || !nextNombre || !nextApellido || !nextUsername) {
       setStatus("Grado, nombre, apellido y usuario son obligatorios.");
       return;
     }
@@ -2662,7 +2662,7 @@ export default function Home() {
     setUsernameSaving(true);
     try {
       await updateUsuarioProfileHandler(usernameDialog.usuarioId, {
-        grado: nextGrado,
+        rangoId: nextRangoId,
         nombre: nextNombre,
         apellido: nextApellido,
         usuario: nextUsername,
@@ -3205,7 +3205,8 @@ export default function Home() {
           mergeEquipoOrigenId={mergeEquipoOrigenId}
           mergeEquipoDestinoId={mergeEquipoDestinoId}
           usuarios={usuarios}
-          newGrado={newGrado}
+          newUserRangoId={newUserRangoId}
+          userRangoOptions={rangosConfigView}
           newNombre={newNombre}
           newApellido={newApellido}
           newUsername={newUsername}
@@ -3257,7 +3258,7 @@ export default function Home() {
           }}
           onResetEquipoOrderDraft={() => setEquipoOrderDraftIds(null)}
           renderEquipoCard={renderEquipoCard}
-          onNewGradoChange={setNewGrado}
+          onNewUserRangoIdChange={setNewUserRangoId}
           onNewNombreChange={setNewNombre}
           onNewApellidoChange={setNewApellido}
           onNewUsernameChange={setNewUsername}
@@ -3393,7 +3394,8 @@ export default function Home() {
       {activeView === "usuario_nuevo" ? (
         <UserCreateView
           isAdmin={isAdmin}
-          grado={newGrado}
+          rangoId={newUserRangoId}
+          rangoOptions={rangosConfigView}
           nombre={newNombre}
           apellido={newApellido}
           username={newUsername}
@@ -3403,7 +3405,7 @@ export default function Home() {
           role={newRole}
           onBack={() => setActiveView("personal")}
           onSubmit={(event) => void createUsuario(event)}
-          onGradoChange={setNewGrado}
+          onRangoIdChange={setNewUserRangoId}
           onNombreChange={setNewNombre}
           onApellidoChange={setNewApellido}
           onUsernameChange={setNewUsername}
@@ -3645,6 +3647,7 @@ export default function Home() {
         onSubmitUserPassword={() => void submitUserPasswordChange()}
         usernameDialog={usernameDialog}
         usernameSaving={usernameSaving}
+        userRangoOptions={rangosConfigView}
         onUsernameDialogChange={(field, value) =>
           setUsernameDialog((current) => (current ? { ...current, [field]: value } : current))
         }

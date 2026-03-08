@@ -16,7 +16,11 @@ export const prestamoInclude = {
   usuarioEntrega: {
     select: {
       usuarioId: true,
-      grado: true,
+      rango: {
+        select: {
+          abreviacion: true,
+        },
+      },
       apellido: true,
       nombre: true,
       username: true,
@@ -38,7 +42,11 @@ export const prestamoInclude = {
       usuarioRecibeDevolucion: {
         select: {
           usuarioId: true,
-          grado: true,
+          rango: {
+            select: {
+              abreviacion: true,
+            },
+          },
           apellido: true,
           nombre: true,
           username: true,
@@ -69,12 +77,12 @@ export type PrestamoWithRelations = Prisma.MovimientoGetPayload<{
 }>;
 
 function formatUserLabel(user: {
-  grado: string;
+  rango: { abreviacion: string };
   apellido: string;
   nombre: string;
   username: string;
 }) {
-  return `${user.grado} ${user.apellido}, ${user.nombre}`.replace(/\s+/g, " ").trim() || user.username;
+  return `${user.rango.abreviacion} ${user.apellido}, ${user.nombre}`.replace(/\s+/g, " ").trim() || user.username;
 }
 
 function mapDestinatarioTipo(tipo: TipoPersonal) {

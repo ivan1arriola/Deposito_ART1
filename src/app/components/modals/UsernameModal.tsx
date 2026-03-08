@@ -3,16 +3,18 @@
 import type { UserProfileDialogState } from "@/app/types/home";
 import { LoadingInline } from "@/app/components/shared";
 import { ModalFrame } from "./ModalFrame";
+import type { Rango } from "@/types/entities";
 
 type UsernameModalProps = {
   dialog: UserProfileDialogState | null;
   saving: boolean;
-  onChange: (field: keyof Pick<UserProfileDialogState, "grado" | "nombre" | "apellido" | "username" | "mailReferencia">, value: string) => void;
+  rangoOptions: Rango[];
+  onChange: (field: keyof Pick<UserProfileDialogState, "rangoId" | "nombre" | "apellido" | "username" | "mailReferencia">, value: string) => void;
   onClose: () => void;
   onSubmit: () => void;
 };
 
-export function UsernameModal({ dialog, saving, onChange, onClose, onSubmit }: UsernameModalProps) {
+export function UsernameModal({ dialog, saving, rangoOptions, onChange, onClose, onSubmit }: UsernameModalProps) {
   if (!dialog) return null;
 
   return (
@@ -23,7 +25,18 @@ export function UsernameModal({ dialog, saving, onChange, onClose, onSubmit }: U
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <label className="block">
           <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Grado</span>
-          <input value={dialog.grado} onChange={(event) => onChange("grado", event.target.value)} placeholder="Grado" className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+          <select
+            value={dialog.rangoId}
+            onChange={(event) => onChange("rangoId", event.target.value)}
+            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+          >
+            <option value="">Seleccionar grado</option>
+            {rangoOptions.map((rango) => (
+              <option key={`username-modal-rango-${rango.rangoId}`} value={String(rango.rangoId)}>
+                {`${rango.abreviacion} - ${rango.nombreCompleto}`}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="block">
           <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre</span>
@@ -60,7 +73,7 @@ export function UsernameModal({ dialog, saving, onChange, onClose, onSubmit }: U
         <button
           type="button"
           onClick={onSubmit}
-          disabled={saving || dialog.grado.trim() === "" || dialog.nombre.trim() === "" || dialog.apellido.trim() === "" || dialog.username.trim() === ""}
+          disabled={saving || dialog.rangoId.trim() === "" || dialog.nombre.trim() === "" || dialog.apellido.trim() === "" || dialog.username.trim() === ""}
           className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
         >
           {saving ? (

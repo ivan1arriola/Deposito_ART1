@@ -12,6 +12,7 @@ export async function GET() {
     return NextResponse.json({
       user: {
         usuarioId: user.usuarioId,
+        rangoId: user.rangoId,
         grado: user.grado,
         nombre: user.nombre,
         apellido: user.apellido,

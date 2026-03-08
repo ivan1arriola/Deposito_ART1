@@ -178,7 +178,11 @@ export async function GET(req: Request) {
     include: {
       usuario: {
         select: {
-          grado: true,
+          rango: {
+            select: {
+              abreviacion: true,
+            },
+          },
           nombre: true,
           apellido: true,
           username: true,
@@ -194,7 +198,7 @@ export async function GET(req: Request) {
     const key = `${audit.entidad}:${audit.entidadId}`;
     if (auditUserByEntity.has(key)) continue;
     const userLabel = audit.usuario
-      ? `${audit.usuario.grado} ${audit.usuario.apellido}, ${audit.usuario.nombre}`.replace(/\s+/g, " ").trim()
+      ? `${audit.usuario.rango.abreviacion} ${audit.usuario.apellido}, ${audit.usuario.nombre}`.replace(/\s+/g, " ").trim()
       : audit.usuarioId
         ? "Usuario eliminado"
         : null;
@@ -278,11 +282,11 @@ export async function GET(req: Request) {
   const historialPrestamos: StockHistorialInternalEntry[] = prestamos.flatMap((prestamo) => {
     const destinatario = formatPrestamoDestinatario(prestamo);
     const totalUnidades = prestamo.items.reduce((acumulado, item) => acumulado + item.cantidad, 0);
-    const usuarioEntregaLabel = `${prestamo.usuarioEntrega.grado} ${prestamo.usuarioEntrega.apellido}, ${prestamo.usuarioEntrega.nombre}`
+    const usuarioEntregaLabel = `${prestamo.usuarioEntrega.rango.abreviacion} ${prestamo.usuarioEntrega.apellido}, ${prestamo.usuarioEntrega.nombre}`
       .replace(/\s+/g, " ")
       .trim();
     const usuarioRecibeLabel = prestamo.prestamoHistorial?.usuarioRecibeDevolucion
-      ? `${prestamo.prestamoHistorial.usuarioRecibeDevolucion.grado} ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.apellido}, ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre}`
+      ? `${prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango.abreviacion} ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.apellido}, ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre}`
           .replace(/\s+/g, " ")
           .trim()
       : null;

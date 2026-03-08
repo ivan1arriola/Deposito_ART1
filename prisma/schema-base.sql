@@ -347,7 +347,7 @@ CREATE INDEX "observacion_ci_fecha_idx" ON "observacion"("ci", "fecha" DESC);
 
 CREATE TABLE "usuario" (
   "usuario_id" TEXT PRIMARY KEY,
-  "grado" TEXT NOT NULL,
+  "grado_id" SMALLINT NOT NULL REFERENCES "grado"("grado_id"),
   "nombre" TEXT NOT NULL,
   "apellido" TEXT NOT NULL,
   "usuario" TEXT NOT NULL UNIQUE,
@@ -358,6 +358,8 @@ CREATE TABLE "usuario" (
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
 );
+
+CREATE INDEX "usuario_grado_id_idx" ON "usuario"("grado_id");
 
 CREATE TABLE "movimiento" (
   "movimiento_id" BIGSERIAL PRIMARY KEY,

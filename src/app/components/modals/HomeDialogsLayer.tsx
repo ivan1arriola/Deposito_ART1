@@ -1,7 +1,7 @@
 "use client";
 
 import { apellidosLabel, nombresLabel, roleDescription, roleLabel, roleScope } from "@/lib/formatters";
-import type { Equipo, Personal, PersonalObservacion, Role } from "@/types/entities";
+import type { Equipo, Personal, PersonalObservacion, Rango, Role } from "@/types/entities";
 import type { RegistroDraft, RegistroDraftEquipo } from "@/types/forms";
 import type { ConfirmDialogState, RegistroView, RegistroViewerState } from "@/types/views";
 import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDialogState, UserRoleDialogState } from "@/app/types/home";
@@ -37,8 +37,9 @@ type HomeDialogsLayerProps = {
   onSubmitUserPassword: () => void;
   usernameDialog: UserProfileDialogState | null;
   usernameSaving: boolean;
+  userRangoOptions: Rango[];
   onUsernameDialogChange: (
-    field: keyof Pick<UserProfileDialogState, "grado" | "nombre" | "apellido" | "username" | "mailReferencia">,
+    field: keyof Pick<UserProfileDialogState, "rangoId" | "nombre" | "apellido" | "username" | "mailReferencia">,
     value: string,
   ) => void;
   onCloseUsernameDialog: () => void;
@@ -107,6 +108,7 @@ export function HomeDialogsLayer({
   onSubmitUserPassword,
   usernameDialog,
   usernameSaving,
+  userRangoOptions,
   onUsernameDialogChange,
   onCloseUsernameDialog,
   onSubmitUsernameDialog,
@@ -188,6 +190,7 @@ export function HomeDialogsLayer({
       <UsernameModal
         dialog={usernameDialog}
         saving={usernameSaving}
+        rangoOptions={userRangoOptions}
         onChange={onUsernameDialogChange}
         onClose={onCloseUsernameDialog}
         onSubmit={onSubmitUsernameDialog}

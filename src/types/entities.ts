@@ -8,6 +8,7 @@ export const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "READ_ONLY"];
 
 export type Rango = {
   rangoId: number;
+  tipo?: "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
   abreviacion: string;
   nombreCompleto: string;
   orden: number;
@@ -125,6 +126,7 @@ export type PersonalObservacion = {
 
 export type CurrentUser = {
   usuarioId: string;
+  rangoId: number;
   grado: string;
   nombre: string;
   apellido: string;
@@ -142,6 +144,8 @@ export type FirmaConfig = {
 
 export type UsuarioAdmin = {
   usuarioId: string;
+  rangoId: number;
+  rango: Rango;
   grado: string;
   nombre: string;
   apellido: string;

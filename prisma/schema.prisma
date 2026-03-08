@@ -47,7 +47,7 @@ enum EstadoPrestamoMovimiento {
 
 model Usuario {
   usuarioId                       String              @id @default(cuid()) @map("usuario_id")
-  grado                           String
+  rangoId                         Int                 @map("grado_id") @db.SmallInt
   nombre                          String
   apellido                        String
   username                        String              @unique @map("usuario")
@@ -60,9 +60,11 @@ model Usuario {
   sesiones                        Sesion[]
   auditorias                      Auditoria[]
   resetCodes                      PasswordResetCode[]
+  rango                           Rango               @relation(fields: [rangoId], references: [rangoId])
   movimientosEntregados           Movimiento[]        @relation("movimiento_usuario_entrega")
   devolucionesPrestamoRegistradas PrestamoHistorial[] @relation("prestamo_historial_usuario_recepcion")
 
+  @@index([rangoId])
   @@map("usuario")
 }
 
@@ -115,6 +117,7 @@ model Rango {
   nombreCompleto String       @map("nombre_completo")
   orden          Int          @map("orden") @db.SmallInt
   personal       Personal[]
+  usuarios       Usuario[]
 
   @@unique([tipo, abreviacion])
   @@unique([tipo, nombreCompleto])

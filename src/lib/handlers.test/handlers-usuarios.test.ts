@@ -30,7 +30,7 @@ describe("Handlers de Usuarios", () => {
 
       await createUsuarioHandler(
         {
-          grado: "Sgto.",
+          rangoId: 1,
           nombre: "Juan",
           apellido: "Perez",
           usuario: "jperez",
@@ -46,7 +46,7 @@ describe("Handlers de Usuarios", () => {
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({
-            grado: "Sgto.",
+            rangoId: 1,
             nombre: "Juan",
             apellido: "Perez",
             usuario: "jperez",
@@ -69,7 +69,7 @@ describe("Handlers de Usuarios", () => {
       await updateUsuarioProfileHandler(
         "USR123",
         {
-          grado: "Tte.",
+          rangoId: 2,
           nombre: "Mario",
           apellido: "Gomez",
           usuario: "mgomez",
@@ -83,7 +83,7 @@ describe("Handlers de Usuarios", () => {
         expect.objectContaining({
           method: "PUT",
           body: JSON.stringify({
-            grado: "Tte.",
+            rangoId: 2,
             nombre: "Mario",
             apellido: "Gomez",
             usuario: "mgomez",

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { UserRole } from "@prisma/client";
+import { type Prisma, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 
 type UsuarioPayload = {
-  grado: string;
+  rangoId: number | string;
   nombre: string;
   apellido: string;
   usuario: string;
@@ -16,10 +16,16 @@ type UsuarioPayload = {
   activo?: boolean;
 };
 
+function parseRangoId(value: unknown) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  return parsed;
+}
+
 function isValidPayload(body: unknown): body is UsuarioPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  if (typeof candidate.grado !== "string" || candidate.grado.trim() === "") return false;
+  if (parseRangoId(candidate.rangoId) === null) return false;
   if (typeof candidate.nombre !== "string" || candidate.nombre.trim() === "") return false;
   if (typeof candidate.apellido !== "string" || candidate.apellido.trim() === "") return false;
   if (typeof candidate.usuario !== "string" || candidate.usuario.trim() === "") return false;
@@ -34,9 +40,42 @@ function roleFromValue(value: unknown): UserRole {
   return "EDITOR";
 }
 
-function serializeUsuario<T extends { createdAt: Date; updatedAt: Date }>(usuario: T) {
+const USUARIO_SELECT = {
+  usuarioId: true,
+  rangoId: true,
+  rango: {
+    select: {
+      rangoId: true,
+      tipo: true,
+      abreviacion: true,
+      nombreCompleto: true,
+      orden: true,
+    },
+  },
+  nombre: true,
+  apellido: true,
+  username: true,
+  mailReferencia: true,
+  rol: true,
+  activo: true,
+  createdAt: true,
+  updatedAt: true,
+} as const satisfies Prisma.UsuarioSelect;
+
+type UsuarioRecord = Prisma.UsuarioGetPayload<{ select: typeof USUARIO_SELECT }>;
+
+function serializeUsuario(usuario: UsuarioRecord) {
   return {
-    ...usuario,
+    usuarioId: usuario.usuarioId,
+    rangoId: usuario.rangoId,
+    rango: usuario.rango,
+    grado: usuario.rango.abreviacion,
+    nombre: usuario.nombre,
+    apellido: usuario.apellido,
+    username: usuario.username,
+    mailReferencia: usuario.mailReferencia,
+    rol: usuario.rol,
+    activo: usuario.activo,
     createdAt: formatDateTimeForDisplay(usuario.createdAt),
     updatedAt: formatDateTimeForDisplay(usuario.updatedAt),
   };
@@ -48,18 +87,7 @@ export async function GET(request: Request) {
 
   const usuarios = await prisma.usuario.findMany({
     orderBy: [{ apellido: "asc" }, { nombre: "asc" }, { username: "asc" }],
-    select: {
-      usuarioId: true,
-      grado: true,
-      nombre: true,
-      apellido: true,
-      username: true,
-      mailReferencia: true,
-      rol: true,
-      activo: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+    select: USUARIO_SELECT,
   });
 
   return NextResponse.json(usuarios.map(serializeUsuario));
@@ -77,12 +105,25 @@ export async function POST(request: Request) {
     );
   }
 
+  const rangoId = parseRangoId(body.rangoId);
+  if (rangoId === null) {
+    return NextResponse.json({ error: "Grado invalido." }, { status: 400 });
+  }
+
+  const rango = await prisma.rango.findUnique({
+    where: { rangoId },
+    select: { rangoId: true, abreviacion: true },
+  });
+  if (!rango) {
+    return NextResponse.json({ error: "Grado invalido." }, { status: 400 });
+  }
+
   const passwordHash = await hashPassword(body.password);
 
   try {
     const created = await prisma.usuario.create({
       data: {
-        grado: body.grado.trim(),
+        rangoId,
         nombre: body.nombre.trim(),
         apellido: body.apellido.trim(),
         username: body.usuario.trim(),
@@ -91,18 +132,7 @@ export async function POST(request: Request) {
         rol: roleFromValue(body.rol),
         activo: body.activo === undefined ? true : Boolean(body.activo),
       },
-      select: {
-        usuarioId: true,
-        grado: true,
-        nombre: true,
-        apellido: true,
-        username: true,
-        mailReferencia: true,
-        rol: true,
-        activo: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: USUARIO_SELECT,
     });
 
     await logAudit({
@@ -111,7 +141,7 @@ export async function POST(request: Request) {
       entidad: "USUARIO",
       entidadId: created.usuarioId,
       detalle: {
-        grado: created.grado,
+        grado: created.rango.abreviacion,
         nombre: created.nombre,
         apellido: created.apellido,
         username: created.username,

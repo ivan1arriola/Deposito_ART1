@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { UserRole } from "@prisma/client";
+import { type Prisma, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest, getUserFromRequest, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 
 type UsuarioUpdatePayload = {
-  grado?: string;
+  rangoId?: number | string;
   nombre?: string;
   apellido?: string;
   usuario?: string;
@@ -21,9 +21,48 @@ function roleFromValue(value: unknown): UserRole | null {
   return null;
 }
 
-function serializeUsuario<T extends { createdAt: Date; updatedAt: Date }>(usuario: T) {
+function parseRangoId(value: unknown) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  return parsed;
+}
+
+const USUARIO_SELECT = {
+  usuarioId: true,
+  rangoId: true,
+  rango: {
+    select: {
+      rangoId: true,
+      tipo: true,
+      abreviacion: true,
+      nombreCompleto: true,
+      orden: true,
+    },
+  },
+  nombre: true,
+  apellido: true,
+  username: true,
+  mailReferencia: true,
+  rol: true,
+  activo: true,
+  createdAt: true,
+  updatedAt: true,
+} as const satisfies Prisma.UsuarioSelect;
+
+type UsuarioRecord = Prisma.UsuarioGetPayload<{ select: typeof USUARIO_SELECT }>;
+
+function serializeUsuario(usuario: UsuarioRecord) {
   return {
-    ...usuario,
+    usuarioId: usuario.usuarioId,
+    rangoId: usuario.rangoId,
+    rango: usuario.rango,
+    grado: usuario.rango.abreviacion,
+    nombre: usuario.nombre,
+    apellido: usuario.apellido,
+    username: usuario.username,
+    mailReferencia: usuario.mailReferencia,
+    rol: usuario.rol,
+    activo: usuario.activo,
     createdAt: formatDateTimeForDisplay(usuario.createdAt),
     updatedAt: formatDateTimeForDisplay(usuario.updatedAt),
   };
@@ -51,15 +90,9 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     where: { usuarioId },
     select: {
       usuarioId: true,
-      grado: true,
-      nombre: true,
-      apellido: true,
-      username: true,
-      mailReferencia: true,
+      rangoId: true,
       rol: true,
       activo: true,
-      createdAt: true,
-      updatedAt: true,
     },
   });
 
@@ -75,7 +108,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
   }
 
   const data: {
-    grado?: string;
+    rangoId?: number;
     nombre?: string;
     apellido?: string;
     username?: string;
@@ -85,11 +118,19 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     activo?: boolean;
   } = {};
 
-  if (body.grado !== undefined) {
-    if (typeof body.grado !== "string" || body.grado.trim() === "") {
+  if (body.rangoId !== undefined) {
+    const rangoId = parseRangoId(body.rangoId);
+    if (!rangoId) {
       return NextResponse.json({ error: "Grado invalido." }, { status: 400 });
     }
-    data.grado = body.grado.trim();
+    const rango = await prisma.rango.findUnique({
+      where: { rangoId },
+      select: { rangoId: true },
+    });
+    if (!rango) {
+      return NextResponse.json({ error: "Grado invalido." }, { status: 400 });
+    }
+    data.rangoId = rangoId;
   }
 
   if (body.nombre !== undefined) {
@@ -162,18 +203,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     const updated = await prisma.usuario.update({
       where: { usuarioId },
       data,
-      select: {
-        usuarioId: true,
-        grado: true,
-        nombre: true,
-        apellido: true,
-        username: true,
-        mailReferencia: true,
-        rol: true,
-        activo: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: USUARIO_SELECT,
     });
 
     await logAudit({
@@ -182,7 +212,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       entidad: "USUARIO",
       entidadId: updated.usuarioId,
       detalle: {
-        grado: updated.grado,
+        grado: updated.rango.abreviacion,
         nombre: updated.nombre,
         apellido: updated.apellido,
         username: updated.username,
@@ -217,7 +247,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
     where: { usuarioId },
     select: {
       usuarioId: true,
-      grado: true,
+      rango: { select: { abreviacion: true } },
       nombre: true,
       apellido: true,
       username: true,
@@ -253,7 +283,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
       entidad: "USUARIO",
       entidadId: target.usuarioId,
       detalle: {
-        grado: target.grado,
+        grado: target.rango.abreviacion,
         nombre: target.nombre,
         apellido: target.apellido,
         username: target.username,

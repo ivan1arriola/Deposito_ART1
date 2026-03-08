@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       select: {
         usuarioId: true,
         username: true,
-        grado: true,
+        rango: { select: { abreviacion: true } },
         nombre: true,
         apellido: true,
         mailReferencia: true,
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
         entidadId: usuario.usuarioId,
         detalle: {
           username: usuario.username,
-          grado: usuario.grado,
+          grado: usuario.rango.abreviacion,
           nombre: usuario.nombre,
           apellido: usuario.apellido,
           mailReferencia: usuario.mailReferencia,

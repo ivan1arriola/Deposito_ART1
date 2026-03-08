@@ -15,12 +15,21 @@ export async function POST() {
       return Response.json({ initialized: false, message: "Ya existe usuario en el sistema." }, { status: 200 });
     }
 
+    const defaultRango = await prisma.rango.findFirst({
+      where: { tipo: "SUBALTERNO" },
+      orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
+      select: { rangoId: true, abreviacion: true },
+    });
+    if (!defaultRango) {
+      return Response.json({ initialized: false, error: "No hay grados disponibles para crear el usuario inicial." }, { status: 500 });
+    }
+
     const defaultPassword = "Admin@123456";
     const passwordHash = await hashPassword(defaultPassword);
 
     const defaultUser = await prisma.usuario.create({
       data: {
-        grado: "S/D",
+        rangoId: defaultRango.rangoId,
         nombre: "Administrador",
         apellido: "Sistema",
         username: "admin",
@@ -31,7 +40,8 @@ export async function POST() {
       },
       select: {
         usuarioId: true,
-        grado: true,
+        rangoId: true,
+        rango: { select: { abreviacion: true } },
         nombre: true,
         apellido: true,
         username: true,
@@ -46,7 +56,7 @@ export async function POST() {
       entidadId: defaultUser.usuarioId,
       detalle: {
         mensaje: "Usuario administrador por defecto creado automaticamente",
-        grado: defaultUser.grado,
+        grado: defaultUser.rango.abreviacion,
         nombre: defaultUser.nombre,
         apellido: defaultUser.apellido,
         username: defaultUser.username,

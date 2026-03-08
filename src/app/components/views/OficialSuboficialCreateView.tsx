@@ -119,21 +119,21 @@ export function OficialSuboficialCreateView({
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">Apellido 1 *</span>
+                    <span className="block text-xs font-medium text-stone-700">Primer apellido *</span>
                     <input
                       value={form.apellido1}
                       onChange={(event) => onChange("apellido1", event.target.value)}
-                      placeholder="Apellido principal"
+                      placeholder="Primer apellido"
                       className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                     />
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">Apellido 2</span>
+                    <span className="block text-xs font-medium text-stone-700">Segundo apellido</span>
                     <input
                       value={form.apellido2}
                       onChange={(event) => onChange("apellido2", event.target.value)}
-                      placeholder="Apellido secundario"
+                      placeholder="Segundo apellido"
                       className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                     />
                   </label>
@@ -270,7 +270,7 @@ export function OficialSuboficialCreateView({
 
                 <div className="mt-4 space-y-2 text-xs text-stone-600">
                   <p>{`Cedula valida: ${requiredFields[0] ? "Si" : "No"}`}</p>
-                  <p>{`Apellido 1: ${requiredFields[1] ? "Completo" : "Falta"}`}</p>
+                  <p>{`Primer apellido: ${requiredFields[1] ? "Completo" : "Falta"}`}</p>
                   <p>{`Nombre 1: ${requiredFields[2] ? "Completo" : "Falta"}`}</p>
                   <p>{`Grado: ${requiredFields[3] ? "Seleccionado" : "Falta"}`}</p>
                   <p>{`Tipo: ${TYPE_LABEL[form.tipo]}`}</p>
