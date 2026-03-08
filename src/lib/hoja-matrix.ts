@@ -1,4 +1,4 @@
-import { TipoRegistro } from "@prisma/client";
+import { Prisma, TipoMovimiento, TipoPersonal } from "@prisma/client";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 import { compareOptionalOrder } from "@/lib/catalog-order";
@@ -11,8 +11,8 @@ type GetHojaMatrixOptions = {
   bateria?: string | null;
 };
 
-function registroFactor(tipo: TipoRegistro) {
-  if (tipo === TipoRegistro.DEVOLUCION) return -1;
+function movimientoFactor(tipo: TipoMovimiento) {
+  if (tipo === TipoMovimiento.DEVOLUCION) return -1;
   return 1;
 }
 
@@ -65,21 +65,32 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
   const itemIds = items.map((item) => item.itemId);
   const itemIndexById = new Map(itemIds.map((itemId, index) => [itemId.toString(), index]));
 
+  const personalWhere: Prisma.PersonalWhereInput = {
+    tipo: TipoPersonal.SUBALTERNO,
+    ...(bateria === null
+      ? {}
+      : bateria === SIN_BATERIA_LABEL
+        ? { subalterno: { is: { bateriaId: null } } }
+        : { subalterno: { is: { bateria: { nombre: bateria } } } }),
+  };
+
   const personal = await prisma.personal.findMany({
-    where:
-      bateria === null
-        ? undefined
-        : bateria === SIN_BATERIA_LABEL
-          ? { bateriaId: null }
-          : { bateria: { nombre: bateria } },
+    where: personalWhere,
     include: {
       rango: {
         select: { abreviacion: true, nombreCompleto: true, orden: true },
       },
-      bateria: {
-        select: { nombre: true, orden: true },
+      subalterno: {
+        include: {
+          bateria: {
+            select: { nombre: true, orden: true },
+          },
+        },
       },
-      registros: {
+      movimientos: {
+        where: {
+          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+        },
         include: {
           items: {
             where: itemIds.length > 0 ? { itemId: { in: itemIds } } : undefined,
@@ -96,9 +107,9 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
   const rows: HojaMatrixRow[] = personal.map((persona) => {
     const totales = Array.from({ length: items.length }, () => 0);
 
-    for (const registro of persona.registros) {
-      const factor = registroFactor(registro.tipo);
-      for (const detail of registro.items) {
+    for (const movimiento of persona.movimientos) {
+      const factor = movimientoFactor(movimiento.tipo);
+      for (const detail of movimiento.items) {
         const index = itemIndexById.get(detail.itemId.toString());
         if (index === undefined) continue;
         totales[index] += detail.cantidad * factor;
@@ -113,8 +124,8 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
       apellido2: persona.apellido2,
       nombre1: persona.nombre1,
       nombre2: persona.nombre2,
-      bateria: persona.bateria?.nombre ?? null,
-      bateriaOrden: persona.bateria?.orden ?? null,
+      bateria: persona.subalterno?.bateria?.nombre ?? null,
+      bateriaOrden: persona.subalterno?.bateria?.orden ?? null,
       grado: persona.rango.nombreCompleto,
       gradoOrden: persona.rango.orden,
       gradoAbreviacion: persona.rango.abreviacion,

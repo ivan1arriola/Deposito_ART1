@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { TipoStockOperacion } from "@prisma/client";
+import { TipoMovimiento, TipoStockOperacion } from "@prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import {
@@ -11,7 +11,8 @@ import {
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
-import { buildPersonalByItemMap, buildStockByItemMap, registroStockDeltaFactor, stockOperacionDeltaFactor } from "@/lib/stock";
+import { buildPersonalByItemMap, buildStockByItemMap, movimientoStockDeltaFactor, stockOperacionDeltaFactor } from "@/lib/stock";
+import { formatPrestamoDestinatario, prestamoInclude, serializePrestamo } from "@/lib/prestamos";
 import type { StockDashboardData } from "@/types/views";
 
 type StockItemPayload = {
@@ -77,8 +78,19 @@ function hasStockDelegates() {
   const candidate = prisma as typeof prisma & {
     stockOperacion?: unknown;
     stockOperacionItem?: unknown;
+    movimiento?: unknown;
+    movimientoItem?: unknown;
+    prestamoActivo?: unknown;
+    prestamoHistorial?: unknown;
   };
-  return typeof candidate.stockOperacion !== "undefined" && typeof candidate.stockOperacionItem !== "undefined";
+  return (
+    typeof candidate.stockOperacion !== "undefined" &&
+    typeof candidate.stockOperacionItem !== "undefined" &&
+    typeof candidate.movimiento !== "undefined" &&
+    typeof candidate.movimientoItem !== "undefined" &&
+    typeof candidate.prestamoActivo !== "undefined" &&
+    typeof candidate.prestamoHistorial !== "undefined"
+  );
 }
 
 export async function GET(req: Request) {
@@ -91,7 +103,7 @@ export async function GET(req: Request) {
   const limitRaw = Number(new URL(req.url).searchParams.get("limit") ?? "200");
   const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 20), 400) : 200;
 
-  const [items, stockDepositoByItem, stockPersonalByItem, stockOperaciones, registros] = await Promise.all([
+  const [items, stockDepositoByItem, stockPersonalByItem, stockOperaciones, movimientos, prestamos] = await Promise.all([
     prisma.item.findMany({
       orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
       select: { itemId: true, nombre: true, activo: true, ordenPdf: true },
@@ -112,13 +124,20 @@ export async function GET(req: Request) {
       orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
       take: limit,
     }),
-    prisma.registro.findMany({
-      where: { afectaStock: true },
+    prisma.movimiento.findMany({
+      where: {
+        afectaStock: true,
+        tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+      },
       include: {
         personal: {
           include: {
             rango: true,
-            bateria: true,
+            subalterno: {
+              include: {
+                bateria: true,
+              },
+            },
           },
         },
         items: {
@@ -133,10 +152,16 @@ export async function GET(req: Request) {
       orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
       take: limit,
     }),
+    prisma.movimiento.findMany({
+      where: { tipo: TipoMovimiento.PRESTAMO },
+      include: prestamoInclude,
+      orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
+      take: limit,
+    }),
   ]);
 
   const stockAuditKeys = stockOperaciones.map((operacion) => operacion.stockOperacionId.toString());
-  const registroAuditKeys = registros.map((registro) => registro.registroId.toString());
+  const registroAuditKeys = movimientos.map((movimiento) => movimiento.movimientoId.toString());
   const auditorias = await prisma.auditoria.findMany({
     where: {
       OR: [
@@ -204,36 +229,97 @@ export async function GET(req: Request) {
     sortCreatedAt: operacion.createdAt.getTime(),
   }));
 
-  const historialPersonal: StockHistorialInternalEntry[] = registros
-    .map((registro) => {
-      if (registro.tipo !== "ENTREGA" && registro.tipo !== "DEVOLUCION") return null;
-      const apellidos = `${registro.personal.apellido1} ${registro.personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
-      const nombres = `${registro.personal.nombre1} ${registro.personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
+  const historialPersonal: StockHistorialInternalEntry[] = movimientos
+    .map((movimiento) => {
+      if (movimiento.tipo !== "ENTREGA" && movimiento.tipo !== "DEVOLUCION") return null;
+      const apellidos = `${movimiento.personal.apellido1} ${movimiento.personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
+      const nombres = `${movimiento.personal.nombre1} ${movimiento.personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
       return {
-        id: `personal-${registro.registroId.toString()}`,
-        fecha: formatDateOnlyFromDate(registro.fecha) ?? "",
-        createdAt: formatDateTimeForDisplay(registro.createdAt),
+        id: `personal-${movimiento.movimientoId.toString()}`,
+        fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
+        createdAt: formatDateTimeForDisplay(movimiento.createdAt),
         origen: "PERSONAL" as const,
-        tipo: registro.tipo,
-        afectaStock: registro.afectaStock,
-        comentarios: registro.comentarios,
-        totalUnidades: registro.items.reduce((total, item) => total + item.cantidad, 0),
-        ci: registro.ci,
-        persona: `${registro.personal.rango.abreviacion} ${apellidos}, ${nombres}`,
-        registradoPor: auditUserByEntity.get(`REGISTRO:${registro.registroId.toString()}`) ?? null,
-        items: registro.items.map((item) => ({
+        tipo: movimiento.tipo,
+        afectaStock: movimiento.afectaStock,
+        comentarios: movimiento.observaciones,
+        totalUnidades: movimiento.items.reduce((total, item) => total + item.cantidad, 0),
+        ci: movimiento.personalCi,
+        persona: `${movimiento.personal.rango.abreviacion} ${apellidos}, ${nombres}`,
+        registradoPor: auditUserByEntity.get(`REGISTRO:${movimiento.movimientoId.toString()}`) ?? null,
+        items: movimiento.items.map((item) => ({
           itemId: item.item.itemId.toString(),
           nombre: item.item.nombre,
           cantidad: item.cantidad,
-          delta: item.cantidad * registroStockDeltaFactor(registro.tipo),
+          delta: item.cantidad * movimientoStockDeltaFactor(movimiento.tipo),
         })),
-        sortFecha: registro.fecha.getTime(),
-        sortCreatedAt: registro.createdAt.getTime(),
+        sortFecha: movimiento.fecha.getTime(),
+        sortCreatedAt: movimiento.createdAt.getTime(),
       };
     })
-    .filter((registro): registro is NonNullable<typeof registro> => registro !== null);
+    .filter((movimiento): movimiento is NonNullable<typeof movimiento> => movimiento !== null);
 
-  const historial: StockDashboardData["historial"] = [...historialManual, ...historialPersonal]
+  const historialPrestamos: StockHistorialInternalEntry[] = prestamos.flatMap((prestamo) => {
+    const destinatario = formatPrestamoDestinatario(prestamo);
+    const totalUnidades = prestamo.items.reduce((acumulado, item) => acumulado + item.cantidad, 0);
+    const usuarioEntregaLabel = `${prestamo.usuarioEntrega.grado} ${prestamo.usuarioEntrega.apellido}, ${prestamo.usuarioEntrega.nombre}`
+      .replace(/\s+/g, " ")
+      .trim();
+    const usuarioRecibeLabel = prestamo.prestamoHistorial?.usuarioRecibeDevolucion
+      ? `${prestamo.prestamoHistorial.usuarioRecibeDevolucion.grado} ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.apellido}, ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre}`
+          .replace(/\s+/g, " ")
+          .trim()
+      : null;
+
+    const salida: StockHistorialInternalEntry = {
+      id: `prestamo-${prestamo.movimientoId.toString()}-salida`,
+      fecha: formatDateOnlyFromDate(prestamo.fecha) ?? "",
+      createdAt: formatDateTimeForDisplay(prestamo.createdAt),
+      origen: "PRESTAMO",
+      tipo: "PRESTAMO",
+      afectaStock: true,
+      comentarios: prestamo.observaciones,
+      totalUnidades,
+      ci: destinatario.ci || null,
+      persona: destinatario.etiqueta,
+      registradoPor: usuarioEntregaLabel || prestamo.usuarioEntrega.username,
+      items: prestamo.items.map((item) => ({
+        itemId: item.item.itemId.toString(),
+        nombre: item.item.nombre,
+        cantidad: item.cantidad,
+        delta: -item.cantidad,
+      })),
+      sortFecha: prestamo.fecha.getTime(),
+      sortCreatedAt: prestamo.createdAt.getTime(),
+    };
+
+    if (!prestamo.prestamoHistorial) return [salida];
+
+    const devolucion: StockHistorialInternalEntry = {
+      id: `prestamo-${prestamo.movimientoId.toString()}-devolucion`,
+      fecha: formatDateOnlyFromDate(prestamo.prestamoHistorial.fechaDevolucion) ?? "",
+      createdAt: formatDateTimeForDisplay(prestamo.prestamoHistorial.createdAt),
+      origen: "PRESTAMO",
+      tipo: "DEVOLUCION_PRESTAMO",
+      afectaStock: true,
+      comentarios: `Devolucion de prestamo ${prestamo.prestamoHistorial.reciboNumero}`,
+      totalUnidades,
+      ci: destinatario.ci || null,
+      persona: destinatario.etiqueta,
+      registradoPor: usuarioRecibeLabel || prestamo.prestamoHistorial.usuarioRecibeDevolucion?.username || null,
+      items: prestamo.items.map((item) => ({
+        itemId: item.item.itemId.toString(),
+        nombre: item.item.nombre,
+        cantidad: item.cantidad,
+        delta: item.cantidad,
+      })),
+      sortFecha: prestamo.prestamoHistorial.fechaDevolucion.getTime(),
+      sortCreatedAt: prestamo.prestamoHistorial.createdAt.getTime(),
+    };
+
+    return [salida, devolucion];
+  });
+
+  const historial: StockDashboardData["historial"] = [...historialManual, ...historialPersonal, ...historialPrestamos]
     .sort((a, b) => {
       const timeDiff = b.sortFecha - a.sortFecha;
       if (timeDiff !== 0) return timeDiff;
@@ -259,6 +345,7 @@ export async function GET(req: Request) {
     generatedAt: formatDateTimeForDisplay(new Date()),
     resumen,
     historial,
+    prestamos: prestamos.map(serializePrestamo),
   };
 
   return NextResponse.json(data);

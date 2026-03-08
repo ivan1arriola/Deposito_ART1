@@ -4,6 +4,7 @@ import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
+import { TipoPersonal } from "@prisma/client";
 
 export const revalidate = 0;
 
@@ -32,9 +33,16 @@ export default async function TallasUnidadPage({
   const shouldAutoPrint = resolvedSearchParams?.autoprint === "1";
 
   const personal = await prisma.personal.findMany({
+    where: {
+      tipo: TipoPersonal.SUBALTERNO,
+    },
     include: {
       rango: true,
-      bateria: true,
+      subalterno: {
+        include: {
+          bateria: true,
+        },
+      },
       tallas: {
         include: { tallaTipo: true },
         orderBy: { tallaTipoId: "asc" },
@@ -220,7 +228,7 @@ export default async function TallasUnidadPage({
                     <td className="cell-center cell-strong">{persona.rango.abreviacion}</td>
                     <td>{buildApellidos(persona)}</td>
                     <td>{buildNombres(persona)}</td>
-                    <td>{persona.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
+                    <td>{persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
                     <td className="cell-center">{tallas.PARKA !== "-" ? tallas.PARKA : "Sin dato"}</td>
                     <td className="cell-center">{tallas.CAMISACO !== "-" ? tallas.CAMISACO : "Sin dato"}</td>
                     <td className="cell-center">{tallas.PANTALON !== "-" ? tallas.PANTALON : "Sin dato"}</td>

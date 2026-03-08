@@ -15,8 +15,25 @@ function hasCurrentDelegates(client: PrismaClient | undefined) {
   const candidate = client as PrismaClient & {
     stockOperacion?: unknown;
     stockOperacionItem?: unknown;
+    subalterno?: unknown;
+    oficial?: unknown;
+    suboficial?: unknown;
+    movimiento?: unknown;
+    movimientoItem?: unknown;
+    prestamoActivo?: unknown;
+    prestamoHistorial?: unknown;
   };
-  return typeof candidate.stockOperacion !== "undefined" && typeof candidate.stockOperacionItem !== "undefined";
+  return (
+    typeof candidate.stockOperacion !== "undefined" &&
+    typeof candidate.stockOperacionItem !== "undefined" &&
+    typeof candidate.subalterno !== "undefined" &&
+    typeof candidate.oficial !== "undefined" &&
+    typeof candidate.suboficial !== "undefined" &&
+    typeof candidate.movimiento !== "undefined" &&
+    typeof candidate.movimientoItem !== "undefined" &&
+    typeof candidate.prestamoActivo !== "undefined" &&
+    typeof candidate.prestamoHistorial !== "undefined"
+  );
 }
 
 export const prisma =

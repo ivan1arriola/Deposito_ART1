@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { TipoRegistro } from "@prisma/client";
+import { TipoMovimiento, TipoPersonal } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -43,7 +43,7 @@ type MovimientoItemPayload = {
 };
 
 type MovimientoPayload = {
-  tipo: TipoRegistro | string;
+  tipo: TipoMovimiento | string;
   afectaStock?: boolean;
   fecha?: string;
   comentarios?: string;
@@ -51,7 +51,7 @@ type MovimientoPayload = {
 };
 
 type ParsedMovimiento = {
-  tipo: TipoRegistro;
+  tipo: TipoMovimiento;
   afectaStock: boolean;
   fecha: Date;
   fechaInput: string;
@@ -72,10 +72,10 @@ function parseCantidad(value: unknown) {
   return parsed;
 }
 
-function parseTipoRegistro(value: unknown) {
+function parseTipoMovimiento(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
-  if (raw === "ENTREGA") return TipoRegistro.ENTREGA;
-  if (raw === "DEVOLUCION") return TipoRegistro.DEVOLUCION;
+  if (raw === "ENTREGA") return TipoMovimiento.ENTREGA;
+  if (raw === "DEVOLUCION") return TipoMovimiento.DEVOLUCION;
   return null;
 }
 
@@ -116,7 +116,7 @@ function isValidPayload(body: unknown): body is PersonalPayload {
     for (const movimiento of candidate.movimientos) {
       if (!movimiento || typeof movimiento !== "object") return false;
       const candidateMovimiento = movimiento as Record<string, unknown>;
-      if (!parseTipoRegistro(candidateMovimiento.tipo)) return false;
+      if (!parseTipoMovimiento(candidateMovimiento.tipo)) return false;
       if (candidateMovimiento.fecha !== undefined && typeof candidateMovimiento.fecha !== "string") return false;
       if (candidateMovimiento.comentarios !== undefined && typeof candidateMovimiento.comentarios !== "string") return false;
       if (candidateMovimiento.afectaStock !== undefined && typeof candidateMovimiento.afectaStock !== "boolean") return false;
@@ -139,14 +139,6 @@ function normalizeNullableText(value: string | undefined) {
   return normalized ? normalized : null;
 }
 
-function serializePersonal<T extends { fechaIngreso: Date | null; fechaIngresoOriginal: Date | null }>(persona: T) {
-  return {
-    ...persona,
-    fechaIngreso: formatDateOnlyFromDate(persona.fechaIngreso),
-    fechaIngresoOriginal: formatDateOnlyFromDate(persona.fechaIngresoOriginal),
-  };
-}
-
 function buildPersonalAuditDetail(personal: {
   ci: string;
   apellido1: string;
@@ -154,14 +146,70 @@ function buildPersonalAuditDetail(personal: {
   nombre1: string;
   nombre2: string | null;
   rango: { nombreCompleto: string; abreviacion: string };
-  bateria: { nombre: string } | null;
+  subalterno: { bateria: { nombre: string } | null } | null;
 }) {
   return {
     ci: personal.ci,
     nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
-    bateria: personal.bateria?.nombre ?? null,
+    bateria: personal.subalterno?.bateria?.nombre ?? null,
+  };
+}
+
+type PersonalWithRelations = {
+  ci: string;
+  tipo: TipoPersonal;
+  apellido1: string;
+  apellido2: string | null;
+  nombre1: string;
+  nombre2: string | null;
+  telefonoContacto: string | null;
+  rangoId: number;
+  rango: {
+    rangoId: number;
+    tipo: TipoPersonal;
+    abreviacion: string;
+    nombreCompleto: string;
+    orden: number;
+  };
+  subalterno: {
+    esReingreso: boolean;
+    fechaIngreso: Date | null;
+    fechaIngresoOriginal: Date | null;
+    bateriaId: number | null;
+    bateria: {
+      bateriaId: number;
+      nombre: string;
+      orden: number;
+    } | null;
+  } | null;
+  tallas: Array<{
+    tallaTipoId: number;
+    tallaValor: string;
+    tallaTipo: {
+      tallaTipoId: number;
+      nombre: string;
+    };
+  }>;
+};
+
+function serializePersonal(persona: PersonalWithRelations) {
+  return {
+    ci: persona.ci,
+    apellido1: persona.apellido1,
+    apellido2: persona.apellido2,
+    nombre1: persona.nombre1,
+    nombre2: persona.nombre2,
+    telefonoContacto: persona.telefonoContacto,
+    esReingreso: persona.subalterno?.esReingreso ?? false,
+    fechaIngreso: formatDateOnlyFromDate(persona.subalterno?.fechaIngreso ?? null),
+    fechaIngresoOriginal: formatDateOnlyFromDate(persona.subalterno?.fechaIngresoOriginal ?? null),
+    rangoId: persona.rangoId,
+    bateriaId: persona.subalterno?.bateriaId ?? null,
+    rango: persona.rango,
+    bateria: persona.subalterno?.bateria ?? null,
+    tallas: persona.tallas,
   };
 }
 
@@ -200,9 +248,14 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const personal = await prisma.personal.findMany({
+    where: { tipo: TipoPersonal.SUBALTERNO },
     include: {
       rango: true,
-      bateria: true,
+      subalterno: {
+        include: {
+          bateria: true,
+        },
+      },
       tallas: {
         include: { tallaTipo: true },
         orderBy: { tallaTipoId: "asc" },
@@ -212,14 +265,16 @@ export async function GET(request: Request) {
 
   personal.sort(comparePersonalByHierarchy);
 
-  return NextResponse.json(personal.map(serializePersonal));
+  return NextResponse.json(personal.map((persona) => serializePersonal(persona as PersonalWithRelations)));
 }
 
 export async function POST(req: Request) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
 
-  const totalGrados = await prisma.rango.count();
+  const totalGrados = await prisma.rango.count({
+    where: { tipo: TipoPersonal.SUBALTERNO },
+  });
   if (totalGrados === 0) {
     return NextResponse.json(
       { error: "No se puede registrar personal sin registrar Grados previamente." },
@@ -295,7 +350,7 @@ export async function POST(req: Request) {
   const movimientoItemIds = new Set<string>();
 
   for (const [movimientoIndex, movimientoRaw] of movimientosPayload.entries()) {
-    const tipo = parseTipoRegistro(movimientoRaw.tipo);
+    const tipo = parseTipoMovimiento(movimientoRaw.tipo);
     const fecha = parseFechaRegistro(movimientoRaw.fecha);
     const fechaInput = String(movimientoRaw.fecha ?? "").trim() || getTodayDateInput();
 
@@ -335,7 +390,7 @@ export async function POST(req: Request) {
 
     movimientosParsed.push({
       tipo,
-      afectaStock: movimientoRaw.afectaStock === true,
+      afectaStock: movimientoRaw.afectaStock !== false,
       fecha,
       fechaInput,
       comentarios: movimientoRaw.comentarios?.trim() || null,
@@ -371,15 +426,22 @@ export async function POST(req: Request) {
       const personalCreated = await tx.personal.create({
         data: {
           ci: body.ci.trim(),
+          tipo: TipoPersonal.SUBALTERNO,
           apellido1: body.apellido1.trim(),
           apellido2: normalizeNullableText(body.apellido2),
           nombre1: body.nombre1.trim(),
           nombre2: normalizeNullableText(body.nombre2),
           telefonoContacto,
+          rangoId: Number(body.rangoId),
+        },
+      });
+
+      await tx.subalterno.create({
+        data: {
+          ci: personalCreated.ci,
           esReingreso,
           fechaIngreso,
           fechaIngresoOriginal,
-          rangoId: Number(body.rangoId),
           bateriaId,
         },
       });
@@ -394,35 +456,40 @@ export async function POST(req: Request) {
         });
       }
 
-      const registroIds: string[] = [];
+      const movimientoIds: string[] = [];
       for (const movimiento of movimientosParsed) {
-        const registro = await tx.registro.create({
+        const movimientoCreado = await tx.movimiento.create({
           data: {
-            ci: personalCreated.ci,
+            personalCi: personalCreated.ci,
+            usuarioEntregaId: auth.user.usuarioId,
             fecha: movimiento.fecha,
             tipo: movimiento.tipo,
             afectaStock: movimiento.afectaStock,
-            comentarios: movimiento.comentarios,
+            observaciones: movimiento.comentarios,
           },
-          select: { registroId: true },
+          select: { movimientoId: true },
         });
 
-        await tx.registroItem.createMany({
+        await tx.movimientoItem.createMany({
           data: movimiento.items.map((item) => ({
-            registroId: registro.registroId,
+            movimientoId: movimientoCreado.movimientoId,
             itemId: item.itemId,
             cantidad: item.cantidad,
           })),
         });
 
-        registroIds.push(registro.registroId.toString());
+        movimientoIds.push(movimientoCreado.movimientoId.toString());
       }
 
       const personalRecord = await tx.personal.findUnique({
         where: { ci: personalCreated.ci },
         include: {
           rango: true,
-          bateria: true,
+          subalterno: {
+            include: {
+              bateria: true,
+            },
+          },
           tallas: {
             include: { tallaTipo: true },
             orderBy: { tallaTipoId: "asc" },
@@ -432,7 +499,7 @@ export async function POST(req: Request) {
 
       return {
         personal: personalRecord,
-        registroIds,
+        movimientoIds,
       };
     });
 
@@ -466,11 +533,11 @@ export async function POST(req: Request) {
           usuarioId: auth.user.usuarioId,
           accion: "CREATE",
           entidad: "REGISTRO",
-          entidadId: result.registroIds[index] ?? null,
+          entidadId: result.movimientoIds[index] ?? null,
           detalle: {
             evento: "MOVIMIENTO_ALTA_PERSONAL",
             ci: created.ci,
-            personal: buildPersonalAuditDetail(created),
+            personal: buildPersonalAuditDetail(created as PersonalWithRelations),
             tipo: movimiento.tipo,
             afectaStock: movimiento.afectaStock,
             fechaMovimiento: formatDateOnlyForDisplay(movimiento.fechaInput),
@@ -486,8 +553,8 @@ export async function POST(req: Request) {
     return NextResponse.json(
       created
         ? {
-            ...serializePersonal(created),
-            movimientosCreados: result.registroIds.length,
+            ...serializePersonal(created as PersonalWithRelations),
+            movimientosCreados: result.movimientoIds.length,
           }
         : created,
       { status: 201 },

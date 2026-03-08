@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { TipoPersonal } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -61,11 +62,59 @@ function normalizeNullableText(value: string | undefined) {
   return normalized ? normalized : null;
 }
 
-function serializePersonal<T extends { fechaIngreso: Date | null; fechaIngresoOriginal: Date | null }>(persona: T) {
+type PersonalWithRelations = {
+  ci: string;
+  tipo: TipoPersonal;
+  apellido1: string;
+  apellido2: string | null;
+  nombre1: string;
+  nombre2: string | null;
+  telefonoContacto: string | null;
+  rangoId: number;
+  rango: {
+    rangoId: number;
+    tipo: TipoPersonal;
+    abreviacion: string;
+    nombreCompleto: string;
+    orden: number;
+  };
+  subalterno: {
+    esReingreso: boolean;
+    fechaIngreso: Date | null;
+    fechaIngresoOriginal: Date | null;
+    bateriaId: number | null;
+    bateria: {
+      bateriaId: number;
+      nombre: string;
+      orden: number;
+    } | null;
+  } | null;
+  tallas: Array<{
+    tallaTipoId: number;
+    tallaValor: string;
+    tallaTipo: {
+      tallaTipoId: number;
+      nombre: string;
+    };
+  }>;
+};
+
+function serializePersonal(persona: PersonalWithRelations) {
   return {
-    ...persona,
-    fechaIngreso: formatDateOnlyFromDate(persona.fechaIngreso),
-    fechaIngresoOriginal: formatDateOnlyFromDate(persona.fechaIngresoOriginal),
+    ci: persona.ci,
+    apellido1: persona.apellido1,
+    apellido2: persona.apellido2,
+    nombre1: persona.nombre1,
+    nombre2: persona.nombre2,
+    telefonoContacto: persona.telefonoContacto,
+    esReingreso: persona.subalterno?.esReingreso ?? false,
+    fechaIngreso: formatDateOnlyFromDate(persona.subalterno?.fechaIngreso ?? null),
+    fechaIngresoOriginal: formatDateOnlyFromDate(persona.subalterno?.fechaIngresoOriginal ?? null),
+    rangoId: persona.rangoId,
+    bateriaId: persona.subalterno?.bateriaId ?? null,
+    rango: persona.rango,
+    bateria: persona.subalterno?.bateria ?? null,
+    tallas: persona.tallas,
   };
 }
 
@@ -171,6 +220,14 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
 
   try {
     const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.personal.findUnique({
+        where: { ci: ciDecoded },
+        select: { ci: true, tipo: true },
+      });
+      if (!existing || existing.tipo !== TipoPersonal.SUBALTERNO) {
+        return null;
+      }
+
       await tx.personal.update({
         where: { ci: ciDecoded },
         data: {
@@ -179,10 +236,23 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
           nombre1: body.nombre1.trim(),
           nombre2: normalizeNullableText(body.nombre2),
           telefonoContacto,
+          rangoId: Number(body.rangoId),
+        },
+      });
+
+      await tx.subalterno.upsert({
+        where: { ci: ciDecoded },
+        create: {
+          ci: ciDecoded,
           esReingreso,
           fechaIngreso,
           fechaIngresoOriginal,
-          rangoId: Number(body.rangoId),
+          bateriaId,
+        },
+        update: {
+          esReingreso,
+          fechaIngreso,
+          fechaIngresoOriginal,
           bateriaId,
         },
       });
@@ -205,7 +275,11 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         where: { ci: ciDecoded },
         include: {
           rango: true,
-          bateria: true,
+          subalterno: {
+            include: {
+              bateria: true,
+            },
+          },
           tallas: {
             include: { tallaTipo: true },
             orderBy: { tallaTipoId: "asc" },
@@ -213,6 +287,10 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         },
       });
     });
+
+    if (!updated) {
+      return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
+    }
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -230,7 +308,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
       },
     });
 
-    return NextResponse.json(updated ? serializePersonal(updated) : updated);
+    return NextResponse.json(serializePersonal(updated as PersonalWithRelations));
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
@@ -254,9 +332,9 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
     const deleted = await prisma.$transaction(async (tx) => {
       const existing = await tx.personal.findUnique({
         where: { ci: ciDecoded },
-        select: { ci: true },
+        select: { ci: true, tipo: true },
       });
-      if (!existing) return null;
+      if (!existing || existing.tipo !== TipoPersonal.SUBALTERNO) return null;
 
       const deletedTallas = await tx.personalTalla.deleteMany({
         where: { ci: ciDecoded },
@@ -264,10 +342,13 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
       const deletedObservaciones = await tx.observacion.deleteMany({
         where: { ci: ciDecoded },
       });
-      const deletedRegistroItems = await tx.registroItem.deleteMany({
-        where: { registro: { ci: ciDecoded } },
+      const deletedMovimientoItems = await tx.movimientoItem.deleteMany({
+        where: { movimiento: { personalCi: ciDecoded } },
       });
-      const deletedRegistros = await tx.registro.deleteMany({
+      const deletedMovimientos = await tx.movimiento.deleteMany({
+        where: { personalCi: ciDecoded },
+      });
+      await tx.subalterno.deleteMany({
         where: { ci: ciDecoded },
       });
       await tx.personal.delete({
@@ -278,8 +359,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
         ci: ciDecoded,
         tallas: deletedTallas.count,
         observaciones: deletedObservaciones.count,
-        registroItems: deletedRegistroItems.count,
-        registros: deletedRegistros.count,
+        movimientoItems: deletedMovimientoItems.count,
+        movimientos: deletedMovimientos.count,
       };
     });
 

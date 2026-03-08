@@ -6,7 +6,7 @@ import type { MainView } from "@/types/views";
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">;
 type SummaryView = Extract<MainView, "equipo_resumen" | "tallas_resumen">;
 type CreateView = Extract<MainView, "personal_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo">;
-type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial">;
+type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos">;
 
 type MainNavigationProps = {
   activeView: MainView;
@@ -209,6 +209,16 @@ const stockViews: Array<{ view: StockView; label: string; shortLabel: string; ic
       </svg>
     ),
   },
+  {
+    view: "stock_prestamos",
+    label: "Prestamos",
+    shortLabel: "Prestamos",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8m-8 4h8m-8 4h5M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+      </svg>
+    ),
+  },
 ];
 
 function viewButtonClass(activeView: MainView, view: MainView) {
@@ -274,6 +284,7 @@ export function MainNavigation({
   const createMenuRef = useRef<HTMLDivElement | null>(null);
   const stockMenuRef = useRef<HTMLDivElement | null>(null);
   const isPersonalView = activeView === "personal" || activeView === "hoja_matrix";
+  const isOficialesSuboficialesView = activeView === "ss_oo_sub_of";
   const isSummaryView = activeView === "equipo_resumen" || activeView === "tallas_resumen";
   const isStockView =
     activeView === "stock" ||
@@ -281,7 +292,8 @@ export function MainNavigation({
     activeView === "stock_actual" ||
     activeView === "stock_alta" ||
     activeView === "stock_baja" ||
-    activeView === "stock_historial";
+    activeView === "stock_historial" ||
+    activeView === "stock_prestamos";
   const isCreateView =
     activeView === "personal_nuevo" ||
     activeView === "equipo_nuevo" ||
@@ -429,6 +441,20 @@ export function MainNavigation({
             </div>
           ) : null}
         </div>
+        <button
+          type="button"
+          onClick={() => handleSelectView("ss_oo_sub_of")}
+          className={`group relative flex-1 overflow-hidden rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+            isOficialesSuboficialesView ? "ej-view-active" : "ej-view-idle"
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
+            </svg>
+            <span>SS.OO y SUB OF.</span>
+          </div>
+        </button>
         <div ref={stockMenuRef} className={menuContainerClass(showStockViews)}>
           <button
             type="button"

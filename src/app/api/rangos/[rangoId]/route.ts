@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { TipoPersonal } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -41,10 +42,14 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
   try {
     const updated = await prisma.$transaction(async (tx) => {
       const existing = await tx.rango.findMany({
+        where: { tipo: TipoPersonal.SUBALTERNO },
         orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
         select: { rangoId: true, orden: true },
       });
       const current = existing.find((entry) => entry.rangoId === rangoId);
+      if (!current) {
+        return null;
+      }
       const updatedRango = await tx.rango.update({
         where: { rangoId },
         data: {
@@ -67,6 +72,10 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
 
       return { ...updatedRango, orden: orderedIds.indexOf(rangoId) + 1 };
     });
+
+    if (!updated) {
+      return NextResponse.json({ error: "Grado del personal no encontrado." }, { status: 404 });
+    }
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -100,9 +109,13 @@ export async function DELETE(req: Request, context: { params: Promise<{ rangoId:
   try {
     const deleted = await prisma.$transaction(async (tx) => {
       const existing = await tx.rango.findMany({
+        where: { tipo: TipoPersonal.SUBALTERNO },
         orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
         select: { rangoId: true },
       });
+      if (!existing.some((entry) => entry.rangoId === rangoId)) {
+        return null;
+      }
       const deletedRango = await tx.rango.delete({ where: { rangoId } });
 
       for (const [index, currentRangoId] of existing
@@ -117,6 +130,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ rangoId:
 
       return deletedRango;
     });
+
+    if (!deleted) {
+      return NextResponse.json({ error: "Grado del personal no encontrado." }, { status: 404 });
+    }
 
     await logAudit({
       usuarioId: auth.user.usuarioId,

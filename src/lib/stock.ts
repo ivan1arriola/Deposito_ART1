@@ -1,17 +1,19 @@
-import { Prisma, TipoRegistro, TipoStockOperacion } from "@prisma/client";
+import { Prisma, TipoMovimiento, TipoStockOperacion } from "@prisma/client";
 
-type PrismaLike = Pick<Prisma.TransactionClient, "registro" | "stockOperacion">;
+type PrismaLike = Pick<Prisma.TransactionClient, "movimiento" | "stockOperacion" | "prestamoActivo">;
 
 type StockMapOptions = {
-  excludeRegistroId?: bigint | null;
+  excludeMovimientoId?: bigint | null;
 };
 
-export function registroStockDeltaFactor(tipo: TipoRegistro | "ENTREGA" | "DEVOLUCION" | "AJUSTE") {
+export function movimientoStockDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "PRESTAMO") {
   switch (tipo) {
-    case TipoRegistro.ENTREGA:
+    case TipoMovimiento.ENTREGA:
     case "ENTREGA":
+    case TipoMovimiento.PRESTAMO:
+    case "PRESTAMO":
       return -1;
-    case TipoRegistro.DEVOLUCION:
+    case TipoMovimiento.DEVOLUCION:
     case "DEVOLUCION":
       return 1;
     default:
@@ -19,12 +21,12 @@ export function registroStockDeltaFactor(tipo: TipoRegistro | "ENTREGA" | "DEVOL
   }
 }
 
-export function registroPersonalDeltaFactor(tipo: TipoRegistro | "ENTREGA" | "DEVOLUCION" | "AJUSTE") {
+export function movimientoPersonalDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "PRESTAMO") {
   switch (tipo) {
-    case TipoRegistro.ENTREGA:
+    case TipoMovimiento.ENTREGA:
     case "ENTREGA":
       return 1;
-    case TipoRegistro.DEVOLUCION:
+    case TipoMovimiento.DEVOLUCION:
     case "DEVOLUCION":
       return -1;
     default:
@@ -43,11 +45,14 @@ export function stockOperacionDeltaFactor(tipo: TipoStockOperacion | "INGRESO" |
 }
 
 export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapOptions = {}) {
-  const [registros, operaciones] = await Promise.all([
-    prisma.registro.findMany({
+  const [movimientos, operaciones, prestamosActivos] = await Promise.all([
+    prisma.movimiento.findMany({
       where: {
+        tipo: {
+          in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION],
+        },
         afectaStock: true,
-        ...(options.excludeRegistroId ? { registroId: { not: options.excludeRegistroId } } : {}),
+        ...(options.excludeMovimientoId ? { movimientoId: { not: options.excludeMovimientoId } } : {}),
       },
       select: {
         tipo: true,
@@ -70,14 +75,28 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
         },
       },
     }),
+    prisma.prestamoActivo.findMany({
+      select: {
+        movimiento: {
+          select: {
+            items: {
+              select: {
+                itemId: true,
+                cantidad: true,
+              },
+            },
+          },
+        },
+      },
+    }),
   ]);
 
   const stockByItem = new Map<string, number>();
 
-  for (const registro of registros) {
-    const factor = registroStockDeltaFactor(registro.tipo);
+  for (const movimiento of movimientos) {
+    const factor = movimientoStockDeltaFactor(movimiento.tipo);
     if (factor === 0) continue;
-    for (const item of registro.items) {
+    for (const item of movimiento.items) {
       const key = item.itemId.toString();
       stockByItem.set(key, (stockByItem.get(key) ?? 0) + item.cantidad * factor);
     }
@@ -91,14 +110,21 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
     }
   }
 
+  for (const prestamo of prestamosActivos) {
+    for (const item of prestamo.movimiento.items) {
+      const key = item.itemId.toString();
+      stockByItem.set(key, (stockByItem.get(key) ?? 0) - item.cantidad);
+    }
+  }
+
   return stockByItem;
 }
 
 export async function buildPersonalByItemMap(prisma: PrismaLike) {
-  const registros = await prisma.registro.findMany({
+  const movimientos = await prisma.movimiento.findMany({
     where: {
       tipo: {
-        in: [TipoRegistro.ENTREGA, TipoRegistro.DEVOLUCION],
+        in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION],
       },
     },
     select: {
@@ -113,10 +139,10 @@ export async function buildPersonalByItemMap(prisma: PrismaLike) {
   });
 
   const personalByItem = new Map<string, number>();
-  for (const registro of registros) {
-    const factor = registroPersonalDeltaFactor(registro.tipo);
+  for (const movimiento of movimientos) {
+    const factor = movimientoPersonalDeltaFactor(movimiento.tipo);
     if (factor === 0) continue;
-    for (const item of registro.items) {
+    for (const item of movimiento.items) {
       const key = item.itemId.toString();
       personalByItem.set(key, (personalByItem.get(key) ?? 0) + item.cantidad * factor);
     }

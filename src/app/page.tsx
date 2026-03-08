@@ -33,6 +33,7 @@ import { PersonalCreateView } from "./components/views/PersonalCreateView";
 import { RangoCreateView } from "./components/views/RangoCreateView";
 import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
+import { OficialesSuboficialesView } from "./components/views/OficialesSuboficialesView";
 import { UserCreateView } from "./components/views/UserCreateView";
 import { SmallActionButton, ActionMenu, LoadingOverlay, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
@@ -50,6 +51,7 @@ import type {
   PersonalForm,
   PersonalAltaMovimientoForm,
   EquipoForm,
+  PrestamoDraft,
   RegistroDraftEquipo,
   RegistroDraft,
   StockOperacionDraft,
@@ -63,7 +65,13 @@ import type {
   AuditFilter,
 } from "@/types/views";
 import { ROLE_OPTIONS } from "@/types/entities";
-import { EMPTY_PERSONAL_FORM, EMPTY_EQUIPO_FORM, EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM, EMPTY_STOCK_OPERACION_DRAFT } from "@/types/forms";
+import {
+  EMPTY_PERSONAL_FORM,
+  EMPTY_EQUIPO_FORM,
+  EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM,
+  EMPTY_STOCK_OPERACION_DRAFT,
+  EMPTY_PRESTAMO_DRAFT,
+} from "@/types/forms";
 import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDialogState, UserRoleDialogState } from "./types/home";
 
 // Importar utilidades desde archivos organizados
@@ -141,6 +149,7 @@ export default function Home() {
     baterias,
     equipos,
     personal,
+    oficialesSuboficiales,
     usuarios,
     auditoria,
     firmaConfig,
@@ -231,6 +240,9 @@ export default function Home() {
   const [registroSaving, setRegistroSaving] = useState(false);
   const [stockDraft, setStockDraft] = useState<StockOperacionDraft>({ ...EMPTY_STOCK_OPERACION_DRAFT, fecha: getTodayDateInput() });
   const [stockSaving, setStockSaving] = useState(false);
+  const [prestamoDraft, setPrestamoDraft] = useState<PrestamoDraft>({ ...EMPTY_PRESTAMO_DRAFT, fechaPrestamo: getTodayDateInput() });
+  const [prestamoSaving, setPrestamoSaving] = useState(false);
+  const [returningPrestamoId, setReturningPrestamoId] = useState<string | null>(null);
   const [personalObservacionDraft, setPersonalObservacionDraft] = useState<PersonalObservacionDraft | null>(null);
   const [personalObservacionSaving, setPersonalObservacionSaving] = useState(false);
   const [registroViewer, setRegistroViewer] = useState<RegistroViewerState | null>(null);
@@ -609,7 +621,7 @@ export default function Home() {
   }, [activeView, equipoResumenData, equipoResumenLoading, loadEquipoResumen]);
 
   useEffect(() => {
-    if (!["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial"].includes(activeView)) return;
+    if (!["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos"].includes(activeView)) return;
     if (stockLoading) return;
     if (stockData) return;
     void loadStockData();
@@ -1925,6 +1937,110 @@ export default function Home() {
     }
   }
 
+  function updatePrestamoDraftItem(index: number, field: keyof RegistroDraftEquipo, value: string) {
+    setPrestamoDraft((prev) => {
+      if (field === "itemId" && value !== "" && prev.items.some((item, itemIndex) => itemIndex !== index && item.itemId === value)) {
+        setStatus("Ese equipo ya fue seleccionado en este prestamo.");
+        return prev;
+      }
+      return {
+        ...prev,
+        items: prev.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
+      };
+    });
+  }
+
+  function addPrestamoDraftItem() {
+    setPrestamoDraft((prev) => ({ ...prev, items: [...prev.items, { itemId: "", cantidad: "1" }] }));
+  }
+
+  function removePrestamoDraftItem(index: number) {
+    setPrestamoDraft((prev) => {
+      if (prev.items.length <= 1) return prev;
+      return { ...prev, items: prev.items.filter((_, itemIndex) => itemIndex !== index) };
+    });
+  }
+
+  async function savePrestamo() {
+    if (prestamoSaving) return;
+    if (prestamoDraft.destinatarioCi.trim() === "") {
+      setStatus("Debes seleccionar un destinatario para el prestamo.");
+      return;
+    }
+    if (!parseDateInput(prestamoDraft.fechaPrestamo).valid) {
+      setStatus("La fecha del prestamo debe estar en formato DD/MM/AAAA.");
+      return;
+    }
+    if (isDateInputAfterToday(prestamoDraft.fechaPrestamo)) {
+      setStatus("La fecha del prestamo no puede ser futura.");
+      return;
+    }
+
+    const payloadItems = prestamoDraft.items
+      .map((item) => ({
+        itemId: item.itemId.trim(),
+        cantidad: Number(item.cantidad),
+      }))
+      .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
+
+    if (payloadItems.length === 0) {
+      setStatus("Debes agregar al menos un equipo con cantidad valida.");
+      return;
+    }
+
+    const uniqueItemIds = new Set(payloadItems.map((item) => item.itemId));
+    if (uniqueItemIds.size !== payloadItems.length) {
+      setStatus("No puedes repetir equipos en un mismo prestamo.");
+      return;
+    }
+
+    setPrestamoSaving(true);
+    setStatus("Registrando prestamo...");
+    try {
+      await api("/api/prestamos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          destinatarioTipo: prestamoDraft.destinatarioTipo,
+          destinatarioCi: prestamoDraft.destinatarioCi.trim(),
+          fechaPrestamo: prestamoDraft.fechaPrestamo,
+          comentarios: prestamoDraft.comentarios.trim() || undefined,
+          items: payloadItems,
+        }),
+      });
+      setPrestamoDraft({ ...EMPTY_PRESTAMO_DRAFT, fechaPrestamo: getTodayDateInput() });
+      setStatus("Prestamo registrado.");
+      await loadData();
+      await loadStockData();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "No se pudo registrar el prestamo.");
+    } finally {
+      setPrestamoSaving(false);
+    }
+  }
+
+  async function returnPrestamo(prestamoId: string, fechaDevolucion: string) {
+    if (returningPrestamoId) return;
+    setReturningPrestamoId(prestamoId);
+    setStatus("Registrando devolucion del prestamo...");
+    try {
+      await api(`/api/prestamos/${encodeURIComponent(prestamoId)}/devolucion`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fechaDevolucion: fechaDevolucion.trim() || getTodayDateInput(),
+        }),
+      });
+      setStatus("Devolucion de prestamo registrada.");
+      await loadData();
+      await loadStockData();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "No se pudo registrar la devolucion del prestamo.");
+    } finally {
+      setReturningPrestamoId(null);
+    }
+  }
+
   async function savePersonalObservacion() {
     if (!personalObservacionDraft || personalObservacionSaving) return;
     const isEditing = personalObservacionDraft.observacionId !== null;
@@ -2725,6 +2841,8 @@ export default function Home() {
       creatingPersonal ||
       mergeEquipoSaving ||
       stockSaving ||
+      prestamoSaving ||
+      returningPrestamoId !== null ||
       registroSaving ||
       personalObservacionSaving ||
       changeLoading ||
@@ -3132,6 +3250,14 @@ export default function Home() {
         />
       ) : null}
 
+      {activeView === "ss_oo_sub_of" ? (
+        <OficialesSuboficialesView
+          oficialesSuboficiales={oficialesSuboficiales}
+          loading={loading}
+          onReload={() => loadData(true)}
+        />
+      ) : null}
+
       {activeView === "hoja_matrix" ? (
         <HojaMatrixView
           data={hojaMatrixData}
@@ -3150,7 +3276,7 @@ export default function Home() {
         />
       ) : null}
 
-      {["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial"].includes(activeView) ? (
+      {["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos"].includes(activeView) ? (
         <StockView
           section={
             activeView === "stock" || activeView === "stock_total"
@@ -3161,6 +3287,8 @@ export default function Home() {
                 ? "baja"
                 : activeView === "stock_historial"
                   ? "historial"
+                  : activeView === "stock_prestamos"
+                    ? "prestamos"
                   : "actual"
           }
           data={stockData}
@@ -3176,6 +3304,24 @@ export default function Home() {
           onAddItem={addStockDraftItem}
           onRemoveItem={removeStockDraftItem}
           onSubmit={() => void saveStockOperation()}
+          personal={personal}
+          oficialesSuboficiales={oficialesSuboficiales}
+          prestamoDraft={prestamoDraft}
+          prestamoSaving={prestamoSaving}
+          returningPrestamoId={returningPrestamoId}
+          onPrestamoDraftChange={(field, value) =>
+            setPrestamoDraft((prev) => {
+              if (field === "destinatarioTipo") {
+                return { ...prev, destinatarioTipo: value as PrestamoDraft["destinatarioTipo"], destinatarioCi: "" };
+              }
+              return { ...prev, [field]: value };
+            })
+          }
+          onPrestamoItemChange={updatePrestamoDraftItem}
+          onAddPrestamoItem={addPrestamoDraftItem}
+          onRemovePrestamoItem={removePrestamoDraftItem}
+          onSubmitPrestamo={() => void savePrestamo()}
+          onReturnPrestamo={(prestamoId, fechaDevolucion) => void returnPrestamo(prestamoId, fechaDevolucion)}
           onReload={() => void loadStockData()}
         />
       ) : null}

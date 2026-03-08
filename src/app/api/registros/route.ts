@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { TipoRegistro } from "@prisma/client";
+import { Prisma, TipoMovimiento, TipoPersonal } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -13,19 +13,19 @@ import {
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
 
-type RegistroItemPayload = {
+type MovimientoItemPayload = {
   itemId: string | number;
   cantidad: number | string;
 };
 
-type RegistroPayload = {
+type MovimientoPayload = {
   ci?: string;
   ciList?: string[];
   fecha?: string;
-  tipo: TipoRegistro | string;
+  tipo: TipoMovimiento | string;
   afectaStock?: boolean;
   comentarios?: string;
-  items: RegistroItemPayload[];
+  items: MovimientoItemPayload[];
 };
 
 function parseBigIntId(value: unknown) {
@@ -41,10 +41,10 @@ function parseCantidad(value: unknown) {
   return parsed;
 }
 
-function parseTipoRegistro(value: unknown) {
+function parseTipoMovimiento(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
-  if (raw === "ENTREGA") return TipoRegistro.ENTREGA;
-  if (raw === "DEVOLUCION") return TipoRegistro.DEVOLUCION;
+  if (raw === "ENTREGA") return TipoMovimiento.ENTREGA;
+  if (raw === "DEVOLUCION") return TipoMovimiento.DEVOLUCION;
   return null;
 }
 
@@ -88,22 +88,22 @@ function buildPersonalAuditDetail(personal: {
   nombre1: string;
   nombre2: string | null;
   rango: { nombreCompleto: string; abreviacion: string };
-  bateria: { nombre: string } | null;
+  subalterno: { bateria: { nombre: string } | null } | null;
 }) {
   return {
     ci: personal.ci,
     nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
-    bateria: personal.bateria?.nombre ?? null,
+    bateria: personal.subalterno?.bateria?.nombre ?? null,
   };
 }
 
-function isValidPayload(body: unknown): body is RegistroPayload {
+function isValidPayload(body: unknown): body is MovimientoPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
   if (!parseTargetCiList(candidate.ci, candidate.ciList)) return false;
-  if (!parseTipoRegistro(candidate.tipo)) return false;
+  if (!parseTipoMovimiento(candidate.tipo)) return false;
   if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
   return true;
 }
@@ -122,15 +122,18 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "CI invalida." }, { status: 400 });
   }
 
+  const where: Prisma.MovimientoWhereInput = {
+    ...(ci ? { personalCi: ci } : {}),
+    tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+  };
+
   if (summaryOnly) {
-    const total = await prisma.registro.count({
-      where: ci ? { ci } : undefined,
-    });
+    const total = await prisma.movimiento.count({ where });
     return NextResponse.json({ total });
   }
 
-  const registros = await prisma.registro.findMany({
-    where: ci ? { ci } : undefined,
+  const movimientos = await prisma.movimiento.findMany({
+    where,
     include: {
       items: {
         include: { item: true },
@@ -141,14 +144,14 @@ export async function GET(req: Request) {
     take: limit,
   });
 
-  const registroIds = registros.map((registro) => registro.registroId.toString());
+  const movimientoIds = movimientos.map((movimiento) => movimiento.movimientoId.toString());
   const auditorias =
-    registroIds.length > 0
+    movimientoIds.length > 0
       ? await prisma.auditoria.findMany({
           where: {
             entidad: "REGISTRO",
             accion: { in: ["CREATE", "UPDATE"] },
-            entidadId: { in: registroIds },
+            entidadId: { in: movimientoIds },
           },
           orderBy: { createdAt: "desc" },
           include: {
@@ -159,19 +162,19 @@ export async function GET(req: Request) {
         })
       : [];
 
-  const auditoriaByRegistroId = new Map<string, (typeof auditorias)[number]>();
+  const auditoriaByMovimientoId = new Map<string, (typeof auditorias)[number]>();
   for (const auditoria of auditorias) {
     if (!auditoria.entidadId) continue;
-    if (!auditoriaByRegistroId.has(auditoria.entidadId)) {
-      auditoriaByRegistroId.set(auditoria.entidadId, auditoria);
+    if (!auditoriaByMovimientoId.has(auditoria.entidadId)) {
+      auditoriaByMovimientoId.set(auditoria.entidadId, auditoria);
     }
   }
 
   return NextResponse.json(
-    registros.map((registro) => ({
-      registroId: registro.registroId.toString(),
+    movimientos.map((movimiento) => ({
+      registroId: movimiento.movimientoId.toString(),
       auditoria: (() => {
-        const audit = auditoriaByRegistroId.get(registro.registroId.toString());
+        const audit = auditoriaByMovimientoId.get(movimiento.movimientoId.toString());
         if (!audit) return null;
         return {
           auditoriaId: audit.auditoriaId.toString(),
@@ -188,13 +191,13 @@ export async function GET(req: Request) {
           accion: audit.accion,
         };
       })(),
-      ci: registro.ci,
-      fecha: formatDateOnlyFromDate(registro.fecha) ?? "",
-      tipo: registro.tipo,
-      afectaStock: registro.afectaStock,
-      comentarios: registro.comentarios,
-      createdAt: formatDateTimeForDisplay(registro.createdAt),
-      items: registro.items.map((detail) => ({
+      ci: movimiento.personalCi,
+      fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
+      tipo: movimiento.tipo,
+      afectaStock: movimiento.afectaStock,
+      comentarios: movimiento.observaciones,
+      createdAt: formatDateTimeForDisplay(movimiento.createdAt),
+      items: movimiento.items.map((detail) => ({
         itemId: detail.itemId.toString(),
         nombre: detail.item.nombre,
         cantidad: detail.cantidad,
@@ -218,7 +221,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Debes enviar al menos una CI valida." }, { status: 400 });
   }
 
-  const tipo = parseTipoRegistro(body.tipo);
+  const tipo = parseTipoMovimiento(body.tipo);
   const fecha = parseFecha(body.fecha);
   if (!tipo || !fecha) {
     return NextResponse.json({ error: "tipo o fecha invalidos." }, { status: 400 });
@@ -248,7 +251,7 @@ export async function POST(req: Request) {
   const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
   const [personalRecords, itemsFound] = await Promise.all([
     prisma.personal.findMany({
-      where: { ci: { in: targetCis } },
+      where: { ci: { in: targetCis }, tipo: TipoPersonal.SUBALTERNO },
       select: {
         ci: true,
         apellido1: true,
@@ -258,8 +261,12 @@ export async function POST(req: Request) {
         rango: {
           select: { nombreCompleto: true, abreviacion: true },
         },
-        bateria: {
-          select: { nombre: true },
+        subalterno: {
+          select: {
+            bateria: {
+              select: { nombre: true },
+            },
+          },
         },
       },
     }),
@@ -270,7 +277,7 @@ export async function POST(req: Request) {
   ]);
 
   const personalByCi = new Map(personalRecords.map((personalRecord) => [personalRecord.ci, personalRecord]));
-  const missingCis = targetCis.filter((ci) => !personalByCi.has(ci));
+  const missingCis = targetCis.filter((targetCi) => !personalByCi.has(targetCi));
   if (missingCis.length > 0) {
     const preview = missingCis.slice(0, 3).join(", ");
     const suffix = missingCis.length > 3 ? "..." : "";
@@ -281,7 +288,7 @@ export async function POST(req: Request) {
   }
 
   const comentarios = body.comentarios?.trim() || null;
-  const afectaStock = body.afectaStock === true;
+  const afectaStock = body.afectaStock !== false;
   const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
   const itemsDetallados = Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
     itemId,
@@ -291,46 +298,47 @@ export async function POST(req: Request) {
   const totalUnidades = itemsDetallados.reduce((acumulado, item) => acumulado + item.cantidad, 0);
 
   try {
-    const createdRegistros = await prisma.$transaction(async (tx) => {
-      const created: Array<{ registroId: bigint; ci: string }> = [];
-      for (const ci of targetCis) {
-        const registro = await tx.registro.create({
+    const createdMovimientos = await prisma.$transaction(async (tx) => {
+      const created: Array<{ movimientoId: bigint; personalCi: string }> = [];
+      for (const targetCi of targetCis) {
+        const movimiento = await tx.movimiento.create({
           data: {
-            ci,
+            personalCi: targetCi,
+            usuarioEntregaId: auth.user.usuarioId,
             fecha,
             tipo,
             afectaStock,
-            comentarios,
+            observaciones: comentarios,
           },
-          select: { registroId: true, ci: true },
+          select: { movimientoId: true, personalCi: true },
         });
 
-        await tx.registroItem.createMany({
+        await tx.movimientoItem.createMany({
           data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
-            registroId: registro.registroId,
+            movimientoId: movimiento.movimientoId,
             itemId: BigInt(itemId),
             cantidad,
           })),
         });
 
-        created.push(registro);
+        created.push(movimiento);
       }
       return created;
     });
 
     await Promise.all(
-      createdRegistros.map(async (createdRegistro) => {
-        const personalRecord = personalByCi.get(createdRegistro.ci);
+      createdMovimientos.map(async (movimiento) => {
+        const personalRecord = personalByCi.get(movimiento.personalCi);
         if (!personalRecord) return;
 
         await logAudit({
           usuarioId: auth.user.usuarioId,
           accion: "CREATE",
           entidad: "REGISTRO",
-          entidadId: createdRegistro.registroId.toString(),
+          entidadId: movimiento.movimientoId.toString(),
           detalle: {
             evento: "MOVIMIENTO_VESTUARIO",
-            ci: createdRegistro.ci,
+            ci: movimiento.personalCi,
             personal: buildPersonalAuditDetail(personalRecord),
             tipo,
             afectaStock,
@@ -347,15 +355,15 @@ export async function POST(req: Request) {
       }),
     );
 
-    if (createdRegistros.length === 1) {
-      return NextResponse.json({ ok: true, registroId: createdRegistros[0].registroId.toString(), createdCount: 1 }, { status: 201 });
+    if (createdMovimientos.length === 1) {
+      return NextResponse.json({ ok: true, registroId: createdMovimientos[0].movimientoId.toString(), createdCount: 1 }, { status: 201 });
     }
 
     return NextResponse.json(
       {
         ok: true,
-        createdCount: createdRegistros.length,
-        registroIds: createdRegistros.map((registro) => registro.registroId.toString()),
+        createdCount: createdMovimientos.length,
+        registroIds: createdMovimientos.map((movimiento) => movimiento.movimientoId.toString()),
         ciList: targetCis,
       },
       { status: 201 },

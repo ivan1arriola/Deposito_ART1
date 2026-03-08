@@ -71,7 +71,7 @@ type DeleteImpactData = {
       seEliminaMovimiento: boolean;
     }>;
   };
-  affectedRegistroIds: bigint[];
+  affectedMovimientoIds: bigint[];
   affectedStockOperacionIds: bigint[];
 };
 
@@ -80,27 +80,29 @@ async function buildDeleteImpactData(
   itemId: bigint,
   itemNombre: string,
 ): Promise<DeleteImpactData> {
-  const registroRefs = await tx.registroItem.findMany({
+  const movimientoRefs = await tx.movimientoItem.findMany({
     where: { itemId },
-    select: { registroId: true },
+    select: { movimientoId: true },
   });
   const stockRefs = await tx.stockOperacionItem.findMany({
     where: { itemId },
     select: { stockOperacionId: true },
   });
 
-  const affectedRegistroIds = Array.from(new Set(registroRefs.map((ref) => ref.registroId.toString()))).map((id) => BigInt(id));
+  const affectedMovimientoIds = Array.from(new Set(movimientoRefs.map((ref) => ref.movimientoId.toString()))).map((id) =>
+    BigInt(id),
+  );
   const affectedStockOperacionIds = Array.from(new Set(stockRefs.map((ref) => ref.stockOperacionId.toString()))).map((id) => BigInt(id));
 
-  const [registros, stockOperaciones] = await Promise.all([
-    affectedRegistroIds.length > 0
-      ? tx.registro.findMany({
-          where: { registroId: { in: affectedRegistroIds } },
+  const [movimientos, stockOperaciones] = await Promise.all([
+    affectedMovimientoIds.length > 0
+      ? tx.movimiento.findMany({
+          where: { movimientoId: { in: affectedMovimientoIds } },
           select: {
-            registroId: true,
+            movimientoId: true,
             fecha: true,
             tipo: true,
-            ci: true,
+            personalCi: true,
             personal: {
               select: {
                 apellido1: true,
@@ -130,20 +132,25 @@ async function buildDeleteImpactData(
       : Promise.resolve([]),
   ]);
 
-  const normalizedRegistros = registros
-    .map((registro) => {
-      const persona = [registro.personal.apellido1, registro.personal.apellido2, registro.personal.nombre1, registro.personal.nombre2]
+  const normalizedRegistros = movimientos
+    .map((movimiento) => {
+      const persona = [
+        movimiento.personal.apellido1,
+        movimiento.personal.apellido2,
+        movimiento.personal.nombre1,
+        movimiento.personal.nombre2,
+      ]
         .filter(Boolean)
         .join(" ")
         .trim();
       return {
-        movimientoId: registro.registroId.toString(),
-        fecha: formatDateOnlyFromDate(registro.fecha) ?? "",
-        tipo: registro.tipo,
-        ci: registro.ci,
+        movimientoId: movimiento.movimientoId.toString(),
+        fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
+        tipo: movimiento.tipo,
+        ci: movimiento.personalCi,
         persona,
-        cantidadItems: registro._count.items,
-        seEliminaMovimiento: registro._count.items <= 1,
+        cantidadItems: movimiento._count.items,
+        seEliminaMovimiento: movimiento._count.items <= 1,
       };
     })
     .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.movimientoId.localeCompare(a.movimientoId));
@@ -179,7 +186,7 @@ async function buildDeleteImpactData(
       registros: normalizedRegistros,
       stock: normalizedStock,
     },
-    affectedRegistroIds,
+    affectedMovimientoIds,
     affectedStockOperacionIds,
   };
 }
@@ -250,10 +257,10 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
 
       const remainingIdsInSourceGroup = await getOrderedItemIds(tx, sourceItem.activo, sourceItemId);
 
-      const [sourceRegistroItems, sourceStockItems] = await Promise.all([
-        tx.registroItem.findMany({
+      const [sourceMovimientoItems, sourceStockItems] = await Promise.all([
+        tx.movimientoItem.findMany({
           where: { itemId: sourceItemId },
-          select: { registroId: true, cantidad: true },
+          select: { movimientoId: true, cantidad: true },
         }),
         tx.stockOperacionItem.findMany({
           where: { itemId: sourceItemId },
@@ -261,14 +268,14 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
         }),
       ]);
 
-      const [targetRegistroItems, targetStockItems] = await Promise.all([
-        sourceRegistroItems.length > 0
-          ? tx.registroItem.findMany({
+      const [targetMovimientoItems, targetStockItems] = await Promise.all([
+        sourceMovimientoItems.length > 0
+          ? tx.movimientoItem.findMany({
               where: {
                 itemId: targetItemId,
-                registroId: { in: sourceRegistroItems.map((entry) => entry.registroId) },
+                movimientoId: { in: sourceMovimientoItems.map((entry) => entry.movimientoId) },
               },
-              select: { registroId: true },
+              select: { movimientoId: true },
             })
           : Promise.resolve([]),
         sourceStockItems.length > 0
@@ -282,31 +289,31 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
           : Promise.resolve([]),
       ]);
 
-      const registroTargetIds = new Set(targetRegistroItems.map((entry) => entry.registroId.toString()));
+      const movimientoTargetIds = new Set(targetMovimientoItems.map((entry) => entry.movimientoId.toString()));
       const stockTargetIds = new Set(targetStockItems.map((entry) => entry.stockOperacionId.toString()));
 
-      for (const sourceRegistroItem of sourceRegistroItems) {
-        await tx.registroItem.upsert({
+      for (const sourceMovimientoItem of sourceMovimientoItems) {
+        await tx.movimientoItem.upsert({
           where: {
-            registroId_itemId: {
-              registroId: sourceRegistroItem.registroId,
+            movimientoId_itemId: {
+              movimientoId: sourceMovimientoItem.movimientoId,
               itemId: targetItemId,
             },
           },
           update: {
-            cantidad: { increment: sourceRegistroItem.cantidad },
+            cantidad: { increment: sourceMovimientoItem.cantidad },
           },
           create: {
-            registroId: sourceRegistroItem.registroId,
+            movimientoId: sourceMovimientoItem.movimientoId,
             itemId: targetItemId,
-            cantidad: sourceRegistroItem.cantidad,
+            cantidad: sourceMovimientoItem.cantidad,
           },
         });
 
-        await tx.registroItem.delete({
+        await tx.movimientoItem.delete({
           where: {
-            registroId_itemId: {
-              registroId: sourceRegistroItem.registroId,
+            movimientoId_itemId: {
+              movimientoId: sourceMovimientoItem.movimientoId,
               itemId: sourceItemId,
             },
           },
@@ -347,18 +354,20 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
 
       await applyItemOrder(tx, remainingIdsInSourceGroup);
 
-      const unidadesRegistrosReasignadas = sourceRegistroItems.reduce((total, entry) => total + entry.cantidad, 0);
+      const unidadesRegistrosReasignadas = sourceMovimientoItems.reduce((total, entry) => total + entry.cantidad, 0);
       const unidadesStockReasignadas = sourceStockItems.reduce((total, entry) => total + entry.cantidad, 0);
-      const registrosConsolidados = sourceRegistroItems.filter((entry) => registroTargetIds.has(entry.registroId.toString())).length;
+      const registrosConsolidados = sourceMovimientoItems.filter((entry) =>
+        movimientoTargetIds.has(entry.movimientoId.toString()),
+      ).length;
       const stockConsolidados = sourceStockItems.filter((entry) => stockTargetIds.has(entry.stockOperacionId.toString())).length;
 
       return {
         sourceItem,
         targetItem,
         resumen: {
-          totalRegistrosAfectados: sourceRegistroItems.length,
+          totalRegistrosAfectados: sourceMovimientoItems.length,
           totalStockAfectados: sourceStockItems.length,
-          totalMovimientosAfectados: sourceRegistroItems.length + sourceStockItems.length,
+          totalMovimientosAfectados: sourceMovimientoItems.length + sourceStockItems.length,
           registrosConsolidados,
           stockConsolidados,
           unidadesRegistrosReasignadas,
@@ -524,20 +533,24 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
         },
       });
 
-      const { impacto, affectedRegistroIds, affectedStockOperacionIds } = await buildDeleteImpactData(tx, itemId, existing.nombre);
+      const { impacto, affectedMovimientoIds, affectedStockOperacionIds } = await buildDeleteImpactData(
+        tx,
+        itemId,
+        existing.nombre,
+      );
       const remainingIds = await getOrderedItemIds(tx, existing.activo, itemId);
 
-      await tx.registroItem.deleteMany({
+      await tx.movimientoItem.deleteMany({
         where: { itemId },
       });
       await tx.stockOperacionItem.deleteMany({
         where: { itemId },
       });
 
-      if (affectedRegistroIds.length > 0) {
-        await tx.registro.deleteMany({
+      if (affectedMovimientoIds.length > 0) {
+        await tx.movimiento.deleteMany({
           where: {
-            registroId: { in: affectedRegistroIds },
+            movimientoId: { in: affectedMovimientoIds },
             items: { none: {} },
           },
         });

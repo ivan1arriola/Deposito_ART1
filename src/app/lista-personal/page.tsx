@@ -3,6 +3,7 @@ import { compareOptionalOrder } from "@/lib/catalog-order";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
+import { TipoPersonal } from "@prisma/client";
 
 export const revalidate = 0;
 export const metadata = {
@@ -43,6 +44,9 @@ export default async function ListaPersonalPage({
   const shouldAutoPrint = resolvedSearchParams?.autoprint === "1";
 
   const personal = await prisma.personal.findMany({
+    where: {
+      tipo: TipoPersonal.SUBALTERNO,
+    },
     select: {
       ci: true,
       apellido1: true,
@@ -55,11 +59,15 @@ export default async function ListaPersonalPage({
           orden: true,
         },
       },
-      bateria: {
+      subalterno: {
         select: {
-          bateriaId: true,
-          nombre: true,
-          orden: true,
+          bateria: {
+            select: {
+              bateriaId: true,
+              nombre: true,
+              orden: true,
+            },
+          },
         },
       },
     },
@@ -68,14 +76,15 @@ export default async function ListaPersonalPage({
   const grupos = new Map<string, GrupoBateria>();
 
   for (const persona of personal) {
-    const key = persona.bateria ? String(persona.bateria.bateriaId) : "NONE";
+    const bateria = persona.subalterno?.bateria ?? null;
+    const key = bateria ? String(bateria.bateriaId) : "NONE";
     const group = grupos.get(key);
 
     if (!group) {
       grupos.set(key, {
         key,
-        nombre: persona.bateria?.nombre ?? "Sin batería",
-        orden: persona.bateria?.orden ?? null,
+        nombre: bateria?.nombre ?? "Sin batería",
+        orden: bateria?.orden ?? null,
         personal: [persona],
       });
       continue;

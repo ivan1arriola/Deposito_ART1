@@ -81,6 +81,11 @@ Tablas principales:
 - `bateria`
 - `talla_tipo`
 - `personal_talla`
+- `grado_mando`
+- `oficial_suboficial`
+- `oficial_suboficial_talla`
+- `prestamo`
+- `prestamo_item`
 - `item`
 - `registro`
 - `registro_item`

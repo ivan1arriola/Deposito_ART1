@@ -45,6 +45,16 @@ export type Talla = {
   tallaValor: string;
 };
 
+export type TipoOficialSuboficial = "OFICIAL" | "SUBOFICIAL";
+export type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL_SUBOFICIAL";
+
+export type GradoMando = {
+  gradoMandoId: number;
+  abreviacion: string;
+  nombreCompleto: string;
+  orden: number;
+};
+
 export type Personal = {
   ci: string;
   apellido1: string;
@@ -60,6 +70,40 @@ export type Personal = {
   rango: Rango;
   bateria: Bateria | null;
   tallas: Talla[];
+};
+
+export type OficialSuboficial = {
+  ci: string;
+  nombre: string;
+  apellido: string;
+  tipo: TipoOficialSuboficial;
+  gradoMandoId: number;
+  gradoMando: GradoMando;
+  tallas: Talla[];
+};
+
+export type PrestamoItem = {
+  itemId: string;
+  nombre: string;
+  cantidad: number;
+};
+
+export type PrestamoRecord = {
+  prestamoId: string;
+  reciboNumero: string;
+  destinatarioTipo: PrestamoDestinatarioTipo;
+  destinatarioCi: string;
+  destinatarioNombre: string;
+  destinatarioEtiqueta: string;
+  usuarioEntregaId: string;
+  usuarioEntregaNombre: string;
+  fechaPrestamo: string;
+  fechaDevolucion: string | null;
+  usuarioRecibeDevolucionId: string | null;
+  usuarioRecibeDevolucionNombre: string | null;
+  comentarios: string | null;
+  estado: "PENDIENTE" | "DEVUELTO";
+  items: PrestamoItem[];
 };
 
 export type PersonalObservacion = {

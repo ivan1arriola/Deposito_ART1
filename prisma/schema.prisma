@@ -3,16 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-}
-
-enum TipoRegistro {
-  ENTREGA
-  DEVOLUCION
-  AJUSTE
-
-  @@map("tipo_registro")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum TipoStockOperacion {
@@ -30,33 +22,58 @@ enum UserRole {
   @@map("user_role")
 }
 
+enum TipoPersonal {
+  SUBALTERNO
+  OFICIAL
+  SUBOFICIAL
+
+  @@map("tipo_personal")
+}
+
+enum TipoMovimiento {
+  ENTREGA
+  DEVOLUCION
+  PRESTAMO
+
+  @@map("tipo_movimiento")
+}
+
+enum EstadoPrestamoMovimiento {
+  PENDIENTE
+  DEVUELTO
+
+  @@map("estado_prestamo_movimiento")
+}
+
 model Usuario {
-  usuarioId      String              @id @default(cuid()) @map("usuario_id")
-  grado          String
-  nombre         String
-  apellido       String
-  username       String              @unique @map("usuario")
-  passwordHash   String              @map("password_hash")
-  mailReferencia String?             @map("mail_referencia")
-  rol            UserRole            @default(EDITOR)
-  activo         Boolean             @default(true)
-  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  sesiones       Sesion[]
-  auditorias     Auditoria[]
-  resetCodes     PasswordResetCode[]
+  usuarioId                       String              @id @default(cuid()) @map("usuario_id")
+  grado                           String
+  nombre                          String
+  apellido                        String
+  username                        String              @unique @map("usuario")
+  passwordHash                    String              @map("password_hash")
+  mailReferencia                  String?             @map("mail_referencia")
+  rol                             UserRole            @default(EDITOR)
+  activo                          Boolean             @default(true)
+  createdAt                       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                       DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  sesiones                        Sesion[]
+  auditorias                      Auditoria[]
+  resetCodes                      PasswordResetCode[]
+  movimientosEntregados           Movimiento[]        @relation("movimiento_usuario_entrega")
+  devolucionesPrestamoRegistradas PrestamoHistorial[] @relation("prestamo_historial_usuario_recepcion")
 
   @@map("usuario")
 }
 
 model PasswordResetCode {
-  resetId   String   @id @default(cuid()) @map("reset_id")
-  usuarioId String   @map("usuario_id")
-  codeHash  String   @map("code_hash")
-  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  resetId   String    @id @default(cuid()) @map("reset_id")
+  usuarioId String    @map("usuario_id")
+  codeHash  String    @map("code_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
   usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  usuario   Usuario  @relation(fields: [usuarioId], references: [usuarioId], onDelete: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  usuario   Usuario   @relation(fields: [usuarioId], references: [usuarioId], onDelete: Cascade)
 
   @@index([usuarioId])
   @@index([expiresAt])
@@ -92,21 +109,26 @@ model Auditoria {
 }
 
 model Rango {
-  rangoId        Int        @id @default(autoincrement()) @map("grado_id") @db.SmallInt
-  abreviacion    String     @unique
-  nombreCompleto String     @unique @map("nombre_completo")
-  orden          Int        @map("orden") @db.SmallInt
+  rangoId        Int          @id @default(autoincrement()) @map("grado_id") @db.SmallInt
+  tipo           TipoPersonal
+  abreviacion    String
+  nombreCompleto String       @map("nombre_completo")
+  orden          Int          @map("orden") @db.SmallInt
   personal       Personal[]
 
+  @@unique([tipo, abreviacion])
+  @@unique([tipo, nombreCompleto])
+  @@unique([rangoId, tipo])
+  @@index([tipo, orden])
   @@index([orden])
   @@map("grado")
 }
 
 model Bateria {
-  bateriaId Int        @id @default(autoincrement()) @map("bateria_id") @db.SmallInt
-  nombre    String     @unique
-  orden     Int        @map("orden") @db.SmallInt
-  personal  Personal[]
+  bateriaId   Int          @id @default(autoincrement()) @map("bateria_id") @db.SmallInt
+  nombre      String       @unique
+  orden       Int          @map("orden") @db.SmallInt
+  subalternos Subalterno[]
 
   @@index([orden])
   @@map("bateria")
@@ -121,39 +143,134 @@ model TallaTipo {
 }
 
 model Item {
-  itemId               BigInt               @id @default(autoincrement()) @map("item_id")
-  nombre               String               @unique
-  activo               Boolean              @default(true)
-  ordenPdf             Int                  @map("orden_pdf")
-  registroItems        RegistroItem[]
-  stockOperacionItems  StockOperacionItem[]
+  itemId              BigInt               @id @default(autoincrement()) @map("item_id")
+  nombre              String               @unique
+  activo              Boolean              @default(true)
+  ordenPdf            Int                  @map("orden_pdf")
+  movimientoItems     MovimientoItem[]
+  stockOperacionItems StockOperacionItem[]
 
   @@map("item")
 }
 
 model Personal {
-  ci            String          @id @map("ci")
-  apellido1     String
-  apellido2     String?
-  nombre1       String
-  nombre2       String?
-  telefonoContacto String?      @map("telefono_contacto")
-  esReingreso   Boolean         @default(false) @map("es_reingreso")
-  fechaIngreso  DateTime?       @map("fecha_ingreso") @db.Date
-  fechaIngresoOriginal DateTime? @map("fecha_ingreso_original") @db.Date
-  rangoId       Int             @map("grado_id") @db.SmallInt
-  bateriaId     Int?            @map("bateria_id") @db.SmallInt
-  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
-  rango         Rango           @relation(fields: [rangoId], references: [rangoId])
-  bateria       Bateria?        @relation(fields: [bateriaId], references: [bateriaId])
-  tallas        PersonalTalla[]
-  registros     Registro[]
-  observaciones Observacion[]
+  ci               String          @id @map("ci")
+  tipo             TipoPersonal
+  apellido1        String
+  apellido2        String?
+  nombre1          String
+  nombre2          String?
+  telefonoContacto String?         @map("telefono_contacto")
+  rangoId          Int             @map("grado_id") @db.SmallInt
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  rango            Rango           @relation(fields: [rangoId, tipo], references: [rangoId, tipo])
+  subalterno       Subalterno?
+  oficial          Oficial?
+  suboficial       Suboficial?
+  tallas           PersonalTalla[]
+  movimientos      Movimiento[]
+  observaciones    Observacion[]
 
-  @@index([rangoId])
-  @@index([bateriaId])
+  @@index([tipo])
+  @@index([rangoId, tipo])
   @@map("personal")
+}
+
+model Movimiento {
+  movimientoId      BigInt             @id @default(autoincrement()) @map("movimiento_id")
+  tipo              TipoMovimiento
+  fecha             DateTime           @db.Date
+  personalCi        String             @map("personal_ci")
+  usuarioEntregaId  String             @map("usuario_entrega_id")
+  afectaStock       Boolean            @default(true) @map("afecta_stock")
+  observaciones     String?
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  personal          Personal           @relation(fields: [personalCi], references: [ci], onDelete: Cascade)
+  usuarioEntrega    Usuario            @relation("movimiento_usuario_entrega", fields: [usuarioEntregaId], references: [usuarioId])
+  items             MovimientoItem[]
+  prestamoActivo    PrestamoActivo?
+  prestamoHistorial PrestamoHistorial?
+
+  @@index([personalCi, fecha(sort: Desc)])
+  @@index([tipo, fecha(sort: Desc)])
+  @@index([usuarioEntregaId, fecha(sort: Desc)])
+  @@map("movimiento")
+}
+
+model MovimientoItem {
+  movimientoId BigInt     @map("movimiento_id")
+  itemId       BigInt     @map("item_id")
+  cantidad     Int
+  movimiento   Movimiento @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
+  item         Item       @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+
+  @@id([movimientoId, itemId])
+  @@index([itemId])
+  @@map("movimiento_item")
+}
+
+model PrestamoActivo {
+  movimientoId BigInt                   @id @map("movimiento_id")
+  reciboNumero String                   @unique @map("recibo_numero")
+  estado       EstadoPrestamoMovimiento @default(PENDIENTE)
+  createdAt    DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  movimiento   Movimiento               @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
+
+  @@index([estado, createdAt(sort: Desc)])
+  @@map("prestamo_activo")
+}
+
+model PrestamoHistorial {
+  historialId               BigInt                   @id @default(autoincrement()) @map("historial_id")
+  movimientoId              BigInt                   @unique @map("movimiento_id")
+  reciboNumero              String                   @unique @map("recibo_numero")
+  estado                    EstadoPrestamoMovimiento @default(DEVUELTO)
+  fechaDevolucion           DateTime                 @map("fecha_devolucion") @db.Date
+  usuarioRecibeDevolucionId String?                  @map("usuario_recibe_devolucion_id")
+  createdAt                 DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  movimiento                Movimiento               @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
+  usuarioRecibeDevolucion   Usuario?                 @relation("prestamo_historial_usuario_recepcion", fields: [usuarioRecibeDevolucionId], references: [usuarioId], onDelete: SetNull)
+
+  @@index([fechaDevolucion(sort: Desc)])
+  @@index([usuarioRecibeDevolucionId, fechaDevolucion(sort: Desc)])
+  @@map("prestamo_historial")
+}
+
+model Subalterno {
+  ci                   String    @id @map("ci")
+  esReingreso          Boolean   @default(false) @map("es_reingreso")
+  fechaIngreso         DateTime? @map("fecha_ingreso") @db.Date
+  fechaIngresoOriginal DateTime? @map("fecha_ingreso_original") @db.Date
+  bateriaId            Int?      @map("bateria_id") @db.SmallInt
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  personal             Personal  @relation(fields: [ci], references: [ci], onDelete: Cascade)
+  bateria              Bateria?  @relation(fields: [bateriaId], references: [bateriaId])
+
+  @@index([bateriaId])
+  @@map("subalterno")
+}
+
+model Oficial {
+  ci        String   @id @map("ci")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  personal  Personal @relation(fields: [ci], references: [ci], onDelete: Cascade)
+
+  @@map("oficial")
+}
+
+model Suboficial {
+  ci        String   @id @map("ci")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  personal  Personal @relation(fields: [ci], references: [ci], onDelete: Cascade)
+
+  @@map("suboficial")
 }
 
 model PersonalTalla {
@@ -166,33 +283,6 @@ model PersonalTalla {
 
   @@id([ci, tallaTipoId])
   @@map("personal_talla")
-}
-
-model Registro {
-  registroId    BigInt         @id @default(autoincrement()) @map("registro_id")
-  ci            String         @map("ci")
-  fecha         DateTime       @db.Date
-  tipo          TipoRegistro
-  afectaStock   Boolean        @default(false) @map("afecta_stock")
-  comentarios   String?
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  personal      Personal       @relation(fields: [ci], references: [ci], onDelete: Cascade)
-  items         RegistroItem[]
-
-  @@index([ci, fecha(sort: Desc)])
-  @@map("registro")
-}
-
-model RegistroItem {
-  registroId BigInt   @map("registro_id")
-  itemId     BigInt   @map("item_id")
-  cantidad   Int
-  registro   Registro @relation(fields: [registroId], references: [registroId], onDelete: Cascade)
-  item       Item     @relation(fields: [itemId], references: [itemId])
-
-  @@id([registroId, itemId])
-  @@index([itemId])
-  @@map("registro_item")
 }
 
 model Observacion {

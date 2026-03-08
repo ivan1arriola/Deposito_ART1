@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { TipoPersonal } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -16,6 +17,7 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const rangos = await prisma.rango.findMany({
+    where: { tipo: TipoPersonal.SUBALTERNO },
     orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
   });
 
@@ -42,11 +44,13 @@ export async function POST(req: Request) {
   try {
     const created = await prisma.$transaction(async (tx) => {
       const existing = await tx.rango.findMany({
+        where: { tipo: TipoPersonal.SUBALTERNO },
         orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
         select: { rangoId: true },
       });
       const createdRango = await tx.rango.create({
         data: {
+          tipo: TipoPersonal.SUBALTERNO,
           abreviacion,
           nombreCompleto,
           orden: existing.length + 1,

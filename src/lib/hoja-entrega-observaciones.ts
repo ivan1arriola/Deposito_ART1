@@ -1,4 +1,4 @@
-import type { TipoRegistro } from "@prisma/client";
+import type { TipoMovimiento } from "@prisma/client";
 import { dateInputToDate, formatDateOnlyForDisplay } from "@/lib/date-helpers";
 
 type PersonalObservacionInput = {
@@ -6,10 +6,10 @@ type PersonalObservacionInput = {
   texto: string | null | undefined;
 };
 
-type RegistroObservacionInput = {
+type MovimientoObservacionInput = {
   fecha: string | Date;
-  tipo: TipoRegistro | "ENTREGA" | "DEVOLUCION";
-  comentarios: string | null | undefined;
+  tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION";
+  observaciones: string | null | undefined;
 };
 
 export type HojaObservacion = {
@@ -30,7 +30,7 @@ function toObservationDate(value: string | Date) {
 
 export function buildHojaObservaciones(
   observacionesPersonal: PersonalObservacionInput[],
-  registros: RegistroObservacionInput[],
+  movimientos: MovimientoObservacionInput[],
 ): HojaObservacion[] {
   const personal = observacionesPersonal
     .map((observacion) => {
@@ -51,18 +51,18 @@ export function buildHojaObservaciones(
       ): observacion is { fecha: string; texto: string; sortOrder: number; sortTime: number } => observacion !== null,
     );
 
-  const movimientos = registros
-    .map((registro) => {
-      const comentarios = registro.comentarios?.trim();
-      const fecha = toObservationDate(registro.fecha);
+  const movimientosNormalizados = movimientos
+    .map((movimiento) => {
+      const comentarios = movimiento.observaciones?.trim();
+      const fecha = toObservationDate(movimiento.fecha);
       if (!comentarios || !fecha) return null;
-      if (registro.tipo !== "ENTREGA" && registro.tipo !== "DEVOLUCION") return null;
+      if (movimiento.tipo !== "ENTREGA" && movimiento.tipo !== "DEVOLUCION") return null;
 
       return {
         fecha,
-        texto: `${registro.tipo === "ENTREGA" ? "Entrega" : "Devolución"}: ${comentarios}`,
-        sortOrder: registro.tipo === "ENTREGA" ? 1 : 2,
-        sortTime: toObservationTimestamp(registro.fecha),
+        texto: `${movimiento.tipo === "ENTREGA" ? "Entrega" : "Devolucion"}: ${comentarios}`,
+        sortOrder: movimiento.tipo === "ENTREGA" ? 1 : 2,
+        sortTime: toObservationTimestamp(movimiento.fecha),
       };
     })
     .filter(
@@ -71,7 +71,7 @@ export function buildHojaObservaciones(
       ): observacion is { fecha: string; texto: string; sortOrder: number; sortTime: number } => observacion !== null,
     );
 
-  return [...personal, ...movimientos]
+  return [...personal, ...movimientosNormalizados]
     .sort((a, b) => a.sortTime - b.sortTime || a.sortOrder - b.sortOrder || a.texto.localeCompare(b.texto, "es"))
     .map(({ fecha, texto }) => ({ fecha, texto }));
 }

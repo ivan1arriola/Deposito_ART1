@@ -1,4 +1,4 @@
-import { TipoRegistro } from "@prisma/client";
+import { TipoMovimiento, TipoPersonal } from "@prisma/client";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 import { compareOptionalOrder } from "@/lib/catalog-order";
@@ -6,8 +6,8 @@ import type { EquipoResumenData, EquipoResumenRow } from "@/types/views";
 
 const SIN_BATERIA_LABEL = "Sin batería";
 
-function registroFactor(tipo: TipoRegistro) {
-  if (tipo === TipoRegistro.DEVOLUCION) return -1;
+function movimientoFactor(tipo: TipoMovimiento) {
+  if (tipo === TipoMovimiento.DEVOLUCION) return -1;
   return 1;
 }
 
@@ -28,11 +28,21 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
   const itemIndexById = new Map(itemIds.map((itemId, index) => [itemId.toString(), index]));
 
   const personal = await prisma.personal.findMany({
+    where: {
+      tipo: TipoPersonal.SUBALTERNO,
+    },
     include: {
-      bateria: {
-        select: { bateriaId: true, nombre: true, orden: true },
+      subalterno: {
+        include: {
+          bateria: {
+            select: { bateriaId: true, nombre: true, orden: true },
+          },
+        },
       },
-      registros: {
+      movimientos: {
+        where: {
+          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+        },
         include: {
           items: {
             where: itemIds.length > 0 ? { itemId: { in: itemIds } } : undefined,
@@ -50,9 +60,9 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
   const unitTotals = Array.from({ length: items.length }, () => 0);
 
   for (const persona of personal) {
-    const batteryKey = persona.bateria ? String(persona.bateria.bateriaId) : "NONE";
-    const batteryName = persona.bateria?.nombre ?? SIN_BATERIA_LABEL;
-    const batteryOrder = persona.bateria?.orden ?? null;
+    const batteryKey = persona.subalterno?.bateria ? String(persona.subalterno.bateria.bateriaId) : "NONE";
+    const batteryName = persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL;
+    const batteryOrder = persona.subalterno?.bateria?.orden ?? null;
 
     let summaryRow = rowsByBattery.get(batteryKey);
     if (!summaryRow) {
@@ -66,9 +76,9 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
       rowsByBattery.set(batteryKey, summaryRow);
     }
 
-    for (const registro of persona.registros) {
-      const factor = registroFactor(registro.tipo);
-      for (const detail of registro.items) {
+    for (const movimiento of persona.movimientos) {
+      const factor = movimientoFactor(movimiento.tipo);
+      for (const detail of movimiento.items) {
         const index = itemIndexById.get(detail.itemId.toString());
         if (index === undefined) continue;
         const delta = detail.cantidad * factor;

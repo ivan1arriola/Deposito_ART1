@@ -1,4 +1,4 @@
-import { Prisma, TipoRegistro } from "@prisma/client";
+import { Prisma, TipoMovimiento, TipoPersonal } from "@prisma/client";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { extractDateParts, formatDateOnlyForDisplay, formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { getFirmaConfig, TEXTO_ENCARGADO, TEXTO_OFICIAL } from "@/lib/firma-config";
@@ -6,8 +6,10 @@ import { buildHojaObservaciones, type HojaObservacion } from "@/lib/hoja-entrega
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
 
-type RegistroWithItems = {
+type MovimientoWithItems = {
   fecha: Date;
+  tipo: TipoMovimiento;
+  observaciones: string | null;
   items: Array<{
     cantidad: number;
     item: {
@@ -66,13 +68,17 @@ export type HojaEntregaSheetData = {
 
 const hojaEntregaPersonalInclude = {
   rango: true,
-  bateria: true,
+  subalterno: {
+    include: {
+      bateria: true,
+    },
+  },
   tallas: {
     include: { tallaTipo: true },
   },
-  registros: {
+  movimientos: {
     where: {
-      tipo: { in: [TipoRegistro.ENTREGA, TipoRegistro.DEVOLUCION] },
+      tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
     },
     orderBy: { fecha: "asc" },
     include: {
@@ -90,7 +96,7 @@ type HojaEntregaPersonalRecord = Prisma.PersonalGetPayload<{
   include: typeof hojaEntregaPersonalInclude;
 }>;
 
-function aggregateItems(records: RegistroWithItems[]) {
+function aggregateItems(records: MovimientoWithItems[]) {
   const map = new Map<string, number>();
   for (const record of records) {
     for (const detail of record.items) {
@@ -101,24 +107,24 @@ function aggregateItems(records: RegistroWithItems[]) {
   return Array.from(map.entries()).map(([nombre, cantidad]) => ({ nombre, cantidad }));
 }
 
-function toSixColumns(records: RegistroWithItems[]): MatrixColumn[] {
+function toSixColumns(records: MovimientoWithItems[]): MatrixColumn[] {
   const sorted = [...records].sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
   const columns: MatrixColumn[] = [];
 
   if (sorted.length > 5) {
-    const oldRecords = sorted.slice(0, sorted.length - 5);
-    const recentRecords = sorted.slice(-5);
-    const cutoffRecord = oldRecords[oldRecords.length - 1] ?? null;
+    const oldMovimientos = sorted.slice(0, sorted.length - 5);
+    const recentMovimientos = sorted.slice(-5);
+    const cutoffRecord = oldMovimientos[oldMovimientos.length - 1] ?? null;
 
     columns.push({
       fecha: cutoffRecord ? formatDateOnlyFromDate(cutoffRecord.fecha) : null,
-      items: aggregateItems(oldRecords),
+      items: aggregateItems(oldMovimientos),
     });
 
     columns.push(
-      ...recentRecords.map((record) => ({
-        fecha: formatDateOnlyFromDate(record.fecha),
-        items: record.items.map((detail) => ({
+      ...recentMovimientos.map((movimiento) => ({
+        fecha: formatDateOnlyFromDate(movimiento.fecha),
+        items: movimiento.items.map((detail) => ({
           nombre: detail.item.nombre,
           cantidad: detail.cantidad,
         })),
@@ -171,8 +177,10 @@ function mapPersonaToHojaEntregaData(
   itemOrder: string[],
   firmas: Awaited<ReturnType<typeof getFirmaConfig>>,
 ): HojaEntregaSheetData {
-  const entregas = toSixColumns(persona.registros.filter((record) => record.tipo === TipoRegistro.ENTREGA));
-  const devoluciones = toSixColumns(persona.registros.filter((record) => record.tipo === TipoRegistro.DEVOLUCION));
+  const entregas = toSixColumns(persona.movimientos.filter((movimiento) => movimiento.tipo === TipoMovimiento.ENTREGA));
+  const devoluciones = toSixColumns(
+    persona.movimientos.filter((movimiento) => movimiento.tipo === TipoMovimiento.DEVOLUCION),
+  );
   const tallas = persona.tallas.reduce<Record<string, string>>((acc, talla) => {
     acc[talla.tallaTipo.nombre] = talla.tallaValor;
     return acc;
@@ -185,12 +193,12 @@ function mapPersonaToHojaEntregaData(
       apellido2: persona.apellido2,
       nombre1: persona.nombre1,
       nombre2: persona.nombre2,
-      esReingreso: persona.esReingreso,
-      fechaIngreso: formatDateOnlyFromDate(persona.fechaIngreso),
-      fechaIngresoOriginal: formatDateOnlyFromDate(persona.fechaIngresoOriginal),
+      esReingreso: persona.subalterno?.esReingreso ?? false,
+      fechaIngreso: formatDateOnlyFromDate(persona.subalterno?.fechaIngreso ?? null),
+      fechaIngresoOriginal: formatDateOnlyFromDate(persona.subalterno?.fechaIngresoOriginal ?? null),
       rango: persona.rango.nombreCompleto,
       rangoAbreviacion: persona.rango.abreviacion,
-      bateria: persona.bateria?.nombre ?? null,
+      bateria: persona.subalterno?.bateria?.nombre ?? null,
       tallas: {
         PARKA: tallas.PARKA ?? "-",
         CAMISACO: tallas.CAMISACO ?? "-",
@@ -210,7 +218,7 @@ function mapPersonaToHojaEntregaData(
       oficialRango: firmas.oficialRango || "Oficial",
       oficialNombre: firmas.oficialNombre || "NOMBRE",
     },
-    observaciones: buildHojaObservaciones(persona.observaciones, persona.registros),
+    observaciones: buildHojaObservaciones(persona.observaciones, persona.movimientos),
   };
 }
 
@@ -230,8 +238,11 @@ export async function getHojaEntregaData(ci: string): Promise<HojaEntregaSheetDa
   }
 
   const [persona, itemCatalog, firmas] = await Promise.all([
-    prisma.personal.findUnique({
-      where: { ci },
+    prisma.personal.findFirst({
+      where: {
+        ci,
+        tipo: TipoPersonal.SUBALTERNO,
+      },
       include: hojaEntregaPersonalInclude,
     }),
     prisma.item.findMany({
@@ -256,6 +267,9 @@ export async function getHojaEntregaData(ci: string): Promise<HojaEntregaSheetDa
 export async function getAllHojasEntregaData(): Promise<HojaEntregaSheetData[]> {
   const [personas, itemCatalog, firmas] = await Promise.all([
     prisma.personal.findMany({
+      where: {
+        tipo: TipoPersonal.SUBALTERNO,
+      },
       include: hojaEntregaPersonalInclude,
     }),
     prisma.item.findMany({

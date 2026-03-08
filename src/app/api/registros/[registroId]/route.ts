@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { TipoRegistro } from "@prisma/client";
+import { TipoMovimiento } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -11,20 +11,20 @@ import {
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
 
-type RegistroItemPayload = {
+type MovimientoItemPayload = {
   itemId: string | number;
   cantidad: number | string;
 };
 
-type UpdateRegistroPayload = {
+type UpdateMovimientoPayload = {
   fecha?: string;
-  tipo: TipoRegistro | string;
+  tipo: TipoMovimiento | string;
   afectaStock?: boolean;
   comentarios?: string;
-  items: RegistroItemPayload[];
+  items: MovimientoItemPayload[];
 };
 
-function parseRegistroId(raw: string) {
+function parseMovimientoId(raw: string) {
   try {
     return BigInt(raw);
   } catch {
@@ -45,10 +45,10 @@ function parseCantidad(value: unknown) {
   return parsed;
 }
 
-function parseTipoRegistro(value: unknown) {
+function parseTipoMovimiento(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
-  if (raw === "ENTREGA") return TipoRegistro.ENTREGA;
-  if (raw === "DEVOLUCION") return TipoRegistro.DEVOLUCION;
+  if (raw === "ENTREGA") return TipoMovimiento.ENTREGA;
+  if (raw === "DEVOLUCION") return TipoMovimiento.DEVOLUCION;
   return null;
 }
 
@@ -58,10 +58,10 @@ function parseFecha(value: unknown) {
   return dateInputToDate(raw);
 }
 
-function isValidPayload(body: unknown): body is UpdateRegistroPayload {
+function isValidPayload(body: unknown): body is UpdateMovimientoPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  if (!parseTipoRegistro(candidate.tipo)) return false;
+  if (!parseTipoMovimiento(candidate.tipo)) return false;
   if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
   return true;
 }
@@ -81,14 +81,14 @@ function buildPersonalAuditDetail(personal: {
   nombre1: string;
   nombre2: string | null;
   rango: { nombreCompleto: string; abreviacion: string };
-  bateria: { nombre: string } | null;
+  subalterno: { bateria: { nombre: string } | null } | null;
 }) {
   return {
     ci: personal.ci,
     nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
-    bateria: personal.bateria?.nombre ?? null,
+    bateria: personal.subalterno?.bateria?.nombre ?? null,
   };
 }
 
@@ -96,9 +96,9 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
 
-  const { registroId: registroIdParam } = await context.params;
-  const registroId = parseRegistroId(registroIdParam);
-  if (!registroId) {
+  const { registroId: movimientoIdParam } = await context.params;
+  const movimientoId = parseMovimientoId(movimientoIdParam);
+  if (!movimientoId) {
     return NextResponse.json({ error: "registroId invalido." }, { status: 400 });
   }
 
@@ -107,7 +107,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({ error: "Payload invalido. Revisa tipo, fecha y equipos." }, { status: 400 });
   }
 
-  const tipo = parseTipoRegistro(body.tipo);
+  const tipo = parseTipoMovimiento(body.tipo);
   const fecha = parseFecha(body.fecha);
   if (!tipo || !fecha) {
     return NextResponse.json({ error: "tipo o fecha invalidos." }, { status: 400 });
@@ -134,8 +134,8 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     dedupedEquipos.set(key, (dedupedEquipos.get(key) ?? 0) + item.cantidad);
   }
 
-  const existing = await prisma.registro.findUnique({
-    where: { registroId },
+  const existing = await prisma.movimiento.findUnique({
+    where: { movimientoId },
     include: {
       personal: {
         select: {
@@ -147,8 +147,12 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
           rango: {
             select: { nombreCompleto: true, abreviacion: true },
           },
-          bateria: {
-            select: { nombre: true },
+          subalterno: {
+            select: {
+              bateria: {
+                select: { nombre: true },
+              },
+            },
           },
         },
       },
@@ -159,12 +163,8 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     },
   });
 
-  if (!existing) {
+  if (!existing || (existing.tipo !== TipoMovimiento.ENTREGA && existing.tipo !== TipoMovimiento.DEVOLUCION)) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
-  }
-
-  if (existing.tipo === TipoRegistro.AJUSTE) {
-    return NextResponse.json({ error: "Los ajustes no se rectifican desde esta vista." }, { status: 409 });
   }
 
   const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
@@ -177,7 +177,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   }
 
   const comentarios = body.comentarios?.trim() || null;
-  const afectaStock = body.afectaStock === true;
+  const afectaStock = body.afectaStock !== false;
   const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
   const itemsNuevos = Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
     itemId,
@@ -195,23 +195,23 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.registro.update({
-        where: { registroId: existing.registroId },
+      await tx.movimiento.update({
+        where: { movimientoId: existing.movimientoId },
         data: {
           tipo,
           fecha,
           afectaStock,
-          comentarios,
+          observaciones: comentarios,
         },
       });
 
-      await tx.registroItem.deleteMany({
-        where: { registroId: existing.registroId },
+      await tx.movimientoItem.deleteMany({
+        where: { movimientoId: existing.movimientoId },
       });
 
-      await tx.registroItem.createMany({
+      await tx.movimientoItem.createMany({
         data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
-          registroId: existing.registroId,
+          movimientoId: existing.movimientoId,
           itemId: BigInt(itemId),
           cantidad,
         })),
@@ -222,10 +222,10 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       usuarioId: auth.user.usuarioId,
       accion: "UPDATE",
       entidad: "REGISTRO",
-      entidadId: existing.registroId.toString(),
+      entidadId: existing.movimientoId.toString(),
       detalle: {
         evento: "MOVIMIENTO_VESTUARIO_RECTIFICADO",
-        ci: existing.ci,
+        ci: existing.personalCi,
         personal: buildPersonalAuditDetail(existing.personal),
         tipoAnterior: existing.tipo,
         tipoNuevo: tipo,
@@ -233,7 +233,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
         afectaStockNuevo: afectaStock,
         fechaAnterior: formatDateOnlyFromDate(existing.fecha),
         fechaNueva: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
-        comentariosAnterior: existing.comentarios,
+        comentariosAnterior: existing.observaciones,
         comentariosNuevo: comentarios,
         totalEquiposAnterior: itemsAnteriores.length,
         totalUnidadesAnterior,
@@ -248,8 +248,8 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
     return NextResponse.json({
       ok: true,
-      registroId: existing.registroId.toString(),
-      ci: existing.ci,
+      registroId: existing.movimientoId.toString(),
+      ci: existing.personalCi,
       fecha: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
     });
   } catch {
@@ -261,14 +261,14 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
   const auth = await authorizeRequest(req, "delete_data");
   if (!auth.ok) return auth.response;
 
-  const { registroId: registroIdParam } = await context.params;
-  const registroId = parseRegistroId(registroIdParam);
-  if (!registroId) {
+  const { registroId: movimientoIdParam } = await context.params;
+  const movimientoId = parseMovimientoId(movimientoIdParam);
+  if (!movimientoId) {
     return NextResponse.json({ error: "registroId invalido." }, { status: 400 });
   }
 
-  const existing = await prisma.registro.findUnique({
-    where: { registroId },
+  const existing = await prisma.movimiento.findUnique({
+    where: { movimientoId },
     include: {
       personal: {
         select: {
@@ -280,8 +280,12 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
           rango: {
             select: { nombreCompleto: true, abreviacion: true },
           },
-          bateria: {
-            select: { nombre: true },
+          subalterno: {
+            select: {
+              bateria: {
+                select: { nombre: true },
+              },
+            },
           },
         },
       },
@@ -292,12 +296,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
     },
   });
 
-  if (!existing) {
+  if (!existing || (existing.tipo !== TipoMovimiento.ENTREGA && existing.tipo !== TipoMovimiento.DEVOLUCION)) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
-  }
-
-  if (existing.tipo === TipoRegistro.AJUSTE) {
-    return NextResponse.json({ error: "Los ajustes no se eliminan desde esta vista." }, { status: 409 });
   }
 
   const itemsEliminados = existing.items.map((detail) => ({
@@ -309,23 +309,23 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
   const requestMeta = readRequestMeta(req);
 
   try {
-    await prisma.registro.delete({
-      where: { registroId: existing.registroId },
+    await prisma.movimiento.delete({
+      where: { movimientoId: existing.movimientoId },
     });
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
       accion: "DELETE",
       entidad: "REGISTRO",
-      entidadId: existing.registroId.toString(),
+      entidadId: existing.movimientoId.toString(),
       detalle: {
         evento: "MOVIMIENTO_VESTUARIO_ELIMINADO",
-        ci: existing.ci,
+        ci: existing.personalCi,
         personal: buildPersonalAuditDetail(existing.personal),
         tipo: existing.tipo,
         afectaStock: existing.afectaStock,
         fecha: formatDateOnlyFromDate(existing.fecha),
-        comentarios: existing.comentarios,
+        comentarios: existing.observaciones,
         totalEquiposEliminados: itemsEliminados.length,
         totalUnidadesEliminadas,
         itemsEliminados,
@@ -336,8 +336,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
 
     return NextResponse.json({
       ok: true,
-      registroId: existing.registroId.toString(),
-      ci: existing.ci,
+      registroId: existing.movimientoId.toString(),
+      ci: existing.personalCi,
     });
   } catch {
     return NextResponse.json({ error: "No se pudo eliminar el movimiento." }, { status: 500 });

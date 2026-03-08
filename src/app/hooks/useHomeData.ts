@@ -10,6 +10,7 @@ import type {
   DbStatus,
   Equipo,
   FirmaConfig,
+  OficialSuboficial,
   Personal,
   Rango,
   UsuarioAdmin,
@@ -30,6 +31,7 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
   const [baterias, setBaterias] = useState<Bateria[]>([]);
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [personal, setPersonal] = useState<Personal[]>([]);
+  const [oficialesSuboficiales, setOficialesSuboficiales] = useState<OficialSuboficial[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([]);
   const [auditoria, setAuditoria] = useState<AuditoriaRecord[]>([]);
   const [firmaConfig, setFirmaConfig] = useState<FirmaConfig | null>(null);
@@ -58,6 +60,7 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     setBaterias([]);
     setEquipos([]);
     setPersonal([]);
+    setOficialesSuboficiales([]);
     setUsuarios([]);
     setAuditoria([]);
     setFirmaConfig(null);
@@ -87,11 +90,12 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
 
         await api<DbStatus>("/api/db-status");
 
-        const [rangosData, bateriasData, equiposData, personalData, movimientosSummary] = await Promise.all([
+        const [rangosData, bateriasData, equiposData, personalData, oficialesSuboficialesData, movimientosSummary] = await Promise.all([
           api<Rango[]>("/api/rangos"),
           api<Bateria[]>("/api/baterias"),
           api<Equipo[]>("/api/items"),
           api<Personal[]>("/api/personal"),
+          api<OficialSuboficial[]>("/api/oficiales-suboficiales"),
           api<{ total: number }>("/api/registros?summary=1").catch(() => ({ total: 0 })),
         ]);
 
@@ -99,6 +103,7 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
         setBaterias(bateriasData);
         setEquipos(equiposData);
         setPersonal(personalData);
+        setOficialesSuboficiales(oficialesSuboficialesData);
         setMovimientosTotal(movimientosSummary.total);
 
         if (me.user.rol === "ADMIN") {
@@ -253,6 +258,7 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     baterias,
     equipos,
     personal,
+    oficialesSuboficiales,
     usuarios,
     auditoria,
     firmaConfig,
@@ -288,6 +294,7 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     setBaterias,
     setEquipos,
     setPersonal,
+    setOficialesSuboficiales,
     setUsuarios,
     setAuditoria,
     setFirmaConfig,

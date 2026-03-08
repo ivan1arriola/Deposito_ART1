@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { TipoPersonal } from "@prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { logAudit } from "@/lib/audit";
@@ -57,8 +58,8 @@ export async function GET(req: Request, context: { params: Promise<{ ci: string 
   if (!ciDecoded) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
   if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
 
-  const persona = await prisma.personal.findUnique({
-    where: { ci: ciDecoded },
+  const persona = await prisma.personal.findFirst({
+    where: { ci: ciDecoded, tipo: TipoPersonal.SUBALTERNO },
     select: { ci: true },
   });
   if (!persona) {
@@ -97,8 +98,8 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
 
   const texto = body.texto.trim();
 
-  const persona = await prisma.personal.findUnique({
-    where: { ci: ciDecoded },
+  const persona = await prisma.personal.findFirst({
+    where: { ci: ciDecoded, tipo: TipoPersonal.SUBALTERNO },
     select: { ci: true },
   });
   if (!persona) {

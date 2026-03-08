@@ -6,6 +6,7 @@ import type { Role } from "./entities";
 
 export type MainView =
   | "personal"
+  | "ss_oo_sub_of"
   | "personal_nuevo"
   | "equipo_nuevo"
   | "bateria_nueva"
@@ -18,6 +19,7 @@ export type MainView =
   | "stock_alta"
   | "stock_baja"
   | "stock_historial"
+  | "stock_prestamos"
   | "hoja_matrix"
   | "equipo_resumen"
   | "tallas_resumen"
@@ -67,6 +69,7 @@ export type RegistroViewerState = {
 };
 
 export type StockOperacionViewTipo = "INGRESO" | "EGRESO";
+export type PrestamoHistorialTipo = "PRESTAMO" | "DEVOLUCION_PRESTAMO";
 
 export type StockResumenRow = {
   itemId: string;
@@ -84,8 +87,8 @@ export type StockHistorialEntry = {
   id: string;
   fecha: string;
   createdAt: string;
-  origen: "MANUAL" | "PERSONAL";
-  tipo: StockOperacionViewTipo | RegistroTipo;
+  origen: "MANUAL" | "PERSONAL" | "PRESTAMO";
+  tipo: StockOperacionViewTipo | RegistroTipo | PrestamoHistorialTipo;
   afectaStock: boolean;
   comentarios: string | null;
   totalUnidades: number;
@@ -100,10 +103,33 @@ export type StockHistorialEntry = {
   }>;
 };
 
+export type PrestamoStockEntry = {
+  prestamoId: string;
+  reciboNumero: string;
+  destinatarioTipo: "PERSONAL" | "OFICIAL_SUBOFICIAL";
+  destinatarioCi: string;
+  destinatarioNombre: string;
+  destinatarioEtiqueta: string;
+  usuarioEntregaId: string;
+  usuarioEntregaNombre: string;
+  fechaPrestamo: string;
+  fechaDevolucion: string | null;
+  usuarioRecibeDevolucionId: string | null;
+  usuarioRecibeDevolucionNombre: string | null;
+  comentarios: string | null;
+  estado: "PENDIENTE" | "DEVUELTO";
+  items: Array<{
+    itemId: string;
+    nombre: string;
+    cantidad: number;
+  }>;
+};
+
 export type StockDashboardData = {
   generatedAt: string;
   resumen: StockResumenRow[];
   historial: StockHistorialEntry[];
+  prestamos: PrestamoStockEntry[];
 };
 
 export type HojaMatrixEquipo = {

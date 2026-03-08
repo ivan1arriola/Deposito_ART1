@@ -5,6 +5,7 @@
 import type { RegistroTipo } from "./views";
 
 export type StockOperacionTipo = "INGRESO" | "EGRESO";
+export type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL_SUBOFICIAL";
 
 export type PersonalForm = {
   ci: string;
@@ -77,6 +78,19 @@ export type StockOperacionDraft = {
   items: StockOperacionDraftItem[];
 };
 
+export type PrestamoDraftItem = {
+  itemId: string;
+  cantidad: string;
+};
+
+export type PrestamoDraft = {
+  destinatarioTipo: PrestamoDestinatarioTipo;
+  destinatarioCi: string;
+  fechaPrestamo: string;
+  comentarios: string;
+  items: PrestamoDraftItem[];
+};
+
 /**
  * Constantes de formularios vacíos
  */
@@ -110,6 +124,14 @@ export const EMPTY_ITEM_FORM: ItemForm = EMPTY_EQUIPO_FORM;
 export const EMPTY_STOCK_OPERACION_DRAFT: StockOperacionDraft = {
   tipo: "INGRESO",
   fecha: "",
+  comentarios: "",
+  items: [{ itemId: "", cantidad: "1" }],
+};
+
+export const EMPTY_PRESTAMO_DRAFT: PrestamoDraft = {
+  destinatarioTipo: "PERSONAL",
+  destinatarioCi: "",
+  fechaPrestamo: "",
   comentarios: "",
   items: [{ itemId: "", cantidad: "1" }],
 };
