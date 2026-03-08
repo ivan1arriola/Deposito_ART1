@@ -1,6 +1,7 @@
 "use client";
 
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
+import { LoadingInline } from "@/app/components/shared";
 import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
 import type { Equipo } from "@/types/entities";
 import type { StockOperacionDraft, StockOperacionDraftItem } from "@/types/forms";
@@ -61,7 +62,7 @@ export function StockView({
   const showHistory = section === "historial";
 
   const formTitle = section === "alta" ? "Alta de stock" : "Baja de stock";
-  const submitLabel = saving ? "Guardando..." : section === "alta" ? "Guardar ingreso" : "Guardar egreso";
+  const submitLabel = section === "alta" ? "Guardar ingreso" : "Guardar egreso";
 
   const viewTitle =
     section === "total"
@@ -98,9 +99,18 @@ export function StockView({
           <button
             type="button"
             onClick={onReload}
+            disabled={loading}
             className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
           >
-            Recargar
+            {loading ? (
+              <LoadingInline
+                label="Recargando..."
+                size="xs"
+                textClassName="text-xs font-semibold text-stone-700"
+              />
+            ) : (
+              "Recargar"
+            )}
           </button>
         </div>
 
@@ -230,7 +240,16 @@ export function StockView({
               disabled={saving}
               className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-50"
             >
-              {submitLabel}
+              {saving ? (
+                <LoadingInline
+                  label="Guardando..."
+                  size="xs"
+                  tone="light"
+                  textClassName="text-xs font-semibold text-white"
+                />
+              ) : (
+                submitLabel
+              )}
             </button>
           </div>
         </article>
@@ -239,7 +258,13 @@ export function StockView({
       {showStockTable ? (
         <article className="ej-card rounded-2xl p-4">
           <h3 className="text-sm font-semibold text-stone-900">{stockTableTitle}</h3>
-          {loading ? <p className="mt-3 text-sm text-stone-600">Cargando stock...</p> : null}
+          {loading ? (
+            <LoadingInline
+              label="Cargando stock..."
+              className="mt-3"
+              textClassName="text-sm font-medium text-stone-600"
+            />
+          ) : null}
           {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
           {!loading && !error ? (
             <>
@@ -324,7 +349,13 @@ export function StockView({
       {showHistory ? (
         <article className="ej-card rounded-2xl p-4">
           <h3 className="text-sm font-semibold text-stone-900">Historial que impacta stock interno</h3>
-          {loading ? <p className="mt-3 text-sm text-stone-600">Cargando stock...</p> : null}
+          {loading ? (
+            <LoadingInline
+              label="Cargando stock..."
+              className="mt-3"
+              textClassName="text-sm font-medium text-stone-600"
+            />
+          ) : null}
           {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
           <div className="mt-3 space-y-2">
             {historial.length === 0 ? <p className="text-sm text-stone-600">No hay movimientos de stock registrados.</p> : null}

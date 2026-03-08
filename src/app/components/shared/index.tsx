@@ -8,6 +8,7 @@ export type { ActionMenuItem } from "./ActionMenu";
 export { ConfirmDialog } from "./ConfirmDialog";
 export { Input, Select, Textarea } from "./FormInputs";
 export { Card, CardHeader, StatCard, EmptyState, Badge } from "./Cards";
+export { LoadingSpinner, LoadingInline, LoadingOverlay } from "./LoadingSpinner";
 
 export function CatalogCard(props: {
   title: string;

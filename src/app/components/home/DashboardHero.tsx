@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import type { CurrentUser } from "@/types/entities";
+import { LoadingInline, LoadingSpinner } from "@/app/components/shared";
 
 type DashboardHeroProps = {
   loading: boolean;
@@ -56,7 +57,7 @@ export function DashboardHero({
 
         <div className="order-1 flex min-w-0 flex-col items-center justify-center text-center xl:order-2">
           <span className="inline-flex items-center gap-2 rounded-full border border-[#BAB08C]/35 bg-[#8D845B]/25 px-3 py-1 text-[11px] font-semibold text-[#F4F1E4]">
-            {loading ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#F4F1E4]/35 border-t-[#F4F1E4]" aria-hidden="true" /> : null}
+            {loading ? <LoadingSpinner size="xs" tone="light" /> : null}
             {loading ? "Sincronizando datos" : "Panel en servicio"}
           </span>
           <h1 className="mt-4 text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl xl:text-7xl">Depósito General</h1>
@@ -70,8 +71,23 @@ export function DashboardHero({
           </article>
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
-            <button type="button" onClick={onReload} className="ej-button-muted w-full rounded-2xl px-3 py-3 text-sm font-semibold">
-              Recargar panel
+            <button
+              type="button"
+              onClick={onReload}
+              disabled={loading}
+              className="ej-button-muted w-full rounded-2xl px-3 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? (
+                <LoadingInline
+                  label="Recargando..."
+                  size="xs"
+                  tone="light"
+                  className="justify-center"
+                  textClassName="text-sm font-semibold text-white"
+                />
+              ) : (
+                "Recargar panel"
+              )}
             </button>
             {canManageAccount ? (
               <button

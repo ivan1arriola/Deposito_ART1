@@ -3,7 +3,7 @@
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
-import { SmallActionButton } from "@/app/components/shared";
+import { LoadingInline, SmallActionButton } from "@/app/components/shared";
 import type { PersonalObservacion } from "@/types/entities";
 import type { PersonalObservacionDraft } from "@/app/types/home";
 import { ModalFrame } from "./ModalFrame";
@@ -54,9 +54,13 @@ export function PersonalObservacionModal({
       </div>
 
       {saving || draft.loading ? (
-        <p className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800">
-          {saving ? "Guardando observación..." : "Cargando observaciones..."}
-        </p>
+        <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
+          <LoadingInline
+            label={saving ? "Guardando observacion..." : "Cargando observaciones..."}
+            size="xs"
+            textClassName="text-xs font-semibold text-sky-800"
+          />
+        </div>
       ) : null}
 
       {draft.error ? (
@@ -157,7 +161,18 @@ export function PersonalObservacionModal({
               disabled={saving}
               className="rounded bg-teal-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {saving ? "Guardando..." : draft.observacionId ? "Guardar cambios" : "Guardar observación"}
+              {saving ? (
+                <LoadingInline
+                  label="Guardando..."
+                  size="xs"
+                  tone="light"
+                  textClassName="text-xs font-semibold text-white"
+                />
+              ) : draft.observacionId ? (
+                "Guardar cambios"
+              ) : (
+                "Guardar observacion"
+              )}
             </button>
           </div>
         </div>
@@ -165,3 +180,5 @@ export function PersonalObservacionModal({
     </ModalFrame>
   );
 }
+
+

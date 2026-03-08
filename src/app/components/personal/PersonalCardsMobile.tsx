@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { apellidosLabel, nombresLabel, tallasEntries } from "@/lib/formatters";
 import { tallasMap } from "@/lib/form-mappers";
@@ -22,7 +21,6 @@ type PersonalCardsMobileProps = {
   onObservacion: (persona: Personal) => void;
   onViewMoves: (persona: Personal) => void;
   onOpenSheet: (ci: string) => void;
-  renderInlineEditForm: (ci: string) => ReactNode;
 };
 
 export function PersonalCardsMobile({
@@ -38,7 +36,6 @@ export function PersonalCardsMobile({
   onObservacion,
   onViewMoves,
   onOpenSheet,
-  renderInlineEditForm,
 }: PersonalCardsMobileProps) {
   return (
     <div className="mt-3 space-y-3 md:hidden">
@@ -109,7 +106,11 @@ export function PersonalCardsMobile({
                 <PersonalTallasPanel entries={tallasEntries(tallas)} />
               </div>
             ) : null}
-            {editing ? <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">{renderInlineEditForm(persona.ci)}</div> : null}
+            {editing ? (
+              <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-600">
+                Editando en modal...
+              </div>
+            ) : null}
           </article>
         );
       })}

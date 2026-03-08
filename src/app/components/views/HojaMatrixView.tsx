@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { compareOptionalOrder } from "@/lib/catalog-order";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { HojaMatrixData } from "@/types/views";
+import { LoadingInline } from "@/app/components/shared";
 
 export interface HojaMatrixViewProps {
   data: HojaMatrixData | null;
@@ -15,7 +16,6 @@ export interface HojaMatrixViewProps {
 export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixViewProps) {
   const [viewMode, setViewMode] = useState<"all" | "battery">("all");
   const [selectedBattery, setSelectedBattery] = useState<string | null>(null);
-  const [hasRequested, setHasRequested] = useState(Boolean(data));
   const title = viewMode === "all" ? "Hoja Matriz Unidad" : "Hoja Matriz por Batería";
 
   const bateriaOptions = useMemo(() => {
@@ -38,7 +38,6 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
   }, [data]);
 
   const handleLoad = async () => {
-    setHasRequested(true);
     await onReload();
   };
 
@@ -78,7 +77,18 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
             disabled={loading}
             className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
           >
-            {loading ? "Actualizando..." : hasRequested ? "Actualizar Matriz" : "Cargar Matriz"}
+            {loading ? (
+              <LoadingInline
+                label="Actualizando..."
+                size="xs"
+                tone="light"
+                textClassName="text-xs font-semibold text-white"
+              />
+            ) : data ? (
+              "Actualizar Matriz"
+            ) : (
+              "Cargar Matriz"
+            )}
           </button>
           <button
             type="button"
@@ -149,17 +159,19 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
         <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
       ) : null}
 
-      {loading && !data ? <p className="mt-3 text-sm text-stone-600">Cargando Hoja Matriz...</p> : null}
+      {loading && !data ? (
+        <LoadingInline
+          label="Cargando Hoja Matriz..."
+          className="mt-3"
+          textClassName="text-sm font-medium text-stone-600"
+        />
+      ) : null}
 
-      {hasRequested && viewMode === "battery" && !selectedBattery && data ? (
+      {viewMode === "battery" && !selectedBattery && data ? (
         <p className="mt-3 text-xs font-semibold text-stone-600">Seleccione una batería para mostrar la matriz.</p>
       ) : null}
 
-      {!hasRequested && !loading ? (
-        <p className="mt-3 text-xs text-stone-600">Seleccione la vista y presione Cargar Matriz.</p>
-      ) : null}
-
-      {data && hasRequested ? (
+      {data ? (
         <div className="mt-4 overflow-hidden rounded-2xl border border-stone-300 bg-stone-100">
           <iframe
             key={previewHref}
@@ -170,7 +182,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
         </div>
       ) : null}
 
-      {data && hasRequested ? (
+      {data ? (
         <div className="mt-2">
           <p className="text-xs text-stone-500">{`Generado: ${formatDateTimeForDisplay(data.generatedAt)}`}</p>
         </div>
@@ -178,3 +190,4 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
     </section>
   );
 }
+

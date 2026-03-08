@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useState } from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { apellidosLabel, nombresLabel, tallasEntries } from "@/lib/formatters";
 import { tallasMap } from "@/lib/form-mappers";
@@ -22,7 +22,6 @@ type PersonalTableDesktopProps = {
   onObservacion: (persona: Personal) => void;
   onViewMoves: (persona: Personal) => void;
   onOpenSheet: (ci: string) => void;
-  renderInlineEditForm: (ci: string) => ReactNode;
 };
 
 export function PersonalTableDesktop({
@@ -38,7 +37,6 @@ export function PersonalTableDesktop({
   onObservacion,
   onViewMoves,
   onOpenSheet,
-  renderInlineEditForm,
 }: PersonalTableDesktopProps) {
   const [expandedPhoneByCi, setExpandedPhoneByCi] = useState<Record<string, boolean>>({});
 
@@ -145,8 +143,8 @@ export function PersonalTableDesktop({
                 ) : null}
                 {editing ? (
                   <tr className="bg-white">
-                    <td colSpan={7} className="px-3 py-3">
-                      {renderInlineEditForm(persona.ci)}
+                    <td colSpan={7} className="px-3 py-2 text-xs font-medium text-stone-600">
+                      Editando en modal...
                     </td>
                   </tr>
                 ) : null}

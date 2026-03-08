@@ -2,7 +2,7 @@
 
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
-import { PaginationControls } from "@/app/components/shared";
+import { LoadingInline, PaginationControls } from "@/app/components/shared";
 import type { Role } from "@/types/entities";
 import type { RegistroView, RegistroViewerState } from "@/types/views";
 import { ModalFrame } from "./ModalFrame";
@@ -54,7 +54,12 @@ export function RegistroViewerModal({
       </div>
 
       <div className="mt-3 max-h-[60vh] space-y-2 overflow-auto pr-1">
-        {viewer.loading ? <p className="text-sm text-stone-600">Cargando movimientos...</p> : null}
+        {viewer.loading ? (
+          <LoadingInline
+            label="Cargando movimientos..."
+            textClassName="text-sm font-medium text-stone-600"
+          />
+        ) : null}
         {!viewer.loading && viewer.error ? (
           <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{viewer.error}</p>
         ) : null}

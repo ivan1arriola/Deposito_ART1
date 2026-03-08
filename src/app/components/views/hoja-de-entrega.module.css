@@ -244,6 +244,15 @@
 .headerInfoLabel {
   font-weight: 700;
   white-space: nowrap;
+  display: block;
+}
+
+.headerInfoValue {
+  display: block;
+  width: 100%;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: normal;
 }
 
 .legacyHeaderRow {
@@ -287,9 +296,10 @@
   background: #fff;
   border-right: 0.8px solid var(--color-border);
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 3px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
   font-size: 11.5px;
   white-space: normal;
   overflow: visible;

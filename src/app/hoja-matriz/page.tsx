@@ -333,8 +333,8 @@ export default async function HojaMatrizPage({
           }
 
           .person-row td {
-            height: 8mm;
-            font-size: 8.75pt;
+            height: 8.4mm;
+            font-size: 9.5pt;
           }
 
           .person-row .number-cell,
@@ -350,8 +350,12 @@ export default async function HojaMatrizPage({
           }
 
           .person-row .value-cell {
-            font-size: 8.75pt;
-            font-weight: 600;
+            font-family: "Arial", "Liberation Sans", sans-serif;
+            font-size: 10.4pt;
+            line-height: 1.05;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums lining-nums;
+            letter-spacing: 0.01em;
           }
 
           .negative {
@@ -363,7 +367,7 @@ export default async function HojaMatrizPage({
             font-weight: 700;
             color: #c00;
             height: 11mm;
-            padding: 0.6mm 0.35mm;
+            padding: 0.45mm 0.35mm;
           }
 
           .total-row .total-label {
@@ -377,16 +381,16 @@ export default async function HojaMatrizPage({
             display: block;
             width: 100%;
             font-family: "Arial Narrow", "Liberation Sans Narrow", Arial, sans-serif;
-            font-size: 7.4pt;
-            line-height: 1;
-            letter-spacing: -0.02em;
+            font-size: 9.2pt;
+            line-height: 1.05;
+            letter-spacing: -0.01em;
             white-space: nowrap;
             font-variant-numeric: tabular-nums lining-nums;
           }
 
           .total-row .total-value-compact {
-            font-size: 6.5pt;
-            letter-spacing: -0.05em;
+            font-size: 8.1pt;
+            letter-spacing: -0.03em;
           }
 
           .empty-state {

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { EquipoResumenData } from "@/types/views";
+import { LoadingInline } from "@/app/components/shared";
 
 type EquipoResumenViewProps = {
   data: EquipoResumenData | null;
@@ -50,14 +51,31 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
             disabled={loading}
             className="rounded bg-stone-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
           >
-            {loading ? "Actualizando..." : data ? "Actualizar resumen" : "Cargar resumen"}
+            {loading ? (
+              <LoadingInline
+                label="Actualizando..."
+                size="xs"
+                tone="light"
+                textClassName="text-xs font-semibold text-white"
+              />
+            ) : data ? (
+              "Actualizar resumen"
+            ) : (
+              "Cargar resumen"
+            )}
           </button>
         </div>
         {error ? (
           <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
         ) : null}
         {!data && !loading ? <p className="mt-3 text-xs text-stone-600">Presiona Cargar resumen para ver cantidades por batería y unidad.</p> : null}
-        {loading && !data ? <p className="mt-3 text-sm text-stone-600">Cargando resumen de equipo en baterías...</p> : null}
+        {loading && !data ? (
+          <LoadingInline
+            label="Cargando resumen de equipo en baterias..."
+            className="mt-3"
+            textClassName="text-sm font-medium text-stone-600"
+          />
+        ) : null}
       </article>
 
       {data ? (
@@ -132,3 +150,4 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
     </section>
   );
 }
+

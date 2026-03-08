@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { extractDateParts, formatDateOnlyForDisplay } from "@/lib/date-helpers";
+import { LoadingInline } from "@/app/components/shared";
 import styles from "./hoja-de-entrega.module.css";
 
 type FichaData = {
@@ -92,11 +93,13 @@ async function api<T>(url: string): Promise<T> {
 export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
   const [data, setData] = useState<FichaData | null>(null);
   const [status, setStatus] = useState("Cargando hoja de entrega...");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchData = async () => {
+      setLoading(true);
       try {
         const result = await api<FichaData>(`/api/hoja-de-entrega/${encodeURIComponent(ci)}`);
         if (!isMounted) return;
@@ -105,6 +108,10 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
       } catch (error: unknown) {
         if (!isMounted) return;
         setStatus(error instanceof Error ? error.message : "No se pudo cargar la hoja de entrega.");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -172,7 +179,15 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
       </div>
 
       <p className={styles.statusLine} role="status">
-        {status}
+        {loading ? (
+          <LoadingInline
+            label={status}
+            size="xs"
+            textClassName="text-xs font-semibold text-stone-700"
+          />
+        ) : (
+          status
+        )}
       </p>
 
       {data ? (
@@ -200,13 +215,16 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
                 <td colSpan={15} className={`${styles.infoGridShell} ${styles.infoGridShellTop}`}>
                   <div className={`${styles.infoGrid} ${styles.infoGrid3}`}>
                     <div className={styles.infoGridItem}>
-                      <span className={styles.headerInfoLabel}>Grado:</span> {data.persona.gradoPersonal}
+                      <span className={styles.headerInfoLabel}>Grado:</span>
+                      <span className={styles.headerInfoValue}>{data.persona.gradoPersonal}</span>
                     </div>
                     <div className={styles.infoGridItem}>
-                      <span className={styles.headerInfoLabel}>Apellidos:</span> {nombreCompleto}
+                      <span className={styles.headerInfoLabel}>Apellidos:</span>
+                      <span className={styles.headerInfoValue}>{nombreCompleto}</span>
                     </div>
                     <div className={styles.infoGridItem}>
-                      <span className={styles.headerInfoLabel}>Nombres:</span> {nombresCompleto}
+                      <span className={styles.headerInfoLabel}>Nombres:</span>
+                      <span className={styles.headerInfoValue}>{nombresCompleto}</span>
                     </div>
                   </div>
                 </td>
@@ -215,19 +233,24 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
                 <td colSpan={15} className={styles.infoGridShell}>
                   <div className={`${styles.infoGrid} ${styles.infoGrid5}`}>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>Parka:</span> {data.persona.tallas.PARKA}
+                      <span className={styles.headerInfoLabel}>Parka:</span>
+                      <span className={styles.headerInfoValue}>{data.persona.tallas.PARKA}</span>
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>Camisaco:</span> {data.persona.tallas.CAMISACO}
+                      <span className={styles.headerInfoLabel}>Camisaco:</span>
+                      <span className={styles.headerInfoValue}>{data.persona.tallas.CAMISACO}</span>
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>{"Pantalón:"}</span> {data.persona.tallas.PANTALON}
+                      <span className={styles.headerInfoLabel}>{"Pantalón:"}</span>
+                      <span className={styles.headerInfoValue}>{data.persona.tallas.PANTALON}</span>
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>{"Kepí:"}</span> {data.persona.tallas.KEPI}
+                      <span className={styles.headerInfoLabel}>{"Kepí:"}</span>
+                      <span className={styles.headerInfoValue}>{data.persona.tallas.KEPI}</span>
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>Calzado:</span> {data.persona.tallas.CALZADO}
+                      <span className={styles.headerInfoLabel}>Calzado:</span>
+                      <span className={styles.headerInfoValue}>{data.persona.tallas.CALZADO}</span>
                     </div>
                   </div>
                 </td>
@@ -236,28 +259,37 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
                 <td colSpan={15} className={`${styles.infoGridShell} ${styles.infoGridShellBottom}`}>
                   <div className={bottomInfoGridClassName}>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>C.I:</span> {ciWarningPrefix}
-                      {formatUruguayanCi(data.persona.ci)}
+                      <span className={styles.headerInfoLabel}>C.I:</span>
+                      <span className={styles.headerInfoValue}>
+                        {ciWarningPrefix}
+                        {formatUruguayanCi(data.persona.ci)}
+                      </span>
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>{"Batería:"}</span> {data.persona.bateria || "Cdo. y Serv."}
+                      <span className={styles.headerInfoLabel}>{"Batería:"}</span>
+                      <span className={styles.headerInfoValue}>{data.persona.bateria || "Cdo. y Serv."}</span>
                     </div>
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>{data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:"}</span>{" "}
-                      {data.persona.fechaIngreso
-                        ? `${getDatePart(data.persona.fechaIngreso, "day")}/${getDatePart(data.persona.fechaIngreso, "month")}/${getDatePart(data.persona.fechaIngreso, "year")}`
-                        : "-"}
+                      <span className={styles.headerInfoLabel}>{data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:"}</span>
+                      <span className={styles.headerInfoValue}>
+                        {data.persona.fechaIngreso
+                          ? `${getDatePart(data.persona.fechaIngreso, "day")}/${getDatePart(data.persona.fechaIngreso, "month")}/${getDatePart(data.persona.fechaIngreso, "year")}`
+                          : "-"}
+                      </span>
                     </div>
                     {data.persona.esReingreso ? (
                       <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
                         <span className={styles.headerInfoLabel}>Fecha ingreso:</span>
-                        {data.persona.fechaIngresoOriginal
-                          ? `${getDatePart(data.persona.fechaIngresoOriginal, "day")}/${getDatePart(data.persona.fechaIngresoOriginal, "month")}/${getDatePart(data.persona.fechaIngresoOriginal, "year")}`
-                          : "-"}
+                        <span className={styles.headerInfoValue}>
+                          {data.persona.fechaIngresoOriginal
+                            ? `${getDatePart(data.persona.fechaIngresoOriginal, "day")}/${getDatePart(data.persona.fechaIngresoOriginal, "month")}/${getDatePart(data.persona.fechaIngresoOriginal, "year")}`
+                            : "-"}
+                        </span>
                       </div>
                     ) : null}
                     <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                      <span className={styles.headerInfoLabel}>Fecha de impresion:</span> {fechaImpresion}
+                      <span className={styles.headerInfoLabel}>Fecha de impresion:</span>
+                      <span className={styles.headerInfoValue}>{fechaImpresion}</span>
                     </div>
                   </div>
                 </td>
@@ -359,3 +391,4 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
     </main>
   );
 }
+

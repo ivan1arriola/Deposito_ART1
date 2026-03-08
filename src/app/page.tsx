@@ -13,7 +13,6 @@ import { formatUruguayanCi, generatePlaceholderUruguayanCi, isValidUruguayanCi, 
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
 import {
   TALLA_KEYS,
-  TALLA_LABELS,
   TALLA_OPTIONS,
   type TallaKey,
   normalizeTallaValue,
@@ -24,7 +23,6 @@ import { MainNavigation } from "./components/home/MainNavigation";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
 import { MergeEquipoModal } from "./components/modals/MergeEquipoModal";
 import { PersonalSection } from "./components/personal/PersonalSection";
-import { DateTextInput } from "./components/shared/DateTextInput";
 import { ConfigViews } from "./components/views/ConfigViews";
 import { BateriaCreateView } from "./components/views/BateriaCreateView";
 import { EquipoResumenView } from "./components/views/EquipoResumenView";
@@ -36,7 +34,7 @@ import { RangoCreateView } from "./components/views/RangoCreateView";
 import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
 import { UserCreateView } from "./components/views/UserCreateView";
-import { SmallActionButton, ActionMenu, toast } from "./components/shared";
+import { SmallActionButton, ActionMenu, LoadingInline, LoadingOverlay, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
 
 // Importar tipos desde archivos de tipos organizados
@@ -600,10 +598,8 @@ export default function Home() {
   }, [clearLoadedDataState]);
   useEffect(() => {
     if (activeView !== "hoja_matrix") return;
-    if (hojaMatrixLoading) return;
-    if (hojaMatrixData) return;
     void loadHojaMatrix();
-  }, [activeView, hojaMatrixData, hojaMatrixLoading, loadHojaMatrix]);
+  }, [activeView, loadHojaMatrix]);
 
   useEffect(() => {
     if (activeView !== "equipo_resumen") return;
@@ -2035,92 +2031,6 @@ export default function Home() {
     });
   }
 
-  function renderInlineEditForm(ci: string) {
-    return (
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <input
-          value={editPersonal.apellido1}
-          onChange={(event) => setEditPersonal((prev) => ({ ...prev, apellido1: event.target.value }))}
-          placeholder="Apellido 1"
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        />
-        <input
-          value={editPersonal.apellido2}
-          onChange={(event) => setEditPersonal((prev) => ({ ...prev, apellido2: event.target.value }))}
-          placeholder="Apellido 2"
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        />
-        <input
-          value={editPersonal.nombre1}
-          onChange={(event) => setEditPersonal((prev) => ({ ...prev, nombre1: event.target.value }))}
-          placeholder="Nombre 1"
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        />
-        <input
-          value={editPersonal.nombre2}
-          onChange={(event) => setEditPersonal((prev) => ({ ...prev, nombre2: event.target.value }))}
-          placeholder="Nombre 2"
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        />
-        <DateTextInput
-          value={editPersonal.fechaIngreso}
-          onChange={(value) => setEditPersonal((prev) => ({ ...prev, fechaIngreso: value }))}
-          ariaLabel={`Fecha de ingreso. Máximo ${maxFechaIngreso}`}
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        />
-        <select
-          value={editPersonal.rangoId}
-          onChange={(event) => setEditPersonal((prev) => ({ ...prev, rangoId: event.target.value }))}
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        >
-          {rangos.map((rango) => (
-            <option key={rango.rangoId} value={rango.rangoId}>
-              {rangoLabel(rango)}
-            </option>
-          ))}
-        </select>
-        <select
-          value={editPersonal.bateriaId}
-          onChange={(event) => setEditPersonal((prev) => ({ ...prev, bateriaId: event.target.value }))}
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        >
-          <option value="">Sin batería (pendiente)</option>
-          {baterias.map((bateria) => (
-            <option key={bateria.bateriaId} value={bateria.bateriaId}>
-              {bateria.nombre}
-            </option>
-          ))}
-        </select>
-        {TALLA_KEYS.map((key) => (
-          <label key={`edit-${ci}-${key}`} className="rounded-xl border border-stone-200/90 bg-stone-50/60 p-3">
-            <span className="block text-xs font-semibold uppercase tracking-wide text-stone-700">{`Talla ${TALLA_LABELS[key]}`}</span>
-            <select
-              value={editPersonal[key]}
-              onChange={(event) => setEditPersonal((prev) => ({ ...prev, [key]: event.target.value }))}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            >
-              <option value="">Seleccionar</option>
-              {tallaOptionsByKey[key].map((option) => (
-                <option key={`edit-${ci}-${key}-${option}`} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
-        <button
-          type="button"
-          onClick={() => void updatePersonal(ci)}
-          className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white sm:col-span-2 lg:col-span-1"
-        >
-          Guardar cambios
-        </button>
-      </div>
-    );
-  }
-
-  void renderInlineEditForm;
-
   const login = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -2803,6 +2713,22 @@ export default function Home() {
     (normalizedStatus.startsWith("verificando") ||
       normalizedStatus.startsWith("iniciando") ||
       loginLoading);
+  const isGlobalBusy =
+    loading ||
+    firmaConfigLoading ||
+    hojaMatrixLoading ||
+    equipoResumenLoading ||
+    stockLoading ||
+    creatingPersonal ||
+    mergeEquipoSaving ||
+    stockSaving ||
+    registroSaving ||
+    personalObservacionSaving ||
+    changeLoading ||
+    userRoleSaving ||
+    userPasswordSaving ||
+    usernameSaving ||
+    confirmDialogBusy;
 
   if (!currentUser) {
     return (
@@ -2851,9 +2777,12 @@ export default function Home() {
               </h2>
               <h1 className="mt-5 text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">Iniciar sesion</h1>
               {isPageBootLoading ? (
-                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-stone-300 bg-stone-100/80 px-3 py-1">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-stone-400 border-t-stone-700" aria-hidden="true" />
-                  <span className="text-xs font-semibold text-stone-700">Cargando pagina...</span>
+                <div className="mt-3 inline-flex rounded-full border border-stone-300 bg-stone-100/80 px-3 py-1">
+                  <LoadingInline
+                    label="Cargando pagina..."
+                    size="sm"
+                    textClassName="text-xs font-semibold text-stone-700"
+                  />
                 </div>
               ) : null}
               <p className="mt-2 text-sm text-stone-600">{status}</p>
@@ -2899,7 +2828,17 @@ export default function Home() {
                   disabled={loading || loginLoading}
                   className="w-full rounded-2xl bg-stone-900 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:opacity-60"
                 >
-                  {loading || loginLoading ? "Ingresando..." : "Entrar"}
+                  {loading || loginLoading ? (
+                    <LoadingInline
+                      label="Ingresando..."
+                      size="xs"
+                      tone="light"
+                      className="justify-center"
+                      textClassName="text-sm font-semibold text-white"
+                    />
+                  ) : (
+                    "Entrar"
+                  )}
                 </button>
               </form>
             </div>
@@ -3162,6 +3101,7 @@ export default function Home() {
 
       {activeView === "personal" ? (
         <PersonalSection
+          loading={isGlobalBusy}
           personal={personal}
           personalFiltrado={personalFiltrado}
           personalFiltradoPaginado={personalFiltradoPaginado}
@@ -3371,13 +3311,8 @@ export default function Home() {
         <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
       ) : null}
 
-      {loading ? (
-        <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-stone-600">
-          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-stone-400 border-t-stone-700" aria-hidden="true" />
-          <span>Actualizando informacion...</span>
-        </div>
-      ) : null}
-      
+      <LoadingOverlay visible={isGlobalBusy} label="Actualizando informacion..." />
+
     </main>
   );
 }

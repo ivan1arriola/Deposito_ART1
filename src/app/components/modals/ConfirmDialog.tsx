@@ -1,6 +1,7 @@
 "use client";
 
 import type { ConfirmDialogState } from "@/types/views";
+import { LoadingInline } from "@/app/components/shared";
 import { ModalFrame } from "./ModalFrame";
 
 type ConfirmDialogModalProps = {
@@ -40,7 +41,16 @@ export function ConfirmDialogModal({ dialog, busy, onClose, onConfirm }: Confirm
             isDestructive ? "bg-rose-700 hover:bg-rose-800" : "bg-stone-700 hover:bg-stone-800"
           }`}
         >
-          {busy ? "Procesando..." : dialog.confirmText}
+          {busy ? (
+            <LoadingInline
+              label="Procesando..."
+              size="xs"
+              tone="light"
+              textClassName="text-xs font-semibold text-white"
+            />
+          ) : (
+            dialog.confirmText
+          )}
         </button>
       </div>
     </ModalFrame>

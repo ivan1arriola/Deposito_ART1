@@ -1,6 +1,7 @@
 "use client";
 
-import { PaginationControls } from "@/app/components/shared";
+import { LoadingInline, PaginationControls } from "@/app/components/shared";
+import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import type { TallaKey } from "@/lib/tallas";
 import type { Bateria, Personal, Rango } from "@/types/entities";
 import type { PersonalForm } from "@/types/forms";
@@ -10,6 +11,7 @@ import { PersonalInlineEditForm } from "./PersonalInlineEditForm";
 import { PersonalTableDesktop } from "./PersonalTableDesktop";
 
 type PersonalSectionProps = {
+  loading: boolean;
   personal: Personal[];
   personalFiltrado: Personal[];
   personalFiltradoPaginado: Personal[];
@@ -52,6 +54,7 @@ type PersonalSectionProps = {
 };
 
 export function PersonalSection({
+  loading,
   personal,
   personalFiltrado,
   personalFiltradoPaginado,
@@ -92,18 +95,6 @@ export function PersonalSection({
   onEditPersonalChange,
   onSaveEditPersonal,
 }: PersonalSectionProps) {
-  const renderInlineEditForm = (ci: string) => (
-    <PersonalInlineEditForm
-      editPersonal={editPersonal}
-      rangos={rangos}
-      baterias={baterias}
-      tallaOptionsByKey={tallaOptionsByKey}
-      maxFechaIngreso={maxFechaIngreso}
-      onChange={onEditPersonalChange}
-      onSave={() => onSaveEditPersonal(ci)}
-    />
-  );
-
   const handleToggleEdit = (persona: Personal) => {
     if (editPersonalCi === persona.ci) {
       onCancelEditPersonal();
@@ -111,6 +102,8 @@ export function PersonalSection({
     }
     onStartEditPersonal(persona);
   };
+
+  const editingPersona = editPersonalCi ? personal.find((persona) => persona.ci === editPersonalCi) ?? null : null;
 
   const actionGridClass = canWrite
     ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
@@ -122,8 +115,17 @@ export function PersonalSection({
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-stone-900">Personal</h2>
           <p className="mt-1 text-xs text-stone-600">Orden: Grado del Personal, Apellidos y Nombres.</p>
-          <div className="mt-2 inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-700">
-            {personalFiltrado.length} resultado{personalFiltrado.length === 1 ? "" : "s"}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-700">
+              {personalFiltrado.length} resultado{personalFiltrado.length === 1 ? "" : "s"}
+            </div>
+            {loading ? (
+              <LoadingInline
+                label="Actualizando datos..."
+                size="xs"
+                textClassName="text-xs font-semibold text-stone-600"
+              />
+            ) : null}
           </div>
         </div>
         <div className={`mt-4 grid w-full gap-2 ${actionGridClass}`}>
@@ -131,7 +133,7 @@ export function PersonalSection({
             <button
               type="button"
               onClick={onOpenMassEntrega}
-              disabled={personalFiltrado.length === 0}
+              disabled={loading || personalFiltrado.length === 0}
               className="h-11 w-full rounded-xl bg-emerald-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               Entrega masiva
@@ -140,7 +142,7 @@ export function PersonalSection({
           <button
             type="button"
             onClick={onPrintAllDeliverySheets}
-            disabled={personal.length === 0}
+            disabled={loading || personal.length === 0}
             className="h-11 w-full rounded-xl bg-indigo-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             Imprimir todas las hojas
@@ -148,7 +150,7 @@ export function PersonalSection({
           <button
             type="button"
             onClick={onPrintPersonnelByBattery}
-            disabled={personal.length === 0}
+            disabled={loading || personal.length === 0}
             className="h-11 w-full rounded-xl bg-sky-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             Imprimir lista por bateria
@@ -202,7 +204,6 @@ export function PersonalSection({
           onObservacion={onOpenPersonalObservacion}
           onViewMoves={onOpenRegistroViewer}
           onOpenSheet={onOpenDeliverySheet}
-          renderInlineEditForm={renderInlineEditForm}
         />
 
         <div className="mt-3 md:hidden">
@@ -230,7 +231,6 @@ export function PersonalSection({
           onObservacion={onOpenPersonalObservacion}
           onViewMoves={onOpenRegistroViewer}
           onOpenSheet={onOpenDeliverySheet}
-          renderInlineEditForm={renderInlineEditForm}
         />
 
         <PaginationControls
@@ -243,6 +243,37 @@ export function PersonalSection({
           className="mt-4 hidden md:flex"
         />
       </section>
+
+      {editPersonalCi ? (
+        <ModalFrame onClose={onCancelEditPersonal} size="xl" closeOnBackdrop={false}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-stone-900">Editar personal</h3>
+              <p className="mt-1 text-sm text-stone-600">
+                {editingPersona ? `${editingPersona.rango.nombreCompleto} - ${editingPersona.apellido1} ${editingPersona.nombre1}` : `CI ${editPersonalCi}`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onCancelEditPersonal}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+            >
+              Cerrar
+            </button>
+          </div>
+          <div className="mt-4">
+            <PersonalInlineEditForm
+              editPersonal={editPersonal}
+              rangos={rangos}
+              baterias={baterias}
+              tallaOptionsByKey={tallaOptionsByKey}
+              maxFechaIngreso={maxFechaIngreso}
+              onChange={onEditPersonalChange}
+              onSave={() => onSaveEditPersonal(editPersonalCi)}
+            />
+          </div>
+        </ModalFrame>
+      ) : null}
     </section>
   );
 }

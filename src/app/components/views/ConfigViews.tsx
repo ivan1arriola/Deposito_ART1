@@ -4,7 +4,7 @@ import { FormEvent, ReactNode } from "react";
 import { formatAuditEntityId, type AuditCiReferences } from "@/lib/audit-helpers";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { MainView } from "@/types/views";
-import { SmallActionButton, PaginationControls } from "../shared";
+import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 
 type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
 type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
@@ -594,7 +594,11 @@ export function ConfigViews(props: ConfigViewsProps) {
             </p>
           </div>
           {props.firmaConfigLoading ? (
-            <p className="mt-3 text-sm text-stone-600">Cargando configuración de firmas...</p>
+            <LoadingInline
+              label="Cargando configuracion de firmas..."
+              className="mt-3"
+              textClassName="text-sm font-medium text-stone-600"
+            />
           ) : (
             <form onSubmit={props.onSaveFirmaConfig} className="mt-3 space-y-4">
               <div className="space-y-2">
@@ -662,7 +666,16 @@ export function ConfigViews(props: ConfigViewsProps) {
                   disabled={props.firmaConfigSaving}
                   className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
                 >
-                  {props.firmaConfigSaving ? "Guardando..." : "Guardar firmas"}
+                  {props.firmaConfigSaving ? (
+                    <LoadingInline
+                      label="Guardando..."
+                      size="xs"
+                      tone="light"
+                      textClassName="text-sm font-semibold text-white"
+                    />
+                  ) : (
+                    "Guardar firmas"
+                  )}
                 </button>
               </div>
               {props.firmaConfigError ? <p className="text-xs font-medium text-rose-700">{props.firmaConfigError}</p> : null}
@@ -884,3 +897,5 @@ export function ConfigViews(props: ConfigViewsProps) {
 
   return null;
 }
+
+

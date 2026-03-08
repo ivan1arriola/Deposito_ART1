@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingInline } from "@/app/components/shared";
 import { ModalFrame } from "./ModalFrame";
 
 type ChangePasswordModalProps = {
@@ -72,7 +73,16 @@ export function ChangePasswordModal({
           onClick={onSubmit}
           className="rounded bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
         >
-          {loading ? "Procesando..." : "Guardar"}
+          {loading ? (
+            <LoadingInline
+              label="Procesando..."
+              size="xs"
+              tone="light"
+              textClassName="text-xs font-semibold text-white"
+            />
+          ) : (
+            "Guardar"
+          )}
         </button>
       </div>
     </ModalFrame>

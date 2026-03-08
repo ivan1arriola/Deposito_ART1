@@ -2,6 +2,7 @@
 
 import { ROLE_OPTIONS, type Role } from "@/types/entities";
 import type { UserRoleDialogState } from "@/app/types/home";
+import { LoadingInline } from "@/app/components/shared";
 import { ModalFrame } from "./ModalFrame";
 
 type UserRoleModalProps = {
@@ -72,7 +73,16 @@ export function UserRoleModal({
           disabled={saving || dialog.nextRole === dialog.currentRole}
           className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
         >
-          {saving ? "Guardando..." : "Guardar rol"}
+          {saving ? (
+            <LoadingInline
+              label="Guardando..."
+              size="xs"
+              tone="light"
+              textClassName="text-xs font-semibold text-white"
+            />
+          ) : (
+            "Guardar rol"
+          )}
         </button>
       </div>
     </ModalFrame>
