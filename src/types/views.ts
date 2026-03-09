@@ -121,6 +121,7 @@ export type PrestamoStockEntry = {
   usuarioEntregaId: string;
   usuarioEntregaNombre: string;
   fechaPrestamo: string;
+  fechaEstimadaDevolucionTexto: string | null;
   fechaDevolucion: string | null;
   usuarioRecibeDevolucionId: string | null;
   usuarioRecibeDevolucionNombre: string | null;
@@ -130,6 +131,10 @@ export type PrestamoStockEntry = {
     itemId: string;
     nombre: string;
     cantidad: number;
+    estadoEntrega: "NUEVO" | "BUENO" | "REGULAR" | "MALO";
+    comentarioEntrega: string | null;
+    estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO" | null;
+    comentarioDevolucion: string | null;
   }>;
 };
 

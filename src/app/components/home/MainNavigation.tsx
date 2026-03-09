@@ -451,7 +451,7 @@ export function MainNavigation({
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <span className="whitespace-nowrap">Personal</span>
+            <span className="whitespace-nowrap">Subalternos</span>
             <svg className={`h-3 w-3 transition-transform ${showPersonalViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -462,13 +462,13 @@ export function MainNavigation({
               role="menu"
               className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
             >
-              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de personal</p>
+              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de subalternos</p>
               <div className="grid grid-cols-1 gap-1.5">
                 <button type="button" onClick={() => handleSelectView("personal")} className={groupedOptionClass(activeView, "personal")}>
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>Personal</span>
+                  <span>Subalternos</span>
                 </button>
                 <button type="button" onClick={() => handleSelectView("hoja_matrix")} className={groupedOptionClass(activeView, "hoja_matrix")}>
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -662,7 +662,7 @@ export function MainNavigation({
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M9 8h6m-9 12h12a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span className="whitespace-nowrap">Formularios</span>
+            <span className="whitespace-nowrap">Prestamos</span>
           </div>
         </button>
         <div ref={configMenuRef} className={menuContainerClass(showConfigViews)}>

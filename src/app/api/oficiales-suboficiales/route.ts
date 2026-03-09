@@ -7,6 +7,7 @@ import { isValidUruguayanCi } from "@/lib/ci";
 import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
 import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import { getPrismaErrorCode, hasConstraintName } from "@/lib/prisma-errors";
+import { getRangoCountByTipo, getTallaTipoIdMap } from "@/lib/reference-data-cache";
 
 type OficialSuboficialRecord = {
   ci: string;
@@ -174,7 +175,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "telefonoContacto debe ser un celular uruguayo valido." }, { status: 400 });
   }
 
-  const totalGradosTipo = await prisma.rango.count({ where: { tipo } });
+  const totalGradosTipo = await getRangoCountByTipo(tipo);
   if (totalGradosTipo === 0) {
     return NextResponse.json(
       { error: "No se puede registrar personal oficial/suboficial sin grados del tipo seleccionado." },
@@ -196,10 +197,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: tallasValidation.error }, { status: 400 });
   }
 
-  const tallaTipos = await prisma.tallaTipo.findMany({
-    where: { nombre: { in: TALLA_KEYS as unknown as string[] } },
-  });
-  const tallaTipoMap = new Map(tallaTipos.map((entry) => [entry.nombre as TallaKey, entry.tallaTipoId]));
+  const tallaTipoMap = await getTallaTipoIdMap();
 
   const tallasToCreate = Object.entries(tallasValidation.values)
     .map(([nombre, tallaValor]) => {

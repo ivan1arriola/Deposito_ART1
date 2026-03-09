@@ -259,6 +259,9 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 export async function DELETE(req: Request, context: { params: Promise<{ registroId: string }> }) {
   const auth = await authorizeRequest(req, "delete_data");
   if (!auth.ok) return auth.response;
+  if (auth.user.rol !== "ADMIN") {
+    return NextResponse.json({ error: "Solo el administrador puede eliminar registros." }, { status: 403 });
+  }
 
   const { registroId: movimientoIdParam } = await context.params;
   const movimientoId = parseMovimientoId(movimientoIdParam);

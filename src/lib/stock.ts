@@ -1,6 +1,7 @@
 import { Prisma, TipoMovimiento, TipoStockOperacion } from "@prisma/client";
 
 type PrismaLike = Pick<Prisma.TransactionClient, "movimiento" | "stockOperacion" | "prestamoActivo">;
+type PrismaRawLike = Pick<Prisma.TransactionClient, "$queryRaw">;
 
 type StockMapOptions = {
   excludeMovimientoId?: bigint | null;
@@ -42,6 +43,72 @@ export function stockOperacionDeltaFactor(tipo: TipoStockOperacion | "INGRESO" |
     default:
       return -1;
   }
+}
+
+type AggregateRow = {
+  itemId: bigint | number | string;
+  total: bigint | number | string | null;
+};
+
+function toSafeInteger(value: AggregateRow["total"]) {
+  if (value === null) return 0;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value === "bigint") return Number(value);
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function rowsToItemMap(rows: AggregateRow[]) {
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    map.set(String(row.itemId), toSafeInteger(row.total));
+  }
+  return map;
+}
+
+export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
+  const [unidadRows, personalRows, prestamoRows] = await Promise.all([
+    prisma.$queryRaw<AggregateRow[]>`
+      SELECT
+        soi.item_id AS "itemId",
+        SUM(CASE WHEN so.tipo = 'INGRESO' THEN soi.cantidad ELSE -soi.cantidad END)::bigint AS total
+      FROM stock_operacion_item soi
+      INNER JOIN stock_operacion so
+        ON so.stock_operacion_id = soi.stock_operacion_id
+      GROUP BY soi.item_id
+    `,
+    prisma.$queryRaw<AggregateRow[]>`
+      SELECT
+        mi.item_id AS "itemId",
+        SUM(
+          CASE
+            WHEN m.tipo = 'ENTREGA' THEN mi.cantidad
+            WHEN m.tipo = 'DEVOLUCION' THEN -mi.cantidad
+            ELSE 0
+          END
+        )::bigint AS total
+      FROM movimiento_item mi
+      INNER JOIN movimiento m
+        ON m.movimiento_id = mi.movimiento_id
+      WHERE m.tipo IN ('ENTREGA', 'DEVOLUCION')
+      GROUP BY mi.item_id
+    `,
+    prisma.$queryRaw<AggregateRow[]>`
+      SELECT
+        mi.item_id AS "itemId",
+        SUM(mi.cantidad)::bigint AS total
+      FROM prestamo_activo pa
+      INNER JOIN movimiento_item mi
+        ON mi.movimiento_id = pa.movimiento_id
+      GROUP BY mi.item_id
+    `,
+  ]);
+
+  return {
+    unidadByItem: rowsToItemMap(unidadRows),
+    personalByItem: rowsToItemMap(personalRows),
+    prestamoByItem: rowsToItemMap(prestamoRows),
+  };
 }
 
 export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapOptions = {}) {

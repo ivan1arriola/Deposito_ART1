@@ -45,6 +45,15 @@ enum EstadoPrestamoMovimiento {
   @@map("estado_prestamo_movimiento")
 }
 
+enum EstadoEquipoPrestamo {
+  NUEVO
+  BUENO
+  REGULAR
+  MALO
+
+  @@map("estado_equipo_prestamo")
+}
+
 model Usuario {
   usuarioId                       String              @id @default(cuid()) @map("usuario_id")
   rangoId                         Int                 @map("grado_id") @db.SmallInt
@@ -203,11 +212,15 @@ model Movimiento {
 }
 
 model MovimientoItem {
-  movimientoId BigInt     @map("movimiento_id")
-  itemId       BigInt     @map("item_id")
-  cantidad     Int
-  movimiento   Movimiento @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
-  item         Item       @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+  movimientoId         BigInt               @map("movimiento_id")
+  itemId               BigInt               @map("item_id")
+  cantidad             Int
+  estadoEntrega        EstadoEquipoPrestamo @default(BUENO) @map("estado_entrega")
+  comentarioEntrega    String?              @map("comentario_entrega")
+  estadoDevolucion     EstadoEquipoPrestamo? @map("estado_devolucion")
+  comentarioDevolucion String?              @map("comentario_devolucion")
+  movimiento           Movimiento           @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
+  item                 Item                 @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
 
   @@id([movimientoId, itemId])
   @@index([itemId])
@@ -215,12 +228,13 @@ model MovimientoItem {
 }
 
 model PrestamoActivo {
-  movimientoId BigInt                   @id @map("movimiento_id")
-  reciboNumero String                   @unique @map("recibo_numero")
-  estado       EstadoPrestamoMovimiento @default(PENDIENTE)
-  createdAt    DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  movimiento   Movimiento               @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
+  movimientoId                  BigInt                   @id @map("movimiento_id")
+  reciboNumero                  String                   @unique @map("recibo_numero")
+  estado                        EstadoPrestamoMovimiento @default(PENDIENTE)
+  fechaEstimadaDevolucionTexto  String?                  @map("fecha_estimada_devolucion_texto")
+  createdAt                     DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                     DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  movimiento                    Movimiento               @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
 
   @@index([estado, createdAt(sort: Desc)])
   @@map("prestamo_activo")
@@ -232,6 +246,7 @@ model PrestamoHistorial {
   reciboNumero              String                   @unique @map("recibo_numero")
   estado                    EstadoPrestamoMovimiento @default(DEVUELTO)
   fechaDevolucion           DateTime                 @map("fecha_devolucion") @db.Date
+  fechaEstimadaDevolucionTexto String?               @map("fecha_estimada_devolucion_texto")
   usuarioRecibeDevolucionId String?                  @map("usuario_recibe_devolucion_id")
   createdAt                 DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                 DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)

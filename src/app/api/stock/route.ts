@@ -12,9 +12,7 @@ import {
 } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 import {
-  buildPersonalByItemMap,
-  buildPrestamoActivoByItemMap,
-  buildUnidadByItemMap,
+  buildStockSummaryMaps,
   movimientoStockDeltaFactor,
   stockOperacionDeltaFactor,
 } from "@/lib/stock";
@@ -106,103 +104,128 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "El cliente Prisma de stock no esta listo. Reinicia el servidor de desarrollo." }, { status: 503 });
   }
 
-  const limitRaw = Number(new URL(req.url).searchParams.get("limit") ?? "200");
+  const url = new URL(req.url);
+  const limitRaw = Number(url.searchParams.get("limit") ?? "200");
   const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 20), 400) : 200;
+  const includeHistorial = url.searchParams.get("includeHistorial") !== "0";
+  const includePrestamos = url.searchParams.get("includePrestamos") !== "0";
 
-  const [items, stockUnidadByItem, stockPersonalByItem, stockPrestamoByItem, stockOperaciones, movimientos, prestamos] = await Promise.all([
+  const [items, stockSummaryMaps] = await Promise.all([
     prisma.item.findMany({
       orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
       select: { itemId: true, nombre: true, activo: true, ordenPdf: true },
     }),
-    buildUnidadByItemMap(prisma),
-    buildPersonalByItemMap(prisma),
-    buildPrestamoActivoByItemMap(prisma),
-    prisma.stockOperacion.findMany({
-      include: {
-        items: {
-          include: {
-            item: {
-              select: { itemId: true, nombre: true },
+    buildStockSummaryMaps(prisma),
+  ]);
+
+  let stockOperaciones: Awaited<ReturnType<typeof prisma.stockOperacion.findMany>> = [];
+  let movimientos: Awaited<ReturnType<typeof prisma.movimiento.findMany>> = [];
+  let prestamos: Awaited<ReturnType<typeof prisma.movimiento.findMany>> = [];
+
+  if (includeHistorial) {
+    [stockOperaciones, movimientos, prestamos] = await Promise.all([
+      prisma.stockOperacion.findMany({
+        include: {
+          items: {
+            include: {
+              item: {
+                select: { itemId: true, nombre: true },
+              },
             },
+            orderBy: { item: { ordenPdf: "asc" } },
           },
-          orderBy: { item: { ordenPdf: "asc" } },
         },
-      },
-      orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
-      take: limit,
-    }),
-    prisma.movimiento.findMany({
-      where: {
-        tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
-      },
-      include: {
-        personal: {
-          include: {
-            rango: true,
-            subalterno: {
-              include: {
-                bateria: true,
+        orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
+        take: limit,
+      }),
+      prisma.movimiento.findMany({
+        where: {
+          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+        },
+        include: {
+          personal: {
+            include: {
+              rango: true,
+              subalterno: {
+                include: {
+                  bateria: true,
+                },
               },
             },
           },
-        },
-        items: {
-          include: {
-            item: {
-              select: { itemId: true, nombre: true },
+          items: {
+            include: {
+              item: {
+                select: { itemId: true, nombre: true },
+              },
             },
+            orderBy: { item: { ordenPdf: "asc" } },
           },
-          orderBy: { item: { ordenPdf: "asc" } },
         },
-      },
-      orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
-      take: limit,
-    }),
-    prisma.movimiento.findMany({
+        orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
+        take: limit,
+      }),
+      prisma.movimiento.findMany({
+        where: { tipo: TipoMovimiento.PRESTAMO },
+        include: prestamoInclude,
+        orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
+        take: limit,
+      }),
+    ]);
+  } else if (includePrestamos) {
+    prestamos = await prisma.movimiento.findMany({
       where: { tipo: TipoMovimiento.PRESTAMO },
       include: prestamoInclude,
       orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
       take: limit,
-    }),
-  ]);
-
-  const stockAuditKeys = stockOperaciones.map((operacion) => operacion.stockOperacionId.toString());
-  const registroAuditKeys = movimientos.map((movimiento) => movimiento.movimientoId.toString());
-  const auditorias = await prisma.auditoria.findMany({
-    where: {
-      OR: [
-        { entidad: "STOCK", entidadId: { in: stockAuditKeys } },
-        { entidad: "REGISTRO", entidadId: { in: registroAuditKeys } },
-      ],
-    },
-    include: {
-      usuario: {
-        select: {
-          rango: {
-            select: {
-              abreviacion: true,
-            },
-          },
-          nombre: true,
-          apellido: true,
-          username: true,
-        },
-      },
-    },
-    orderBy: [{ createdAt: "desc" }],
-  });
+    });
+  }
+  const stockUnidadByItem = stockSummaryMaps.unidadByItem;
+  const stockPersonalByItem = stockSummaryMaps.personalByItem;
+  const stockPrestamoByItem = stockSummaryMaps.prestamoByItem;
 
   const auditUserByEntity = new Map<string, string | null>();
-  for (const audit of auditorias) {
-    if (!audit.entidadId) continue;
-    const key = `${audit.entidad}:${audit.entidadId}`;
-    if (auditUserByEntity.has(key)) continue;
-    const userLabel = audit.usuario
-      ? `${audit.usuario.rango.abreviacion} ${audit.usuario.apellido}, ${audit.usuario.nombre}`.replace(/\s+/g, " ").trim()
-      : audit.usuarioId
-        ? "Usuario eliminado"
-        : null;
-    auditUserByEntity.set(key, userLabel ?? audit.usuario?.username ?? null);
+  if (includeHistorial) {
+    const stockAuditKeys = stockOperaciones.map((operacion) => operacion.stockOperacionId.toString());
+    const registroAuditKeys = movimientos.map((movimiento) => movimiento.movimientoId.toString());
+    const auditorias =
+      stockAuditKeys.length === 0 && registroAuditKeys.length === 0
+        ? []
+        : await prisma.auditoria.findMany({
+            where: {
+              OR: [
+                { entidad: "STOCK", entidadId: { in: stockAuditKeys } },
+                { entidad: "REGISTRO", entidadId: { in: registroAuditKeys } },
+              ],
+            },
+            include: {
+              usuario: {
+                select: {
+                  rango: {
+                    select: {
+                      abreviacion: true,
+                    },
+                  },
+                  nombre: true,
+                  apellido: true,
+                  username: true,
+                },
+              },
+            },
+            orderBy: [{ createdAt: "desc" }],
+          });
+
+    for (const audit of auditorias) {
+      if (!audit.entidadId) continue;
+      const key = `${audit.entidad}:${audit.entidadId}`;
+      if (auditUserByEntity.has(key)) continue;
+      const userLabel = audit.usuario
+        ? `${audit.usuario.rango.abreviacion} ${audit.usuario.apellido}, ${audit.usuario.nombre}`.replace(/\s+/g, " ").trim()
+        : audit.usuarioId
+          ? "Usuario eliminado"
+          : null;
+      auditUserByEntity.set(key, userLabel ?? audit.usuario?.username ?? null);
+    }
   }
 
   const resumen = items.map((item) => {
@@ -228,145 +251,148 @@ export async function GET(req: Request) {
     };
   });
 
-  const historialManual: StockHistorialInternalEntry[] = stockOperaciones.map((operacion) => ({
-    id: `manual-${operacion.stockOperacionId.toString()}`,
-    fecha: formatDateOnlyFromDate(operacion.fecha) ?? "",
-    createdAt: formatDateTimeForDisplay(operacion.createdAt),
-    origen: "MANUAL" as const,
-    tipo: operacion.tipo,
-    afectaStock: true,
-    comentarios: operacion.comentarios,
-    totalUnidades: operacion.items.reduce((total, item) => total + item.cantidad, 0),
-    ci: null,
-    persona: null,
-    registradoPor: auditUserByEntity.get(`STOCK:${operacion.stockOperacionId.toString()}`) ?? null,
-    items: operacion.items.map((item) => ({
-      itemId: item.item.itemId.toString(),
-      nombre: item.item.nombre,
-      cantidad: item.cantidad,
-      delta: item.cantidad * stockOperacionDeltaFactor(operacion.tipo),
-    })),
-    sortFecha: operacion.fecha.getTime(),
-    sortCreatedAt: operacion.createdAt.getTime(),
-  }));
+  let historial: StockDashboardData["historial"] = [];
+  if (includeHistorial) {
+    const historialManual: StockHistorialInternalEntry[] = stockOperaciones.map((operacion) => ({
+      id: `manual-${operacion.stockOperacionId.toString()}`,
+      fecha: formatDateOnlyFromDate(operacion.fecha) ?? "",
+      createdAt: formatDateTimeForDisplay(operacion.createdAt),
+      origen: "MANUAL" as const,
+      tipo: operacion.tipo,
+      afectaStock: true,
+      comentarios: operacion.comentarios,
+      totalUnidades: operacion.items.reduce((total, item) => total + item.cantidad, 0),
+      ci: null,
+      persona: null,
+      registradoPor: auditUserByEntity.get(`STOCK:${operacion.stockOperacionId.toString()}`) ?? null,
+      items: operacion.items.map((item) => ({
+        itemId: item.item.itemId.toString(),
+        nombre: item.item.nombre,
+        cantidad: item.cantidad,
+        delta: item.cantidad * stockOperacionDeltaFactor(operacion.tipo),
+      })),
+      sortFecha: operacion.fecha.getTime(),
+      sortCreatedAt: operacion.createdAt.getTime(),
+    }));
 
-  const historialPersonal: StockHistorialInternalEntry[] = movimientos
-    .map((movimiento) => {
-      if (movimiento.tipo !== "ENTREGA" && movimiento.tipo !== "DEVOLUCION") return null;
-      const apellidos = `${movimiento.personal.apellido1} ${movimiento.personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
-      const nombres = `${movimiento.personal.nombre1} ${movimiento.personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
-      return {
-        id: `personal-${movimiento.movimientoId.toString()}`,
-        fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
-        createdAt: formatDateTimeForDisplay(movimiento.createdAt),
-        origen: "PERSONAL" as const,
-        tipo: movimiento.tipo,
+    const historialPersonal: StockHistorialInternalEntry[] = movimientos
+      .map((movimiento) => {
+        if (movimiento.tipo !== "ENTREGA" && movimiento.tipo !== "DEVOLUCION") return null;
+        const apellidos = `${movimiento.personal.apellido1} ${movimiento.personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
+        const nombres = `${movimiento.personal.nombre1} ${movimiento.personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
+        return {
+          id: `personal-${movimiento.movimientoId.toString()}`,
+          fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
+          createdAt: formatDateTimeForDisplay(movimiento.createdAt),
+          origen: "PERSONAL" as const,
+          tipo: movimiento.tipo,
+          afectaStock: true,
+          comentarios: movimiento.observaciones,
+          totalUnidades: movimiento.items.reduce((total, item) => total + item.cantidad, 0),
+          ci: movimiento.personalCi,
+          persona: `${movimiento.personal.rango.abreviacion} ${apellidos}, ${nombres}`,
+          registradoPor: auditUserByEntity.get(`REGISTRO:${movimiento.movimientoId.toString()}`) ?? null,
+          items: movimiento.items.map((item) => ({
+            itemId: item.item.itemId.toString(),
+            nombre: item.item.nombre,
+            cantidad: item.cantidad,
+            delta: item.cantidad * movimientoStockDeltaFactor(movimiento.tipo),
+          })),
+          sortFecha: movimiento.fecha.getTime(),
+          sortCreatedAt: movimiento.createdAt.getTime(),
+        };
+      })
+      .filter((movimiento): movimiento is NonNullable<typeof movimiento> => movimiento !== null);
+
+    const historialPrestamos: StockHistorialInternalEntry[] = prestamos.flatMap((prestamo) => {
+      const destinatario = formatPrestamoDestinatario(prestamo);
+      const totalUnidades = prestamo.items.reduce((acumulado, item) => acumulado + item.cantidad, 0);
+      const usuarioEntregaLabel = `${prestamo.usuarioEntrega.rango.abreviacion} ${prestamo.usuarioEntrega.apellido}, ${prestamo.usuarioEntrega.nombre}`
+        .replace(/\s+/g, " ")
+        .trim();
+      const usuarioRecibeLabel = prestamo.prestamoHistorial?.usuarioRecibeDevolucion
+        ? `${prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango.abreviacion} ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.apellido}, ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre}`
+            .replace(/\s+/g, " ")
+            .trim()
+        : null;
+
+      const salida: StockHistorialInternalEntry = {
+        id: `prestamo-${prestamo.movimientoId.toString()}-salida`,
+        fecha: formatDateOnlyFromDate(prestamo.fecha) ?? "",
+        createdAt: formatDateTimeForDisplay(prestamo.createdAt),
+        origen: "PRESTAMO",
+        tipo: "PRESTAMO",
         afectaStock: true,
-        comentarios: movimiento.observaciones,
-        totalUnidades: movimiento.items.reduce((total, item) => total + item.cantidad, 0),
-        ci: movimiento.personalCi,
-        persona: `${movimiento.personal.rango.abreviacion} ${apellidos}, ${nombres}`,
-        registradoPor: auditUserByEntity.get(`REGISTRO:${movimiento.movimientoId.toString()}`) ?? null,
-        items: movimiento.items.map((item) => ({
+        comentarios: prestamo.observaciones,
+        totalUnidades,
+        ci: destinatario.ci || null,
+        persona: destinatario.etiqueta,
+        registradoPor: usuarioEntregaLabel || prestamo.usuarioEntrega.username,
+        items: prestamo.items.map((item) => ({
           itemId: item.item.itemId.toString(),
           nombre: item.item.nombre,
           cantidad: item.cantidad,
-          delta: item.cantidad * movimientoStockDeltaFactor(movimiento.tipo),
+          delta: -item.cantidad,
         })),
-        sortFecha: movimiento.fecha.getTime(),
-        sortCreatedAt: movimiento.createdAt.getTime(),
+        sortFecha: prestamo.fecha.getTime(),
+        sortCreatedAt: prestamo.createdAt.getTime(),
       };
-    })
-    .filter((movimiento): movimiento is NonNullable<typeof movimiento> => movimiento !== null);
 
-  const historialPrestamos: StockHistorialInternalEntry[] = prestamos.flatMap((prestamo) => {
-    const destinatario = formatPrestamoDestinatario(prestamo);
-    const totalUnidades = prestamo.items.reduce((acumulado, item) => acumulado + item.cantidad, 0);
-    const usuarioEntregaLabel = `${prestamo.usuarioEntrega.rango.abreviacion} ${prestamo.usuarioEntrega.apellido}, ${prestamo.usuarioEntrega.nombre}`
-      .replace(/\s+/g, " ")
-      .trim();
-    const usuarioRecibeLabel = prestamo.prestamoHistorial?.usuarioRecibeDevolucion
-      ? `${prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango.abreviacion} ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.apellido}, ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre}`
-          .replace(/\s+/g, " ")
-          .trim()
-      : null;
+      if (!prestamo.prestamoHistorial) return [salida];
 
-    const salida: StockHistorialInternalEntry = {
-      id: `prestamo-${prestamo.movimientoId.toString()}-salida`,
-      fecha: formatDateOnlyFromDate(prestamo.fecha) ?? "",
-      createdAt: formatDateTimeForDisplay(prestamo.createdAt),
-      origen: "PRESTAMO",
-      tipo: "PRESTAMO",
-      afectaStock: true,
-      comentarios: prestamo.observaciones,
-      totalUnidades,
-      ci: destinatario.ci || null,
-      persona: destinatario.etiqueta,
-      registradoPor: usuarioEntregaLabel || prestamo.usuarioEntrega.username,
-      items: prestamo.items.map((item) => ({
-        itemId: item.item.itemId.toString(),
-        nombre: item.item.nombre,
-        cantidad: item.cantidad,
-        delta: -item.cantidad,
-      })),
-      sortFecha: prestamo.fecha.getTime(),
-      sortCreatedAt: prestamo.createdAt.getTime(),
-    };
+      const devolucion: StockHistorialInternalEntry = {
+        id: `prestamo-${prestamo.movimientoId.toString()}-devolucion`,
+        fecha: formatDateOnlyFromDate(prestamo.prestamoHistorial.fechaDevolucion) ?? "",
+        createdAt: formatDateTimeForDisplay(prestamo.prestamoHistorial.createdAt),
+        origen: "PRESTAMO",
+        tipo: "DEVOLUCION_PRESTAMO",
+        afectaStock: true,
+        comentarios: `Devolucion de prestamo ${prestamo.prestamoHistorial.reciboNumero}`,
+        totalUnidades,
+        ci: destinatario.ci || null,
+        persona: destinatario.etiqueta,
+        registradoPor: usuarioRecibeLabel || prestamo.prestamoHistorial.usuarioRecibeDevolucion?.username || null,
+        items: prestamo.items.map((item) => ({
+          itemId: item.item.itemId.toString(),
+          nombre: item.item.nombre,
+          cantidad: item.cantidad,
+          delta: item.cantidad,
+        })),
+        sortFecha: prestamo.prestamoHistorial.fechaDevolucion.getTime(),
+        sortCreatedAt: prestamo.prestamoHistorial.createdAt.getTime(),
+      };
 
-    if (!prestamo.prestamoHistorial) return [salida];
+      return [salida, devolucion];
+    });
 
-    const devolucion: StockHistorialInternalEntry = {
-      id: `prestamo-${prestamo.movimientoId.toString()}-devolucion`,
-      fecha: formatDateOnlyFromDate(prestamo.prestamoHistorial.fechaDevolucion) ?? "",
-      createdAt: formatDateTimeForDisplay(prestamo.prestamoHistorial.createdAt),
-      origen: "PRESTAMO",
-      tipo: "DEVOLUCION_PRESTAMO",
-      afectaStock: true,
-      comentarios: `Devolucion de prestamo ${prestamo.prestamoHistorial.reciboNumero}`,
-      totalUnidades,
-      ci: destinatario.ci || null,
-      persona: destinatario.etiqueta,
-      registradoPor: usuarioRecibeLabel || prestamo.prestamoHistorial.usuarioRecibeDevolucion?.username || null,
-      items: prestamo.items.map((item) => ({
-        itemId: item.item.itemId.toString(),
-        nombre: item.item.nombre,
-        cantidad: item.cantidad,
-        delta: item.cantidad,
-      })),
-      sortFecha: prestamo.prestamoHistorial.fechaDevolucion.getTime(),
-      sortCreatedAt: prestamo.prestamoHistorial.createdAt.getTime(),
-    };
-
-    return [salida, devolucion];
-  });
-
-  const historial: StockDashboardData["historial"] = [...historialManual, ...historialPersonal, ...historialPrestamos]
-    .sort((a, b) => {
-      const timeDiff = b.sortFecha - a.sortFecha;
-      if (timeDiff !== 0) return timeDiff;
-      return b.sortCreatedAt - a.sortCreatedAt;
-    })
-    .slice(0, limit)
-    .map((entry) => ({
-      id: entry.id,
-      fecha: entry.fecha,
-      createdAt: entry.createdAt,
-      origen: entry.origen,
-      tipo: entry.tipo,
-      afectaStock: entry.afectaStock,
-      comentarios: entry.comentarios,
-      totalUnidades: entry.totalUnidades,
-      ci: entry.ci,
-      persona: entry.persona,
-      registradoPor: entry.registradoPor,
-      items: entry.items,
-    }));
+    historial = [...historialManual, ...historialPersonal, ...historialPrestamos]
+      .sort((a, b) => {
+        const timeDiff = b.sortFecha - a.sortFecha;
+        if (timeDiff !== 0) return timeDiff;
+        return b.sortCreatedAt - a.sortCreatedAt;
+      })
+      .slice(0, limit)
+      .map((entry) => ({
+        id: entry.id,
+        fecha: entry.fecha,
+        createdAt: entry.createdAt,
+        origen: entry.origen,
+        tipo: entry.tipo,
+        afectaStock: entry.afectaStock,
+        comentarios: entry.comentarios,
+        totalUnidades: entry.totalUnidades,
+        ci: entry.ci,
+        persona: entry.persona,
+        registradoPor: entry.registradoPor,
+        items: entry.items,
+      }));
+  }
 
   const data: StockDashboardData = {
     generatedAt: formatDateTimeForDisplay(new Date()),
     resumen,
     historial,
-    prestamos: prestamos.map(serializePrestamo),
+    prestamos: includePrestamos ? prestamos.map(serializePrestamo) : [],
   };
 
   return NextResponse.json(data);

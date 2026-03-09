@@ -21,6 +21,12 @@ type UseHomeDataOptions = {
   onStatusChange: (message: string) => void;
 };
 
+type LoadStockDataOptions = {
+  includeHistorial?: boolean;
+  includePrestamos?: boolean;
+  limit?: number;
+};
+
 export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
   const [loading, setLoading] = useState(true);
   const [initMessage, setInitMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
@@ -210,11 +216,19 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     }
   }, []);
 
-  const loadStockData = useCallback(async () => {
+  const loadStockData = useCallback(async (options: LoadStockDataOptions = {}) => {
     setStockLoading(true);
     setStockError(null);
     try {
-      const data = await api<StockDashboardData>("/api/stock");
+      const params = new URLSearchParams();
+      if (options.includeHistorial === false) params.set("includeHistorial", "0");
+      if (options.includePrestamos === false) params.set("includePrestamos", "0");
+      if (typeof options.limit === "number" && Number.isInteger(options.limit) && options.limit > 0) {
+        params.set("limit", String(options.limit));
+      }
+      const query = params.toString();
+      const url = query ? `/api/stock?${query}` : "/api/stock";
+      const data = await api<StockDashboardData>(url);
       setStockData(data);
     } catch (error: unknown) {
       setStockError(error instanceof Error ? error.message : "No se pudo cargar el stock.");

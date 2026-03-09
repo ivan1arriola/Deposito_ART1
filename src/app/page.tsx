@@ -56,6 +56,7 @@ import type {
   PersonalAltaMovimientoForm,
   EquipoForm,
   PrestamoDraft,
+  PrestamoDraftItem,
   RegistroDraftEquipo,
   RegistroDraft,
   StockOperacionDraft,
@@ -143,6 +144,15 @@ import {
 // Importar utilidades de helpers
 import { auditActionLabel, auditEntityLabel, renderAuditDetalle } from "@/lib/audit-helpers";
 
+type StockLoadProfile = {
+  key: "summary" | "historial" | "prestamos";
+  options: {
+    includeHistorial?: boolean;
+    includePrestamos?: boolean;
+    limit?: number;
+  };
+};
+
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
   const [status, setStatus] = useState("Verificando sesión...");
@@ -185,6 +195,8 @@ export default function Home() {
     stockData,
     stockLoading,
     stockError,
+    setStockData,
+    setStockError,
     loadStockData,
     clearLoadedData: clearLoadedDataState,
   } = useHomeData({ onStatusChange: setStatus });
@@ -280,6 +292,7 @@ export default function Home() {
   const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
   const canManageOwnAccount = canWrite;
   const canDelete = canWrite;
+  const canDeleteRegistros = isAdmin;
   const canRegisterPersonal = canWrite && rangos.length > 0;
   const rangosOficialSuboficialDisponibles = useMemo(
     () => (newOficialSuboficial.tipo === "OFICIAL" ? rangosOficiales : rangosSuboficiales),
@@ -717,12 +730,42 @@ export default function Home() {
     void loadEquipoResumen();
   }, [activeView, equipoResumenData, equipoResumenLoading, loadEquipoResumen]);
 
+  const getStockLoadProfile = useCallback((view: MainView): StockLoadProfile | null => {
+    if (view === "stock_historial") {
+      return {
+        key: "historial",
+        options: { includeHistorial: true, includePrestamos: false },
+      };
+    }
+    if (view === "stock_prestamos" || view === "formularios") {
+      return {
+        key: "prestamos",
+        options: { includeHistorial: false, includePrestamos: true },
+      };
+    }
+    if (view === "stock" || view === "stock_total" || view === "stock_actual" || view === "stock_alta" || view === "stock_baja") {
+      return {
+        key: "summary",
+        options: { includeHistorial: false, includePrestamos: false },
+      };
+    }
+    return null;
+  }, []);
+
+  const activeStockLoadProfile = useMemo(() => getStockLoadProfile(activeView), [activeView, getStockLoadProfile]);
+
+  const reloadActiveStockData = useCallback(async () => {
+    if (!activeStockLoadProfile) return;
+    await loadStockData(activeStockLoadProfile.options);
+  }, [activeStockLoadProfile, loadStockData]);
+
   useEffect(() => {
-    if (!["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos", "formularios"].includes(activeView)) return;
+    if (!activeStockLoadProfile) return;
     if (stockLoading) return;
     if (stockData) return;
-    void loadStockData();
-  }, [activeView, stockData, stockLoading, loadStockData]);
+    if (stockError) return;
+    void loadStockData(activeStockLoadProfile.options);
+  }, [activeStockLoadProfile, stockData, stockLoading, stockError, loadStockData]);
 
   useEffect(() => {
     if (activeView === "stock_alta" && stockDraft.tipo !== "INGRESO") {
@@ -2029,8 +2072,8 @@ export default function Home() {
   }
 
   function deleteRegistro(registro: RegistroView) {
-    if (!canDelete) {
-      setStatus("No tienes permisos para eliminar movimientos.");
+    if (!canDeleteRegistros) {
+      setStatus("Solo un administrador puede eliminar movimientos.");
       return;
     }
     if (registro.tipo === "AJUSTE") {
@@ -2133,8 +2176,7 @@ export default function Home() {
       });
       setStockDraft({ ...EMPTY_STOCK_OPERACION_DRAFT, fecha: getTodayDateInput() });
       setStatus(stockDraft.tipo === "INGRESO" ? "Ingreso de stock registrado." : "Egreso de stock registrado.");
-      await loadData();
-      await loadStockData();
+      await reloadActiveStockData();
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "No se pudo registrar el movimiento de stock.");
     } finally {
@@ -2142,7 +2184,7 @@ export default function Home() {
     }
   }
 
-  function updatePrestamoDraftItem(index: number, field: keyof RegistroDraftEquipo, value: string) {
+  function updatePrestamoDraftItem(index: number, field: keyof PrestamoDraftItem, value: string) {
     setPrestamoDraft((prev) => {
       if (field === "itemId" && value !== "" && prev.items.some((item, itemIndex) => itemIndex !== index && item.itemId === value)) {
         setStatus("Ese equipo ya fue seleccionado en este prestamo.");
@@ -2156,7 +2198,7 @@ export default function Home() {
   }
 
   function addPrestamoDraftItem() {
-    setPrestamoDraft((prev) => ({ ...prev, items: [...prev.items, { itemId: "", cantidad: "1" }] }));
+    setPrestamoDraft((prev) => ({ ...prev, items: [...prev.items, { itemId: "", cantidad: "1", estadoEntrega: "NUEVO", comentarioEntrega: "" }] }));
   }
 
   function removePrestamoDraftItem(index: number) {
@@ -2166,7 +2208,7 @@ export default function Home() {
     });
   }
 
-  async function savePrestamo() {
+  async function savePrestamo(printAfterSave = false) {
     if (prestamoSaving) return;
     if (prestamoDraft.destinatarioCi.trim() === "") {
       setStatus("Debes seleccionar un destinatario para el prestamo.");
@@ -2185,6 +2227,8 @@ export default function Home() {
       .map((item) => ({
         itemId: item.itemId.trim(),
         cantidad: Number(item.cantidad),
+        estadoEntrega: item.estadoEntrega,
+        comentarioEntrega: item.comentarioEntrega.trim() || undefined,
       }))
       .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
 
@@ -2202,21 +2246,24 @@ export default function Home() {
     setPrestamoSaving(true);
     setStatus("Registrando prestamo...");
     try {
-      await api("/api/prestamos", {
+      const created = await api<{ prestamoId: string }>("/api/prestamos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           destinatarioTipo: prestamoDraft.destinatarioTipo,
           destinatarioCi: prestamoDraft.destinatarioCi.trim(),
           fechaPrestamo: prestamoDraft.fechaPrestamo,
+          fechaEstimadaDevolucionTexto: prestamoDraft.fechaEstimadaDevolucionTexto.trim() || undefined,
           comentarios: prestamoDraft.comentarios.trim() || undefined,
           items: payloadItems,
         }),
       });
       setPrestamoDraft({ ...EMPTY_PRESTAMO_DRAFT, fechaPrestamo: getTodayDateInput() });
       setStatus("Prestamo registrado.");
-      await loadData();
-      await loadStockData();
+      await reloadActiveStockData();
+      if (printAfterSave) {
+        window.open(`/api/prestamos/${encodeURIComponent(created.prestamoId)}/recibo`, "_blank", "noopener,noreferrer");
+      }
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "No se pudo registrar el prestamo.");
     } finally {
@@ -2224,7 +2271,11 @@ export default function Home() {
     }
   }
 
-  async function returnPrestamo(prestamoId: string, fechaDevolucion: string) {
+  async function returnPrestamo(
+    prestamoId: string,
+    fechaDevolucion: string,
+    items?: Array<{ itemId: string; estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion?: string }>,
+  ) {
     if (returningPrestamoId) return;
     setReturningPrestamoId(prestamoId);
     setStatus("Registrando devolucion del prestamo...");
@@ -2234,11 +2285,11 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fechaDevolucion: fechaDevolucion.trim() || getTodayDateInput(),
+          items,
         }),
       });
       setStatus("Devolucion de prestamo registrada.");
-      await loadData();
-      await loadStockData();
+      await reloadActiveStockData();
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "No se pudo registrar la devolucion del prestamo.");
     } finally {
@@ -3171,7 +3222,17 @@ export default function Home() {
         showConfigViews={showConfigViews}
         isConfigView={isConfigView}
         configMenuRef={configMenuRef}
-        onSelectView={(view) => setActiveView(view)}
+        onSelectView={(view) => {
+          const currentProfile = getStockLoadProfile(activeView);
+          const nextProfile = getStockLoadProfile(view);
+          if (view !== activeView && nextProfile) {
+            setStockError(null);
+          }
+          if ((currentProfile?.key ?? null) !== (nextProfile?.key ?? null)) {
+            setStockData(null);
+          }
+          setActiveView(view);
+        }}
         onSetConfigViews={setShowConfigViews}
       />
 
@@ -3568,9 +3629,10 @@ export default function Home() {
           onPrestamoItemChange={updatePrestamoDraftItem}
           onAddPrestamoItem={addPrestamoDraftItem}
           onRemovePrestamoItem={removePrestamoDraftItem}
-          onSubmitPrestamo={() => void savePrestamo()}
-          onReturnPrestamo={(prestamoId, fechaDevolucion) => void returnPrestamo(prestamoId, fechaDevolucion)}
-          onReload={() => void loadStockData()}
+          onSubmitPrestamo={() => void savePrestamo(false)}
+          onSubmitPrestamoAndPrint={() => void savePrestamo(true)}
+          onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
+          onReload={() => void reloadActiveStockData()}
         />
       ) : null}
 
@@ -3598,9 +3660,10 @@ export default function Home() {
           onPrestamoItemChange={updatePrestamoDraftItem}
           onAddPrestamoItem={addPrestamoDraftItem}
           onRemovePrestamoItem={removePrestamoDraftItem}
-          onSubmitPrestamo={() => void savePrestamo()}
-          onReturnPrestamo={(prestamoId, fechaDevolucion) => void returnPrestamo(prestamoId, fechaDevolucion)}
-          onReload={() => void loadStockData()}
+          onSubmitPrestamo={() => void savePrestamo(false)}
+          onSubmitPrestamoAndPrint={() => void savePrestamo(true)}
+          onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
+          onReload={() => void reloadActiveStockData()}
         />
       ) : null}
 
@@ -3662,7 +3725,7 @@ export default function Home() {
         registroViewerPage={registroViewerPage}
         registroViewerPageSize={registroViewerPageSize}
         canWrite={canWrite}
-        canDelete={canDelete}
+        canDelete={canDeleteRegistros}
         onRectifyRegistro={rectifyRegistro}
         onRegistroViewerPageChange={setRegistroViewerPage}
         onRegistroViewerPageSizeChange={setRegistroViewerPageSize}

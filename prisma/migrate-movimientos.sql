@@ -12,6 +12,25 @@ BEGIN
   END IF;
 END $$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_equipo_prestamo') THEN
+    CREATE TYPE "estado_equipo_prestamo" AS ENUM ('NUEVO', 'BUENO', 'REGULAR', 'MALO');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_equipo_prestamo') THEN
+    BEGIN
+      ALTER TYPE "estado_equipo_prestamo" ADD VALUE IF NOT EXISTS 'NUEVO' BEFORE 'BUENO';
+    EXCEPTION
+      WHEN feature_not_supported THEN
+        NULL;
+    END;
+  END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS "movimiento" (
   "movimiento_id" BIGSERIAL PRIMARY KEY,
   "tipo" "tipo_movimiento" NOT NULL,
@@ -91,8 +110,25 @@ CREATE TABLE IF NOT EXISTS "movimiento_item" (
   "movimiento_id" BIGINT NOT NULL REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
   "item_id" BIGINT NOT NULL REFERENCES "item"("item_id") ON DELETE CASCADE,
   "cantidad" INTEGER NOT NULL CHECK ("cantidad" > 0),
+  "estado_entrega" "estado_equipo_prestamo" NOT NULL DEFAULT 'NUEVO',
+  "comentario_entrega" TEXT,
+  "estado_devolucion" "estado_equipo_prestamo",
+  "comentario_devolucion" TEXT,
   PRIMARY KEY ("movimiento_id", "item_id")
 );
+
+ALTER TABLE "movimiento_item"
+  ADD COLUMN IF NOT EXISTS "estado_entrega" "estado_equipo_prestamo",
+  ADD COLUMN IF NOT EXISTS "comentario_entrega" TEXT,
+  ADD COLUMN IF NOT EXISTS "estado_devolucion" "estado_equipo_prestamo",
+  ADD COLUMN IF NOT EXISTS "comentario_devolucion" TEXT;
+
+ALTER TABLE "movimiento_item"
+  ALTER COLUMN "estado_entrega" SET DEFAULT 'NUEVO';
+
+UPDATE "movimiento_item"
+SET "estado_entrega" = 'NUEVO'
+WHERE "estado_entrega" IS NULL;
 
 CREATE INDEX IF NOT EXISTS "movimiento_item_item_id_idx" ON "movimiento_item"("item_id");
 
@@ -100,6 +136,7 @@ CREATE TABLE IF NOT EXISTS "prestamo_activo" (
   "movimiento_id" BIGINT PRIMARY KEY REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
   "recibo_numero" TEXT NOT NULL UNIQUE,
   "estado" "estado_prestamo_movimiento" NOT NULL DEFAULT 'PENDIENTE',
+  "fecha_estimada_devolucion_texto" TEXT,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
 );
@@ -108,6 +145,7 @@ ALTER TABLE "prestamo_activo"
   ADD COLUMN IF NOT EXISTS "movimiento_id" BIGINT,
   ADD COLUMN IF NOT EXISTS "recibo_numero" TEXT,
   ADD COLUMN IF NOT EXISTS "estado" "estado_prestamo_movimiento",
+  ADD COLUMN IF NOT EXISTS "fecha_estimada_devolucion_texto" TEXT,
   ADD COLUMN IF NOT EXISTS "created_at" TIMESTAMPTZ(6),
   ADD COLUMN IF NOT EXISTS "updated_at" TIMESTAMPTZ(6);
 
@@ -135,6 +173,7 @@ CREATE TABLE IF NOT EXISTS "prestamo_historial" (
   "recibo_numero" TEXT NOT NULL UNIQUE,
   "estado" "estado_prestamo_movimiento" NOT NULL DEFAULT 'DEVUELTO',
   "fecha_devolucion" DATE NOT NULL,
+  "fecha_estimada_devolucion_texto" TEXT,
   "usuario_recibe_devolucion_id" TEXT REFERENCES "usuario"("usuario_id") ON DELETE SET NULL,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
@@ -145,6 +184,7 @@ ALTER TABLE "prestamo_historial"
   ADD COLUMN IF NOT EXISTS "recibo_numero" TEXT,
   ADD COLUMN IF NOT EXISTS "estado" "estado_prestamo_movimiento",
   ADD COLUMN IF NOT EXISTS "fecha_devolucion" DATE,
+  ADD COLUMN IF NOT EXISTS "fecha_estimada_devolucion_texto" TEXT,
   ADD COLUMN IF NOT EXISTS "usuario_recibe_devolucion_id" TEXT,
   ADD COLUMN IF NOT EXISTS "created_at" TIMESTAMPTZ(6),
   ADD COLUMN IF NOT EXISTS "updated_at" TIMESTAMPTZ(6);

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { moveCatalogId } from "@/lib/catalog-order";
+import { invalidateRangoTipoCountCache } from "@/lib/reference-data-cache";
 
 function parseOptionalOrden(value: unknown) {
   if (value === undefined || value === null || value === "") return undefined;
@@ -91,6 +92,7 @@ export async function POST(req: Request) {
       entidadId: String(created.rangoId),
       detalle: { abreviacion: created.abreviacion, nombreCompleto: created.nombreCompleto, orden: created.orden },
     });
+    invalidateRangoTipoCountCache();
 
     return NextResponse.json(created, { status: 201 });
   } catch (error: unknown) {

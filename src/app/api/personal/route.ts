@@ -16,6 +16,7 @@ import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tal
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
 import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import { getPrismaErrorCode, hasConstraintName } from "@/lib/prisma-errors";
+import { getRangoCountByTipo, getTallaTipoIdMap } from "@/lib/reference-data-cache";
 
 type PersonalPayload = {
   ci: string;
@@ -270,9 +271,7 @@ export async function POST(req: Request) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
 
-  const totalGrados = await prisma.rango.count({
-    where: { tipo: TipoPersonal.SUBALTERNO },
-  });
+  const totalGrados = await getRangoCountByTipo(TipoPersonal.SUBALTERNO);
   if (totalGrados === 0) {
     return NextResponse.json(
       { error: "No se puede registrar personal sin registrar Grados previamente." },
@@ -326,10 +325,7 @@ export async function POST(req: Request) {
   }
 
   const normalizedTallas = tallasValidation.values;
-  const tallaTipos = await prisma.tallaTipo.findMany({
-    where: { nombre: { in: TALLA_KEYS as unknown as string[] } },
-  });
-  const tallaTipoMap = new Map(tallaTipos.map((tipo) => [tipo.nombre as TallaKey, tipo.tallaTipoId]));
+  const tallaTipoMap = await getTallaTipoIdMap();
 
   const tallasToCreate = Object.entries(normalizedTallas)
     .map(([nombre, tallaValor]) => {

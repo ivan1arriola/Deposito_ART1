@@ -15,6 +15,11 @@ import { prestamoInclude, serializePrestamo, totalUnidadesPrestamo } from "@/lib
 
 type DevolucionPrestamoPayload = {
   fechaDevolucion?: string;
+  items?: Array<{
+    itemId: string | number;
+    estadoDevolucion?: string;
+    comentarioDevolucion?: string;
+  }>;
 };
 
 function parsePrestamoId(raw: string) {
@@ -29,6 +34,22 @@ function parseFechaDevolucion(value: unknown) {
   const raw = String(value ?? "").trim();
   if (!raw) return dateInputToDate(getTodayDateInput());
   return dateInputToDate(raw);
+}
+
+function parseBigIntId(value: unknown) {
+  if (typeof value === "bigint") return value;
+  const raw = String(value ?? "").trim();
+  if (!/^\d+$/.test(raw)) return null;
+  return BigInt(raw);
+}
+
+function parseEstadoEquipoPrestamo(value: unknown) {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (raw === "NUEVO") return "NUEVO";
+  if (raw === "BUENO") return "BUENO";
+  if (raw === "REGULAR") return "REGULAR";
+  if (raw === "MALO") return "MALO";
+  return null;
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ prestamoId: string }> }) {
@@ -73,13 +94,49 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     return NextResponse.json({ error: "La fecha de devolucion no puede ser anterior a la fecha del prestamo." }, { status: 400 });
   }
 
+  const devolucionInputByItemId = new Map<string, { estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion: string }>();
+  if (Array.isArray(body.items)) {
+    for (const item of body.items) {
+      const itemId = parseBigIntId(item.itemId);
+      const estadoDevolucion = parseEstadoEquipoPrestamo(item.estadoDevolucion) ?? "NUEVO";
+      const comentarioDevolucion = String(item.comentarioDevolucion ?? "").trim();
+      if (!itemId) {
+        return NextResponse.json({ error: "items: itemId invalido." }, { status: 400 });
+      }
+      const key = itemId.toString();
+      devolucionInputByItemId.set(key, { estadoDevolucion, comentarioDevolucion });
+    }
+  }
+
   try {
     const updated = await prisma.$transaction(async (tx) => {
+      for (const item of existing.items) {
+        const itemId = item.itemId.toString();
+        const itemUpdate = devolucionInputByItemId.get(itemId) ?? {
+          estadoDevolucion: item.estadoEntrega,
+          comentarioDevolucion: "",
+        };
+
+        await tx.movimientoItem.update({
+          where: {
+            movimientoId_itemId: {
+              movimientoId: existing.movimientoId,
+              itemId: item.itemId,
+            },
+          },
+          data: {
+            estadoDevolucion: itemUpdate.estadoDevolucion,
+            comentarioDevolucion: itemUpdate.comentarioDevolucion || null,
+          },
+        });
+      }
+
       await tx.prestamoHistorial.create({
         data: {
           movimientoId: existing.movimientoId,
           reciboNumero: existing.prestamoActivo?.reciboNumero ?? `PR-${existing.movimientoId.toString().padStart(8, "0")}`,
           fechaDevolucion,
+          fechaEstimadaDevolucionTexto: existing.prestamoActivo?.fechaEstimadaDevolucionTexto ?? null,
           usuarioRecibeDevolucionId: auth.user.usuarioId,
         },
       });
@@ -103,6 +160,8 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         evento: "PRESTAMO_DEVUELTO",
         reciboNumero: updated.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo.reciboNumero,
         fechaPrestamo: formatDateOnlyFromDate(updated.fecha),
+        fechaEstimadaDevolucionTexto:
+          updated.prestamoHistorial?.fechaEstimadaDevolucionTexto ?? existing.prestamoActivo.fechaEstimadaDevolucionTexto ?? null,
         fechaDevolucion: formatDateOnlyForDisplay(fechaDevolucionInput),
         totalEquipos: updated.items.length,
         totalUnidades: totalUnidadesPrestamo(updated),
@@ -111,6 +170,10 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
           itemId: item.item.itemId.toString(),
           nombre: item.item.nombre,
           cantidad: item.cantidad,
+          estadoEntrega: item.estadoEntrega,
+          comentarioEntrega: item.comentarioEntrega,
+          estadoDevolucion: item.estadoDevolucion,
+          comentarioDevolucion: item.comentarioDevolucion,
         })),
       },
     });

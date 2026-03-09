@@ -14,6 +14,7 @@ import {
 import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
 import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import { getPrismaErrorCode, hasConstraintName } from "@/lib/prisma-errors";
+import { getTallaTipoIdMap } from "@/lib/reference-data-cache";
 
 type PersonalUpdatePayload = {
   apellido1: string;
@@ -203,10 +204,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
   }
 
   const normalizedTallas = tallasValidation.values;
-  const tallaTipos = await prisma.tallaTipo.findMany({
-    where: { nombre: { in: TALLA_KEYS as unknown as string[] } },
-  });
-  const tallaTipoMap = new Map(tallaTipos.map((tipo) => [tipo.nombre as TallaKey, tipo.tallaTipoId]));
+  const tallaTipoMap = await getTallaTipoIdMap();
 
   const tallasToCreate = Object.entries(normalizedTallas)
     .map(([nombre, tallaValor]) => {

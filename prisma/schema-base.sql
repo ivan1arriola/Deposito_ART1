@@ -8,6 +8,7 @@ CREATE TYPE "user_role" AS ENUM ('ADMIN', 'EDITOR', 'READ_ONLY');
 CREATE TYPE "tipo_personal" AS ENUM ('SUBALTERNO', 'OFICIAL', 'SUBOFICIAL');
 CREATE TYPE "tipo_movimiento" AS ENUM ('ENTREGA', 'DEVOLUCION', 'PRESTAMO');
 CREATE TYPE "estado_prestamo_movimiento" AS ENUM ('PENDIENTE', 'DEVUELTO');
+CREATE TYPE "estado_equipo_prestamo" AS ENUM ('NUEVO', 'BUENO', 'REGULAR', 'MALO');
 
 CREATE OR REPLACE FUNCTION public.es_ci_uruguaya_valida(ci_text TEXT)
 RETURNS BOOLEAN
@@ -383,6 +384,10 @@ CREATE TABLE "movimiento_item" (
   "movimiento_id" BIGINT NOT NULL REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
   "item_id" BIGINT NOT NULL REFERENCES "item"("item_id") ON DELETE CASCADE,
   "cantidad" INTEGER NOT NULL CHECK ("cantidad" > 0),
+  "estado_entrega" "estado_equipo_prestamo" NOT NULL DEFAULT 'NUEVO',
+  "comentario_entrega" TEXT,
+  "estado_devolucion" "estado_equipo_prestamo",
+  "comentario_devolucion" TEXT,
   PRIMARY KEY ("movimiento_id", "item_id")
 );
 
@@ -392,6 +397,7 @@ CREATE TABLE "prestamo_activo" (
   "movimiento_id" BIGINT PRIMARY KEY REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
   "recibo_numero" TEXT NOT NULL UNIQUE,
   "estado" "estado_prestamo_movimiento" NOT NULL DEFAULT 'PENDIENTE',
+  "fecha_estimada_devolucion_texto" TEXT,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   CONSTRAINT "prestamo_activo_estado_chk" CHECK ("estado" = 'PENDIENTE')
@@ -405,6 +411,7 @@ CREATE TABLE "prestamo_historial" (
   "recibo_numero" TEXT NOT NULL UNIQUE,
   "estado" "estado_prestamo_movimiento" NOT NULL DEFAULT 'DEVUELTO',
   "fecha_devolucion" DATE NOT NULL,
+  "fecha_estimada_devolucion_texto" TEXT,
   "usuario_recibe_devolucion_id" TEXT REFERENCES "usuario"("usuario_id") ON DELETE SET NULL,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),

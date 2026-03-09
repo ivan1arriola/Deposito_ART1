@@ -30,6 +30,7 @@ export const prestamoInclude = {
     select: {
       reciboNumero: true,
       estado: true,
+      fechaEstimadaDevolucionTexto: true,
     },
   },
   prestamoHistorial: {
@@ -37,6 +38,7 @@ export const prestamoInclude = {
       reciboNumero: true,
       estado: true,
       fechaDevolucion: true,
+      fechaEstimadaDevolucionTexto: true,
       createdAt: true,
       usuarioRecibeDevolucionId: true,
       usuarioRecibeDevolucion: {
@@ -120,6 +122,10 @@ export function serializePrestamo(prestamo: PrestamoWithRelations): PrestamoStoc
     usuarioEntregaId: prestamo.usuarioEntregaId,
     usuarioEntregaNombre: formatUserLabel(prestamo.usuarioEntrega),
     fechaPrestamo: formatDateOnlyFromDate(prestamo.fecha) ?? "",
+    fechaEstimadaDevolucionTexto:
+      prestamo.prestamoHistorial?.fechaEstimadaDevolucionTexto ??
+      prestamo.prestamoActivo?.fechaEstimadaDevolucionTexto ??
+      null,
     fechaDevolucion: formatDateOnlyFromDate(prestamo.prestamoHistorial?.fechaDevolucion),
     usuarioRecibeDevolucionId: prestamo.prestamoHistorial?.usuarioRecibeDevolucionId ?? null,
     usuarioRecibeDevolucionNombre: prestamo.prestamoHistorial?.usuarioRecibeDevolucion
@@ -131,6 +137,10 @@ export function serializePrestamo(prestamo: PrestamoWithRelations): PrestamoStoc
       itemId: item.item.itemId.toString(),
       nombre: item.item.nombre,
       cantidad: item.cantidad,
+      estadoEntrega: item.estadoEntrega,
+      comentarioEntrega: item.comentarioEntrega,
+      estadoDevolucion: item.estadoDevolucion,
+      comentarioDevolucion: item.comentarioDevolucion,
     })),
   };
 }

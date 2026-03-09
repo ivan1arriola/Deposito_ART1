@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { type Prisma, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { authorizeRequest, getUserFromRequest, hashPassword } from "@/lib/auth";
+import { authorizeRequest, getUserFromRequest, hashPassword, invalidateAuthUserCache } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 
@@ -222,6 +222,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
         updatedFields: Object.keys(data),
       },
     });
+    invalidateAuthUserCache(updated.usuarioId);
 
     return NextResponse.json(serializeUsuario(updated));
   } catch (error: unknown) {
@@ -290,6 +291,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
         rol: target.rol,
       },
     });
+    invalidateAuthUserCache(target.usuarioId);
 
     return NextResponse.json({ ok: true });
   } catch {

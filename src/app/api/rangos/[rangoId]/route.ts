@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { moveCatalogId } from "@/lib/catalog-order";
+import { invalidateRangoTipoCountCache } from "@/lib/reference-data-cache";
 
 function parseOptionalOrden(value: unknown) {
   if (value === undefined || value === null || value === "") return undefined;
@@ -87,6 +88,7 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
       entidadId: String(updated.rangoId),
       detalle: { abreviacion: updated.abreviacion, nombreCompleto: updated.nombreCompleto, orden: updated.orden },
     });
+    invalidateRangoTipoCountCache();
 
     return NextResponse.json(updated);
   } catch (error: unknown) {
@@ -150,6 +152,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ rangoId:
       entidadId: String(deleted.rangoId),
       detalle: { abreviacion: deleted.abreviacion, nombreCompleto: deleted.nombreCompleto, orden: deleted.orden },
     });
+    invalidateRangoTipoCountCache();
 
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {

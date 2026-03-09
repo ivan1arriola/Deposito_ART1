@@ -18,12 +18,15 @@ type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
 type PrestamoItemPayload = {
   itemId: string | number;
   cantidad: number | string;
+  estadoEntrega?: string;
+  comentarioEntrega?: string;
 };
 
 type PrestamoPayload = {
   destinatarioTipo: PrestamoDestinatarioTipo | string;
   destinatarioCi: string;
   fechaPrestamo?: string;
+  fechaEstimadaDevolucionTexto?: string;
   comentarios?: string;
   items: PrestamoItemPayload[];
 };
@@ -39,6 +42,15 @@ function parseCantidad(value: unknown) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) return null;
   return parsed;
+}
+
+function parseEstadoEquipoPrestamo(value: unknown) {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (raw === "NUEVO") return "NUEVO";
+  if (raw === "BUENO") return "BUENO";
+  if (raw === "REGULAR") return "REGULAR";
+  if (raw === "MALO") return "MALO";
+  return null;
 }
 
 function parseDestinatarioTipo(value: unknown): PrestamoDestinatarioTipo | null {
@@ -64,6 +76,7 @@ function isValidPayload(body: unknown): body is PrestamoPayload {
   if (!isValidUruguayanCi(destinatarioCi)) return false;
   if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
   if (candidate.fechaPrestamo !== undefined && typeof candidate.fechaPrestamo !== "string") return false;
+  if (candidate.fechaEstimadaDevolucionTexto !== undefined && typeof candidate.fechaEstimadaDevolucionTexto !== "string") return false;
   if (candidate.comentarios !== undefined && typeof candidate.comentarios !== "string") return false;
   return true;
 }
@@ -121,17 +134,39 @@ export async function POST(request: Request) {
     .map((item) => ({
       itemId: parseBigIntId(item.itemId),
       cantidad: parseCantidad(item.cantidad),
+      estadoEntrega: parseEstadoEquipoPrestamo(item.estadoEntrega) ?? "NUEVO",
+      comentarioEntrega: String(item.comentarioEntrega ?? "").trim(),
     }))
-    .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{ itemId: bigint; cantidad: number }>;
+    .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{
+    itemId: bigint;
+    cantidad: number;
+    estadoEntrega: "NUEVO" | "BUENO" | "REGULAR" | "MALO";
+    comentarioEntrega: string;
+  }>;
 
   if (parsedItems.length === 0) {
     return NextResponse.json({ error: "Debes enviar al menos un equipo valido para el prestamo." }, { status: 400 });
   }
 
-  const dedupedItems = new Map<string, number>();
+  const dedupedItems = new Map<string, { cantidad: number; estadoEntrega: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioEntrega: string }>();
   for (const item of parsedItems) {
     const key = item.itemId.toString();
-    dedupedItems.set(key, (dedupedItems.get(key) ?? 0) + item.cantidad);
+    const existing = dedupedItems.get(key);
+    if (!existing) {
+      dedupedItems.set(key, {
+        cantidad: item.cantidad,
+        estadoEntrega: item.estadoEntrega,
+        comentarioEntrega: item.comentarioEntrega,
+      });
+      continue;
+    }
+    if (existing.estadoEntrega !== item.estadoEntrega || existing.comentarioEntrega !== item.comentarioEntrega) {
+      return NextResponse.json(
+        { error: "No puedes repetir el mismo equipo con distinto estado/comentario en un mismo prestamo." },
+        { status: 400 },
+      );
+    }
+    dedupedItems.set(key, { ...existing, cantidad: existing.cantidad + item.cantidad });
   }
 
   const itemIds = Array.from(dedupedItems.keys()).map((itemId) => BigInt(itemId));
@@ -179,6 +214,7 @@ export async function POST(request: Request) {
   }
 
   const comentarios = body.comentarios?.trim() || null;
+  const fechaEstimadaDevolucionTexto = body.fechaEstimadaDevolucionTexto?.trim() || null;
   const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
 
   try {
@@ -202,6 +238,7 @@ export async function POST(request: Request) {
         data: {
           movimientoId: movimiento.movimientoId,
           reciboNumero: provisionalRecibo,
+          fechaEstimadaDevolucionTexto,
         },
       });
 
@@ -212,10 +249,12 @@ export async function POST(request: Request) {
       });
 
       await tx.movimientoItem.createMany({
-        data: Array.from(dedupedItems.entries()).map(([itemId, cantidad]) => ({
+        data: Array.from(dedupedItems.entries()).map(([itemId, entry]) => ({
           movimientoId: movimiento.movimientoId,
           itemId: BigInt(itemId),
-          cantidad,
+          cantidad: entry.cantidad,
+          estadoEntrega: entry.estadoEntrega,
+          comentarioEntrega: entry.comentarioEntrega || null,
         })),
       });
 
@@ -245,6 +284,7 @@ export async function POST(request: Request) {
         reciboNumero: created.prestamoActivo?.reciboNumero ?? `PR-${created.movimientoId.toString().padStart(8, "0")}`,
         destinatario: destinatarioDetalle,
         fechaPrestamo: formatDateOnlyForDisplay(fechaPrestamoInput),
+        fechaEstimadaDevolucionTexto,
         comentarios,
         totalEquipos: created.items.length,
         totalUnidades: totalUnidadesPrestamo(created),
@@ -252,6 +292,8 @@ export async function POST(request: Request) {
           itemId: item.item.itemId.toString(),
           nombre: itemNombrePorId.get(item.item.itemId.toString()) ?? item.item.nombre,
           cantidad: item.cantidad,
+          estadoEntrega: item.estadoEntrega,
+          comentarioEntrega: item.comentarioEntrega,
         })),
       },
     });

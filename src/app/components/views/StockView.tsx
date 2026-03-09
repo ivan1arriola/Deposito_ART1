@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
+import { DestinatarioSearchSelect } from "@/app/components/shared/DestinatarioSearchSelect";
 import { LoadingInline } from "@/app/components/shared";
 import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
 import { formatUruguayanCi } from "@/lib/ci";
 import type { Equipo, OficialSuboficial, Personal } from "@/types/entities";
-import type { PrestamoDraft, PrestamoDraftItem, StockOperacionDraft, StockOperacionDraftItem } from "@/types/forms";
+import type { PrestamoDraft, PrestamoDraftItem, PrestamoEstadoEquipo, StockOperacionDraft, StockOperacionDraftItem } from "@/types/forms";
 import type { StockDashboardData } from "@/types/views";
 
 type StockViewProps = {
@@ -31,14 +32,19 @@ type StockViewProps = {
   prestamoSaving: boolean;
   returningPrestamoId: string | null;
   onPrestamoDraftChange: (
-    field: "destinatarioTipo" | "destinatarioCi" | "fechaPrestamo" | "comentarios",
+    field: "destinatarioTipo" | "destinatarioCi" | "fechaPrestamo" | "fechaEstimadaDevolucionTexto" | "comentarios",
     value: string,
   ) => void;
   onPrestamoItemChange: (index: number, field: keyof PrestamoDraftItem, value: string) => void;
   onAddPrestamoItem: () => void;
   onRemovePrestamoItem: (index: number) => void;
   onSubmitPrestamo: () => void;
-  onReturnPrestamo: (prestamoId: string, fechaDevolucion: string) => void;
+  onSubmitPrestamoAndPrint: () => void;
+  onReturnPrestamo: (
+    prestamoId: string,
+    fechaDevolucion: string,
+    items?: Array<{ itemId: string; estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion?: string }>,
+  ) => void;
   onReload: () => void;
 };
 
@@ -46,6 +52,10 @@ function historyBadgeClass(tipo: "INGRESO" | "EGRESO" | "ENTREGA" | "DEVOLUCION"
   if (tipo === "INGRESO" || tipo === "DEVOLUCION" || tipo === "DEVOLUCION_PRESTAMO") return "bg-emerald-100 text-emerald-800";
   if (tipo === "PRESTAMO") return "bg-amber-100 text-amber-800";
   return "bg-rose-100 text-rose-800";
+}
+
+function reciboHref(prestamoId: string) {
+  return `/api/prestamos/${encodeURIComponent(prestamoId)}/recibo`;
 }
 
 export function StockView({
@@ -73,9 +83,11 @@ export function StockView({
   onAddPrestamoItem,
   onRemovePrestamoItem,
   onSubmitPrestamo,
+  onSubmitPrestamoAndPrint,
   onReturnPrestamo,
   onReload,
 }: StockViewProps) {
+  const ESTADO_OPTIONS: PrestamoEstadoEquipo[] = ["NUEVO", "BUENO", "REGULAR", "MALO"];
   const resumen = data?.resumen ?? [];
   const historial = data?.historial ?? [];
   const prestamos = data?.prestamos ?? [];
@@ -104,6 +116,27 @@ export function StockView({
         label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`,
       }));
   }, [prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales]);
+  const [returnDateByPrestamo, setReturnDateByPrestamo] = useState<Record<string, string>>({});
+  const [returnItemsByPrestamo, setReturnItemsByPrestamo] = useState<
+    Record<string, Record<string, { estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion: string }>>
+  >({});
+
+  const getReturnDate = (prestamoId: string) => {
+    const saved = returnDateByPrestamo[prestamoId];
+    return saved !== undefined ? saved : maxDate;
+  };
+
+  const getReturnItemData = (
+    prestamoId: string,
+    item: StockDashboardData["prestamos"][number]["items"][number],
+  ) => {
+    const byPrestamo = returnItemsByPrestamo[prestamoId];
+    if (byPrestamo && byPrestamo[item.itemId]) return byPrestamo[item.itemId];
+    return {
+      estadoDevolucion: item.estadoEntrega,
+      comentarioDevolucion: "",
+    };
+  };
 
   const totalSubalternos = resumen.reduce((total, item) => total + item.stockSubalternos, 0);
   const totalPrestamo = resumen.reduce((total, item) => total + item.stockPrestamo, 0);
@@ -132,7 +165,6 @@ export function StockView({
               : "Historial de stock";
 
   const stockTableTitle = section === "total" ? "Totales por item (subalternos + prestamo + deposito)" : "Stock interno de deposito por equipo";
-  const returnDateFallback = maxDate;
 
   return (
     <section className="mt-6 space-y-4">
@@ -291,27 +323,21 @@ export function StockView({
                     onChange={(event) => onPrestamoDraftChange("destinatarioTipo", event.target.value)}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 >
-                  <option value="PERSONAL">Personal</option>
+                  <option value="PERSONAL">Subalternos</option>
                   <option value="OFICIAL">Oficiales</option>
                   <option value="SUBOFICIAL">Sub Oficiales</option>
                 </select>
               </label>
-                <label className="text-xs text-stone-700">
+                <div className="text-xs text-stone-700">
                   Destinatario
-                  <select
+                  <DestinatarioSearchSelect
+                    key={prestamoDraft.destinatarioTipo}
+                    options={destinatarioOptions}
                     value={prestamoDraft.destinatarioCi}
                     disabled={prestamoSaving}
-                    onChange={(event) => onPrestamoDraftChange("destinatarioCi", event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  >
-                    <option value="">Seleccionar destinatario</option>
-                    {destinatarioOptions.map((option) => (
-                      <option key={option.ci} value={option.ci}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    onChange={(ci) => onPrestamoDraftChange("destinatarioCi", ci)}
+                  />
+                </div>
                 <label className="text-xs text-stone-700">
                   Fecha prestamo
                   <DateTextInput
@@ -319,6 +345,16 @@ export function StockView({
                     disabled={prestamoSaving}
                     onChange={(value) => onPrestamoDraftChange("fechaPrestamo", value)}
                     ariaLabel={`Fecha del prestamo. Maximo ${maxDate}`}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="text-xs text-stone-700">
+                  Fecha estimada devolucion (texto)
+                  <input
+                    value={prestamoDraft.fechaEstimadaDevolucionTexto}
+                    disabled={prestamoSaving}
+                    onChange={(event) => onPrestamoDraftChange("fechaEstimadaDevolucionTexto", event.target.value)}
+                    placeholder="Ej: 10 dias, fin de campana, 2 semanas"
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   />
                 </label>
@@ -346,7 +382,7 @@ export function StockView({
                   </button>
                 </div>
                 {prestamoDraft.items.map((item, index) => (
-                  <div key={`prestamo-item-${index}`} className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,1fr)_120px_auto]">
+                  <div key={`prestamo-item-${index}`} className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,1fr)_120px_140px_minmax(0,1fr)_auto]">
                     <select
                       value={item.itemId}
                       disabled={prestamoSaving}
@@ -373,6 +409,25 @@ export function StockView({
                       onChange={(event) => onPrestamoItemChange(index, "cantidad", event.target.value)}
                       className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                     />
+                    <select
+                      value={item.estadoEntrega}
+                      disabled={prestamoSaving}
+                      onChange={(event) => onPrestamoItemChange(index, "estadoEntrega", event.target.value)}
+                      className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    >
+                      {ESTADO_OPTIONS.map((estado) => (
+                        <option key={estado} value={estado}>
+                          {estado}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={item.comentarioEntrega}
+                      disabled={prestamoSaving}
+                      onChange={(event) => onPrestamoItemChange(index, "comentarioEntrega", event.target.value)}
+                      placeholder="Comentario del equipo (opcional)"
+                      className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    />
                     <button
                       type="button"
                       onClick={() => onRemovePrestamoItem(index)}
@@ -385,14 +440,22 @@ export function StockView({
                 ))}
               </div>
 
-              <div className="mt-3 flex justify-end">
+              <div className="mt-3 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={onSubmitPrestamo}
                   disabled={prestamoSaving}
+                  className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 disabled:opacity-50"
+                >
+                  Solo guardar
+                </button>
+                <button
+                  type="button"
+                  onClick={onSubmitPrestamoAndPrint}
+                  disabled={prestamoSaving}
                   className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-50"
                 >
-                  {prestamoSaving ? <LoadingInline label="Guardando..." size="xs" tone="light" textClassName="text-xs font-semibold text-white" /> : "Guardar prestamo"}
+                  {prestamoSaving ? <LoadingInline label="Guardando..." size="xs" tone="light" textClassName="text-xs font-semibold text-white" /> : "Guardar e imprimir"}
                 </button>
               </div>
             </article>
@@ -412,30 +475,118 @@ export function StockView({
                         {prestamo.destinatarioCi ? ` - CI ${formatUruguayanCi(prestamo.destinatarioCi)}` : ""}
                       </p>
                       <p className="text-xs text-stone-500">Prestado: {formatDateOnlyForDisplay(prestamo.fechaPrestamo)}</p>
+                      {prestamo.fechaEstimadaDevolucionTexto ? (
+                        <p className="text-xs text-stone-500">Estimado: {prestamo.fechaEstimadaDevolucionTexto}</p>
+                      ) : null}
                       {prestamo.fechaDevolucion ? <p className="text-xs text-stone-500">Devuelto: {formatDateOnlyForDisplay(prestamo.fechaDevolucion)}</p> : null}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${prestamo.estado === "PENDIENTE" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
                         {prestamo.estado}
                       </span>
+                      <a
+                        href={reciboHref(prestamo.prestamoId)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+                      >
+                        Recibo
+                      </a>
                       {canWrite && prestamo.estado === "PENDIENTE" ? (
-                        <button
-                          type="button"
-                          onClick={() => onReturnPrestamo(prestamo.prestamoId, returnDateFallback)}
-                          disabled={returningPrestamoId === prestamo.prestamoId}
-                          className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
-                        >
-                          {returningPrestamoId === prestamo.prestamoId ? "Guardando..." : "Devolver hoy"}
-                        </button>
+                        <>
+                          <DateTextInput
+                            value={getReturnDate(prestamo.prestamoId)}
+                            disabled={returningPrestamoId === prestamo.prestamoId}
+                            onChange={(value) =>
+                              setReturnDateByPrestamo((prev) => ({ ...prev, [prestamo.prestamoId]: value }))
+                            }
+                            ariaLabel={`Fecha de devolucion. Maximo ${maxDate}`}
+                            className="w-28 rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onReturnPrestamo(
+                                prestamo.prestamoId,
+                                getReturnDate(prestamo.prestamoId),
+                                prestamo.items.map((item) => {
+                                  const itemData = getReturnItemData(prestamo.prestamoId, item);
+                                  return {
+                                    itemId: item.itemId,
+                                    estadoDevolucion: itemData.estadoDevolucion,
+                                    comentarioDevolucion: itemData.comentarioDevolucion.trim() || undefined,
+                                  };
+                                }),
+                              )
+                            }
+                            disabled={returningPrestamoId === prestamo.prestamoId}
+                            className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                          >
+                            {returningPrestamoId === prestamo.prestamoId ? "Guardando..." : "Devolver"}
+                          </button>
+                        </>
                       ) : null}
                     </div>
                   </div>
                   {prestamo.comentarios ? <p className="mt-2 text-xs text-stone-700">{prestamo.comentarios}</p> : null}
-                  <div className="mt-2 grid grid-cols-1 gap-1 md:grid-cols-2">
+                  <div className="mt-2 grid grid-cols-1 gap-2">
                     {prestamo.items.map((item) => (
-                      <p key={`${prestamo.prestamoId}-${item.itemId}`} className="text-xs text-stone-700">
-                        <span className="font-semibold text-amber-700">{item.cantidad}</span> {item.nombre}
-                      </p>
+                      <div key={`${prestamo.prestamoId}-${item.itemId}`} className="rounded-lg border border-stone-200 bg-white px-2 py-2">
+                        <p className="text-xs text-stone-700">
+                          <span className="font-semibold text-amber-700">{item.cantidad}</span> {item.nombre}
+                        </p>
+                        <p className="text-xs text-stone-600">Entrega: {item.estadoEntrega}{item.comentarioEntrega ? ` | ${item.comentarioEntrega}` : ""}</p>
+                        {prestamo.estado === "PENDIENTE" ? (
+                          <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)]">
+                            <select
+                              value={getReturnItemData(prestamo.prestamoId, item).estadoDevolucion}
+                              disabled={returningPrestamoId === prestamo.prestamoId}
+                              onChange={(event) =>
+                                setReturnItemsByPrestamo((prev) => ({
+                                  ...prev,
+                                  [prestamo.prestamoId]: {
+                                    ...(prev[prestamo.prestamoId] ?? {}),
+                                    [item.itemId]: {
+                                      ...getReturnItemData(prestamo.prestamoId, item),
+                                      estadoDevolucion: event.target.value as PrestamoEstadoEquipo,
+                                    },
+                                  },
+                                }))
+                              }
+                              className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
+                            >
+                              {ESTADO_OPTIONS.map((estado) => (
+                                <option key={`${prestamo.prestamoId}-${item.itemId}-${estado}`} value={estado}>
+                                  {estado}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              value={getReturnItemData(prestamo.prestamoId, item).comentarioDevolucion}
+                              disabled={returningPrestamoId === prestamo.prestamoId}
+                              onChange={(event) =>
+                                setReturnItemsByPrestamo((prev) => ({
+                                  ...prev,
+                                  [prestamo.prestamoId]: {
+                                    ...(prev[prestamo.prestamoId] ?? {}),
+                                    [item.itemId]: {
+                                      ...getReturnItemData(prestamo.prestamoId, item),
+                                      comentarioDevolucion: event.target.value,
+                                    },
+                                  },
+                                }))
+                              }
+                              placeholder="Comentario devolucion (opcional)"
+                              className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-xs text-stone-600">
+                            Devolucion: {item.estadoDevolucion ?? "-"}
+                            {item.comentarioDevolucion ? ` | ${item.comentarioDevolucion}` : ""}
+                          </p>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -469,8 +620,8 @@ export function StockView({
                   </tr>
                 </thead>
                 <tbody>
-                  {resumen.map((item) => (
-                    <tr key={item.itemId}>
+                  {resumen.map((item, index) => (
+                    <tr key={item.itemId} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
                       <td className="border-b border-stone-100 px-3 py-2 text-stone-900">{item.nombre}</td>
                       {section === "total" ? (
                         <>
