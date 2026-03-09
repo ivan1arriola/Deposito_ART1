@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { TipoMovimiento, TipoStockOperacion } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import {
@@ -35,6 +36,44 @@ type StockHistorialInternalEntry = StockDashboardData["historial"][number] & {
   sortFecha: number;
   sortCreatedAt: number;
 };
+
+type StockOperacionHistorial = Prisma.StockOperacionGetPayload<{
+  include: {
+    items: {
+      include: {
+        item: {
+          select: { itemId: true; nombre: true };
+        };
+      };
+    };
+  };
+}>;
+
+type MovimientoHistorial = Prisma.MovimientoGetPayload<{
+  include: {
+    personal: {
+      include: {
+        rango: true;
+        subalterno: {
+          include: {
+            bateria: true;
+          };
+        };
+      };
+    };
+    items: {
+      include: {
+        item: {
+          select: { itemId: true; nombre: true };
+        };
+      };
+    };
+  };
+}>;
+
+type PrestamoMovimiento = Prisma.MovimientoGetPayload<{
+  include: typeof prestamoInclude;
+}>;
 
 function parseBigIntId(value: unknown) {
   if (typeof value === "bigint") return value;
@@ -118,9 +157,9 @@ export async function GET(req: Request) {
     buildStockSummaryMaps(prisma),
   ]);
 
-  let stockOperaciones: Awaited<ReturnType<typeof prisma.stockOperacion.findMany>> = [];
-  let movimientos: Awaited<ReturnType<typeof prisma.movimiento.findMany>> = [];
-  let prestamos: Awaited<ReturnType<typeof prisma.movimiento.findMany>> = [];
+  let stockOperaciones: StockOperacionHistorial[] = [];
+  let movimientos: MovimientoHistorial[] = [];
+  let prestamos: PrestamoMovimiento[] = [];
 
   if (includeHistorial) {
     [stockOperaciones, movimientos, prestamos] = await Promise.all([
