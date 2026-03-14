@@ -1,0 +1,26 @@
+{
+  "name": "Deposito ART1",
+  "short_name": "Deposito ART1",
+  "description": "Sistema de gestión de depósito general del Grupo de Artillería 105mm No. 1 Brig. Gral. Manuel Oribe",
+  "lang": "es-UY",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#E9E5D2",
+  "theme_color": "#66704D",
+  "icons": [
+    {
+      "src": "/assets/logo-deposito.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/logo-deposito.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

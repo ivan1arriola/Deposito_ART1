@@ -51,6 +51,13 @@ body {
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (display-mode: standalone) {
+  body {
+    background-attachment: scroll;
+  }
 }
 
 /* Mejoras en inputs para mobile y desktop */

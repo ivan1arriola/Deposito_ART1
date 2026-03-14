@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { AppToaster } from "@/components/AppToaster";
+import { PwaBootstrap } from "@/components/PwaBootstrap";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +18,23 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Deposito ART1",
   description: "Sistema de gestión de depósito general del Grupo de Artillería 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
+  manifest: "/manifest.webmanifest",
+  applicationName: "Deposito ART1",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Deposito ART1",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/assets/logo-deposito.png", sizes: "512x512", type: "image/png" },
+      { url: "/assets/logo-deposito.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/assets/logo-deposito.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     title: "Deposito ART1",
     description: "Sistema de gestión de depósito general del Grupo de Artillería 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
@@ -31,6 +49,10 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#66704D",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,6 +64,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
+          <PwaBootstrap />
           {children}
           <AppToaster />
         </AuthProvider>

@@ -117,9 +117,15 @@ export function StockView({
       }));
   }, [prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales]);
   const [returnDateByPrestamo, setReturnDateByPrestamo] = useState<Record<string, string>>({});
+  const [prestamoIdFilter, setPrestamoIdFilter] = useState("");
   const [returnItemsByPrestamo, setReturnItemsByPrestamo] = useState<
     Record<string, Record<string, { estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion: string }>>
   >({});
+  const normalizedPrestamoIdFilter = prestamoIdFilter.trim();
+  const prestamosFiltrados =
+    normalizedPrestamoIdFilter === ""
+      ? prestamos
+      : prestamos.filter((prestamo) => prestamo.prestamoId.includes(normalizedPrestamoIdFilter));
 
   const getReturnDate = (prestamoId: string) => {
     const saved = returnDateByPrestamo[prestamoId];
@@ -462,10 +468,29 @@ export function StockView({
           ) : null}
 
           <article className="ej-card rounded-2xl p-4">
-            <h3 className="text-sm font-semibold text-stone-900">Prestamos registrados</h3>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <h3 className="text-sm font-semibold text-stone-900">Prestamos registrados</h3>
+              <label className="w-full max-w-xs text-xs text-stone-700">
+                Buscar hoja por ID
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={prestamoIdFilter}
+                  onChange={(event) => setPrestamoIdFilter(event.target.value)}
+                  placeholder="Ej: 145"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
             <div className="mt-3 space-y-2">
-              {prestamos.length === 0 ? <p className="text-sm text-stone-600">No hay prestamos registrados.</p> : null}
-              {prestamos.map((prestamo) => (
+              {prestamosFiltrados.length === 0 ? (
+                <p className="text-sm text-stone-600">
+                  {normalizedPrestamoIdFilter === ""
+                    ? "No hay prestamos registrados."
+                    : `No hay prestamos para ID ${normalizedPrestamoIdFilter}.`}
+                </p>
+              ) : null}
+              {prestamosFiltrados.map((prestamo) => (
                 <div key={prestamo.prestamoId} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>

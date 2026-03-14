@@ -75,11 +75,13 @@ export function FormulariosPrestamosView({
   const ESTADO_OPTIONS: PrestamoEstadoEquipo[] = ["NUEVO", "BUENO", "REGULAR", "MALO"];
   const [tab, setTab] = useState<PrestamosTab>(canWrite ? "registrar" : "vigentes");
   const [selectedPrestamo, setSelectedPrestamo] = useState<StockDashboardData["prestamos"][number] | null>(null);
+  const [prestamoIdFilter, setPrestamoIdFilter] = useState("");
   const [returnDateByPrestamo, setReturnDateByPrestamo] = useState<Record<string, string>>({});
   const [returnItemsByPrestamo, setReturnItemsByPrestamo] = useState<
     Record<string, Record<string, { estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion: string }>>
   >({});
   const prestamos = useMemo(() => data?.prestamos ?? [], [data]);
+  const normalizedPrestamoIdFilter = prestamoIdFilter.trim();
 
   const getReturnDate = (prestamoId: string) => {
     const saved = returnDateByPrestamo[prestamoId];
@@ -131,6 +133,14 @@ export function FormulariosPrestamosView({
     () => prestamos.filter((prestamo) => prestamo.estado === "PENDIENTE"),
     [prestamos],
   );
+  const prestamosVigentesFiltrados = useMemo(() => {
+    if (normalizedPrestamoIdFilter === "") return prestamosVigentes;
+    return prestamosVigentes.filter((prestamo) => prestamo.prestamoId.includes(normalizedPrestamoIdFilter));
+  }, [prestamosVigentes, normalizedPrestamoIdFilter]);
+  const prestamosFiltrados = useMemo(() => {
+    if (normalizedPrestamoIdFilter === "") return prestamos;
+    return prestamos.filter((prestamo) => prestamo.prestamoId.includes(normalizedPrestamoIdFilter));
+  }, [prestamos, normalizedPrestamoIdFilter]);
 
   function renderPrestamoList(items: StockDashboardData["prestamos"], emptyMessage: string, showReturnAction: boolean) {
     return (
@@ -222,14 +232,27 @@ export function FormulariosPrestamosView({
             <h2 className="text-base font-semibold text-stone-900">Prestamos</h2>
             <p className="mt-1 text-xs text-stone-600">Registro, vigentes e historial en un solo modulo.</p>
           </div>
-          <button
-            type="button"
-            onClick={onReload}
-            disabled={loading}
-            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
-          >
-            {loading ? <LoadingInline label="Recargando..." size="xs" textClassName="text-xs font-semibold text-stone-700" /> : "Recargar"}
-          </button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
+            <label className="w-full text-xs text-stone-700 sm:w-64">
+              Buscar hoja por ID
+              <input
+                type="text"
+                inputMode="numeric"
+                value={prestamoIdFilter}
+                onChange={(event) => setPrestamoIdFilter(event.target.value)}
+                placeholder="Ej: 145"
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={onReload}
+              disabled={loading}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+            >
+              {loading ? <LoadingInline label="Recargando..." size="xs" textClassName="text-xs font-semibold text-stone-700" /> : "Recargar"}
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -436,7 +459,13 @@ export function FormulariosPrestamosView({
         <article className="ej-card rounded-2xl p-4">
           <h3 className="text-sm font-semibold text-stone-900">Prestamos vigentes</h3>
           <div className="mt-3">
-            {renderPrestamoList(prestamosVigentes, "No hay prestamos vigentes.", true)}
+            {renderPrestamoList(
+              prestamosVigentesFiltrados,
+              normalizedPrestamoIdFilter === ""
+                ? "No hay prestamos vigentes."
+                : `No hay prestamos vigentes para ID ${normalizedPrestamoIdFilter}.`,
+              true,
+            )}
           </div>
         </article>
       ) : null}
@@ -445,7 +474,13 @@ export function FormulariosPrestamosView({
         <article className="ej-card rounded-2xl p-4">
           <h3 className="text-sm font-semibold text-stone-900">Historial (todos los prestamos)</h3>
           <div className="mt-3">
-            {renderPrestamoList(prestamos, "No hay prestamos registrados.", false)}
+            {renderPrestamoList(
+              prestamosFiltrados,
+              normalizedPrestamoIdFilter === ""
+                ? "No hay prestamos registrados."
+                : `No hay prestamos para ID ${normalizedPrestamoIdFilter}.`,
+              false,
+            )}
           </div>
         </article>
       ) : null}

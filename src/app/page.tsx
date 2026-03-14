@@ -20,6 +20,7 @@ import {
 } from "@/lib/tallas";
 import { DashboardHero } from "./components/home/DashboardHero";
 import { MainNavigation } from "./components/home/MainNavigation";
+import { AppInstallCard } from "./components/pwa/AppInstallCard";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
 import { MergeEquipoModal } from "./components/modals/MergeEquipoModal";
 import { PersonalSection } from "./components/personal/PersonalSection";
@@ -153,9 +154,14 @@ type StockLoadProfile = {
   };
 };
 
+const STATUS_VERIFYING_SESSION = "Verificando sesion...";
+const STATUS_STARTING_SESSION = "Iniciando sesion...";
+const STATUS_ENTER_CREDENTIALS = "Ingresa tus credenciales.";
+const STATUS_SESSION_CLOSED = "Sesion cerrada. Ingresa tus credenciales.";
+
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
-  const [status, setStatus] = useState("Verificando sesión...");
+  const [status, setStatus] = useState(STATUS_VERIFYING_SESSION);
   const {
     loading,
     initMessage,
@@ -619,10 +625,10 @@ export default function Home() {
     const normalized = status.toLowerCase();
     const shouldIgnore =
       status === "Datos actualizados." ||
-      status === "Verificando sesión..." ||
-      status === "Iniciando sesión..." ||
-      status === "Ingresa tus credenciales." ||
-      status === "Sesión cerrada. Ingresa tus credenciales." ||
+      status === STATUS_VERIFYING_SESSION ||
+      status === STATUS_STARTING_SESSION ||
+      status === STATUS_ENTER_CREDENTIALS ||
+      status === STATUS_SESSION_CLOSED ||
       normalized.startsWith("actualizando ") ||
       normalized.startsWith("guardando ");
 
@@ -2407,7 +2413,7 @@ export default function Home() {
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       setLoginLoading(true);
-      setStatus("Iniciando sesión...");
+      setStatus(STATUS_STARTING_SESSION);
 
       try {
         await loginHandler(loginUsername, loginPassword, {
@@ -2466,7 +2472,7 @@ export default function Home() {
           clearLoadedData();
           setLoginPassword("");
           setActiveView("personal");
-          setStatus("Sesión cerrada. Ingresa tus credenciales.");
+          setStatus(STATUS_SESSION_CLOSED);
         },
       });
     } catch {
@@ -2475,7 +2481,7 @@ export default function Home() {
       clearLoadedData();
       setLoginPassword("");
       setActiveView("personal");
-      setStatus("Sesión cerrada. Ingresa tus credenciales.");
+      setStatus(STATUS_SESSION_CLOSED);
     }
   }, [clearLoadedData, setCurrentUser]);
 
@@ -3214,6 +3220,8 @@ export default function Home() {
         }}
         onLogout={() => void logout()}
       />
+
+      <AppInstallCard />
 
       <MainNavigation
         activeView={activeView}
