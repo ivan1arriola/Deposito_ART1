@@ -272,7 +272,7 @@ function menuContainerClass(isOpen: boolean) {
 }
 
 function menuPanelClass(desktopWidthClass: string) {
-  return `absolute left-0 right-0 top-full z-30 mt-2 rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:left-auto sm:right-0 ${desktopWidthClass}`;
+  return `absolute left-0 right-auto top-full z-30 mt-2 rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:left-0 sm:right-auto ${desktopWidthClass}`;
 }
 
 export function MainNavigation({
