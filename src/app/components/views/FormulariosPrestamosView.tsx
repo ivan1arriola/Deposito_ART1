@@ -232,27 +232,14 @@ export function FormulariosPrestamosView({
             <h2 className="text-base font-semibold text-stone-900">Prestamos</h2>
             <p className="mt-1 text-xs text-stone-600">Registro, vigentes e historial en un solo modulo.</p>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
-            <label className="w-full text-xs text-stone-700 sm:w-64">
-              Buscar hoja por ID
-              <input
-                type="text"
-                inputMode="numeric"
-                value={prestamoIdFilter}
-                onChange={(event) => setPrestamoIdFilter(event.target.value)}
-                placeholder="Ej: 145"
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={onReload}
-              disabled={loading}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
-            >
-              {loading ? <LoadingInline label="Recargando..." size="xs" textClassName="text-xs font-semibold text-stone-700" /> : "Recargar"}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onReload}
+            disabled={loading}
+            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+          >
+            {loading ? <LoadingInline label="Recargando..." size="xs" textClassName="text-xs font-semibold text-stone-700" /> : "Recargar"}
+          </button>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -283,6 +270,23 @@ export function FormulariosPrestamosView({
       </article>
 
       {error ? <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
+
+      {tab === "vigentes" || tab === "historial" ? (
+        <article className="ej-card rounded-2xl p-4">
+          <h3 className="text-sm font-semibold text-stone-900">Buscar hoja por ID</h3>
+          <label className="mt-3 block text-xs text-stone-700">
+            ID de prestamo
+            <input
+              type="text"
+              inputMode="numeric"
+              value={prestamoIdFilter}
+              onChange={(event) => setPrestamoIdFilter(event.target.value)}
+              placeholder="Ej: 145"
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+          </label>
+        </article>
+      ) : null}
 
       {tab === "registrar" ? (
         canWrite ? (

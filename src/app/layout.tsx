@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Deposito ART1",
-  description: "Sistema de gestión de depósito general del Grupo de Artillería 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
+  description: "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
   manifest: "/manifest.webmanifest",
   applicationName: "Deposito ART1",
   appleWebApp: {
@@ -30,14 +30,16 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/assets/logo-deposito.png", sizes: "512x512", type: "image/png" },
-      { url: "/assets/logo-deposito.png", sizes: "192x192", type: "image/png" },
+      { url: "/pwa-icons/android/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/pwa-icons/android/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/pwa-icons/android/icon-512-maskable.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/assets/logo-deposito.png", sizes: "180x180", type: "image/png" }],
+    apple: [{ url: "/pwa-icons/ios/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: [{ url: "/pwa-icons/android/icon-192.png", sizes: "192x192", type: "image/png" }],
   },
   openGraph: {
     title: "Deposito ART1",
-    description: "Sistema de gestión de depósito general del Grupo de Artillería 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
+    description: "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
     type: "website",
     locale: "es_UY",
     siteName: "Deposito ART1",
@@ -45,7 +47,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "Deposito ART1",
-    description: "Sistema de gestión de depósito general del Grupo de Artillería 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
+    description: "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
   },
 };
 
@@ -60,9 +62,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
           <PwaBootstrap />
           {children}
