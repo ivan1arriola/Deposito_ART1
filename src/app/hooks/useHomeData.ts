@@ -91,14 +91,23 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
   }, []);
 
   const loadData = useCallback(
-    async (showSpinner = false) => {
+    async (showSpinner = false, forceCacheReload = false) => {
       if (showSpinner) setLoading(true);
+      const requestInit: RequestInit | undefined = forceCacheReload
+        ? {
+            cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache",
+              Pragma: "no-cache",
+            },
+          }
+        : undefined;
 
       try {
-        const me = await api<{ user: CurrentUser }>("/api/auth/me");
+        const me = await api<{ user: CurrentUser }>("/api/auth/me", requestInit);
         setCurrentUser(me.user);
 
-        await api<DbStatus>("/api/db-status");
+        await api<DbStatus>("/api/db-status", requestInit);
 
         const [
           rangosData,
@@ -110,14 +119,14 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
           oficialesSuboficialesData,
           movimientosSummary,
         ] = await Promise.all([
-          api<Rango[]>("/api/rangos"),
-          api<Rango[]>("/api/rangos?tipo=OFICIAL"),
-          api<Rango[]>("/api/rangos?tipo=SUBOFICIAL"),
-          api<Bateria[]>("/api/baterias"),
-          api<Equipo[]>("/api/items"),
-          api<Personal[]>("/api/personal"),
-          api<OficialSuboficial[]>("/api/oficiales-suboficiales"),
-          api<{ total: number }>("/api/registros?summary=1").catch(() => ({ total: 0 })),
+          api<Rango[]>("/api/rangos", requestInit),
+          api<Rango[]>("/api/rangos?tipo=OFICIAL", requestInit),
+          api<Rango[]>("/api/rangos?tipo=SUBOFICIAL", requestInit),
+          api<Bateria[]>("/api/baterias", requestInit),
+          api<Equipo[]>("/api/items", requestInit),
+          api<Personal[]>("/api/personal", requestInit),
+          api<OficialSuboficial[]>("/api/oficiales-suboficiales", requestInit),
+          api<{ total: number }>("/api/registros?summary=1", requestInit).catch(() => ({ total: 0 })),
         ]);
 
         setRangos(rangosData);
@@ -132,9 +141,9 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
         if (me.user.rol === "ADMIN") {
           setFirmaConfigLoading(true);
           const [usuariosData, auditoriaData, firmaConfigResult] = await Promise.all([
-            api<UsuarioAdmin[]>("/api/usuarios"),
-            api<AuditoriaRecord[]>("/api/auditoria?limit=200"),
-            api<FirmaConfig>("/api/firma-config")
+            api<UsuarioAdmin[]>("/api/usuarios", requestInit),
+            api<AuditoriaRecord[]>("/api/auditoria?limit=200", requestInit),
+            api<FirmaConfig>("/api/firma-config", requestInit)
               .then((config) => ({ config, error: null as string | null }))
               .catch((error: unknown) => ({
                 config: null,

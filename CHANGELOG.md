@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-03-15
+
+### Changed
+- Bumped the application version from `1.3.2` to `2.0.0`.
+
 ## [1.3.2] - 2026-03-14
 
 ### Added

@@ -8,6 +8,7 @@ export type MainView =
   | "personal"
   | "oficiales"
   | "suboficiales"
+  | "oficiales_suboficiales_resumen"
   | "personal_nuevo"
   | "oficial_nuevo"
   | "suboficial_nuevo"

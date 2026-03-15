@@ -37,6 +37,7 @@ import { RangoCreateView } from "./components/views/RangoCreateView";
 import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
 import { OficialesSuboficialesView } from "./components/views/OficialesSuboficialesView";
+import { OficialesSuboficialesResumenView } from "./components/views/OficialesSuboficialesResumenView";
 import { UserCreateView } from "./components/views/UserCreateView";
 import { SmallActionButton, ActionMenu, LoadingOverlay, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
@@ -3428,7 +3429,7 @@ export default function Home() {
         equiposRegistradosCount={equipos.length}
         movimientosTotal={movimientosTotal}
         roleLabel={roleLabel}
-        onReload={() => void loadData(true)}
+        onReload={() => void loadData(true, true)}
         onEditOwnUser={changeOwnUsername}
         onChangePassword={() => {
           setChangeCurrentPassword("");
@@ -3797,6 +3798,14 @@ export default function Home() {
           viewType="SUBOFICIAL"
           onOpenCreate={() => openOficialSuboficialCreate("SUBOFICIAL")}
           onStartEdit={startEditOficialSuboficial}
+          onReload={() => loadData(true)}
+        />
+      ) : null}
+
+      {activeView === "oficiales_suboficiales_resumen" ? (
+        <OficialesSuboficialesResumenView
+          oficialesSuboficiales={oficialesSuboficiales}
+          loading={loading}
           onReload={() => loadData(true)}
         />
       ) : null}

@@ -243,7 +243,7 @@ export function PersonalView({
           <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-600">
             <tr>
               <th className="w-[11%] px-3 py-2">CI</th>
-              <th className="w-[15%] px-3 py-2">Grado (subalterno)</th>
+              <th className="w-[15%] px-3 py-2">Grado</th>
               <th className="w-[18%] px-3 py-2">Apellidos</th>
               <th className="w-[18%] px-3 py-2">Nombres</th>
               <th className="w-[13%] px-3 py-2">Batería</th>
