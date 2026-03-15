@@ -3708,81 +3708,73 @@ export default function Home() {
       ) : null}
 
       {activeView === "personal" ? (
-        <>
-          <PersonalSection
-            loading={loading}
-            personal={personal}
-            personalFiltrado={personalFiltrado}
-            personalFiltradoPaginado={personalFiltradoPaginado}
-            baterias={baterias}
-            rangos={rangos}
-            canWrite={canWrite}
-            isAdmin={isAdmin}
-            searchCedula={searchCedula}
-            searchApellidos={searchApellidos}
-            searchNombres={searchNombres}
-            bateriaFilter={bateriaFilter}
-            hasPersonalFilters={hasPersonalFilters}
-            personalPage={personalPage}
-            personalPageSize={personalPageSize}
-            expandedTallasByCi={expandedTallasByCi}
-            editPersonalCi={editPersonalCi}
-            editPersonal={editPersonal}
-            tallaOptionsByKey={tallaOptionsByKey}
-            maxFechaIngreso={maxFechaIngreso}
-            onSearchCedulaChange={setSearchCedula}
-            onSearchApellidosChange={setSearchApellidos}
-            onSearchNombresChange={setSearchNombres}
-            onBateriaFilterChange={setBateriaFilter}
-            onClearFilters={() => {
-              setSearchCedula("");
-              setSearchNombres("");
-              setSearchApellidos("");
-              setBateriaFilter("ALL");
-            }}
-            onPersonalPageChange={setPersonalPage}
-            onPersonalPageSizeChange={setPersonalPageSize}
-            onPrintAllDeliverySheets={printAllDeliverySheets}
-            onPrintPersonnelByBattery={printPersonnelByBattery}
-            onOpenMassEntrega={() => openMassRegistro("ENTREGA")}
-            onOpenCreate={() => setActiveView("personal_nuevo")}
-            onToggleTallas={toggleTallas}
-            onDeletePersonal={(ci) => void deletePersonal(ci)}
-            onOpenRegistro={(ci, tipo) => openRegistro(ci, tipo)}
-            onOpenPersonalObservacion={(persona) => void openPersonalObservacion(persona)}
-            onOpenRegistroViewer={(persona) => void openRegistroViewer(persona)}
-            onOpenDeliverySheet={(ci) => {
-              setActiveView("hoja-de-entrega");
-              setFichaViewingCi(ci);
-            }}
-            onStartEditPersonal={startEditPersonal}
-            onCancelEditPersonal={() => {
-              setEditPersonalCi(null);
-              setEditPersonal(EMPTY_PERSONAL_FORM);
-            }}
-            onEditPersonalChange={(field, value) =>
-              setEditPersonal((prev) => {
-                const next = { ...prev, [field]: value } as PersonalForm;
-                if (field === "esReingreso" && value === false) {
-                  next.fechaIngresoOriginal = "";
-                }
-                return next;
-              })}
-            onSaveEditPersonal={(ci) => void updatePersonal(ci)}
-            canPromoteEditPersonalToSuboficial={canPromoteEditPersonalToSuboficial}
-            promoteEditPersonalBusy={promotingSubalternoCi !== null}
-            onPromoteEditPersonalToSuboficial={(ci, adminPassword) =>
-              void promoteSargentoToSuboficial(ci, adminPassword)
-            }
-            onPrintAscensoDeliverySheet={openAscensoDeliverySheet}
-          />
-          <TallasResumenView
-            personal={personal}
-            baterias={baterias}
-            oficialesSuboficiales={oficialesSuboficiales}
-            showOficialesSuboficialesResumen={false}
-          />
-        </>
+        <PersonalSection
+          loading={loading}
+          personal={personal}
+          personalFiltrado={personalFiltrado}
+          personalFiltradoPaginado={personalFiltradoPaginado}
+          baterias={baterias}
+          rangos={rangos}
+          canWrite={canWrite}
+          isAdmin={isAdmin}
+          searchCedula={searchCedula}
+          searchApellidos={searchApellidos}
+          searchNombres={searchNombres}
+          bateriaFilter={bateriaFilter}
+          hasPersonalFilters={hasPersonalFilters}
+          personalPage={personalPage}
+          personalPageSize={personalPageSize}
+          expandedTallasByCi={expandedTallasByCi}
+          editPersonalCi={editPersonalCi}
+          editPersonal={editPersonal}
+          tallaOptionsByKey={tallaOptionsByKey}
+          maxFechaIngreso={maxFechaIngreso}
+          onSearchCedulaChange={setSearchCedula}
+          onSearchApellidosChange={setSearchApellidos}
+          onSearchNombresChange={setSearchNombres}
+          onBateriaFilterChange={setBateriaFilter}
+          onClearFilters={() => {
+            setSearchCedula("");
+            setSearchNombres("");
+            setSearchApellidos("");
+            setBateriaFilter("ALL");
+          }}
+          onPersonalPageChange={setPersonalPage}
+          onPersonalPageSizeChange={setPersonalPageSize}
+          onPrintAllDeliverySheets={printAllDeliverySheets}
+          onPrintPersonnelByBattery={printPersonnelByBattery}
+          onOpenMassEntrega={() => openMassRegistro("ENTREGA")}
+          onOpenCreate={() => setActiveView("personal_nuevo")}
+          onToggleTallas={toggleTallas}
+          onDeletePersonal={(ci) => void deletePersonal(ci)}
+          onOpenRegistro={(ci, tipo) => openRegistro(ci, tipo)}
+          onOpenPersonalObservacion={(persona) => void openPersonalObservacion(persona)}
+          onOpenRegistroViewer={(persona) => void openRegistroViewer(persona)}
+          onOpenDeliverySheet={(ci) => {
+            setActiveView("hoja-de-entrega");
+            setFichaViewingCi(ci);
+          }}
+          onStartEditPersonal={startEditPersonal}
+          onCancelEditPersonal={() => {
+            setEditPersonalCi(null);
+            setEditPersonal(EMPTY_PERSONAL_FORM);
+          }}
+          onEditPersonalChange={(field, value) =>
+            setEditPersonal((prev) => {
+              const next = { ...prev, [field]: value } as PersonalForm;
+              if (field === "esReingreso" && value === false) {
+                next.fechaIngresoOriginal = "";
+              }
+              return next;
+            })}
+          onSaveEditPersonal={(ci) => void updatePersonal(ci)}
+          canPromoteEditPersonalToSuboficial={canPromoteEditPersonalToSuboficial}
+          promoteEditPersonalBusy={promotingSubalternoCi !== null}
+          onPromoteEditPersonalToSuboficial={(ci, adminPassword) =>
+            void promoteSargentoToSuboficial(ci, adminPassword)
+          }
+          onPrintAscensoDeliverySheet={openAscensoDeliverySheet}
+        />
       ) : null}
 
       {activeView === "oficiales" ? (
@@ -3909,6 +3901,10 @@ export default function Home() {
           onDeletePrestamo={(prestamoId) => void deletePrestamo(prestamoId)}
           onReload={() => void reloadActiveStockData()}
         />
+      ) : null}
+
+      {activeView === "tallas_resumen" ? (
+        <TallasResumenView personal={personal} baterias={baterias} oficialesSuboficiales={oficialesSuboficiales} />
       ) : null}
 
       <MergeEquipoModal
