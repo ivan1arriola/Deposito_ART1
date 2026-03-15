@@ -129,7 +129,7 @@ export function SoldadoRecordatorioWidget({
           ) : null}
         </button>
 
-        {!open ? (
+        {!open && (urgentCount > 0 || pendingTasks.length > 0) ? (
           <button
             type="button"
             onClick={() => setOpen(true)}
