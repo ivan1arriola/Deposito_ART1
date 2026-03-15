@@ -127,6 +127,24 @@ export async function toggleUserActiveHandler(
   }
 }
 
+export async function confirmUserEmailHandler(
+  usuarioId: string,
+  callbacks: CallbackProps,
+) {
+  try {
+    await api(`/api/usuarios/${usuarioId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmarMail: true }),
+    });
+    callbacks.onSuccess?.();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo confirmar el correo.";
+    callbacks.onError?.(message);
+    throw error;
+  }
+}
+
 export async function deleteUsuarioHandler(
   usuarioId: string,
   callbacks: CallbackProps,

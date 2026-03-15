@@ -14,6 +14,7 @@ type UsuarioUpdatePayload = {
   apellido?: string;
   usuario?: string;
   mailReferencia?: string | null;
+  confirmarMail?: boolean;
   password?: string;
   rol?: UserRole;
   activo?: boolean;
@@ -111,9 +112,9 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });
   }
 
-  if (!isAdmin && (body.rol !== undefined || body.activo !== undefined || body.password !== undefined)) {
+  if (!isAdmin && (body.rol !== undefined || body.activo !== undefined || body.password !== undefined || body.confirmarMail !== undefined)) {
     return NextResponse.json(
-      { error: "Solo el administrador puede cambiar rol, estado o contraseñas ajenas." },
+      { error: "Solo el administrador puede cambiar rol, estado, contraseñas ajenas o verificar correos." },
       { status: 403 },
     );
   }
@@ -184,6 +185,20 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       data.mailVerificadaAt = null;
       shouldSendVerification = nextMail !== null;
     }
+  }
+
+  if (body.confirmarMail !== undefined) {
+    if (typeof body.confirmarMail !== "boolean") {
+      return NextResponse.json({ error: "Accion de verificacion invalida." }, { status: 400 });
+    }
+
+    const effectiveMail = data.mailReferencia !== undefined ? data.mailReferencia : existing.mailReferencia;
+    if (!effectiveMail) {
+      return NextResponse.json({ error: "El usuario no tiene mail de referencia." }, { status: 400 });
+    }
+
+    data.mailVerificadaAt = body.confirmarMail ? new Date() : null;
+    if (body.confirmarMail) shouldSendVerification = false;
   }
 
   if (body.password !== undefined) {

@@ -12,9 +12,15 @@ interface TallasResumenViewProps {
   personal: Personal[];
   baterias: Bateria[];
   oficialesSuboficiales: OficialSuboficial[];
+  showOficialesSuboficialesResumen?: boolean;
 }
 
-export function TallasResumenView({ personal, baterias, oficialesSuboficiales }: TallasResumenViewProps) {
+export function TallasResumenView({
+  personal,
+  baterias,
+  oficialesSuboficiales,
+  showOficialesSuboficialesResumen = true,
+}: TallasResumenViewProps) {
   const buildTallasResumen = (personas: Personal[]) =>
     TALLA_KEYS.map((key) => {
       const counter = new Map<string, number>();
@@ -400,45 +406,47 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales }:
         "Resumen de tallas de subalternos por batería",
         "Cantidades absolutas por prenda y batería para subalternos. Incluye el grupo Sin batería cuando corresponde."
       )}
-      <article className="ej-card rounded-2xl p-4">
-        <div className="mb-4">
-          <h2 className="text-base font-semibold text-stone-900">Resumen de tallas de oficiales y suboficiales</h2>
-          <p className="mt-1 text-xs text-stone-600">Cantidades por talla en ambos grupos.</p>
-        </div>
-        <div className="space-y-4">
-          {resumenOficialesSuboficiales.map((section) => (
-            <article key={`resumen-ssoo-${section.key}`} className="rounded-xl border border-stone-200 bg-white p-3">
-              <h3 className="text-sm font-semibold text-stone-900">{section.label}</h3>
-              {section.rows.length === 0 ? (
-                <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">Sin datos.</p>
-              ) : (
-                <div className="mt-2 overflow-auto rounded-lg border border-stone-200">
-                  <table className="w-full border-collapse text-left text-xs">
-                    <thead>
-                      <tr className="bg-stone-100">
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Oficiales</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Suboficiales</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {section.rows.map((row, rowIndex) => (
-                        <tr key={`${section.key}-${row.talla}`} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.talla}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.oficiales}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.suboficiales}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.total}</td>
+      {showOficialesSuboficialesResumen ? (
+        <article className="ej-card rounded-2xl p-4">
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-stone-900">Resumen de tallas de oficiales y suboficiales</h2>
+            <p className="mt-1 text-xs text-stone-600">Cantidades por talla en ambos grupos.</p>
+          </div>
+          <div className="space-y-4">
+            {resumenOficialesSuboficiales.map((section) => (
+              <article key={`resumen-ssoo-${section.key}`} className="rounded-xl border border-stone-200 bg-white p-3">
+                <h3 className="text-sm font-semibold text-stone-900">{section.label}</h3>
+                {section.rows.length === 0 ? (
+                  <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">Sin datos.</p>
+                ) : (
+                  <div className="mt-2 overflow-auto rounded-lg border border-stone-200">
+                    <table className="w-full border-collapse text-left text-xs">
+                      <thead>
+                        <tr className="bg-stone-100">
+                          <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
+                          <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Oficiales</th>
+                          <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Suboficiales</th>
+                          <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Total</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </article>
-          ))}
-        </div>
-      </article>
+                      </thead>
+                      <tbody>
+                        {section.rows.map((row, rowIndex) => (
+                          <tr key={`${section.key}-${row.talla}`} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
+                            <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.talla}</td>
+                            <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.oficiales}</td>
+                            <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.suboficiales}</td>
+                            <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.total}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </article>
+      ) : null}
     </section>
   );
 }

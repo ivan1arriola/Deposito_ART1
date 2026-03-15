@@ -74,10 +74,10 @@ function AscensoSargentoPanel({ ci, busy, onContinue, onPrintDeliverySheet }: As
     <section className="mt-4 rounded-xl border border-amber-300 bg-amber-50/80 p-3">
       <h4 className="text-sm font-semibold text-amber-900">Ascenso a Sargento Primero</h4>
       <p className="mt-1 text-xs text-amber-900/90">
-        La impresiÃƒÆ’Ã‚Â³n de hoja es opcional antes del ascenso.
+        La impresion de hoja es opcional antes del ascenso.
       </p>
       <p className="mt-1 text-xs font-semibold text-amber-950">
-        Importante: cuando el ascenso finalice, ya no podrÃƒÆ’Ã‚¡s imprimir esta hoja previa.
+        Importante: cuando el ascenso finalice, ya no podras imprimir esta hoja previa.
       </p>
       <form
         className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]"
@@ -93,7 +93,7 @@ function AscensoSargentoPanel({ ci, busy, onContinue, onPrintDeliverySheet }: As
           type="password"
           value={adminPassword}
           onChange={(event) => setAdminPassword(event.target.value)}
-          placeholder="Contraseña de administrador"
+          placeholder="Contrasena de administrador"
           className="w-full rounded-lg border border-amber-400 px-3 py-2 text-sm"
           disabled={busy}
           required
@@ -238,7 +238,7 @@ export function PersonalSection({
             disabled={loading || personal.length === 0}
             className="h-11 w-full rounded-xl bg-sky-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Imprimir lista de subalternos por baterÃƒÆ’Ã‚Â­a
+            Imprimir lista de subalternos por bateria
           </button>
           <button
             type="button"

@@ -40,17 +40,15 @@ export function OficialesSuboficialesView({
   const tallasResumen = useMemo(
     () =>
       TALLA_KEYS.map((key) => {
-        const oficialesCounter = new Map<string, number>();
-        const suboficialesCounter = new Map<string, number>();
+        const counter = new Map<string, number>();
 
-        for (const registro of oficialesSuboficiales) {
+        for (const registro of registros) {
           const talles = tallasMap(registro.tallas);
           const value = talles[key] && talles[key] !== "-" ? talles[key] : "Sin dato";
-          const counter = registro.tipo === "OFICIAL" ? oficialesCounter : suboficialesCounter;
           counter.set(value, (counter.get(value) ?? 0) + 1);
         }
 
-        const tallas = Array.from(new Set([...oficialesCounter.keys(), ...suboficialesCounter.keys()])).sort((a, b) => {
+        const tallas = Array.from(counter.keys()).sort((a, b) => {
           if (a === "Sin dato") return 1;
           if (b === "Sin dato") return -1;
           return a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
@@ -59,19 +57,10 @@ export function OficialesSuboficialesView({
         return {
           key,
           label: TALLA_LABELS[key],
-          rows: tallas.map((talla) => {
-            const oficiales = oficialesCounter.get(talla) ?? 0;
-            const suboficiales = suboficialesCounter.get(talla) ?? 0;
-            return {
-              talla,
-              oficiales,
-              suboficiales,
-              total: oficiales + suboficiales,
-            };
-          }),
+          rows: tallas.map((talla) => ({ talla, cantidad: counter.get(talla) ?? 0 })),
         };
       }),
-    [oficialesSuboficiales],
+    [registros],
   );
 
   const createLabel = viewType === "OFICIAL" ? "Registrar oficial" : "Registrar suboficial";
@@ -224,8 +213,8 @@ export function OficialesSuboficialesView({
 
       <article className="ej-card rounded-2xl p-4">
         <div className="mb-3">
-          <h3 className="text-sm font-semibold text-stone-900">Resumen de talles de oficiales y suboficiales</h3>
-          <p className="mt-1 text-xs text-stone-600">Tabla consolidada por prenda y talla para ambos grupos.</p>
+          <h3 className="text-sm font-semibold text-stone-900">{`Resumen de talles de ${TYPE_LABEL[viewType].toLowerCase()}`}</h3>
+          <p className="mt-1 text-xs text-stone-600">Tabla por prenda y talla para el tipo de personal seleccionado.</p>
         </div>
         <div className="space-y-4">
           {tallasResumen.map((section) => (
@@ -239,18 +228,14 @@ export function OficialesSuboficialesView({
                     <thead>
                       <tr className="bg-stone-100">
                         <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Oficiales</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Suboficiales</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Total</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Cantidad</th>
                       </tr>
                     </thead>
                     <tbody>
                       {section.rows.map((row, index) => (
                         <tr key={`${section.key}-${row.talla}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
                           <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.talla}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.oficiales}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.suboficiales}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.total}</td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.cantidad}</td>
                         </tr>
                       ))}
                     </tbody>

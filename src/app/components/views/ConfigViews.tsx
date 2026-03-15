@@ -142,6 +142,7 @@ interface ConfigViewsProps {
   onEditUsuario: (usuario: UsuarioAdmin) => void;
   onChangeUserRole: (usuario: UsuarioAdmin) => void;
   onChangeUserPassword: (usuario: UsuarioAdmin) => void;
+  onConfirmUserEmail: (usuario: UsuarioAdmin) => void;
   onToggleUserActive: (usuario: UsuarioAdmin) => void;
   onDeleteUsuario: (usuario: UsuarioAdmin) => void;
   // Firma config callbacks
@@ -836,6 +837,13 @@ export function ConfigViews(props: ConfigViewsProps) {
                       tone="edit"
                       onClick={() => props.onChangeUserPassword(usuario)}
                     />
+                    {usuario.mailReferencia && !usuario.mailVerificadaAt ? (
+                      <SmallActionButton
+                        text="Confirmar correo"
+                        tone="ok"
+                        onClick={() => props.onConfirmUserEmail(usuario)}
+                      />
+                    ) : null}
                     <SmallActionButton
                       text={usuario.activo ? "Desactivar" : "Activar"}
                       tone="neutral"
