@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2026-03-14
+
+### Added
+- Added admin web push notification flow with public key endpoint and subscription management API.
+- Added schema support for push subscriptions in the database setup scripts.
+
+### Changed
+- Improved ascenso workflow reliability and related API behavior.
+- Updated app manifest and icon handling for better client-side refresh consistency.
+
+### Fixed
+- Fixed intermittent database-related runtime failures across API routes and auth checks.
+- Fixed edge cases in notification subscription persistence.
+
 ## [1.0.0] - 2026-03-01
 
 ### Added

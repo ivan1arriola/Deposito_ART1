@@ -6,7 +6,7 @@ Construido con Next.js, Prisma y PostgreSQL.
 ## Estado del Proyecto
 
 - Nombre del paquete: `deposito-art1`
-- Version actual: `1.3.1`
+- Version actual: `1.3.2`
 - Licencia del proyecto: `Apache-2.0`
 
 ## Stack Tecnologico
