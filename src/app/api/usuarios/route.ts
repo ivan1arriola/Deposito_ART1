@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest, hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
+import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
+import { sendEmailVerificationMagicLinkEmail } from "@/lib/auth-email";
+import { ensurePasswordResetCompatibility } from "@/lib/password-reset";
 
 type UsuarioPayload = {
   rangoId: number | string;
@@ -56,6 +59,7 @@ const USUARIO_SELECT = {
   apellido: true,
   username: true,
   mailReferencia: true,
+  mailVerificadaAt: true,
   rol: true,
   activo: true,
   createdAt: true,
@@ -74,6 +78,7 @@ function serializeUsuario(usuario: UsuarioRecord) {
     apellido: usuario.apellido,
     username: usuario.username,
     mailReferencia: usuario.mailReferencia,
+    mailVerificadaAt: usuario.mailVerificadaAt ? formatDateTimeForDisplay(usuario.mailVerificadaAt) : null,
     rol: usuario.rol,
     activo: usuario.activo,
     createdAt: formatDateTimeForDisplay(usuario.createdAt),
@@ -84,6 +89,7 @@ function serializeUsuario(usuario: UsuarioRecord) {
 export async function GET(request: Request) {
   const auth = await authorizeRequest(request, "manage_users");
   if (!auth.ok) return auth.response;
+  await ensurePasswordResetCompatibility();
 
   const usuarios = await prisma.usuario.findMany({
     orderBy: [{ apellido: "asc" }, { nombre: "asc" }, { username: "asc" }],
@@ -96,11 +102,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await authorizeRequest(request, "manage_users");
   if (!auth.ok) return auth.response;
+  await ensurePasswordResetCompatibility();
 
   const body = await request.json();
   if (!isValidPayload(body)) {
     return NextResponse.json(
-      { error: "Payload invalido. Grado, nombre, apellido, usuario y contrasena (min 8 caracteres) son obligatorios." },
+      { error: "Payload inválido. Grado, nombre, apellido, usuario y contraseña (mín. 8 caracteres) son obligatorios." },
       { status: 400 },
     );
   }
@@ -119,6 +126,10 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await hashPassword(body.password);
+  const normalizedMail = body.mailReferencia?.trim() ? normalizeEmailAddress(body.mailReferencia) : null;
+  if (normalizedMail && !isValidEmailAddress(normalizedMail)) {
+    return NextResponse.json({ error: "Mail de referencia invalido." }, { status: 400 });
+  }
 
   try {
     const created = await prisma.usuario.create({
@@ -128,12 +139,28 @@ export async function POST(request: Request) {
         apellido: body.apellido.trim(),
         username: body.usuario.trim(),
         passwordHash,
-        mailReferencia: body.mailReferencia?.trim() ? body.mailReferencia.trim() : null,
+        mailReferencia: normalizedMail,
+        mailVerificadaAt: null,
         rol: roleFromValue(body.rol),
         activo: body.activo === undefined ? true : Boolean(body.activo),
       },
       select: USUARIO_SELECT,
     });
+    let verificationEmailSent = false;
+    if (created.mailReferencia) {
+      try {
+        await sendEmailVerificationMagicLinkEmail(request, {
+          usuarioId: created.usuarioId,
+          username: created.username,
+          nombre: created.nombre,
+          apellido: created.apellido,
+          mailReferencia: created.mailReferencia,
+        });
+        verificationEmailSent = true;
+      } catch {
+        verificationEmailSent = false;
+      }
+    }
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -146,6 +173,8 @@ export async function POST(request: Request) {
         apellido: created.apellido,
         username: created.username,
         mailReferencia: created.mailReferencia,
+        mailVerificadaAt: created.mailVerificadaAt,
+        verificationEmailSent,
         rol: created.rol,
         activo: created.activo,
       },

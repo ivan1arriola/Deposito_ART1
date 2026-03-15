@@ -40,7 +40,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
       <article className="ej-card rounded-2xl p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-stone-900">Resumen de Equipo en Baterías</h2>
+            <h2 className="text-base font-semibold text-stone-900">Resumen de equipo en baterías</h2>
             <p className="mt-1 text-xs text-stone-600">
               Muestra cómo está distribuido cada equipo entre las baterías. Filas por equipo y columnas por batería, con una última columna para el total de la unidad.
             </p>
@@ -71,7 +71,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
         {!data && !loading ? <p className="mt-3 text-xs text-stone-600">Presiona Cargar resumen para ver cantidades por batería y unidad.</p> : null}
         {loading && !data ? (
           <LoadingInline
-            label="Cargando resumen de equipo en baterias..."
+            label="Cargando resumen de equipo en baterías..."
             className="mt-3"
             textClassName="text-sm font-medium text-stone-600"
           />

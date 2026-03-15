@@ -123,7 +123,15 @@ for (const filePath of listTrackedFiles()) {
     continue;
   }
 
-  const content = readFileSync(filePath);
+  let content;
+  try {
+    content = readFileSync(filePath);
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && error.code === "ENOENT") {
+      continue;
+    }
+    throw error;
+  }
 
   if (hasUtf8Bom(content)) {
     findings.push(`[BOM] ${filePath}`);

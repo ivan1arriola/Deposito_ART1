@@ -35,8 +35,8 @@ export function PersonalFilters({
   const [showMobileFilters, setShowMobileFilters] = useState(hasFilters);
   const bateriaOptions = useMemo(
     () => [
-      { value: "ALL", label: "Todas las baterias" },
-      { value: "NONE", label: "Sin bateria" },
+      { value: "ALL", label: "Todas las baterías" },
+      { value: "NONE", label: "Sin batería" },
       ...baterias.map((bateria) => ({ value: String(bateria.bateriaId), label: bateria.nombre })),
     ],
     [baterias],
@@ -55,11 +55,11 @@ export function PersonalFilters({
     <section className={`rounded-2xl border border-stone-200 bg-stone-50/80 p-3 sm:p-4 ${className ?? ""}`}>
       <div className="flex flex-col gap-3 sm:min-h-[74px] sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-stone-900">Filtros de busqueda</p>
+          <p className="text-sm font-semibold text-stone-900">Filtros de subalternos</p>
           <p className="mt-1 min-h-[20px] text-xs text-stone-600">
             {activeFilterCount > 0
               ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}`
-              : "Busca rapido por cedula, apellidos, nombres o bateria."}
+              : "Busca subalternos por cédula, apellidos, nombres o batería."}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ export function PersonalFilters({
 
       <div className={`${showMobileFilters ? "mt-3 grid" : "hidden"} grid-cols-1 gap-3 md:mt-4 md:grid md:grid-cols-3`}>
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Cedula</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Cédula</span>
           <input
             value={searchCedula}
             onChange={(event) => onSearchCedulaChange(event.target.value)}
@@ -110,7 +110,7 @@ export function PersonalFilters({
           />
         </label>
         <label className="block md:col-span-3">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Bateria</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Batería</span>
           <div className="mt-1 grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(140px,1fr))]">
             {bateriaOptions.map((option) => {
               const isActive = bateriaFilter === option.value;

@@ -354,6 +354,7 @@ CREATE TABLE "usuario" (
   "usuario" TEXT NOT NULL UNIQUE,
   "password_hash" TEXT NOT NULL,
   "mail_referencia" TEXT,
+  "mail_verificada_at" TIMESTAMPTZ(6),
   "rol" "user_role" NOT NULL DEFAULT 'EDITOR',
   "activo" BOOLEAN NOT NULL DEFAULT TRUE,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
@@ -601,6 +602,8 @@ CREATE TABLE "password_reset" (
   "reset_id" TEXT PRIMARY KEY,
   "usuario_id" TEXT NOT NULL REFERENCES "usuario"("usuario_id") ON DELETE CASCADE,
   "code_hash" TEXT NOT NULL,
+  "token_type" TEXT NOT NULL DEFAULT 'PASSWORD_RESET',
+  "mail_snapshot" TEXT,
   "expires_at" TIMESTAMPTZ(6) NOT NULL,
   "used_at" TIMESTAMPTZ(6),
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
@@ -608,6 +611,7 @@ CREATE TABLE "password_reset" (
 
 CREATE INDEX "password_reset_usuario_id_idx" ON "password_reset"("usuario_id");
 CREATE INDEX "password_reset_expires_at_idx" ON "password_reset"("expires_at");
+CREATE INDEX "password_reset_token_type_expires_at_idx" ON "password_reset"("token_type", "expires_at");
 
 CREATE TABLE "sesion" (
   "sesion_id" TEXT PRIMARY KEY,

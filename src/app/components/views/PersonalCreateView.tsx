@@ -87,7 +87,7 @@ export function PersonalCreateView({
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">Nueva vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-stone-900">Registrar personal</h2>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-stone-900">Registrar subalterno</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
                 Completa identidad, destino y tallas en una sola ficha. Al guardar, el registro queda disponible de inmediato en la vista principal.
               </p>
@@ -103,7 +103,7 @@ export function PersonalCreateView({
                 disabled={creatingPersonal}
                 className="rounded-2xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Volver a personal
+                Volver a subalternos
               </button>
             </div>
           </div>
@@ -395,7 +395,7 @@ export function PersonalCreateView({
               <article className="rounded-2xl border border-stone-200 bg-stone-950 p-4 text-white shadow-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lime-300">Alta inmediata</p>
                 <p className="mt-3 text-sm leading-6 text-white/80">
-                  Al confirmar, la ficha se incorpora al listado general y ya puede recibir movimientos de entrega o devolución.
+                  Al confirmar, la ficha se incorpora al listado de subalternos y ya puede recibir movimientos de entrega o devolución.
                 </p>
 
                 <button
@@ -403,7 +403,7 @@ export function PersonalCreateView({
                   disabled={!canSubmitPersonal}
                   className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-lime-400 px-4 py-3 text-sm font-bold text-stone-950 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-stone-700 disabled:text-stone-300"
                 >
-                  {creatingPersonal ? "Registrando..." : "Registrar personal"}
+                  {creatingPersonal ? "Registrando..." : "Registrar subalterno"}
                 </button>
               </article>
             </aside>
@@ -417,7 +417,7 @@ export function PersonalCreateView({
             <header className="space-y-1">
               <h3 className="text-xl font-semibold text-stone-900">{movimientoModalEditing ? "Rectificar movimiento" : "Agregar movimiento"}</h3>
               <p className="text-sm text-stone-600">
-                Define el movimiento y los equipos asociados. Al cerrar este modal verás el resumen en el alta de personal.
+                Define el movimiento y los equipos asociados. Al cerrar este modal verás el resumen en el alta de subalterno.
               </p>
             </header>
 

@@ -140,6 +140,7 @@ import {
 import {
   loginHandler,
   logoutHandler,
+  requestPasswordResetHandler,
   changePasswordHandler,
 } from "@/lib/handlers-auth";
 
@@ -155,8 +156,8 @@ type StockLoadProfile = {
   };
 };
 
-const STATUS_VERIFYING_SESSION = "Verificando sesion...";
-const STATUS_STARTING_SESSION = "Iniciando sesion...";
+const STATUS_VERIFYING_SESSION = "Verificando sesión...";
+const STATUS_STARTING_SESSION = "Iniciando sesión...";
 const STATUS_ENTER_CREDENTIALS = "Ingresa tus credenciales.";
 const STATUS_SESSION_CLOSED = "Sesion cerrada. Ingresa tus credenciales.";
 
@@ -218,6 +219,10 @@ export default function Home() {
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [showResetRequest, setShowResetRequest] = useState(false);
+  const [resetUsername, setResetUsername] = useState("");
+  const [resetRequestLoading, setResetRequestLoading] = useState(false);
+  const [resetRequestMessage, setResetRequestMessage] = useState("");
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [changeCurrentPassword, setChangeCurrentPassword] = useState("");
   const [changeNewPassword, setChangeNewPassword] = useState("");
@@ -1545,11 +1550,11 @@ export default function Home() {
             setNewPersonalMovimientoEditIndex(null);
             setActiveView("personal");
             setPersonalPage(1);
-            toast.success("Personal registrado correctamente", {
+            toast.success("Subalterno registrado correctamente", {
               description:
                 movimientosPayload.length > 0
                   ? `${nombreCompleto} y ${movimientosPayload.length} movimiento(s) inicial(es) fueron registrados.`
-                  : `${nombreCompleto} ya figura en el listado general y puede recibir movimientos.`,
+                  : `${nombreCompleto} ya figura en el listado de subalternos y puede recibir movimientos.`,
               duration: 5000,
             });
             await loadData();
@@ -1605,11 +1610,11 @@ export default function Home() {
         return;
       }
       if (oficialSuboficialCiAlreadyExists) {
-        setStatus("La cedula ya existe.");
+        setStatus("La cédula ya existe.");
         return;
       }
       if (!isValidUruguayanCi(newOficialSuboficial.ci)) {
-        setStatus("CI uruguaya invalida. Revisa digito verificador.");
+        setStatus("CI uruguaya inválida. Revisa dígito verificador.");
         return;
       }
       if (!newOficialSuboficialPhoneLooksValid) {
@@ -1645,8 +1650,8 @@ export default function Home() {
 
         toast.success(
           isEditing
-            ? "Personal oficial/suboficial actualizado correctamente"
-            : "Personal oficial/suboficial registrado correctamente",
+            ? "Oficial/Suboficial actualizado correctamente"
+            : "Oficial/Suboficial registrado correctamente",
           {
             description: isEditing
               ? `${nombreCompleto} fue actualizado en el listado.`
@@ -1738,7 +1743,7 @@ export default function Home() {
           onSuccess: async () => {
             setEditPersonalCi(null);
             setEditPersonal(EMPTY_PERSONAL_FORM);
-            setStatus("Personal actualizado.");
+            setStatus("Subalterno actualizado.");
             await loadData();
           },
           onError: (message) => setStatus(message),
@@ -1760,7 +1765,7 @@ export default function Home() {
 
       const trimmedPassword = adminPassword.trim();
       if (trimmedPassword === "") {
-        setStatus("Debes ingresar la contrasena del administrador para confirmar.");
+        setStatus("Debes ingresar la contraseña del administrador para confirmar.");
         return;
       }
 
@@ -1801,7 +1806,7 @@ export default function Home() {
       return false;
     }
     popup.focus();
-    setStatus("Hoja de entrega abierta (opcional). Tras confirmar el ascenso no podras imprimir la hoja previa.");
+    setStatus("Hoja de entrega abierta (opcional). Tras confirmar el ascenso no podrás imprimir la hoja previa.");
     return true;
   }, []);
 
@@ -1813,17 +1818,17 @@ export default function Home() {
       }
       const persona = personal.find((entry) => entry.ci === ci);
       openConfirmDialog({
-        title: "Eliminar personal",
+        title: "Eliminar subalterno",
         message: persona
           ? `Se eliminará ${apellidosLabel(persona)}, ${nombresLabel(persona)} (${formatUruguayanCi(ci)}).`
-          : `Se eliminará el personal con CI ${formatUruguayanCi(ci)}.`,
-        confirmText: "Eliminar personal",
+          : `Se eliminara el subalterno con CI ${formatUruguayanCi(ci)}.`,
+        confirmText: "Eliminar subalterno",
         tone: "danger",
         onConfirm: async () => {
           try {
             await deletePersonalHandler(ci, {
               onSuccess: async () => {
-                setStatus("Personal eliminado.");
+                setStatus("Subalterno eliminado.");
                 await loadData();
               },
               onError: (message) => setStatus(message),
@@ -2322,7 +2327,7 @@ export default function Home() {
       .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
 
     if (payloadItems.length === 0) {
-      setStatus("Debes agregar al menos un equipo con cantidad valida.");
+      setStatus("Debes agregar al menos un equipo con cantidad válida.");
       return;
     }
 
@@ -2367,7 +2372,7 @@ export default function Home() {
   ) {
     if (returningPrestamoId) return;
     setReturningPrestamoId(prestamoId);
-    setStatus("Registrando devolucion del prestamo...");
+    setStatus("Registrando devolución del préstamo...");
     try {
       await api(`/api/prestamos/${encodeURIComponent(prestamoId)}/devolucion`, {
         method: "PUT",
@@ -2380,7 +2385,7 @@ export default function Home() {
       setStatus("Devolucion de prestamo registrada.");
       await reloadActiveStockData();
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo registrar la devolucion del prestamo.");
+      setStatus(error instanceof Error ? error.message : "No se pudo registrar la devolución del préstamo.");
     } finally {
       setReturningPrestamoId(null);
     }
@@ -2533,6 +2538,37 @@ export default function Home() {
       }
     },
     [loginUsername, loginPassword, loadData],
+  );
+
+  const requestPasswordReset = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (resetRequestLoading) return;
+
+      const username = resetUsername.trim();
+      if (username === "") {
+        setResetRequestMessage("Ingresa tu usuario para recibir el enlace.");
+        return;
+      }
+
+      setResetRequestLoading(true);
+      setResetRequestMessage("");
+      try {
+        const result = await requestPasswordResetHandler(username, {
+          onError: (message) => {
+            setResetRequestMessage(message);
+            setStatus(message);
+          },
+        });
+        setResetRequestMessage(result.message);
+        setStatus(result.message);
+      } catch {
+        // Error manejado por callbacks.
+      } finally {
+        setResetRequestLoading(false);
+      }
+    },
+    [resetRequestLoading, resetUsername],
   );
 
   const submitChangePassword = useCallback(async () => {
@@ -3250,7 +3286,7 @@ export default function Home() {
                   className="h-auto w-36 object-contain drop-shadow-[0_14px_28px_rgba(17,24,39,0.22)] sm:w-44"
                 />
               </div>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">Iniciar sesion</h1>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">Iniciar sesión</h1>
               <p className="mt-2 text-sm text-stone-600" suppressHydrationWarning>{status}</p>
 
               {initMessage && showInitCredentials && initCredentials && (
@@ -3297,10 +3333,44 @@ export default function Home() {
                   {loading || loginLoading ? "Ingresando..." : "Entrar"}
                 </button>
               </form>
+
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetRequest((current) => !current);
+                    setResetRequestMessage("");
+                    setResetUsername((current) => current || loginUsername.trim());
+                  }}
+                  className="text-xs font-semibold text-stone-700 underline underline-offset-2 hover:text-stone-900"
+                >
+                  {showResetRequest ? "Ocultar recuperación de contraseña" : "Olvidé mi contraseña"}
+                </button>
+              </div>
+
+              {showResetRequest ? (
+                <form onSubmit={requestPasswordReset} className="mt-3 space-y-2 rounded-2xl border border-stone-300 bg-stone-50/90 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Recuperar acceso</p>
+                  <input
+                    value={resetUsername}
+                    onChange={(event) => setResetUsername(event.target.value)}
+                    placeholder="Usuario"
+                    className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="submit"
+                    disabled={resetRequestLoading}
+                    className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-100 disabled:opacity-60"
+                  >
+                    {resetRequestLoading ? "Enviando..." : "Enviar enlace mágico"}
+                  </button>
+                  {resetRequestMessage ? <p className="text-xs text-stone-600">{resetRequestMessage}</p> : null}
+                </form>
+              ) : null}
             </div>
           </div>
         </section>
-        <LoadingOverlay visible={isLoginGlobalBusy} label={loginLoading ? "Ingresando..." : "Cargando pagina..."} />
+        <LoadingOverlay visible={isLoginGlobalBusy} label={loginLoading ? "Ingresando..." : "Cargando página..."} />
       </main>
     );
   }
@@ -3313,6 +3383,7 @@ export default function Home() {
         currentUser={currentUser}
         canManageAccount={canManageOwnAccount}
         personalCount={personal.length}
+        oficialesSuboficialesCount={oficialesSuboficiales.length}
         equiposRegistradosCount={equipos.length}
         movimientosTotal={movimientosTotal}
         roleLabel={roleLabel}

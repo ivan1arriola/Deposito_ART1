@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest, getUserFromRequest, hashPassword, invalidateAuthUserCache } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
+import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
+import { sendEmailVerificationMagicLinkEmail } from "@/lib/auth-email";
+import { ensurePasswordResetCompatibility } from "@/lib/password-reset";
 
 type UsuarioUpdatePayload = {
   rangoId?: number | string;
@@ -43,6 +46,7 @@ const USUARIO_SELECT = {
   apellido: true,
   username: true,
   mailReferencia: true,
+  mailVerificadaAt: true,
   rol: true,
   activo: true,
   createdAt: true,
@@ -61,6 +65,7 @@ function serializeUsuario(usuario: UsuarioRecord) {
     apellido: usuario.apellido,
     username: usuario.username,
     mailReferencia: usuario.mailReferencia,
+    mailVerificadaAt: usuario.mailVerificadaAt ? formatDateTimeForDisplay(usuario.mailVerificadaAt) : null,
     rol: usuario.rol,
     activo: usuario.activo,
     createdAt: formatDateTimeForDisplay(usuario.createdAt),
@@ -70,6 +75,7 @@ function serializeUsuario(usuario: UsuarioRecord) {
 
 export async function PUT(request: Request, context: { params: Promise<{ usuarioId: string }> }) {
   const { usuarioId } = await context.params;
+  await ensurePasswordResetCompatibility();
   const actor = await getUserFromRequest();
   if (!actor) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
@@ -91,6 +97,11 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     select: {
       usuarioId: true,
       rangoId: true,
+      username: true,
+      nombre: true,
+      apellido: true,
+      mailReferencia: true,
+      mailVerificadaAt: true,
       rol: true,
       activo: true,
     },
@@ -102,7 +113,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
 
   if (!isAdmin && (body.rol !== undefined || body.activo !== undefined || body.password !== undefined)) {
     return NextResponse.json(
-      { error: "Solo el administrador puede cambiar rol, estado o contrasenas ajenas." },
+      { error: "Solo el administrador puede cambiar rol, estado o contraseñas ajenas." },
       { status: 403 },
     );
   }
@@ -113,10 +124,12 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     apellido?: string;
     username?: string;
     mailReferencia?: string | null;
+    mailVerificadaAt?: Date | null;
     passwordHash?: string;
     rol?: UserRole;
     activo?: boolean;
   } = {};
+  let shouldSendVerification = false;
 
   if (body.rangoId !== undefined) {
     const rangoId = parseRangoId(body.rangoId);
@@ -158,12 +171,24 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     if (body.mailReferencia !== null && typeof body.mailReferencia !== "string") {
       return NextResponse.json({ error: "Mail de referencia invalido." }, { status: 400 });
     }
-    data.mailReferencia = body.mailReferencia?.trim() ? body.mailReferencia.trim() : null;
+    const nextMail = body.mailReferencia?.trim() ? normalizeEmailAddress(body.mailReferencia) : null;
+    if (nextMail && !isValidEmailAddress(nextMail)) {
+      return NextResponse.json({ error: "Mail de referencia invalido." }, { status: 400 });
+    }
+
+    const previousMail = existing.mailReferencia ? normalizeEmailAddress(existing.mailReferencia) : null;
+    const mailChanged = previousMail !== nextMail;
+
+    data.mailReferencia = nextMail;
+    if (mailChanged) {
+      data.mailVerificadaAt = null;
+      shouldSendVerification = nextMail !== null;
+    }
   }
 
   if (body.password !== undefined) {
     if (typeof body.password !== "string" || body.password.length < 8) {
-      return NextResponse.json({ error: "Contrasena invalida. Minimo 8 caracteres." }, { status: 400 });
+      return NextResponse.json({ error: "Contraseña inválida. Mínimo 8 caracteres." }, { status: 400 });
     }
     data.passwordHash = await hashPassword(body.password);
   }
@@ -205,6 +230,21 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       data,
       select: USUARIO_SELECT,
     });
+    let verificationEmailSent = false;
+    if (shouldSendVerification && updated.mailReferencia) {
+      try {
+        await sendEmailVerificationMagicLinkEmail(request, {
+          usuarioId: updated.usuarioId,
+          username: updated.username,
+          nombre: updated.nombre,
+          apellido: updated.apellido,
+          mailReferencia: updated.mailReferencia,
+        });
+        verificationEmailSent = true;
+      } catch {
+        verificationEmailSent = false;
+      }
+    }
 
     await logAudit({
       usuarioId: actor.usuarioId,
@@ -217,6 +257,8 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
         apellido: updated.apellido,
         username: updated.username,
         mailReferencia: updated.mailReferencia,
+        mailVerificadaAt: updated.mailVerificadaAt,
+        verificationEmailSent,
         rol: updated.rol,
         activo: updated.activo,
         updatedFields: Object.keys(data),

@@ -46,7 +46,7 @@ export function RegistroViewerModal({
         <div>
           <h3 className="text-base font-semibold text-stone-900">Visualizador de Entregas / Devoluciones</h3>
           <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(viewer.ci)}`}</p>
-          <p className="text-xs font-medium text-stone-700">{`Personal: ${viewer.nombre}`}</p>
+          <p className="text-xs font-medium text-stone-700">{`Subalterno: ${viewer.nombre}`}</p>
         </div>
         <button type="button" onClick={onClose} className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white">
           Cerrar

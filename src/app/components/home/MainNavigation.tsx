@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type JSX, type RefObject } from "react";
 import type { MainView } from "@/types/views";
 
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">;
-type SummaryView = Extract<MainView, "equipo_resumen" | "tallas_resumen">;
+type SummaryView = Extract<MainView, "tallas_resumen">;
 type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo">;
 type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos">;
 
@@ -81,16 +81,6 @@ const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean;
 
 const summaryViews: Array<{ view: SummaryView; label: string; shortLabel: string; icon: JSX.Element }> = [
   {
-    view: "equipo_resumen",
-    label: "Resumen de Equipo en Baterías",
-    shortLabel: "Baterías",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M7 3v4m10-4v4M6 12h4v8H6zM14 10h4v10h-4z" />
-      </svg>
-    ),
-  },
-  {
     view: "tallas_resumen",
     label: "Resumen por tallas",
     shortLabel: "Tallas",
@@ -105,8 +95,8 @@ const summaryViews: Array<{ view: SummaryView; label: string; shortLabel: string
 const createViews: Array<{ view: CreateView; label: string; shortLabel: string; adminOnly?: boolean; icon: JSX.Element }> = [
   {
     view: "personal_nuevo",
-    label: "Alta de personal",
-    shortLabel: "Personal",
+    label: "Alta de subalterno",
+    shortLabel: "Subalterno",
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -295,11 +285,11 @@ export function MainNavigation({
   const summaryMenuRef = useRef<HTMLDivElement | null>(null);
   const createMenuRef = useRef<HTMLDivElement | null>(null);
   const stockMenuRef = useRef<HTMLDivElement | null>(null);
-  const isPersonalView = activeView === "personal" || activeView === "hoja_matrix";
+  const isPersonalView = activeView === "personal" || activeView === "hoja_matrix" || activeView === "equipo_resumen";
   const isOficialesView = activeView === "oficiales";
   const isSuboficialesView = activeView === "suboficiales";
   const isOficialesSuboficialesView = isOficialesView || isSuboficialesView;
-  const isSummaryView = activeView === "equipo_resumen" || activeView === "tallas_resumen";
+  const isSummaryView = activeView === "tallas_resumen";
   const isStockView =
     activeView === "stock" ||
     activeView === "stock_total" ||
@@ -451,7 +441,7 @@ export function MainNavigation({
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <span className="whitespace-nowrap">Subalternos</span>
+            <span className="whitespace-nowrap">Personal subalterno</span>
             <svg className={`h-3 w-3 transition-transform ${showPersonalViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -462,19 +452,25 @@ export function MainNavigation({
               role="menu"
               className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
             >
-              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de subalternos</p>
+              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de personal subalterno</p>
               <div className="grid grid-cols-1 gap-1.5">
                 <button type="button" onClick={() => handleSelectView("personal")} className={groupedOptionClass(activeView, "personal")}>
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>Subalternos</span>
+                  <span>Personal subalterno</span>
                 </button>
                 <button type="button" onClick={() => handleSelectView("hoja_matrix")} className={groupedOptionClass(activeView, "hoja_matrix")}>
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
                   </svg>
                   <span>Hoja Matriz</span>
+                </button>
+                <button type="button" onClick={() => handleSelectView("equipo_resumen")} className={groupedOptionClass(activeView, "equipo_resumen")}>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M7 3v4m10-4v4M6 12h4v8H6zM14 10h4v10h-4z" />
+                  </svg>
+                  <span>Resumen de equipo en baterías</span>
                 </button>
               </div>
             </div>
@@ -494,7 +490,7 @@ export function MainNavigation({
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
             </svg>
-            <span className="whitespace-nowrap">Oficiales/Suboficiales</span>
+            <span className="whitespace-nowrap">Oficiales y Suboficiales</span>
             <svg className={`h-3 w-3 transition-transform ${showOficialesSuboficialesViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -591,7 +587,7 @@ export function MainNavigation({
               role="menu"
               className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
             >
-              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de resumen</p>
+              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de resumen por personal</p>
               <div className="grid grid-cols-1 gap-1.5">
                 {summaryViews.map((item) => (
                   <button

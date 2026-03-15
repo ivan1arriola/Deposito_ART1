@@ -41,7 +41,7 @@ export function PersonalObservacionModal({
         <div>
           <h3 className="text-base font-semibold text-stone-900">{draft.observacionId ? "Editar Observación" : "Registrar Observación"}</h3>
           <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(draft.ci)}`}</p>
-          <p className="text-xs font-medium text-stone-700">{`Personal: ${draft.nombre}`}</p>
+          <p className="text-xs font-medium text-stone-700">{`Subalterno: ${draft.nombre}`}</p>
         </div>
         <button
           type="button"
@@ -56,7 +56,7 @@ export function PersonalObservacionModal({
       {saving || draft.loading ? (
         <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
           <LoadingInline
-            label={saving ? "Guardando observacion..." : "Cargando observaciones..."}
+            label={saving ? "Guardando observación..." : "Cargando observaciones..."}
             size="xs"
             textClassName="text-xs font-semibold text-sky-800"
           />
@@ -171,7 +171,7 @@ export function PersonalObservacionModal({
               ) : draft.observacionId ? (
                 "Guardar cambios"
               ) : (
-                "Guardar observacion"
+                "Guardar observación"
               )}
             </button>
           </div>

@@ -16,7 +16,7 @@ export interface HojaMatrixViewProps {
 export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixViewProps) {
   const [viewMode, setViewMode] = useState<"all" | "battery">("all");
   const [selectedBattery, setSelectedBattery] = useState<string | null>(null);
-  const title = viewMode === "all" ? "Hoja Matriz Unidad" : "Hoja Matriz por Batería";
+  const title = viewMode === "all" ? "Hoja matriz de subalternos (unidad)" : "Hoja matriz de subalternos por batería";
 
   const bateriaOptions = useMemo(() => {
     if (!data) return [] as string[];
@@ -161,7 +161,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
 
       {loading && !data ? (
         <LoadingInline
-          label="Cargando Hoja Matriz..."
+          label="Cargando hoja matriz de subalternos..."
           className="mt-3"
           textClassName="text-sm font-medium text-stone-600"
         />
@@ -175,7 +175,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
         <div className="mt-4 overflow-hidden rounded-2xl border border-stone-300 bg-stone-100">
           <iframe
             key={previewHref}
-            title={viewMode === "all" ? "Vista previa de hoja matriz unidad" : "Vista previa de hoja matriz por batería"}
+            title={viewMode === "all" ? "Vista previa de hoja matriz de subalternos (unidad)" : "Vista previa de hoja matriz de subalternos por batería"}
             src={previewHref}
             className="h-[80vh] min-h-[900px] w-full bg-white"
           />

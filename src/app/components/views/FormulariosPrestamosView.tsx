@@ -194,7 +194,7 @@ export function FormulariosPrestamosView({
                       value={getReturnDate(prestamo.prestamoId)}
                       disabled={returningPrestamoId === prestamo.prestamoId}
                       onChange={(value) => setReturnDateByPrestamo((prev) => ({ ...prev, [prestamo.prestamoId]: value }))}
-                      ariaLabel={`Fecha de devolucion. Maximo ${maxDate}`}
+                      ariaLabel={`Fecha de devolución. Máximo ${maxDate}`}
                       className="w-28 rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700"
                     />
                     <button
@@ -307,7 +307,7 @@ export function FormulariosPrestamosView({
                 >
                   <option value="PERSONAL">Subalternos</option>
                   <option value="OFICIAL">Oficiales</option>
-                  <option value="SUBOFICIAL">Sub Oficiales</option>
+                  <option value="SUBOFICIAL">Suboficiales</option>
                 </select>
               </label>
 
@@ -334,7 +334,7 @@ export function FormulariosPrestamosView({
               </label>
 
               <label className="text-xs text-stone-700">
-                Fecha estimada devolucion (texto)
+                Fecha estimada devolución (texto)
                 <input
                   value={prestamoDraft.fechaEstimadaDevolucionTexto}
                   disabled={prestamoSaving}
@@ -513,11 +513,11 @@ export function FormulariosPrestamosView({
               </p>
               <p><span className="font-semibold text-stone-900">Fecha prestamo:</span> {formatDateOnlyForDisplay(selectedPrestamo.fechaPrestamo)}</p>
               <p>
-                <span className="font-semibold text-stone-900">Fecha estimada devolucion:</span>{" "}
+                <span className="font-semibold text-stone-900">Fecha estimada devolución:</span>{" "}
                 {selectedPrestamo.fechaEstimadaDevolucionTexto?.trim() ? selectedPrestamo.fechaEstimadaDevolucionTexto : "-"}
               </p>
               <p>
-                <span className="font-semibold text-stone-900">Fecha devolucion:</span>{" "}
+                <span className="font-semibold text-stone-900">Fecha devolución:</span>{" "}
                 {selectedPrestamo.fechaDevolucion ? formatDateOnlyForDisplay(selectedPrestamo.fechaDevolucion) : "Pendiente"}
               </p>
               <p>
@@ -575,7 +575,7 @@ export function FormulariosPrestamosView({
                               },
                             }))
                           }
-                          placeholder="Comentario devolucion (opcional)"
+                          placeholder="Comentario devolución (opcional)"
                           className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
                         />
                       </div>
@@ -611,14 +611,14 @@ export function FormulariosPrestamosView({
               {canWrite && selectedPrestamo.estado === "PENDIENTE" ? (
                 <>
                   <div className="w-36">
-                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-600">Fecha devolucion</p>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-600">Fecha devolución</p>
                     <DateTextInput
                       value={getReturnDate(selectedPrestamo.prestamoId)}
                       disabled={returningPrestamoId === selectedPrestamo.prestamoId}
                       onChange={(value) =>
                         setReturnDateByPrestamo((prev) => ({ ...prev, [selectedPrestamo.prestamoId]: value }))
                       }
-                      ariaLabel={`Fecha de devolucion. Maximo ${maxDate}`}
+                      ariaLabel={`Fecha de devolución. Máximo ${maxDate}`}
                       className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                     />
                   </div>

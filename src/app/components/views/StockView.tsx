@@ -170,7 +170,7 @@ export function StockView({
               ? "Prestamos de equipo"
               : "Historial de stock";
 
-  const stockTableTitle = section === "total" ? "Totales por item (subalternos + prestamo + deposito)" : "Stock interno de deposito por equipo";
+  const stockTableTitle = section === "total" ? "Totales por item (subalternos + préstamo + depósito)" : "Stock interno de depósito por equipo";
 
   return (
     <section className="mt-6 space-y-4">
@@ -331,7 +331,7 @@ export function StockView({
                 >
                   <option value="PERSONAL">Subalternos</option>
                   <option value="OFICIAL">Oficiales</option>
-                  <option value="SUBOFICIAL">Sub Oficiales</option>
+                  <option value="SUBOFICIAL">Suboficiales</option>
                 </select>
               </label>
                 <div className="text-xs text-stone-700">
@@ -355,7 +355,7 @@ export function StockView({
                   />
                 </label>
                 <label className="text-xs text-stone-700">
-                  Fecha estimada devolucion (texto)
+                  Fecha estimada devolución (texto)
                   <input
                     value={prestamoDraft.fechaEstimadaDevolucionTexto}
                     disabled={prestamoSaving}
@@ -525,7 +525,7 @@ export function StockView({
                             onChange={(value) =>
                               setReturnDateByPrestamo((prev) => ({ ...prev, [prestamo.prestamoId]: value }))
                             }
-                            ariaLabel={`Fecha de devolucion. Maximo ${maxDate}`}
+                            ariaLabel={`Fecha de devolución. Máximo ${maxDate}`}
                             className="w-28 rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700"
                           />
                           <button
@@ -601,7 +601,7 @@ export function StockView({
                                   },
                                 }))
                               }
-                              placeholder="Comentario devolucion (opcional)"
+                              placeholder="Comentario devolución (opcional)"
                               className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
                             />
                           </div>

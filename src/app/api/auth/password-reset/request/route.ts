@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
-import { getUserFromRequest } from "@/lib/auth";
-import { createResetCode } from "@/lib/password-reset";
+import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
+import { sendEmailVerificationMagicLinkEmail, sendPasswordResetMagicLinkEmail } from "@/lib/auth-email";
+import { ensurePasswordResetCompatibility } from "@/lib/password-reset";
 
 type ResetRequestPayload = {
   username: string;
@@ -14,68 +15,96 @@ function isValidPayload(body: unknown): body is ResetRequestPayload {
   return typeof candidate.username === "string" && candidate.username.trim() !== "";
 }
 
-export async function POST(request: Request) {
-  const actor = await getUserFromRequest();
-  if (!actor) {
-    return NextResponse.json({ error: "No autenticado." }, { status: 401 });
-  }
-  if (actor.rol !== "ADMIN") {
-    return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
-  }
+function genericResponse() {
+  return NextResponse.json({
+    ok: true,
+    message: "Si el usuario existe y tiene correo configurado, se envio un enlace.",
+  });
+}
 
+export async function POST(request: Request) {
   const body = await request.json();
   if (!isValidPayload(body)) {
     return NextResponse.json({ error: "Usuario es obligatorio." }, { status: 400 });
   }
 
-  const query = body.username.trim();
+  const username = body.username.trim();
 
   try {
-    const usuario = await prisma.usuario.findFirst({
-      where: {
-        activo: true,
-        username: query,
-      },
+    await ensurePasswordResetCompatibility();
+    const usuario = await prisma.usuario.findUnique({
+      where: { username },
       select: {
         usuarioId: true,
         username: true,
-        rango: { select: { abreviacion: true } },
         nombre: true,
         apellido: true,
+        activo: true,
         mailReferencia: true,
-        rol: true,
+        mailVerificadaAt: true,
+        rango: { select: { abreviacion: true } },
       },
     });
 
-    if (usuario) {
-      const { code, expiresAt } = await createResetCode(usuario.usuarioId);
+    if (!usuario || !usuario.activo || !usuario.mailReferencia) {
+      return genericResponse();
+    }
+
+    const normalizedMail = normalizeEmailAddress(usuario.mailReferencia);
+    if (!isValidEmailAddress(normalizedMail)) {
+      return genericResponse();
+    }
+
+    if (usuario.mailVerificadaAt) {
+      const { expiresAt } = await sendPasswordResetMagicLinkEmail(request, {
+        usuarioId: usuario.usuarioId,
+        username: usuario.username,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        mailReferencia: normalizedMail,
+      });
       await logAudit({
-        usuarioId: actor.usuarioId,
-        accion: "PASSWORD_RESET_REQUEST",
+        usuarioId: usuario.usuarioId,
+        accion: "PASSWORD_RESET_MAGIC_LINK_SENT",
         entidad: "AUTH",
         entidadId: usuario.usuarioId,
         detalle: {
-          actorUsername: actor.username,
           username: usuario.username,
           grado: usuario.rango.abreviacion,
           nombre: usuario.nombre,
           apellido: usuario.apellido,
-          mailReferencia: usuario.mailReferencia,
+          mailReferencia: normalizedMail,
           expiresAt,
-          delivery: "DIRECT_CODE",
         },
       });
-
-      return NextResponse.json({
-        ok: true,
-        code,
-        expiresAt: expiresAt.toISOString(),
-        username: usuario.username,
-      });
+      return genericResponse();
     }
 
-    return NextResponse.json({ ok: true, code: null, expiresAt: null, username: null });
+    const { expiresAt } = await sendEmailVerificationMagicLinkEmail(request, {
+      usuarioId: usuario.usuarioId,
+      username: usuario.username,
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      mailReferencia: normalizedMail,
+    });
+    await logAudit({
+      usuarioId: usuario.usuarioId,
+      accion: "EMAIL_VERIFY_MAGIC_LINK_SENT",
+      entidad: "AUTH",
+      entidadId: usuario.usuarioId,
+      detalle: {
+        username: usuario.username,
+        grado: usuario.rango.abreviacion,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        mailReferencia: normalizedMail,
+        motivo: "PASSWORD_RESET_REQUEST",
+        expiresAt,
+      },
+    });
   } catch {
-    return NextResponse.json({ error: "No se pudo generar el codigo." }, { status: 503 });
+    // Respuesta generica para no exponer estado interno ni existencia de usuarios.
   }
+
+  return genericResponse();
 }

@@ -62,6 +62,7 @@ model Usuario {
   username                        String              @unique @map("usuario")
   passwordHash                    String              @map("password_hash")
   mailReferencia                  String?             @map("mail_referencia")
+  mailVerificadaAt                DateTime?           @map("mail_verificada_at") @db.Timestamptz(6)
   rol                             UserRole            @default(EDITOR)
   activo                          Boolean             @default(true)
   createdAt                       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -81,6 +82,8 @@ model PasswordResetCode {
   resetId   String    @id @default(cuid()) @map("reset_id")
   usuarioId String    @map("usuario_id")
   codeHash  String    @map("code_hash")
+  tokenType String    @default("PASSWORD_RESET") @map("token_type")
+  mailSnapshot String? @map("mail_snapshot")
   expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
   usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -88,6 +91,7 @@ model PasswordResetCode {
 
   @@index([usuarioId])
   @@index([expiresAt])
+  @@index([tokenType, expiresAt])
   @@map("password_reset")
 }
 

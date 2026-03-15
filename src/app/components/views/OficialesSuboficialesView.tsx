@@ -20,7 +20,7 @@ type OficialesSuboficialesViewProps = {
 
 const TYPE_LABEL: Record<TipoOficialSuboficial, string> = {
   OFICIAL: "Oficiales",
-  SUBOFICIAL: "Sub Oficiales",
+  SUBOFICIAL: "Suboficiales",
 };
 
 export function OficialesSuboficialesView({
@@ -224,7 +224,7 @@ export function OficialesSuboficialesView({
 
       <article className="ej-card rounded-2xl p-4">
         <div className="mb-3">
-          <h3 className="text-sm font-semibold text-stone-900">Resumen de talles de Oficiales y Sub Oficiales</h3>
+          <h3 className="text-sm font-semibold text-stone-900">Resumen de talles de oficiales y suboficiales</h3>
           <p className="mt-1 text-xs text-stone-600">Tabla consolidada por prenda y talla para ambos grupos.</p>
         </div>
         <div className="space-y-4">
@@ -240,7 +240,7 @@ export function OficialesSuboficialesView({
                       <tr className="bg-stone-100">
                         <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
                         <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Oficiales</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Sub Oficiales</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Suboficiales</th>
                         <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Total</th>
                       </tr>
                     </thead>

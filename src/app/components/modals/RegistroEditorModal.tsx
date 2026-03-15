@@ -92,7 +92,7 @@ export function RegistroEditorModal({
             <p className="text-xs text-stone-600">{`Destinatarios seleccionados: ${selectedCis.length}`}</p>
           ) : null}
           {draft.modo === "rectificar" && draft.registroId ? <p className="text-xs text-stone-600">{`Registro #${draft.registroId}`}</p> : null}
-          {personaLabel ? <p className="text-xs font-medium text-stone-700">{`Personal: ${personaLabel}`}</p> : null}
+          {personaLabel ? <p className="text-xs font-medium text-stone-700">{`Subalterno: ${personaLabel}`}</p> : null}
         </div>
         <button
           type="button"
@@ -165,7 +165,7 @@ export function RegistroEditorModal({
           />
           <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-stone-200 bg-white p-2">
             {personalVisible.length === 0 ? (
-              <p className="px-2 py-2 text-xs text-stone-500">No hay personal para el filtro actual.</p>
+              <p className="px-2 py-2 text-xs text-stone-500">No hay subalternos para el filtro actual.</p>
             ) : (
               personalVisible.map((persona) => {
                 const checked = selectedCiSet.has(persona.ci);
@@ -257,10 +257,10 @@ export function RegistroEditorModal({
         >
           {saving
             ? draft.modo === "rectificar"
-              ? "Guardando rectificacion..."
+              ? "Guardando rectificación..."
               : "Guardando movimiento..."
             : draft.modo === "rectificar"
-              ? "Guardar rectificacion"
+              ? "Guardar rectificación"
               : "Guardar movimiento"}
         </button>
       </div>

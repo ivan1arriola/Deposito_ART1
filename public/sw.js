@@ -1,21 +1,27 @@
-const CACHE_NAME = "deposito-art1-v3";
-const STATIC_ASSETS = [
-  "/pwa-icons/android/icon-192.png",
-  "/pwa-icons/android/icon-512.png",
-  "/pwa-icons/android/icon-512-maskable.png",
-];
+const OFFLINE_FALLBACK_HTML = `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Deposito ART1 - Offline</title>
+  </head>
+  <body>
+    <main style="font-family: sans-serif; margin: 2rem;">
+      <h1>Sin conexion</h1>
+      <p>No hay red disponible en este momento.</p>
+    </main>
+  </body>
+</html>`;
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting()),
-  );
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
@@ -24,9 +30,6 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
-  if (requestUrl.pathname === "/manifest.webmanifest") {
-    return;
-  }
 
   // Nunca cachear recursos dinamicos de Next o API: evita mezclar HTML/JS de builds distintos.
   if (requestUrl.pathname.startsWith("/_next/") || requestUrl.pathname.startsWith("/api/")) {
@@ -37,44 +40,15 @@ self.addEventListener("fetch", (event) => {
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(() => {
-        return new Response("Offline", {
-          status: 503,
-          statusText: "Offline",
-          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        return new Response(OFFLINE_FALLBACK_HTML, {
+          status: 200,
+          statusText: "OK",
+          headers: { "Content-Type": "text/html; charset=utf-8" },
         });
       }),
     );
     return;
   }
-
-  const isStaticAsset = requestUrl.pathname.startsWith("/pwa-icons/");
-
-  if (!isStaticAsset) return;
-
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type !== "basic") {
-            return response;
-          }
-
-          const cloned = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, cloned);
-          });
-          return response;
-        })
-        .catch(() => {
-          return new Response("Offline", {
-            status: 503,
-            statusText: "Offline",
-            headers: { "Content-Type": "text/plain; charset=utf-8" },
-          });
-        });
-    }),
-  );
 });
 
 self.addEventListener("push", (event) => {

@@ -4,6 +4,7 @@ import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
 import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
+import { TipoPersonal } from "@prisma/client";
 
 export const revalidate = 0;
 
@@ -42,7 +43,7 @@ function buildTallasResumen(personas: Array<{ tallas: Parameters<typeof tallasMa
 
 export async function generateMetadata() {
   return {
-    title: "Resumen de Talles de la Unidad",
+    title: "Resumen de Talles de Subalternos",
   };
 }
 
@@ -55,6 +56,9 @@ export default async function ResumenTallasUnidadPage({
   const shouldAutoPrint = resolvedSearchParams?.autoprint === "1";
 
   const personal = await prisma.personal.findMany({
+    where: {
+      tipo: TipoPersonal.SUBALTERNO,
+    },
     select: {
       ci: true,
       tallas: {
@@ -227,9 +231,9 @@ export default async function ResumenTallasUnidadPage({
       `}</style>
       <main className="sheet">
         <header className="header">
-          <h1 className="title">Resumen de Talles de la Unidad</h1>
-          <p className="subtitle">Cantidades absolutas de cada talle en la unidad, agrupadas por vestimenta.</p>
-          <p className="meta">{`Generado: ${generatedAt} | Total personal: ${personal.length}`}</p>
+          <h1 className="title">Resumen de Talles de Subalternos</h1>
+          <p className="subtitle">Cantidades absolutas de cada talle en subalternos, agrupadas por vestimenta.</p>
+          <p className="meta">{`Generado: ${generatedAt} | Total subalternos: ${personal.length}`}</p>
         </header>
 
         <section className="sections">

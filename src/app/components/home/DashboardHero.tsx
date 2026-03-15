@@ -9,6 +9,7 @@ type DashboardHeroProps = {
   currentUser: CurrentUser;
   canManageAccount: boolean;
   personalCount: number;
+  oficialesSuboficialesCount: number;
   equiposRegistradosCount: number;
   movimientosTotal: number;
   roleLabel: (role: CurrentUser["rol"]) => string;
@@ -23,6 +24,7 @@ export function DashboardHero({
   currentUser,
   canManageAccount,
   personalCount,
+  oficialesSuboficialesCount,
   equiposRegistradosCount,
   movimientosTotal,
   roleLabel,
@@ -104,10 +106,17 @@ export function DashboardHero({
         </div>
       </div>
 
-      <div className="relative mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="relative mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div className="rounded-xl border border-[#BAB08C]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-          <p className="text-[10px] uppercase tracking-wider text-[#BAB08C]">Personal</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#BAB08C]">Subalternos</p>
           <p className="text-lg font-bold text-white">{personalCount}</p>
+        </div>
+        <div className="rounded-xl border border-[#BAB08C]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
+          <p className="text-[10px] uppercase tracking-wider text-[#BAB08C]">
+            <span className="sm:hidden">Of/Sub</span>
+            <span className="hidden sm:inline">Oficiales/Suboficiales</span>
+          </p>
+          <p className="text-lg font-bold text-white">{oficialesSuboficialesCount}</p>
         </div>
         <div className="rounded-xl border border-[#BAB08C]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
           <p className="text-[10px] uppercase tracking-wider text-[#BAB08C]">

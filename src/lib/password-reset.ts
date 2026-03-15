@@ -1,53 +1,146 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { normalizeEmailAddress } from "@/lib/email-address";
 
-const RESET_CODE_TTL_MINUTES = 5;
+export type MagicLinkPurpose = "PASSWORD_RESET" | "EMAIL_VERIFY";
 
-function hashResetCode(code: string) {
-  return crypto.createHash("sha256").update(code).digest("hex");
+const DEFAULT_PASSWORD_RESET_TTL_MINUTES = 20;
+const DEFAULT_EMAIL_VERIFY_TTL_MINUTES = 24 * 60;
+
+let ensureSchemaPromise: Promise<void> | null = null;
+
+function hashToken(token: string) {
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-export function generateResetCode() {
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  return code;
+function normalizePurpose(purpose: MagicLinkPurpose) {
+  return purpose;
 }
 
-export async function createResetCode(usuarioId: string) {
-  const code = generateResetCode();
-  const codeHash = hashResetCode(code);
-  const expiresAt = new Date(Date.now() + RESET_CODE_TTL_MINUTES * 60 * 1000);
+function tokenExpiryFromMinutes(ttlMinutes: number) {
+  return new Date(Date.now() + ttlMinutes * 60 * 1000);
+}
+
+export function generateMagicToken() {
+  return crypto.randomBytes(32).toString("base64url");
+}
+
+async function ensureMagicLinkSchema() {
+  if (ensureSchemaPromise) return ensureSchemaPromise;
+
+  ensureSchemaPromise = (async () => {
+    await prisma.$executeRawUnsafe(
+      'ALTER TABLE "usuario" ADD COLUMN IF NOT EXISTS "mail_verificada_at" TIMESTAMPTZ(6);',
+    );
+    await prisma.$executeRawUnsafe(
+      'ALTER TABLE "password_reset" ADD COLUMN IF NOT EXISTS "token_type" TEXT NOT NULL DEFAULT \'PASSWORD_RESET\';',
+    );
+    await prisma.$executeRawUnsafe(
+      'ALTER TABLE "password_reset" ADD COLUMN IF NOT EXISTS "mail_snapshot" TEXT;',
+    );
+    await prisma.$executeRawUnsafe(
+      'CREATE INDEX IF NOT EXISTS "password_reset_token_type_expires_at_idx" ON "password_reset"("token_type", "expires_at");',
+    );
+  })().catch((error) => {
+    ensureSchemaPromise = null;
+    throw error;
+  });
+
+  return ensureSchemaPromise;
+}
+
+export async function createMagicLinkToken(input: {
+  usuarioId: string;
+  purpose: MagicLinkPurpose;
+  mailSnapshot?: string | null;
+  ttlMinutes?: number;
+}) {
+  await ensureMagicLinkSchema();
+
+  const ttlMinutes =
+    input.ttlMinutes ??
+    (input.purpose === "PASSWORD_RESET"
+      ? DEFAULT_PASSWORD_RESET_TTL_MINUTES
+      : DEFAULT_EMAIL_VERIFY_TTL_MINUTES);
+
+  const token = generateMagicToken();
+  const expiresAt = tokenExpiryFromMinutes(ttlMinutes);
 
   await prisma.passwordResetCode.create({
     data: {
-      usuarioId,
-      codeHash,
+      usuarioId: input.usuarioId,
+      codeHash: hashToken(token),
+      tokenType: normalizePurpose(input.purpose),
+      mailSnapshot: input.mailSnapshot
+        ? normalizeEmailAddress(input.mailSnapshot)
+        : null,
       expiresAt,
     },
   });
 
-  return { code, expiresAt };
+  return { token, expiresAt };
 }
 
-export async function verifyResetCode(usuarioId: string, code: string) {
-  const codeHash = hashResetCode(code);
+export async function createPasswordResetToken(usuarioId: string, mailSnapshot?: string | null) {
+  return createMagicLinkToken({
+    usuarioId,
+    purpose: "PASSWORD_RESET",
+    mailSnapshot,
+    ttlMinutes: DEFAULT_PASSWORD_RESET_TTL_MINUTES,
+  });
+}
+
+export async function createEmailVerificationToken(usuarioId: string, mailSnapshot: string) {
+  return createMagicLinkToken({
+    usuarioId,
+    purpose: "EMAIL_VERIFY",
+    mailSnapshot,
+    ttlMinutes: DEFAULT_EMAIL_VERIFY_TTL_MINUTES,
+  });
+}
+
+export async function consumeMagicLinkToken(input: { token: string; purpose: MagicLinkPurpose }) {
+  await ensureMagicLinkSchema();
+  const tokenHash = hashToken(input.token.trim());
   const now = new Date();
 
-  const record = await prisma.passwordResetCode.findFirst({
-    where: {
-      usuarioId,
-      codeHash,
-      usedAt: null,
-      expiresAt: { gt: now },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  return prisma.$transaction(async (tx) => {
+    const record = await tx.passwordResetCode.findFirst({
+      where: {
+        codeHash: tokenHash,
+        tokenType: normalizePurpose(input.purpose),
+        usedAt: null,
+        expiresAt: { gt: now },
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        resetId: true,
+        usuarioId: true,
+        mailSnapshot: true,
+        expiresAt: true,
+      },
+    });
 
-  return record;
+    if (!record) return null;
+
+    const updateResult = await tx.passwordResetCode.updateMany({
+      where: {
+        resetId: record.resetId,
+        usedAt: null,
+      },
+      data: {
+        usedAt: now,
+      },
+    });
+
+    if (updateResult.count !== 1) {
+      return null;
+    }
+
+    return record;
+  });
 }
 
-export async function markResetCodeUsed(resetId: string) {
-  await prisma.passwordResetCode.update({
-    where: { resetId },
-    data: { usedAt: new Date() },
-  });
+export async function ensurePasswordResetCompatibility() {
+  await ensureMagicLinkSchema();
 }

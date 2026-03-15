@@ -74,10 +74,10 @@ function AscensoSargentoPanel({ ci, busy, onContinue, onPrintDeliverySheet }: As
     <section className="mt-4 rounded-xl border border-amber-300 bg-amber-50/80 p-3">
       <h4 className="text-sm font-semibold text-amber-900">Ascenso a Sargento Primero</h4>
       <p className="mt-1 text-xs text-amber-900/90">
-        La impresion de hoja es opcional antes del ascenso.
+        La impresiÃƒÆ’Ã‚Â³n de hoja es opcional antes del ascenso.
       </p>
       <p className="mt-1 text-xs font-semibold text-amber-950">
-        Importante: cuando el ascenso finalice, ya no podras imprimir esta hoja previa.
+        Importante: cuando el ascenso finalice, ya no podrÃƒÆ’Ã‚¡s imprimir esta hoja previa.
       </p>
       <form
         className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]"
@@ -93,7 +93,7 @@ function AscensoSargentoPanel({ ci, busy, onContinue, onPrintDeliverySheet }: As
           type="password"
           value={adminPassword}
           onChange={(event) => setAdminPassword(event.target.value)}
-          placeholder="Contrasena de administrador"
+          placeholder="Contraseña de administrador"
           className="w-full rounded-lg border border-amber-400 px-3 py-2 text-sm"
           disabled={busy}
           required
@@ -198,8 +198,8 @@ export function PersonalSection({
     <section className="mt-6 space-y-4">
       <section className="ej-card rounded-2xl p-3 sm:p-4">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-stone-900">Personal</h2>
-          <p className="mt-1 text-xs text-stone-600">Orden: Grado del Personal, Apellidos y Nombres.</p>
+          <h2 className="text-base font-semibold text-stone-900">Personal subalterno</h2>
+          <p className="mt-1 text-xs text-stone-600">Orden: grado del personal subalterno, apellidos y nombres.</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <div className="inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-700">
               {personalFiltrado.length} resultado{personalFiltrado.length === 1 ? "" : "s"}
@@ -238,7 +238,7 @@ export function PersonalSection({
             disabled={loading || personal.length === 0}
             className="h-11 w-full rounded-xl bg-sky-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Imprimir lista por bateria
+            Imprimir lista de subalternos por baterÃƒÆ’Ã‚Â­a
           </button>
           <button
             type="button"
@@ -246,7 +246,7 @@ export function PersonalSection({
             disabled={!canWrite}
             className="ej-button h-11 w-full rounded-xl px-3 text-sm font-semibold disabled:opacity-50"
           >
-            Registrar nuevo
+            Registrar subalterno
           </button>
         </div>
       </section>
@@ -270,7 +270,7 @@ export function PersonalSection({
           page={personalPage}
           pageSize={personalPageSize}
           totalItems={personalFiltrado.length}
-          itemLabel="personas"
+          itemLabel="subalternos"
           onPageChange={onPersonalPageChange}
           onPageSizeChange={onPersonalPageSizeChange}
           className="hidden md:flex"
@@ -293,14 +293,14 @@ export function PersonalSection({
 
         <div className="mt-3 md:hidden">
           <PaginationControls
-            page={personalPage}
-            pageSize={personalPageSize}
-            totalItems={personalFiltrado.length}
-            itemLabel="personas"
-            onPageChange={onPersonalPageChange}
-            onPageSizeChange={onPersonalPageSizeChange}
-            className="mt-1"
-          />
+              page={personalPage}
+              pageSize={personalPageSize}
+              totalItems={personalFiltrado.length}
+              itemLabel="subalternos"
+              onPageChange={onPersonalPageChange}
+              onPageSizeChange={onPersonalPageSizeChange}
+              className="mt-1"
+            />
         </div>
 
         <PersonalTableDesktop
@@ -322,7 +322,7 @@ export function PersonalSection({
           page={personalPage}
           pageSize={personalPageSize}
           totalItems={personalFiltrado.length}
-          itemLabel="personas"
+          itemLabel="subalternos"
           onPageChange={onPersonalPageChange}
           onPageSizeChange={onPersonalPageSizeChange}
           className="mt-4 hidden md:flex"
@@ -333,7 +333,7 @@ export function PersonalSection({
         <ModalFrame onClose={onCancelEditPersonal} size="xl" closeOnBackdrop={false}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-stone-900">Editar personal</h3>
+              <h3 className="text-lg font-semibold text-stone-900">Editar subalterno</h3>
               <p className="mt-1 text-sm text-stone-600">
                 {editingPersona ? `${editingPersona.rango.nombreCompleto} - ${editingPersona.apellido1} ${editingPersona.nombre1}` : `CI ${editPersonalCi}`}
               </p>

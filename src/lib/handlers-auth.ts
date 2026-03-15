@@ -12,9 +12,7 @@ interface CallbackProps {
 
 export type PasswordResetRequestResponse = {
   ok: true;
-  code: string | null;
-  expiresAt: string | null;
-  username: string | null;
+  message: string;
 };
 
 export async function loginHandler(
@@ -68,7 +66,7 @@ export async function requestPasswordResetHandler(
     callbacks.onSuccess?.(result);
     return result;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo generar el código.";
+    const message = error instanceof Error ? error.message : "No se pudo enviar el enlace.";
     callbacks.onError?.(message);
     throw error;
   }

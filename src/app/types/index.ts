@@ -142,6 +142,7 @@ export type UsuarioAdmin = {
   apellido: string;
   username: string;
   mailReferencia: string | null;
+  mailVerificadaAt: string | null;
   rol: Role;
   activo: boolean;
   createdAt: string;

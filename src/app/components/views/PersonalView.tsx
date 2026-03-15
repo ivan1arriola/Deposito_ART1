@@ -76,8 +76,8 @@ export function PersonalView({
     <section className="ej-card mt-6 rounded-2xl p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-stone-900">Personal</h2>
-          <p className="mt-1 text-xs text-stone-600">Orden: Grado del Personal, Apellidos y Nombres.</p>
+          <h2 className="text-base font-semibold text-stone-900">Personal subalterno</h2>
+          <p className="mt-1 text-xs text-stone-600">Orden: grado del personal subalterno, apellidos y nombres.</p>
         </div>
         <button
           type="button"
@@ -243,7 +243,7 @@ export function PersonalView({
           <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-600">
             <tr>
               <th className="w-[11%] px-3 py-2">CI</th>
-              <th className="w-[15%] px-3 py-2">Grado del Personal</th>
+              <th className="w-[15%] px-3 py-2">Grado (subalterno)</th>
               <th className="w-[18%] px-3 py-2">Apellidos</th>
               <th className="w-[18%] px-3 py-2">Nombres</th>
               <th className="w-[13%] px-3 py-2">Batería</th>

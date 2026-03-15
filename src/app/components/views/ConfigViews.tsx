@@ -20,6 +20,7 @@ type UsuarioAdmin = {
   apellido: string;
   username: string;
   mailReferencia: string | null;
+  mailVerificadaAt: string | null;
   rol: Role;
   activo: boolean;
   createdAt: string;
@@ -165,7 +166,7 @@ const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "READ_ONLY"];
 const RANGO_TIPO_LABEL: Record<RangoTipo, string> = {
   SUBALTERNO: "Personal Subalterno",
   OFICIAL: "Senores Oficiales",
-  SUBOFICIAL: "Sub Oficiales",
+  SUBOFICIAL: "Suboficiales",
 };
 
 export function ConfigViews(props: ConfigViewsProps) {
@@ -812,7 +813,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                     <p className="text-sm font-medium text-stone-900">{`${usuario.grado} ${usuario.apellido}, ${usuario.nombre}`}</p>
                     <p className="mt-1 text-xs text-stone-600">{`Usuario: ${usuario.username}`}</p>
                     <p className="text-xs text-stone-600">
-                      {usuario.mailReferencia ? `Mail de referencia: ${usuario.mailReferencia}` : "Mail de referencia: sin dato"}
+                      {usuario.mailReferencia
+                        ? `Mail de referencia: ${usuario.mailReferencia} (${usuario.mailVerificadaAt ? "verificado" : "no verificado"})`
+                        : "Mail de referencia: sin dato"}
                     </p>
                     <p className="mt-1 text-xs text-stone-500">{props.roleDescription(usuario.rol)}</p>
                     <p className="text-xs text-stone-600">{usuario.activo ? "Activo" : "Inactivo"}</p>

@@ -20,7 +20,7 @@ function buildNombres(persona: { nombre1: string; nombre2: string | null }) {
 
 export async function generateMetadata() {
   return {
-    title: "Tabla de Talles de la Unidad",
+    title: "Tabla de Talles de Subalternos",
   };
 }
 
@@ -182,9 +182,9 @@ export default async function TallasUnidadPage({
       `}</style>
       <main className="sheet">
         <header className="header">
-          <h1 className="title">Tabla de Talles de la Unidad</h1>
-          <p className="subtitle">Personal completo con talles registrados para parka, camisaco, pantalon, kepi y calzado.</p>
-          <p className="meta">{`Generado: ${generatedAt} | Total personal: ${personal.length}`}</p>
+          <h1 className="title">Tabla de Talles de Subalternos</h1>
+          <p className="subtitle">Personal subalterno con talles registrados para parka, camisaco, pantalon, kepi y calzado.</p>
+          <p className="meta">{`Generado: ${generatedAt} | Total subalternos: ${personal.length}`}</p>
         </header>
 
         <div className="table-wrap">

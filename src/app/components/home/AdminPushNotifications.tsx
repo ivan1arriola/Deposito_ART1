@@ -64,7 +64,7 @@ export function AdminPushNotifications() {
           return;
         }
         setState("ready");
-        setMessage("Activa notificaciones para recibir movimientos e inicios de sesion.");
+        setMessage("Activa notificaciones para recibir movimientos e inicios de sesión.");
       } catch {
         setState("error");
         setMessage("No se pudo verificar el estado de notificaciones.");
@@ -92,7 +92,7 @@ export function AdminPushNotifications() {
       }
       const { publicKey } = (await keyResponse.json()) as { publicKey: string };
       if (!publicKey || publicKey.trim() === "") {
-        throw new Error("La clave publica de notificaciones es invalida.");
+        throw new Error("La clave pública de notificaciones es inválida.");
       }
 
       const registration = await getPushRegistration();
@@ -124,37 +124,11 @@ export function AdminPushNotifications() {
     }
   };
 
-  const deactivate = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const registration = await getPushRegistration();
-      const subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        setState("ready");
-        setMessage("No habia suscripcion activa.");
-        return;
-      }
-
-      const unsubscribeResponse = await fetch("/api/notifications/subscriptions", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ endpoint: subscription.endpoint }),
-      });
-      if (!unsubscribeResponse.ok) {
-        const details = await parseError(unsubscribeResponse, "No se pudo desactivar la suscripcion.");
-        throw new Error(details);
-      }
-      await subscription.unsubscribe();
-      setState("ready");
-      setMessage("Notificaciones desactivadas en este dispositivo.");
-    } catch (error) {
-      setState("error");
-      setMessage(error instanceof Error ? error.message : "No se pudo desactivar la suscripcion.");
-    } finally {
-      setBusy(false);
-    }
-  };
+  // Evita ruido visual constante en el dashboard:
+  // mostrar solo cuando hay accion pendiente o error.
+  if (state === "checking" || state === "unsupported" || state === "active") {
+    return null;
+  }
 
   return (
     <article className="rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm">
@@ -169,16 +143,6 @@ export function AdminPushNotifications() {
             className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/15 disabled:opacity-50"
           >
             {busy ? "Activando..." : "Activar notificaciones"}
-          </button>
-        ) : null}
-        {state === "active" ? (
-          <button
-            type="button"
-            onClick={() => void deactivate()}
-            disabled={busy}
-            className="rounded-xl border border-rose-200/35 bg-rose-950/20 px-3 py-2 text-xs font-semibold text-rose-100 transition hover:bg-rose-900/30 disabled:opacity-50"
-          >
-            {busy ? "Desactivando..." : "Desactivar en este dispositivo"}
           </button>
         ) : null}
       </div>

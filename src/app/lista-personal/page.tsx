@@ -7,7 +7,7 @@ import { TipoPersonal } from "@prisma/client";
 
 export const revalidate = 0;
 export const metadata = {
-  title: "Lista de Personal por Batería",
+  title: "Lista de Subalternos por Bateria",
 };
 
 function buildApellidos(persona: { apellido1: string; apellido2: string | null }) {
@@ -246,8 +246,8 @@ export default async function ListaPersonalPage({
         }
       `}</style>
       <main className="sheet">
-        <h1 className="title">Lista de Personal por Batería</h1>
-        <p className="meta">{`Generado: ${generatedAt} | Total personal: ${personal.length}`}</p>
+        <h1 className="title">Lista de Subalternos por Bateria</h1>
+        <p className="meta">{`Generado: ${generatedAt} | Total subalternos: ${personal.length}`}</p>
 
         {grouped.length === 0 ? (
           <section className="group">
