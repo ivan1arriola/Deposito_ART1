@@ -46,6 +46,7 @@ export function RecordatoriosConfigView({
   const [newTitulo, setNewTitulo] = useState("");
   const [newNota, setNewNota] = useState("");
   const [newFechaLimite, setNewFechaLimite] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitulo, setEditTitulo] = useState("");
   const [editNota, setEditNota] = useState("");
@@ -141,38 +142,58 @@ export function RecordatoriosConfigView({
         </label>
 
         <section className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Nueva tarea</p>
-          <div className="mt-2 space-y-2">
-            <input
-              value={newTitulo}
-              onChange={(event) => setNewTitulo(event.target.value)}
-              placeholder="Titulo"
-              maxLength={140}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-            />
-            <input
-              type="date"
-              value={newFechaLimite}
-              onChange={(event) => setNewFechaLimite(event.target.value)}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-            />
-            <textarea
-              value={newNota}
-              onChange={(event) => setNewNota(event.target.value)}
-              placeholder="Nota o detalle"
-              maxLength={2500}
-              rows={3}
-              className="w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-            />
-            <button
-              type="button"
-              onClick={() => void submitCreate()}
-              disabled={saving || newTitulo.trim().length < 2}
-              className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-60"
+          <button
+            type="button"
+            onClick={() => setShowCreateForm((current) => !current)}
+            aria-expanded={showCreateForm}
+            aria-controls="recordatorios-create-panel"
+            className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1 text-left"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Nueva tarea</p>
+            <svg
+              className={`h-4 w-4 text-stone-500 transition-transform ${showCreateForm ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
             >
-              {saving ? "Guardando..." : "Agregar tarea"}
-            </button>
-          </div>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showCreateForm ? (
+            <div id="recordatorios-create-panel" className="mt-2 space-y-2">
+              <input
+                value={newTitulo}
+                onChange={(event) => setNewTitulo(event.target.value)}
+                placeholder="Titulo"
+                maxLength={140}
+                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+              />
+              <input
+                type="date"
+                value={newFechaLimite}
+                onChange={(event) => setNewFechaLimite(event.target.value)}
+                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+              />
+              <textarea
+                value={newNota}
+                onChange={(event) => setNewNota(event.target.value)}
+                placeholder="Nota o detalle"
+                maxLength={2500}
+                rows={3}
+                className="w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => void submitCreate()}
+                disabled={saving || newTitulo.trim().length < 2}
+                className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-60"
+              >
+                {saving ? "Guardando..." : "Agregar tarea"}
+              </button>
+            </div>
+          ) : null}
         </section>
 
         <section className="mt-4 space-y-2">
