@@ -621,7 +621,7 @@ export default function Home() {
   }, [currentUser]);
 
   const createRecordatorioTask = useCallback(
-    async (input: { titulo: string; nota: string; fechaLimite: string | null }) => {
+    async (input: { titulo: string; nota: string; fechaLimite: string | null; prioridad: "NORMAL" | "URGENTE"; usuarioId?: string }) => {
       setRecordatoriosSaving(true);
       setRecordatoriosError(null);
       try {
@@ -645,7 +645,7 @@ export default function Home() {
   const updateRecordatorioTask = useCallback(
     async (
       tareaId: string,
-      input: Partial<{ titulo: string; nota: string; fechaLimite: string | null }> & { completada?: boolean },
+      input: Partial<{ titulo: string; nota: string; fechaLimite: string | null; prioridad: "NORMAL" | "URGENTE" }> & { completada?: boolean },
     ) => {
       setRecordatoriosSaving(true);
       setRecordatoriosError(null);
@@ -724,7 +724,7 @@ export default function Home() {
   const urgentPendingRecordatorios = useMemo(() => {
     const now = new Date();
     const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    return pendingRecordatorios.filter((task) => task.fechaLimite && task.fechaLimite <= todayKey).length;
+    return pendingRecordatorios.filter((task) => task.prioridad === "URGENTE" || (task.fechaLimite && task.fechaLimite <= todayKey)).length;
   }, [pendingRecordatorios]);
 
   useEffect(() => {
@@ -3626,6 +3626,9 @@ export default function Home() {
         <RecordatoriosConfigView
           tasks={recordatorioTasks}
           config={recordatorioConfig}
+          isAdmin={isAdmin}
+          currentUserId={currentUser?.usuarioId ?? null}
+          userOptions={usuarios}
           loading={recordatoriosLoading}
           saving={recordatoriosSaving}
           error={recordatoriosError}

@@ -9,6 +9,7 @@ CREATE TYPE "tipo_personal" AS ENUM ('SUBALTERNO', 'OFICIAL', 'SUBOFICIAL');
 CREATE TYPE "tipo_movimiento" AS ENUM ('ENTREGA', 'DEVOLUCION', 'PRESTAMO');
 CREATE TYPE "estado_prestamo_movimiento" AS ENUM ('PENDIENTE', 'DEVUELTO');
 CREATE TYPE "estado_equipo_prestamo" AS ENUM ('NUEVO', 'BUENO', 'REGULAR', 'MALO');
+CREATE TYPE "prioridad_recordatorio" AS ENUM ('NORMAL', 'URGENTE');
 
 CREATE OR REPLACE FUNCTION public.es_ci_uruguaya_valida(ci_text TEXT)
 RETURNS BOOLEAN
@@ -376,13 +377,14 @@ CREATE TABLE "usuario_recordatorio_tarea" (
   "titulo" TEXT NOT NULL,
   "nota" TEXT,
   "fecha_limite" DATE,
+  "prioridad" "prioridad_recordatorio" NOT NULL DEFAULT 'NORMAL',
   "completada" BOOLEAN NOT NULL DEFAULT FALSE,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
 );
 
 CREATE INDEX "usuario_recordatorio_tarea_usuario_completada_fecha_idx"
-  ON "usuario_recordatorio_tarea"("usuario_id", "completada", "fecha_limite");
+  ON "usuario_recordatorio_tarea"("usuario_id", "completada", "prioridad", "fecha_limite");
 
 CREATE TABLE "movimiento" (
   "movimiento_id" BIGSERIAL PRIMARY KEY,

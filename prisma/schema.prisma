@@ -54,6 +54,13 @@ enum EstadoEquipoPrestamo {
   @@map("estado_equipo_prestamo")
 }
 
+enum PrioridadRecordatorio {
+  NORMAL
+  URGENTE
+
+  @@map("prioridad_recordatorio")
+}
+
 model Usuario {
   usuarioId                       String              @id @default(cuid()) @map("usuario_id")
   rangoId                         Int                 @map("grado_id") @db.SmallInt
@@ -91,17 +98,18 @@ model UsuarioRecordatorioConfig {
 }
 
 model UsuarioRecordatorioTarea {
-  tareaId      BigInt    @id @default(autoincrement()) @map("tarea_id")
-  usuarioId    String    @map("usuario_id")
+  tareaId      BigInt                @id @default(autoincrement()) @map("tarea_id")
+  usuarioId    String                @map("usuario_id")
   titulo       String
   nota         String?
-  fechaLimite  DateTime? @map("fecha_limite") @db.Date
-  completada   Boolean   @default(false)
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  usuario      Usuario   @relation(fields: [usuarioId], references: [usuarioId], onDelete: Cascade)
+  fechaLimite  DateTime?             @map("fecha_limite") @db.Date
+  prioridad    PrioridadRecordatorio @default(NORMAL)
+  completada   Boolean               @default(false)
+  createdAt    DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  usuario      Usuario               @relation(fields: [usuarioId], references: [usuarioId], onDelete: Cascade)
 
-  @@index([usuarioId, completada, fechaLimite])
+  @@index([usuarioId, completada, prioridad, fechaLimite])
   @@map("usuario_recordatorio_tarea")
 }
 

@@ -249,7 +249,7 @@ function groupedOptionClass(activeView: MainView, view: MainView) {
 }
 
 function menuContainerClass(isOpen: boolean) {
-  return `relative flex-1 ${isOpen ? "z-20" : "z-0"}`;
+  return `relative w-full sm:w-auto sm:min-w-[11rem] sm:flex-none ${isOpen ? "z-20" : "z-0"}`;
 }
 
 function menuPanelClass(desktopWidthClass: string) {
@@ -397,7 +397,7 @@ export function MainNavigation({
   return (
     <section className="ej-card relative isolate z-[220] mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Navegación</p>
-      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch">
         <div ref={personalMenuRef} className={menuContainerClass(showPersonalViews)}>
           <button
             type="button"
@@ -548,7 +548,7 @@ export function MainNavigation({
         <button
           type="button"
           onClick={() => handleSelectView("tallas_resumen")}
-          className={`group flex min-w-[13rem] flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+          className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all sm:w-auto sm:min-w-[13rem] sm:flex-none ${
             isSummaryView ? "ej-view-active" : "ej-view-idle"
           }`}
         >
@@ -604,7 +604,11 @@ export function MainNavigation({
             ) : null}
           </div>
         ) : null}
-        <button type="button" onClick={() => handleSelectView("formularios")} className={`${viewButtonClass(activeView, "formularios")} group relative flex-1 overflow-hidden transition-all`}>
+        <button
+          type="button"
+          onClick={() => handleSelectView("formularios")}
+          className={`${viewButtonClass(activeView, "formularios")} group relative w-full transition-all sm:w-auto sm:min-w-[10.5rem] sm:flex-none`}
+        >
           <div className="flex items-center justify-center gap-2">
             <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M9 8h6m-9 12h12a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />

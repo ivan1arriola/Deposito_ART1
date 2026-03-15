@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
 
 type CreateTaskPayload = {
   titulo?: unknown;
   nota?: unknown;
   fechaLimite?: unknown;
+  prioridad?: unknown;
+  usuarioId?: unknown;
 };
 
 function pad2(value: number) {
@@ -36,35 +39,62 @@ function parseIsoDate(value: string): Date | null {
   return utcDate;
 }
 
+function parsePriority(value: unknown): "NORMAL" | "URGENTE" | null {
+  if (value === "NORMAL" || value === "URGENTE") return value;
+  return null;
+}
+
 function serializeTask(task: {
   tareaId: bigint;
+  usuarioId: string;
   titulo: string;
   nota: string | null;
   fechaLimite: Date | null;
+  prioridad: "NORMAL" | "URGENTE";
   completada: boolean;
   createdAt: Date;
   updatedAt: Date;
 }) {
   return {
     tareaId: task.tareaId.toString(),
+    usuarioId: task.usuarioId,
     titulo: task.titulo,
     nota: task.nota ?? "",
     fechaLimite: toIsoDate(task.fechaLimite),
+    prioridad: task.prioridad,
     completada: task.completada,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getUserFromRequest();
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const requestedUsuarioId = searchParams.get("usuarioId")?.trim() ?? "";
+  let targetUsuarioId = user.usuarioId;
+
+  if (requestedUsuarioId !== "" && requestedUsuarioId !== user.usuarioId) {
+    if (user.rol !== UserRole.ADMIN) {
+      return NextResponse.json({ error: "Solo administradores pueden consultar tareas de otros usuarios." }, { status: 403 });
+    }
+    const target = await prisma.usuario.findUnique({
+      where: { usuarioId: requestedUsuarioId },
+      select: { usuarioId: true, activo: true },
+    });
+    if (!target || !target.activo) {
+      return NextResponse.json({ error: "Usuario destino no encontrado." }, { status: 404 });
+    }
+    targetUsuarioId = target.usuarioId;
+  }
+
   const tareas = await prisma.usuarioRecordatorioTarea.findMany({
-    where: { usuarioId: user.usuarioId },
-    orderBy: [{ completada: "asc" }, { fechaLimite: "asc" }, { createdAt: "desc" }],
+    where: { usuarioId: targetUsuarioId },
+    orderBy: [{ completada: "asc" }, { prioridad: "desc" }, { fechaLimite: "asc" }, { createdAt: "desc" }],
   });
 
   return NextResponse.json(tareas.map(serializeTask));
@@ -104,12 +134,35 @@ export async function POST(request: Request) {
     fechaLimite = parsed;
   }
 
+  const prioridadRaw = body.prioridad === undefined ? "NORMAL" : body.prioridad;
+  const prioridad = parsePriority(prioridadRaw);
+  if (!prioridad) {
+    return NextResponse.json({ error: "La prioridad es invalida." }, { status: 400 });
+  }
+
+  const requestedUsuarioId = typeof body.usuarioId === "string" ? body.usuarioId.trim() : "";
+  let targetUsuarioId = user.usuarioId;
+  if (requestedUsuarioId !== "" && requestedUsuarioId !== user.usuarioId) {
+    if (user.rol !== UserRole.ADMIN) {
+      return NextResponse.json({ error: "Solo administradores pueden asignar tareas a otros usuarios." }, { status: 403 });
+    }
+    const target = await prisma.usuario.findUnique({
+      where: { usuarioId: requestedUsuarioId },
+      select: { usuarioId: true, activo: true, username: true },
+    });
+    if (!target || !target.activo) {
+      return NextResponse.json({ error: "Usuario destino no encontrado." }, { status: 404 });
+    }
+    targetUsuarioId = target.usuarioId;
+  }
+
   const created = await prisma.usuarioRecordatorioTarea.create({
     data: {
-      usuarioId: user.usuarioId,
+      usuarioId: targetUsuarioId,
       titulo,
       nota,
       fechaLimite,
+      prioridad,
     },
   });
 
@@ -121,6 +174,8 @@ export async function POST(request: Request) {
     detalle: {
       titulo: created.titulo,
       fechaLimite: toIsoDate(created.fechaLimite),
+      prioridad: created.prioridad,
+      usuarioDestinoId: targetUsuarioId,
     },
   });
 

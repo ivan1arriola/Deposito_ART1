@@ -8,6 +8,7 @@ type UpdateTaskPayload = {
   nota?: unknown;
   fechaLimite?: unknown;
   completada?: unknown;
+  prioridad?: unknown;
 };
 
 function pad2(value: number) {
@@ -47,20 +48,29 @@ function parseTaskId(raw: string) {
   }
 }
 
+function parsePriority(value: unknown): "NORMAL" | "URGENTE" | null {
+  if (value === "NORMAL" || value === "URGENTE") return value;
+  return null;
+}
+
 function serializeTask(task: {
   tareaId: bigint;
+  usuarioId: string;
   titulo: string;
   nota: string | null;
   fechaLimite: Date | null;
+  prioridad: "NORMAL" | "URGENTE";
   completada: boolean;
   createdAt: Date;
   updatedAt: Date;
 }) {
   return {
     tareaId: task.tareaId.toString(),
+    usuarioId: task.usuarioId,
     titulo: task.titulo,
     nota: task.nota ?? "",
     fechaLimite: toIsoDate(task.fechaLimite),
+    prioridad: task.prioridad,
     completada: task.completada,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
@@ -96,6 +106,7 @@ export async function PUT(request: Request, context: { params: Promise<{ tareaId
     nota?: string | null;
     fechaLimite?: Date | null;
     completada?: boolean;
+    prioridad?: "NORMAL" | "URGENTE";
   } = {};
 
   if ("titulo" in body) {
@@ -141,6 +152,14 @@ export async function PUT(request: Request, context: { params: Promise<{ tareaId
     data.completada = body.completada;
   }
 
+  if ("prioridad" in body) {
+    const prioridad = parsePriority(body.prioridad);
+    if (!prioridad) {
+      return NextResponse.json({ error: "La prioridad es invalida." }, { status: 400 });
+    }
+    data.prioridad = prioridad;
+  }
+
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "No hay cambios para guardar." }, { status: 400 });
   }
@@ -159,6 +178,7 @@ export async function PUT(request: Request, context: { params: Promise<{ tareaId
       titulo: updated.titulo,
       completada: updated.completada,
       fechaLimite: toIsoDate(updated.fechaLimite),
+      prioridad: updated.prioridad,
     },
   });
 
@@ -195,6 +215,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ tare
       titulo: existing.titulo,
       completada: existing.completada,
       fechaLimite: toIsoDate(existing.fechaLimite),
+      prioridad: existing.prioridad,
     },
   });
 
