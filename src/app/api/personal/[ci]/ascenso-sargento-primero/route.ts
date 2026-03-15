@@ -10,6 +10,8 @@ import { normalizeSearchTerm } from "@/lib/search";
 
 const ASCENSO_COMENTARIO_PRESTAMO = "Por ascenso a Sargento Primero";
 const ASCENSO_FECHA_ESTIMADA = "Indefinido";
+const ASCENSO_TX_MAX_WAIT_MS = 10_000;
+const ASCENSO_TX_TIMEOUT_MS = 120_000;
 
 type AscensoPayload = {
   adminPassword: string;
@@ -267,6 +269,9 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
         totalUnidadesPrestamo,
         prestamoGenerado,
       };
+    }, {
+      maxWait: ASCENSO_TX_MAX_WAIT_MS,
+      timeout: ASCENSO_TX_TIMEOUT_MS,
     });
 
     await logAudit({
@@ -308,6 +313,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
       prestamoGenerado: result.prestamoGenerado,
     });
   } catch (error: unknown) {
+    const prismaLike = error as { code?: string; message?: string };
     if (error instanceof AscensoError) {
       if (error.code === "PERSONA_NO_ENCONTRADA") {
         return NextResponse.json({ error: error.message }, { status: 404 });
@@ -321,6 +327,14 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
       }
     }
 
+    if (prismaLike?.code === "P2028" || prismaLike?.code === "P1008") {
+      return NextResponse.json(
+        { error: "La operacion demoro demasiado. Reintenta el ascenso en unos segundos." },
+        { status: 503 },
+      );
+    }
+
+    console.error("ascenso-sargento-primero: unexpected error", error);
     return NextResponse.json({ error: "No se pudo completar el ascenso." }, { status: 500 });
   }
 }

@@ -1,6 +1,5 @@
-const CACHE_NAME = "deposito-art1-v2";
+const CACHE_NAME = "deposito-art1-v3";
 const STATIC_ASSETS = [
-  "/manifest.webmanifest",
   "/pwa-icons/android/icon-192.png",
   "/pwa-icons/android/icon-512.png",
   "/pwa-icons/android/icon-512-maskable.png",
@@ -25,6 +24,9 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
+  if (requestUrl.pathname === "/manifest.webmanifest") {
+    return;
+  }
 
   // Nunca cachear recursos dinamicos de Next o API: evita mezclar HTML/JS de builds distintos.
   if (requestUrl.pathname.startsWith("/_next/") || requestUrl.pathname.startsWith("/api/")) {
@@ -45,9 +47,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const isStaticAsset =
-    requestUrl.pathname === "/manifest.webmanifest" ||
-    requestUrl.pathname.startsWith("/pwa-icons/");
+  const isStaticAsset = requestUrl.pathname.startsWith("/pwa-icons/");
 
   if (!isStaticAsset) return;
 
