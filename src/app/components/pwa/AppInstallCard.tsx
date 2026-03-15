@@ -6,25 +6,35 @@ type InstallState = "loading" | "available" | "installed" | "manual";
 
 const DISMISS_KEY = "pwa-install-card-dismissed";
 
-export function AppInstallCard() {
+type AppInstallCardProps = {
+  compact?: boolean;
+};
+
+export function AppInstallCard({ compact = false }: AppInstallCardProps) {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [installState, setInstallState] = useState<InstallState>("loading");
   const [installing, setInstalling] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  const manualMessage = useMemo(() => {
+  const manualMessages = useMemo(() => {
     if (typeof navigator === "undefined") {
-      return "";
+      return { full: "", compact: "" };
     }
 
     const ua = navigator.userAgent.toLowerCase();
     const isMobile = /android|iphone|ipad|ipod/.test(ua);
 
     if (isMobile) {
-      return "En Chrome mobile, abre el menu (tres puntos) y toca 'Instalar aplicacion'.";
+      return {
+        full: "En Chrome mobile, abre el menu (tres puntos) y toca 'Instalar aplicacion'.",
+        compact: "Chrome mobile: menu (tres puntos) > Instalar aplicacion.",
+      };
     }
 
-    return "En Chrome escritorio, usa el icono de instalacion en la barra de direcciones (a la derecha).";
+    return {
+      full: "En Chrome escritorio, usa el icono de instalacion en la barra de direcciones (a la derecha).",
+      compact: "Chrome escritorio: usa el icono de instalacion de la barra.",
+    };
   }, []);
 
   useEffect(() => {
@@ -102,34 +112,52 @@ export function AppInstallCard() {
     }
   };
 
+  const summaryText =
+    installState === "available"
+      ? compact
+        ? "Instalala para abrir rapido desde Inicio."
+        : "Instalala para abrir rapido desde el inicio y usarla como app en escritorio o mobile."
+      : compact
+        ? manualMessages.compact
+        : manualMessages.full;
+
+  const primaryLabel = installing
+    ? "Abriendo..."
+    : installState === "available"
+      ? compact
+        ? "Instalar app"
+        : "Descargar app"
+      : compact
+        ? "Como instalar"
+        : "Ver como descargar app";
+
   return (
-    <section className="ej-card mt-4 rounded-2xl border border-stone-300/70 bg-white/85 p-4 sm:p-5" aria-live="polite">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <section
+      className={`ej-card mt-4 rounded-2xl border border-stone-300/70 bg-white/85 ${compact ? "p-3 sm:p-4" : "p-4 sm:p-5"}`}
+      aria-live="polite"
+    >
+      <div className={`flex flex-col gap-3 ${compact ? "" : "sm:flex-row sm:items-center sm:justify-between"}`}>
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Aplicacion instalable</p>
-          <h2 className="text-base font-bold text-stone-900 sm:text-lg">Instala Deposito ART1 en Chrome</h2>
-          <p className="mt-1 text-sm text-stone-700">
-            {installState === "available"
-              ? "Instalala para abrir rapido desde el inicio y usarla como app en escritorio o mobile."
-              : manualMessage}
-          </p>
+          <h2 className={`${compact ? "text-sm sm:text-base" : "text-base sm:text-lg"} font-bold text-stone-900`}>Instala Deposito ART1 en Chrome</h2>
+          <p className={`${compact ? "text-xs" : "text-sm"} mt-1 text-stone-700`}>{summaryText}</p>
         </div>
 
-        <div className="flex gap-2 sm:shrink-0">
+        <div className={`gap-2 ${compact ? "grid grid-cols-2" : "flex sm:shrink-0"}`}>
           <button
             type="button"
             onClick={() => void install()}
             disabled={installing}
-            className="ej-button rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60"
+            className={`ej-button rounded-xl ${compact ? "px-3 py-2 text-xs sm:text-sm" : "px-4 py-2 text-sm"} font-semibold disabled:opacity-60`}
           >
-            {installing ? "Abriendo..." : installState === "available" ? "Descargar app" : "Ver como descargar app"}
+            {primaryLabel}
           </button>
           <button
             type="button"
             onClick={dismiss}
-            className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
+            className={`rounded-xl border border-stone-300 bg-white ${compact ? "px-3 py-2 text-xs sm:text-sm" : "px-4 py-2 text-sm"} font-semibold text-stone-700 transition hover:bg-stone-100`}
           >
-            Ocultar
+            {compact ? "Cerrar" : "Ocultar"}
           </button>
         </div>
       </div>

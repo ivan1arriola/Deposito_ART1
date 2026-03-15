@@ -3326,7 +3326,8 @@ export default function Home() {
                   className="h-auto w-36 object-contain drop-shadow-[0_14px_28px_rgba(17,24,39,0.22)] sm:w-44"
                 />
               </div>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">Iniciar sesión</h1>
+              <div className="rounded-2xl border border-stone-200/80 bg-white/75 p-4 shadow-sm sm:p-5">
+              <h1 className="mt-1 text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">Iniciar sesión</h1>
               <p className="mt-2 text-sm text-stone-600" suppressHydrationWarning>{status}</p>
 
               {initMessage && showInitCredentials && initCredentials && (
@@ -3356,14 +3357,14 @@ export default function Home() {
                   value={loginUsername}
                   onChange={(event) => setLoginUsername(event.target.value)}
                   placeholder="Usuario"
-                  className="w-full rounded-2xl border border-stone-300/90 bg-white/75 px-3 py-2 text-sm"
+                  className="w-full rounded-2xl border border-stone-300/90 bg-white/90 px-3 py-2 text-sm"
                 />
                 <input
                   value={loginPassword}
                   onChange={(event) => setLoginPassword(event.target.value)}
                   placeholder="Contrasena"
                   type="password"
-                  className="w-full rounded-2xl border border-stone-300/90 bg-white/75 px-3 py-2 text-sm"
+                  className="w-full rounded-2xl border border-stone-300/90 bg-white/90 px-3 py-2 text-sm"
                 />
                 <button
                   type="submit"
@@ -3407,8 +3408,9 @@ export default function Home() {
                   {resetRequestMessage ? <p className="text-xs text-stone-600">{resetRequestMessage}</p> : null}
                 </form>
               ) : null}
+              </div>
 
-              <AppInstallCard />
+              <AppInstallCard compact />
             </div>
           </div>
         </section>

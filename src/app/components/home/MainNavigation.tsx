@@ -38,15 +38,6 @@ const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean;
     ),
   },
   {
-    view: "equipos",
-    label: "Equipos Registrados",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-      </svg>
-    ),
-  },
-  {
     view: "firmas",
     label: "Firmas institucionales",
     adminOnly: true,
@@ -545,16 +536,14 @@ export function MainNavigation({
         <button
           type="button"
           onClick={() => handleSelectView("tallas_resumen")}
-          className={`group relative flex-1 overflow-hidden rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+          className={`group flex min-w-[13rem] flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
             isSummaryView ? "ej-view-active" : "ej-view-idle"
           }`}
         >
-          <div className="flex items-center justify-center gap-2">
-            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19h16M4 12h10M4 5h16" />
-            </svg>
-            <span className="whitespace-nowrap">Resumen de Tallas</span>
-          </div>
+          <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20V10m5 10V4m5 16v-6M4 20h16" />
+          </svg>
+          <span className="whitespace-nowrap">Resumen de Tallas</span>
         </button>
         {canWrite ? (
           <div ref={createMenuRef} className={menuContainerClass(showCreateViews)}>

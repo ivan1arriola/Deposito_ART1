@@ -64,7 +64,7 @@ export default async function TallesSubalternosPage({
       <style>{`
         @page {
           size: A4 portrait;
-          margin: 8mm;
+          margin: 6mm;
         }
 
         * {
@@ -83,12 +83,12 @@ export default async function TallesSubalternosPage({
           width: 100%;
           max-width: 198mm;
           margin: 0 auto;
-          padding: 8mm;
+          padding: 6mm;
           background: #ffffff;
         }
 
         .header {
-          margin-bottom: 4mm;
+          margin-bottom: 3mm;
         }
 
         .title {
@@ -104,82 +104,78 @@ export default async function TallesSubalternosPage({
           font-size: 9pt;
         }
 
-        .cards {
-          display: grid;
-          gap: 3mm;
-        }
-
-        .card {
-          break-inside: avoid;
+        .table-wrap {
           border: 1px solid #111827;
-          padding: 2.4mm 2.6mm;
         }
 
-        .card-head {
-          display: grid;
-          grid-template-columns: auto 1fr auto;
-          align-items: center;
-          gap: 2mm;
-          border-bottom: 1px solid #d6d3d1;
-          padding-bottom: 1.5mm;
-          margin-bottom: 1.5mm;
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
         }
 
-        .index-badge {
-          min-width: 8mm;
-          text-align: center;
-          font-size: 8.5pt;
-          font-weight: 700;
+        thead {
+          display: table-header-group;
+        }
+
+        th,
+        td {
           border: 1px solid #111827;
-          padding: 0.6mm 1mm;
+          padding: 1.3mm 1.1mm;
+          vertical-align: middle;
         }
 
-        .identity {
-          font-size: 9pt;
-          line-height: 1.3;
-        }
-
-        .identity strong {
-          font-size: 9.5pt;
-        }
-
-        .ci {
-          font-family: "Courier New", monospace;
-          font-size: 8.5pt;
-        }
-
-        .battery {
-          font-size: 8.5pt;
-          text-align: right;
-        }
-
-        .tallas-grid {
-          display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
-          gap: 1.6mm;
-        }
-
-        .talla-item {
-          border: 1px solid #d6d3d1;
-          padding: 1.2mm;
-          text-align: center;
-          background: #fafaf9;
-        }
-
-        .talla-label {
-          font-size: 7.5pt;
-          font-weight: 700;
+        th {
+          background: #f5f5f4;
           text-transform: uppercase;
+          font-size: 7.1pt;
+          font-weight: 700;
+          text-align: center;
+          letter-spacing: 0.02em;
+        }
+
+        td {
+          font-size: 8.2pt;
+          text-align: center;
+        }
+
+        tr {
+          break-inside: avoid;
+        }
+
+        .col-index {
+          width: 6%;
+          font-weight: 700;
+        }
+
+        .col-persona {
+          width: 34%;
+          text-align: left;
+        }
+
+        .col-bateria {
+          width: 14%;
+        }
+
+        .persona-nombre {
+          font-size: 8.8pt;
+          font-weight: 700;
+          line-height: 1.2;
+        }
+
+        .persona-ci {
+          margin-top: 0.4mm;
+          font-family: "Courier New", monospace;
+          font-size: 8.2pt;
+          line-height: 1.2;
         }
 
         .talla-value {
-          margin-top: 0.6mm;
-          font-size: 9pt;
           font-weight: 700;
         }
 
         .firma-section {
-          margin-top: 11mm;
+          margin-top: 10mm;
           display: grid;
           gap: 3.2mm;
         }
@@ -241,30 +237,47 @@ export default async function TallesSubalternosPage({
           <p className="meta">{`Generado: ${generatedAt} | Total subalternos: ${personal.length}`}</p>
         </header>
 
-        <section className="cards">
-          {personal.map((persona, index) => {
-            const talles = tallasMap(persona.tallas);
-            return (
-              <article key={persona.ci} className="card">
-                <div className="card-head">
-                  <span className="index-badge">{index + 1}</span>
-                  <div className="identity">
-                    <strong>{`${persona.rango.abreviacion} ${buildApellidos(persona)}, ${buildNombres(persona)}`}</strong>
-                    <div className="ci">{formatUruguayanCi(persona.ci)}</div>
-                  </div>
-                  <div className="battery">{persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL}</div>
-                </div>
-                <div className="tallas-grid">
-                  {TALLA_KEYS.map((key) => (
-                    <div key={`${persona.ci}-${key}`} className="talla-item">
-                      <div className="talla-label">{TALLA_LABELS[key]}</div>
-                      <div className="talla-value">{talles[key] !== "-" ? talles[key] : "Sin dato"}</div>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            );
-          })}
+        <section className="table-wrap">
+          <table>
+            <colgroup>
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "34%" }} />
+              <col style={{ width: "14%" }} />
+              {TALLA_KEYS.map((key) => (
+                <col key={`col-${key}`} style={{ width: "9.2%" }} />
+              ))}
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Nro</th>
+                <th>Grado y nombre</th>
+                <th>Bateria</th>
+                {TALLA_KEYS.map((key) => (
+                  <th key={`head-${key}`}>{TALLA_LABELS[key]}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {personal.map((persona, index) => {
+                const talles = tallasMap(persona.tallas);
+                return (
+                  <tr key={persona.ci}>
+                    <td className="col-index">{index + 1}</td>
+                    <td className="col-persona">
+                      <div className="persona-nombre">{`${persona.rango.abreviacion} ${buildApellidos(persona)}, ${buildNombres(persona)}`}</div>
+                      <div className="persona-ci">{formatUruguayanCi(persona.ci)}</div>
+                    </td>
+                    <td className="col-bateria">{persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
+                    {TALLA_KEYS.map((key) => (
+                      <td key={`${persona.ci}-${key}`} className="talla-value">
+                        {talles[key] !== "-" ? talles[key] : "Sin dato"}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </section>
 
         <section className="firma-section">
