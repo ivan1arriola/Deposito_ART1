@@ -3406,6 +3406,8 @@ export default function Home() {
                   {resetRequestMessage ? <p className="text-xs text-stone-600">{resetRequestMessage}</p> : null}
                 </form>
               ) : null}
+
+              <AppInstallCard />
             </div>
           </div>
         </section>

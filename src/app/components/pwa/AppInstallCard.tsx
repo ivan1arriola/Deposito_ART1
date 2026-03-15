@@ -74,7 +74,11 @@ export function AppInstallCard() {
   }
 
   const install = async () => {
-    if (!installEvent || installing) return;
+    if (installing) return;
+    if (!installEvent) {
+      setInstallState("manual");
+      return;
+    }
 
     setInstalling(true);
     try {
@@ -112,16 +116,14 @@ export function AppInstallCard() {
         </div>
 
         <div className="flex gap-2 sm:shrink-0">
-          {installState === "available" ? (
-            <button
-              type="button"
-              onClick={() => void install()}
-              disabled={installing}
-              className="ej-button rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60"
-            >
-              {installing ? "Abriendo..." : "Instalar aplicacion"}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={() => void install()}
+            disabled={installing}
+            className="ej-button rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60"
+          >
+            {installing ? "Abriendo..." : installState === "available" ? "Descargar app" : "Ver como descargar app"}
+          </button>
           <button
             type="button"
             onClick={dismiss}
