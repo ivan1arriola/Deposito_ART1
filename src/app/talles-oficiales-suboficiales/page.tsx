@@ -1,5 +1,4 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
-import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { tallasMap } from "@/lib/form-mappers";
@@ -135,16 +134,13 @@ export default async function TallesOficialesSuboficialesPage({
 
         th {
           background: #f5f5f4;
-          text-transform: uppercase;
-          font-size: 7.1pt;
+          font-size: 10pt;
           font-weight: 700;
-          text-align: center;
-          letter-spacing: 0.02em;
+          text-align: left;
         }
 
         td {
-          font-size: 8.2pt;
-          text-align: center;
+          font-size: 10pt;
         }
 
         tr {
@@ -154,34 +150,33 @@ export default async function TallesOficialesSuboficialesPage({
         .col-index {
           width: 6%;
           font-weight: 700;
+          text-align: center;
         }
 
-        .col-persona {
-          width: 34%;
-          text-align: left;
+        .col-grado {
+          width: 10%;
+          font-weight: 700;
+          text-align: center;
+        }
+
+        .col-nombre {
+          width: 22%;
+        }
+
+        .col-apellido {
+          width: 22%;
         }
 
         .col-tipo {
-          width: 14%;
-          font-size: 7.8pt;
+          width: 10%;
+          font-size: 10pt;
           font-weight: 700;
-        }
-
-        .persona-nombre {
-          font-size: 8.8pt;
-          font-weight: 700;
-          line-height: 1.2;
-        }
-
-        .persona-ci {
-          margin-top: 0.4mm;
-          font-family: "Courier New", monospace;
-          font-size: 8.2pt;
-          line-height: 1.2;
+          text-align: center;
         }
 
         .talla-value {
           font-weight: 700;
+          text-align: center;
         }
 
         .firma-section {
@@ -251,16 +246,20 @@ export default async function TallesOficialesSuboficialesPage({
           <table>
             <colgroup>
               <col style={{ width: "6%" }} />
-              <col style={{ width: "34%" }} />
-              <col style={{ width: "14%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "22%" }} />
+              <col style={{ width: "22%" }} />
+              <col style={{ width: "10%" }} />
               {TALLA_KEYS.map((key) => (
-                <col key={`col-${key}`} style={{ width: "9.2%" }} />
+                <col key={`col-${key}`} style={{ width: "6%" }} />
               ))}
             </colgroup>
             <thead>
               <tr>
                 <th>Nro</th>
-                <th>Grado y nombre</th>
+                <th>Grado</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
                 <th>Tipo</th>
                 {TALLA_KEYS.map((key) => (
                   <th key={`head-${key}`}>{TALLA_LABELS[key]}</th>
@@ -274,10 +273,9 @@ export default async function TallesOficialesSuboficialesPage({
                 return (
                   <tr key={`${registro.tipo}-${registro.ci}`}>
                     <td className="col-index">{index + 1}</td>
-                    <td className="col-persona">
-                      <div className="persona-nombre">{`${registro.rango.abreviacion} ${buildApellidos(registro)}, ${buildNombres(registro)}`}</div>
-                      <div className="persona-ci">{formatUruguayanCi(registro.ci)}</div>
-                    </td>
+                    <td className="col-grado">{registro.rango.abreviacion}</td>
+                    <td className="col-nombre">{buildNombres(registro)}</td>
+                    <td className="col-apellido">{buildApellidos(registro)}</td>
                     <td className="col-tipo">{typeLabel}</td>
                     {TALLA_KEYS.map((key) => (
                       <td key={`${registro.ci}-${key}`} className="talla-value">

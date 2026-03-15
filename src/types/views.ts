@@ -30,6 +30,7 @@ export type MainView =
   | "grados"
   | "baterias"
   | "equipos"
+  | "recordatorios"
   | "firmas"
   | "usuarios"
   | "auditoria"

@@ -83,7 +83,7 @@ export default async function ListaPersonalPage({
     if (!group) {
       grupos.set(key, {
         key,
-        nombre: bateria?.nombre ?? "Sin batería",
+        nombre: bateria?.nombre ?? "Sin bateria",
         orden: bateria?.orden ?? null,
         personal: [persona],
       });
@@ -161,8 +161,7 @@ export default async function ListaPersonalPage({
           margin: 0 0 2mm;
           font-size: 11pt;
           font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.02em;
         }
 
         .table-wrap {
@@ -190,23 +189,19 @@ export default async function ListaPersonalPage({
 
         th, td {
           border: 1px solid #111827;
-          padding: 2mm 2.2mm;
+          padding: 2.4mm 2.2mm;
           vertical-align: middle;
         }
 
         thead th {
           background: #e7e5e4;
-          font-size: 9pt;
+          font-size: 11pt;
           font-weight: 700;
           text-align: left;
         }
 
         tbody td {
-          font-size: 9pt;
-        }
-
-        tbody tr:nth-child(even) {
-          background: #f5f5f4;
+          font-size: 11pt;
         }
 
         .center {

@@ -124,6 +124,20 @@ export type PersonalObservacion = {
   createdAt: string;
 };
 
+export type RecordatorioTarea = {
+  tareaId: string;
+  titulo: string;
+  nota: string;
+  fechaLimite: string | null;
+  completada: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RecordatorioConfig = {
+  mostrarMuneco: boolean;
+};
+
 export type CurrentUser = {
   usuarioId: string;
   rangoId: number;

@@ -1,5 +1,4 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
-import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { tallasMap } from "@/lib/form-mappers";
@@ -127,16 +126,13 @@ export default async function TallesSubalternosPage({
 
         th {
           background: #f5f5f4;
-          text-transform: uppercase;
-          font-size: 7.1pt;
+          font-size: 10pt;
           font-weight: 700;
-          text-align: center;
-          letter-spacing: 0.02em;
+          text-align: left;
         }
 
         td {
-          font-size: 8.2pt;
-          text-align: center;
+          font-size: 10pt;
         }
 
         tr {
@@ -146,32 +142,31 @@ export default async function TallesSubalternosPage({
         .col-index {
           width: 6%;
           font-weight: 700;
+          text-align: center;
         }
 
-        .col-persona {
-          width: 34%;
-          text-align: left;
+        .col-grado {
+          width: 10%;
+          font-weight: 700;
+          text-align: center;
+        }
+
+        .col-nombre {
+          width: 18%;
+        }
+
+        .col-apellido {
+          width: 20%;
         }
 
         .col-bateria {
-          width: 14%;
-        }
-
-        .persona-nombre {
-          font-size: 8.8pt;
-          font-weight: 700;
-          line-height: 1.2;
-        }
-
-        .persona-ci {
-          margin-top: 0.4mm;
-          font-family: "Courier New", monospace;
-          font-size: 8.2pt;
-          line-height: 1.2;
+          width: 10%;
+          text-align: center;
         }
 
         .talla-value {
           font-weight: 700;
+          text-align: center;
         }
 
         .firma-section {
@@ -241,16 +236,20 @@ export default async function TallesSubalternosPage({
           <table>
             <colgroup>
               <col style={{ width: "6%" }} />
-              <col style={{ width: "34%" }} />
-              <col style={{ width: "14%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "20%" }} />
+              <col style={{ width: "10%" }} />
               {TALLA_KEYS.map((key) => (
-                <col key={`col-${key}`} style={{ width: "9.2%" }} />
+                <col key={`col-${key}`} style={{ width: "7.2%" }} />
               ))}
             </colgroup>
             <thead>
               <tr>
                 <th>Nro</th>
-                <th>Grado y nombre</th>
+                <th>Grado</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
                 <th>Bateria</th>
                 {TALLA_KEYS.map((key) => (
                   <th key={`head-${key}`}>{TALLA_LABELS[key]}</th>
@@ -263,10 +262,9 @@ export default async function TallesSubalternosPage({
                 return (
                   <tr key={persona.ci}>
                     <td className="col-index">{index + 1}</td>
-                    <td className="col-persona">
-                      <div className="persona-nombre">{`${persona.rango.abreviacion} ${buildApellidos(persona)}, ${buildNombres(persona)}`}</div>
-                      <div className="persona-ci">{formatUruguayanCi(persona.ci)}</div>
-                    </td>
+                    <td className="col-grado">{persona.rango.abreviacion}</td>
+                    <td className="col-nombre">{buildNombres(persona)}</td>
+                    <td className="col-apellido">{buildApellidos(persona)}</td>
                     <td className="col-bateria">{persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
                     {TALLA_KEYS.map((key) => (
                       <td key={`${persona.ci}-${key}`} className="talla-value">

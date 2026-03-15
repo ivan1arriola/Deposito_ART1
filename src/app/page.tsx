@@ -20,6 +20,7 @@ import {
 } from "@/lib/tallas";
 import { DashboardHero } from "./components/home/DashboardHero";
 import { MainNavigation } from "./components/home/MainNavigation";
+import { SoldadoRecordatorioWidget } from "./components/home/SoldadoRecordatorioWidget";
 import { AppInstallCard } from "./components/pwa/AppInstallCard";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
 import { MergeEquipoModal } from "./components/modals/MergeEquipoModal";
@@ -38,6 +39,7 @@ import { StockView } from "./components/views/StockView";
 import { TallasResumenView } from "./components/views/TallasResumenView";
 import { OficialesSuboficialesView } from "./components/views/OficialesSuboficialesView";
 import { OficialesSuboficialesResumenView } from "./components/views/OficialesSuboficialesResumenView";
+import { RecordatoriosConfigView } from "./components/views/RecordatoriosConfigView";
 import { UserCreateView } from "./components/views/UserCreateView";
 import { SmallActionButton, ActionMenu, LoadingOverlay, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
@@ -49,6 +51,8 @@ import type {
   Personal,
   OficialSuboficial,
   PersonalObservacion,
+  RecordatorioConfig,
+  RecordatorioTarea,
   FirmaConfig,
   UsuarioAdmin,
 } from "@/types/entities";
@@ -299,6 +303,12 @@ export default function Home() {
   const [activeView, setActiveView] = useState<MainView>("personal");
   const [fichaViewingCi, setFichaViewingCi] = useState<string | null>(null);
   const [showConfigViews, setShowConfigViews] = useState(false);
+  const [recordatorioTasks, setRecordatorioTasks] = useState<RecordatorioTarea[]>([]);
+  const [recordatorioConfig, setRecordatorioConfig] = useState<RecordatorioConfig>({ mostrarMuneco: true });
+  const [recordatoriosLoading, setRecordatoriosLoading] = useState(false);
+  const [recordatoriosSaving, setRecordatoriosSaving] = useState(false);
+  const [recordatoriosError, setRecordatoriosError] = useState<string | null>(null);
+  const recordatorioToastShownRef = useRef<string | null>(null);
   const configMenuRef = useRef<HTMLDivElement | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const [confirmDialogBusy, setConfirmDialogBusy] = useState(false);
@@ -323,6 +333,7 @@ export default function Home() {
   );
   const canRegisterOficialSuboficial = canWrite && rangosOficialSuboficialDisponibles.length > 0;
   const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "equipos";
+  const inReminderConfigView = activeView === "recordatorios";
   const inAdminConfigView = activeView === "firmas" || activeView === "usuarios" || activeView === "auditoria";
   const normalizedNewCi = normalizeCi(newPersonal.ci.trim());
   const duplicatePersonal = useMemo(() => {
@@ -548,7 +559,7 @@ export default function Home() {
     const start = (personalPageSafe - 1) * personalPageSize;
     return personalFiltrado.slice(start, start + personalPageSize);
   }, [personalFiltrado, personalPageSafe, personalPageSize]);
-  const isConfigView = inCatalogView || inAdminConfigView;
+  const isConfigView = inCatalogView || inReminderConfigView || inAdminConfigView;
   const personaRegistro = useMemo(() => {
     if (!registroDraft) return null;
     return personal.find((persona) => persona.ci === registroDraft.ci) ?? null;
@@ -583,6 +594,151 @@ export default function Home() {
       setActiveView("personal");
     }
   }, [inAdminConfigView, isAdmin]);
+
+  const loadRecordatorios = useCallback(async () => {
+    if (!currentUser) {
+      setRecordatorioTasks([]);
+      setRecordatorioConfig({ mostrarMuneco: true });
+      setRecordatoriosError(null);
+      return;
+    }
+
+    setRecordatoriosLoading(true);
+    setRecordatoriosError(null);
+    try {
+      const [tasksData, configData] = await Promise.all([
+        api<RecordatorioTarea[]>("/api/tareas"),
+        api<RecordatorioConfig>("/api/tareas/config"),
+      ]);
+      setRecordatorioTasks(tasksData);
+      setRecordatorioConfig(configData);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "No se pudieron cargar los recordatorios.";
+      setRecordatoriosError(message);
+    } finally {
+      setRecordatoriosLoading(false);
+    }
+  }, [currentUser]);
+
+  const createRecordatorioTask = useCallback(
+    async (input: { titulo: string; nota: string; fechaLimite: string | null }) => {
+      setRecordatoriosSaving(true);
+      setRecordatoriosError(null);
+      try {
+        await api<RecordatorioTarea>("/api/tareas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        });
+        await loadRecordatorios();
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "No se pudo crear la tarea.";
+        setRecordatoriosError(message);
+        toast.error(message);
+      } finally {
+        setRecordatoriosSaving(false);
+      }
+    },
+    [loadRecordatorios],
+  );
+
+  const updateRecordatorioTask = useCallback(
+    async (
+      tareaId: string,
+      input: Partial<{ titulo: string; nota: string; fechaLimite: string | null }> & { completada?: boolean },
+    ) => {
+      setRecordatoriosSaving(true);
+      setRecordatoriosError(null);
+      try {
+        await api<RecordatorioTarea>(`/api/tareas/${encodeURIComponent(tareaId)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        });
+        await loadRecordatorios();
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "No se pudo actualizar la tarea.";
+        setRecordatoriosError(message);
+        toast.error(message);
+      } finally {
+        setRecordatoriosSaving(false);
+      }
+    },
+    [loadRecordatorios],
+  );
+
+  const deleteRecordatorioTask = useCallback(
+    async (tareaId: string) => {
+      setRecordatoriosSaving(true);
+      setRecordatoriosError(null);
+      try {
+        await api<{ ok: boolean }>(`/api/tareas/${encodeURIComponent(tareaId)}`, {
+          method: "DELETE",
+        });
+        await loadRecordatorios();
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "No se pudo eliminar la tarea.";
+        setRecordatoriosError(message);
+        toast.error(message);
+      } finally {
+        setRecordatoriosSaving(false);
+      }
+    },
+    [loadRecordatorios],
+  );
+
+  const updateRecordatorioConfig = useCallback(async (mostrarMuneco: boolean) => {
+    setRecordatoriosSaving(true);
+    setRecordatoriosError(null);
+    try {
+      const result = await api<RecordatorioConfig>("/api/tareas/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mostrarMuneco }),
+      });
+      setRecordatorioConfig(result);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "No se pudo actualizar la configuracion del recordatorio.";
+      setRecordatoriosError(message);
+      toast.error(message);
+    } finally {
+      setRecordatoriosSaving(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setRecordatorioTasks([]);
+      setRecordatorioConfig({ mostrarMuneco: true });
+      setRecordatoriosError(null);
+      recordatorioToastShownRef.current = null;
+      return;
+    }
+    void loadRecordatorios();
+  }, [currentUser, loadRecordatorios]);
+
+  const pendingRecordatorios = useMemo(
+    () => recordatorioTasks.filter((task) => !task.completada),
+    [recordatorioTasks],
+  );
+  const urgentPendingRecordatorios = useMemo(() => {
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return pendingRecordatorios.filter((task) => task.fechaLimite && task.fechaLimite <= todayKey).length;
+  }, [pendingRecordatorios]);
+
+  useEffect(() => {
+    if (!currentUser || recordatoriosLoading) return;
+    if (recordatorioToastShownRef.current === currentUser.usuarioId) return;
+    recordatorioToastShownRef.current = currentUser.usuarioId;
+
+    if (pendingRecordatorios.length <= 0) return;
+    if (urgentPendingRecordatorios > 0) {
+      toast.error(`Tenes ${urgentPendingRecordatorios} tarea(s) urgente(s) en tu recordatorio.`);
+      return;
+    }
+    toast.info(`Tenes ${pendingRecordatorios.length} tarea(s) pendiente(s) en tu recordatorio.`);
+  }, [currentUser, pendingRecordatorios.length, recordatoriosLoading, urgentPendingRecordatorios]);
 
   useEffect(() => {
     if ((activeView === "personal_nuevo" || activeView === "oficial_nuevo" || activeView === "suboficial_nuevo") && !canWrite) {
@@ -3466,6 +3622,21 @@ export default function Home() {
       />
 
 
+      {inReminderConfigView ? (
+        <RecordatoriosConfigView
+          tasks={recordatorioTasks}
+          config={recordatorioConfig}
+          loading={recordatoriosLoading}
+          saving={recordatoriosSaving}
+          error={recordatoriosError}
+          onCreateTask={createRecordatorioTask}
+          onUpdateTask={updateRecordatorioTask}
+          onDeleteTask={deleteRecordatorioTask}
+          onToggleWidget={updateRecordatorioConfig}
+          onReload={loadRecordatorios}
+        />
+      ) : null}
+
       {inCatalogView || (isAdmin && inAdminConfigView) ? (
         <ConfigViews
           activeView={activeView as "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria"}
@@ -3643,7 +3814,7 @@ export default function Home() {
         <EquipoCreateView
           form={newEquipo}
           saving={loading}
-          onBack={() => setActiveView("personal")}
+          onBack={() => setActiveView("equipos")}
           onSubmit={(event) => void createEquipo(event)}
           onChange={(key, value) => {
             setNewEquipo((previous) => ({
@@ -4011,6 +4182,17 @@ export default function Home() {
       {activeView === "hoja-de-entrega" && fichaViewingCi ? (
 
         <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
+      ) : null}
+
+      {recordatorioConfig.mostrarMuneco && activeView !== "recordatorios" ? (
+        <SoldadoRecordatorioWidget
+          tasks={recordatorioTasks}
+          loading={recordatoriosLoading}
+          saving={recordatoriosSaving}
+          onCreateTask={createRecordatorioTask}
+          onToggleTask={(tareaId, completada) => updateRecordatorioTask(tareaId, { completada })}
+          onOpenConfig={() => setActiveView("recordatorios")}
+        />
       ) : null}
 
       <LoadingOverlay visible={isAppGlobalBusy} label="Actualizando informacion..." />

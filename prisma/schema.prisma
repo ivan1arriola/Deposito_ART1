@@ -73,9 +73,36 @@ model Usuario {
   rango                           Rango               @relation(fields: [rangoId], references: [rangoId])
   movimientosEntregados           Movimiento[]        @relation("movimiento_usuario_entrega")
   devolucionesPrestamoRegistradas PrestamoHistorial[] @relation("prestamo_historial_usuario_recepcion")
+  recordatorioConfig              UsuarioRecordatorioConfig?
+  recordatorioTareas              UsuarioRecordatorioTarea[]
 
   @@index([rangoId])
   @@map("usuario")
+}
+
+model UsuarioRecordatorioConfig {
+  usuarioId     String   @id @map("usuario_id")
+  mostrarMuneco Boolean  @default(true) @map("mostrar_muneco")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  usuario       Usuario  @relation(fields: [usuarioId], references: [usuarioId], onDelete: Cascade)
+
+  @@map("usuario_recordatorio_config")
+}
+
+model UsuarioRecordatorioTarea {
+  tareaId      BigInt    @id @default(autoincrement()) @map("tarea_id")
+  usuarioId    String    @map("usuario_id")
+  titulo       String
+  nota         String?
+  fechaLimite  DateTime? @map("fecha_limite") @db.Date
+  completada   Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  usuario      Usuario   @relation(fields: [usuarioId], references: [usuarioId], onDelete: Cascade)
+
+  @@index([usuarioId, completada, fechaLimite])
+  @@map("usuario_recordatorio_tarea")
 }
 
 model PasswordResetCode {

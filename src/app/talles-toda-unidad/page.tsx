@@ -1,5 +1,4 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
-import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { tallasMap } from "@/lib/form-mappers";
@@ -86,6 +85,8 @@ export default async function TallesTodaUnidadPage({
     if (byNombre2 !== 0) return byNombre2;
     return a.ci.localeCompare(b.ci, "es", { sensitivity: "base" });
   });
+  const oficiales = oficialesSuboficiales.filter((registro) => registro.tipo === TipoPersonal.OFICIAL);
+  const suboficiales = oficialesSuboficiales.filter((registro) => registro.tipo === TipoPersonal.SUBOFICIAL);
 
   const generatedAt = formatDateTimeForDisplay(new Date());
 
@@ -170,16 +171,13 @@ export default async function TallesTodaUnidadPage({
 
         th {
           background: #f5f5f4;
-          text-transform: uppercase;
-          font-size: 7.1pt;
+          font-size: 10pt;
           font-weight: 700;
-          text-align: center;
-          letter-spacing: 0.02em;
+          text-align: left;
         }
 
         td {
-          font-size: 8.2pt;
-          text-align: center;
+          font-size: 10pt;
         }
 
         tr {
@@ -189,38 +187,37 @@ export default async function TallesTodaUnidadPage({
         .col-index {
           width: 6%;
           font-weight: 700;
+          text-align: center;
         }
 
-        .col-persona {
-          width: 34%;
-          text-align: left;
+        .col-grado {
+          width: 10%;
+          font-weight: 700;
+          text-align: center;
+        }
+
+        .col-nombre {
+          width: 18%;
+        }
+
+        .col-apellido {
+          width: 20%;
         }
 
         .col-extra {
-          width: 14%;
-          font-size: 7.8pt;
+          width: 10%;
+          font-size: 10pt;
           font-weight: 700;
-        }
-
-        .persona-nombre {
-          font-size: 8.8pt;
-          font-weight: 700;
-          line-height: 1.2;
-        }
-
-        .persona-ci {
-          margin-top: 0.4mm;
-          font-family: "Courier New", monospace;
-          font-size: 8.2pt;
-          line-height: 1.2;
+          text-align: center;
         }
 
         .talla-value {
           font-weight: 700;
+          text-align: center;
         }
 
         .firma-section {
-          margin-top: 10mm;
+          margin-top: 6mm;
           display: grid;
           gap: 3.2mm;
         }
@@ -278,9 +275,127 @@ export default async function TallesTodaUnidadPage({
       <main className="sheet">
         <header className="header">
           <h1 className="title">Talles de toda la unidad</h1>
-          <p className="subtitle">Consolidado nominal de subalternos, oficiales y suboficiales.</p>
+          <p className="subtitle">Consolidado nominal de oficiales, suboficiales y subalternos.</p>
           <p className="meta">{`Generado: ${generatedAt} | Total registros: ${subalternos.length + oficialesSuboficiales.length}`}</p>
         </header>
+
+        <section className="group">
+          <h2 className="group-title">{`Oficiales (${oficiales.length})`}</h2>
+          <div className="table-wrap">
+            <table>
+              <colgroup>
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "22%" }} />
+                {TALLA_KEYS.map((key) => (
+                  <col key={`of-col-${key}`} style={{ width: "8%" }} />
+                ))}
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Nro</th>
+                  <th>Grado</th>
+                  <th>Nombre</th>
+                  <th>Apellido</th>
+                  {TALLA_KEYS.map((key) => (
+                    <th key={`of-head-${key}`}>{TALLA_LABELS[key]}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {oficiales.map((registro, index) => {
+                  const talles = tallasMap(registro.tallas);
+                  return (
+                    <tr key={`of-${registro.tipo}-${registro.ci}`}>
+                      <td className="col-index">{index + 1}</td>
+                      <td className="col-grado">{registro.rango.abreviacion}</td>
+                      <td className="col-nombre">{buildNombres(registro)}</td>
+                      <td className="col-apellido">{buildApellidos(registro)}</td>
+                      {TALLA_KEYS.map((key) => (
+                        <td key={`of-${registro.tipo}-${registro.ci}-${key}`} className="talla-value">
+                          {talles[key] !== "-" ? talles[key] : "Sin dato"}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <section className="firma-section">
+            <div className="firma-block firma-level-1">
+              <div className="firma-title">{TEXTO_ENCARGADO}</div>
+              <div className="firma-role firma-level-1">{firmas.encargadoRango}</div>
+              <div className="firma-name firma-level-2">{firmas.encargadoNombre}</div>
+            </div>
+            <div className="firma-block firma-level-2">
+              <div className="firma-title">{TEXTO_OFICIAL}</div>
+              <div className="firma-role firma-level-1">{firmas.oficialRango}</div>
+              <div className="firma-name firma-level-2">{firmas.oficialNombre}</div>
+            </div>
+          </section>
+        </section>
+
+        <section className="group">
+          <h2 className="group-title">{`Suboficiales (${suboficiales.length})`}</h2>
+          <div className="table-wrap">
+            <table>
+              <colgroup>
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "22%" }} />
+                {TALLA_KEYS.map((key) => (
+                  <col key={`sof-col-${key}`} style={{ width: "8%" }} />
+                ))}
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Nro</th>
+                  <th>Grado</th>
+                  <th>Nombre</th>
+                  <th>Apellido</th>
+                  {TALLA_KEYS.map((key) => (
+                    <th key={`sof-head-${key}`}>{TALLA_LABELS[key]}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {suboficiales.map((registro, index) => {
+                  const talles = tallasMap(registro.tallas);
+                  return (
+                    <tr key={`sof-${registro.tipo}-${registro.ci}`}>
+                      <td className="col-index">{index + 1}</td>
+                      <td className="col-grado">{registro.rango.abreviacion}</td>
+                      <td className="col-nombre">{buildNombres(registro)}</td>
+                      <td className="col-apellido">{buildApellidos(registro)}</td>
+                      {TALLA_KEYS.map((key) => (
+                        <td key={`sof-${registro.tipo}-${registro.ci}-${key}`} className="talla-value">
+                          {talles[key] !== "-" ? talles[key] : "Sin dato"}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <section className="firma-section">
+            <div className="firma-block firma-level-1">
+              <div className="firma-title">{TEXTO_ENCARGADO}</div>
+              <div className="firma-role firma-level-1">{firmas.encargadoRango}</div>
+              <div className="firma-name firma-level-2">{firmas.encargadoNombre}</div>
+            </div>
+            <div className="firma-block firma-level-2">
+              <div className="firma-title">{TEXTO_OFICIAL}</div>
+              <div className="firma-role firma-level-1">{firmas.oficialRango}</div>
+              <div className="firma-name firma-level-2">{firmas.oficialNombre}</div>
+            </div>
+          </section>
+        </section>
 
         <section className="group">
           <h2 className="group-title">{`Subalternos (${subalternos.length})`}</h2>
@@ -288,16 +403,20 @@ export default async function TallesTodaUnidadPage({
             <table>
               <colgroup>
                 <col style={{ width: "6%" }} />
-                <col style={{ width: "34%" }} />
-                <col style={{ width: "14%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "10%" }} />
                 {TALLA_KEYS.map((key) => (
-                  <col key={`sub-col-${key}`} style={{ width: "9.2%" }} />
+                  <col key={`sub-col-${key}`} style={{ width: "7.2%" }} />
                 ))}
               </colgroup>
               <thead>
                 <tr>
                   <th>Nro</th>
-                  <th>Grado y nombre</th>
+                  <th>Grado</th>
+                  <th>Nombre</th>
+                  <th>Apellido</th>
                   <th>Bateria</th>
                   {TALLA_KEYS.map((key) => (
                     <th key={`sub-head-${key}`}>{TALLA_LABELS[key]}</th>
@@ -310,10 +429,9 @@ export default async function TallesTodaUnidadPage({
                   return (
                     <tr key={`sub-${persona.ci}`}>
                       <td className="col-index">{index + 1}</td>
-                      <td className="col-persona">
-                        <div className="persona-nombre">{`${persona.rango.abreviacion} ${buildApellidos(persona)}, ${buildNombres(persona)}`}</div>
-                        <div className="persona-ci">{formatUruguayanCi(persona.ci)}</div>
-                      </td>
+                      <td className="col-grado">{persona.rango.abreviacion}</td>
+                      <td className="col-nombre">{buildNombres(persona)}</td>
+                      <td className="col-apellido">{buildApellidos(persona)}</td>
                       <td className="col-extra">{persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
                       {TALLA_KEYS.map((key) => (
                         <td key={`sub-${persona.ci}-${key}`} className="talla-value">
@@ -326,66 +444,19 @@ export default async function TallesTodaUnidadPage({
               </tbody>
             </table>
           </div>
-        </section>
 
-        <section className="group">
-          <h2 className="group-title">{`Oficiales y suboficiales (${oficialesSuboficiales.length})`}</h2>
-          <div className="table-wrap">
-            <table>
-              <colgroup>
-                <col style={{ width: "6%" }} />
-                <col style={{ width: "34%" }} />
-                <col style={{ width: "14%" }} />
-                {TALLA_KEYS.map((key) => (
-                  <col key={`oss-col-${key}`} style={{ width: "9.2%" }} />
-                ))}
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>Nro</th>
-                  <th>Grado y nombre</th>
-                  <th>Tipo</th>
-                  {TALLA_KEYS.map((key) => (
-                    <th key={`oss-head-${key}`}>{TALLA_LABELS[key]}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {oficialesSuboficiales.map((registro, index) => {
-                  const talles = tallasMap(registro.tallas);
-                  const typeLabel = registro.tipo === TipoPersonal.OFICIAL ? "Oficial" : "Suboficial";
-                  return (
-                    <tr key={`oss-${registro.tipo}-${registro.ci}`}>
-                      <td className="col-index">{index + 1}</td>
-                      <td className="col-persona">
-                        <div className="persona-nombre">{`${registro.rango.abreviacion} ${buildApellidos(registro)}, ${buildNombres(registro)}`}</div>
-                        <div className="persona-ci">{formatUruguayanCi(registro.ci)}</div>
-                      </td>
-                      <td className="col-extra">{typeLabel}</td>
-                      {TALLA_KEYS.map((key) => (
-                        <td key={`oss-${registro.tipo}-${registro.ci}-${key}`} className="talla-value">
-                          {talles[key] !== "-" ? talles[key] : "Sin dato"}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="firma-section">
-          <div className="firma-block firma-level-1">
-            <div className="firma-title">{TEXTO_ENCARGADO}</div>
-            <div className="firma-role firma-level-1">{firmas.encargadoRango}</div>
-            <div className="firma-name firma-level-2">{firmas.encargadoNombre}</div>
-          </div>
-          <div className="firma-block firma-level-2">
-            <div className="firma-title">{TEXTO_OFICIAL}</div>
-            <div className="firma-role firma-level-1">{firmas.oficialRango}</div>
-            <div className="firma-name firma-level-2">{firmas.oficialNombre}</div>
-          </div>
+          <section className="firma-section">
+            <div className="firma-block firma-level-1">
+              <div className="firma-title">{TEXTO_ENCARGADO}</div>
+              <div className="firma-role firma-level-1">{firmas.encargadoRango}</div>
+              <div className="firma-name firma-level-2">{firmas.encargadoNombre}</div>
+            </div>
+            <div className="firma-block firma-level-2">
+              <div className="firma-title">{TEXTO_OFICIAL}</div>
+              <div className="firma-role firma-level-1">{firmas.oficialRango}</div>
+              <div className="firma-name firma-level-2">{firmas.oficialNombre}</div>
+            </div>
+          </section>
         </section>
       </main>
     </>

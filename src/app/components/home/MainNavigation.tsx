@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, type JSX, type RefObject } from "react";
 import type { MainView } from "@/types/views";
 
-type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria">;
-type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo">;
-type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos">;
+type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recordatorios" | "firmas" | "usuarios" | "auditoria">;
+type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo">;
+type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "equipo_nuevo">;
 
 type MainNavigationProps = {
   activeView: MainView;
@@ -44,6 +44,15 @@ const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean;
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h2m10 0V6a3 3 0 10-6 0v2m6 0H7" />
+      </svg>
+    ),
+  },
+  {
+    view: "recordatorios",
+    label: "Recordatorios",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 11V9a6 6 0 1112 0v2m-8 4h4m-6 0h8a2 2 0 002-2v-2H6v2a2 2 0 002 2z" />
       </svg>
     ),
   },
@@ -101,16 +110,6 @@ const createViews: Array<{ view: CreateView; label: string; shortLabel: string; 
     ),
   },
   {
-    view: "equipo_nuevo",
-    label: "Alta de equipo",
-    shortLabel: "Equipo",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-      </svg>
-    ),
-  },
-  {
     view: "bateria_nueva",
     label: "Alta de batería",
     shortLabel: "Batería",
@@ -145,7 +144,18 @@ const createViews: Array<{ view: CreateView; label: string; shortLabel: string; 
   },
 ];
 
-const stockViews: Array<{ view: StockView; label: string; shortLabel: string; icon: JSX.Element }> = [
+const stockViews: Array<{ view: StockView; label: string; shortLabel: string; icon: JSX.Element; writeOnly?: boolean }> = [
+  {
+    view: "equipo_nuevo",
+    label: "Alta de equipo",
+    shortLabel: "Alta Eq.",
+    writeOnly: true,
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+    ),
+  },
   {
     view: "equipos",
     label: "Equipos Registrados",
@@ -273,6 +283,7 @@ export function MainNavigation({
   const isStockView =
     activeView === "stock" ||
     activeView === "equipos" ||
+    activeView === "equipo_nuevo" ||
     activeView === "stock_total" ||
     activeView === "stock_actual" ||
     activeView === "stock_alta" ||
@@ -283,7 +294,6 @@ export function MainNavigation({
     activeView === "personal_nuevo" ||
     activeView === "oficial_nuevo" ||
     activeView === "suboficial_nuevo" ||
-    activeView === "equipo_nuevo" ||
     activeView === "bateria_nueva" ||
     activeView === "grado_nuevo" ||
     activeView === "usuario_nuevo";
@@ -517,7 +527,9 @@ export function MainNavigation({
             >
               <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de stock y equipos</p>
               <div className="grid grid-cols-1 gap-1.5">
-                {stockViews.map((item) => (
+                {stockViews
+                  .filter((item) => (item.writeOnly ? canWrite : true))
+                  .map((item) => (
                   <button
                     key={item.view}
                     type="button"
