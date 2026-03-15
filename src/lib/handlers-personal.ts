@@ -60,6 +60,26 @@ export async function deletePersonalHandler(
   }
 }
 
+export async function promoteSargentoToSuboficialHandler(
+  ci: string,
+  adminPassword: string,
+  callbacks: CallbackProps
+) {
+  try {
+    const data = await api(`/api/personal/${encodeURIComponent(ci)}/ascenso-sargento-primero`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ adminPassword }),
+    });
+    callbacks.onSuccess?.(data);
+    return data;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo completar el ascenso.";
+    callbacks.onError?.(message);
+    throw error;
+  }
+}
+
 export async function createOficialSuboficialHandler(
   payload: unknown,
   callbacks: CallbackProps

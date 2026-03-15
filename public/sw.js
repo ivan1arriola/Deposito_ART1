@@ -1,9 +1,14 @@
-const CACHE_NAME = "deposito-art1-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest"];
+const CACHE_NAME = "deposito-art1-v2";
+const STATIC_ASSETS = [
+  "/manifest.webmanifest",
+  "/pwa-icons/android/icon-192.png",
+  "/pwa-icons/android/icon-512.png",
+  "/pwa-icons/android/icon-512-maskable.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()),
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting()),
   );
 });
 
@@ -21,6 +26,31 @@ self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
 
+  // Nunca cachear recursos dinamicos de Next o API: evita mezclar HTML/JS de builds distintos.
+  if (requestUrl.pathname.startsWith("/_next/") || requestUrl.pathname.startsWith("/api/")) {
+    return;
+  }
+
+  // Navegacion: siempre red primero para no hidratar con HTML viejo.
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return new Response("Offline", {
+          status: 503,
+          statusText: "Offline",
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        });
+      }),
+    );
+    return;
+  }
+
+  const isStaticAsset =
+    requestUrl.pathname === "/manifest.webmanifest" ||
+    requestUrl.pathname.startsWith("/pwa-icons/");
+
+  if (!isStaticAsset) return;
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
@@ -37,15 +67,60 @@ self.addEventListener("fetch", (event) => {
           return response;
         })
         .catch(() => {
-          if (event.request.mode === "navigate") {
-            return caches.match("/");
-          }
           return new Response("Offline", {
             status: 503,
             statusText: "Offline",
             headers: { "Content-Type": "text/plain; charset=utf-8" },
           });
         });
+    }),
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let payload = {
+    title: "Deposito ART1",
+    body: "Nueva actividad registrada.",
+    url: "/",
+  };
+
+  if (event.data) {
+    try {
+      const parsed = event.data.json();
+      payload = {
+        title: parsed.title || payload.title,
+        body: parsed.body || payload.body,
+        url: parsed.url || payload.url,
+      };
+    } catch {
+      // Keep default payload.
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: "/pwa-icons/android/icon-192.png",
+      badge: "/pwa-icons/android/icon-192.png",
+      data: { url: payload.url },
+      tag: "deposito-art1-admin",
+      renotify: true,
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
+      const existing = clientsArr.find((client) => "focus" in client);
+      if (existing) {
+        existing.navigate(targetUrl);
+        return existing.focus();
+      }
+      return self.clients.openWindow(targetUrl);
     }),
   );
 });

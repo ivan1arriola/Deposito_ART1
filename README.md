@@ -38,6 +38,17 @@ npm install
 ```env
 DATABASE_URL="postgresql://..."
 DATABASE_URL_UNPOOLED="postgresql://..." # opcional
+
+# Requerido para notificaciones push admin (Chrome/Android)
+WEB_PUSH_PUBLIC_KEY="..."
+WEB_PUSH_PRIVATE_KEY="..."
+WEB_PUSH_SUBJECT="mailto:admin@example.com"
+```
+
+Para generar claves VAPID:
+
+```bash
+npm run webpush:generate
 ```
 
 3. Generar esquema y cliente Prisma:
@@ -65,6 +76,7 @@ npm run dev
 - `npm run prisma:generate`: regenera cliente Prisma
 - `npm run prisma:studio`: abre Prisma Studio
 - `npm run user:create -- --username <u> --password <p> --role ADMIN|EDITOR`: crea o actualiza usuario
+- `npm run webpush:generate`: genera claves VAPID para notificaciones push
 
 Ejemplo:
 

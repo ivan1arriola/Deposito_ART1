@@ -3,6 +3,7 @@ import { Prisma, TipoMovimiento, TipoPersonal } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { notifyAdminOnMovement } from "@/lib/notify-admins";
 import { isValidUruguayanCi } from "@/lib/ci";
 import {
   dateInputToDate,
@@ -353,6 +354,22 @@ export async function POST(req: Request) {
         });
       }),
     );
+
+    try {
+      await notifyAdminOnMovement(
+        {
+          usuarioId: auth.user.usuarioId,
+          username: auth.user.username,
+          nombre: auth.user.nombre,
+          apellido: auth.user.apellido,
+          rol: auth.user.rol,
+        },
+        `${tipo} para ${targetCis.length} personal(es).`,
+        "/",
+      );
+    } catch {
+      // No bloquear registro por fallas de push.
+    }
 
     if (createdMovimientos.length === 1) {
       return NextResponse.json({ ok: true, registroId: createdMovimientos[0].movimientoId.toString(), createdCount: 1 }, { status: 201 });

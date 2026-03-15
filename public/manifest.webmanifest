@@ -25,14 +25,14 @@
       "purpose": "any"
     },
     {
-      "src": "/pwa-icons/android/icon-512-maskable.png",
-      "sizes": "512x512",
+      "src": "/pwa-icons/android/icon-192-maskable.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/pwa-icons/master-maskable-transparent-1024.png",
-      "sizes": "1024x1024",
+      "src": "/pwa-icons/android/icon-512-maskable.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }

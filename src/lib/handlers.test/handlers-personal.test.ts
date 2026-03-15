@@ -8,6 +8,7 @@ import {
   createPersonalHandler,
   updatePersonalHandler,
   deletePersonalHandler,
+  promoteSargentoToSuboficialHandler,
 } from "@/lib/handlers-personal";
 
 vi.mock("@/lib/api", () => ({
@@ -108,6 +109,24 @@ describe("Handlers de Personal", () => {
       }
 
       expect(onError).toHaveBeenCalled();
+    });
+  });
+
+  describe("promoteSargentoToSuboficialHandler", () => {
+    it("deberia solicitar ascenso de sargento a suboficial con password", async () => {
+      const onSuccess = vi.fn();
+      vi.mocked(api).mockResolvedValue({ ok: true, prestamoGenerado: { reciboNumero: "PR-00000001" } });
+
+      await promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "ClaveAdmin123", { onSuccess });
+
+      expect(vi.mocked(api)).toHaveBeenCalledWith(
+        `/api/personal/${mockPersonalPayload.ci}/ascenso-sargento-primero`,
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ adminPassword: "ClaveAdmin123" }),
+        }),
+      );
+      expect(onSuccess).toHaveBeenCalled();
     });
   });
 });

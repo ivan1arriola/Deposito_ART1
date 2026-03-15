@@ -18,6 +18,7 @@
     "db:rebuild": "prisma db execute --schema prisma/schema.prisma --file prisma/schema-base.sql && prisma generate",
     "prisma:studio": "prisma studio",
     "user:create": "node scripts/create-user.mjs",
+    "webpush:generate": "node scripts/generate-webpush-keys.mjs",
     "licenses": "license-checker --json --out licenses.json",
     "licenses:summary": "license-checker --summary",
     "licenses:prod": "license-checker --production --json --out licenses-prod.json",
@@ -27,6 +28,7 @@
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
     "@prisma/client": "^6.17.1",
+    "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
     "ciuy": "^1.0.0",
     "next": "16.1.6",
@@ -35,7 +37,8 @@
     "pdfkit": "^0.17.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "sonner": "^2.0.7"
+    "sonner": "^2.0.7",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

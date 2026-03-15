@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { LoadingInline, PaginationControls } from "@/app/components/shared";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import type { TallaKey } from "@/lib/tallas";
@@ -18,6 +19,7 @@ type PersonalSectionProps = {
   baterias: Bateria[];
   rangos: Rango[];
   canWrite: boolean;
+  isAdmin: boolean;
   searchCedula: string;
   searchApellidos: string;
   searchNombres: string;
@@ -51,7 +53,84 @@ type PersonalSectionProps = {
   onCancelEditPersonal: () => void;
   onEditPersonalChange: (field: keyof PersonalForm, value: string | boolean) => void;
   onSaveEditPersonal: (ci: string) => void;
+  canPromoteEditPersonalToSuboficial: boolean;
+  promoteEditPersonalBusy: boolean;
+  onPromoteEditPersonalToSuboficial: (ci: string, adminPassword: string) => void;
+  onPrintAscensoDeliverySheet: (ci: string) => boolean;
 };
+
+type AscensoSargentoPanelProps = {
+  ci: string;
+  busy: boolean;
+  onContinue: (ci: string, adminPassword: string) => void;
+  onPrintDeliverySheet: (ci: string) => boolean;
+};
+
+function AscensoSargentoPanel({ ci, busy, onContinue, onPrintDeliverySheet }: AscensoSargentoPanelProps) {
+  const [adminPassword, setAdminPassword] = useState("");
+  const [printedOnce, setPrintedOnce] = useState(false);
+
+  return (
+    <section className="mt-4 rounded-xl border border-amber-300 bg-amber-50/80 p-3">
+      <h4 className="text-sm font-semibold text-amber-900">Ascenso a Sargento Primero</h4>
+      <p className="mt-1 text-xs text-amber-900/90">
+        La impresion de hoja es opcional antes del ascenso.
+      </p>
+      <p className="mt-1 text-xs font-semibold text-amber-950">
+        Importante: cuando el ascenso finalice, ya no podras imprimir esta hoja previa.
+      </p>
+      <form
+        className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const trimmed = adminPassword.trim();
+          if (!trimmed) return;
+          onContinue(ci, trimmed);
+        }}
+      >
+        <input
+          name="adminPassword"
+          type="password"
+          value={adminPassword}
+          onChange={(event) => setAdminPassword(event.target.value)}
+          placeholder="Contrasena de administrador"
+          className="w-full rounded-lg border border-amber-400 px-3 py-2 text-sm"
+          disabled={busy}
+          required
+        />
+        <button
+          type="button"
+          onClick={() => {
+            const opened = onPrintDeliverySheet(ci);
+            if (opened) setPrintedOnce(true);
+          }}
+          disabled={busy}
+          className="rounded-lg border border-amber-400 bg-white px-3 py-2 text-xs font-semibold text-amber-900 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {printedOnce ? "Reimprimir hoja" : "Imprimir hoja"}
+        </button>
+        <button
+          type="submit"
+          disabled={busy || adminPassword.trim() === ""}
+          className="rounded-lg bg-rose-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Continuar ascenso
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setAdminPassword("");
+            setPrintedOnce(false);
+          }}
+          disabled={busy}
+          className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Reiniciar
+        </button>
+      </form>
+    </section>
+  );
+}
 
 export function PersonalSection({
   loading,
@@ -61,6 +140,7 @@ export function PersonalSection({
   baterias,
   rangos,
   canWrite,
+  isAdmin,
   searchCedula,
   searchApellidos,
   searchNombres,
@@ -94,6 +174,10 @@ export function PersonalSection({
   onCancelEditPersonal,
   onEditPersonalChange,
   onSaveEditPersonal,
+  canPromoteEditPersonalToSuboficial,
+  promoteEditPersonalBusy,
+  onPromoteEditPersonalToSuboficial,
+  onPrintAscensoDeliverySheet,
 }: PersonalSectionProps) {
   const handleToggleEdit = (persona: Personal) => {
     if (editPersonalCi === persona.ci) {
@@ -104,6 +188,7 @@ export function PersonalSection({
   };
 
   const editingPersona = editPersonalCi ? personal.find((persona) => persona.ci === editPersonalCi) ?? null : null;
+  const canShowAscensoBlock = Boolean(isAdmin && editingPersona && canPromoteEditPersonalToSuboficial);
 
   const actionGridClass = canWrite
     ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
@@ -272,6 +357,15 @@ export function PersonalSection({
               onSave={() => onSaveEditPersonal(editPersonalCi)}
             />
           </div>
+          {canShowAscensoBlock ? (
+            <AscensoSargentoPanel
+              key={`ascenso-${editPersonalCi}`}
+              ci={editPersonalCi}
+              busy={promoteEditPersonalBusy}
+              onContinue={onPromoteEditPersonalToSuboficial}
+              onPrintDeliverySheet={onPrintAscensoDeliverySheet}
+            />
+          ) : null}
         </ModalFrame>
       ) : null}
     </section>

@@ -4,6 +4,7 @@ import { TipoMovimiento, TipoPersonal } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { notifyAdminOnMovement } from "@/lib/notify-admins";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -297,6 +298,22 @@ export async function POST(request: Request) {
         })),
       },
     });
+
+    try {
+      await notifyAdminOnMovement(
+        {
+          usuarioId: auth.user.usuarioId,
+          username: auth.user.username,
+          nombre: auth.user.nombre,
+          apellido: auth.user.apellido,
+          rol: auth.user.rol,
+        },
+        `Prestamo creado (${totalUnidadesPrestamo(created)} unidades).`,
+        `/api/prestamos/${encodeURIComponent(created.movimientoId.toString())}/recibo`,
+      );
+    } catch {
+      // No bloquear prestamo por fallas de push.
+    }
 
     return NextResponse.json(serializePrestamo(created), { status: 201 });
   } catch {

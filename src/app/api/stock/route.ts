@@ -3,6 +3,7 @@ import { TipoMovimiento, TipoStockOperacion } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { notifyAdminOnMovement } from "@/lib/notify-admins";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -535,6 +536,22 @@ export async function POST(req: Request) {
         userAgent: requestMeta.userAgent,
       },
     });
+
+    try {
+      await notifyAdminOnMovement(
+        {
+          usuarioId: auth.user.usuarioId,
+          username: auth.user.username,
+          nombre: auth.user.nombre,
+          apellido: auth.user.apellido,
+          rol: auth.user.rol,
+        },
+        `${tipo} de stock (${totalUnidades} unidades).`,
+        "/",
+      );
+    } catch {
+      // No bloquear stock por fallas de push.
+    }
 
     return NextResponse.json({ ok: true, stockOperacionId: created.stockOperacionId.toString() }, { status: 201 });
   } catch {

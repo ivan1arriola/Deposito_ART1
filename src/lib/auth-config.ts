@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { notifyAdminOnLogin } from "@/lib/notify-admins";
 
 const authSecret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET;
 type ExtendedNextAuthOptions = NextAuthOptions & { trustHost?: boolean };
@@ -62,6 +63,17 @@ export const authOptions = {
             rol: user.rol,
           },
         });
+        try {
+          await notifyAdminOnLogin({
+            usuarioId: user.usuarioId,
+            username: user.username,
+            nombre: user.nombre,
+            apellido: user.apellido,
+            rol: user.rol,
+          });
+        } catch {
+          // No bloquear login por fallas de notificaciones.
+        }
 
         return {
           id: user.usuarioId,

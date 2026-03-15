@@ -17,6 +17,7 @@ type FormulariosPrestamosViewProps = {
   loading: boolean;
   error: string | null;
   canWrite: boolean;
+  isAdmin: boolean;
   equipos: Equipo[];
   personal: Personal[];
   oficialesSuboficiales: OficialSuboficial[];
@@ -38,6 +39,7 @@ type FormulariosPrestamosViewProps = {
     fechaDevolucion: string,
     items?: Array<{ itemId: string; estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion?: string }>,
   ) => void;
+  onDeletePrestamo: (prestamoId: string) => void;
   onReload: () => void;
 };
 
@@ -56,6 +58,7 @@ export function FormulariosPrestamosView({
   loading,
   error,
   canWrite,
+  isAdmin,
   equipos,
   personal,
   oficialesSuboficiales,
@@ -70,6 +73,7 @@ export function FormulariosPrestamosView({
   onSubmitPrestamo,
   onSubmitPrestamoAndPrint,
   onReturnPrestamo,
+  onDeletePrestamo,
   onReload,
 }: FormulariosPrestamosViewProps) {
   const ESTADO_OPTIONS: PrestamoEstadoEquipo[] = ["NUEVO", "BUENO", "REGULAR", "MALO"];
@@ -587,6 +591,15 @@ export function FormulariosPrestamosView({
             </section>
 
             <footer className="flex flex-wrap justify-end gap-2 border-t border-stone-200 pt-3">
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => onDeletePrestamo(selectedPrestamo.prestamoId)}
+                  className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100"
+                >
+                  Eliminar registro
+                </button>
+              ) : null}
               <a
                 href={reciboHref(selectedPrestamo.prestamoId)}
                 target="_blank"

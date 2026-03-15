@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import type { CurrentUser } from "@/types/entities";
+import { AdminPushNotifications } from "./AdminPushNotifications";
 
 type DashboardHeroProps = {
   loading: boolean;
@@ -120,6 +121,12 @@ export function DashboardHero({
           <p className="text-lg font-bold text-white">{movimientosTotal}</p>
         </div>
       </div>
+
+      {currentUser.rol === "ADMIN" ? (
+        <div className="relative mt-4">
+          <AdminPushNotifications />
+        </div>
+      ) : null}
     </section>
   );
 }

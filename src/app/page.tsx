@@ -122,6 +122,7 @@ import {
   updateOficialSuboficialHandler,
   updatePersonalHandler,
   deletePersonalHandler,
+  promoteSargentoToSuboficialHandler,
   createPersonalObservacionHandler,
   loadPersonalObservacionesHandler,
   updatePersonalObservacionHandler,
@@ -158,6 +159,14 @@ const STATUS_VERIFYING_SESSION = "Verificando sesion...";
 const STATUS_STARTING_SESSION = "Iniciando sesion...";
 const STATUS_ENTER_CREDENTIALS = "Ingresa tus credenciales.";
 const STATUS_SESSION_CLOSED = "Sesion cerrada. Ingresa tus credenciales.";
+
+function rangoLooksLikeSargento(rango: { abreviacion: string; nombreCompleto: string } | null | undefined) {
+  if (!rango) return false;
+  const normalized = normalizeSearchTerm(`${rango.abreviacion} ${rango.nombreCompleto}`);
+  const hasSargento = normalized.includes("sargento") || normalized.includes("sgto");
+  const hasPrimero = /\b(primero|1ro|1ero|1er)\b/.test(normalized);
+  return hasSargento && !hasPrimero;
+}
 
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
@@ -262,6 +271,7 @@ export default function Home() {
   const [newPersonalMovimientoEditIndex, setNewPersonalMovimientoEditIndex] = useState<number | null>(null);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
   const [editPersonal, setEditPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
+  const [promotingSubalternoCi, setPromotingSubalternoCi] = useState<string | null>(null);
   const [searchCedula, setSearchCedula] = useState("");
   const [searchNombres, setSearchNombres] = useState("");
   const [searchApellidos, setSearchApellidos] = useState("");
@@ -536,6 +546,23 @@ export default function Home() {
     if (!registroDraft) return null;
     return personal.find((persona) => persona.ci === registroDraft.ci) ?? null;
   }, [personal, registroDraft]);
+  const personaEnEdicion = useMemo(() => {
+    if (!editPersonalCi) return null;
+    return personal.find((persona) => persona.ci === editPersonalCi) ?? null;
+  }, [editPersonalCi, personal]);
+  const rangoEnEdicion = useMemo(() => {
+    if (!personaEnEdicion) return null;
+    const parsedRangoId = Number(editPersonal.rangoId);
+    if (Number.isInteger(parsedRangoId) && parsedRangoId > 0) {
+      return rangos.find((rango) => rango.rangoId === parsedRangoId) ?? personaEnEdicion.rango;
+    }
+    return personaEnEdicion.rango;
+  }, [editPersonal.rangoId, personaEnEdicion, rangos]);
+  const canPromoteEditPersonalToSuboficial = useMemo(() => {
+    if (!isAdmin) return false;
+    if (!editPersonalCi) return false;
+    return rangoLooksLikeSargento(rangoEnEdicion);
+  }, [editPersonalCi, isAdmin, rangoEnEdicion]);
   const registroViewerRows = useMemo(() => registroViewer?.registros ?? [], [registroViewer]);
   const registroViewerTotalPages = Math.max(1, Math.ceil(registroViewerRows.length / registroViewerPageSize));
   const registroViewerPageSafe = Math.min(registroViewerPage, registroViewerTotalPages);
@@ -707,6 +734,7 @@ export default function Home() {
     clearLoadedDataState();
     setEditPersonalCi(null);
     setEditPersonal(EMPTY_PERSONAL_FORM);
+    setPromotingSubalternoCi(null);
     setExpandedTallasByCi({});
     setRegistroDraft(null);
     setRegistroSaving(false);
@@ -1722,6 +1750,61 @@ export default function Home() {
     [canWrite, editPersonal, loadData],
   );
 
+  const promoteSargentoToSuboficial = useCallback(
+    async (ci: string, adminPassword: string) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede ejecutar ascensos.");
+        return;
+      }
+      if (promotingSubalternoCi) return;
+
+      const trimmedPassword = adminPassword.trim();
+      if (trimmedPassword === "") {
+        setStatus("Debes ingresar la contrasena del administrador para confirmar.");
+        return;
+      }
+
+      setPromotingSubalternoCi(ci);
+      setStatus("Procesando ascenso a Sargento Primero...");
+      try {
+        const response = (await promoteSargentoToSuboficialHandler(ci, trimmedPassword, {
+          onError: (message) => setStatus(message),
+        })) as
+          | {
+              prestamoGenerado?: { reciboNumero?: string | null } | null;
+            }
+          | undefined;
+
+        const recibo = response?.prestamoGenerado?.reciboNumero;
+        setEditPersonalCi(null);
+        setEditPersonal(EMPTY_PERSONAL_FORM);
+        setStatus(
+          recibo
+            ? `Ascenso completado. Se genero el recibo ${recibo}.`
+            : "Ascenso completado.",
+        );
+        await loadData();
+      } catch {
+        // Error manejado en el handler
+      } finally {
+        setPromotingSubalternoCi(null);
+      }
+    },
+    [isAdmin, loadData, promotingSubalternoCi],
+  );
+
+  const openAscensoDeliverySheet = useCallback((ci: string) => {
+    const printUrl = `/hoja-de-entrega/${encodeURIComponent(ci)}?autoprint=1`;
+    const popup = window.open(printUrl, "_blank", "noopener,noreferrer");
+    if (!popup) {
+      setStatus("Debes permitir ventanas emergentes para imprimir la hoja de entrega.");
+      return false;
+    }
+    popup.focus();
+    setStatus("Hoja de entrega abierta (opcional). Tras confirmar el ascenso no podras imprimir la hoja previa.");
+    return true;
+  }, []);
+
   const deletePersonal = useCallback(
     (ci: string) => {
       if (!canDelete) {
@@ -2301,6 +2384,28 @@ export default function Home() {
     } finally {
       setReturningPrestamoId(null);
     }
+  }
+
+  async function deletePrestamo(prestamoId: string) {
+    if (!isAdmin) {
+      setStatus("Solo el administrador puede eliminar prestamos.");
+      return;
+    }
+
+    openConfirmDialog({
+      title: "Eliminar prestamo",
+      message: `Se eliminara el prestamo con ID ${prestamoId}. Esta accion no se puede deshacer.`,
+      confirmText: "Eliminar prestamo",
+      tone: "danger",
+      onConfirm: async () => {
+        setStatus("Eliminando prestamo...");
+        await api(`/api/prestamos/${encodeURIComponent(prestamoId)}`, {
+          method: "DELETE",
+        });
+        setStatus(`Prestamo ${prestamoId} eliminado.`);
+        await reloadActiveStockData();
+      },
+    });
   }
 
   async function savePersonalObservacion() {
@@ -3112,6 +3217,7 @@ export default function Home() {
       userRoleSaving ||
       userPasswordSaving ||
       usernameSaving ||
+      promotingSubalternoCi !== null ||
       confirmDialogBusy
     );
 
@@ -3145,7 +3251,7 @@ export default function Home() {
                 />
               </div>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">Iniciar sesion</h1>
-              <p className="mt-2 text-sm text-stone-600">{status}</p>
+              <p className="mt-2 text-sm text-stone-600" suppressHydrationWarning>{status}</p>
 
               {initMessage && showInitCredentials && initCredentials && (
                 <div className={`mt-4 rounded-2xl border px-3 py-2 text-sm ${
@@ -3497,6 +3603,7 @@ export default function Home() {
           baterias={baterias}
           rangos={rangos}
           canWrite={canWrite}
+          isAdmin={isAdmin}
           searchCedula={searchCedula}
           searchApellidos={searchApellidos}
           searchNombres={searchNombres}
@@ -3548,6 +3655,12 @@ export default function Home() {
               return next;
             })}
           onSaveEditPersonal={(ci) => void updatePersonal(ci)}
+          canPromoteEditPersonalToSuboficial={canPromoteEditPersonalToSuboficial}
+          promoteEditPersonalBusy={promotingSubalternoCi !== null}
+          onPromoteEditPersonalToSuboficial={(ci, adminPassword) =>
+            void promoteSargentoToSuboficial(ci, adminPassword)
+          }
+          onPrintAscensoDeliverySheet={openAscensoDeliverySheet}
         />
       ) : null}
 
@@ -3650,6 +3763,7 @@ export default function Home() {
           loading={stockLoading}
           error={stockError}
           canWrite={canWrite}
+          isAdmin={isAdmin}
           equipos={equiposOrdenados}
           personal={personal}
           oficialesSuboficiales={oficialesSuboficiales}
@@ -3671,6 +3785,7 @@ export default function Home() {
           onSubmitPrestamo={() => void savePrestamo(false)}
           onSubmitPrestamoAndPrint={() => void savePrestamo(true)}
           onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
+          onDeletePrestamo={(prestamoId) => void deletePrestamo(prestamoId)}
           onReload={() => void reloadActiveStockData()}
         />
       ) : null}

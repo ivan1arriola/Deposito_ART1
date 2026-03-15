@@ -3,6 +3,7 @@ import { TipoMovimiento } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { notifyAdminOnMovement } from "@/lib/notify-admins";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -177,6 +178,22 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         })),
       },
     });
+
+    try {
+      await notifyAdminOnMovement(
+        {
+          usuarioId: auth.user.usuarioId,
+          username: auth.user.username,
+          nombre: auth.user.nombre,
+          apellido: auth.user.apellido,
+          rol: auth.user.rol,
+        },
+        `Devolucion de prestamo ${updated.movimientoId.toString()}.`,
+        `/api/prestamos/${encodeURIComponent(updated.movimientoId.toString())}/recibo`,
+      );
+    } catch {
+      // No bloquear devolucion por fallas de push.
+    }
 
     return NextResponse.json(serializePrestamo(updated));
   } catch {
