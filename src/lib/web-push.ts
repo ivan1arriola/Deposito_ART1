@@ -28,6 +28,7 @@ type SubscriptionRow = {
 };
 
 let vapidConfigured = false;
+let webPushSchemaReady: Promise<void> | null = null;
 
 function getVapidConfig() {
   const publicKey = process.env.WEB_PUSH_PUBLIC_KEY?.trim() ?? "";
@@ -63,7 +64,42 @@ export function getWebPushPublicKey() {
   return getVapidConfig().publicKey;
 }
 
+async function ensureWebPushSchema() {
+  if (webPushSchemaReady) return webPushSchemaReady;
+
+  webPushSchemaReady = (async () => {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS web_push_subscription (
+        subscription_id BIGSERIAL PRIMARY KEY,
+        usuario_id TEXT NOT NULL REFERENCES usuario(usuario_id) ON DELETE CASCADE,
+        endpoint TEXT NOT NULL UNIQUE,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        user_agent TEXT,
+        enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_web_push_subscription_usuario
+        ON web_push_subscription (usuario_id);
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_web_push_subscription_enabled
+        ON web_push_subscription (enabled);
+    `);
+  })().catch((error) => {
+    webPushSchemaReady = null;
+    throw error;
+  });
+
+  return webPushSchemaReady;
+}
+
 export async function upsertAdminPushSubscription(usuarioId: string, subscription: PushSubscriptionInput, userAgent: string | null) {
+  await ensureWebPushSchema();
+
   await prisma.$executeRaw(
     Prisma.sql`
       INSERT INTO web_push_subscription (usuario_id, endpoint, p256dh, auth, user_agent, enabled)
@@ -81,6 +117,8 @@ export async function upsertAdminPushSubscription(usuarioId: string, subscriptio
 }
 
 export async function disableAdminPushSubscription(usuarioId: string, endpoint: string) {
+  await ensureWebPushSchema();
+
   await prisma.$executeRaw(
     Prisma.sql`
       UPDATE web_push_subscription
@@ -96,6 +134,8 @@ function isGoneSubscriptionError(error: unknown) {
 }
 
 async function listAdminSubscriptions() {
+  await ensureWebPushSchema();
+
   const rows = await prisma.$queryRaw<SubscriptionRow[]>(
     Prisma.sql`
       SELECT s.subscription_id, s.endpoint, s.p256dh, s.auth

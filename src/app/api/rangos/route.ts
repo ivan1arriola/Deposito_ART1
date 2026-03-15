@@ -5,6 +5,7 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { moveCatalogId } from "@/lib/catalog-order";
 import { invalidateRangoTipoCountCache } from "@/lib/reference-data-cache";
+import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
 
 function parseOptionalOrden(value: unknown) {
   if (value === undefined || value === null || value === "") return undefined;
@@ -33,12 +34,21 @@ export async function GET(request: Request) {
   }
   const tipo = parsedTipo ?? TipoPersonal.SUBALTERNO;
 
-  const rangos = await prisma.rango.findMany({
-    where: { tipo },
-    orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
-  });
+  try {
+    const rangos = await withPrismaReadRetry(() =>
+      prisma.rango.findMany({
+        where: { tipo },
+        orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
+      }),
+    );
 
-  return NextResponse.json(rangos);
+    return NextResponse.json(rangos);
+  } catch (error: unknown) {
+    if (isPrismaDatabaseUnavailable(error)) {
+      return NextResponse.json({ error: "Base de datos no disponible temporalmente. Intenta nuevamente." }, { status: 503 });
+    }
+    return NextResponse.json({ error: "No se pudieron cargar los grados." }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {

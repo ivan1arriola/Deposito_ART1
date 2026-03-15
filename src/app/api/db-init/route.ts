@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
 
 /**
  * Endpoint para inicializar la base de datos con un usuario administrador por defecto.
@@ -9,17 +10,19 @@ import { logAudit } from "@/lib/audit";
  */
 export async function POST() {
   try {
-    const userCount = await prisma.usuario.count();
+    const userCount = await withPrismaReadRetry(() => prisma.usuario.count());
 
     if (userCount > 0) {
       return Response.json({ initialized: false, message: "Ya existe usuario en el sistema." }, { status: 200 });
     }
 
-    const defaultRango = await prisma.rango.findFirst({
-      where: { tipo: "SUBALTERNO" },
-      orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
-      select: { rangoId: true, abreviacion: true },
-    });
+    const defaultRango = await withPrismaReadRetry(() =>
+      prisma.rango.findFirst({
+        where: { tipo: "SUBALTERNO" },
+        orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
+        select: { rangoId: true, abreviacion: true },
+      }),
+    );
     if (!defaultRango) {
       return Response.json({ initialized: false, error: "No hay grados disponibles para crear el usuario inicial." }, { status: 500 });
     }
@@ -76,6 +79,12 @@ export async function POST() {
       { status: 201 },
     );
   } catch (error: unknown) {
+    if (isPrismaDatabaseUnavailable(error)) {
+      return Response.json(
+        { initialized: false, error: "Base de datos no disponible temporalmente. Intenta nuevamente." },
+        { status: 503 },
+      );
+    }
     const message = error instanceof Error ? error.message : "Error desconocido";
     return Response.json({ initialized: false, error: message }, { status: 500 });
   }
@@ -86,9 +95,12 @@ export async function POST() {
  */
 export async function GET() {
   try {
-    const userCount = await prisma.usuario.count();
+    const userCount = await withPrismaReadRetry(() => prisma.usuario.count());
     return Response.json({ needsInit: userCount === 0, userCount }, { status: 200 });
   } catch (error: unknown) {
+    if (isPrismaDatabaseUnavailable(error)) {
+      return Response.json({ error: "Base de datos no disponible temporalmente. Intenta nuevamente." }, { status: 503 });
+    }
     const message = error instanceof Error ? error.message : "Error desconocido";
     return Response.json({ error: message }, { status: 500 });
   }

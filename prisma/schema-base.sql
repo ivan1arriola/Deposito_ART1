@@ -632,3 +632,18 @@ CREATE TABLE "auditoria" (
 
 CREATE INDEX "auditoria_created_at_desc_idx" ON "auditoria"("created_at" DESC);
 CREATE INDEX "auditoria_usuario_id_created_at_desc_idx" ON "auditoria"("usuario_id", "created_at" DESC);
+
+CREATE TABLE "web_push_subscription" (
+  "subscription_id" BIGSERIAL PRIMARY KEY,
+  "usuario_id" TEXT NOT NULL REFERENCES "usuario"("usuario_id") ON DELETE CASCADE,
+  "endpoint" TEXT NOT NULL UNIQUE,
+  "p256dh" TEXT NOT NULL,
+  "auth" TEXT NOT NULL,
+  "user_agent" TEXT,
+  "enabled" BOOLEAN NOT NULL DEFAULT TRUE,
+  "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+  "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
+);
+
+CREATE INDEX "idx_web_push_subscription_usuario" ON "web_push_subscription"("usuario_id");
+CREATE INDEX "idx_web_push_subscription_enabled" ON "web_push_subscription"("enabled");

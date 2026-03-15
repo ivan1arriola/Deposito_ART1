@@ -4,6 +4,7 @@ import { UserRole } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
 import { prisma } from "@/lib/prisma";
+import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
 import { hasPermission, type Permission } from "@/lib/permissions";
 
 export type AuthUser = {
@@ -68,8 +69,8 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
   if (!authUserInflight.has(userId)) {
     authUserInflight.set(
       userId,
-      prisma.usuario
-        .findUnique({
+      withPrismaReadRetry(() =>
+        prisma.usuario.findUnique({
           where: { usuarioId: userId },
           select: {
             usuarioId: true,
@@ -85,7 +86,8 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
               },
             },
           },
-        })
+        }),
+      )
         .then((usuario) => {
           if (!usuario || !usuario.activo) {
             setCachedAuthUser(userId, null);
@@ -118,7 +120,22 @@ export async function authorizeRequest(
   request: Request,
   permission: Permission,
 ): Promise<{ ok: true; user: AuthUser } | { ok: false; response: NextResponse }> {
-  const user = await getUserFromRequest();
+  let user: AuthUser | null = null;
+  try {
+    user = await getUserFromRequest();
+  } catch (error: unknown) {
+    if (isPrismaDatabaseUnavailable(error)) {
+      return {
+        ok: false,
+        response: NextResponse.json({ error: "Base de datos no disponible temporalmente. Intenta nuevamente." }, { status: 503 }),
+      };
+    }
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "No se pudo validar la sesion." }, { status: 500 }),
+    };
+  }
+
   if (!user) {
     return {
       ok: false,
