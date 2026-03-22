@@ -31,7 +31,7 @@ import { EquipoResumenView } from "./components/views/EquipoResumenView";
 import { EquipoCreateView } from "./components/views/EquipoCreateView";
 import { HojaDeEntregaView } from "./components/views/HojaDeEntregaView";
 import { HojaMatrixView } from "./components/views/HojaMatrixView";
-import { FormulariosPrestamosView } from "./components/views/FormulariosPrestamosView";
+import { FormulariosPrestamosView, type PrestamoEditPayload } from "./components/views/FormulariosPrestamosView";
 import { EtiquetadoView } from "./components/views/EtiquetadoView";
 import { PersonalCreateView } from "./components/views/PersonalCreateView";
 import { OficialSuboficialCreateView } from "./components/views/OficialSuboficialCreateView";
@@ -299,6 +299,7 @@ export default function Home() {
   const [prestamoDraft, setPrestamoDraft] = useState<PrestamoDraft>({ ...EMPTY_PRESTAMO_DRAFT, fechaPrestamo: getTodayDateInput() });
   const [prestamoSaving, setPrestamoSaving] = useState(false);
   const [returningPrestamoId, setReturningPrestamoId] = useState<string | null>(null);
+  const [editingPrestamoId, setEditingPrestamoId] = useState<string | null>(null);
   const [personalObservacionDraft, setPersonalObservacionDraft] = useState<PersonalObservacionDraft | null>(null);
   const [personalObservacionSaving, setPersonalObservacionSaving] = useState(false);
   const [registroViewer, setRegistroViewer] = useState<RegistroViewerState | null>(null);
@@ -2837,6 +2838,32 @@ export default function Home() {
     });
   }
 
+  async function editPrestamo(prestamoId: string, payload: PrestamoEditPayload) {
+    if (!isAdmin) {
+      setStatus("Solo el administrador puede editar prestamos.");
+      return;
+    }
+    if (editingPrestamoId) return;
+
+    setEditingPrestamoId(prestamoId);
+    setStatus(`Actualizando prestamo ${prestamoId}...`);
+    try {
+      await api(`/api/prestamos/${encodeURIComponent(prestamoId)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setStatus(`Prestamo ${prestamoId} actualizado.`);
+      await reloadActiveStockData();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "No se pudo editar el prestamo.";
+      setStatus(message);
+      throw error;
+    } finally {
+      setEditingPrestamoId(null);
+    }
+  }
+
   async function savePersonalObservacion() {
     if (!personalObservacionDraft || personalObservacionSaving) return;
     const isEditing = personalObservacionDraft.observacionId !== null;
@@ -3709,6 +3736,7 @@ export default function Home() {
       stockSaving ||
       prestamoSaving ||
       returningPrestamoId !== null ||
+      editingPrestamoId !== null ||
       registroSaving ||
       personalObservacionSaving ||
       changeLoading ||
@@ -4338,6 +4366,7 @@ export default function Home() {
           prestamoDraft={prestamoDraft}
           prestamoSaving={prestamoSaving}
           returningPrestamoId={returningPrestamoId}
+          editingPrestamoId={editingPrestamoId}
           maxDate={maxFechaIngreso}
           onPrestamoDraftChange={(field, value) =>
             setPrestamoDraft((prev) => {
@@ -4353,6 +4382,7 @@ export default function Home() {
           onSubmitPrestamo={() => void savePrestamo(false)}
           onSubmitPrestamoAndPrint={() => void savePrestamo(true)}
           onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
+          onEditPrestamo={(prestamoId, payload) => editPrestamo(prestamoId, payload)}
           onDeletePrestamo={(prestamoId) => void deletePrestamo(prestamoId)}
           onReload={() => void reloadActiveStockData()}
         />

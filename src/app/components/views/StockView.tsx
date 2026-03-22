@@ -1,12 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { DestinatarioSearchSelect } from "@/app/components/shared/DestinatarioSearchSelect";
 import { LoadingInline } from "@/app/components/shared";
-import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
+import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers";
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
 import { formatUruguayanCi } from "@/lib/ci";
+import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import type { Equipo, OficialSuboficial, Personal } from "@/types/entities";
 import type { PrestamoDraft, PrestamoDraftItem, PrestamoEstadoEquipo, StockOperacionDraft, StockOperacionDraftItem } from "@/types/forms";
 import type { StockDashboardData } from "@/types/views";
@@ -121,6 +122,10 @@ export function StockView({
   const [returnItemsByPrestamo, setReturnItemsByPrestamo] = useState<
     Record<string, Record<string, { estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion: string }>>
   >({});
+  const [returnDialog, setReturnDialog] = useState<{
+    prestamo: StockDashboardData["prestamos"][number];
+    fechaDevolucion: string;
+  } | null>(null);
   const normalizedPrestamoIdFilter = prestamoIdFilter.trim();
   const prestamosFiltrados =
     normalizedPrestamoIdFilter === ""
@@ -131,6 +136,32 @@ export function StockView({
     const saved = returnDateByPrestamo[prestamoId];
     return saved !== undefined ? saved : maxDate;
   };
+
+  function openReturnDialog(prestamo: StockDashboardData["prestamos"][number]) {
+    setReturnDialog({
+      prestamo,
+      fechaDevolucion: getReturnDate(prestamo.prestamoId) || getTodayDateInput(),
+    });
+  }
+
+  function submitReturnDialog() {
+    if (!returnDialog) return;
+    const fechaDevolucion = returnDialog.fechaDevolucion.trim() || getTodayDateInput();
+    setReturnDateByPrestamo((prev) => ({ ...prev, [returnDialog.prestamo.prestamoId]: fechaDevolucion }));
+    onReturnPrestamo(
+      returnDialog.prestamo.prestamoId,
+      fechaDevolucion,
+      returnDialog.prestamo.items.map((item) => {
+        const itemData = getReturnItemData(returnDialog.prestamo.prestamoId, item);
+        return {
+          itemId: item.itemId,
+          estadoDevolucion: itemData.estadoDevolucion,
+          comentarioDevolucion: itemData.comentarioDevolucion.trim() || undefined,
+        };
+      }),
+    );
+    setReturnDialog(null);
+  }
 
   const getReturnItemData = (
     prestamoId: string,
@@ -170,7 +201,7 @@ export function StockView({
               ? "Prestamos de equipo"
               : "Historial de stock";
 
-  const stockTableTitle = section === "total" ? "Totales por item (subalternos + préstamo + depósito)" : "Stock interno de depósito por equipo";
+  const stockTableTitle = section === "total" ? "Totales por item (subalternos + prÃ©stamo + depÃ³sito)" : "Stock interno de depÃ³sito por equipo";
 
   return (
     <section className="mt-6 space-y-4">
@@ -355,7 +386,7 @@ export function StockView({
                   />
                 </label>
                 <label className="text-xs text-stone-700">
-                  Fecha estimada devolución (texto)
+                  Fecha estimada devoluciÃ³n (texto)
                   <input
                     value={prestamoDraft.fechaEstimadaDevolucionTexto}
                     disabled={prestamoSaving}
@@ -518,38 +549,14 @@ export function StockView({
                         Recibo
                       </a>
                       {canWrite && prestamo.estado === "PENDIENTE" ? (
-                        <>
-                          <DateTextInput
-                            value={getReturnDate(prestamo.prestamoId)}
-                            disabled={returningPrestamoId === prestamo.prestamoId}
-                            onChange={(value) =>
-                              setReturnDateByPrestamo((prev) => ({ ...prev, [prestamo.prestamoId]: value }))
-                            }
-                            ariaLabel={`Fecha de devolución. Máximo ${maxDate}`}
-                            className="w-28 rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onReturnPrestamo(
-                                prestamo.prestamoId,
-                                getReturnDate(prestamo.prestamoId),
-                                prestamo.items.map((item) => {
-                                  const itemData = getReturnItemData(prestamo.prestamoId, item);
-                                  return {
-                                    itemId: item.itemId,
-                                    estadoDevolucion: itemData.estadoDevolucion,
-                                    comentarioDevolucion: itemData.comentarioDevolucion.trim() || undefined,
-                                  };
-                                }),
-                              )
-                            }
-                            disabled={returningPrestamoId === prestamo.prestamoId}
-                            className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
-                          >
-                            {returningPrestamoId === prestamo.prestamoId ? "Guardando..." : "Devolver"}
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          onClick={() => openReturnDialog(prestamo)}
+                          disabled={returningPrestamoId === prestamo.prestamoId}
+                          className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                        >
+                          {returningPrestamoId === prestamo.prestamoId ? "Guardando..." : "Devolver"}
+                        </button>
                       ) : null}
                     </div>
                   </div>
@@ -601,7 +608,7 @@ export function StockView({
                                   },
                                 }))
                               }
-                              placeholder="Comentario devolución (opcional)"
+                              placeholder="Comentario devoluciÃ³n (opcional)"
                               className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
                             />
                           </div>
@@ -704,6 +711,72 @@ export function StockView({
           </div>
         </article>
       ) : null}
+
+      {returnDialog ? (
+        <ModalFrame onClose={() => setReturnDialog(null)} size="md">
+          <div className="space-y-4">
+            <header>
+              <h3 className="text-lg font-semibold text-stone-900">Confirmar devolucion</h3>
+              <p className="text-sm text-stone-600">
+                {returnDialog.prestamo.reciboNumero} | {returnDialog.prestamo.destinatarioEtiqueta}
+              </p>
+            </header>
+
+            <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+              <p className="text-xs text-stone-600">Fecha prestamo: {formatDateOnlyForDisplay(returnDialog.prestamo.fechaPrestamo)}</p>
+              <label className="mt-3 block text-xs text-stone-700">
+                Fecha devolucion
+                <DateTextInput
+                  value={returnDialog.fechaDevolucion}
+                  disabled={returningPrestamoId === returnDialog.prestamo.prestamoId}
+                  onChange={(value) =>
+                    setReturnDialog((current) => (current ? { ...current, fechaDevolucion: value } : current))
+                  }
+                  ariaLabel={`Fecha de devolucion. Maximo ${maxDate}`}
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={returningPrestamoId === returnDialog.prestamo.prestamoId}
+                onClick={() =>
+                  setReturnDialog((current) =>
+                    current
+                      ? {
+                          ...current,
+                          fechaDevolucion: getTodayDateInput(),
+                        }
+                      : current,
+                  )
+                }
+                className="mt-2 rounded border border-stone-300 bg-white px-3 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+              >
+                Hoy
+              </button>
+            </div>
+
+            <footer className="flex justify-end gap-2 border-t border-stone-200 pt-3">
+              <button
+                type="button"
+                onClick={() => setReturnDialog(null)}
+                disabled={returningPrestamoId === returnDialog.prestamo.prestamoId}
+                className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={submitReturnDialog}
+                disabled={returningPrestamoId === returnDialog.prestamo.prestamoId}
+                className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {returningPrestamoId === returnDialog.prestamo.prestamoId ? "Guardando..." : "Confirmar devolucion"}
+              </button>
+            </footer>
+          </div>
+        </ModalFrame>
+      ) : null}
     </section>
   );
 }
+
