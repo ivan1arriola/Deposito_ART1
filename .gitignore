@@ -53,3 +53,6 @@ next-env.d.ts
 # license reports (generated)
 licenses.json
 licenses-prod.json
+
+# refactor reports (generated)
+/reports/

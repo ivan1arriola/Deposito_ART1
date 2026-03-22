@@ -34,6 +34,10 @@ export type MainView =
   | "firmas"
   | "usuarios"
   | "auditoria"
+  | "etiquetado_codigos_sie"
+  | "etiquetado_registrar_caja"
+  | "etiquetado_listado_cajas"
+  | "etiquetado_imprimir_todas"
   | "hoja-de-entrega";
 
 export type RegistroTipo = "ENTREGA" | "DEVOLUCION";

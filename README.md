@@ -72,6 +72,9 @@ npm run dev
 - `npm run test`: ejecuta tests con Vitest
 - `npm run test:ui`: interfaz de Vitest
 - `npm run test:coverage`: cobertura de tests
+- `npm run refactor:scan`: analiza hotspots y puntaje de riesgo de refactorizacion
+- `npm run refactor:scan:json`: genera reporte JSON en `reports/refactor-metrics.json`
+- `npm run refactor:gate`: igual que scan, pero retorna error si detecta riesgo ALTO/CRITICO
 - `npm run db:rebuild`: recrea esquema `public` usando `prisma/schema-base.sql`
 - `npm run prisma:generate`: regenera cliente Prisma
 - `npm run prisma:studio`: abre Prisma Studio

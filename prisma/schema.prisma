@@ -185,6 +185,14 @@ model Bateria {
   @@map("bateria")
 }
 
+model Estanteria {
+  codigo String @db.Char(1)
+  piso   Int    @db.SmallInt
+
+  @@id([codigo, piso])
+  @@map("estanteria")
+}
+
 model TallaTipo {
   tallaTipoId Int             @id @default(autoincrement()) @map("talla_tipo_id") @db.SmallInt
   nombre      String          @unique
@@ -200,8 +208,48 @@ model Item {
   ordenPdf            Int                  @map("orden_pdf")
   movimientoItems     MovimientoItem[]
   stockOperacionItems StockOperacionItem[]
+  codigosSIE          ItemCodigoSIE[]
+  cajas               Caja[]
 
   @@map("item")
+}
+
+model ItemCodigoSIE {
+  codigo String @id
+  talla  String?
+  itemId BigInt @map("item_id")
+  item   Item   @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+  cajas  CajaItemCodigoSIE[]
+
+  @@index([itemId])
+  @@unique([codigo, itemId])
+  @@map("item_codigo_sie")
+}
+
+model Caja {
+  codigoDepositoGeneral Int                 @id @map("codigo_deposito_general")
+  estanteria            String              @db.Char(1)
+  cantidad              Int
+  itemId                BigInt              @map("item_id")
+  item                  Item                @relation(fields: [itemId], references: [itemId], onDelete: Restrict)
+  codigosSIE            CajaItemCodigoSIE[]
+
+  @@index([itemId])
+  @@unique([codigoDepositoGeneral, itemId])
+  @@map("caja")
+}
+
+model CajaItemCodigoSIE {
+  codigoDepositoGeneral Int           @map("codigo_deposito_general")
+  codigoSIE             String        @map("codigo_sie")
+  itemId                BigInt        @map("item_id")
+  caja                  Caja          @relation(fields: [codigoDepositoGeneral, itemId], references: [codigoDepositoGeneral, itemId], onDelete: Cascade)
+  itemCodigoSIE         ItemCodigoSIE @relation(fields: [codigoSIE, itemId], references: [codigo, itemId], onDelete: Cascade)
+
+  @@id([codigoDepositoGeneral, codigoSIE])
+  @@index([codigoSIE, itemId])
+  @@index([itemId])
+  @@map("caja_item_codigo_sie")
 }
 
 model Personal {

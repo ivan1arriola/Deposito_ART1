@@ -6,6 +6,10 @@ import type { MainView } from "@/types/views";
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recordatorios" | "firmas" | "usuarios" | "auditoria">;
 type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo">;
 type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "equipo_nuevo">;
+type EtiquetadoView = Extract<
+  MainView,
+  "etiquetado_codigos_sie" | "etiquetado_registrar_caja" | "etiquetado_listado_cajas" | "etiquetado_imprimir_todas"
+>;
 
 type MainNavigationProps = {
   activeView: MainView;
@@ -218,6 +222,49 @@ const stockViews: Array<{ view: StockView; label: string; shortLabel: string; ic
   },
 ];
 
+const etiquetadoViews: Array<{ view: EtiquetadoView; label: string; shortLabel: string; icon: JSX.Element }> = [
+  {
+    view: "etiquetado_codigos_sie",
+    label: "Codigos SIE",
+    shortLabel: "Codigos SIE",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5h6M7 9h10M5 13h14M7 17h10M9 21h6" />
+      </svg>
+    ),
+  },
+  {
+    view: "etiquetado_registrar_caja",
+    label: "Registrar Caja",
+    shortLabel: "Registrar Caja",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
+      </svg>
+    ),
+  },
+  {
+    view: "etiquetado_listado_cajas",
+    label: "Listado de Cajas",
+    shortLabel: "Listado Cajas",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    ),
+  },
+  {
+    view: "etiquetado_imprimir_todas",
+    label: "Imprimir Todas",
+    shortLabel: "Imprimir Todas",
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9V4h12v5M6 14H4v6h16v-6h-2M8 14h8v6H8z" />
+      </svg>
+    ),
+  },
+];
+
 function viewButtonClass(activeView: MainView, view: MainView) {
   return activeView === view
     ? "ej-view-active rounded-lg px-3 py-2 text-sm font-semibold"
@@ -270,10 +317,12 @@ export function MainNavigation({
   const [showOficialesSuboficialesViews, setShowOficialesSuboficialesViews] = useState(false);
   const [showCreateViews, setShowCreateViews] = useState(false);
   const [showStockViews, setShowStockViews] = useState(false);
+  const [showEtiquetadoViews, setShowEtiquetadoViews] = useState(false);
   const personalMenuRef = useRef<HTMLDivElement | null>(null);
   const oficialesSuboficialesMenuRef = useRef<HTMLDivElement | null>(null);
   const createMenuRef = useRef<HTMLDivElement | null>(null);
   const stockMenuRef = useRef<HTMLDivElement | null>(null);
+  const etiquetadoMenuRef = useRef<HTMLDivElement | null>(null);
   const isPersonalView = activeView === "personal" || activeView === "hoja_matrix" || activeView === "equipo_resumen";
   const isOficialesView = activeView === "oficiales";
   const isSuboficialesView = activeView === "suboficiales";
@@ -290,6 +339,11 @@ export function MainNavigation({
     activeView === "stock_baja" ||
     activeView === "stock_historial" ||
     activeView === "stock_prestamos";
+  const isEtiquetadoView =
+    activeView === "etiquetado_codigos_sie" ||
+    activeView === "etiquetado_registrar_caja" ||
+    activeView === "etiquetado_listado_cajas" ||
+    activeView === "etiquetado_imprimir_todas";
   const isCreateView =
     activeView === "personal_nuevo" ||
     activeView === "oficial_nuevo" ||
@@ -303,6 +357,7 @@ export function MainNavigation({
     setShowOficialesSuboficialesViews(false);
     setShowCreateViews(false);
     setShowStockViews(false);
+    setShowEtiquetadoViews(false);
   }
 
   function closeAllMenus() {
@@ -321,6 +376,7 @@ export function MainNavigation({
     setShowPersonalViews(false);
     setShowOficialesSuboficialesViews(false);
     setShowCreateViews(false);
+    setShowEtiquetadoViews(false);
     onSetConfigViews(false);
   }
 
@@ -330,6 +386,7 @@ export function MainNavigation({
     setShowStockViews(false);
     setShowOficialesSuboficialesViews(false);
     setShowCreateViews(false);
+    setShowEtiquetadoViews(false);
     onSetConfigViews(false);
   }
 
@@ -339,6 +396,7 @@ export function MainNavigation({
     setShowPersonalViews(false);
     setShowStockViews(false);
     setShowCreateViews(false);
+    setShowEtiquetadoViews(false);
     onSetConfigViews(false);
   }
 
@@ -347,6 +405,17 @@ export function MainNavigation({
     setShowCreateViews(next);
     setShowPersonalViews(false);
     setShowOficialesSuboficialesViews(false);
+    setShowStockViews(false);
+    setShowEtiquetadoViews(false);
+    onSetConfigViews(false);
+  }
+
+  function handleToggleEtiquetadoViews() {
+    const next = !showEtiquetadoViews;
+    setShowEtiquetadoViews(next);
+    setShowPersonalViews(false);
+    setShowOficialesSuboficialesViews(false);
+    setShowCreateViews(false);
     setShowStockViews(false);
     onSetConfigViews(false);
   }
@@ -374,6 +443,9 @@ export function MainNavigation({
       if (stockMenuRef.current && event.target instanceof Node && !stockMenuRef.current.contains(event.target)) {
         setShowStockViews(false);
       }
+      if (etiquetadoMenuRef.current && event.target instanceof Node && !etiquetadoMenuRef.current.contains(event.target)) {
+        setShowEtiquetadoViews(false);
+      }
     }
 
     function handleEscape(event: KeyboardEvent) {
@@ -382,9 +454,10 @@ export function MainNavigation({
       setShowOficialesSuboficialesViews(false);
       setShowCreateViews(false);
       setShowStockViews(false);
+      setShowEtiquetadoViews(false);
     }
 
-    if (!showPersonalViews && !showOficialesSuboficialesViews && !showCreateViews && !showStockViews) return;
+    if (!showPersonalViews && !showOficialesSuboficialesViews && !showCreateViews && !showStockViews && !showEtiquetadoViews) return;
 
     document.addEventListener("mousedown", handleOutsideClick);
     document.addEventListener("keydown", handleEscape);
@@ -392,7 +465,7 @@ export function MainNavigation({
       document.removeEventListener("mousedown", handleOutsideClick);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [showPersonalViews, showOficialesSuboficialesViews, showCreateViews, showStockViews]);
+  }, [showPersonalViews, showOficialesSuboficialesViews, showCreateViews, showStockViews, showEtiquetadoViews]);
 
   return (
     <section className="ej-card relative isolate z-[220] mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
@@ -539,6 +612,49 @@ export function MainNavigation({
                     {item.icon}
                     <span className="hidden sm:inline">{item.label}</span>
                     <span className="sm:hidden">{item.shortLabel}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <div ref={etiquetadoMenuRef} className={menuContainerClass(showEtiquetadoViews)}>
+          <button
+            type="button"
+            onClick={handleToggleEtiquetadoViews}
+            aria-haspopup="menu"
+            aria-expanded={showEtiquetadoViews}
+            aria-controls="menu-etiquetado"
+            className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+              isEtiquetadoView || showEtiquetadoViews ? "ej-view-active" : "ej-view-idle"
+            }`}
+          >
+            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5h6M7 9h10M5 13h14M7 17h10M9 21h6" />
+            </svg>
+            <span className="whitespace-nowrap">Etiquetado</span>
+            <svg className={`h-3 w-3 transition-transform ${showEtiquetadoViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showEtiquetadoViews ? (
+            <div
+              id="menu-etiquetado"
+              role="menu"
+              className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
+            >
+              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de etiquetado</p>
+              <div className="grid grid-cols-1 gap-1.5">
+                {etiquetadoViews.map((viewItem) => (
+                  <button
+                    key={viewItem.view}
+                    type="button"
+                    onClick={() => handleSelectView(viewItem.view)}
+                    className={groupedOptionClass(activeView, viewItem.view)}
+                  >
+                    {viewItem.icon}
+                    <span className="hidden sm:inline">{viewItem.label}</span>
+                    <span className="sm:hidden">{viewItem.shortLabel}</span>
                   </button>
                 ))}
               </div>

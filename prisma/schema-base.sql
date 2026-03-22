@@ -132,6 +132,55 @@ INSERT INTO "item" ("nombre", "activo", "orden_pdf") VALUES
 ('Bota Corta de Cuero SIE', TRUE, 23),
 ('Bota Corta de tela S.I.E.', TRUE, 24);
 
+CREATE TABLE "estanteria" (
+  "codigo" CHAR(1) NOT NULL,
+  "piso" SMALLINT NOT NULL,
+  CONSTRAINT "estanteria_codigo_formato_chk" CHECK ("codigo" ~ '^[A-Z0-9]$'),
+  CONSTRAINT "estanteria_piso_rango_chk" CHECK ("piso" >= 1 AND "piso" <= 2),
+  PRIMARY KEY ("codigo", "piso")
+);
+
+CREATE TABLE "item_codigo_sie" (
+  "codigo" TEXT PRIMARY KEY,
+  "talla" TEXT,
+  "item_id" BIGINT NOT NULL REFERENCES "item"("item_id") ON DELETE CASCADE,
+  CONSTRAINT "item_codigo_sie_codigo_formato_chk" CHECK ("codigo" ~ '^[A-Z0-9./-]{3,40}$'),
+  CONSTRAINT "item_codigo_sie_codigo_item_uq" UNIQUE ("codigo", "item_id")
+);
+
+CREATE INDEX "item_codigo_sie_item_id_idx" ON "item_codigo_sie"("item_id");
+
+CREATE TABLE "caja" (
+  "codigo_deposito_general" INTEGER PRIMARY KEY,
+  "estanteria" CHAR(1) NOT NULL,
+  "cantidad" INTEGER NOT NULL,
+  "item_id" BIGINT NOT NULL REFERENCES "item"("item_id") ON DELETE RESTRICT,
+  CONSTRAINT "caja_codigo_deposito_general_chk" CHECK ("codigo_deposito_general" > 0),
+  CONSTRAINT "caja_estanteria_formato_chk" CHECK ("estanteria" ~ '^[A-Z0-9]$'),
+  CONSTRAINT "caja_cantidad_chk" CHECK ("cantidad" > 0),
+  CONSTRAINT "caja_codigo_item_uq" UNIQUE ("codigo_deposito_general", "item_id")
+);
+
+CREATE INDEX "caja_item_id_idx" ON "caja"("item_id");
+
+CREATE TABLE "caja_item_codigo_sie" (
+  "codigo_deposito_general" INTEGER NOT NULL,
+  "codigo_sie" TEXT NOT NULL,
+  "item_id" BIGINT NOT NULL,
+  PRIMARY KEY ("codigo_deposito_general", "codigo_sie"),
+  CONSTRAINT "caja_item_codigo_sie_caja_fk"
+    FOREIGN KEY ("codigo_deposito_general", "item_id")
+    REFERENCES "caja"("codigo_deposito_general", "item_id")
+    ON DELETE CASCADE,
+  CONSTRAINT "caja_item_codigo_sie_codigo_fk"
+    FOREIGN KEY ("codigo_sie", "item_id")
+    REFERENCES "item_codigo_sie"("codigo", "item_id")
+    ON DELETE CASCADE
+);
+
+CREATE INDEX "caja_item_codigo_sie_codigo_item_idx" ON "caja_item_codigo_sie"("codigo_sie", "item_id");
+CREATE INDEX "caja_item_codigo_sie_item_id_idx" ON "caja_item_codigo_sie"("item_id");
+
 CREATE TABLE "personal" (
   "ci" TEXT PRIMARY KEY,
   "tipo" "tipo_personal" NOT NULL,

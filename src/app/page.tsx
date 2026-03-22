@@ -32,6 +32,7 @@ import { EquipoCreateView } from "./components/views/EquipoCreateView";
 import { HojaDeEntregaView } from "./components/views/HojaDeEntregaView";
 import { HojaMatrixView } from "./components/views/HojaMatrixView";
 import { FormulariosPrestamosView } from "./components/views/FormulariosPrestamosView";
+import { EtiquetadoView } from "./components/views/EtiquetadoView";
 import { PersonalCreateView } from "./components/views/PersonalCreateView";
 import { OficialSuboficialCreateView } from "./components/views/OficialSuboficialCreateView";
 import { RangoCreateView } from "./components/views/RangoCreateView";
@@ -75,6 +76,7 @@ import type {
   ConfirmDialogState,
   AuditFilter,
 } from "@/types/views";
+import type { EtiquetadoDashboardData } from "@/types/etiquetado";
 import { ROLE_OPTIONS } from "@/types/entities";
 import {
   EMPTY_PERSONAL_FORM,
@@ -161,6 +163,8 @@ type StockLoadProfile = {
     limit?: number;
   };
 };
+
+type EtiquetadoSection = "codigos_sie" | "registrar_caja" | "listado_cajas" | "imprimir_todas";
 
 const STATUS_VERIFYING_SESSION = "Verificando sesión...";
 const STATUS_STARTING_SESSION = "Iniciando sesión...";
@@ -303,6 +307,9 @@ export default function Home() {
   const [activeView, setActiveView] = useState<MainView>("personal");
   const [fichaViewingCi, setFichaViewingCi] = useState<string | null>(null);
   const [showConfigViews, setShowConfigViews] = useState(false);
+  const [etiquetadoData, setEtiquetadoData] = useState<EtiquetadoDashboardData | null>(null);
+  const [etiquetadoLoading, setEtiquetadoLoading] = useState(false);
+  const [etiquetadoError, setEtiquetadoError] = useState<string | null>(null);
   const [recordatorioTasks, setRecordatorioTasks] = useState<RecordatorioTarea[]>([]);
   const [recordatorioConfig, setRecordatorioConfig] = useState<RecordatorioConfig>({ mostrarMuneco: true });
   const [recordatoriosLoading, setRecordatoriosLoading] = useState(false);
@@ -335,6 +342,11 @@ export default function Home() {
   const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "equipos";
   const inReminderConfigView = activeView === "recordatorios";
   const inAdminConfigView = activeView === "firmas" || activeView === "usuarios" || activeView === "auditoria";
+  const inEtiquetadoView =
+    activeView === "etiquetado_codigos_sie" ||
+    activeView === "etiquetado_registrar_caja" ||
+    activeView === "etiquetado_listado_cajas" ||
+    activeView === "etiquetado_imprimir_todas";
   const normalizedNewCi = normalizeCi(newPersonal.ci.trim());
   const duplicatePersonal = useMemo(() => {
     if (normalizedNewCi === "") return null;
@@ -914,6 +926,9 @@ export default function Home() {
     setAuditPage(1);
     setAuditPageSize(25);
     setEquipoOrderDraftIds(null);
+    setEtiquetadoData(null);
+    setEtiquetadoLoading(false);
+    setEtiquetadoError(null);
   }, [clearLoadedDataState]);
   useEffect(() => {
     if (activeView !== "hoja_matrix") return;
@@ -973,6 +988,233 @@ export default function Home() {
       setStockDraft((prev) => ({ ...prev, tipo: "EGRESO" }));
     }
   }, [activeView, stockDraft.tipo]);
+
+  const getEtiquetadoSection = useCallback((view: MainView): EtiquetadoSection | null => {
+    if (view === "etiquetado_codigos_sie") return "codigos_sie";
+    if (view === "etiquetado_registrar_caja") return "registrar_caja";
+    if (view === "etiquetado_listado_cajas") return "listado_cajas";
+    if (view === "etiquetado_imprimir_todas") return "imprimir_todas";
+    return null;
+  }, []);
+
+  const activeEtiquetadoSection = useMemo(
+    () => getEtiquetadoSection(activeView),
+    [activeView, getEtiquetadoSection],
+  );
+
+  const loadEtiquetadoData = useCallback(async () => {
+    setEtiquetadoLoading(true);
+    setEtiquetadoError(null);
+    try {
+      const data = await api<EtiquetadoDashboardData>("/api/etiquetado/dashboard");
+      setEtiquetadoData(data);
+    } catch (error: unknown) {
+      setEtiquetadoError(error instanceof Error ? error.message : "No se pudo cargar el modulo de etiquetado.");
+    } finally {
+      setEtiquetadoLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!activeEtiquetadoSection) return;
+    if (etiquetadoLoading) return;
+    if (etiquetadoData) return;
+    if (etiquetadoError) return;
+    void loadEtiquetadoData();
+  }, [activeEtiquetadoSection, etiquetadoData, etiquetadoError, etiquetadoLoading, loadEtiquetadoData]);
+
+  const reloadEtiquetadoData = useCallback(async () => {
+    await loadEtiquetadoData();
+  }, [loadEtiquetadoData]);
+
+  const createEtiquetadoItem = useCallback(
+    async (input: { nombre: string; activo: boolean }) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para crear.");
+        return;
+      }
+      try {
+        await createItemHandler(input.nombre, input.activo, {
+          onSuccess: async () => {
+            setStatus("Equipo creado.");
+            await Promise.all([loadData(), loadEtiquetadoData()]);
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [canWrite, loadData, loadEtiquetadoData],
+  );
+
+  const createEtiquetadoEstanteria = useCallback(
+    async (codigo: string, piso: number) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para crear.");
+        return;
+      }
+
+      setStatus("Registrando estanteria...");
+      try {
+        await api("/api/etiquetado/estanterias", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo, piso }),
+        });
+        setStatus("Estanteria registrada.");
+        await loadEtiquetadoData();
+      } catch (error: unknown) {
+        setStatus(error instanceof Error ? error.message : "No se pudo registrar la estanteria.");
+      }
+    },
+    [canWrite, loadEtiquetadoData],
+  );
+
+  const deleteEtiquetadoEstanteria = useCallback(
+    async (codigo: string, piso: number) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para eliminar.");
+        return;
+      }
+
+      setStatus("Eliminando estanteria...");
+      try {
+        await api(`/api/etiquetado/estanterias/${encodeURIComponent(codigo)}/${encodeURIComponent(String(piso))}`, {
+          method: "DELETE",
+        });
+        setStatus("Estanteria eliminada.");
+        await loadEtiquetadoData();
+      } catch (error: unknown) {
+        setStatus(error instanceof Error ? error.message : "No se pudo eliminar la estanteria.");
+      }
+    },
+    [canWrite, loadEtiquetadoData],
+  );
+
+  const createEtiquetadoCodigoSIE = useCallback(
+    async (input: { codigo: string; talla: string; itemId: string }) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para crear.");
+        return;
+      }
+
+      setStatus("Registrando codigo SIE...");
+      try {
+        await api("/api/etiquetado/codigos-sie", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        });
+        setStatus("Codigo SIE registrado.");
+        await loadEtiquetadoData();
+      } catch (error: unknown) {
+        setStatus(error instanceof Error ? error.message : "No se pudo registrar el codigo SIE.");
+      }
+    },
+    [canWrite, loadEtiquetadoData],
+  );
+
+  const deleteEtiquetadoCodigoSIE = useCallback(
+    async (codigo: string) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para eliminar.");
+        return;
+      }
+
+      setStatus("Eliminando codigo SIE...");
+      try {
+        await api(`/api/etiquetado/codigos-sie/${encodeURIComponent(codigo)}`, {
+          method: "DELETE",
+        });
+        setStatus("Codigo SIE eliminado.");
+        await loadEtiquetadoData();
+      } catch (error: unknown) {
+        setStatus(error instanceof Error ? error.message : "No se pudo eliminar el codigo SIE.");
+      }
+    },
+    [canWrite, loadEtiquetadoData],
+  );
+
+  const createEtiquetadoCaja = useCallback(
+    async (input: {
+      codigoDepositoGeneral: number;
+      itemId: string;
+      cantidad: number;
+      estanteria: string;
+      codigosSIE: string[];
+    }) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para crear.");
+        return;
+      }
+
+      setStatus("Registrando caja...");
+      try {
+        await api("/api/etiquetado/cajas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        });
+        setStatus("Caja registrada.");
+        await loadEtiquetadoData();
+      } catch (error: unknown) {
+        setStatus(error instanceof Error ? error.message : "No se pudo registrar la caja.");
+      }
+    },
+    [canWrite, loadEtiquetadoData],
+  );
+
+  const deleteEtiquetadoCaja = useCallback(
+    async (codigoDepositoGeneral: number) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para eliminar.");
+        return;
+      }
+
+      setStatus("Eliminando caja...");
+      try {
+        await api(`/api/etiquetado/cajas/${encodeURIComponent(String(codigoDepositoGeneral))}`, {
+          method: "DELETE",
+        });
+        setStatus("Caja eliminada.");
+        await loadEtiquetadoData();
+      } catch (error: unknown) {
+        setStatus(error instanceof Error ? error.message : "No se pudo eliminar la caja.");
+      }
+    },
+    [canWrite, loadEtiquetadoData],
+  );
+
+  const openEtiquetasPrint = useCallback(
+    (options: { codigos?: number[]; orientacion: "horizontal" | "vertical" }) => {
+      const params = new URLSearchParams();
+      params.set("autoprint", "1");
+      params.set("orientacion", options.orientacion);
+      if (options.codigos && options.codigos.length > 0) {
+        params.set("cajas", options.codigos.join(","));
+      }
+      const popup = window.open(`/etiquetas-cajas?${params.toString()}`, "_blank", "noopener,noreferrer");
+      if (!popup) {
+        setStatus("Permite ventanas emergentes para imprimir las etiquetas.");
+      }
+    },
+    [],
+  );
+
+  const printEtiquetaCaja = useCallback(
+    (codigoDepositoGeneral: number, orientacion: "horizontal" | "vertical") => {
+      openEtiquetasPrint({ codigos: [codigoDepositoGeneral], orientacion });
+    },
+    [openEtiquetasPrint],
+  );
+
+  const printTodasEtiquetas = useCallback(
+    (orientacion: "horizontal" | "vertical") => {
+      openEtiquetasPrint({ orientacion });
+    },
+    [openEtiquetasPrint],
+  );
 
   const createRango = useCallback(async () => {
     if (!isAdmin) {
@@ -3610,8 +3852,12 @@ export default function Home() {
         onSelectView={(view) => {
           const currentProfile = getStockLoadProfile(activeView);
           const nextProfile = getStockLoadProfile(view);
+          const nextEtiquetadoSection = getEtiquetadoSection(view);
           if (view !== activeView && nextProfile) {
             setStockError(null);
+          }
+          if (view !== activeView && nextEtiquetadoSection) {
+            setEtiquetadoError(null);
           }
           if ((currentProfile?.key ?? null) !== (nextProfile?.key ?? null)) {
             setStockData(null);
@@ -4085,6 +4331,26 @@ export default function Home() {
           onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
           onDeletePrestamo={(prestamoId) => void deletePrestamo(prestamoId)}
           onReload={() => void reloadActiveStockData()}
+        />
+      ) : null}
+
+      {inEtiquetadoView && activeEtiquetadoSection ? (
+        <EtiquetadoView
+          section={activeEtiquetadoSection}
+          data={etiquetadoData}
+          loading={etiquetadoLoading}
+          error={etiquetadoError}
+          canWrite={canWrite}
+          onReload={() => void reloadEtiquetadoData()}
+          onCreateItem={(input) => void createEtiquetadoItem(input)}
+          onCreateEstanteria={(codigo, piso) => void createEtiquetadoEstanteria(codigo, piso)}
+          onDeleteEstanteria={(codigo, piso) => void deleteEtiquetadoEstanteria(codigo, piso)}
+          onCreateCodigoSIE={(input) => void createEtiquetadoCodigoSIE(input)}
+          onDeleteCodigoSIE={(codigo) => void deleteEtiquetadoCodigoSIE(codigo)}
+          onCreateCaja={(input) => void createEtiquetadoCaja(input)}
+          onDeleteCaja={(codigoDepositoGeneral) => void deleteEtiquetadoCaja(codigoDepositoGeneral)}
+          onPrintCaja={(codigoDepositoGeneral, orientacion) => printEtiquetaCaja(codigoDepositoGeneral, orientacion)}
+          onPrintTodas={(orientacion) => printTodasEtiquetas(orientacion)}
         />
       ) : null}
 
