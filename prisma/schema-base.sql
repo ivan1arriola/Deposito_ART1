@@ -162,7 +162,9 @@ CREATE TABLE "caja" (
 CREATE TABLE "caja_item" (
   "codigo_deposito_general" INTEGER NOT NULL,
   "item_id" BIGINT NOT NULL,
+  "cantidad" INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY ("codigo_deposito_general", "item_id"),
+  CONSTRAINT "caja_item_cantidad_chk" CHECK ("cantidad" > 0),
   CONSTRAINT "caja_item_caja_fk"
     FOREIGN KEY ("codigo_deposito_general")
     REFERENCES "caja"("codigo_deposito_general")

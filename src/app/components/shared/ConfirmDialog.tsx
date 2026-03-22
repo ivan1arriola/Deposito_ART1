@@ -1,5 +1,6 @@
 "use client";
 
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { LoadingInline } from "./LoadingSpinner";
 
 /**
@@ -16,49 +17,45 @@ export function ConfirmDialog(props: {
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  if (!props.isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-96 max-w-sm rounded-lg bg-white shadow-lg">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">{props.title}</h2>
-        </div>
+    <Dialog open={props.isOpen} onClose={props.isLoading ? undefined : props.onCancel} fullWidth maxWidth="xs">
+      <DialogTitle>{props.title}</DialogTitle>
 
-        {props.description ? (
-          <div className="px-6 py-3">
-            <p className="text-sm text-gray-600">{props.description}</p>
-          </div>
-        ) : null}
+      {props.description ? (
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">{props.description}</Typography>
+        </DialogContent>
+      ) : null}
 
-        <div className="flex gap-3 border-t border-gray-200 px-6 py-4">
-          <button
+      <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
             onClick={props.onCancel}
             disabled={props.isLoading}
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+            variant="outlined"
+            color="inherit"
+            sx={{ minWidth: 120 }}
           >
             {props.cancelText || "Cancelar"}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={props.onConfirm}
             disabled={props.isLoading}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50 ${
-              props.isDangerous ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            color={props.isDangerous ? "error" : "primary"}
+            variant="contained"
+            sx={{ minWidth: 140 }}
           >
             {props.isLoading ? (
               <LoadingInline
                 label="Procesando..."
                 size="xs"
                 tone="light"
-                textClassName="text-sm font-medium text-white"
+                textClassName="MuiTypography-root"
               />
             ) : (
               props.confirmText || "Confirmar"
             )}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

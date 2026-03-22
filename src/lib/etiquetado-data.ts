@@ -7,6 +7,7 @@ export type EtiquetaCajaPrintData = {
   equipos: Array<{
     itemId: string;
     itemNombre: string;
+    cantidad: number;
     codigosSIE: Array<{
       codigo: string;
       talla: string | null;
@@ -102,11 +103,19 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
             .map((entry) => ({
               itemId: entry.item.itemId.toString(),
               itemNombre: entry.item.nombre,
+              cantidad: entry.cantidad,
             }))
             .sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }))
         : Array.from(
             new Map(
-              codigosSIEConEquipo.map((codigo) => [codigo.itemId, { itemId: codigo.itemId, itemNombre: codigo.itemNombre }]),
+              codigosSIEConEquipo.map((codigo) => [
+                codigo.itemId,
+                {
+                  itemId: codigo.itemId,
+                  itemNombre: codigo.itemNombre,
+                  cantidad: codigosSIEConEquipo.filter((entry) => entry.itemId === codigo.itemId).length || 1,
+                },
+              ]),
             ).values(),
           ).sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }));
 
@@ -118,17 +127,19 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
       return {
         itemId: equipo.itemId,
         itemNombre: equipo.itemNombre,
+        cantidad: equipo.cantidad,
         codigosSIE: codigosEquipo,
         sinCodigo: codigosEquipo.length === 0,
       };
     });
 
     const itemNombres = equipos.map((equipo) => equipo.itemNombre);
+    const cantidadTotal = equipos.reduce((sum, equipo) => sum + equipo.cantidad, 0);
 
     return {
       codigoDepositoGeneral: caja.codigoDepositoGeneral,
       estanteria: caja.estanteria,
-      cantidad: caja.cantidad,
+      cantidad: cantidadTotal > 0 ? cantidadTotal : caja.cantidad,
       equipos,
       itemNombres,
       codigosSIE,

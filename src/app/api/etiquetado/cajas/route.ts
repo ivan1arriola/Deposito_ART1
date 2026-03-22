@@ -5,10 +5,17 @@ import { prisma } from "@/lib/prisma";
 
 type CreateCajaPayload = {
   codigoDepositoGeneral?: string | number;
-  cantidad?: string | number;
   estanteria?: string;
-  itemIds?: Array<string | number>;
+  items?: Array<{
+    itemId?: string | number;
+    cantidad?: string | number;
+  }>;
   codigosSIE?: string[];
+};
+
+type ParsedCajaItem = {
+  itemId: bigint;
+  cantidad: number;
 };
 
 function hasEtiquetadoDelegates() {
@@ -62,6 +69,22 @@ function normalizeCodigoSIE(value: unknown) {
   return normalized;
 }
 
+function parseCajaItems(value: unknown): ParsedCajaItem[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+
+  const parsed: ParsedCajaItem[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") return null;
+    const candidate = entry as { itemId?: unknown; cantidad?: unknown };
+    const itemId = parseItemId(candidate.itemId);
+    const cantidad = parseCantidad(candidate.cantidad);
+    if (itemId === null || cantidad === null) return null;
+    parsed.push({ itemId, cantidad });
+  }
+
+  return parsed;
+}
+
 export async function POST(request: Request) {
   const auth = await authorizeRequest(request, "write_data");
   if (!auth.ok) return auth.response;
@@ -75,16 +98,25 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as CreateCajaPayload;
   const codigoDepositoGeneral = parseCodigoDepositoGeneral(body.codigoDepositoGeneral);
-  const cantidad = parseCantidad(body.cantidad);
   const estanteria = normalizeEstanteria(body.estanteria);
-  const rawItemIds = Array.isArray(body.itemIds) ? body.itemIds : [];
-  const itemIdsParsed = rawItemIds.map(parseItemId);
-  if (itemIdsParsed.some((itemId) => itemId === null)) {
-    return NextResponse.json({ error: "Equipos invalidos seleccionados." }, { status: 400 });
+  const parsedItems = parseCajaItems(body.items);
+  if (!parsedItems || parsedItems.length === 0) {
+    return NextResponse.json(
+      { error: "Payload invalido. Debes enviar al menos un equipo con cantidad valida." },
+      { status: 400 },
+    );
   }
-  const itemIds = Array.from(
-    new Set((itemIdsParsed as bigint[]).map((itemId) => itemId.toString())),
-  ).map((itemId) => BigInt(itemId));
+  const cantidadesByItemId = new Map<string, number>();
+  for (const entry of parsedItems) {
+    const key = entry.itemId.toString();
+    cantidadesByItemId.set(key, (cantidadesByItemId.get(key) ?? 0) + entry.cantidad);
+  }
+  const items = Array.from(cantidadesByItemId.entries()).map(([itemId, cantidad]) => ({
+    itemId: BigInt(itemId),
+    cantidad,
+  }));
+  const itemIds = items.map((entry) => entry.itemId);
+  const cantidadTotal = items.reduce((sum, entry) => sum + entry.cantidad, 0);
 
   const rawCodigosSIE = Array.isArray(body.codigosSIE) ? body.codigosSIE : [];
   const codigosSIENormalizados = rawCodigosSIE.map(normalizeCodigoSIE);
@@ -96,9 +128,9 @@ export async function POST(request: Request) {
   }
   const codigosSIE = Array.from(new Set(codigosSIENormalizados as string[]));
 
-  if (codigoDepositoGeneral === null || cantidad === null || !estanteria || itemIds.length === 0) {
+  if (codigoDepositoGeneral === null || !estanteria || itemIds.length === 0 || cantidadTotal <= 0) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo de caja, cantidad, nombre de estanteria y equipos son obligatorios." },
+      { error: "Payload invalido. codigo de caja, nombre de estanteria y equipos con cantidad son obligatorios." },
       { status: 400 },
     );
   }
@@ -169,14 +201,15 @@ export async function POST(request: Request) {
         data: {
           codigoDepositoGeneral,
           estanteria,
-          cantidad,
+          cantidad: cantidadTotal,
         },
       });
 
       await tx.cajaItem.createMany({
-        data: itemIds.map((itemId) => ({
+        data: items.map((entry) => ({
           codigoDepositoGeneral,
-          itemId,
+          itemId: entry.itemId,
+          cantidad: entry.cantidad,
         })),
       });
 
@@ -197,9 +230,12 @@ export async function POST(request: Request) {
       entidadId: String(codigoDepositoGeneral),
       detalle: {
         codigoDepositoGeneral,
-        itemIds: itemIds.map((itemId) => itemId.toString()),
+        items: items.map((entry) => ({
+          itemId: entry.itemId.toString(),
+          cantidad: entry.cantidad,
+        })),
         itemNombres,
-        cantidad,
+        cantidad: cantidadTotal,
         estanteria,
         codigosSIE,
       },

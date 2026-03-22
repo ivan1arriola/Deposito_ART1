@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 
 /**
  * Card mejorado con variantes y sombra
@@ -14,31 +15,54 @@ export function Card(props: {
 }) {
   const { variant = "default", padding = "md", hover = false } = props;
 
-  const paddingClasses = {
-    none: "",
-    sm: "p-3",
-    md: "p-4 sm:p-6",
-    lg: "p-6 sm:p-8",
+  const paddingSx = {
+    none: { p: 0 },
+    sm: { p: 1.5 },
+    md: { p: { xs: 2, sm: 3 } },
+    lg: { p: { xs: 3, sm: 4 } },
   };
 
-  const variantClasses = {
-    default: "ej-card",
-    elevated: "bg-white shadow-lg border border-stone-200",
-    outlined: "bg-white border-2 border-stone-300",
+  const variantSx = {
+    default: {
+      bgcolor: "background.paper",
+      border: "1px solid",
+      borderColor: "divider",
+      boxShadow: "0 8px 20px rgb(0 0 0 / 10%)",
+    },
+    elevated: {
+      bgcolor: "background.paper",
+      border: "1px solid",
+      borderColor: "divider",
+      boxShadow: 3,
+    },
+    outlined: {
+      bgcolor: "background.paper",
+      border: "2px solid",
+      borderColor: "divider",
+      boxShadow: 0,
+    },
   };
 
   return (
-    <div
-      className={`
-        rounded-2xl transition-all duration-200
-        ${variantClasses[variant]}
-        ${paddingClasses[padding]}
-        ${hover ? "hover:shadow-xl hover:-translate-y-1" : ""}
-        ${props.className || ""}
-      `}
+    <Paper
+      className={props.className}
+      sx={{
+        borderRadius: 3,
+        transition: "transform 180ms ease, box-shadow 180ms ease",
+        ...(variantSx[variant] ?? variantSx.default),
+        ...(paddingSx[padding] ?? paddingSx.md),
+        ...(hover
+          ? {
+              "&:hover": {
+                boxShadow: 6,
+                transform: "translateY(-2px)",
+              },
+            }
+          : null),
+      }}
     >
       {props.children}
-    </div>
+    </Paper>
   );
 }
 
@@ -52,18 +76,22 @@ export function CardHeader(props: {
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-4 flex items-start justify-between gap-4">
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-stone-900">{props.title}</h2>
+    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
+      <Box sx={{ flex: 1 }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            {props.title}
+          </Typography>
           {props.badge}
-        </div>
+        </Stack>
         {props.description && (
-          <p className="mt-1 text-sm text-stone-600">{props.description}</p>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            {props.description}
+          </Typography>
         )}
-      </div>
-      {props.action && <div className="flex-shrink-0">{props.action}</div>}
-    </div>
+      </Box>
+      {props.action && <Box sx={{ flexShrink: 0 }}>{props.action}</Box>}
+    </Stack>
   );
 }
 
@@ -82,49 +110,54 @@ export function StatCard(props: {
   className?: string;
 }) {
   return (
-    <div
-      className={`
-        rounded-xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:shadow-md
-        ${props.className || ""}
-      `}
+    <Paper
+      className={props.className}
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        border: "1px solid",
+        borderColor: "divider",
+        boxShadow: 1,
+        transition: "box-shadow 180ms ease",
+        "&:hover": { boxShadow: 3 },
+      }}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+      <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1.5}>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="caption" sx={{ textTransform: "uppercase", letterSpacing: 0.6, color: "text.secondary", fontWeight: 700 }}>
             {props.label}
-          </p>
-          <p className="mt-2 text-2xl font-bold text-stone-900">{props.value}</p>
+          </Typography>
+          <Typography variant="h4" sx={{ mt: 1, fontWeight: 800 }}>
+            {props.value}
+          </Typography>
           
           {props.trend && (
-            <div className="mt-2 flex items-center gap-1">
-              {props.trend.direction === "up" && (
-                <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              )}
-              {props.trend.direction === "down" && (
-                <svg className="h-4 w-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                </svg>
-              )}
-              <span className={`text-xs font-medium ${
-                props.trend.direction === "up" ? "text-green-600" :
-                props.trend.direction === "down" ? "text-red-600" :
-                "text-stone-600"
-              }`}>
+            <Typography
+              variant="caption"
+              sx={{
+                mt: 1,
+                display: "inline-block",
+                fontWeight: 700,
+                color:
+                  props.trend.direction === "up"
+                    ? "success.main"
+                    : props.trend.direction === "down"
+                      ? "error.main"
+                      : "text.secondary",
+              }}
+            >
                 {props.trend.value > 0 ? "+" : ""}{props.trend.value}% {props.trend.label}
-              </span>
-            </div>
+            </Typography>
           )}
-        </div>
+        </Box>
         
         {props.icon && (
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
+          <Box sx={{ display: "grid", placeItems: "center", width: 48, height: 48, borderRadius: 2, bgcolor: "action.hover", color: "text.secondary" }}>
             {props.icon}
-          </div>
+          </Box>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Paper>
   );
 }
 
@@ -138,18 +171,32 @@ export function EmptyState(props: {
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-6 py-12 text-center">
+    <Paper
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 2,
+        border: "2px dashed",
+        borderColor: "divider",
+        bgcolor: "action.hover",
+        px: 3,
+        py: 6,
+        textAlign: "center",
+      }}
+    >
       {props.icon && (
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-stone-200 text-stone-500">
+        <Box sx={{ mb: 2, display: "grid", placeItems: "center", width: 64, height: 64, borderRadius: "50%", bgcolor: "divider", color: "text.secondary" }}>
           {props.icon}
-        </div>
+        </Box>
       )}
-      <h3 className="text-base font-semibold text-stone-900">{props.title}</h3>
+      <Typography variant="h6" sx={{ fontWeight: 700 }}>{props.title}</Typography>
       {props.description && (
-        <p className="mt-2 text-sm text-stone-600">{props.description}</p>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{props.description}</Typography>
       )}
-      {props.action && <div className="mt-4">{props.action}</div>}
-    </div>
+      {props.action && <Box sx={{ mt: 2 }}>{props.action}</Box>}
+    </Paper>
   );
 }
 
@@ -164,30 +211,33 @@ export function Badge(props: {
 }) {
   const { variant = "default", size = "md" } = props;
 
-  const variantClasses = {
-    default: "bg-stone-100 text-stone-700",
-    success: "bg-green-100 text-green-700",
-    error: "bg-red-100 text-red-700",
-    warning: "bg-yellow-100 text-yellow-700",
-    info: "bg-blue-100 text-blue-700",
-  };
+  const colorByVariant = {
+    default: "default",
+    success: "success",
+    error: "error",
+    warning: "warning",
+    info: "info",
+  } as const;
 
-  const sizeClasses = {
-    sm: "px-2 py-0.5 text-xs",
-    md: "px-2.5 py-1 text-xs",
-    lg: "px-3 py-1.5 text-sm",
+  const sizeByVariant = {
+    sm: "small",
+    md: "medium",
+    lg: "medium",
+  } as const;
+
+  const paddingSx = {
+    sm: { px: 0.5 },
+    md: { px: 0.75 },
+    lg: { px: 1 },
   };
 
   return (
-    <span
-      className={`
-        inline-flex items-center rounded-full font-medium
-        ${variantClasses[variant]}
-        ${sizeClasses[size]}
-        ${props.className || ""}
-      `}
-    >
-      {props.children}
-    </span>
+    <Chip
+      label={props.children}
+      size={sizeByVariant[size]}
+      color={colorByVariant[variant]}
+      className={props.className}
+      sx={{ borderRadius: 999, fontWeight: 700, ...paddingSx[size] }}
+    />
   );
 }

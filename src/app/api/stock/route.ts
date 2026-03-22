@@ -137,6 +137,14 @@ function hasStockDelegates() {
   );
 }
 
+export const stockRouteTestables = {
+  parseBigIntId,
+  parseCantidad,
+  parseTipoStockOperacion,
+  parseFecha,
+  isValidPayload,
+};
+
 export async function GET(req: Request) {
   const auth = await authorizeRequest(req, "read_data");
   if (!auth.ok) return auth.response;

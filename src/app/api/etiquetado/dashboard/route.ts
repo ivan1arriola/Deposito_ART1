@@ -109,7 +109,7 @@ export async function GET(request: Request) {
     estanterias: estanterias.map((estanteria) => ({
       codigo: estanteria.codigo,
       piso: estanteria.piso,
-      etiqueta: `Estanteria P${estanteria.piso} - ${estanteria.codigo}`,
+      etiqueta: `${estanteria.codigo} Piso ${estanteria.piso}`,
     })),
     codigosSIE: codigosSIE.map((codigoSIE) => ({
       codigo: codigoSIE.codigo,
@@ -152,10 +152,20 @@ export async function GET(request: Request) {
               .map((entry) => ({
                 itemId: entry.item.itemId.toString(),
                 itemNombre: entry.item.nombre,
+                cantidad: entry.cantidad,
               }))
               .sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }))
           : Array.from(
-              new Map(codigosConEquipo.map((codigo) => [codigo.itemId, { itemId: codigo.itemId, itemNombre: codigo.itemNombre }])).values(),
+              new Map(
+                codigosConEquipo.map((codigo) => [
+                  codigo.itemId,
+                  {
+                    itemId: codigo.itemId,
+                    itemNombre: codigo.itemNombre,
+                    cantidad: codigosConEquipo.filter((entry) => entry.itemId === codigo.itemId).length || 1,
+                  },
+                ]),
+              ).values(),
             ).sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }));
 
       const equipos = equiposBase.map((equipo) => {
@@ -166,17 +176,19 @@ export async function GET(request: Request) {
         return {
           itemId: equipo.itemId,
           itemNombre: equipo.itemNombre,
+          cantidad: equipo.cantidad,
           codigosSIE: codigosSIEEquipo,
           sinCodigo: codigosSIEEquipo.length === 0,
         };
       });
 
       const itemNombres = equipos.map((equipo) => equipo.itemNombre);
+      const cantidadTotal = equipos.reduce((sum, equipo) => sum + equipo.cantidad, 0);
 
       return {
         codigoDepositoGeneral: caja.codigoDepositoGeneral,
         estanteria: caja.estanteria,
-        cantidad: caja.cantidad,
+        cantidad: cantidadTotal > 0 ? cantidadTotal : caja.cantidad,
         equipos,
         itemNombres,
         codigosSIE: codigos,

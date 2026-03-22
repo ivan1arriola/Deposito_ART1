@@ -205,8 +205,8 @@ export function EtiquetaCajaPrintSheet({
         ? caja.codigosSIE
         : [{ codigo: "-", talla: null }];
   const talles = caja.tallas.length > 0 ? caja.tallas.join(", ") : "-";
-  const equipos = caja.itemNombres.length > 0 ? caja.itemNombres.join(", ") : "-";
-  const equiposLabel = caja.itemNombres.length === 1 ? "EQUIPO:" : "EQUIPOS:";
+  const equipos = caja.equipos.length > 0 ? caja.equipos.map((equipo) => `${equipo.itemNombre} x${equipo.cantidad}`).join(", ") : "-";
+  const equiposLabel = caja.equipos.length === 1 ? "EQUIPO:" : "EQUIPOS:";
 
   return (
     <section className="etiqueta-sheet">

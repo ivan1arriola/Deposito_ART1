@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { AppToaster } from "@/components/AppToaster";
+import { MaterialThemeProvider } from "@/components/MaterialThemeProvider";
 import { PwaBootstrap } from "@/components/PwaBootstrap";
 
 const geistSans = Geist({
@@ -64,9 +65,11 @@ export default function RootLayout({
     <html lang="es">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
-          <PwaBootstrap />
-          {children}
-          <AppToaster />
+          <MaterialThemeProvider>
+            <PwaBootstrap />
+            {children}
+            <AppToaster />
+          </MaterialThemeProvider>
         </AuthProvider>
       </body>
     </html>

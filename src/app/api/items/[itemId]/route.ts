@@ -106,7 +106,6 @@ async function buildDeleteImpactData(
     where: { itemId },
     select: { stockOperacionId: true },
   });
-
   const affectedMovimientoIds = Array.from(new Set(movimientoRefs.map((ref) => ref.movimientoId.toString()))).map((id) =>
     BigInt(id),
   );
@@ -287,6 +286,11 @@ async function buildDeleteImpactData(
     affectedStockOperacionIds,
   };
 }
+
+export const itemByIdRouteTestables = {
+  parseItemId,
+  isValidOrder,
+};
 
 export async function GET(req: Request, context: { params: Promise<{ itemId: string }> }) {
   const auth = await authorizeRequest(req, "delete_data");

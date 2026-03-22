@@ -1,5 +1,7 @@
 "use client";
 
+import { Backdrop, CircularProgress, Stack, Typography } from "@mui/material";
+
 type LoadingSpinnerProps = {
   size?: "xs" | "sm" | "md" | "lg";
   tone?: "dark" | "light";
@@ -19,23 +21,26 @@ type LoadingOverlayProps = {
   label?: string;
 };
 
-const SIZE_CLASSES: Record<NonNullable<LoadingSpinnerProps["size"]>, string> = {
-  xs: "h-3 w-3",
-  sm: "h-4 w-4",
-  md: "h-5 w-5",
-  lg: "h-7 w-7",
+const SIZE_PX: Record<NonNullable<LoadingSpinnerProps["size"]>, number> = {
+  xs: 14,
+  sm: 18,
+  md: 22,
+  lg: 28,
 };
 
-const TONE_CLASSES: Record<NonNullable<LoadingSpinnerProps["tone"]>, string> = {
-  dark: "border-stone-400 border-t-stone-700",
-  light: "border-white/35 border-t-white",
+const TONE_COLOR: Record<NonNullable<LoadingSpinnerProps["tone"]>, "inherit" | "primary"> = {
+  dark: "primary",
+  light: "inherit",
 };
 
 export function LoadingSpinner({ size = "sm", tone = "dark", className }: LoadingSpinnerProps) {
   return (
-    <span
+    <CircularProgress
       aria-hidden="true"
-      className={`inline-block animate-spin rounded-full border-2 ${SIZE_CLASSES[size]} ${TONE_CLASSES[tone]} ${className ?? ""}`.trim()}
+      color={TONE_COLOR[tone]}
+      size={SIZE_PX[size]}
+      thickness={4.6}
+      className={className}
     />
   );
 }
@@ -48,21 +53,28 @@ export function LoadingInline({
   textClassName,
 }: LoadingInlineProps) {
   return (
-    <span className={`inline-flex items-center gap-2 ${className ?? ""}`.trim()} role="status" aria-live="polite">
+    <Stack direction="row" spacing={1.25} alignItems="center" className={className} role="status" aria-live="polite">
       <LoadingSpinner size={size} tone={tone} />
-      <span className={textClassName ?? "text-sm font-semibold text-stone-700"}>{label}</span>
-    </span>
+      <Typography variant="body2" fontWeight={600} className={textClassName} color={tone === "light" ? "common.white" : "text.primary"}>
+        {label}
+      </Typography>
+    </Stack>
   );
 }
 
 export function LoadingOverlay({ visible, label = "Cargando..." }: LoadingOverlayProps) {
-  if (!visible) return null;
-
   return (
-    <div className="pointer-events-none fixed inset-0 z-[950] flex items-start justify-center pt-4 sm:pt-6">
-      <div className="rounded-full border border-stone-300 bg-white/95 px-4 py-2 shadow-lg backdrop-blur-sm">
-        <LoadingInline label={label} size="sm" tone="dark" />
-      </div>
-    </div>
+    <Backdrop
+      open={visible}
+      sx={{
+        zIndex: (theme) => theme.zIndex.modal + 1,
+        bgcolor: "rgba(26, 23, 16, 0.28)",
+      }}
+    >
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ px: 3, py: 1.5, borderRadius: 20, bgcolor: "background.paper", border: "1px solid", borderColor: "divider" }}>
+        <LoadingSpinner size="sm" tone="dark" />
+        <Typography variant="body2" fontWeight={600}>{label}</Typography>
+      </Stack>
+    </Backdrop>
   );
 }

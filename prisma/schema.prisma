@@ -239,6 +239,7 @@ model Caja {
 model CajaItem {
   codigoDepositoGeneral Int    @map("codigo_deposito_general")
   itemId                BigInt @map("item_id")
+  cantidad              Int    @default(1)
   caja                  Caja   @relation(fields: [codigoDepositoGeneral], references: [codigoDepositoGeneral], onDelete: Cascade)
   item                  Item   @relation(fields: [itemId], references: [itemId], onDelete: Restrict)
 

@@ -175,6 +175,15 @@ function buildItemChanges(before: PrestamoAuditSnapshot, after: PrestamoAuditSna
     .filter((entry): entry is { itemId: string; nombre: string; changes: Record<string, { antes: number | string | null; despues: number | string | null }> } => entry !== null);
 }
 
+export const prestamoByIdRouteTestables = {
+  parsePrestamoId,
+  parseBigIntId,
+  parseCantidad,
+  parseEstadoEquipoPrestamo,
+  buildGeneralChanges,
+  buildItemChanges,
+};
+
 export async function PUT(request: Request, context: { params: Promise<{ prestamoId: string }> }) {
   const auth = await authorizeRequest(request, "write_data");
   if (!auth.ok) return auth.response;

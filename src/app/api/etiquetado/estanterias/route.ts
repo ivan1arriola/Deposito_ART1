@@ -79,7 +79,7 @@ export async function POST(request: Request) {
         nombreEstanteria: created.codigo,
         codigo: created.codigo,
         piso: created.piso,
-        etiqueta: `Estanteria P${created.piso} - ${created.codigo}`,
+        etiqueta: `${created.codigo} Piso ${created.piso}`,
       },
       { status: 201 },
     );
