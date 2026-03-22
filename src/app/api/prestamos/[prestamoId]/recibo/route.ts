@@ -15,10 +15,19 @@ const A4_HEIGHT = 297 * MM_TO_PT;
 const PAGE_MARGIN_X = 12 * MM_TO_PT;
 const PAGE_MARGIN_Y = 20 * MM_TO_PT;
 const RECEIPT_PADDING = 8 * MM_TO_PT;
+const INNER_WIDTH = A4_WIDTH - PAGE_MARGIN_X * 2 - RECEIPT_PADDING * 2;
 const CONTENT_BOTTOM = A4_HEIGHT - PAGE_MARGIN_Y - RECEIPT_PADDING;
 const CLOSING_BLOCK_RESERVE = 248;
-const TABLE_ROW_HEIGHT = 18;
 const TABLE_HEADER_HEIGHT = 20;
+const TABLE_MIN_ROW_HEIGHT = 18;
+const TABLE_CELL_TEXT_SIZE = 10;
+const TABLE_CELL_LINE_HEIGHT = 10;
+const TABLE_CELL_TOP_PADDING = 5;
+const TABLE_CELL_BOTTOM_PADDING = 3;
+const TABLE_COL_QTY = 58;
+const TABLE_COL_ESTADO = 90;
+const TABLE_COL_OBS = 120;
+const TABLE_COL_EFECTO = INNER_WIDTH - TABLE_COL_QTY - TABLE_COL_ESTADO - TABLE_COL_OBS;
 const WATERMARK_FILENAME = "marca-agua-recibo-prestamo-bn.png";
 const WATERMARK_OPACITY = 0.24;
 const WATERMARK_MAX_WIDTH_RATIO = 0.98;
@@ -29,6 +38,14 @@ type TableRow = {
   efecto: string;
   estado: string;
   observaciones: string;
+};
+
+type TableRowLayout = {
+  cantidadLines: string[];
+  efectoLines: string[];
+  estadoLines: string[];
+  observacionesLines: string[];
+  height: number;
 };
 
 type PageContext = {
@@ -167,6 +184,37 @@ function wrapText(text: string, maxWidth: number, font: PDFFont, size: number) {
   }
   if (current) lines.push(current);
   return lines;
+}
+
+function normalizeCellValue(value: string | null | undefined) {
+  const trimmed = String(value ?? "").trim();
+  return trimmed === "" ? "-" : trimmed;
+}
+
+function layoutTableRow(row: TableRow, font: PDFFont): TableRowLayout {
+  const efectoLines = wrapText(normalizeCellValue(row.efecto), TABLE_COL_EFECTO - 10, font, TABLE_CELL_TEXT_SIZE);
+  const cantidadLines = wrapText(normalizeCellValue(row.cantidad), TABLE_COL_QTY - 10, font, TABLE_CELL_TEXT_SIZE);
+  const estadoLines = wrapText(normalizeCellValue(row.estado), TABLE_COL_ESTADO - 10, font, TABLE_CELL_TEXT_SIZE);
+  const observacionesLines = wrapText(
+    normalizeCellValue(row.observaciones),
+    TABLE_COL_OBS - 10,
+    font,
+    TABLE_CELL_TEXT_SIZE,
+  );
+
+  const lineCount = Math.max(efectoLines.length, cantidadLines.length, estadoLines.length, observacionesLines.length, 1);
+  const height = Math.max(
+    TABLE_MIN_ROW_HEIGHT,
+    TABLE_CELL_TOP_PADDING + TABLE_CELL_BOTTOM_PADDING + lineCount * TABLE_CELL_LINE_HEIGHT,
+  );
+
+  return {
+    cantidadLines,
+    efectoLines,
+    estadoLines,
+    observacionesLines,
+    height,
+  };
 }
 
 function centerTextX(text: string, width: number, font: PDFFont, size: number) {
@@ -405,10 +453,31 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     return top + 20;
   }
 
+  function drawFieldMultiline(
+    page: PDFPage,
+    x: number,
+    top: number,
+    width: number,
+    label: string,
+    value: string,
+  ) {
+    const lines = wrapText(normalizeCellValue(value), width - 12, regular, 10);
+    const lineHeight = 10;
+    const height = Math.max(28, 20 + lines.length * lineHeight + 4);
+
+    drawRectTop(page, x, top, width, height);
+    drawTextAt(page, bold, label.toUpperCase(), x + 6, top + 4, 7);
+    lines.forEach((line, index) => {
+      drawTextAt(page, regular, line, x + 6, top + 16 + index * lineHeight, 10);
+    });
+
+    return top + height + 6;
+  }
+
   function startPage(continuation: boolean) {
     const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
     const innerX = PAGE_MARGIN_X + RECEIPT_PADDING;
-    const innerW = A4_WIDTH - PAGE_MARGIN_X * 2 - RECEIPT_PADDING * 2;
+    const innerW = INNER_WIDTH;
     const top0 = PAGE_MARGIN_Y + RECEIPT_PADDING;
 
     const header = drawHeaderAndFrame(page, top0, innerX, innerW);
@@ -437,8 +506,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       drawField(page, innerX + col4 * 2 + gap * 2, y, col4, boxH, "Fecha estimada devolucion", fechaEstimadaDevolucion);
       y += boxH + 6;
 
-      drawField(page, innerX, y, innerW, 28, "Observaciones", observaciones);
-      y += 34;
+      y = drawFieldMultiline(page, innerX, y, innerW, "Observaciones", observaciones);
     }
 
     y = drawSectionTitle(
@@ -451,10 +519,10 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
 
     const tableX = innerX;
     const tableW = innerW;
-    const colQty = 58;
-    const colEstado = 90;
-    const colObs = 120;
-    const colEfecto = tableW - colQty - colEstado - colObs;
+    const colQty = TABLE_COL_QTY;
+    const colEstado = TABLE_COL_ESTADO;
+    const colObs = TABLE_COL_OBS;
+    const colEfecto = TABLE_COL_EFECTO;
 
     drawRectTop(page, tableX, y, tableW, TABLE_HEADER_HEIGHT);
     page.drawLine({
@@ -501,7 +569,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
   function startClosingPage() {
     const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
     const innerX = PAGE_MARGIN_X + RECEIPT_PADDING;
-    const innerW = A4_WIDTH - PAGE_MARGIN_X * 2 - RECEIPT_PADDING * 2;
+    const innerW = INNER_WIDTH;
     const top0 = PAGE_MARGIN_Y + RECEIPT_PADDING;
 
     const header = drawHeaderAndFrame(page, top0, innerX, innerW);
@@ -520,50 +588,72 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     return context;
   }
 
-  function drawTableRow(ctx: PageContext, row: TableRow) {
-    drawRectTop(ctx.page, ctx.tableX, ctx.y, ctx.tableW, TABLE_ROW_HEIGHT);
+  function drawTableRow(ctx: PageContext, layout: TableRowLayout) {
+    drawRectTop(ctx.page, ctx.tableX, ctx.y, ctx.tableW, layout.height);
     ctx.page.drawLine({
-      start: { x: ctx.tableX + ctx.colEfecto, y: A4_HEIGHT - ctx.y - TABLE_ROW_HEIGHT },
+      start: { x: ctx.tableX + ctx.colEfecto, y: A4_HEIGHT - ctx.y - layout.height },
       end: { x: ctx.tableX + ctx.colEfecto, y: A4_HEIGHT - ctx.y },
       thickness: 1,
       color: rgb(0, 0, 0),
     });
     ctx.page.drawLine({
-      start: { x: ctx.tableX + ctx.colEfecto + ctx.colQty, y: A4_HEIGHT - ctx.y - TABLE_ROW_HEIGHT },
+      start: { x: ctx.tableX + ctx.colEfecto + ctx.colQty, y: A4_HEIGHT - ctx.y - layout.height },
       end: { x: ctx.tableX + ctx.colEfecto + ctx.colQty, y: A4_HEIGHT - ctx.y },
       thickness: 1,
       color: rgb(0, 0, 0),
     });
     ctx.page.drawLine({
-      start: { x: ctx.tableX + ctx.colEfecto + ctx.colQty + ctx.colEstado, y: A4_HEIGHT - ctx.y - TABLE_ROW_HEIGHT },
+      start: { x: ctx.tableX + ctx.colEfecto + ctx.colQty + ctx.colEstado, y: A4_HEIGHT - ctx.y - layout.height },
       end: { x: ctx.tableX + ctx.colEfecto + ctx.colQty + ctx.colEstado, y: A4_HEIGHT - ctx.y },
       thickness: 1,
       color: rgb(0, 0, 0),
     });
 
-    drawTextAt(ctx.page, regular, fitOneLine(row.efecto, ctx.colEfecto - 10, regular, 10), ctx.tableX + 8, ctx.y + 5, 10);
-    drawTextAt(ctx.page, regular, fitOneLine(row.cantidad, ctx.colQty - 10, regular, 10), ctx.tableX + ctx.colEfecto + 8, ctx.y + 5, 10);
-    drawTextAt(
-      ctx.page,
-      regular,
-      fitOneLine(row.estado, ctx.colEstado - 10, regular, 10),
-      ctx.tableX + ctx.colEfecto + ctx.colQty + 8,
-      ctx.y + 5,
-      10,
-    );
-    drawTextAt(
-      ctx.page,
-      regular,
-      fitOneLine(row.observaciones, ctx.colObs - 10, regular, 10),
-      ctx.tableX + ctx.colEfecto + ctx.colQty + ctx.colEstado + 8,
-      ctx.y + 5,
-      10,
-    );
-    ctx.y += TABLE_ROW_HEIGHT;
+    layout.efectoLines.forEach((line, index) => {
+      drawTextAt(
+        ctx.page,
+        regular,
+        line,
+        ctx.tableX + 8,
+        ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
+        TABLE_CELL_TEXT_SIZE,
+      );
+    });
+    layout.cantidadLines.forEach((line, index) => {
+      drawTextAt(
+        ctx.page,
+        regular,
+        line,
+        ctx.tableX + ctx.colEfecto + 8,
+        ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
+        TABLE_CELL_TEXT_SIZE,
+      );
+    });
+    layout.estadoLines.forEach((line, index) => {
+      drawTextAt(
+        ctx.page,
+        regular,
+        line,
+        ctx.tableX + ctx.colEfecto + ctx.colQty + 8,
+        ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
+        TABLE_CELL_TEXT_SIZE,
+      );
+    });
+    layout.observacionesLines.forEach((line, index) => {
+      drawTextAt(
+        ctx.page,
+        regular,
+        line,
+        ctx.tableX + ctx.colEfecto + ctx.colQty + ctx.colEstado + 8,
+        ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
+        TABLE_CELL_TEXT_SIZE,
+      );
+    });
+    ctx.y += layout.height;
   }
 
   function drawEmptyRow(ctx: PageContext) {
-    drawTableRow(ctx, { cantidad: "", efecto: "", estado: "", observaciones: "" });
+    drawTableRow(ctx, layoutTableRow({ cantidad: "", efecto: "", estado: "", observaciones: "" }, regular));
   }
 
   function drawClosingBlock(ctx: PageContext) {
@@ -618,15 +708,20 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
   let ctx = startPage(false);
   let rowIndex = 0;
   let rowsOnCurrentPage = 0;
+  const rowLayouts = rows.map((row) => layoutTableRow(row, regular));
+  const remainingHeights = new Array(rowLayouts.length + 1).fill(0);
+  for (let i = rowLayouts.length - 1; i >= 0; i -= 1) {
+    remainingHeights[i] = rowLayouts[i].height + remainingHeights[i + 1];
+  }
 
   while (rowIndex < rows.length) {
-    const remaining = rows.length - rowIndex;
-    const availableNoReserve = Math.floor((CONTENT_BOTTOM - ctx.y) / TABLE_ROW_HEIGHT);
-    const availableWithReserve = Math.floor((CONTENT_BOTTOM - CLOSING_BLOCK_RESERVE - ctx.y) / TABLE_ROW_HEIGHT);
+    const availableNoReserve = CONTENT_BOTTOM - ctx.y;
+    const availableWithReserve = CONTENT_BOTTOM - CLOSING_BLOCK_RESERVE - ctx.y;
+    const remainingHeight = remainingHeights[rowIndex];
 
-    if (remaining <= Math.max(0, availableWithReserve)) {
+    if (remainingHeight <= Math.max(0, availableWithReserve)) {
       while (rowIndex < rows.length) {
-        drawTableRow(ctx, rows[rowIndex]);
+        drawTableRow(ctx, rowLayouts[rowIndex]);
         rowIndex += 1;
         rowsOnCurrentPage += 1;
       }
@@ -639,9 +734,16 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       continue;
     }
 
-    const take = Math.min(remaining, availableNoReserve);
-    for (let i = 0; i < take; i += 1) {
-      drawTableRow(ctx, rows[rowIndex]);
+    if (rowLayouts[rowIndex].height > availableNoReserve) {
+      ctx = startPage(true);
+      rowsOnCurrentPage = 0;
+      continue;
+    }
+
+    while (rowIndex < rows.length) {
+      const nextLayout = rowLayouts[rowIndex];
+      if (ctx.y + nextLayout.height > CONTENT_BOTTOM) break;
+      drawTableRow(ctx, nextLayout);
       rowIndex += 1;
       rowsOnCurrentPage += 1;
     }

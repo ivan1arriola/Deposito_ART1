@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
@@ -201,7 +201,7 @@ export function StockView({
               ? "Prestamos de equipo"
               : "Historial de stock";
 
-  const stockTableTitle = section === "total" ? "Totales por item (subalternos + prÃ©stamo + depÃ³sito)" : "Stock interno de depÃ³sito por equipo";
+  const stockTableTitle = section === "total" ? "Totales por item (subalternos + préstamo + depósito)" : "Stock interno de depósito por equipo";
 
   return (
     <section className="mt-6 space-y-4">
@@ -386,7 +386,7 @@ export function StockView({
                   />
                 </label>
                 <label className="text-xs text-stone-700">
-                  Fecha estimada devoluciÃ³n (texto)
+                  Fecha estimada devolución (texto)
                   <input
                     value={prestamoDraft.fechaEstimadaDevolucionTexto}
                     disabled={prestamoSaving}
@@ -608,7 +608,7 @@ export function StockView({
                                   },
                                 }))
                               }
-                              placeholder="Comentario devoluciÃ³n (opcional)"
+                              placeholder="Comentario devolución (opcional)"
                               className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
                             />
                           </div>

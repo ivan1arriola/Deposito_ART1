@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
@@ -452,7 +452,7 @@ export function FormulariosPrestamosView({
               </label>
 
               <label className="text-xs text-stone-700">
-                Fecha estimada devoluciÃ³n (texto)
+                Fecha estimada devolución (texto)
                 <input
                   value={prestamoDraft.fechaEstimadaDevolucionTexto}
                   disabled={prestamoSaving}
@@ -631,11 +631,11 @@ export function FormulariosPrestamosView({
               </p>
               <p><span className="font-semibold text-stone-900">Fecha prestamo:</span> {formatDateOnlyForDisplay(selectedPrestamo.fechaPrestamo)}</p>
               <p>
-                <span className="font-semibold text-stone-900">Fecha estimada devoluciÃ³n:</span>{" "}
+                <span className="font-semibold text-stone-900">Fecha estimada devolución:</span>{" "}
                 {selectedPrestamo.fechaEstimadaDevolucionTexto?.trim() ? selectedPrestamo.fechaEstimadaDevolucionTexto : "-"}
               </p>
               <p>
-                <span className="font-semibold text-stone-900">Fecha devoluciÃ³n:</span>{" "}
+                <span className="font-semibold text-stone-900">Fecha devolución:</span>{" "}
                 {selectedPrestamo.fechaDevolucion ? formatDateOnlyForDisplay(selectedPrestamo.fechaDevolucion) : "Pendiente"}
               </p>
               <p>
@@ -693,7 +693,7 @@ export function FormulariosPrestamosView({
                               },
                             }))
                           }
-                          placeholder="Comentario devoluciÃ³n (opcional)"
+                          placeholder="Comentario devolución (opcional)"
                           className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
                         />
                       </div>
