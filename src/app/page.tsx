@@ -19,7 +19,6 @@ import {
   normalizeTallaValue,
 } from "@/lib/tallas";
 import { DashboardHero } from "./components/home/DashboardHero";
-import { MainNavigation } from "./components/home/MainNavigation";
 import { SoldadoRecordatorioWidget } from "./components/home/SoldadoRecordatorioWidget";
 import { AppInstallCard } from "./components/pwa/AppInstallCard";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
@@ -572,7 +571,7 @@ export default function Home() {
     const start = (personalPageSafe - 1) * personalPageSize;
     return personalFiltrado.slice(start, start + personalPageSize);
   }, [personalFiltrado, personalPageSafe, personalPageSize]);
-  const isConfigView = inCatalogView || inReminderConfigView || inAdminConfigView;
+  const isConfigView = inCatalogView || inReminderConfigView || inAdminConfigView || activeView === "usuario_nuevo";
   const personaRegistro = useMemo(() => {
     if (!registroDraft) return null;
     return personal.find((persona) => persona.ci === registroDraft.ci) ?? null;
@@ -874,9 +873,10 @@ export default function Home() {
     if (!showConfigViews) return;
 
     function handleOutsideClick(event: MouseEvent) {
-      if (!configMenuRef.current) return;
       if (!(event.target instanceof Node)) return;
-      if (configMenuRef.current.contains(event.target)) return;
+      if (configMenuRef.current?.contains(event.target)) return;
+      const configDropdown = document.getElementById("menu-configuracion");
+      if (configDropdown?.contains(event.target)) return;
       setShowConfigViews(false);
     }
 
@@ -1001,6 +1001,25 @@ export default function Home() {
   const activeEtiquetadoSection = useMemo(
     () => getEtiquetadoSection(activeView),
     [activeView, getEtiquetadoSection],
+  );
+
+  const handleSelectMainView = useCallback(
+    (view: MainView) => {
+      const currentProfile = getStockLoadProfile(activeView);
+      const nextProfile = getStockLoadProfile(view);
+      const nextEtiquetadoSection = getEtiquetadoSection(view);
+      if (view !== activeView && nextProfile) {
+        setStockError(null);
+      }
+      if (view !== activeView && nextEtiquetadoSection) {
+        setEtiquetadoError(null);
+      }
+      if ((currentProfile?.key ?? null) !== (nextProfile?.key ?? null)) {
+        setStockData(null);
+      }
+      setActiveView(view);
+    },
+    [activeView, getEtiquetadoSection, getStockLoadProfile, setStockData, setStockError],
   );
 
   const loadEtiquetadoData = useCallback(async () => {
@@ -1167,9 +1186,11 @@ export default function Home() {
   const createEtiquetadoCaja = useCallback(
     async (input: {
       codigoDepositoGeneral: number;
-      cantidad: number;
       estanteria: string;
-      itemIds: string[];
+      items: Array<{
+        itemId: string;
+        cantidad: number;
+      }>;
       codigosSIE: string[];
     }) => {
       if (!canWrite) {
@@ -3011,6 +3032,8 @@ export default function Home() {
           },
           onError: (message) => setStatus(message),
         });
+      } catch {
+        // Error de login manejado por callbacks de estado (ej: credenciales invalidas).
       } finally {
         setLoginLoading(false);
       }
@@ -3898,16 +3921,23 @@ export default function Home() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
-
       <DashboardHero
         loading={loading}
         currentUser={currentUser}
+        activeView={activeView}
+        canWrite={canWrite}
+        isAdmin={isAdmin}
+        showConfigViews={showConfigViews}
+        isConfigView={isConfigView}
+        configMenuRef={configMenuRef}
         canManageAccount={canManageOwnAccount}
         personalCount={personal.length}
         oficialesSuboficialesCount={oficialesSuboficiales.length}
         equiposRegistradosCount={equipos.length}
         movimientosTotal={movimientosTotal}
         roleLabel={roleLabel}
+        onSelectView={handleSelectMainView}
+        onSetConfigViews={setShowConfigViews}
         onReload={() => void loadData(true, true)}
         onEditOwnUser={changeOwnUsername}
         onChangePassword={() => {
@@ -3920,31 +3950,6 @@ export default function Home() {
       />
 
       <AppInstallCard />
-
-      <MainNavigation
-        activeView={activeView}
-        canWrite={canWrite}
-        isAdmin={isAdmin}
-        showConfigViews={showConfigViews}
-        isConfigView={isConfigView}
-        configMenuRef={configMenuRef}
-        onSelectView={(view) => {
-          const currentProfile = getStockLoadProfile(activeView);
-          const nextProfile = getStockLoadProfile(view);
-          const nextEtiquetadoSection = getEtiquetadoSection(view);
-          if (view !== activeView && nextProfile) {
-            setStockError(null);
-          }
-          if (view !== activeView && nextEtiquetadoSection) {
-            setEtiquetadoError(null);
-          }
-          if ((currentProfile?.key ?? null) !== (nextProfile?.key ?? null)) {
-            setStockData(null);
-          }
-          setActiveView(view);
-        }}
-        onSetConfigViews={setShowConfigViews}
-      />
 
 
       {inReminderConfigView ? (
@@ -4193,7 +4198,7 @@ export default function Home() {
           passwordConfirm={newPasswordConfirm}
           mailReferencia={newMailReferencia}
           role={newRole}
-          onBack={() => setActiveView("personal")}
+          onBack={() => setActiveView("usuarios")}
           onSubmit={(event) => void createUsuario(event)}
           onRangoIdChange={setNewUserRangoId}
           onNombreChange={setNewNombre}

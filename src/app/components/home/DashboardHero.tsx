@@ -1,18 +1,32 @@
 "use client";
 
 import Image from "next/image";
+import { useState, type RefObject } from "react";
+import { Box, Button, Chip, Divider, Drawer, Grid, IconButton, Paper, Stack, Typography } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import type { CurrentUser } from "@/types/entities";
+import type { MainView } from "@/types/views";
 import { AdminPushNotifications } from "./AdminPushNotifications";
+import { MainNavigation } from "./MainNavigation";
 
 type DashboardHeroProps = {
   loading: boolean;
   currentUser: CurrentUser;
+  activeView: MainView;
+  canWrite: boolean;
+  isAdmin: boolean;
+  showConfigViews: boolean;
+  isConfigView: boolean;
+  configMenuRef: RefObject<HTMLDivElement | null>;
   canManageAccount: boolean;
   personalCount: number;
   oficialesSuboficialesCount: number;
   equiposRegistradosCount: number;
   movimientosTotal: number;
   roleLabel: (role: CurrentUser["rol"]) => string;
+  onSelectView: (view: MainView) => void;
+  onSetConfigViews: (open: boolean) => void;
   onReload: () => void;
   onEditOwnUser: () => void;
   onChangePassword: () => void;
@@ -22,123 +36,340 @@ type DashboardHeroProps = {
 export function DashboardHero({
   loading,
   currentUser,
+  activeView,
+  canWrite,
+  isAdmin,
+  showConfigViews,
+  isConfigView,
+  configMenuRef,
   canManageAccount,
   personalCount,
   oficialesSuboficialesCount,
   equiposRegistradosCount,
   movimientosTotal,
   roleLabel,
+  onSelectView,
+  onSetConfigViews,
   onReload,
-  onEditOwnUser,
-  onChangePassword,
   onLogout,
 }: DashboardHeroProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  function closeMobileMenu() {
+    setMobileMenuOpen(false);
+    onSetConfigViews(false);
+  }
+
+  function handleMobileReload() {
+    closeMobileMenu();
+    onReload();
+  }
+
+  function handleMobileLogout() {
+    closeMobileMenu();
+    onLogout();
+  }
+
+  function handleMobileSelectView(view: MainView) {
+    closeMobileMenu();
+    onSelectView(view);
+  }
+
   return (
-    <section className="ej-hero relative overflow-hidden rounded-[28px] border border-white/10 px-4 py-5 shadow-[0_28px_80px_rgba(15,23,42,0.28)] sm:rounded-[32px] sm:px-7 sm:py-8">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(186,176,140,0.24),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(102,112,77,0.34),transparent_36%)]" />
-      <div className="pointer-events-none absolute -right-16 top-6 h-48 w-48 rounded-full border border-white/10 bg-white/5 blur-2xl" />
-      <div className="pointer-events-none absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-[#66704D]/40 blur-3xl" />
+    <Paper
+      component="section"
+      sx={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: { xs: 3, sm: 4 },
+        px: { xs: 2, sm: 3 },
+        py: { xs: 2, sm: 2.5 },
+        border: "1px solid rgba(255,255,255,0.12)",
+        background:
+          "linear-gradient(132deg, rgba(34,34,26,0.95) 0%, rgba(68,79,51,0.92) 58%, rgba(112,104,72,0.88) 100%)",
+        color: "common.white",
+        boxShadow: "0 28px 80px rgba(15,23,42,0.28)",
+      }}
+    >
+      <Box
+        aria-hidden
+        sx={{
+          pointerEvents: "none",
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(circle at top right, rgba(186,176,140,0.22), transparent 35%), radial-gradient(circle at bottom left, rgba(102,112,77,0.34), transparent 36%)",
+        }}
+      />
 
-      <header className="relative rounded-2xl border border-white/10 bg-black/20 px-4 py-3 backdrop-blur-sm">
-        <p className="text-[10px] font-semibold uppercase leading-relaxed tracking-[0.18em] text-[#FFCC00] sm:truncate sm:text-[11px] sm:tracking-[0.24em]">
-          {'Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1'}
-        </p>
-      </header>
+      <Stack spacing={2} sx={{ position: "relative" }}>
+        <Stack spacing={{ xs: 1.5, md: 1.2 }}>
+          <Box
+            sx={{
+              display: { xs: "grid", md: "none" },
+              gridTemplateColumns: "auto 1fr auto",
+              alignItems: "center",
+              columnGap: 1.25,
+            }}
+          >
+            <Box sx={{ width: { xs: 72, sm: 84 }, flexShrink: 0 }}>
+              <Image
+                src="/assets/logo-deposito.png"
+                alt="Logo Deposito"
+                width={360}
+                height={430}
+                priority
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.28))",
+                }}
+              />
+            </Box>
 
-      <div className="relative mt-4 grid gap-4 xl:mt-5 xl:grid-cols-[minmax(260px,320px)_minmax(0,1fr)_minmax(260px,320px)] xl:items-center">
-        <div className="order-2 flex min-h-[220px] items-center justify-center xl:order-1 xl:min-h-[320px]">
-          <Image
-            src="/assets/logo-deposito.png"
-            alt="Logo Depósito"
-            width={420}
-            height={320}
-            priority
-            className="h-auto max-h-[260px] w-full max-w-[280px] object-contain sm:max-h-[300px] sm:max-w-[320px] xl:max-h-[340px] xl:max-w-[340px]"
-          />
-        </div>
-
-        <div className="order-1 flex min-w-0 flex-col items-center justify-center text-center xl:order-2">
-          <h1 className="text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl xl:text-7xl">Depósito General</h1>
-        </div>
-
-        <div className="order-3 flex flex-col gap-3 xl:order-3">
-          <article className="rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#BAB08C]">Cuenta activa</p>
-            <p className="mt-2 text-lg font-semibold text-white">{currentUser.username}</p>
-            <p className="mt-1 text-sm text-white/78">{`Rol: ${roleLabel(currentUser.rol)}`}</p>
-          </article>
-
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
-            <button
-              type="button"
-              onClick={onReload}
-              disabled={loading}
-              className="ej-button-muted w-full rounded-2xl px-3 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Recargar panel
-            </button>
-            {canManageAccount ? (
-              <button
-                type="button"
-                onClick={onEditOwnUser}
-                className="w-full rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+            <Box sx={{ minWidth: 0, textAlign: "center" }}>
+              <Typography
+                sx={{
+                  fontSize: { xs: 9, sm: 10 },
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: { xs: "0.14em", sm: "0.2em" },
+                  color: "#FFCC00",
+                }}
               >
-                Cambiar usuario
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={onChangePassword}
-              disabled={!canManageAccount}
-              className="w-full rounded-2xl border border-[#BAB08C]/35 bg-black/30 px-3 py-3 text-sm font-semibold text-white transition hover:bg-black/40 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Cambiar contraseña
-            </button>
-            {!canManageAccount ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white/80 sm:col-span-2 xl:col-span-1">
-                Modo solo lectura: esta cuenta no puede cambiar credenciales ni datos.
-              </div>
-            ) : null}
-            <button type="button" onClick={onLogout} className="ej-button-danger w-full rounded-2xl px-3 py-3 text-sm font-semibold sm:col-span-2 xl:col-span-1">
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
-      </div>
+                {'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1'}
+              </Typography>
+              <Typography sx={{ fontSize: { xs: 30, sm: 38 }, fontWeight: 900, lineHeight: 1.01, mt: 0.35 }}>
+                Deposito General
+              </Typography>
+            </Box>
 
-      <div className="relative mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <div className="rounded-xl border border-[#BAB08C]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-          <p className="text-[10px] uppercase tracking-wider text-[#BAB08C]">Subalternos</p>
-          <p className="text-lg font-bold text-white">{personalCount}</p>
-        </div>
-        <div className="rounded-xl border border-[#BAB08C]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-          <p className="text-[10px] uppercase tracking-wider text-[#BAB08C]">
-            <span className="sm:hidden">Of/Sub</span>
-            <span className="hidden sm:inline">Oficiales/Suboficiales</span>
-          </p>
-          <p className="text-lg font-bold text-white">{oficialesSuboficialesCount}</p>
-        </div>
-        <div className="rounded-xl border border-[#BAB08C]/35 bg-black/30 px-3 py-2 backdrop-blur-sm">
-          <p className="text-[10px] uppercase tracking-wider text-[#BAB08C]">
-            <span className="sm:hidden">Equipos</span>
-            <span className="hidden sm:inline">Equipos registrados</span>
-          </p>
-          <p className="text-lg font-bold text-white">{equiposRegistradosCount}</p>
-        </div>
-        <div className="col-span-2 rounded-xl border border-[#BAB08C]/35 bg-black/30 px-3 py-2 backdrop-blur-sm sm:col-span-1">
-          <p className="text-[10px] uppercase tracking-wider text-[#BAB08C]">Movimientos</p>
-          <p className="text-lg font-bold text-white">{movimientosTotal}</p>
-        </div>
-      </div>
+            <IconButton
+              type="button"
+              aria-label="Abrir menu"
+              onClick={() => setMobileMenuOpen(true)}
+              sx={{
+                color: "common.white",
+                border: "1px solid rgba(255,255,255,0.28)",
+                bgcolor: "rgba(0,0,0,0.24)",
+              }}
+            >
+              <MenuRoundedIcon />
+            </IconButton>
+          </Box>
+
+          <Box
+            sx={{
+              display: { xs: "none", md: "grid" },
+              gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
+              alignItems: "start",
+              columnGap: 2,
+            }}
+          >
+            <Box />
+
+            <Box sx={{ minWidth: 0, textAlign: "center" }}>
+              <Typography
+                sx={{
+                  fontSize: { xs: 9, sm: 10 },
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: { xs: "0.14em", sm: "0.2em" },
+                  color: "#FFCC00",
+                }}
+              >
+                {'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1'}
+              </Typography>
+              <Typography sx={{ fontSize: { md: 56, lg: 64, xl: 72 }, fontWeight: 900, lineHeight: 0.98, mt: 0.35 }}>
+                Deposito General
+              </Typography>
+            </Box>
+
+            <Stack spacing={1} sx={{ minWidth: 0, justifySelf: "end", alignItems: "flex-end" }}>
+              <Stack direction="row" spacing={1}>
+                <Chip
+                  size="small"
+                  label={`Usuario: ${currentUser.username}`}
+                  sx={{ color: "common.white", bgcolor: "rgba(0,0,0,0.32)", border: "1px solid rgba(255,255,255,0.2)" }}
+                />
+                <Chip
+                  size="small"
+                  label={`Rol: ${roleLabel(currentUser.rol)}`}
+                  sx={{ color: "common.white", bgcolor: "rgba(0,0,0,0.32)", border: "1px solid rgba(255,255,255,0.2)" }}
+                />
+              </Stack>
+
+              <Stack direction="row" flexWrap="wrap" useFlexGap gap={1} justifyContent="flex-end">
+                <Button
+                  type="button"
+                  onClick={onReload}
+                  disabled={loading}
+                  size="small"
+                  variant="contained"
+                  color="secondary"
+                  sx={{ borderRadius: 1.5, minHeight: 34 }}
+                >
+                  Recargar
+                </Button>
+                <Button type="button" onClick={onLogout} size="small" color="error" variant="contained" sx={{ borderRadius: 1.5, minHeight: 34 }}>
+                  Cerrar sesion
+                </Button>
+              </Stack>
+
+              {!canManageAccount ? (
+                <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.82)", textAlign: "right" }}>
+                  Modo solo lectura: esta cuenta no puede cambiar credenciales ni datos.
+                </Typography>
+              ) : null}
+            </Stack>
+          </Box>
+        </Stack>
+
+        <Box sx={{ display: { xs: "none", md: "block" } }}>
+          <Stack direction="row" alignItems="center" gap={{ md: 1.25, lg: 1.8 }}>
+            <Box sx={{ flexShrink: 0, pt: 0.25, width: { md: 170, lg: 220, xl: 240 } }}>
+              <Image
+                src="/assets/logo-deposito.png"
+                alt="Logo Deposito"
+                width={360}
+                height={430}
+                priority
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 10px 22px rgba(0,0,0,0.35))",
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <MainNavigation
+                activeView={activeView}
+                canWrite={canWrite}
+                isAdmin={isAdmin}
+                showConfigViews={showConfigViews}
+                isConfigView={isConfigView}
+                configMenuRef={configMenuRef}
+                onSelectView={onSelectView}
+                onSetConfigViews={onSetConfigViews}
+                embedded
+              />
+            </Box>
+          </Stack>
+        </Box>
+      </Stack>
+
+      <Drawer
+        anchor="right"
+        open={mobileMenuOpen}
+        onClose={closeMobileMenu}
+        ModalProps={{ keepMounted: true }}
+        PaperProps={{
+          sx: {
+            width: "min(96vw, 520px)",
+            p: 1.5,
+            bgcolor: "var(--EscudoGris)",
+            color: "var(--foreground)",
+          },
+        }}
+      >
+        <Stack spacing={1.5}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "var(--EscudoAzul)" }}>
+              Menu
+            </Typography>
+            <IconButton type="button" aria-label="Cerrar menu" onClick={closeMobileMenu}>
+              <CloseRoundedIcon />
+            </IconButton>
+          </Stack>
+
+          <Stack direction="column" spacing={1}>
+            <Chip
+              size="small"
+              label={`Usuario: ${currentUser.username}`}
+              sx={{ justifyContent: "flex-start", color: "var(--foreground)", bgcolor: "var(--Blanco)", border: "1px solid var(--brand-sand)" }}
+            />
+            <Chip
+              size="small"
+              label={`Rol: ${roleLabel(currentUser.rol)}`}
+              sx={{ justifyContent: "flex-start", color: "var(--foreground)", bgcolor: "var(--Blanco)", border: "1px solid var(--brand-sand)" }}
+            />
+          </Stack>
+
+          <Stack direction="column" spacing={1}>
+            <Button type="button" onClick={handleMobileReload} disabled={loading} fullWidth variant="contained" color="secondary" sx={{ borderRadius: 1.5 }}>
+              Recargar
+            </Button>
+            <Button type="button" onClick={handleMobileLogout} fullWidth color="error" variant="contained" sx={{ borderRadius: 1.5 }}>
+              Cerrar sesion
+            </Button>
+          </Stack>
+
+          {!canManageAccount ? (
+            <Typography sx={{ fontSize: 12, color: "var(--EscudoAzul)" }}>
+              Modo solo lectura: esta cuenta no puede cambiar credenciales ni datos.
+            </Typography>
+          ) : null}
+
+          <Divider />
+
+          <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+            <Box sx={{ width: { xs: 180, sm: 210 } }}>
+              <Image
+                src="/assets/logo-deposito.png"
+                alt="Logo Deposito"
+                width={360}
+                height={430}
+                priority
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  objectFit: "contain",
+                }}
+              />
+            </Box>
+          </Box>
+
+          <MainNavigation
+            activeView={activeView}
+            canWrite={canWrite}
+            isAdmin={isAdmin}
+            showConfigViews={showConfigViews}
+            isConfigView={isConfigView}
+            configMenuRef={configMenuRef}
+            onSelectView={handleMobileSelectView}
+            onSetConfigViews={onSetConfigViews}
+            expandSubmenus
+          />
+        </Stack>
+      </Drawer>
+
+      <Grid container spacing={1} sx={{ position: "relative", mt: 2 }}>
+        {[
+          { label: "Subalternos", value: personalCount },
+          { label: "Oficiales/Suboficiales", value: oficialesSuboficialesCount },
+          { label: "Equipos registrados", value: equiposRegistradosCount },
+          { label: "Movimientos", value: movimientosTotal },
+        ].map((metric) => (
+          <Grid key={metric.label} size={{ xs: 6, sm: 3 }}>
+            <Paper sx={{ borderRadius: 1.5, border: "1px solid rgba(186,176,140,0.35)", bgcolor: "rgba(0,0,0,0.3)", px: 1.25, py: 1 }}>
+              <Typography sx={{ fontSize: { xs: 9, sm: 10 }, textTransform: "uppercase", letterSpacing: "0.08em", color: "#BAB08C" }}>
+                {metric.label}
+              </Typography>
+              <Typography sx={{ fontSize: { xs: 19, sm: 22 }, fontWeight: 800, color: "common.white", lineHeight: 1.1 }}>
+                {metric.value}
+              </Typography>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
 
       {currentUser.rol === "ADMIN" ? (
-        <div className="relative mt-4">
+        <Box sx={{ position: "relative", mt: 2 }}>
           <AdminPushNotifications />
-        </div>
+        </Box>
       ) : null}
-    </section>
+    </Paper>
   );
 }
-
-
-
