@@ -63,8 +63,8 @@ type EtiquetadoViewProps = {
 
 const SECTION_META: Record<EtiquetadoSection, { title: string; description: string }> = {
   codigos_sie: {
-    title: "CÃ³digos SIE",
-    description: "Registra equipos, cÃ³digos SIE y estanterÃ­as para su vinculaciÃ³n.",
+    title: "Códigos SIE",
+    description: "Registra equipos, códigos SIE y estanterías para su vinculación.",
   },
   listado_cajas: {
     title: "Listado de Cajas",
@@ -456,12 +456,12 @@ export function EtiquetadoView({
   }
 
   function confirmDeleteEstanteria(codigo: string, piso: number) {
-    if (!window.confirm(`Se eliminarÃ¡ la ${formatEstanteriaLabel(piso, codigo)}.`)) return;
+    if (!window.confirm(`Se eliminará la ${formatEstanteriaLabel(piso, codigo)}.`)) return;
     onDeleteEstanteria(codigo, piso);
   }
 
   function confirmDeleteCodigoSIE(codigoSIEId: string, codigo: string) {
-    if (!window.confirm(`Se eliminarÃ¡ el cÃ³digo SIE ${codigo}.`)) return;
+    if (!window.confirm(`Se eliminará el código SIE ${codigo}.`)) return;
     onDeleteCodigoSIE(codigoSIEId, codigo);
   }
 
@@ -499,7 +499,7 @@ export function EtiquetadoView({
   }
 
   function confirmDeleteCaja(codigoDepositoGeneral: number) {
-    if (!window.confirm(`Se eliminarÃ¡ la caja ${codigoDepositoGeneral}.`)) return;
+    if (!window.confirm(`Se eliminará la caja ${codigoDepositoGeneral}.`)) return;
     onDeleteCaja(codigoDepositoGeneral);
   }
 
@@ -512,7 +512,7 @@ export function EtiquetadoView({
             <p className="mt-1 text-xs text-stone-600">{meta.description}</p>
             {data ? (
               <p className="mt-1 text-xs text-stone-500">
-                Ultima actualizacion: {formatDateTimeForDisplay(data.generatedAt)}
+                Última actualización: {formatDateTimeForDisplay(data.generatedAt)}
               </p>
             ) : null}
           </div>
@@ -565,7 +565,7 @@ export function EtiquetadoView({
                 </label>
                 <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                   Los equipos creados aqui quedan ocultos en Hoja de Entrega. Puedes habilitarlos luego desde
-                  ConfiguraciÃ³n &gt; Equipos.
+                  Configuración &gt; Equipos.
                 </p>
                 <button
                   type="submit"
@@ -577,8 +577,8 @@ export function EtiquetadoView({
               </form>
 
               <form onSubmit={handleCreateEstanteria} className="space-y-2 rounded-xl border border-stone-200 bg-stone-50 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Nueva estanterÃ­a</p>
-                <p className="text-xs text-stone-600">Formato: Nombre de estanterÃ­a (A-Z) + piso.</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Nueva estantería</p>
+                <p className="text-xs text-stone-600">Formato: Nombre de estantería (A-Z) + piso.</p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <label className="text-xs text-stone-700">
                     Piso
@@ -593,7 +593,7 @@ export function EtiquetadoView({
                     </select>
                   </label>
                   <label className="text-xs text-stone-700">
-                    Nombre de estanterÃ­a
+                    Nombre de estantería
                     <input
                       value={newEstanteriaCodigo}
                       onChange={(event) => setNewEstanteriaCodigo(normalizeEstanteriaName(event.target.value))}
@@ -610,14 +610,14 @@ export function EtiquetadoView({
                   disabled={!canWrite || !isValidEstanteriaName(newEstanteriaCodigo)}
                   className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60"
                 >
-                  Registrar estanterÃ­a
+                  Registrar estantería
                 </button>
               </form>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
               {estanteriasList.length === 0 ? (
-                <p className="text-sm text-stone-600">No hay estanterÃ­as registradas.</p>
+                <p className="text-sm text-stone-600">No hay estanterías registradas.</p>
               ) : (
                 estanteriasList.map((estanteria) => (
                   <div
@@ -643,7 +643,7 @@ export function EtiquetadoView({
           <article className="ej-card order-1 rounded-2xl p-4">
             <h3 className="text-sm font-semibold text-stone-900">Registrar Codigo SIE</h3>
             <p className="mt-1 text-xs text-stone-600">
-              El cÃ³digo SIE se registra primero. Si hubo un error de digitado, usa &quot;Editar cÃ³digo&quot; en la tabla.
+              El código SIE se registra primero. Si hubo un error de digitado, usa &quot;Editar código&quot; en la tabla.
             </p>
             <form onSubmit={handleCreateCodigoSIE} className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-4">
               <input
@@ -678,7 +678,7 @@ export function EtiquetadoView({
                 disabled={!canWrite || newCodigoSIE.trim() === "" || codigoItemIdValue.trim() === ""}
                 className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60"
               >
-                Registrar cÃ³digo
+                Registrar código
               </button>
             </form>
 
@@ -696,7 +696,7 @@ export function EtiquetadoView({
                   {codigosSIEList.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-3 py-3 text-sm text-stone-600">
-                        No hay cÃ³digos SIE registrados.
+                        No hay códigos SIE registrados.
                       </td>
                     </tr>
                   ) : (
@@ -776,7 +776,7 @@ export function EtiquetadoView({
                                   onClick={() => startEditCodigoSIE(codigo)}
                                   className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100"
                                 >
-                                  Editar cÃ³digo
+                                  Editar código
                                 </button>
                                 <button
                                   type="button"
@@ -835,7 +835,7 @@ export function EtiquetadoView({
                 <input
                   value={cajaFiltro}
                   onChange={(event) => setCajaFiltro(event.target.value)}
-                  placeholder="CÃ³digo, equipo, nombre de estanterÃ­a o cÃ³digo SIE"
+                  placeholder="Código, equipo, nombre de estantería o código SIE"
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 />
               </label>
@@ -877,7 +877,7 @@ export function EtiquetadoView({
                     disabled={!canWrite || estanteriaOptions.length === 0}
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   >
-                    {estanteriaOptions.length === 0 ? <option value="">Sin estanterÃ­as</option> : null}
+                    {estanteriaOptions.length === 0 ? <option value="">Sin estanterías</option> : null}
                     {estanteriaOptions.map((estanteria) => (
                       <option key={`caja-estanteria-${estanteria.value}`} value={estanteria.value}>
                         {estanteria.label}
@@ -948,13 +948,13 @@ export function EtiquetadoView({
 
                 <div className="rounded-xl border border-stone-200 bg-white p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
-                    CÃ³digos SIE por equipo
+                    Códigos SIE por equipo
                   </p>
                   <p className="text-[11px] text-stone-600">
-                    Para cada equipo, selecciona cÃ³digos o deja activo &quot;Sin cÃ³digo&quot;.
+                    Para cada equipo, selecciona códigos o deja activo &quot;Sin código&quot;.
                   </p>
                   {selectedCajaItems.length === 0 ? (
-                    <p className="mt-2 text-sm text-stone-600">Selecciona equipos para configurar cÃ³digos.</p>
+                    <p className="mt-2 text-sm text-stone-600">Selecciona equipos para configurar códigos.</p>
                   ) : (
                     <div className="mt-2 max-h-80 space-y-2 overflow-y-auto pr-1">
                       {selectedCajaItems.map((item) => {
@@ -988,7 +988,7 @@ export function EtiquetadoView({
                             </div>
 
                             {codigos.length === 0 ? (
-                              <p className="mt-2 text-xs text-stone-600">Sin cÃ³digos registrados. QuedarÃ¡ S/CÃ³digo.</p>
+                              <p className="mt-2 text-xs text-stone-600">Sin códigos registrados. Quedará S/Código.</p>
                             ) : (
                               <div className="mt-2 flex flex-wrap gap-2">
                                 <button
@@ -1000,7 +1000,7 @@ export function EtiquetadoView({
                                       : "border-emerald-300 bg-emerald-50 text-emerald-800"
                                   }`}
                                 >
-                                  Sin cÃ³digo
+                                  Sin código
                                 </button>
                                 {codigos.map((codigo) => {
                                   const checked = selectedCajaCodigosSet.has(codigo.codigoSIEId);
@@ -1058,11 +1058,11 @@ export function EtiquetadoView({
                     <div>
                       <p className="text-sm font-semibold text-stone-900">Caja {caja.codigoDepositoGeneral}</p>
                       <p className="text-xs text-stone-600">
-                        {caja.itemNombres.length > 0 ? caja.itemNombres.join(", ") : "Sin equipos asociados por cÃ³digo SIE"}
+                        {caja.itemNombres.length > 0 ? caja.itemNombres.join(", ") : "Sin equipos asociados por código SIE"}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {renderTag(`Cantidad ${caja.cantidad}`, "accent")}
-                        {renderTag(estanteriaLabelByCode.get(caja.estanteria) ?? `EstanterÃ­a ${caja.estanteria}`)}
+                        {renderTag(estanteriaLabelByCode.get(caja.estanteria) ?? `Estantería ${caja.estanteria}`)}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -1093,7 +1093,7 @@ export function EtiquetadoView({
                   </div>
                   <div className="mt-2 space-y-1 text-xs text-stone-700">
                     <p>
-                      <span className="font-semibold">Equipos / CÃ³digos:</span>{" "}
+                      <span className="font-semibold">Equipos / Códigos:</span>{" "}
                       {caja.equipos.length === 0
                         ? "-"
                         : caja.equipos
