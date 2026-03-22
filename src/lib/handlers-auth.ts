@@ -1,5 +1,5 @@
-﻿/**
- * Handler functions para autenticaciÃ³n
+/**
+ * Handler functions para autenticación
  */
 
 import { signIn, signOut } from "next-auth/react";
@@ -28,7 +28,7 @@ export async function loginHandler(
     });
 
     if (result?.error) {
-      const message = result.error === "CredentialsSignin" ? "Credenciales invalidas" : result.error;
+      const message = result.error === "CredentialsSignin" ? "Credenciales inválidas" : result.error;
       callbacks.onError?.(message);
       return;
     }
@@ -38,9 +38,9 @@ export async function loginHandler(
       return;
     }
 
-    callbacks.onError?.("No se pudo iniciar sesion.");
+    callbacks.onError?.("No se pudo iniciar sesión.");
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo iniciar sesion.";
+    const message = error instanceof Error ? error.message : "No se pudo iniciar sesión.";
     callbacks.onError?.(message);
   }
 }
@@ -49,7 +49,7 @@ export async function logoutHandler(callbacks: CallbackProps) {
   try {
     await signOut({ redirect: false });
   } catch (error) {
-    console.error("Error al cerrar sesiÃ³n:", error);
+    console.error("Error al cerrar sesión:", error);
   } finally {
     callbacks.onSuccess?.();
   }
@@ -86,7 +86,7 @@ export async function changePasswordHandler(
     });
     callbacks.onSuccess?.();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo cambiar la contraseÃ±a.";
+    const message = error instanceof Error ? error.message : "No se pudo cambiar la contraseña.";
     callbacks.onError?.(message);
     throw error;
   }
@@ -117,4 +117,3 @@ export async function initializeDatabaseHandler(callbacks: CallbackProps) {
     throw error;
   }
 }
-

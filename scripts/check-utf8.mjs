@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
@@ -62,6 +62,14 @@ const COMMON_MOJIBAKE_TOKENS = [
 ];
 
 const ESCAPED_LATIN1_RE = /\\u00(?:e1|e9|ed|f3|fa|f1|c1|c9|cd|d3|da|d1|bf|a1)/gi;
+const argv = new Set(process.argv.slice(2));
+const fixBom = argv.has("--fix-bom");
+
+if (argv.has("--help") || argv.has("-h")) {
+  console.log("Uso: node scripts/check-utf8.mjs [--fix-bom]");
+  console.log("  --fix-bom   Elimina BOM UTF-8 de archivos de texto rastreados por git.");
+  process.exit(0);
+}
 
 function shouldSkipFile(filePath) {
   if (SKIP_DIRECTORIES.some((prefix) => filePath.startsWith(prefix))) {
@@ -113,6 +121,8 @@ function hasUtf8Bom(buffer) {
 }
 
 const findings = [];
+const bomFiles = [];
+let fixedBomCount = 0;
 
 for (const filePath of listTrackedFiles()) {
   if (filePath === "scripts/check-utf8.mjs") {
@@ -134,7 +144,17 @@ for (const filePath of listTrackedFiles()) {
   }
 
   if (hasUtf8Bom(content)) {
-    findings.push(`[BOM] ${filePath}`);
+    bomFiles.push(filePath);
+
+    if (fixBom) {
+      writeFileSync(filePath, content.slice(3));
+      fixedBomCount += 1;
+      content = readFileSync(filePath);
+    }
+
+    if (!fixBom) {
+      findings.push(`[BOM] ${filePath}`);
+    }
   }
 
   if (isLikelyBinary(content)) {
@@ -168,12 +188,26 @@ for (const filePath of listTrackedFiles()) {
   }
 }
 
+if (fixBom && fixedBomCount > 0) {
+  console.log(`Se eliminaron ${fixedBomCount} archivo(s) con BOM UTF-8.`);
+}
+
 if (findings.length > 0) {
   console.error("Se detectaron problemas de codificacion UTF-8:");
   for (const finding of findings) {
     console.error(`- ${finding}`);
   }
+
+  if (bomFiles.length > 0 && !fixBom) {
+    console.error("Tip: ejecuta 'npm run check:encoding:fix' para remover BOM automaticamente.");
+  }
+
+  console.error(`Resumen: ${findings.length} problema(s) detectado(s).`);
   process.exit(1);
+}
+
+if (fixBom && fixedBomCount === 0) {
+  console.log("No se encontraron archivos con BOM para corregir.");
 }
 
 console.log("OK: no se encontro BOM ni mojibake en archivos de texto.");
