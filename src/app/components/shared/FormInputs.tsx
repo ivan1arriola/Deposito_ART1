@@ -1,30 +1,30 @@
 "use client";
 
 import { forwardRef } from "react";
+import type { TextFieldProps } from "@mui/material/TextField";
 import { FormControl, FormHelperText, InputLabel, NativeSelect, TextField } from "@mui/material";
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+export interface InputProps extends Omit<TextFieldProps, "error" | "helperText"> {
   error?: string;
   helperText?: string;
   icon?: React.ReactNode;
-  className?: string;
 }
 
 /**
  * Input mejorado con label, error y helper text
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, icon, className = "", ...props }, ref) => {
+  ({ error, helperText, icon, InputProps: muiInputProps, ...props }, ref) => {
     return (
       <TextField
         fullWidth
         inputRef={ref}
-        label={label}
         error={Boolean(error)}
         helperText={error || helperText}
-        className={className}
-        InputProps={icon ? { startAdornment: icon } : undefined}
+        InputProps={{
+          ...muiInputProps,
+          startAdornment: icon ?? muiInputProps?.startAdornment,
+        }}
         {...props}
       />
     );
@@ -69,22 +69,18 @@ export function Select(props: {
  * Textarea mejorado con label y error
  */
 export const Textarea = forwardRef<HTMLTextAreaElement, {
-  label?: string;
   error?: string;
   helperText?: string;
-  className?: string;
-} & React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
-  ({ label, error, helperText, className = "", ...props }, ref) => {
+} & Omit<TextFieldProps, "error" | "helperText" | "multiline">>(
+  ({ error, helperText, ...props }, ref) => {
     return (
       <TextField
         fullWidth
         multiline
         minRows={3}
-        label={label}
         error={Boolean(error)}
         helperText={error || helperText}
         inputRef={ref}
-        className={className}
         {...props}
       />
     );
