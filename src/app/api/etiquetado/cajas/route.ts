@@ -52,7 +52,7 @@ function parseItemId(value: unknown) {
 
 function normalizeEstanteria(value: unknown) {
   const normalized = String(value ?? "").trim().toUpperCase();
-  if (!/^[A-Z0-9]$/.test(normalized)) return null;
+  if (!/^[A-Z]$/.test(normalized)) return null;
   return normalized;
 }
 
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
   if (codigoDepositoGeneral === null || cantidad === null || !estanteria || itemIds.length === 0) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo de caja, cantidad, estanteria y equipos son obligatorios." },
+      { error: "Payload invalido. codigo de caja, cantidad, nombre de estanteria y equipos son obligatorios." },
       { status: 400 },
     );
   }

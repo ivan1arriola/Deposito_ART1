@@ -4,6 +4,7 @@ import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 
 type CreateEstanteriaPayload = {
+  nombreEstanteria?: string;
   codigo?: string;
   piso?: string | number;
 };
@@ -15,9 +16,9 @@ function hasEtiquetadoDelegates() {
   return typeof candidate.estanteria !== "undefined";
 }
 
-function normalizeCodigo(value: unknown) {
+function normalizeNombreEstanteria(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
-  if (!/^[A-Z0-9]$/.test(raw)) return null;
+  if (!/^[A-Z]$/.test(raw)) return null;
   return raw;
 }
 
@@ -39,12 +40,12 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as CreateEstanteriaPayload;
-  const codigo = normalizeCodigo(body.codigo);
+  const nombreEstanteria = normalizeNombreEstanteria(body.nombreEstanteria ?? body.codigo);
   const piso = parsePiso(body.piso);
 
-  if (!codigo || piso === null) {
+  if (!nombreEstanteria || piso === null) {
     return NextResponse.json(
-      { error: "Payload invalido. Usa codigo de una letra o numero y piso 1 o 2." },
+      { error: "Payload invalido. Usa nombre de estanteria (1 letra A-Z) y piso 1 o 2." },
       { status: 400 },
     );
   }
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
   try {
     const created = await prisma.estanteria.create({
       data: {
-        codigo,
+        codigo: nombreEstanteria,
         piso,
       },
       select: {
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
       entidad: "ESTANTERIA",
       entidadId: `${created.codigo}-${created.piso}`,
       detalle: {
+        nombreEstanteria: created.codigo,
         codigo: created.codigo,
         piso: created.piso,
       },
@@ -74,9 +76,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
+        nombreEstanteria: created.codigo,
         codigo: created.codigo,
         piso: created.piso,
-        etiqueta: `${created.piso}${created.codigo}`,
+        etiqueta: `Estanteria P${created.piso} - ${created.codigo}`,
       },
       { status: 201 },
     );

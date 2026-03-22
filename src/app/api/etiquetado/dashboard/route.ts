@@ -109,7 +109,7 @@ export async function GET(request: Request) {
     estanterias: estanterias.map((estanteria) => ({
       codigo: estanteria.codigo,
       piso: estanteria.piso,
-      etiqueta: `${estanteria.piso}${estanteria.codigo}`,
+      etiqueta: `Estanteria P${estanteria.piso} - ${estanteria.codigo}`,
     })),
     codigosSIE: codigosSIE.map((codigoSIE) => ({
       codigo: codigoSIE.codigo,

@@ -56,3 +56,4 @@ licenses-prod.json
 
 # refactor reports (generated)
 /reports/
+package-lock.json

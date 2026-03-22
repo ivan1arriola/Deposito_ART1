@@ -1,6 +1,38 @@
 "use client";
 
-import { useEffect, useRef, useState, type JSX, type RefObject } from "react";
+import { useState, type JSX, type MouseEvent, type RefObject } from "react";
+import {
+  Box,
+  Button,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
+import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
+import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
+import Groups2OutlinedIcon from "@mui/icons-material/Groups2Outlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import InventoryOutlinedIcon from "@mui/icons-material/InventoryOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import MilitaryTechOutlinedIcon from "@mui/icons-material/MilitaryTechOutlined";
+import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
+import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
+import QrCode2OutlinedIcon from "@mui/icons-material/QrCode2Outlined";
+import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
+import RemoveOutlinedIcon from "@mui/icons-material/RemoveOutlined";
+import SellOutlinedIcon from "@mui/icons-material/SellOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
 import type { MainView } from "@/types/views";
 
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recordatorios" | "firmas" | "usuarios" | "auditoria">;
@@ -22,275 +54,175 @@ type MainNavigationProps = {
   onSetConfigViews: (open: boolean) => void;
 };
 
-const configViews: Array<{ view: ConfigView; label: string; adminOnly?: boolean; icon: JSX.Element }> = [
-  {
-    view: "grados",
-    label: "Grados Registrados",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-      </svg>
-    ),
-  },
-  {
-    view: "baterias",
-    label: "Baterías Registradas",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-      </svg>
-    ),
-  },
-  {
-    view: "firmas",
-    label: "Firmas institucionales",
-    adminOnly: true,
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h2m10 0V6a3 3 0 10-6 0v2m6 0H7" />
-      </svg>
-    ),
-  },
-  {
-    view: "recordatorios",
-    label: "Recordatorios",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 11V9a6 6 0 1112 0v2m-8 4h4m-6 0h8a2 2 0 002-2v-2H6v2a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
-  {
-    view: "usuarios",
-    label: "Usuarios Registrados",
-    adminOnly: true,
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
-  {
-    view: "auditoria",
-    label: "Auditoría detallada",
-    adminOnly: true,
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m4 6V7m4 10v-3M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
+type MenuKey = "personal" | "oficiales" | "stock" | "etiquetado" | "create" | "config";
+type NavOption<T extends MainView> = {
+  view: T;
+  label: string;
+  shortLabel?: string;
+  icon: JSX.Element;
+  adminOnly?: boolean;
+  writeOnly?: boolean;
+};
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <ExpandMoreRoundedIcon
+      fontSize="small"
+      sx={{
+        transform: open ? "rotate(180deg)" : "rotate(0deg)",
+        transition: "transform 180ms ease",
+      }}
+    />
+  );
+}
+
+const materialIconProps = { fontSize: "small" as const };
+
+const icons = {
+  personal: <Groups2OutlinedIcon {...materialIconProps} />,
+  oficiales: <MilitaryTechOutlinedIcon {...materialIconProps} />,
+  stock: <Inventory2OutlinedIcon {...materialIconProps} />,
+  etiquetado: <SellOutlinedIcon {...materialIconProps} />,
+  resumen: <QueryStatsOutlinedIcon {...materialIconProps} />,
+  altas: <AddCircleOutlineRoundedIcon {...materialIconProps} />,
+  prestamos: <DescriptionOutlinedIcon {...materialIconProps} />,
+  config: <SettingsOutlinedIcon {...materialIconProps} />,
+  matrix: <GridViewOutlinedIcon {...materialIconProps} />,
+  resumenEquipo: <ViewAgendaOutlinedIcon {...materialIconProps} />,
+  codigo: <QrCode2OutlinedIcon {...materialIconProps} />,
+  cajas: <InventoryOutlinedIcon {...materialIconProps} />,
+  imprimir: <PrintOutlinedIcon {...materialIconProps} />,
+  bell: <NotificationsOutlinedIcon {...materialIconProps} />,
+  lock: <LockOutlinedIcon {...materialIconProps} />,
+  users: <GroupOutlinedIcon {...materialIconProps} />,
+  audit: <FactCheckOutlinedIcon {...materialIconProps} />,
+  minus: <RemoveOutlinedIcon {...materialIconProps} />,
+  history: <HistoryOutlinedIcon {...materialIconProps} />,
+};
+
+const configViews: Array<NavOption<ConfigView>> = [
+  { view: "grados", label: "Grados registrados", icon: icons.resumen },
+  { view: "baterias", label: "Baterias registradas", icon: icons.cajas },
+  { view: "firmas", label: "Firmas institucionales", icon: icons.lock, adminOnly: true },
+  { view: "recordatorios", label: "Recordatorios", icon: icons.bell },
+  { view: "usuarios", label: "Usuarios registrados", icon: icons.users, adminOnly: true },
+  { view: "auditoria", label: "Auditoria detallada", icon: icons.audit, adminOnly: true },
 ];
 
-const createViews: Array<{ view: CreateView; label: string; shortLabel: string; adminOnly?: boolean; icon: JSX.Element }> = [
-  {
-    view: "personal_nuevo",
-    label: "Alta de subalterno",
-    shortLabel: "Subalterno",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-      </svg>
-    ),
-  },
-  {
-    view: "oficial_nuevo",
-    label: "Alta de oficial",
-    shortLabel: "Oficial",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
-      </svg>
-    ),
-  },
-  {
-    view: "suboficial_nuevo",
-    label: "Alta de suboficial",
-    shortLabel: "Suboficial",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
-      </svg>
-    ),
-  },
-  {
-    view: "bateria_nueva",
-    label: "Alta de batería",
-    shortLabel: "Batería",
-    adminOnly: true,
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
-      </svg>
-    ),
-  },
-  {
-    view: "grado_nuevo",
-    label: "Alta de grado",
-    shortLabel: "Grado",
-    adminOnly: true,
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-      </svg>
-    ),
-  },
-  {
-    view: "usuario_nuevo",
-    label: "Alta de usuario",
-    shortLabel: "Usuario",
-    adminOnly: true,
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v6m3-3h-6M5 20h8a2 2 0 002-2v-1a4 4 0 00-4-4H9a4 4 0 00-4 4v1a2 2 0 002 2zm8-13a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
+const createViews: Array<NavOption<CreateView>> = [
+  { view: "personal_nuevo", label: "Alta de subalterno", shortLabel: "Subalterno", icon: icons.altas },
+  { view: "oficial_nuevo", label: "Alta de oficial", shortLabel: "Oficial", icon: icons.altas },
+  { view: "suboficial_nuevo", label: "Alta de suboficial", shortLabel: "Suboficial", icon: icons.altas },
+  { view: "bateria_nueva", label: "Alta de bateria", shortLabel: "Bateria", icon: icons.altas, adminOnly: true },
+  { view: "grado_nuevo", label: "Alta de grado", shortLabel: "Grado", icon: icons.altas, adminOnly: true },
+  { view: "usuario_nuevo", label: "Alta de usuario", shortLabel: "Usuario", icon: icons.altas, adminOnly: true },
 ];
 
-const stockViews: Array<{ view: StockView; label: string; shortLabel: string; icon: JSX.Element; writeOnly?: boolean }> = [
-  {
-    view: "equipo_nuevo",
-    label: "Alta de equipo",
-    shortLabel: "Alta Eq.",
-    writeOnly: true,
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-      </svg>
-    ),
-  },
-  {
-    view: "equipos",
-    label: "Equipos Registrados",
-    shortLabel: "Equipos",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-      </svg>
-    ),
-  },
-  {
-    view: "stock_total",
-    label: "Total de Items",
-    shortLabel: "Total",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5h16M4 12h16M4 19h16" />
-      </svg>
-    ),
-  },
-  {
-    view: "stock_actual",
-    label: "Deposito Interno",
-    shortLabel: "Deposito",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
-      </svg>
-    ),
-  },
-  {
-    view: "stock_alta",
-    label: "Alta de Stock",
-    shortLabel: "Alta",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-      </svg>
-    ),
-  },
-  {
-    view: "stock_baja",
-    label: "Baja de Stock",
-    shortLabel: "Baja",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-      </svg>
-    ),
-  },
-  {
-    view: "stock_historial",
-    label: "Historial",
-    shortLabel: "Historial",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3M12 3a9 9 0 109 9" />
-      </svg>
-    ),
-  },
+const stockViews: Array<NavOption<StockView>> = [
+  { view: "equipo_nuevo", label: "Alta de equipo", shortLabel: "Alta Eq.", icon: icons.altas, writeOnly: true },
+  { view: "equipos", label: "Equipos registrados", shortLabel: "Equipos", icon: icons.stock },
+  { view: "stock_total", label: "Total de items", shortLabel: "Total", icon: icons.resumen },
+  { view: "stock_actual", label: "Deposito interno", shortLabel: "Deposito", icon: icons.stock },
+  { view: "stock_alta", label: "Alta de stock", shortLabel: "Alta", icon: icons.altas },
+  { view: "stock_baja", label: "Baja de stock", shortLabel: "Baja", icon: icons.minus },
+  { view: "stock_historial", label: "Historial", shortLabel: "Historial", icon: icons.history },
 ];
 
-const etiquetadoViews: Array<{ view: EtiquetadoView; label: string; shortLabel: string; icon: JSX.Element }> = [
-  {
-    view: "etiquetado_codigos_sie",
-    label: "Codigos SIE",
-    shortLabel: "Codigos SIE",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5h6M7 9h10M5 13h14M7 17h10M9 21h6" />
-      </svg>
-    ),
-  },
-  {
-    view: "etiquetado_listado_cajas",
-    label: "Listado de Cajas",
-    shortLabel: "Listado Cajas",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
-    ),
-  },
-  {
-    view: "etiquetado_imprimir_todas",
-    label: "Imprimir Todas",
-    shortLabel: "Imprimir Todas",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9V4h12v5M6 14H4v6h16v-6h-2M8 14h8v6H8z" />
-      </svg>
-    ),
-  },
+const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
+  { view: "etiquetado_codigos_sie", label: "Codigos SIE", shortLabel: "Codigos", icon: icons.codigo },
+  { view: "etiquetado_listado_cajas", label: "Listado de cajas", shortLabel: "Cajas", icon: icons.cajas },
+  { view: "etiquetado_imprimir_todas", label: "Imprimir todas", shortLabel: "Imprimir", icon: icons.imprimir },
 ];
 
-function viewButtonClass(activeView: MainView, view: MainView) {
-  return activeView === view
-    ? "ej-view-active rounded-lg px-3 py-2 text-sm font-semibold"
-    : "ej-view-idle rounded-lg px-3 py-2 text-sm font-semibold";
+const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen">>> = [
+  { view: "personal", label: "Personal subalterno", icon: icons.personal },
+  { view: "hoja_matrix", label: "Hoja matriz", icon: icons.matrix },
+  { view: "equipo_resumen", label: "Resumen de equipo en baterias", icon: icons.resumenEquipo },
+];
+
+const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficiales" | "oficiales_suboficiales_resumen">>> = [
+  { view: "oficiales", label: "Oficiales", icon: icons.oficiales },
+  { view: "suboficiales", label: "Suboficiales", icon: icons.oficiales },
+  { view: "oficiales_suboficiales_resumen", label: "Resumen de talles (ambos)", icon: icons.resumen },
+];
+
+function navButtonSx(active: boolean) {
+  return {
+    px: 2.25,
+    justifyContent: "space-between",
+    width: { xs: "100%", sm: "auto" },
+    minWidth: { sm: 170 },
+    minHeight: 44,
+    borderRadius: 2,
+    borderWidth: "1px",
+    borderColor: active ? "var(--EscudoVerde)" : "var(--brand-sand)",
+    bgcolor: active ? "var(--EscudoAmarillo)" : "var(--Blanco)",
+    color: active ? "var(--EscudoAzul)" : "var(--foreground)",
+    fontWeight: 600,
+    textTransform: "none",
+    "&:hover": {
+      borderColor: active ? "var(--EscudoVerde)" : "var(--brand-moss)",
+      bgcolor: active ? "var(--EscudoAmarillo)" : "var(--EscudoGris)",
+    },
+  };
 }
 
-function configOptionClass(activeView: MainView, view: ConfigView) {
-  return activeView === view
-    ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
-    : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-100";
+function menuPaperSx() {
+  return {
+    mt: 1,
+    p: 0.5,
+    borderRadius: 2,
+    width: "min(360px, calc(100vw - 2rem))",
+    maxWidth: "calc(100vw - 2rem)",
+    border: "1px solid",
+    borderColor: "var(--brand-sand)",
+    bgcolor: "var(--Blanco)",
+    color: "var(--foreground)",
+  };
 }
 
-function createOptionClass(activeView: MainView, view: CreateView) {
-  return activeView === view
-    ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
-    : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-100";
-}
+const menuHeaderSx = {
+  px: 2,
+  py: 0.75,
+  color: "var(--EscudoAzul)",
+  fontWeight: 700,
+  letterSpacing: 0.6,
+};
 
-function stockOptionClass(activeView: MainView, view: StockView) {
-  return activeView === view
-    ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
-    : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-100";
-}
+const menuDividerSx = {
+  mb: 0.5,
+  borderColor: "var(--brand-sand)",
+};
 
-function groupedOptionClass(activeView: MainView, view: MainView) {
-  return activeView === view
-    ? "flex w-full items-center gap-2 rounded-lg border border-stone-900 bg-stone-900 px-3 py-2.5 text-left text-sm font-semibold text-white transition-colors"
-    : "flex w-full items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-100";
-}
+const menuItemSx = {
+  borderRadius: 1,
+  mx: 0.5,
+  color: "var(--foreground)",
+  "&:hover": {
+    bgcolor: "var(--EscudoGris)",
+  },
+  "&.Mui-selected": {
+    bgcolor: "var(--EscudoAmarillo)",
+    color: "var(--EscudoAzul)",
+  },
+  "&.Mui-selected:hover": {
+    bgcolor: "var(--EscudoAmarillo)",
+  },
+};
 
-function menuContainerClass(isOpen: boolean) {
-  return `relative w-full sm:w-auto sm:min-w-[11rem] sm:flex-none ${isOpen ? "z-20" : "z-0"}`;
-}
+function labelForViewport(label: string, shortLabel?: string) {
+  if (!shortLabel || shortLabel === label) return label;
 
-function menuPanelClass(desktopWidthClass: string) {
-  return `absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-x-hidden rounded-xl border border-stone-300 bg-white p-2 shadow-xl sm:w-auto sm:max-w-none ${desktopWidthClass}`;
+  return (
+    <Box component="span">
+      <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+        {label}
+      </Box>
+      <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
+        {shortLabel}
+      </Box>
+    </Box>
+  );
 }
 
 export function MainNavigation({
@@ -303,22 +235,12 @@ export function MainNavigation({
   onSelectView,
   onSetConfigViews,
 }: MainNavigationProps) {
-  const [showPersonalViews, setShowPersonalViews] = useState(false);
-  const [showOficialesSuboficialesViews, setShowOficialesSuboficialesViews] = useState(false);
-  const [showCreateViews, setShowCreateViews] = useState(false);
-  const [showStockViews, setShowStockViews] = useState(false);
-  const [showEtiquetadoViews, setShowEtiquetadoViews] = useState(false);
-  const personalMenuRef = useRef<HTMLDivElement | null>(null);
-  const oficialesSuboficialesMenuRef = useRef<HTMLDivElement | null>(null);
-  const createMenuRef = useRef<HTMLDivElement | null>(null);
-  const stockMenuRef = useRef<HTMLDivElement | null>(null);
-  const etiquetadoMenuRef = useRef<HTMLDivElement | null>(null);
+  const [menuAnchors, setMenuAnchors] = useState<Partial<Record<MenuKey, HTMLElement | null>>>({});
+  const isConfigMenuOpen = Boolean(menuAnchors.config) && showConfigViews;
+
   const isPersonalView = activeView === "personal" || activeView === "hoja_matrix" || activeView === "equipo_resumen";
-  const isOficialesView = activeView === "oficiales";
-  const isSuboficialesView = activeView === "suboficiales";
-  const isOficialesSuboficialesResumenView = activeView === "oficiales_suboficiales_resumen";
-  const isOficialesSuboficialesView = isOficialesView || isSuboficialesView || isOficialesSuboficialesResumenView;
-  const isSummaryView = activeView === "tallas_resumen";
+  const isOficialesSuboficialesView =
+    activeView === "oficiales" || activeView === "suboficiales" || activeView === "oficiales_suboficiales_resumen";
   const isStockView =
     activeView === "stock" ||
     activeView === "equipos" ||
@@ -333,6 +255,7 @@ export function MainNavigation({
     activeView === "etiquetado_codigos_sie" ||
     activeView === "etiquetado_listado_cajas" ||
     activeView === "etiquetado_imprimir_todas";
+  const isSummaryView = activeView === "tallas_resumen";
   const isCreateView =
     activeView === "personal_nuevo" ||
     activeView === "oficial_nuevo" ||
@@ -341,17 +264,39 @@ export function MainNavigation({
     activeView === "grado_nuevo" ||
     activeView === "usuario_nuevo";
 
-  function closeLocalMenus() {
-    setShowPersonalViews(false);
-    setShowOficialesSuboficialesViews(false);
-    setShowCreateViews(false);
-    setShowStockViews(false);
-    setShowEtiquetadoViews(false);
+  function isMenuOpen(menu: MenuKey) {
+    if (menu === "config") return isConfigMenuOpen;
+    return Boolean(menuAnchors[menu]);
   }
 
   function closeAllMenus() {
-    closeLocalMenus();
+    setMenuAnchors({});
     onSetConfigViews(false);
+  }
+
+  function closeMenu(menu: MenuKey) {
+    setMenuAnchors((prev) => ({ ...prev, [menu]: null }));
+    if (menu === "config") {
+      onSetConfigViews(false);
+    }
+  }
+
+  function handleToggleMenu(menu: MenuKey) {
+    return (event: MouseEvent<HTMLButtonElement>) => {
+      const current = menuAnchors[menu];
+      const isCurrentOpen = menu === "config" ? Boolean(current) && showConfigViews : Boolean(current);
+
+      if (isCurrentOpen) {
+        setMenuAnchors({ ...menuAnchors, [menu]: null });
+        if (menu === "config") {
+          onSetConfigViews(false);
+        }
+        return;
+      }
+
+      setMenuAnchors({ [menu]: event.currentTarget });
+      onSetConfigViews(menu === "config");
+    };
   }
 
   function handleSelectView(view: MainView) {
@@ -359,409 +304,249 @@ export function MainNavigation({
     onSelectView(view);
   }
 
-  function handleToggleStockViews() {
-    const next = !showStockViews;
-    setShowStockViews(next);
-    setShowPersonalViews(false);
-    setShowOficialesSuboficialesViews(false);
-    setShowCreateViews(false);
-    setShowEtiquetadoViews(false);
-    onSetConfigViews(false);
-  }
-
-  function handleTogglePersonalViews() {
-    const next = !showPersonalViews;
-    setShowPersonalViews(next);
-    setShowStockViews(false);
-    setShowOficialesSuboficialesViews(false);
-    setShowCreateViews(false);
-    setShowEtiquetadoViews(false);
-    onSetConfigViews(false);
-  }
-
-  function handleToggleOficialesSuboficialesViews() {
-    const next = !showOficialesSuboficialesViews;
-    setShowOficialesSuboficialesViews(next);
-    setShowPersonalViews(false);
-    setShowStockViews(false);
-    setShowCreateViews(false);
-    setShowEtiquetadoViews(false);
-    onSetConfigViews(false);
-  }
-
-  function handleToggleCreateViews() {
-    const next = !showCreateViews;
-    setShowCreateViews(next);
-    setShowPersonalViews(false);
-    setShowOficialesSuboficialesViews(false);
-    setShowStockViews(false);
-    setShowEtiquetadoViews(false);
-    onSetConfigViews(false);
-  }
-
-  function handleToggleEtiquetadoViews() {
-    const next = !showEtiquetadoViews;
-    setShowEtiquetadoViews(next);
-    setShowPersonalViews(false);
-    setShowOficialesSuboficialesViews(false);
-    setShowCreateViews(false);
-    setShowStockViews(false);
-    onSetConfigViews(false);
-  }
-
-  function handleToggleConfigViews() {
-    closeLocalMenus();
-    onSetConfigViews(!showConfigViews);
-  }
-
-  useEffect(() => {
-    function handleOutsideClick(event: MouseEvent) {
-      if (personalMenuRef.current && event.target instanceof Node && !personalMenuRef.current.contains(event.target)) {
-        setShowPersonalViews(false);
-      }
-      if (
-        oficialesSuboficialesMenuRef.current &&
-        event.target instanceof Node &&
-        !oficialesSuboficialesMenuRef.current.contains(event.target)
-      ) {
-        setShowOficialesSuboficialesViews(false);
-      }
-      if (createMenuRef.current && event.target instanceof Node && !createMenuRef.current.contains(event.target)) {
-        setShowCreateViews(false);
-      }
-      if (stockMenuRef.current && event.target instanceof Node && !stockMenuRef.current.contains(event.target)) {
-        setShowStockViews(false);
-      }
-      if (etiquetadoMenuRef.current && event.target instanceof Node && !etiquetadoMenuRef.current.contains(event.target)) {
-        setShowEtiquetadoViews(false);
-      }
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      setShowPersonalViews(false);
-      setShowOficialesSuboficialesViews(false);
-      setShowCreateViews(false);
-      setShowStockViews(false);
-      setShowEtiquetadoViews(false);
-    }
-
-    if (!showPersonalViews && !showOficialesSuboficialesViews && !showCreateViews && !showStockViews && !showEtiquetadoViews) return;
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [showPersonalViews, showOficialesSuboficialesViews, showCreateViews, showStockViews, showEtiquetadoViews]);
-
   return (
-    <section className="ej-card relative isolate z-[220] mt-4 overflow-visible rounded-2xl p-3 sm:p-4">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Navegación</p>
-      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch">
-        <div ref={personalMenuRef} className={menuContainerClass(showPersonalViews)}>
-          <button
-            type="button"
-            onClick={handleTogglePersonalViews}
+    <Paper
+      variant="outlined"
+      sx={{
+        mt: 2,
+        p: { xs: 2, sm: 2.5 },
+        borderRadius: 3,
+        position: "relative",
+        zIndex: 220,
+        bgcolor: "var(--EscudoGris)",
+        borderColor: "var(--brand-sand)",
+        color: "var(--foreground)",
+        fontFamily: 'var(--fuentePrincipal, "Liberation Sans", sans-serif)',
+      }}
+    >
+      <Typography variant="subtitle2" sx={{ color: "var(--EscudoAzul)", fontWeight: 700, letterSpacing: 1 }}>
+        NAVEGACION
+      </Typography>
+
+      <Stack direction="row" flexWrap="wrap" useFlexGap gap={1.2} sx={{ mt: 1.5 }}>
+          <Button
+            variant="outlined"
+            onClick={handleToggleMenu("personal")}
+            startIcon={icons.personal}
+            endIcon={<ChevronIcon open={isMenuOpen("personal")} />}
             aria-haspopup="menu"
-            aria-expanded={showPersonalViews}
+            aria-expanded={isMenuOpen("personal")}
             aria-controls="menu-personal-subalterno"
-            className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
-              isPersonalView || showPersonalViews ? "ej-view-active" : "ej-view-idle"
-            }`}
+            sx={navButtonSx(isPersonalView || isMenuOpen("personal"))}
           >
-            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <span className="whitespace-nowrap">Personal subalterno</span>
-            <svg className={`h-3 w-3 transition-transform ${showPersonalViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {showPersonalViews ? (
-            <div
-              id="menu-personal-subalterno"
-              role="menu"
-              className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
-            >
-              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de personal subalterno</p>
-              <div className="grid grid-cols-1 gap-1.5">
-                <button type="button" onClick={() => handleSelectView("personal")} className={groupedOptionClass(activeView, "personal")}>
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>Personal subalterno</span>
-                </button>
-                <button type="button" onClick={() => handleSelectView("hoja_matrix")} className={groupedOptionClass(activeView, "hoja_matrix")}>
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-                  </svg>
-                  <span>Hoja Matriz</span>
-                </button>
-                <button type="button" onClick={() => handleSelectView("equipo_resumen")} className={groupedOptionClass(activeView, "equipo_resumen")}>
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M7 3v4m10-4v4M6 12h4v8H6zM14 10h4v10h-4z" />
-                  </svg>
-                  <span>Resumen de equipo en baterías</span>
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-        <div ref={oficialesSuboficialesMenuRef} className={menuContainerClass(showOficialesSuboficialesViews)}>
-          <button
-            type="button"
-            onClick={handleToggleOficialesSuboficialesViews}
+            Personal subalterno
+          </Button>
+          <Menu
+            id="menu-personal-subalterno"
+            anchorEl={menuAnchors.personal}
+            open={isMenuOpen("personal")}
+            onClose={() => closeMenu("personal")}
+            PaperProps={{ sx: menuPaperSx() }}
+            MenuListProps={{ "aria-label": "Vistas de personal subalterno" }}
+          >
+            <Typography variant="overline" sx={menuHeaderSx}>
+              Vistas de personal subalterno
+            </Typography>
+            <Divider sx={menuDividerSx} />
+            {personalViews.map((item) => (
+              <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
+                <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
+                <ListItemText>{item.label}</ListItemText>
+              </MenuItem>
+            ))}
+          </Menu>
+
+          <Button
+            variant="outlined"
+            onClick={handleToggleMenu("oficiales")}
+            startIcon={icons.oficiales}
+            endIcon={<ChevronIcon open={isMenuOpen("oficiales")} />}
             aria-haspopup="menu"
-            aria-expanded={showOficialesSuboficialesViews}
+            aria-expanded={isMenuOpen("oficiales")}
             aria-controls="menu-oficiales-suboficiales"
-            className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
-              isOficialesSuboficialesView || showOficialesSuboficialesViews ? "ej-view-active" : "ej-view-idle"
-            }`}
+            sx={navButtonSx(isOficialesSuboficialesView || isMenuOpen("oficiales"))}
           >
-            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
-            </svg>
-            <span className="whitespace-nowrap">Oficiales y Suboficiales</span>
-            <svg className={`h-3 w-3 transition-transform ${showOficialesSuboficialesViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {showOficialesSuboficialesViews ? (
-            <div
-              id="menu-oficiales-suboficiales"
-              role="menu"
-              className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
-            >
-              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de oficiales y suboficiales</p>
-              <div className="grid grid-cols-1 gap-1.5">
-                <button type="button" onClick={() => handleSelectView("oficiales")} className={groupedOptionClass(activeView, "oficiales")}>
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
-                  </svg>
-                  <span>Oficiales</span>
-                </button>
-                <button type="button" onClick={() => handleSelectView("suboficiales")} className={groupedOptionClass(activeView, "suboficiales")}>
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17a4 4 0 100-8 4 4 0 000 8zm0 0v4m0-4h4m-4 0H7M5 13a6 6 0 1112 0v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z" />
-                  </svg>
-                  <span>Suboficiales</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSelectView("oficiales_suboficiales_resumen")}
-                  className={groupedOptionClass(activeView, "oficiales_suboficiales_resumen")}
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19h16M4 12h10M4 5h16" />
-                  </svg>
-                  <span>Resumen de talles (ambos)</span>
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-        <div ref={stockMenuRef} className={menuContainerClass(showStockViews)}>
-          <button
-            type="button"
-            onClick={handleToggleStockViews}
+            Oficiales y suboficiales
+          </Button>
+          <Menu
+            id="menu-oficiales-suboficiales"
+            anchorEl={menuAnchors.oficiales}
+            open={isMenuOpen("oficiales")}
+            onClose={() => closeMenu("oficiales")}
+            PaperProps={{ sx: menuPaperSx() }}
+            MenuListProps={{ "aria-label": "Vistas de oficiales y suboficiales" }}
+          >
+            <Typography variant="overline" sx={menuHeaderSx}>
+              Vistas de oficiales y suboficiales
+            </Typography>
+            <Divider sx={menuDividerSx} />
+            {oficialesViews.map((item) => (
+              <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
+                <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
+                <ListItemText>{item.label}</ListItemText>
+              </MenuItem>
+            ))}
+          </Menu>
+
+          <Button
+            variant="outlined"
+            onClick={handleToggleMenu("stock")}
+            startIcon={icons.stock}
+            endIcon={<ChevronIcon open={isMenuOpen("stock")} />}
             aria-haspopup="menu"
-            aria-expanded={showStockViews}
+            aria-expanded={isMenuOpen("stock")}
             aria-controls="menu-stock"
-            className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
-              isStockView || showStockViews ? "ej-view-active" : "ej-view-idle"
-            }`}
+            sx={navButtonSx(isStockView || isMenuOpen("stock"))}
           >
-            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7H4m16 5H4m16 5H4M8 4v16" />
-            </svg>
-            <span className="whitespace-nowrap">Stock y Equipos</span>
-            <svg className={`h-3 w-3 transition-transform ${showStockViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {showStockViews ? (
-            <div
-              id="menu-stock"
-              role="menu"
-              className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
-            >
-              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de stock y equipos</p>
-              <div className="grid grid-cols-1 gap-1.5">
-                {stockViews
-                  .filter((item) => (item.writeOnly ? canWrite : true))
-                  .map((item) => (
-                  <button
-                    key={item.view}
-                    type="button"
-                    onClick={() => handleSelectView(item.view)}
-                    className={stockOptionClass(activeView, item.view)}
-                  >
-                    {item.icon}
-                    <span className="hidden sm:inline">{item.label}</span>
-                    <span className="sm:hidden">{item.shortLabel}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-        <div ref={etiquetadoMenuRef} className={menuContainerClass(showEtiquetadoViews)}>
-          <button
-            type="button"
-            onClick={handleToggleEtiquetadoViews}
+            Stock y equipos
+          </Button>
+          <Menu
+            id="menu-stock"
+            anchorEl={menuAnchors.stock}
+            open={isMenuOpen("stock")}
+            onClose={() => closeMenu("stock")}
+            PaperProps={{ sx: menuPaperSx() }}
+            MenuListProps={{ "aria-label": "Vistas de stock y equipos" }}
+          >
+            <Typography variant="overline" sx={menuHeaderSx}>
+              Vistas de stock y equipos
+            </Typography>
+            <Divider sx={menuDividerSx} />
+            {stockViews
+              .filter((item) => (item.writeOnly ? canWrite : true))
+              .map((item) => (
+                <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
+                  <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
+                  <ListItemText>{labelForViewport(item.label, item.shortLabel)}</ListItemText>
+                </MenuItem>
+              ))}
+          </Menu>
+
+          <Button
+            variant="outlined"
+            onClick={handleToggleMenu("etiquetado")}
+            startIcon={icons.etiquetado}
+            endIcon={<ChevronIcon open={isMenuOpen("etiquetado")} />}
             aria-haspopup="menu"
-            aria-expanded={showEtiquetadoViews}
+            aria-expanded={isMenuOpen("etiquetado")}
             aria-controls="menu-etiquetado"
-            className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
-              isEtiquetadoView || showEtiquetadoViews ? "ej-view-active" : "ej-view-idle"
-            }`}
+            sx={navButtonSx(isEtiquetadoView || isMenuOpen("etiquetado"))}
           >
-            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5h6M7 9h10M5 13h14M7 17h10M9 21h6" />
-            </svg>
-            <span className="whitespace-nowrap">Etiquetado</span>
-            <svg className={`h-3 w-3 transition-transform ${showEtiquetadoViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {showEtiquetadoViews ? (
-            <div
-              id="menu-etiquetado"
-              role="menu"
-              className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
-            >
-              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de etiquetado</p>
-              <div className="grid grid-cols-1 gap-1.5">
-                {etiquetadoViews.map((viewItem) => (
-                  <button
-                    key={viewItem.view}
-                    type="button"
-                    onClick={() => handleSelectView(viewItem.view)}
-                    className={groupedOptionClass(activeView, viewItem.view)}
-                  >
-                    {viewItem.icon}
-                    <span className="hidden sm:inline">{viewItem.label}</span>
-                    <span className="sm:hidden">{viewItem.shortLabel}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          onClick={() => handleSelectView("tallas_resumen")}
-          className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all sm:w-auto sm:min-w-[13rem] sm:flex-none ${
-            isSummaryView ? "ej-view-active" : "ej-view-idle"
-          }`}
-        >
-          <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20V10m5 10V4m5 16v-6M4 20h16" />
-          </svg>
-          <span className="whitespace-nowrap">Resumen de Tallas</span>
-        </button>
-        {canWrite ? (
-          <div ref={createMenuRef} className={menuContainerClass(showCreateViews)}>
-            <button
-              type="button"
-              onClick={handleToggleCreateViews}
-              aria-haspopup="menu"
-              aria-expanded={showCreateViews}
-              aria-controls="menu-altas"
-              className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
-                isCreateView || showCreateViews ? "ej-view-active" : "ej-view-idle"
-              }`}
-            >
-              <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="whitespace-nowrap">Altas</span>
-              <svg className={`h-3 w-3 transition-transform ${showCreateViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {showCreateViews ? (
-              <div
-                id="menu-altas"
-                role="menu"
-                className={menuPanelClass("sm:w-[300px] sm:min-w-[300px]")}
+            Etiquetado
+          </Button>
+          <Menu
+            id="menu-etiquetado"
+            anchorEl={menuAnchors.etiquetado}
+            open={isMenuOpen("etiquetado")}
+            onClose={() => closeMenu("etiquetado")}
+            PaperProps={{ sx: menuPaperSx() }}
+            MenuListProps={{ "aria-label": "Vistas de etiquetado" }}
+          >
+            <Typography variant="overline" sx={menuHeaderSx}>
+              Vistas de etiquetado
+            </Typography>
+            <Divider sx={menuDividerSx} />
+            {etiquetadoViews.map((item) => (
+              <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
+                <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
+                <ListItemText>{labelForViewport(item.label, item.shortLabel)}</ListItemText>
+              </MenuItem>
+            ))}
+          </Menu>
+
+          <Button
+            variant="outlined"
+            onClick={() => handleSelectView("tallas_resumen")}
+            startIcon={icons.resumen}
+            sx={{ ...navButtonSx(isSummaryView), minWidth: { sm: 190 } }}
+          >
+            Resumen de tallas
+          </Button>
+
+          {canWrite ? (
+            <>
+              <Button
+                variant="outlined"
+                onClick={handleToggleMenu("create")}
+                startIcon={icons.altas}
+                endIcon={<ChevronIcon open={isMenuOpen("create")} />}
+                aria-haspopup="menu"
+                aria-expanded={isMenuOpen("create")}
+                aria-controls="menu-altas"
+                sx={navButtonSx(isCreateView || isMenuOpen("create"))}
               >
-                <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Pantallas de alta</p>
-                <div className="grid grid-cols-1 gap-1.5">
+                Altas
+              </Button>
+              <Menu
+                id="menu-altas"
+                anchorEl={menuAnchors.create}
+                open={isMenuOpen("create")}
+                onClose={() => closeMenu("create")}
+                PaperProps={{ sx: menuPaperSx() }}
+                MenuListProps={{ "aria-label": "Pantallas de alta" }}
+              >
+                <Typography variant="overline" sx={menuHeaderSx}>
+                  Pantallas de alta
+                </Typography>
+                <Divider sx={menuDividerSx} />
                 {createViews
-                    .filter((item) => (item.adminOnly ? isAdmin : true))
-                    .map((item) => (
-                      <button
-                        key={item.view}
-                        type="button"
-                        onClick={() => handleSelectView(item.view)}
-                        className={createOptionClass(activeView, item.view)}
-                      >
-                        {item.icon}
-                        <span className="hidden sm:inline">{item.label}</span>
-                        <span className="sm:hidden">{item.shortLabel}</span>
-                      </button>
-                    ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => handleSelectView("formularios")}
-          className={`${viewButtonClass(activeView, "formularios")} group relative w-full transition-all sm:w-auto sm:min-w-[10.5rem] sm:flex-none`}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6M9 8h6m-9 12h12a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span className="whitespace-nowrap">Prestamos</span>
-          </div>
-        </button>
-        <div ref={configMenuRef} className={menuContainerClass(showConfigViews)}>
-          <button
-            type="button"
-            onClick={handleToggleConfigViews}
-            aria-haspopup="menu"
-            aria-expanded={showConfigViews}
-            aria-controls="menu-configuracion"
-            className={`group flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
-              isConfigView || showConfigViews ? "ej-view-active" : "ej-view-idle"
-            }`}
-          >
-            <svg className="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span className="whitespace-nowrap">Configuración</span>
-            <svg className={`h-3 w-3 transition-transform ${showConfigViews ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {showConfigViews ? (
-            <div
-              id="menu-configuracion"
-              role="menu"
-              className={menuPanelClass("sm:w-[360px] sm:min-w-[360px]")}
-            >
-              <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Vistas de configuración</p>
-              <div className="grid grid-cols-1 gap-1.5">
-                {configViews
                   .filter((item) => (item.adminOnly ? isAdmin : true))
                   .map((item) => (
-                    <button key={item.view} type="button" onClick={() => handleSelectView(item.view)} className={configOptionClass(activeView, item.view)}>
-                      {item.icon}
-                      {item.label}
-                    </button>
+                    <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
+                      <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
+                      <ListItemText>{labelForViewport(item.label, item.shortLabel)}</ListItemText>
+                    </MenuItem>
                   ))}
-              </div>
-            </div>
+              </Menu>
+            </>
           ) : null}
-        </div>
-      </div>
-    </section>
+
+          <Button
+            variant="outlined"
+            onClick={() => handleSelectView("formularios")}
+            startIcon={icons.prestamos}
+            sx={{ ...navButtonSx(activeView === "formularios"), minWidth: { sm: 176 } }}
+          >
+            Prestamos
+          </Button>
+
+          <Box ref={configMenuRef}>
+            <Button
+              variant="outlined"
+              onClick={handleToggleMenu("config")}
+              startIcon={icons.config}
+              endIcon={<ChevronIcon open={isMenuOpen("config")} />}
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen("config")}
+              aria-controls="menu-configuracion"
+              sx={navButtonSx(isConfigView || isMenuOpen("config"))}
+            >
+              Configuracion
+            </Button>
+            <Menu
+              id="menu-configuracion"
+              anchorEl={menuAnchors.config}
+              open={isMenuOpen("config")}
+              onClose={() => closeMenu("config")}
+              disablePortal
+              PaperProps={{ sx: { ...menuPaperSx(), width: "min(420px, calc(100vw - 2rem))" } }}
+              MenuListProps={{ "aria-label": "Vistas de configuracion" }}
+            >
+              <Typography variant="overline" sx={menuHeaderSx}>
+                Vistas de configuracion
+              </Typography>
+              <Divider sx={menuDividerSx} />
+              {configViews
+                .filter((item) => (item.adminOnly ? isAdmin : true))
+                .map((item) => (
+                  <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
+                    <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
+                    <ListItemText>{item.label}</ListItemText>
+                  </MenuItem>
+                ))}
+            </Menu>
+          </Box>
+      </Stack>
+    </Paper>
   );
 }

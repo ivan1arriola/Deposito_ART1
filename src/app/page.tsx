@@ -1050,7 +1050,7 @@ export default function Home() {
   );
 
   const createEtiquetadoEstanteria = useCallback(
-    async (codigo: string, piso: number) => {
+    async (nombreEstanteria: string, piso: number) => {
       if (!canWrite) {
         setStatus("No tienes permisos para crear.");
         return;
@@ -1061,7 +1061,7 @@ export default function Home() {
         await api("/api/etiquetado/estanterias", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ codigo, piso }),
+          body: JSON.stringify({ nombreEstanteria, piso }),
         });
         setStatus("Estanteria registrada.");
         await loadEtiquetadoData();
@@ -1111,6 +1111,33 @@ export default function Home() {
         await loadEtiquetadoData();
       } catch (error: unknown) {
         setStatus(error instanceof Error ? error.message : "No se pudo registrar el codigo SIE.");
+      }
+    },
+    [canWrite, loadEtiquetadoData],
+  );
+
+  const updateEtiquetadoCodigoSIE = useCallback(
+    async (input: { originalCodigo: string; codigo: string; talla: string; itemId: string }) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para editar.");
+        return;
+      }
+
+      setStatus("Actualizando codigo SIE...");
+      try {
+        await api(`/api/etiquetado/codigos-sie/${encodeURIComponent(input.originalCodigo)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            codigo: input.codigo,
+            talla: input.talla,
+            itemId: input.itemId,
+          }),
+        });
+        setStatus("Codigo SIE actualizado.");
+        await loadEtiquetadoData();
+      } catch (error: unknown) {
+        setStatus(error instanceof Error ? error.message : "No se pudo actualizar el codigo SIE.");
       }
     },
     [canWrite, loadEtiquetadoData],
@@ -1564,7 +1591,7 @@ export default function Home() {
         ]
           .filter((detail): detail is string => detail !== null)
           .join(" | ");
-        return `- Caja ${caja.codigoDepositoGeneral} (estanteria ${caja.estanteria}) | equipos: ${caja.totalEquiposEnCaja}${detalles ? ` | ${detalles}` : ""}`;
+        return `- Caja ${caja.codigoDepositoGeneral} (nombre estanteria ${caja.estanteria}) | equipos: ${caja.totalEquiposEnCaja}${detalles ? ` | ${detalles}` : ""}`;
       });
       const resumen = impacto.resumen;
       const messageLines = [
@@ -4397,10 +4424,11 @@ export default function Home() {
           canWrite={canWrite}
           onReload={() => void reloadEtiquetadoData()}
           onCreateItem={(input) => void createEtiquetadoItem(input)}
-          onCreateEstanteria={(codigo, piso) => void createEtiquetadoEstanteria(codigo, piso)}
-          onDeleteEstanteria={(codigo, piso) => void deleteEtiquetadoEstanteria(codigo, piso)}
-          onCreateCodigoSIE={(input) => void createEtiquetadoCodigoSIE(input)}
-          onDeleteCodigoSIE={(codigo) => void deleteEtiquetadoCodigoSIE(codigo)}
+        onCreateEstanteria={(codigo, piso) => void createEtiquetadoEstanteria(codigo, piso)}
+        onDeleteEstanteria={(codigo, piso) => void deleteEtiquetadoEstanteria(codigo, piso)}
+        onCreateCodigoSIE={(input) => void createEtiquetadoCodigoSIE(input)}
+        onUpdateCodigoSIE={(input) => void updateEtiquetadoCodigoSIE(input)}
+        onDeleteCodigoSIE={(codigo) => void deleteEtiquetadoCodigoSIE(codigo)}
           onCreateCaja={(input) => void createEtiquetadoCaja(input)}
           onDeleteCaja={(codigoDepositoGeneral) => void deleteEtiquetadoCaja(codigoDepositoGeneral)}
           onPrintCaja={(codigoDepositoGeneral, orientacion) => printEtiquetaCaja(codigoDepositoGeneral, orientacion)}

@@ -11,9 +11,9 @@ function hasEtiquetadoDelegates() {
   return typeof candidate.estanteria !== "undefined" && typeof candidate.caja !== "undefined";
 }
 
-function normalizeCodigo(value: string) {
+function normalizeNombreEstanteria(value: string) {
   const raw = decodeURIComponent(value).trim().toUpperCase();
-  if (!/^[A-Z0-9]$/.test(raw)) return null;
+  if (!/^[A-Z]$/.test(raw)) return null;
   return raw;
 }
 
@@ -38,7 +38,7 @@ export async function DELETE(
   }
 
   const { codigo: codigoParam, piso: pisoParam } = await context.params;
-  const codigo = normalizeCodigo(codigoParam);
+  const codigo = normalizeNombreEstanteria(codigoParam);
   const piso = parsePiso(pisoParam);
 
   if (!codigo || piso === null) {
@@ -50,7 +50,7 @@ export async function DELETE(
   });
   if (cajasUsandoCodigo > 0) {
     return NextResponse.json(
-      { error: "No se puede eliminar la estanteria porque hay cajas registradas en ese codigo." },
+      { error: "No se puede eliminar la estanteria porque hay cajas registradas con ese nombre de estanteria." },
       { status: 409 },
     );
   }
@@ -75,6 +75,7 @@ export async function DELETE(
       entidad: "ESTANTERIA",
       entidadId: `${removed.codigo}-${removed.piso}`,
       detalle: {
+        nombreEstanteria: removed.codigo,
         codigo: removed.codigo,
         piso: removed.piso,
       },

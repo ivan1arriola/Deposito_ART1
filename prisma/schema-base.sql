@@ -133,9 +133,9 @@ INSERT INTO "item" ("nombre", "activo", "orden_pdf") VALUES
 ('Bota Corta de tela S.I.E.', TRUE, 24);
 
 CREATE TABLE "estanteria" (
-  "codigo" CHAR(1) NOT NULL,
+  "codigo" VARCHAR(1) NOT NULL,
   "piso" SMALLINT NOT NULL,
-  CONSTRAINT "estanteria_codigo_formato_chk" CHECK ("codigo" ~ '^[A-Z0-9]$'),
+  CONSTRAINT "estanteria_codigo_formato_chk" CHECK ("codigo" ~ '^[A-Z]$'),
   CONSTRAINT "estanteria_piso_rango_chk" CHECK ("piso" >= 1 AND "piso" <= 2),
   PRIMARY KEY ("codigo", "piso")
 );
@@ -152,10 +152,10 @@ CREATE INDEX "item_codigo_sie_item_id_idx" ON "item_codigo_sie"("item_id");
 
 CREATE TABLE "caja" (
   "codigo_deposito_general" INTEGER PRIMARY KEY,
-  "estanteria" CHAR(1) NOT NULL,
+  "estanteria" VARCHAR(1) NOT NULL,
   "cantidad" INTEGER NOT NULL,
   CONSTRAINT "caja_codigo_deposito_general_chk" CHECK ("codigo_deposito_general" > 0),
-  CONSTRAINT "caja_estanteria_formato_chk" CHECK ("estanteria" ~ '^[A-Z0-9]$'),
+  CONSTRAINT "caja_estanteria_formato_chk" CHECK ("estanteria" ~ '^[A-Z]$'),
   CONSTRAINT "caja_cantidad_chk" CHECK ("cantidad" > 0)
 );
 
