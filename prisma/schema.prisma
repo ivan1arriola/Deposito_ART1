@@ -215,14 +215,16 @@ model Item {
 }
 
 model ItemCodigoSIE {
-  codigo String @id
-  talla  String?
-  itemId BigInt @map("item_id")
-  item   Item   @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
-  cajas  CajaItemCodigoSIE[]
+  itemCodigoSIEId BigInt             @id @default(autoincrement()) @map("item_codigo_sie_id")
+  codigo          String
+  talla           String             @default("-")
+  itemId          BigInt             @map("item_id")
+  item            Item               @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+  cajas           CajaItemCodigoSIE[]
 
   @@index([itemId])
-  @@unique([codigo, itemId])
+  @@index([codigo])
+  @@unique([codigo, talla, itemId])
   @@map("item_codigo_sie")
 }
 
@@ -250,12 +252,12 @@ model CajaItem {
 
 model CajaItemCodigoSIE {
   codigoDepositoGeneral Int           @map("codigo_deposito_general")
-  codigoSIE             String        @map("codigo_sie")
+  itemCodigoSIEId       BigInt        @map("item_codigo_sie_id")
   caja                  Caja          @relation(fields: [codigoDepositoGeneral], references: [codigoDepositoGeneral], onDelete: Cascade)
-  itemCodigoSIE         ItemCodigoSIE @relation(fields: [codigoSIE], references: [codigo], onDelete: Cascade)
+  itemCodigoSIE         ItemCodigoSIE @relation(fields: [itemCodigoSIEId], references: [itemCodigoSIEId], onDelete: Cascade)
 
-  @@id([codigoDepositoGeneral, codigoSIE])
-  @@index([codigoSIE])
+  @@id([codigoDepositoGeneral, itemCodigoSIEId])
+  @@index([itemCodigoSIEId])
   @@map("caja_item_codigo_sie")
 }
 

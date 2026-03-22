@@ -15,16 +15,17 @@ export function AppInstallCard({ compact = false }: AppInstallCardProps) {
   const [installState, setInstallState] = useState<InstallState>("loading");
   const [installing, setInstalling] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [isMobileClient, setIsMobileClient] = useState<boolean | null>(null);
 
   const manualMessages = useMemo(() => {
-    if (typeof navigator === "undefined") {
-      return { full: "", compact: "" };
+    if (isMobileClient === null) {
+      return {
+        full: "En Chrome, abre el menú (tres puntos) o usa el ícono de instalación de la barra.",
+        compact: "Chrome: menú (tres puntos) o ícono de instalación.",
+      };
     }
 
-    const ua = navigator.userAgent.toLowerCase();
-    const isMobile = /android|iphone|ipad|ipod/.test(ua);
-
-    if (isMobile) {
+    if (isMobileClient) {
       return {
         full: "En Chrome mobile, abre el menú (tres puntos) y toca 'Instalar aplicación'.",
         compact: "Chrome mobile: menú (tres puntos) > Instalar aplicación.",
@@ -35,10 +36,13 @@ export function AppInstallCard({ compact = false }: AppInstallCardProps) {
       full: "En Chrome escritorio, usa el ícono de instalación en la barra de direcciones (a la derecha).",
       compact: "Chrome escritorio: usa el ícono de instalación de la barra.",
     };
-  }, []);
+  }, [isMobileClient]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const ua = window.navigator.userAgent.toLowerCase();
+    setIsMobileClient(/android|iphone|ipad|ipod/.test(ua));
 
     const wasDismissed = window.localStorage.getItem(DISMISS_KEY) === "1";
     if (wasDismissed) {
@@ -47,7 +51,9 @@ export function AppInstallCard({ compact = false }: AppInstallCardProps) {
 
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (typeof navigator !== "undefined" && "standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+      (typeof navigator !== "undefined" &&
+        "standalone" in navigator &&
+        Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
 
     if (standalone) {
       setInstallState("installed");

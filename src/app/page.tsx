@@ -1113,7 +1113,7 @@ export default function Home() {
   );
 
   const createEtiquetadoCodigoSIE = useCallback(
-    async (input: { codigo: string; talla: string; itemId: string }) => {
+    async (input: { codigo: string; talla: string; itemId: string; allowDuplicateCodigo?: boolean }) => {
       if (!canWrite) {
         setStatus("No tienes permisos para crear.");
         return;
@@ -1136,7 +1136,7 @@ export default function Home() {
   );
 
   const updateEtiquetadoCodigoSIE = useCallback(
-    async (input: { originalCodigo: string; codigo: string; talla: string; itemId: string }) => {
+    async (input: { originalCodigoSIEId: string; originalCodigo: string; codigo: string; talla: string; itemId: string }) => {
       if (!canWrite) {
         setStatus("No tienes permisos para editar.");
         return;
@@ -1144,7 +1144,9 @@ export default function Home() {
 
       setStatus("Actualizando código SIE...");
       try {
-        await api(`/api/etiquetado/codigos-sie/${encodeURIComponent(input.originalCodigo)}`, {
+        await api(
+          `/api/etiquetado/codigos-sie/${encodeURIComponent(input.originalCodigo)}?id=${encodeURIComponent(input.originalCodigoSIEId)}`,
+          {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1152,7 +1154,8 @@ export default function Home() {
             talla: input.talla,
             itemId: input.itemId,
           }),
-        });
+          },
+        );
         setStatus("Código SIE actualizado.");
         await loadEtiquetadoData();
       } catch (error: unknown) {
@@ -1163,7 +1166,7 @@ export default function Home() {
   );
 
   const deleteEtiquetadoCodigoSIE = useCallback(
-    async (codigo: string) => {
+    async (codigoSIEId: string, codigo: string) => {
       if (!canWrite) {
         setStatus("No tienes permisos para eliminar.");
         return;
@@ -1171,7 +1174,7 @@ export default function Home() {
 
       setStatus("Eliminando código SIE...");
       try {
-        await api(`/api/etiquetado/codigos-sie/${encodeURIComponent(codigo)}`, {
+        await api(`/api/etiquetado/codigos-sie/${encodeURIComponent(codigo)}?id=${encodeURIComponent(codigoSIEId)}`, {
           method: "DELETE",
         });
         setStatus("Código SIE eliminado.");
@@ -1191,7 +1194,7 @@ export default function Home() {
         itemId: string;
         cantidad: number;
       }>;
-      codigosSIE: string[];
+      codigosSIEIds: string[];
     }) => {
       if (!canWrite) {
         setStatus("No tienes permisos para crear.");
@@ -1264,6 +1267,15 @@ export default function Home() {
     },
     [openEtiquetasPrint],
   );
+
+  const printListadoCajas = useCallback(() => {
+    const params = new URLSearchParams();
+    params.set("autoprint", "1");
+    const popup = window.open(`/listado-cajas?${params.toString()}`, "_blank", "noopener,noreferrer");
+    if (!popup) {
+      setStatus("Permite ventanas emergentes para imprimir el listado de cajas.");
+    }
+  }, []);
 
   const createRango = useCallback(async () => {
     if (!isAdmin) {
@@ -4429,14 +4441,15 @@ export default function Home() {
           canWrite={canWrite}
           onReload={() => void reloadEtiquetadoData()}
           onCreateItem={(input) => void createEtiquetadoItem(input)}
-        onCreateEstanteria={(codigo, piso) => void createEtiquetadoEstanteria(codigo, piso)}
-        onDeleteEstanteria={(codigo, piso) => void deleteEtiquetadoEstanteria(codigo, piso)}
-        onCreateCodigoSIE={(input) => void createEtiquetadoCodigoSIE(input)}
-        onUpdateCodigoSIE={(input) => void updateEtiquetadoCodigoSIE(input)}
-        onDeleteCodigoSIE={(codigo) => void deleteEtiquetadoCodigoSIE(codigo)}
+          onCreateEstanteria={(codigo, piso) => void createEtiquetadoEstanteria(codigo, piso)}
+          onDeleteEstanteria={(codigo, piso) => void deleteEtiquetadoEstanteria(codigo, piso)}
+          onCreateCodigoSIE={(input) => void createEtiquetadoCodigoSIE(input)}
+          onUpdateCodigoSIE={(input) => void updateEtiquetadoCodigoSIE(input)}
+          onDeleteCodigoSIE={(codigoSIEId, codigo) => void deleteEtiquetadoCodigoSIE(codigoSIEId, codigo)}
           onCreateCaja={(input) => void createEtiquetadoCaja(input)}
           onDeleteCaja={(codigoDepositoGeneral) => void deleteEtiquetadoCaja(codigoDepositoGeneral)}
           onPrintCaja={(codigoDepositoGeneral, orientacion) => printEtiquetaCaja(codigoDepositoGeneral, orientacion)}
+          onPrintListadoCajas={printListadoCajas}
           onPrintTodas={(orientacion) => printTodasEtiquetas(orientacion)}
         />
       ) : null}

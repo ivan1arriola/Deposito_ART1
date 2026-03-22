@@ -16,9 +16,11 @@ type CreateCodigoSIEInput = {
   codigo: string;
   talla: string;
   itemId: string;
+  allowDuplicateCodigo?: boolean;
 };
 
 type UpdateCodigoSIEInput = {
+  originalCodigoSIEId: string;
   originalCodigo: string;
   codigo: string;
   talla: string;
@@ -36,7 +38,7 @@ type CreateCajaInput = {
     itemId: string;
     cantidad: number;
   }>;
-  codigosSIE: string[];
+  codigosSIEIds: string[];
 };
 
 type EtiquetadoViewProps = {
@@ -51,17 +53,18 @@ type EtiquetadoViewProps = {
   onDeleteEstanteria: (codigo: string, piso: number) => void;
   onCreateCodigoSIE: (input: CreateCodigoSIEInput) => void;
   onUpdateCodigoSIE: (input: UpdateCodigoSIEInput) => void;
-  onDeleteCodigoSIE: (codigo: string) => void;
+  onDeleteCodigoSIE: (codigoSIEId: string, codigo: string) => void;
   onCreateCaja: (input: CreateCajaInput) => void;
   onDeleteCaja: (codigoDepositoGeneral: number) => void;
   onPrintCaja: (codigoDepositoGeneral: number, orientacion: EtiquetaOrientacion) => void;
+  onPrintListadoCajas: () => void;
   onPrintTodas: (orientacion: EtiquetaOrientacion) => void;
 };
 
 const SECTION_META: Record<EtiquetadoSection, { title: string; description: string }> = {
   codigos_sie: {
-    title: "Códigos SIE",
-    description: "Registra equipos, códigos SIE y estanterías para su vinculación.",
+    title: "CÃ³digos SIE",
+    description: "Registra equipos, cÃ³digos SIE y estanterÃ­as para su vinculaciÃ³n.",
   },
   listado_cajas: {
     title: "Listado de Cajas",
@@ -121,6 +124,7 @@ export function EtiquetadoView({
   onCreateCaja,
   onDeleteCaja,
   onPrintCaja,
+  onPrintListadoCajas,
   onPrintTodas,
 }: EtiquetadoViewProps) {
   const meta = SECTION_META[section];
@@ -168,7 +172,7 @@ export function EtiquetadoView({
   const [newCodigoSIE, setNewCodigoSIE] = useState("");
   const [newCodigoTalla, setNewCodigoTalla] = useState("");
   const [newCodigoItemId, setNewCodigoItemId] = useState("");
-  const [editingCodigoOriginal, setEditingCodigoOriginal] = useState<string | null>(null);
+  const [editingCodigoSIEId, setEditingCodigoSIEId] = useState<string | null>(null);
   const [editCodigoSIE, setEditCodigoSIE] = useState("");
   const [editCodigoTalla, setEditCodigoTalla] = useState("");
   const [editCodigoItemId, setEditCodigoItemId] = useState("");
@@ -176,7 +180,7 @@ export function EtiquetadoView({
   const [newCajaCantidadByItemId, setNewCajaCantidadByItemId] = useState<Record<string, string>>({});
   const [newCajaEstanteria, setNewCajaEstanteria] = useState("");
   const [newCajaItemIds, setNewCajaItemIds] = useState<string[]>([]);
-  const [newCajaCodigosSIE, setNewCajaCodigosSIE] = useState<string[]>([]);
+  const [newCajaCodigosSIEIds, setNewCajaCodigosSIEIds] = useState<string[]>([]);
   const [cajaFiltro, setCajaFiltro] = useState("");
   const [cajaItemFiltro, setCajaItemFiltro] = useState("");
   const [showCreateCajaForm, setShowCreateCajaForm] = useState(false);
@@ -200,11 +204,11 @@ export function EtiquetadoView({
   );
 
   const codigosDisponiblesSet = useMemo(
-    () => new Set(codigosSIEDisponibles.map((codigo) => codigo.codigo)),
+    () => new Set(codigosSIEDisponibles.map((codigo) => codigo.codigoSIEId)),
     [codigosSIEDisponibles],
   );
-  const codigoSIEItemByCodigo = useMemo(
-    () => new Map(codigosSIEDisponibles.map((codigo) => [codigo.codigo, codigo.itemId])),
+  const codigoSIEItemById = useMemo(
+    () => new Map(codigosSIEDisponibles.map((codigo) => [codigo.codigoSIEId, codigo.itemId])),
     [codigosSIEDisponibles],
   );
   const itemOptionById = useMemo(
@@ -271,18 +275,18 @@ export function EtiquetadoView({
     [codigosPorItemSeleccionado],
   );
 
-  const selectedCajaCodigosSIE = useMemo(
+  const selectedCajaCodigosSIEIds = useMemo(
     () =>
-      newCajaCodigosSIE.filter((codigo) => {
-        if (!codigosDisponiblesSet.has(codigo)) return false;
-        const itemId = codigoSIEItemByCodigo.get(codigo);
+      newCajaCodigosSIEIds.filter((codigoSIEId) => {
+        if (!codigosDisponiblesSet.has(codigoSIEId)) return false;
+        const itemId = codigoSIEItemById.get(codigoSIEId);
         return typeof itemId === "string" && selectedCajaItemSet.has(itemId);
       }),
-    [newCajaCodigosSIE, codigosDisponiblesSet, codigoSIEItemByCodigo, selectedCajaItemSet],
+    [newCajaCodigosSIEIds, codigosDisponiblesSet, codigoSIEItemById, selectedCajaItemSet],
   );
   const selectedCajaCodigosSet = useMemo(
-    () => new Set(selectedCajaCodigosSIE),
-    [selectedCajaCodigosSIE],
+    () => new Set(selectedCajaCodigosSIEIds),
+    [selectedCajaCodigosSIEIds],
   );
 
   const cajasFiltradas = useMemo(() => {
@@ -328,27 +332,42 @@ export function EtiquetadoView({
     const talla = normalizeCode(newCodigoTalla);
     const itemId = codigoItemIdValue.trim();
     if (!codigo || !itemId) return;
-    onCreateCodigoSIE({ codigo, talla, itemId });
+    const tallaNormalizada = talla.length > 0 ? talla : "-";
+    const duplicateTupleExists = codigosSIEList.some(
+      (entry) => entry.codigo === codigo && entry.talla === tallaNormalizada && entry.itemId === itemId,
+    );
+    if (duplicateTupleExists) {
+      window.alert("Ya existe un codigo SIE con la misma combinacion de codigo, talla e item.");
+      return;
+    }
+
+    const sameCodeEntries = codigosSIEList.filter((entry) => entry.codigo === codigo);
+    const allowDuplicateCodigo = sameCodeEntries.length > 0
+      ? window.confirm(`El codigo SIE ${codigo} ya existe (${sameCodeEntries.length} registro(s)). Deseas registrarlo igualmente?`)
+      : false;
+    if (sameCodeEntries.length > 0 && !allowDuplicateCodigo) return;
+
+    onCreateCodigoSIE({ codigo, talla, itemId, allowDuplicateCodigo });
     setNewCodigoSIE("");
     setNewCodigoTalla("");
   }
 
-  function toggleCodigoSIEEnCaja(codigo: string) {
-    if (!codigosDisponiblesSet.has(codigo)) return;
-    const itemId = codigoSIEItemByCodigo.get(codigo);
+  function toggleCodigoSIEEnCaja(codigoSIEId: string) {
+    if (!codigosDisponiblesSet.has(codigoSIEId)) return;
+    const itemId = codigoSIEItemById.get(codigoSIEId);
     if (!itemId || !selectedCajaItemSet.has(itemId)) return;
-    setNewCajaCodigosSIE((prev) => {
+    setNewCajaCodigosSIEIds((prev) => {
       const normalized = prev.filter((entry) => codigosDisponiblesSet.has(entry));
-      if (normalized.includes(codigo)) return normalized.filter((entry) => entry !== codigo);
-      return [...normalized, codigo];
+      if (normalized.includes(codigoSIEId)) return normalized.filter((entry) => entry !== codigoSIEId);
+      return [...normalized, codigoSIEId];
     });
   }
 
   function toggleItemEnCaja(itemId: string) {
     setNewCajaItemIds((prev) => {
       if (prev.includes(itemId)) {
-        setNewCajaCodigosSIE((prevCodigos) =>
-          prevCodigos.filter((codigo) => codigoSIEItemByCodigo.get(codigo) !== itemId),
+        setNewCajaCodigosSIEIds((prevCodigos) =>
+          prevCodigos.filter((codigoSIEId) => codigoSIEItemById.get(codigoSIEId) !== itemId),
         );
         setNewCajaCantidadByItemId((prevCantidades) => {
           const next = { ...prevCantidades };
@@ -370,8 +389,8 @@ export function EtiquetadoView({
   }
 
   function clearCodigosForItem(itemId: string) {
-    setNewCajaCodigosSIE((prevCodigos) =>
-      prevCodigos.filter((codigo) => codigoSIEItemByCodigo.get(codigo) !== itemId),
+    setNewCajaCodigosSIEIds((prevCodigos) =>
+      prevCodigos.filter((codigoSIEId) => codigoSIEItemById.get(codigoSIEId) !== itemId),
     );
   }
 
@@ -400,9 +419,9 @@ export function EtiquetadoView({
       }
       return next;
     });
-    setNewCajaCodigosSIE((prevCodigos) =>
-      prevCodigos.filter((codigo) => {
-        const itemId = codigoSIEItemByCodigo.get(codigo);
+    setNewCajaCodigosSIEIds((prevCodigos) =>
+      prevCodigos.filter((codigoSIEId) => {
+        const itemId = codigoSIEItemById.get(codigoSIEId);
         return !itemId || !filteredSet.has(itemId);
       }),
     );
@@ -428,47 +447,50 @@ export function EtiquetadoView({
       codigoDepositoGeneral,
       estanteria,
       items: itemsPayload,
-      codigosSIE: selectedCajaCodigosSIE,
+      codigosSIEIds: selectedCajaCodigosSIEIds,
     });
     setNewCajaCodigo("");
     setNewCajaCantidadByItemId({});
     setNewCajaItemIds([]);
-    setNewCajaCodigosSIE([]);
+    setNewCajaCodigosSIEIds([]);
   }
 
   function confirmDeleteEstanteria(codigo: string, piso: number) {
-    if (!window.confirm(`Se eliminará la ${formatEstanteriaLabel(piso, codigo)}.`)) return;
+    if (!window.confirm(`Se eliminarÃ¡ la ${formatEstanteriaLabel(piso, codigo)}.`)) return;
     onDeleteEstanteria(codigo, piso);
   }
 
-  function confirmDeleteCodigoSIE(codigo: string) {
-    if (!window.confirm(`Se eliminará el código SIE ${codigo}.`)) return;
-    onDeleteCodigoSIE(codigo);
+  function confirmDeleteCodigoSIE(codigoSIEId: string, codigo: string) {
+    if (!window.confirm(`Se eliminarÃ¡ el cÃ³digo SIE ${codigo}.`)) return;
+    onDeleteCodigoSIE(codigoSIEId, codigo);
   }
 
-  function startEditCodigoSIE(codigo: { codigo: string; talla: string | null; itemId: string }) {
-    setEditingCodigoOriginal(codigo.codigo);
+  function startEditCodigoSIE(codigo: { codigoSIEId: string; codigo: string; talla: string; itemId: string }) {
+    setEditingCodigoSIEId(codigo.codigoSIEId);
     setEditCodigoSIE(codigo.codigo);
-    setEditCodigoTalla(codigo.talla ?? "");
+    setEditCodigoTalla(codigo.talla === "-" ? "" : codigo.talla);
     setEditCodigoItemId(codigo.itemId);
   }
 
   function cancelEditCodigoSIE() {
-    setEditingCodigoOriginal(null);
+    setEditingCodigoSIEId(null);
     setEditCodigoSIE("");
     setEditCodigoTalla("");
     setEditCodigoItemId("");
   }
 
   function saveEditCodigoSIE() {
-    if (!editingCodigoOriginal) return;
+    if (!editingCodigoSIEId) return;
+    const originalCodigo = codigosSIEList.find((entry) => entry.codigoSIEId === editingCodigoSIEId)?.codigo ?? null;
+    if (!originalCodigo) return;
     const codigo = normalizeCode(editCodigoSIE);
     const talla = normalizeCode(editCodigoTalla);
     const itemId = editCodigoItemId.trim();
     if (!codigo || !itemId || !SIE_CODE_REGEX.test(codigo)) return;
 
     onUpdateCodigoSIE({
-      originalCodigo: editingCodigoOriginal,
+      originalCodigoSIEId: editingCodigoSIEId,
+      originalCodigo,
       codigo,
       talla,
       itemId,
@@ -477,7 +499,7 @@ export function EtiquetadoView({
   }
 
   function confirmDeleteCaja(codigoDepositoGeneral: number) {
-    if (!window.confirm(`Se eliminará la caja ${codigoDepositoGeneral}.`)) return;
+    if (!window.confirm(`Se eliminarÃ¡ la caja ${codigoDepositoGeneral}.`)) return;
     onDeleteCaja(codigoDepositoGeneral);
   }
 
@@ -543,7 +565,7 @@ export function EtiquetadoView({
                 </label>
                 <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                   Los equipos creados aqui quedan ocultos en Hoja de Entrega. Puedes habilitarlos luego desde
-                  Configuración &gt; Equipos.
+                  ConfiguraciÃ³n &gt; Equipos.
                 </p>
                 <button
                   type="submit"
@@ -555,8 +577,8 @@ export function EtiquetadoView({
               </form>
 
               <form onSubmit={handleCreateEstanteria} className="space-y-2 rounded-xl border border-stone-200 bg-stone-50 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Nueva estantería</p>
-                <p className="text-xs text-stone-600">Formato: Nombre de estantería (A-Z) + piso.</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Nueva estanterÃ­a</p>
+                <p className="text-xs text-stone-600">Formato: Nombre de estanterÃ­a (A-Z) + piso.</p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <label className="text-xs text-stone-700">
                     Piso
@@ -571,7 +593,7 @@ export function EtiquetadoView({
                     </select>
                   </label>
                   <label className="text-xs text-stone-700">
-                    Nombre de estantería
+                    Nombre de estanterÃ­a
                     <input
                       value={newEstanteriaCodigo}
                       onChange={(event) => setNewEstanteriaCodigo(normalizeEstanteriaName(event.target.value))}
@@ -588,14 +610,14 @@ export function EtiquetadoView({
                   disabled={!canWrite || !isValidEstanteriaName(newEstanteriaCodigo)}
                   className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60"
                 >
-                  Registrar estantería
+                  Registrar estanterÃ­a
                 </button>
               </form>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
               {estanteriasList.length === 0 ? (
-                <p className="text-sm text-stone-600">No hay estanterías registradas.</p>
+                <p className="text-sm text-stone-600">No hay estanterÃ­as registradas.</p>
               ) : (
                 estanteriasList.map((estanteria) => (
                   <div
@@ -621,7 +643,7 @@ export function EtiquetadoView({
           <article className="ej-card order-1 rounded-2xl p-4">
             <h3 className="text-sm font-semibold text-stone-900">Registrar Codigo SIE</h3>
             <p className="mt-1 text-xs text-stone-600">
-              El código SIE se registra primero. Si hubo un error de digitado, usa &quot;Editar código&quot; en la tabla.
+              El cÃ³digo SIE se registra primero. Si hubo un error de digitado, usa &quot;Editar cÃ³digo&quot; en la tabla.
             </p>
             <form onSubmit={handleCreateCodigoSIE} className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-4">
               <input
@@ -656,7 +678,7 @@ export function EtiquetadoView({
                 disabled={!canWrite || newCodigoSIE.trim() === "" || codigoItemIdValue.trim() === ""}
                 className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60"
               >
-                Registrar código
+                Registrar cÃ³digo
               </button>
             </form>
 
@@ -674,14 +696,14 @@ export function EtiquetadoView({
                   {codigosSIEList.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-3 py-3 text-sm text-stone-600">
-                        No hay códigos SIE registrados.
+                        No hay cÃ³digos SIE registrados.
                       </td>
                     </tr>
                   ) : (
                     codigosSIEList.map((codigo) => (
-                      <tr key={`sie-row-${codigo.codigo}`} className="bg-white">
+                      <tr key={`sie-row-${codigo.codigoSIEId}`} className="bg-white">
                         <td className="border-b border-stone-100 px-3 py-2 font-semibold text-stone-900">
-                          {editingCodigoOriginal === codigo.codigo ? (
+                          {editingCodigoSIEId === codigo.codigoSIEId ? (
                             <input
                               value={editCodigoSIE}
                               onChange={(event) => setEditCodigoSIE(event.target.value.toUpperCase())}
@@ -694,7 +716,7 @@ export function EtiquetadoView({
                           )}
                         </td>
                         <td className="border-b border-stone-100 px-3 py-2 text-stone-700">
-                          {editingCodigoOriginal === codigo.codigo ? (
+                          {editingCodigoSIEId === codigo.codigoSIEId ? (
                             <input
                               value={editCodigoTalla}
                               onChange={(event) => setEditCodigoTalla(event.target.value.toUpperCase())}
@@ -702,11 +724,11 @@ export function EtiquetadoView({
                               className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                             />
                           ) : (
-                            (codigo.talla ?? "-")
+                            codigo.talla
                           )}
                         </td>
                         <td className="border-b border-stone-100 px-3 py-2 text-stone-700">
-                          {editingCodigoOriginal === codigo.codigo ? (
+                          {editingCodigoSIEId === codigo.codigoSIEId ? (
                             <select
                               value={editCodigoItemId}
                               onChange={(event) => setEditCodigoItemId(event.target.value)}
@@ -714,7 +736,7 @@ export function EtiquetadoView({
                               className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                             >
                               {itemOptions.map((item) => (
-                                <option key={`sie-item-edit-${codigo.codigo}-${item.itemId}`} value={item.itemId}>
+                                <option key={`sie-item-edit-${codigo.codigoSIEId}-${item.itemId}`} value={item.itemId}>
                                   {item.nombre}
                                 </option>
                               ))}
@@ -725,7 +747,7 @@ export function EtiquetadoView({
                         </td>
                         <td className="border-b border-stone-100 px-3 py-2 text-right">
                           {canWrite ? (
-                            editingCodigoOriginal === codigo.codigo ? (
+                            editingCodigoSIEId === codigo.codigoSIEId ? (
                               <div className="flex justify-end gap-2">
                                 <button
                                   type="button"
@@ -754,11 +776,11 @@ export function EtiquetadoView({
                                   onClick={() => startEditCodigoSIE(codigo)}
                                   className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100"
                                 >
-                                  Editar código
+                                  Editar cÃ³digo
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => confirmDeleteCodigoSIE(codigo.codigo)}
+                                  onClick={() => confirmDeleteCodigoSIE(codigo.codigoSIEId, codigo.codigo)}
                                   className="rounded bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100"
                                 >
                                   Borrar
@@ -799,15 +821,25 @@ export function EtiquetadoView({
 
           <div className="flex flex-wrap items-end justify-between gap-2">
             <h3 className="text-sm font-semibold text-stone-900">Cajas registradas</h3>
-            <label className="w-full max-w-xs text-xs text-stone-700">
-              Buscar caja
-              <input
-                value={cajaFiltro}
-                onChange={(event) => setCajaFiltro(event.target.value)}
-                placeholder="Código, equipo, nombre de estantería o código SIE"
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
+            <div className="flex w-full flex-wrap items-end justify-end gap-2 md:w-auto">
+              <button
+                type="button"
+                onClick={onPrintListadoCajas}
+                disabled={cajasList.length === 0}
+                className="rounded border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-60"
+              >
+                Imprimir listado
+              </button>
+              <label className="w-full max-w-xs text-xs text-stone-700">
+                Buscar caja
+                <input
+                  value={cajaFiltro}
+                  onChange={(event) => setCajaFiltro(event.target.value)}
+                  placeholder="CÃ³digo, equipo, nombre de estanterÃ­a o cÃ³digo SIE"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
           </div>
 
           {canWrite && showCreateCajaForm ? (
@@ -829,10 +861,12 @@ export function EtiquetadoView({
                   <input
                     type="number"
                     min={0}
-                    value={cantidadCajaCalculada > 0 ? String(cantidadCajaCalculada) : ""}
+                    value={String(cantidadCajaCalculada)}
                     readOnly
                     tabIndex={-1}
-                    className="mt-1 w-full rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-sm text-stone-700"
+                    aria-readonly="true"
+                    title="Se calcula automaticamente segun los equipos seleccionados."
+                    className="pointer-events-none mt-1 w-full rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-700 shadow-inner focus:border-stone-300 focus:shadow-none focus:translate-y-0"
                   />
                 </label>
                 <label className="text-xs text-stone-700">
@@ -843,7 +877,7 @@ export function EtiquetadoView({
                     disabled={!canWrite || estanteriaOptions.length === 0}
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   >
-                    {estanteriaOptions.length === 0 ? <option value="">Sin estanterías</option> : null}
+                    {estanteriaOptions.length === 0 ? <option value="">Sin estanterÃ­as</option> : null}
                     {estanteriaOptions.map((estanteria) => (
                       <option key={`caja-estanteria-${estanteria.value}`} value={estanteria.value}>
                         {estanteria.label}
@@ -914,19 +948,19 @@ export function EtiquetadoView({
 
                 <div className="rounded-xl border border-stone-200 bg-white p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
-                    Códigos SIE por equipo
+                    CÃ³digos SIE por equipo
                   </p>
                   <p className="text-[11px] text-stone-600">
-                    Para cada equipo, selecciona códigos o deja activo &quot;Sin código&quot;.
+                    Para cada equipo, selecciona cÃ³digos o deja activo &quot;Sin cÃ³digo&quot;.
                   </p>
                   {selectedCajaItems.length === 0 ? (
-                    <p className="mt-2 text-sm text-stone-600">Selecciona equipos para configurar códigos.</p>
+                    <p className="mt-2 text-sm text-stone-600">Selecciona equipos para configurar cÃ³digos.</p>
                   ) : (
                     <div className="mt-2 max-h-80 space-y-2 overflow-y-auto pr-1">
                       {selectedCajaItems.map((item) => {
                         const entry = codigosPorItemSeleccionadoMap.get(item.itemId);
                         const codigos = entry?.codigos ?? [];
-                        const selectedCodesForItem = codigos.filter((codigo) => selectedCajaCodigosSet.has(codigo.codigo));
+                        const selectedCodesForItem = codigos.filter((codigo) => selectedCajaCodigosSet.has(codigo.codigoSIEId));
                         const hasSelectedCodes = selectedCodesForItem.length > 0;
                         return (
                           <div key={`caja-item-codigos-${item.itemId}`} className="rounded-lg border border-stone-200 bg-stone-50 p-2.5">
@@ -954,7 +988,7 @@ export function EtiquetadoView({
                             </div>
 
                             {codigos.length === 0 ? (
-                              <p className="mt-2 text-xs text-stone-600">Sin códigos registrados. Quedará S/Código.</p>
+                              <p className="mt-2 text-xs text-stone-600">Sin cÃ³digos registrados. QuedarÃ¡ S/CÃ³digo.</p>
                             ) : (
                               <div className="mt-2 flex flex-wrap gap-2">
                                 <button
@@ -966,15 +1000,15 @@ export function EtiquetadoView({
                                       : "border-emerald-300 bg-emerald-50 text-emerald-800"
                                   }`}
                                 >
-                                  Sin código
+                                  Sin cÃ³digo
                                 </button>
                                 {codigos.map((codigo) => {
-                                  const checked = selectedCajaCodigosSet.has(codigo.codigo);
+                                  const checked = selectedCajaCodigosSet.has(codigo.codigoSIEId);
                                   return (
                                     <button
-                                      key={`caja-codigo-${item.itemId}-${codigo.codigo}`}
+                                      key={`caja-codigo-${item.itemId}-${codigo.codigoSIEId}`}
                                       type="button"
-                                      onClick={() => toggleCodigoSIEEnCaja(codigo.codigo)}
+                                      onClick={() => toggleCodigoSIEEnCaja(codigo.codigoSIEId)}
                                       className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
                                         checked
                                           ? "border-blue-300 bg-blue-50 text-blue-900"
@@ -982,7 +1016,7 @@ export function EtiquetadoView({
                                       }`}
                                     >
                                       {codigo.codigo}
-                                      {codigo.talla ? ` (${codigo.talla})` : ""}
+                                      {codigo.talla !== "-" ? ` (${codigo.talla})` : ""}
                                     </button>
                                   );
                                 })}
@@ -1024,11 +1058,11 @@ export function EtiquetadoView({
                     <div>
                       <p className="text-sm font-semibold text-stone-900">Caja {caja.codigoDepositoGeneral}</p>
                       <p className="text-xs text-stone-600">
-                        {caja.itemNombres.length > 0 ? caja.itemNombres.join(", ") : "Sin equipos asociados por código SIE"}
+                        {caja.itemNombres.length > 0 ? caja.itemNombres.join(", ") : "Sin equipos asociados por cÃ³digo SIE"}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {renderTag(`Cantidad ${caja.cantidad}`, "accent")}
-                        {renderTag(estanteriaLabelByCode.get(caja.estanteria) ?? `Estantería ${caja.estanteria}`)}
+                        {renderTag(estanteriaLabelByCode.get(caja.estanteria) ?? `EstanterÃ­a ${caja.estanteria}`)}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -1059,7 +1093,7 @@ export function EtiquetadoView({
                   </div>
                   <div className="mt-2 space-y-1 text-xs text-stone-700">
                     <p>
-                      <span className="font-semibold">Equipos / Códigos:</span>{" "}
+                      <span className="font-semibold">Equipos / CÃ³digos:</span>{" "}
                       {caja.equipos.length === 0
                         ? "-"
                         : caja.equipos
@@ -1068,7 +1102,7 @@ export function EtiquetadoView({
                                 return `${equipo.itemNombre} x${equipo.cantidad}: S/Codigo`;
                               }
                               const codigosEquipo = equipo.codigosSIE
-                                .map((codigo) => `${codigo.codigo}${codigo.talla ? ` (${codigo.talla})` : ""}`)
+                                .map((codigo) => `${codigo.codigo}${codigo.talla !== "-" ? ` (${codigo.talla})` : ""}`)
                                 .join(", ");
                               return `${equipo.itemNombre} x${equipo.cantidad}: ${codigosEquipo}`;
                             })

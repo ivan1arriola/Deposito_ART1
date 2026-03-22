@@ -10,7 +10,7 @@ type CreateCajaPayload = {
     itemId?: string | number;
     cantidad?: string | number;
   }>;
-  codigosSIE?: string[];
+  codigosSIEIds?: Array<string | number>;
 };
 
 type ParsedCajaItem = {
@@ -37,8 +37,6 @@ function hasEtiquetadoDelegates() {
   );
 }
 
-const SIE_CODE_REGEX = /^(?:\d{8}|[A-Z]{3}\d{2})$/;
-
 function parseCodigoDepositoGeneral(value: unknown) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 99999999) return null;
@@ -63,10 +61,10 @@ function normalizeEstanteria(value: unknown) {
   return normalized;
 }
 
-function normalizeCodigoSIE(value: unknown) {
-  const normalized = String(value ?? "").trim().toUpperCase();
-  if (!SIE_CODE_REGEX.test(normalized)) return null;
-  return normalized;
+function parseCodigoSIEId(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!/^\d+$/.test(raw)) return null;
+  return BigInt(raw);
 }
 
 function parseCajaItems(value: unknown): ParsedCajaItem[] | null {
@@ -83,6 +81,16 @@ function parseCajaItems(value: unknown): ParsedCajaItem[] | null {
   }
 
   return parsed;
+}
+
+function parseCodigoSIEIds(value: unknown): bigint[] | null {
+  if (typeof value === "undefined") return [];
+  if (!Array.isArray(value)) return null;
+
+  const parsed = value.map(parseCodigoSIEId);
+  if (parsed.some((entry) => entry === null)) return null;
+
+  return Array.from(new Set((parsed as bigint[]).map((entry) => entry.toString()))).map((entry) => BigInt(entry));
 }
 
 export async function POST(request: Request) {
@@ -117,16 +125,10 @@ export async function POST(request: Request) {
   }));
   const itemIds = items.map((entry) => entry.itemId);
   const cantidadTotal = items.reduce((sum, entry) => sum + entry.cantidad, 0);
-
-  const rawCodigosSIE = Array.isArray(body.codigosSIE) ? body.codigosSIE : [];
-  const codigosSIENormalizados = rawCodigosSIE.map(normalizeCodigoSIE);
-  if (codigosSIENormalizados.some((codigo) => codigo === null)) {
-    return NextResponse.json(
-      { error: "Codigos SIE invalidos. Formatos validos: 8 digitos o 3 letras y 2 numeros." },
-      { status: 400 },
-    );
+  const codigosSIEIds = parseCodigoSIEIds(body.codigosSIEIds);
+  if (codigosSIEIds === null) {
+    return NextResponse.json({ error: "Payload invalido. codigosSIEIds debe ser una lista de IDs numericos." }, { status: 400 });
   }
-  const codigosSIE = Array.from(new Set(codigosSIENormalizados as string[]));
 
   if (codigoDepositoGeneral === null || !estanteria || itemIds.length === 0 || cantidadTotal <= 0) {
     return NextResponse.json(
@@ -156,11 +158,18 @@ export async function POST(request: Request) {
   const itemIdSet = new Set(itemIds.map((itemId) => itemId.toString()));
   const itemNameById = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
   const itemNombres = Array.from(itemNameById.values()).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  let codigosSIEDetalle: Array<{
+    codigoSIEId: string;
+    codigo: string;
+    talla: string;
+    itemId: string;
+    itemNombre: string;
+  }> = [];
 
-  if (codigosSIE.length > 0) {
+  if (codigosSIEIds.length > 0) {
     const codesFound = await prisma.itemCodigoSIE.findMany({
       where: {
-        codigo: { in: codigosSIE },
+        itemCodigoSIEId: { in: codigosSIEIds },
       },
       include: {
         item: {
@@ -171,25 +180,41 @@ export async function POST(request: Request) {
         },
       },
     });
-    const foundSet = new Set(codesFound.map((entry) => entry.codigo.toUpperCase()));
-    const missing = codigosSIE.filter((codigo) => !foundSet.has(codigo));
+    const foundSet = new Set(codesFound.map((entry) => entry.itemCodigoSIEId.toString()));
+    const missing = codigosSIEIds
+      .map((entry) => entry.toString())
+      .filter((codigoSIEId) => !foundSet.has(codigoSIEId));
     if (missing.length > 0) {
       return NextResponse.json(
-        { error: `Los siguientes codigos SIE no existen: ${missing.join(", ")}` },
+        { error: `Los siguientes IDs de codigos SIE no existen: ${missing.join(", ")}` },
         { status: 400 },
       );
     }
 
+    const codeById = new Map(codesFound.map((entry) => [entry.itemCodigoSIEId.toString(), entry]));
+    codigosSIEDetalle = codigosSIEIds
+      .map((entry) => codeById.get(entry.toString()))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+      .map((entry) => ({
+        codigoSIEId: entry.itemCodigoSIEId.toString(),
+        codigo: entry.codigo,
+        talla: entry.talla,
+        itemId: entry.item.itemId.toString(),
+        itemNombre: entry.item.nombre,
+      }));
+
     const codigosFueraDeEquipos = Array.from(
       new Set(
-        codesFound
-          .filter((entry) => !itemIdSet.has(entry.item.itemId.toString()))
-          .map((entry) => entry.codigo),
+        codigosSIEDetalle
+          .filter((entry) => !itemIdSet.has(entry.itemId))
+          .map((entry) => `${entry.codigo} (${entry.itemNombre}, talla ${entry.talla})`),
       ),
     );
     if (codigosFueraDeEquipos.length > 0) {
       return NextResponse.json(
-        { error: `Estos codigos SIE no pertenecen a los equipos seleccionados: ${codigosFueraDeEquipos.join(", ")}` },
+        {
+          error: `Estos codigos SIE no pertenecen a los equipos seleccionados: ${codigosFueraDeEquipos.join(", ")}`,
+        },
         { status: 400 },
       );
     }
@@ -213,11 +238,11 @@ export async function POST(request: Request) {
         })),
       });
 
-      if (codigosSIE.length > 0) {
+      if (codigosSIEIds.length > 0) {
         await tx.cajaItemCodigoSIE.createMany({
-          data: codigosSIE.map((codigoSIE) => ({
+          data: codigosSIEIds.map((itemCodigoSIEId) => ({
             codigoDepositoGeneral,
-            codigoSIE,
+            itemCodigoSIEId,
           })),
         });
       }
@@ -237,7 +262,7 @@ export async function POST(request: Request) {
         itemNombres,
         cantidad: cantidadTotal,
         estanteria,
-        codigosSIE,
+        codigosSIE: codigosSIEDetalle,
       },
     });
 
@@ -245,6 +270,15 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
       return NextResponse.json({ error: "Ya existe una caja con ese codigo de deposito general." }, { status: 409 });
+    }
+    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2022") {
+      return NextResponse.json(
+        {
+          error:
+            "La base de datos de etiquetado esta desactualizada. Ejecuta: npx prisma db execute --schema prisma/schema.prisma --file prisma/upgrade-sie-duplicate-support.sql",
+        },
+        { status: 500 },
+      );
     }
     return NextResponse.json({ error: "No se pudo crear la caja." }, { status: 500 });
   }

@@ -22,6 +22,14 @@ export type EtiquetaCajaPrintData = {
   tallas: string[];
 };
 
+export type CajaListadoPrintData = {
+  piso: string;
+  estanteria: string;
+  codigoDepositoGeneral: number;
+  contenido: string;
+  cantidad: number;
+};
+
 function normalizeTallaForSort(value: string | null) {
   return (value ?? "").trim().toUpperCase();
 }
@@ -93,7 +101,7 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
       new Set(
         codigosSIE
           .map((codigo) => codigo.talla?.trim())
-          .filter((talla): talla is string => typeof talla === "string" && talla.length > 0),
+          .filter((talla): talla is string => typeof talla === "string" && talla.length > 0 && talla !== "-"),
       ),
     ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
@@ -146,4 +154,64 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
       tallas,
     };
   });
+}
+
+function formatContenidoForListado(caja: EtiquetaCajaPrintData) {
+  if (caja.equipos.length === 0) return "-";
+  return caja.equipos
+    .map((equipo) => `${equipo.itemNombre}${equipo.cantidad > 1 ? ` x${equipo.cantidad}` : ""}`)
+    .join(", ");
+}
+
+function formatPisoForListado(pisos: number[]) {
+  if (pisos.length === 0) return "-";
+  if (pisos.length === 1) return String(pisos[0]);
+  return pisos.join("/");
+}
+
+export async function getListadoCajasPrintData(): Promise<CajaListadoPrintData[]> {
+  const [cajas, estanterias] = await Promise.all([
+    getEtiquetasCajaData(),
+    prisma.estanteria.findMany({
+      select: {
+        codigo: true,
+        piso: true,
+      },
+      orderBy: [{ piso: "asc" }, { codigo: "asc" }],
+    }),
+  ]);
+
+  const pisosByEstanteria = new Map<string, number[]>();
+  for (const estanteria of estanterias) {
+    const current = pisosByEstanteria.get(estanteria.codigo) ?? [];
+    current.push(estanteria.piso);
+    pisosByEstanteria.set(estanteria.codigo, current);
+  }
+
+  return cajas
+    .map((caja) => {
+      const pisos = pisosByEstanteria.get(caja.estanteria) ?? [];
+      const pisoPrincipal = pisos.length > 0 ? pisos[0] : Number.POSITIVE_INFINITY;
+      return {
+        piso: formatPisoForListado(pisos),
+        estanteria: caja.estanteria,
+        codigoDepositoGeneral: caja.codigoDepositoGeneral,
+        contenido: formatContenidoForListado(caja),
+        cantidad: caja.cantidad,
+        pisoPrincipal,
+      };
+    })
+    .sort((a, b) => {
+      if (a.pisoPrincipal !== b.pisoPrincipal) return a.pisoPrincipal - b.pisoPrincipal;
+      const byEstanteria = a.estanteria.localeCompare(b.estanteria, "es", { sensitivity: "base" });
+      if (byEstanteria !== 0) return byEstanteria;
+      return a.codigoDepositoGeneral - b.codigoDepositoGeneral;
+    })
+    .map((row) => ({
+      piso: row.piso,
+      estanteria: row.estanteria,
+      codigoDepositoGeneral: row.codigoDepositoGeneral,
+      contenido: row.contenido,
+      cantidad: row.cantidad,
+    }));
 }

@@ -21,8 +21,13 @@ function hasEtiquetadoDelegates() {
   );
 }
 
-function normalizeTallaForSort(value: string | null) {
+function normalizeTallaForSort(value: string | null | undefined) {
   return (value ?? "").trim().toUpperCase();
+}
+
+function normalizeTalla(value: string | null | undefined) {
+  const normalized = (value ?? "").trim().toUpperCase();
+  return normalized.length > 0 ? normalized : "-";
 }
 
 export async function GET(request: Request) {
@@ -64,6 +69,8 @@ export async function GET(request: Request) {
       orderBy: [
         { item: { nombre: "asc" } },
         { codigo: "asc" },
+        { talla: "asc" },
+        { itemCodigoSIEId: "asc" },
       ],
     }),
     prisma.caja.findMany({
@@ -82,6 +89,7 @@ export async function GET(request: Request) {
           include: {
             itemCodigoSIE: {
               select: {
+                itemCodigoSIEId: true,
                 codigo: true,
                 talla: true,
                 item: {
@@ -112,16 +120,18 @@ export async function GET(request: Request) {
       etiqueta: `${estanteria.codigo} Piso ${estanteria.piso}`,
     })),
     codigosSIE: codigosSIE.map((codigoSIE) => ({
+      codigoSIEId: codigoSIE.itemCodigoSIEId.toString(),
       codigo: codigoSIE.codigo,
-      talla: codigoSIE.talla,
+      talla: normalizeTalla(codigoSIE.talla),
       itemId: codigoSIE.itemId.toString(),
       itemNombre: codigoSIE.item.nombre,
     })),
     cajas: cajas.map((caja) => {
       const codigosConEquipo = caja.codigosSIE
         .map((codigo) => ({
+          codigoSIEId: codigo.itemCodigoSIE.itemCodigoSIEId.toString(),
           codigo: codigo.itemCodigoSIE.codigo,
-          talla: codigo.itemCodigoSIE.talla,
+          talla: normalizeTalla(codigo.itemCodigoSIE.talla),
           itemId: codigo.itemCodigoSIE.item.itemId.toString(),
           itemNombre: codigo.itemCodigoSIE.item.nombre,
         }))
@@ -134,6 +144,7 @@ export async function GET(request: Request) {
         });
 
       const codigos = codigosConEquipo.map((codigo) => ({
+        codigoSIEId: codigo.codigoSIEId,
         codigo: codigo.codigo,
         talla: codigo.talla,
       }));
@@ -141,8 +152,8 @@ export async function GET(request: Request) {
       const tallas = Array.from(
         new Set(
           codigos
-            .map((codigo) => codigo.talla?.trim())
-            .filter((talla): talla is string => typeof talla === "string" && talla.length > 0),
+            .map((codigo) => codigo.talla.trim())
+            .filter((talla) => talla.length > 0 && talla !== "-"),
         ),
       ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
@@ -171,7 +182,11 @@ export async function GET(request: Request) {
       const equipos = equiposBase.map((equipo) => {
         const codigosSIEEquipo = codigosConEquipo
           .filter((codigo) => codigo.itemId === equipo.itemId)
-          .map((codigo) => ({ codigo: codigo.codigo, talla: codigo.talla }));
+          .map((codigo) => ({
+            codigoSIEId: codigo.codigoSIEId,
+            codigo: codigo.codigo,
+            talla: codigo.talla,
+          }));
 
         return {
           itemId: equipo.itemId,

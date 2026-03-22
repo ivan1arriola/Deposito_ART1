@@ -58,6 +58,7 @@ export default async function EtiquetasCajasPage({
             <EtiquetaCajaPrintSheet
               key={`etiqueta-caja-${caja.codigoDepositoGeneral}`}
               caja={caja}
+              orientacion={orientacion}
             />
           ))}
         </main>

@@ -38,11 +38,18 @@ function normalizeCodigoSIEInput(value: unknown) {
 
 function normalizeTalla(value: unknown) {
   const normalized = String(value ?? "").trim().toUpperCase();
-  return normalized.length > 0 ? normalized : null;
+  return normalized.length > 0 ? normalized : "-";
 }
 
 function parseItemId(value: unknown) {
   const raw = String(value ?? "").trim();
+  if (!/^\d+$/.test(raw)) return null;
+  return BigInt(raw);
+}
+
+function parseCodigoSIEId(value: string | null) {
+  if (!value) return null;
+  const raw = value.trim();
   if (!/^\d+$/.test(raw)) return null;
   return BigInt(raw);
 }
@@ -64,6 +71,12 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
     return NextResponse.json({ error: "Codigo SIE invalido." }, { status: 400 });
   }
 
+  const url = new URL(request.url);
+  const codigoSIEId = parseCodigoSIEId(url.searchParams.get("id"));
+  if (codigoSIEId === null) {
+    return NextResponse.json({ error: "Falta id del codigo SIE a editar." }, { status: 400 });
+  }
+
   const body = (await request.json()) as UpdateCodigoSIEPayload;
   const codigo = normalizeCodigoSIEInput(body.codigo);
   const talla = normalizeTalla(body.talla);
@@ -78,7 +91,7 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
 
   const [existing, item] = await Promise.all([
     prisma.itemCodigoSIE.findUnique({
-      where: { codigo: originalCodigo },
+      where: { itemCodigoSIEId: codigoSIEId },
       include: {
         item: {
           select: { itemId: true, nombre: true },
@@ -94,12 +107,15 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
   if (!existing) {
     return NextResponse.json({ error: "Codigo SIE no encontrado." }, { status: 404 });
   }
+  if (existing.codigo !== originalCodigo) {
+    return NextResponse.json({ error: "El codigo SIE indicado no coincide con el registro seleccionado." }, { status: 409 });
+  }
   if (!item) {
     return NextResponse.json({ error: "El item seleccionado no existe." }, { status: 400 });
   }
 
   const cajasVinculadas = await prisma.cajaItemCodigoSIE.count({
-    where: { codigoSIE: existing.codigo },
+    where: { itemCodigoSIEId: existing.itemCodigoSIEId },
   });
 
   if (existing.itemId.toString() !== itemId.toString() && cajasVinculadas > 0) {
@@ -110,89 +126,23 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
   }
 
   try {
-    if (originalCodigo === codigo) {
-      const updated = await prisma.itemCodigoSIE.update({
-        where: { codigo: originalCodigo },
-        data: { talla, itemId },
-        include: {
-          item: {
-            select: { itemId: true, nombre: true },
-          },
+    const updated = await prisma.itemCodigoSIE.update({
+      where: { itemCodigoSIEId: existing.itemCodigoSIEId },
+      data: { codigo, talla, itemId },
+      include: {
+        item: {
+          select: { itemId: true, nombre: true },
         },
-      });
-
-      await logAudit({
-        usuarioId: auth.user.usuarioId,
-        accion: "UPDATE",
-        entidad: "CODIGO_SIE",
-        entidadId: updated.codigo,
-        detalle: {
-          codigoAntes: existing.codigo,
-          codigoDespues: updated.codigo,
-          tallaAntes: existing.talla,
-          tallaDespues: updated.talla,
-          itemIdAntes: existing.item.itemId.toString(),
-          itemIdDespues: updated.item.itemId.toString(),
-          itemNombreAntes: existing.item.nombre,
-          itemNombreDespues: updated.item.nombre,
-          cajasVinculadas,
-        },
-      });
-
-      return NextResponse.json({
-        codigo: updated.codigo,
-        talla: updated.talla,
-        itemId: updated.item.itemId.toString(),
-        itemNombre: updated.item.nombre,
-      });
-    }
-
-    const targetExists = await prisma.itemCodigoSIE.findUnique({
-      where: { codigo },
-      select: { codigo: true },
+      },
     });
-    if (targetExists) {
-      return NextResponse.json({ error: "Ese codigo SIE ya existe." }, { status: 409 });
-    }
-
-    const updated = await prisma.$transaction(async (tx) => {
-      await tx.itemCodigoSIE.create({
-        data: {
-          codigo,
-          talla,
-          itemId,
-        },
-      });
-
-      await tx.cajaItemCodigoSIE.updateMany({
-        where: { codigoSIE: originalCodigo },
-        data: { codigoSIE: codigo },
-      });
-
-      await tx.itemCodigoSIE.delete({
-        where: { codigo: originalCodigo },
-      });
-
-      return tx.itemCodigoSIE.findUnique({
-        where: { codigo },
-        include: {
-          item: {
-            select: { itemId: true, nombre: true },
-          },
-        },
-      });
-    });
-
-    if (!updated) {
-      return NextResponse.json({ error: "No se pudo actualizar el codigo SIE." }, { status: 500 });
-    }
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
       accion: "UPDATE",
       entidad: "CODIGO_SIE",
-      entidadId: updated.codigo,
+      entidadId: updated.itemCodigoSIEId.toString(),
       detalle: {
+        codigoSIEId: updated.itemCodigoSIEId.toString(),
         codigoAntes: existing.codigo,
         codigoDespues: updated.codigo,
         tallaAntes: existing.talla,
@@ -201,11 +151,12 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
         itemIdDespues: updated.item.itemId.toString(),
         itemNombreAntes: existing.item.nombre,
         itemNombreDespues: updated.item.nombre,
-        cajasVinculadasMigradas: cajasVinculadas,
+        cajasVinculadas,
       },
     });
 
     return NextResponse.json({
+      codigoSIEId: updated.itemCodigoSIEId.toString(),
       codigo: updated.codigo,
       talla: updated.talla,
       itemId: updated.item.itemId.toString(),
@@ -213,7 +164,7 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
     });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-      return NextResponse.json({ error: "Ese codigo SIE ya existe." }, { status: 409 });
+      return NextResponse.json({ error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e item." }, { status: 409 });
     }
 
     return NextResponse.json({ error: "No se pudo actualizar el codigo SIE." }, { status: 500 });
@@ -237,8 +188,14 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
     return NextResponse.json({ error: "Codigo SIE invalido." }, { status: 400 });
   }
 
+  const url = new URL(request.url);
+  const codigoSIEId = parseCodigoSIEId(url.searchParams.get("id"));
+  if (codigoSIEId === null) {
+    return NextResponse.json({ error: "Falta id del codigo SIE a eliminar." }, { status: 400 });
+  }
+
   const existing = await prisma.itemCodigoSIE.findUnique({
-    where: { codigo },
+    where: { itemCodigoSIEId: codigoSIEId },
     include: {
       item: {
         select: { itemId: true, nombre: true },
@@ -248,17 +205,20 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
   if (!existing) {
     return NextResponse.json({ error: "Codigo SIE no encontrado." }, { status: 404 });
   }
+  if (existing.codigo !== codigo) {
+    return NextResponse.json({ error: "El codigo SIE indicado no coincide con el registro seleccionado." }, { status: 409 });
+  }
 
   const cajasVinculadas = await prisma.cajaItemCodigoSIE.count({
     where: {
-      codigoSIE: existing.codigo,
+      itemCodigoSIEId: existing.itemCodigoSIEId,
     },
   });
 
   try {
     await prisma.itemCodigoSIE.delete({
       where: {
-        codigo: existing.codigo,
+        itemCodigoSIEId: existing.itemCodigoSIEId,
       },
     });
 
@@ -266,8 +226,9 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
       usuarioId: auth.user.usuarioId,
       accion: "DELETE",
       entidad: "CODIGO_SIE",
-      entidadId: existing.codigo,
+      entidadId: existing.itemCodigoSIEId.toString(),
       detalle: {
+        codigoSIEId: existing.itemCodigoSIEId.toString(),
         codigo: existing.codigo,
         talla: existing.talla,
         itemId: existing.item.itemId.toString(),

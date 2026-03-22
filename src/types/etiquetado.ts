@@ -11,15 +11,17 @@ export type EtiquetadoEstanteria = {
 };
 
 export type EtiquetadoCodigoSIE = {
+  codigoSIEId: string;
   codigo: string;
-  talla: string | null;
+  talla: string;
   itemId: string;
   itemNombre: string;
 };
 
 export type EtiquetadoCajaCodigoSIE = {
+  codigoSIEId: string;
   codigo: string;
-  talla: string | null;
+  talla: string;
 };
 
 export type EtiquetadoCajaEquipo = {

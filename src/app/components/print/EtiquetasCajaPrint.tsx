@@ -6,8 +6,14 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
   const pageOrientation = orientacion === "horizontal" ? "landscape" : "portrait";
   const pageWidth = orientacion === "horizontal" ? "297mm" : "210mm";
   const pageHeight = orientacion === "horizontal" ? "210mm" : "297mm";
-  const outerPadding = orientacion === "horizontal" ? "12mm 10mm" : "14mm 10mm";
-  const itemFontSize = orientacion === "horizontal" ? "62px" : "58px";
+  const sheetPadding = orientacion === "horizontal" ? "8mm 7mm" : "9mm 7mm";
+  const contentColumns = orientacion === "horizontal" ? "repeat(3, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))";
+  const identificadorSize = orientacion === "horizontal" ? "64px" : "52px";
+  const metaValueSize = orientacion === "horizontal" ? "48px" : "42px";
+  const equipoNameSize = orientacion === "horizontal" ? "24px" : "20px";
+  const equipoCantidadSize = orientacion === "horizontal" ? "30px" : "26px";
+  const codigoFontSize = orientacion === "horizontal" ? "14px" : "13px";
+  const rowGap = orientacion === "horizontal" ? "4mm" : "3.2mm";
 
   return `
     * {
@@ -33,7 +39,7 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
       width: ${pageWidth};
       min-height: ${pageHeight};
       margin: 0 auto;
-      padding: ${outerPadding};
+      padding: ${sheetPadding};
       display: flex;
       align-items: stretch;
       justify-content: center;
@@ -48,105 +54,288 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
     }
 
     .etiqueta-frame {
+      position: relative;
       width: 100%;
-      border: 1.8mm double #494949;
-      padding: 4.5mm;
+      border: 1.2mm solid #2e2e2e;
+      padding: 4mm;
+      background: linear-gradient(145deg, #ffffff 0%, #f7f5eb 100%);
+      overflow: hidden;
+    }
+
+    .etiqueta-frame::before {
+      content: "";
+      position: absolute;
+      inset: 1.6mm;
+      border: 0.4mm solid #8d845b;
+      pointer-events: none;
+    }
+
+    .etiqueta-frame::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 0 0, #8d845b 0 1.2mm, transparent 1.2mm),
+        radial-gradient(circle at 100% 0, #8d845b 0 1.2mm, transparent 1.2mm),
+        radial-gradient(circle at 0 100%, #8d845b 0 1.2mm, transparent 1.2mm),
+        radial-gradient(circle at 100% 100%, #8d845b 0 1.2mm, transparent 1.2mm);
+      background-repeat: no-repeat;
+      opacity: 0.85;
+      pointer-events: none;
     }
 
     .etiqueta-inner {
-      border: 0.8mm solid #666;
-      padding: 6mm 7mm 7mm;
+      position: relative;
+      z-index: 1;
+      border: 0.5mm solid #7a7a7a;
+      padding: 5.5mm 6mm;
       min-height: 100%;
       display: flex;
       flex-direction: column;
-      gap: 5mm;
+      gap: ${rowGap};
     }
 
-    .etiqueta-top {
+    .etiqueta-header {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: ${orientacion === "horizontal" ? "1.2fr 1fr" : "1fr"};
       gap: 4mm;
-      border-bottom: 0.7mm solid #8a8a8a;
+      border-bottom: 0.6mm solid #8a8a8a;
       padding-bottom: 4mm;
-      min-height: ${orientacion === "horizontal" ? "74mm" : "88mm"};
     }
 
-    .etiqueta-top-left {
-      border-right: 0.7mm solid #8a8a8a;
-      padding-right: 4mm;
+    .etiqueta-title-block {
       display: flex;
       flex-direction: column;
-      gap: 2.5mm;
-    }
-
-    .etiqueta-top-right {
-      padding-left: 3mm;
-      display: flex;
-      flex-direction: column;
-      gap: 2.5mm;
       justify-content: center;
+      gap: 2mm;
     }
 
-    .heading {
-      font-size: 18px;
+    .etiqueta-kicker {
+      font-size: 13px;
       font-weight: 700;
-      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .etiqueta-identificador {
+      font-size: ${identificadorSize};
+      font-weight: 700;
+      line-height: 0.95;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      word-break: break-word;
+    }
+
+    .etiqueta-meta-grid {
+      display: flex;
+      border-left: 0.5mm solid #8a8a8a;
+      padding-left: 4mm;
+      gap: 4mm;
+    }
+
+    .etiqueta-sheet--vertical .etiqueta-meta-grid {
+      border-left: 0;
+      border-top: 0.5mm solid #8a8a8a;
+      padding-left: 0;
+      padding-top: 3.4mm;
+    }
+
+    .etiqueta-meta-box {
+      flex: 1;
+      border: 0.45mm solid #8a8a8a;
+      background: rgb(255 255 255 / 86%);
+      padding: 2.4mm 2.8mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1.2mm;
+    }
+
+    .etiqueta-meta-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .etiqueta-meta-value {
+      font-size: ${metaValueSize};
+      font-weight: 700;
+      line-height: 0.94;
       text-transform: uppercase;
     }
 
-    .codigo-lines {
+    .etiqueta-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 0.45mm solid #8a8a8a;
+    }
+
+    .summary-box {
+      border-right: 0.45mm solid #8a8a8a;
+      padding: 2.5mm 2.7mm;
+      background: rgb(255 255 255 / 86%);
       display: flex;
       flex-direction: column;
-      gap: 1.8mm;
-      font-size: 42px;
-      line-height: 1.05;
-      font-weight: 700;
-      letter-spacing: 0.03em;
+      gap: 1mm;
     }
 
-    .codigo-line {
-      white-space: nowrap;
+    .summary-box:last-child {
+      border-right: 0;
     }
 
-    .item-value {
-      font-size: ${itemFontSize};
-      line-height: 0.98;
+    .summary-label {
+      font-size: 10px;
       font-weight: 700;
-      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .summary-value {
+      font-size: 32px;
+      line-height: 0.95;
+      font-weight: 700;
+    }
+
+    .etiqueta-content {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
+      gap: 2.4mm;
+    }
+
+    .etiqueta-content-title {
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-bottom: 0.45mm solid #8a8a8a;
+      padding-bottom: 2mm;
+    }
+
+    .etiqueta-equipos-grid {
+      display: grid;
+      grid-template-columns: ${contentColumns};
+      gap: 2.5mm;
+      min-height: 0;
+      align-content: start;
+      overflow: hidden;
+    }
+
+    .equipo-card {
+      border: 0.45mm solid #8a8a8a;
+      background: #fff;
+      padding: 2.2mm;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      gap: 2mm;
+    }
+
+    .equipo-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: start;
+      gap: 2.2mm;
+      padding-bottom: 2mm;
+      border-bottom: 0.35mm solid #b5b5b5;
+    }
+
+    .equipo-nombre {
+      font-size: ${equipoNameSize};
+      font-weight: 700;
+      line-height: 0.95;
       text-transform: uppercase;
       word-break: break-word;
     }
 
-    .detail-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      border-bottom: 0.6mm solid #b0b0b0;
-      padding-bottom: 2.8mm;
-      min-height: 16mm;
+    .equipo-cantidad {
+      border-left: 0.35mm solid #b5b5b5;
+      padding-left: 2.2mm;
+      text-align: right;
+      min-width: 19mm;
     }
 
-    .detail-row:last-child {
-      border-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    .detail-left {
-      border-right: 0.6mm solid #b0b0b0;
-      padding-right: 4mm;
-      font-size: 19px;
+    .equipo-cantidad-label {
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .equipo-cantidad-value {
+      font-size: ${equipoCantidadSize};
+      font-weight: 700;
+      line-height: 0.95;
+    }
+
+    .equipo-codigos {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: ${codigoFontSize};
+    }
+
+    .equipo-codigos th {
+      border-bottom: 0.35mm solid #b5b5b5;
+      background: #f0efe7;
+      text-align: left;
+      padding: 1.3mm 1.4mm;
+      text-transform: uppercase;
+      font-size: 10px;
       letter-spacing: 0.06em;
     }
 
-    .detail-right {
-      padding-left: 4mm;
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
+    .equipo-codigos td {
+      border-bottom: 0.3mm solid #d3d3d3;
+      padding: 1.1mm 1.4mm;
+      font-weight: 600;
+      line-height: 1.18;
       word-break: break-word;
+    }
+
+    .equipo-codigos tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .etiqueta-sin-equipos {
+      grid-column: 1 / -1;
+      border: 0.4mm dashed #9b9b9b;
+      padding: 6mm;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: #3b3b3b;
+    }
+
+    .etiqueta-footer {
+      border-top: 0.6mm solid #8a8a8a;
+      padding-top: 2.5mm;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 4mm;
+    }
+
+    .etiqueta-footer-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8mm;
+    }
+
+    .etiqueta-footer-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .etiqueta-footer-value {
+      font-size: 31px;
+      font-weight: 700;
+      line-height: 0.95;
+      text-transform: uppercase;
     }
 
     .etiqueta-empty {
@@ -180,9 +369,27 @@ export function EtiquetasCajaPrintStyles({ orientacion }: { orientacion: Etiquet
   return <style>{buildPrintStyles(orientacion)}</style>;
 }
 
-function formatCodigoLine(codigo: { codigo: string; talla: string | null }) {
-  if (!codigo.talla || codigo.talla.trim() === "") return codigo.codigo;
-  return `${codigo.codigo} ${codigo.talla}`;
+function normalizeTalla(value: string | null) {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : "-";
+}
+
+function buildCodigoRows(equipo: EtiquetaCajaPrintData["equipos"][number]) {
+  const rows = equipo.codigosSIE.map((codigo) => ({
+    codigo: codigo.codigo,
+    talla: normalizeTalla(codigo.talla),
+  }));
+
+  const expectedRows = Math.max(rows.length, equipo.cantidad);
+  while (rows.length < expectedRows) {
+    rows.push({ codigo: "S/Codigo", talla: "-" });
+  }
+
+  if (rows.length === 0) {
+    rows.push({ codigo: "-", talla: "-" });
+  }
+
+  return rows;
 }
 
 export function EtiquetasCajaPrintEmptyState({ message }: { message: string }) {
@@ -191,63 +398,99 @@ export function EtiquetasCajaPrintEmptyState({ message }: { message: string }) {
 
 export function EtiquetaCajaPrintSheet({
   caja,
+  orientacion,
 }: {
   caja: EtiquetaCajaPrintData;
+  orientacion: EtiquetaOrientacion;
 }) {
-  const codigos =
-    caja.equipos.length > 0
-      ? caja.equipos.flatMap((equipo) =>
-          equipo.codigosSIE.length > 0
-            ? equipo.codigosSIE
-            : [{ codigo: `S/Codigo (${equipo.itemNombre})`, talla: null }],
-        )
-      : caja.codigosSIE.length > 0
-        ? caja.codigosSIE
-        : [{ codigo: "-", talla: null }];
-  const talles = caja.tallas.length > 0 ? caja.tallas.join(", ") : "-";
-  const equipos = caja.equipos.length > 0 ? caja.equipos.map((equipo) => `${equipo.itemNombre} x${equipo.cantidad}`).join(", ") : "-";
-  const equiposLabel = caja.equipos.length === 1 ? "EQUIPO:" : "EQUIPOS:";
+  const totalEquipos = caja.equipos.length;
+  const totalUnidades = caja.equipos.reduce((acumulado, equipo) => acumulado + equipo.cantidad, 0);
+  const totalCodigosRegistrados = caja.equipos.reduce((acumulado, equipo) => acumulado + equipo.codigosSIE.length, 0);
 
   return (
-    <section className="etiqueta-sheet">
+    <section className={`etiqueta-sheet etiqueta-sheet--${orientacion}`}>
       <article className="etiqueta-frame">
         <div className="etiqueta-inner">
-          <div className="etiqueta-top">
-            <div className="etiqueta-top-left">
-              <p className="heading">COD. S.I.E:</p>
-              <div className="codigo-lines">
-                {codigos.map((codigo) => (
-                  <p key={`${caja.codigoDepositoGeneral}-${codigo.codigo}-${codigo.talla ?? "-"}`} className="codigo-line">
-                    {formatCodigoLine(codigo)}
-                  </p>
-                ))}
+          <header className="etiqueta-header">
+            <div className="etiqueta-title-block">
+              <p className="etiqueta-kicker">Etiqueta de caja</p>
+              <p className="etiqueta-identificador">Caja N.º {caja.codigoDepositoGeneral}</p>
+            </div>
+            <div className="etiqueta-meta-grid">
+              <div className="etiqueta-meta-box">
+                <p className="etiqueta-meta-label">Dep. Gral.</p>
+                <p className="etiqueta-meta-value">{caja.codigoDepositoGeneral}</p>
+              </div>
+              <div className="etiqueta-meta-box">
+                <p className="etiqueta-meta-label">Estante</p>
+                <p className="etiqueta-meta-value">{caja.estanteria}</p>
               </div>
             </div>
-            <div className="etiqueta-top-right">
-              <p className="heading">{equiposLabel}</p>
-              <p className="item-value">{equipos}</p>
+          </header>
+
+          <section className="etiqueta-summary">
+            <div className="summary-box">
+              <p className="summary-label">Equipos distintos</p>
+              <p className="summary-value">{totalEquipos}</p>
             </div>
-          </div>
+            <div className="summary-box">
+              <p className="summary-label">Unidades totales</p>
+              <p className="summary-value">{totalUnidades}</p>
+            </div>
+            <div className="summary-box">
+              <p className="summary-label">Codigos registrados</p>
+              <p className="summary-value">{totalCodigosRegistrados}</p>
+            </div>
+          </section>
 
-          <div className="detail-row">
-            <p className="detail-left">TALLES:</p>
-            <p className="detail-right">{talles}</p>
-          </div>
+          <section className="etiqueta-content">
+            <p className="etiqueta-content-title">Contenido de la caja</p>
+            <div className="etiqueta-equipos-grid">
+              {caja.equipos.length === 0 ? <p className="etiqueta-sin-equipos">Sin equipos registrados.</p> : null}
+              {caja.equipos.map((equipo, index) => {
+                const codigoRows = buildCodigoRows(equipo);
+                return (
+                  <article key={`${caja.codigoDepositoGeneral}-${equipo.itemId}-${index}`} className="equipo-card">
+                    <div className="equipo-head">
+                      <p className="equipo-nombre">{equipo.itemNombre}</p>
+                      <div className="equipo-cantidad">
+                        <p className="equipo-cantidad-label">Cantidad</p>
+                        <p className="equipo-cantidad-value">{equipo.cantidad}</p>
+                      </div>
+                    </div>
 
-          <div className="detail-row">
-            <p className="detail-left">CANTIDAD:</p>
-            <p className="detail-right">{caja.cantidad}</p>
-          </div>
+                    <table className="equipo-codigos">
+                      <thead>
+                        <tr>
+                          <th style={{ width: "68%" }}>Codigo</th>
+                          <th style={{ width: "32%" }}>Talle</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {codigoRows.map((row, rowIndex) => (
+                          <tr key={`${equipo.itemId}-${row.codigo}-${row.talla}-${rowIndex}`}>
+                            <td>{row.codigo}</td>
+                            <td>{row.talla}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
 
-          <div className="detail-row">
-            <p className="detail-left">DEP. GRAL:</p>
-            <p className="detail-right">{caja.codigoDepositoGeneral}</p>
-          </div>
-
-          <div className="detail-row">
-            <p className="detail-left">ESTANTERIA:</p>
-            <p className="detail-right">{caja.estanteria}</p>
-          </div>
+          <footer className="etiqueta-footer">
+            <div className="etiqueta-footer-block">
+              <p className="etiqueta-footer-label">Ubicacion corta</p>
+              <p className="etiqueta-footer-value">E{caja.estanteria}</p>
+            </div>
+            <div className="etiqueta-footer-block" style={{ textAlign: "right" }}>
+              <p className="etiqueta-footer-label">Destino</p>
+              <p className="etiqueta-footer-value">Deposito General</p>
+            </div>
+          </footer>
         </div>
       </article>
     </section>

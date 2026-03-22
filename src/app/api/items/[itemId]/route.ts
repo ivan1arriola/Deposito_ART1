@@ -189,7 +189,13 @@ async function buildDeleteImpactData(
       },
       codigosSIE: {
         where: { itemCodigoSIE: { itemId } },
-        select: { codigoSIE: true },
+        select: {
+          itemCodigoSIE: {
+            select: {
+              codigo: true,
+            },
+          },
+        },
       },
     },
     orderBy: [{ codigoDepositoGeneral: "asc" }],
@@ -236,7 +242,7 @@ async function buildDeleteImpactData(
 
   const normalizedCajas = cajasAfectadas.map((caja) => {
     const codigosSIERelacionados = Array.from(
-      new Set(caja.codigosSIE.map((codigo) => codigo.codigoSIE)),
+      new Set(caja.codigosSIE.map((codigo) => codigo.itemCodigoSIE.codigo)),
     ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
     const tieneRelacionEquipoDirecta = caja.items.length > 0;
     const quedaSinEquipos = tieneRelacionEquipoDirecta ? caja._count.items <= 1 : false;
