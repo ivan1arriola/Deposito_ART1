@@ -1028,15 +1028,15 @@ export default function Home() {
   }, [loadEtiquetadoData]);
 
   const createEtiquetadoItem = useCallback(
-    async (input: { nombre: string; activo: boolean }) => {
+    async (input: { nombre: string }) => {
       if (!canWrite) {
         setStatus("No tienes permisos para crear.");
         return;
       }
       try {
-        await createItemHandler(input.nombre, input.activo, {
+        await createItemHandler(input.nombre, false, {
           onSuccess: async () => {
-            setStatus("Equipo creado.");
+            setStatus("Equipo creado oculto de hoja de entrega.");
             await Promise.all([loadData(), loadEtiquetadoData()]);
           },
           onError: (message) => setStatus(message),
@@ -1139,7 +1139,6 @@ export default function Home() {
   const createEtiquetadoCaja = useCallback(
     async (input: {
       codigoDepositoGeneral: number;
-      itemId: string;
       cantidad: number;
       estanteria: string;
       codigosSIE: string[];

@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 
 type CreateCajaPayload = {
   codigoDepositoGeneral?: string | number;
-  itemId?: string | number;
   cantidad?: string | number;
   estanteria?: string;
   codigosSIE?: string[];
@@ -13,14 +12,12 @@ type CreateCajaPayload = {
 
 function hasEtiquetadoDelegates() {
   const candidate = prisma as typeof prisma & {
-    item?: unknown;
     estanteria?: unknown;
     itemCodigoSIE?: unknown;
     caja?: unknown;
     cajaItemCodigoSIE?: unknown;
   };
   return (
-    typeof candidate.item !== "undefined" &&
     typeof candidate.estanteria !== "undefined" &&
     typeof candidate.itemCodigoSIE !== "undefined" &&
     typeof candidate.caja !== "undefined" &&
@@ -32,12 +29,6 @@ function parseCodigoDepositoGeneral(value: unknown) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 99999999) return null;
   return parsed;
-}
-
-function parseItemId(value: unknown) {
-  const raw = String(value ?? "").trim();
-  if (!/^\d+$/.test(raw)) return null;
-  return BigInt(raw);
 }
 
 function parseCantidad(value: unknown) {
@@ -72,54 +63,53 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as CreateCajaPayload;
   const codigoDepositoGeneral = parseCodigoDepositoGeneral(body.codigoDepositoGeneral);
-  const itemId = parseItemId(body.itemId);
   const cantidad = parseCantidad(body.cantidad);
   const estanteria = normalizeEstanteria(body.estanteria);
   const codigosSIE = Array.from(
     new Set((body.codigosSIE ?? []).map(normalizeCodigoSIE).filter((codigo): codigo is string => codigo !== null)),
   );
 
-  if (codigoDepositoGeneral === null || itemId === null || cantidad === null || !estanteria) {
+  if (codigoDepositoGeneral === null || cantidad === null || !estanteria) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo de caja, item, cantidad y estanteria son obligatorios." },
+      { error: "Payload invalido. codigo de caja, cantidad y estanteria son obligatorios." },
       { status: 400 },
     );
   }
 
-  const [item, estanteriaRegistrada] = await Promise.all([
-    prisma.item.findUnique({
-      where: { itemId },
-      select: { itemId: true, nombre: true },
-    }),
-    prisma.estanteria.findFirst({
-      where: { codigo: estanteria },
-      select: { codigo: true },
-    }),
-  ]);
-
-  if (!item) {
-    return NextResponse.json({ error: "El item seleccionado no existe." }, { status: 400 });
-  }
+  const estanteriaRegistrada = await prisma.estanteria.findFirst({
+    where: { codigo: estanteria },
+    select: { codigo: true },
+  });
   if (!estanteriaRegistrada) {
     return NextResponse.json({ error: "La estanteria no existe. Registrala primero." }, { status: 400 });
   }
 
+  let itemNombres: string[] = [];
   if (codigosSIE.length > 0) {
     const codesFound = await prisma.itemCodigoSIE.findMany({
       where: {
         codigo: { in: codigosSIE },
-        itemId,
       },
-      select: { codigo: true },
+      include: {
+        item: {
+          select: {
+            nombre: true,
+          },
+        },
+      },
     });
-    const foundSet = new Set(codesFound.map((entry) => entry.codigo));
+    const foundSet = new Set(codesFound.map((entry) => entry.codigo.toUpperCase()));
     const missing = codigosSIE.filter((codigo) => !foundSet.has(codigo));
     if (missing.length > 0) {
       return NextResponse.json(
-        { error: `Los siguientes codigos SIE no pertenecen al item seleccionado: ${missing.join(", ")}` },
+        { error: `Los siguientes codigos SIE no existen: ${missing.join(", ")}` },
         { status: 400 },
       );
     }
+
+    itemNombres = Array.from(new Set(codesFound.map((entry) => entry.item.nombre))).sort((a, b) =>
+      a.localeCompare(b, "es", { sensitivity: "base" }),
+    );
   }
 
   try {
@@ -129,7 +119,6 @@ export async function POST(request: Request) {
           codigoDepositoGeneral,
           estanteria,
           cantidad,
-          itemId,
         },
       });
 
@@ -138,7 +127,6 @@ export async function POST(request: Request) {
           data: codigosSIE.map((codigoSIE) => ({
             codigoDepositoGeneral,
             codigoSIE,
-            itemId,
           })),
         });
       }
@@ -151,8 +139,7 @@ export async function POST(request: Request) {
       entidadId: String(codigoDepositoGeneral),
       detalle: {
         codigoDepositoGeneral,
-        itemId: item.itemId.toString(),
-        itemNombre: item.nombre,
+        itemNombres,
         cantidad,
         estanteria,
         codigosSIE,

@@ -196,6 +196,8 @@ export function EtiquetaCajaPrintSheet({
 }) {
   const codigos = caja.codigosSIE.length > 0 ? caja.codigosSIE : [{ codigo: "-", talla: null }];
   const talles = caja.tallas.length > 0 ? caja.tallas.join(", ") : "-";
+  const equipos = caja.itemNombres.length > 0 ? caja.itemNombres.join(", ") : "-";
+  const equiposLabel = caja.itemNombres.length === 1 ? "EQUIPO:" : "EQUIPOS:";
 
   return (
     <section className="etiqueta-sheet">
@@ -213,8 +215,8 @@ export function EtiquetaCajaPrintSheet({
               </div>
             </div>
             <div className="etiqueta-top-right">
-              <p className="heading">ITEM:</p>
-              <p className="item-value">{caja.itemNombre}</p>
+              <p className="heading">{equiposLabel}</p>
+              <p className="item-value">{equipos}</p>
             </div>
           </div>
 

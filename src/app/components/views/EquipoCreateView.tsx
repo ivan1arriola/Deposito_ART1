@@ -18,8 +18,7 @@ export function EquipoCreateView({ form, saving, onBack, onSubmit, onChange }: E
         <div className="border-b border-stone-200 bg-[linear-gradient(135deg,#f8fafc_0%,#edf8f1_60%,#fff8db_100%)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">Nueva vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-stone-900">Registrar equipo</h2>
+              <h2 className="text-2xl font-black tracking-tight text-stone-900">Registrar equipo</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
                 Crea un equipo operativo y define si aparece en la hoja de entrega.
               </p>

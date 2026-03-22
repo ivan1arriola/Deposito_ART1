@@ -36,15 +36,17 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
   const existing = await prisma.caja.findUnique({
     where: { codigoDepositoGeneral },
     include: {
-      item: {
-        select: { itemId: true, nombre: true },
-      },
       codigosSIE: {
         include: {
           itemCodigoSIE: {
             select: {
               codigo: true,
               talla: true,
+              item: {
+                select: {
+                  nombre: true,
+                },
+              },
             },
           },
         },
@@ -60,6 +62,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
       where: { codigoDepositoGeneral },
     });
 
+    const itemNombres = Array.from(
+      new Set(existing.codigosSIE.map((entry) => entry.itemCodigoSIE.item.nombre)),
+    ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+
     await logAudit({
       usuarioId: auth.user.usuarioId,
       accion: "DELETE",
@@ -67,8 +73,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
       entidadId: String(existing.codigoDepositoGeneral),
       detalle: {
         codigoDepositoGeneral: existing.codigoDepositoGeneral,
-        itemId: existing.item.itemId.toString(),
-        itemNombre: existing.item.nombre,
+        itemNombres,
         cantidad: existing.cantidad,
         estanteria: existing.estanteria,
         codigosSIE: existing.codigosSIE.map((entry) => ({

@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 
   const [items, estanterias, codigosSIE, cajas] = await Promise.all([
     prisma.item.findMany({
-      orderBy: [{ activo: "desc" }, { ordenPdf: "asc" }, { nombre: "asc" }],
+      orderBy: [{ nombre: "asc" }, { itemId: "asc" }],
       select: {
         itemId: true,
         nombre: true,
@@ -60,25 +60,23 @@ export async function GET(request: Request) {
         },
       },
       orderBy: [
-        { item: { ordenPdf: "asc" } },
         { item: { nombre: "asc" } },
         { codigo: "asc" },
       ],
     }),
     prisma.caja.findMany({
       include: {
-        item: {
-          select: {
-            itemId: true,
-            nombre: true,
-          },
-        },
         codigosSIE: {
           include: {
             itemCodigoSIE: {
               select: {
                 codigo: true,
                 talla: true,
+                item: {
+                  select: {
+                    nombre: true,
+                  },
+                },
               },
             },
           },
@@ -128,12 +126,15 @@ export async function GET(request: Request) {
         ),
       ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
+      const itemNombres = Array.from(
+        new Set(caja.codigosSIE.map((codigo) => codigo.itemCodigoSIE.item.nombre)),
+      ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+
       return {
         codigoDepositoGeneral: caja.codigoDepositoGeneral,
         estanteria: caja.estanteria,
         cantidad: caja.cantidad,
-        itemId: caja.itemId.toString(),
-        itemNombre: caja.item.nombre,
+        itemNombres,
         codigosSIE: codigos,
         tallas,
       };

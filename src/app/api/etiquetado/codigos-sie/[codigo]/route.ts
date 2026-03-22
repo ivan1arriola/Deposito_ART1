@@ -50,7 +50,6 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
   const cajasVinculadas = await prisma.cajaItemCodigoSIE.count({
     where: {
       codigoSIE: existing.codigo,
-      itemId: existing.itemId,
     },
   });
 

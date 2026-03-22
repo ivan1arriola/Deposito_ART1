@@ -150,7 +150,7 @@ export const EMPTY_OFICIAL_SUBOFICIAL_FORM: OficialSuboficialForm = {
 
 export const EMPTY_EQUIPO_FORM: EquipoForm = {
   nombre: "",
-  activo: true,
+  activo: false,
   ordenPdf: 1,
 };
 

@@ -26,8 +26,7 @@ export type EtiquetadoCaja = {
   codigoDepositoGeneral: number;
   estanteria: string;
   cantidad: number;
-  itemId: string;
-  itemNombre: string;
+  itemNombres: string[];
   codigosSIE: EtiquetadoCajaCodigoSIE[];
   tallas: string[];
 };

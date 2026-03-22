@@ -4,7 +4,7 @@ export type EtiquetaCajaPrintData = {
   codigoDepositoGeneral: number;
   estanteria: string;
   cantidad: number;
-  itemNombre: string;
+  itemNombres: string[];
   codigosSIE: Array<{
     codigo: string;
     talla: string | null;
@@ -28,17 +28,17 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
   const cajas = await prisma.caja.findMany({
     where: codigosFiltrados.length > 0 ? { codigoDepositoGeneral: { in: codigosFiltrados } } : undefined,
     include: {
-      item: {
-        select: {
-          nombre: true,
-        },
-      },
       codigosSIE: {
         include: {
           itemCodigoSIE: {
             select: {
               codigo: true,
               talla: true,
+              item: {
+                select: {
+                  nombre: true,
+                },
+              },
             },
           },
         },
@@ -69,11 +69,15 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
       ),
     ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
+    const itemNombres = Array.from(
+      new Set(caja.codigosSIE.map((codigo) => codigo.itemCodigoSIE.item.nombre)),
+    ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+
     return {
       codigoDepositoGeneral: caja.codigoDepositoGeneral,
       estanteria: caja.estanteria,
       cantidad: caja.cantidad,
-      itemNombre: caja.item.nombre,
+      itemNombres,
       codigosSIE,
       tallas,
     };

@@ -209,7 +209,6 @@ model Item {
   movimientoItems     MovimientoItem[]
   stockOperacionItems StockOperacionItem[]
   codigosSIE          ItemCodigoSIE[]
-  cajas               Caja[]
 
   @@map("item")
 }
@@ -227,28 +226,22 @@ model ItemCodigoSIE {
 }
 
 model Caja {
-  codigoDepositoGeneral Int                 @id @map("codigo_deposito_general")
-  estanteria            String              @db.Char(1)
+  codigoDepositoGeneral Int               @id @map("codigo_deposito_general")
+  estanteria            String            @db.Char(1)
   cantidad              Int
-  itemId                BigInt              @map("item_id")
-  item                  Item                @relation(fields: [itemId], references: [itemId], onDelete: Restrict)
   codigosSIE            CajaItemCodigoSIE[]
 
-  @@index([itemId])
-  @@unique([codigoDepositoGeneral, itemId])
   @@map("caja")
 }
 
 model CajaItemCodigoSIE {
   codigoDepositoGeneral Int           @map("codigo_deposito_general")
   codigoSIE             String        @map("codigo_sie")
-  itemId                BigInt        @map("item_id")
-  caja                  Caja          @relation(fields: [codigoDepositoGeneral, itemId], references: [codigoDepositoGeneral, itemId], onDelete: Cascade)
-  itemCodigoSIE         ItemCodigoSIE @relation(fields: [codigoSIE, itemId], references: [codigo, itemId], onDelete: Cascade)
+  caja                  Caja          @relation(fields: [codigoDepositoGeneral], references: [codigoDepositoGeneral], onDelete: Cascade)
+  itemCodigoSIE         ItemCodigoSIE @relation(fields: [codigoSIE], references: [codigo], onDelete: Cascade)
 
   @@id([codigoDepositoGeneral, codigoSIE])
-  @@index([codigoSIE, itemId])
-  @@index([itemId])
+  @@index([codigoSIE])
   @@map("caja_item_codigo_sie")
 }
 

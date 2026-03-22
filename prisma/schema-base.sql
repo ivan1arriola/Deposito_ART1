@@ -154,32 +154,26 @@ CREATE TABLE "caja" (
   "codigo_deposito_general" INTEGER PRIMARY KEY,
   "estanteria" CHAR(1) NOT NULL,
   "cantidad" INTEGER NOT NULL,
-  "item_id" BIGINT NOT NULL REFERENCES "item"("item_id") ON DELETE RESTRICT,
   CONSTRAINT "caja_codigo_deposito_general_chk" CHECK ("codigo_deposito_general" > 0),
   CONSTRAINT "caja_estanteria_formato_chk" CHECK ("estanteria" ~ '^[A-Z0-9]$'),
-  CONSTRAINT "caja_cantidad_chk" CHECK ("cantidad" > 0),
-  CONSTRAINT "caja_codigo_item_uq" UNIQUE ("codigo_deposito_general", "item_id")
+  CONSTRAINT "caja_cantidad_chk" CHECK ("cantidad" > 0)
 );
-
-CREATE INDEX "caja_item_id_idx" ON "caja"("item_id");
 
 CREATE TABLE "caja_item_codigo_sie" (
   "codigo_deposito_general" INTEGER NOT NULL,
   "codigo_sie" TEXT NOT NULL,
-  "item_id" BIGINT NOT NULL,
   PRIMARY KEY ("codigo_deposito_general", "codigo_sie"),
   CONSTRAINT "caja_item_codigo_sie_caja_fk"
-    FOREIGN KEY ("codigo_deposito_general", "item_id")
-    REFERENCES "caja"("codigo_deposito_general", "item_id")
+    FOREIGN KEY ("codigo_deposito_general")
+    REFERENCES "caja"("codigo_deposito_general")
     ON DELETE CASCADE,
   CONSTRAINT "caja_item_codigo_sie_codigo_fk"
-    FOREIGN KEY ("codigo_sie", "item_id")
-    REFERENCES "item_codigo_sie"("codigo", "item_id")
+    FOREIGN KEY ("codigo_sie")
+    REFERENCES "item_codigo_sie"("codigo")
     ON DELETE CASCADE
 );
 
-CREATE INDEX "caja_item_codigo_sie_codigo_item_idx" ON "caja_item_codigo_sie"("codigo_sie", "item_id");
-CREATE INDEX "caja_item_codigo_sie_item_id_idx" ON "caja_item_codigo_sie"("item_id");
+CREATE INDEX "caja_item_codigo_sie_codigo_idx" ON "caja_item_codigo_sie"("codigo_sie");
 
 CREATE TABLE "personal" (
   "ci" TEXT PRIMARY KEY,
