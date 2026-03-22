@@ -22,10 +22,18 @@ export type EtiquetadoCajaCodigoSIE = {
   talla: string | null;
 };
 
+export type EtiquetadoCajaEquipo = {
+  itemId: string;
+  itemNombre: string;
+  codigosSIE: EtiquetadoCajaCodigoSIE[];
+  sinCodigo: boolean;
+};
+
 export type EtiquetadoCaja = {
   codigoDepositoGeneral: number;
   estanteria: string;
   cantidad: number;
+  equipos: EtiquetadoCajaEquipo[];
   itemNombres: string[];
   codigosSIE: EtiquetadoCajaCodigoSIE[];
   tallas: string[];

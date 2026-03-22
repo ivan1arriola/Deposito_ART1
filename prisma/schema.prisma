@@ -209,6 +209,7 @@ model Item {
   movimientoItems     MovimientoItem[]
   stockOperacionItems StockOperacionItem[]
   codigosSIE          ItemCodigoSIE[]
+  cajas               CajaItem[]
 
   @@map("item")
 }
@@ -229,9 +230,21 @@ model Caja {
   codigoDepositoGeneral Int               @id @map("codigo_deposito_general")
   estanteria            String            @db.Char(1)
   cantidad              Int
+  items                 CajaItem[]
   codigosSIE            CajaItemCodigoSIE[]
 
   @@map("caja")
+}
+
+model CajaItem {
+  codigoDepositoGeneral Int    @map("codigo_deposito_general")
+  itemId                BigInt @map("item_id")
+  caja                  Caja   @relation(fields: [codigoDepositoGeneral], references: [codigoDepositoGeneral], onDelete: Cascade)
+  item                  Item   @relation(fields: [itemId], references: [itemId], onDelete: Restrict)
+
+  @@id([codigoDepositoGeneral, itemId])
+  @@index([itemId])
+  @@map("caja_item")
 }
 
 model CajaItemCodigoSIE {

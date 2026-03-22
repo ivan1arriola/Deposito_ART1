@@ -10,12 +10,14 @@ function hasEtiquetadoDelegates() {
     estanteria?: unknown;
     itemCodigoSIE?: unknown;
     caja?: unknown;
+    cajaItem?: unknown;
   };
   return (
     typeof candidate.item !== "undefined" &&
     typeof candidate.estanteria !== "undefined" &&
     typeof candidate.itemCodigoSIE !== "undefined" &&
-    typeof candidate.caja !== "undefined"
+    typeof candidate.caja !== "undefined" &&
+    typeof candidate.cajaItem !== "undefined"
   );
 }
 
@@ -66,6 +68,16 @@ export async function GET(request: Request) {
     }),
     prisma.caja.findMany({
       include: {
+        items: {
+          include: {
+            item: {
+              select: {
+                itemId: true,
+                nombre: true,
+              },
+            },
+          },
+        },
         codigosSIE: {
           include: {
             itemCodigoSIE: {
@@ -74,6 +86,7 @@ export async function GET(request: Request) {
                 talla: true,
                 item: {
                   select: {
+                    itemId: true,
                     nombre: true,
                   },
                 },
@@ -105,10 +118,12 @@ export async function GET(request: Request) {
       itemNombre: codigoSIE.item.nombre,
     })),
     cajas: cajas.map((caja) => {
-      const codigos = caja.codigosSIE
+      const codigosConEquipo = caja.codigosSIE
         .map((codigo) => ({
           codigo: codigo.itemCodigoSIE.codigo,
           talla: codigo.itemCodigoSIE.talla,
+          itemId: codigo.itemCodigoSIE.item.itemId.toString(),
+          itemNombre: codigo.itemCodigoSIE.item.nombre,
         }))
         .sort((a, b) => {
           const byCodigo = a.codigo.localeCompare(b.codigo, "es", { sensitivity: "base" });
@@ -118,6 +133,11 @@ export async function GET(request: Request) {
           });
         });
 
+      const codigos = codigosConEquipo.map((codigo) => ({
+        codigo: codigo.codigo,
+        talla: codigo.talla,
+      }));
+
       const tallas = Array.from(
         new Set(
           codigos
@@ -126,14 +146,38 @@ export async function GET(request: Request) {
         ),
       ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
-      const itemNombres = Array.from(
-        new Set(caja.codigosSIE.map((codigo) => codigo.itemCodigoSIE.item.nombre)),
-      ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+      const equiposBase =
+        caja.items.length > 0
+          ? caja.items
+              .map((entry) => ({
+                itemId: entry.item.itemId.toString(),
+                itemNombre: entry.item.nombre,
+              }))
+              .sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }))
+          : Array.from(
+              new Map(codigosConEquipo.map((codigo) => [codigo.itemId, { itemId: codigo.itemId, itemNombre: codigo.itemNombre }])).values(),
+            ).sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }));
+
+      const equipos = equiposBase.map((equipo) => {
+        const codigosSIEEquipo = codigosConEquipo
+          .filter((codigo) => codigo.itemId === equipo.itemId)
+          .map((codigo) => ({ codigo: codigo.codigo, talla: codigo.talla }));
+
+        return {
+          itemId: equipo.itemId,
+          itemNombre: equipo.itemNombre,
+          codigosSIE: codigosSIEEquipo,
+          sinCodigo: codigosSIEEquipo.length === 0,
+        };
+      });
+
+      const itemNombres = equipos.map((equipo) => equipo.itemNombre);
 
       return {
         codigoDepositoGeneral: caja.codigoDepositoGeneral,
         estanteria: caja.estanteria,
         cantidad: caja.cantidad,
+        equipos,
         itemNombres,
         codigosSIE: codigos,
         tallas,

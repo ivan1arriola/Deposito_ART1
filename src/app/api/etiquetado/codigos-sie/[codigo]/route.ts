@@ -11,10 +11,11 @@ function hasEtiquetadoDelegates() {
   return typeof candidate.itemCodigoSIE !== "undefined" && typeof candidate.cajaItemCodigoSIE !== "undefined";
 }
 
+const SIE_CODE_REGEX = /^(?:\d{8}|[A-Z]{3}\d{2})$/;
+
 function normalizeCodigoSIE(value: string) {
   const normalized = decodeURIComponent(value).trim().toUpperCase();
-  if (normalized.length < 3 || normalized.length > 40) return null;
-  if (!/^[A-Z0-9\-./]+$/.test(normalized)) return null;
+  if (!SIE_CODE_REGEX.test(normalized)) return null;
   return normalized;
 }
 

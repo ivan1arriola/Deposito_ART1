@@ -6,8 +6,9 @@ import { prisma } from "@/lib/prisma";
 function hasEtiquetadoDelegates() {
   const candidate = prisma as typeof prisma & {
     caja?: unknown;
+    cajaItem?: unknown;
   };
-  return typeof candidate.caja !== "undefined";
+  return typeof candidate.caja !== "undefined" && typeof candidate.cajaItem !== "undefined";
 }
 
 function parseCodigoCaja(value: string) {
@@ -36,6 +37,16 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
   const existing = await prisma.caja.findUnique({
     where: { codigoDepositoGeneral },
     include: {
+      items: {
+        include: {
+          item: {
+            select: {
+              itemId: true,
+              nombre: true,
+            },
+          },
+        },
+      },
       codigosSIE: {
         include: {
           itemCodigoSIE: {
@@ -62,9 +73,14 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
       where: { codigoDepositoGeneral },
     });
 
-    const itemNombres = Array.from(
-      new Set(existing.codigosSIE.map((entry) => entry.itemCodigoSIE.item.nombre)),
-    ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+    const itemNombres =
+      existing.items.length > 0
+        ? existing.items
+            .map((entry) => entry.item.nombre)
+            .sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }))
+        : Array.from(new Set(existing.codigosSIE.map((entry) => entry.itemCodigoSIE.item.nombre))).sort((a, b) =>
+            a.localeCompare(b, "es", { sensitivity: "base" },
+          ));
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -73,6 +89,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
       entidadId: String(existing.codigoDepositoGeneral),
       detalle: {
         codigoDepositoGeneral: existing.codigoDepositoGeneral,
+        itemIds: existing.items.map((entry) => entry.item.itemId.toString()),
         itemNombres,
         cantidad: existing.cantidad,
         estanteria: existing.estanteria,

@@ -194,7 +194,16 @@ export function EtiquetaCajaPrintSheet({
 }: {
   caja: EtiquetaCajaPrintData;
 }) {
-  const codigos = caja.codigosSIE.length > 0 ? caja.codigosSIE : [{ codigo: "-", talla: null }];
+  const codigos =
+    caja.equipos.length > 0
+      ? caja.equipos.flatMap((equipo) =>
+          equipo.codigosSIE.length > 0
+            ? equipo.codigosSIE
+            : [{ codigo: `S/Codigo (${equipo.itemNombre})`, talla: null }],
+        )
+      : caja.codigosSIE.length > 0
+        ? caja.codigosSIE
+        : [{ codigo: "-", talla: null }];
   const talles = caja.tallas.length > 0 ? caja.tallas.join(", ") : "-";
   const equipos = caja.itemNombres.length > 0 ? caja.itemNombres.join(", ") : "-";
   const equiposLabel = caja.itemNombres.length === 1 ? "EQUIPO:" : "EQUIPOS:";

@@ -17,10 +17,11 @@ function hasEtiquetadoDelegates() {
   return typeof candidate.item !== "undefined" && typeof candidate.itemCodigoSIE !== "undefined";
 }
 
+const SIE_CODE_REGEX = /^(?:\d{8}|[A-Z]{3}\d{2})$/;
+
 function normalizeCodigoSIE(value: unknown) {
   const normalized = String(value ?? "").trim().toUpperCase();
-  if (normalized.length < 3 || normalized.length > 40) return null;
-  if (!/^[A-Z0-9\-./]+$/.test(normalized)) return null;
+  if (!SIE_CODE_REGEX.test(normalized)) return null;
   return normalized;
 }
 
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
 
   if (!codigo || itemId === null) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo e item son obligatorios." },
+      { error: "Payload invalido. codigo e item son obligatorios. Formatos validos: 8 digitos o 3 letras y 2 numeros." },
       { status: 400 },
     );
   }

@@ -4,6 +4,15 @@ export type EtiquetaCajaPrintData = {
   codigoDepositoGeneral: number;
   estanteria: string;
   cantidad: number;
+  equipos: Array<{
+    itemId: string;
+    itemNombre: string;
+    codigosSIE: Array<{
+      codigo: string;
+      talla: string | null;
+    }>;
+    sinCodigo: boolean;
+  }>;
   itemNombres: string[];
   codigosSIE: Array<{
     codigo: string;
@@ -28,6 +37,16 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
   const cajas = await prisma.caja.findMany({
     where: codigosFiltrados.length > 0 ? { codigoDepositoGeneral: { in: codigosFiltrados } } : undefined,
     include: {
+      items: {
+        include: {
+          item: {
+            select: {
+              itemId: true,
+              nombre: true,
+            },
+          },
+        },
+      },
       codigosSIE: {
         include: {
           itemCodigoSIE: {
@@ -36,6 +55,7 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
               talla: true,
               item: {
                 select: {
+                  itemId: true,
                   nombre: true,
                 },
               },
@@ -48,10 +68,12 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
   });
 
   return cajas.map((caja) => {
-    const codigosSIE = caja.codigosSIE
+    const codigosSIEConEquipo = caja.codigosSIE
       .map((codigo) => ({
         codigo: codigo.itemCodigoSIE.codigo,
         talla: codigo.itemCodigoSIE.talla,
+        itemId: codigo.itemCodigoSIE.item.itemId.toString(),
+        itemNombre: codigo.itemCodigoSIE.item.nombre,
       }))
       .sort((a, b) => {
         const byCodigo = a.codigo.localeCompare(b.codigo, "es", { sensitivity: "base" });
@@ -61,6 +83,11 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
         });
       });
 
+    const codigosSIE = codigosSIEConEquipo.map((codigo) => ({
+      codigo: codigo.codigo,
+      talla: codigo.talla,
+    }));
+
     const tallas = Array.from(
       new Set(
         codigosSIE
@@ -69,14 +96,40 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
       ),
     ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
-    const itemNombres = Array.from(
-      new Set(caja.codigosSIE.map((codigo) => codigo.itemCodigoSIE.item.nombre)),
-    ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+    const equiposBase =
+      caja.items.length > 0
+        ? caja.items
+            .map((entry) => ({
+              itemId: entry.item.itemId.toString(),
+              itemNombre: entry.item.nombre,
+            }))
+            .sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }))
+        : Array.from(
+            new Map(
+              codigosSIEConEquipo.map((codigo) => [codigo.itemId, { itemId: codigo.itemId, itemNombre: codigo.itemNombre }]),
+            ).values(),
+          ).sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }));
+
+    const equipos = equiposBase.map((equipo) => {
+      const codigosEquipo = codigosSIEConEquipo
+        .filter((codigo) => codigo.itemId === equipo.itemId)
+        .map((codigo) => ({ codigo: codigo.codigo, talla: codigo.talla }));
+
+      return {
+        itemId: equipo.itemId,
+        itemNombre: equipo.itemNombre,
+        codigosSIE: codigosEquipo,
+        sinCodigo: codigosEquipo.length === 0,
+      };
+    });
+
+    const itemNombres = equipos.map((equipo) => equipo.itemNombre);
 
     return {
       codigoDepositoGeneral: caja.codigoDepositoGeneral,
       estanteria: caja.estanteria,
       cantidad: caja.cantidad,
+      equipos,
       itemNombres,
       codigosSIE,
       tallas,

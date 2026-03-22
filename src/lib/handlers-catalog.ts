@@ -214,7 +214,25 @@ export type ItemDeleteImpact = {
     totalStock: number;
     movimientosQueSeEliminan: number;
     movimientosQueSeActualizan: number;
+    totalCodigosSIE: number;
+    totalCodigosSIEEnCajas: number;
+    totalAparicionesEquipoEnCajas: number;
+    totalCajasAfectadas: number;
+    cajasQueQuedanSinEquipos: number;
   };
+  codigosSIE: Array<{
+    codigo: string;
+    talla: string | null;
+    aparicionesEnCajas: number;
+  }>;
+  cajas: Array<{
+    codigoDepositoGeneral: number;
+    estanteria: string;
+    totalEquiposEnCaja: number;
+    tieneRelacionEquipoDirecta: boolean;
+    codigosSIERelacionados: string[];
+    quedaSinEquipos: boolean;
+  }>;
   registros: Array<{
     movimientoId: string;
     fecha: string;

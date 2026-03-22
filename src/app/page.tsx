@@ -164,7 +164,7 @@ type StockLoadProfile = {
   };
 };
 
-type EtiquetadoSection = "codigos_sie" | "registrar_caja" | "listado_cajas" | "imprimir_todas";
+type EtiquetadoSection = "codigos_sie" | "listado_cajas" | "imprimir_todas";
 
 const STATUS_VERIFYING_SESSION = "Verificando sesión...";
 const STATUS_STARTING_SESSION = "Iniciando sesión...";
@@ -991,7 +991,7 @@ export default function Home() {
 
   const getEtiquetadoSection = useCallback((view: MainView): EtiquetadoSection | null => {
     if (view === "etiquetado_codigos_sie") return "codigos_sie";
-    if (view === "etiquetado_registrar_caja") return "registrar_caja";
+    if (view === "etiquetado_registrar_caja") return "listado_cajas";
     if (view === "etiquetado_listado_cajas") return "listado_cajas";
     if (view === "etiquetado_imprimir_todas") return "imprimir_todas";
     return null;
@@ -1141,6 +1141,7 @@ export default function Home() {
       codigoDepositoGeneral: number;
       cantidad: number;
       estanteria: string;
+      itemIds: string[];
       codigosSIE: string[];
     }) => {
       if (!canWrite) {
@@ -1550,12 +1551,36 @@ export default function Home() {
         const fecha = formatDateOnlyForDisplay(stock.fecha, stock.fecha);
         return `- Stock #${stock.movimientoId} | ${stock.tipo} | ${fecha} | ${accion}`;
       });
+      const codigosSIEImpacto = impacto.codigosSIE.map((codigo) => {
+        const talla = codigo.talla ? ` | talla ${codigo.talla}` : "";
+        return `- ${codigo.codigo}${talla} | apariciones en cajas: ${codigo.aparicionesEnCajas}`;
+      });
+      const cajasImpacto = impacto.cajas.map((caja) => {
+        const detalles = [
+          caja.tieneRelacionEquipoDirecta ? "incluye este equipo" : null,
+          caja.codigosSIERelacionados.length > 0 ? `codigos SIE: ${caja.codigosSIERelacionados.join(", ")}` : null,
+          caja.quedaSinEquipos ? "queda sin equipos seleccionados" : null,
+        ]
+          .filter((detail): detail is string => detail !== null)
+          .join(" | ");
+        return `- Caja ${caja.codigoDepositoGeneral} (estanteria ${caja.estanteria}) | equipos: ${caja.totalEquiposEnCaja}${detalles ? ` | ${detalles}` : ""}`;
+      });
       const resumen = impacto.resumen;
       const messageLines = [
-        `Acción destructiva e irreversible: se eliminará ${item?.nombre ?? "este equipo"} y no se puede deshacer.`,
+        `Accion destructiva e irreversible: se eliminara ${item?.nombre ?? "este equipo"} y no se puede deshacer.`,
         `Movimientos afectados: ${resumen.totalMovimientos} (registros: ${resumen.totalRegistros}, stock: ${resumen.totalStock}).`,
-        `Movimientos que quedarán vacíos y se eliminarán: ${resumen.movimientosQueSeEliminan}.`,
-        `Movimientos que conservarán otros equipos: ${resumen.movimientosQueSeActualizan}.`,
+        `Movimientos que quedaran vacios y se eliminaran: ${resumen.movimientosQueSeEliminan}.`,
+        `Movimientos que conservaran otros equipos: ${resumen.movimientosQueSeActualizan}.`,
+        `Codigos SIE a eliminar: ${resumen.totalCodigosSIE} (apariciones en cajas por codigo: ${resumen.totalCodigosSIEEnCajas}).`,
+        `Apariciones directas del equipo en cajas: ${resumen.totalAparicionesEquipoEnCajas}.`,
+        `Cajas afectadas (equipo/codigos): ${resumen.totalCajasAfectadas}.`,
+        `Cajas que quedan sin equipos seleccionados: ${resumen.cajasQueQuedanSinEquipos}.`,
+        "",
+        "Codigos SIE afectados:",
+        ...(codigosSIEImpacto.length > 0 ? codigosSIEImpacto : ["- Ninguno"]),
+        "",
+        "Cajas afectadas:",
+        ...(cajasImpacto.length > 0 ? cajasImpacto : ["- Ninguna"]),
         "",
         "Registros afectados:",
         ...(registrosImpacto.length > 0 ? registrosImpacto : ["- Ninguno"]),
@@ -4468,3 +4493,4 @@ export default function Home() {
     </main>
   );
 }
+

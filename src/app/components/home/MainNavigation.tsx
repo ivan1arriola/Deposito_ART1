@@ -8,7 +8,7 @@ type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "subofi
 type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "equipo_nuevo">;
 type EtiquetadoView = Extract<
   MainView,
-  "etiquetado_codigos_sie" | "etiquetado_registrar_caja" | "etiquetado_listado_cajas" | "etiquetado_imprimir_todas"
+  "etiquetado_codigos_sie" | "etiquetado_listado_cajas" | "etiquetado_imprimir_todas"
 >;
 
 type MainNavigationProps = {
@@ -234,16 +234,6 @@ const etiquetadoViews: Array<{ view: EtiquetadoView; label: string; shortLabel: 
     ),
   },
   {
-    view: "etiquetado_registrar_caja",
-    label: "Registrar Caja",
-    shortLabel: "Registrar Caja",
-    icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
-      </svg>
-    ),
-  },
-  {
     view: "etiquetado_listado_cajas",
     label: "Listado de Cajas",
     shortLabel: "Listado Cajas",
@@ -341,7 +331,6 @@ export function MainNavigation({
     activeView === "stock_prestamos";
   const isEtiquetadoView =
     activeView === "etiquetado_codigos_sie" ||
-    activeView === "etiquetado_registrar_caja" ||
     activeView === "etiquetado_listado_cajas" ||
     activeView === "etiquetado_imprimir_todas";
   const isCreateView =

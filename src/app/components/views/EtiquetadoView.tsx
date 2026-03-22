@@ -7,7 +7,6 @@ import type { EtiquetadoDashboardData } from "@/types/etiquetado";
 
 export type EtiquetadoSection =
   | "codigos_sie"
-  | "registrar_caja"
   | "listado_cajas"
   | "imprimir_todas";
 
@@ -27,6 +26,7 @@ type CreateCajaInput = {
   codigoDepositoGeneral: number;
   cantidad: number;
   estanteria: string;
+  itemIds: string[];
   codigosSIE: string[];
 };
 
@@ -52,10 +52,6 @@ const SECTION_META: Record<EtiquetadoSection, { title: string; description: stri
   codigos_sie: {
     title: "Codigos SIE",
     description: "Registra equipos, codigos SIE y estanterias para su vinculacion.",
-  },
-  registrar_caja: {
-    title: "Registrar Caja",
-    description: "Crea nuevas cajas indicando cantidad total, ubicacion y codigos SIE asociados.",
   },
   listado_cajas: {
     title: "Listado de Cajas",
@@ -134,8 +130,10 @@ export function EtiquetadoView({
   const [newCajaCodigo, setNewCajaCodigo] = useState("");
   const [newCajaCantidad, setNewCajaCantidad] = useState("1");
   const [newCajaEstanteria, setNewCajaEstanteria] = useState("");
+  const [newCajaItemIds, setNewCajaItemIds] = useState<string[]>([]);
   const [newCajaCodigosSIE, setNewCajaCodigosSIE] = useState<string[]>([]);
   const [cajaFiltro, setCajaFiltro] = useState("");
+  const [showCreateCajaForm, setShowCreateCajaForm] = useState(false);
   const [massOrientation, setMassOrientation] = useState<EtiquetaOrientacion>("horizontal");
 
   const codigoItemIdValue = itemOptions.some((item) => item.itemId === newCodigoItemId)
@@ -159,10 +157,44 @@ export function EtiquetadoView({
     () => new Set(codigosSIEDisponibles.map((codigo) => codigo.codigo)),
     [codigosSIEDisponibles],
   );
+  const codigoSIEItemByCodigo = useMemo(
+    () => new Map(codigosSIEDisponibles.map((codigo) => [codigo.codigo, codigo.itemId])),
+    [codigosSIEDisponibles],
+  );
+  const itemOptionById = useMemo(
+    () => new Map(itemOptions.map((item) => [item.itemId, item])),
+    [itemOptions],
+  );
+  const selectedCajaItemIds = useMemo(
+    () => newCajaItemIds.filter((itemId) => itemOptionById.has(itemId)),
+    [newCajaItemIds, itemOptionById],
+  );
+  const selectedCajaItemSet = useMemo(
+    () => new Set(selectedCajaItemIds),
+    [selectedCajaItemIds],
+  );
+  const selectedCajaItems = useMemo(
+    () => itemOptions.filter((item) => selectedCajaItemSet.has(item.itemId)),
+    [itemOptions, selectedCajaItemSet],
+  );
+  const codigosPorItemSeleccionado = useMemo(
+    () =>
+      selectedCajaItems.map((item) => ({
+        itemId: item.itemId,
+        itemNombre: item.nombre,
+        codigos: codigosSIEDisponibles.filter((codigo) => codigo.itemId === item.itemId),
+      })),
+    [selectedCajaItems, codigosSIEDisponibles],
+  );
 
   const selectedCajaCodigosSIE = useMemo(
-    () => newCajaCodigosSIE.filter((codigo) => codigosDisponiblesSet.has(codigo)),
-    [newCajaCodigosSIE, codigosDisponiblesSet],
+    () =>
+      newCajaCodigosSIE.filter((codigo) => {
+        if (!codigosDisponiblesSet.has(codigo)) return false;
+        const itemId = codigoSIEItemByCodigo.get(codigo);
+        return typeof itemId === "string" && selectedCajaItemSet.has(itemId);
+      }),
+    [newCajaCodigosSIE, codigosDisponiblesSet, codigoSIEItemByCodigo, selectedCajaItemSet],
   );
 
   const cajasFiltradas = useMemo(() => {
@@ -215,10 +247,24 @@ export function EtiquetadoView({
 
   function toggleCodigoSIEEnCaja(codigo: string) {
     if (!codigosDisponiblesSet.has(codigo)) return;
+    const itemId = codigoSIEItemByCodigo.get(codigo);
+    if (!itemId || !selectedCajaItemSet.has(itemId)) return;
     setNewCajaCodigosSIE((prev) => {
       const normalized = prev.filter((entry) => codigosDisponiblesSet.has(entry));
       if (normalized.includes(codigo)) return normalized.filter((entry) => entry !== codigo);
       return [...normalized, codigo];
+    });
+  }
+
+  function toggleItemEnCaja(itemId: string) {
+    setNewCajaItemIds((prev) => {
+      if (prev.includes(itemId)) {
+        setNewCajaCodigosSIE((prevCodigos) =>
+          prevCodigos.filter((codigo) => codigoSIEItemByCodigo.get(codigo) !== itemId),
+        );
+        return prev.filter((entry) => entry !== itemId);
+      }
+      return [...prev, itemId];
     });
   }
 
@@ -227,15 +273,17 @@ export function EtiquetadoView({
     const codigoDepositoGeneral = Number(newCajaCodigo);
     const cantidad = Number(newCajaCantidad);
     const estanteria = normalizeCode(cajaEstanteriaValue);
-    if (!Number.isInteger(codigoDepositoGeneral) || !Number.isInteger(cantidad) || !estanteria) return;
+    if (!Number.isInteger(codigoDepositoGeneral) || !Number.isInteger(cantidad) || !estanteria || selectedCajaItemIds.length === 0) return;
     onCreateCaja({
       codigoDepositoGeneral,
       cantidad,
       estanteria,
+      itemIds: selectedCajaItemIds,
       codigosSIE: selectedCajaCodigosSIE,
     });
     setNewCajaCodigo("");
     setNewCajaCantidad("1");
+    setNewCajaItemIds([]);
     setNewCajaCodigosSIE([]);
   }
 
@@ -409,7 +457,7 @@ export function EtiquetadoView({
               <input
                 value={newCodigoSIE}
                 onChange={(event) => setNewCodigoSIE(event.target.value)}
-                placeholder="Codigo SIE"
+                placeholder="00005450 o ABC12"
                 disabled={!canWrite}
                 className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
@@ -475,110 +523,21 @@ export function EtiquetadoView({
         </>
       ) : null}
 
-      {section === "registrar_caja" ? (
-        <article className="ej-card rounded-2xl p-4">
-          <h3 className="text-sm font-semibold text-stone-900">Nueva Caja</h3>
-          <form onSubmit={handleCreateCaja} className="mt-3 space-y-3">
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
-              <label className="text-xs text-stone-700">
-                Codigo Dep. Gral.
-                <input
-                  type="number"
-                  min={1}
-                  value={newCajaCodigo}
-                  onChange={(event) => setNewCajaCodigo(event.target.value)}
-                  disabled={!canWrite}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="text-xs text-stone-700">
-                Cantidad
-                <input
-                  type="number"
-                  min={1}
-                  value={newCajaCantidad}
-                  onChange={(event) => setNewCajaCantidad(event.target.value)}
-                  disabled={!canWrite}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="text-xs text-stone-700">
-                Estanteria
-                <select
-                  value={cajaEstanteriaValue}
-                  onChange={(event) => setNewCajaEstanteria(event.target.value)}
-                  disabled={!canWrite || estanteriaCodes.length === 0}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                >
-                  {estanteriaCodes.length === 0 ? <option value="">Sin estanterias</option> : null}
-                  {estanteriaCodes.map((codigo) => (
-                    <option key={`caja-estanteria-${codigo}`} value={codigo}>
-                      {codigo}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
-                Codigos SIE de la caja (pueden ser de varios equipos)
-              </p>
-              {codigosSIEDisponibles.length === 0 ? (
-                <p className="mt-2 text-sm text-stone-600">
-                  No hay codigos SIE registrados.
-                </p>
-              ) : (
-                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {codigosSIEDisponibles.map((codigo) => {
-                    const checked = selectedCajaCodigosSIE.includes(codigo.codigo);
-                    return (
-                      <label
-                        key={`caja-codigo-${codigo.codigo}`}
-                        className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-sm leading-5 ${
-                          checked ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-stone-300 bg-white text-stone-700"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          disabled={!canWrite}
-                          onChange={() => toggleCodigoSIEEnCaja(codigo.codigo)}
-                        />
-                        <span className="font-semibold">
-                          {codigo.codigo}
-                          {codigo.talla ? ` (${codigo.talla})` : ""}
-                        </span>
-                        <span className="text-xs text-stone-600">- {codigo.itemNombre}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={
-                  !canWrite ||
-                  newCajaCodigo.trim() === "" ||
-                  newCajaCantidad.trim() === "" ||
-                  cajaEstanteriaValue.trim() === ""
-                }
-                className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60"
-              >
-                Crear caja
-              </button>
-            </div>
-          </form>
-        </article>
-      ) : null}
-
       {section === "listado_cajas" ? (
         <article className="ej-card rounded-2xl p-4">
           <div className="flex flex-wrap items-end justify-between gap-2">
-            <h3 className="text-sm font-semibold text-stone-900">Cajas registradas</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold text-stone-900">Cajas registradas</h3>
+              {canWrite ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCreateCajaForm((prev) => !prev)}
+                  className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+                >
+                  {showCreateCajaForm ? "Ocultar registro" : "Registrar caja"}
+                </button>
+              ) : null}
+            </div>
             <label className="w-full max-w-xs text-xs text-stone-700">
               Buscar caja
               <input
@@ -589,6 +548,148 @@ export function EtiquetadoView({
               />
             </label>
           </div>
+
+          {canWrite && showCreateCajaForm ? (
+            <form onSubmit={handleCreateCaja} className="mt-3 space-y-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+                <label className="text-xs text-stone-700">
+                  Codigo Dep. Gral.
+                  <input
+                    type="number"
+                    min={1}
+                    value={newCajaCodigo}
+                    onChange={(event) => setNewCajaCodigo(event.target.value)}
+                    disabled={!canWrite}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="text-xs text-stone-700">
+                  Cantidad
+                  <input
+                    type="number"
+                    min={1}
+                    value={newCajaCantidad}
+                    onChange={(event) => setNewCajaCantidad(event.target.value)}
+                    disabled={!canWrite}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="text-xs text-stone-700">
+                  Estanteria
+                  <select
+                    value={cajaEstanteriaValue}
+                    onChange={(event) => setNewCajaEstanteria(event.target.value)}
+                    disabled={!canWrite || estanteriaCodes.length === 0}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  >
+                    {estanteriaCodes.length === 0 ? <option value="">Sin estanterias</option> : null}
+                    {estanteriaCodes.map((codigo) => (
+                      <option key={`caja-estanteria-${codigo}`} value={codigo}>
+                        {codigo}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="rounded-xl border border-stone-200 bg-white p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+                  Equipos de la caja
+                </p>
+                {itemOptions.length === 0 ? (
+                  <p className="mt-2 text-sm text-stone-600">No hay equipos registrados.</p>
+                ) : (
+                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {itemOptions.map((item) => {
+                      const checked = selectedCajaItemSet.has(item.itemId);
+                      return (
+                        <label
+                          key={`caja-item-${item.itemId}`}
+                          className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-sm ${
+                            checked ? "border-blue-300 bg-blue-50 text-blue-900" : "border-stone-300 bg-white text-stone-700"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={!canWrite}
+                            onChange={() => toggleItemEnCaja(item.itemId)}
+                          />
+                          <span className="font-medium">{item.nombre}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-stone-200 bg-white p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+                  Codigos SIE opcionales por equipo
+                </p>
+                {selectedCajaItems.length === 0 ? (
+                  <p className="mt-2 text-sm text-stone-600">Selecciona uno o mas equipos para asignar codigos.</p>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    {codigosPorItemSeleccionado.map((entry) => (
+                      <div key={`caja-item-codigos-${entry.itemId}`} className="rounded-lg border border-stone-200 bg-stone-50 p-2.5">
+                        <p className="text-xs font-semibold text-stone-800">{entry.itemNombre}</p>
+                        {entry.codigos.length === 0 ? (
+                          <p className="mt-1 text-xs text-stone-600">Sin codigos registrados. Quedara S/Codigo.</p>
+                        ) : (
+                          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                            {entry.codigos.map((codigo) => {
+                              const checked = selectedCajaCodigosSIE.includes(codigo.codigo);
+                              return (
+                                <label
+                                  key={`caja-codigo-${entry.itemId}-${codigo.codigo}`}
+                                  className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-sm leading-5 ${
+                                    checked
+                                      ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                                      : "border-stone-300 bg-white text-stone-700"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    disabled={!canWrite}
+                                    onChange={() => toggleCodigoSIEEnCaja(codigo.codigo)}
+                                  />
+                                  <span className="font-semibold">
+                                    {codigo.codigo}
+                                    {codigo.talla ? ` (${codigo.talla})` : ""}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <p className="mt-2 text-[11px] text-stone-600">
+                          Si no seleccionas codigos para este equipo, se guardara como S/Codigo.
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={
+                    !canWrite ||
+                    newCajaCodigo.trim() === "" ||
+                    newCajaCantidad.trim() === "" ||
+                    selectedCajaItemIds.length === 0 ||
+                    cajaEstanteriaValue.trim() === ""
+                  }
+                  className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60"
+                >
+                  Crear caja
+                </button>
+              </div>
+            </form>
+          ) : null}
 
           <div className="mt-3 space-y-2">
             {cajasFiltradas.length === 0 ? (
@@ -635,12 +736,20 @@ export function EtiquetadoView({
                   </div>
                   <div className="mt-2 space-y-1 text-xs text-stone-700">
                     <p>
-                      <span className="font-semibold">Codigos SIE:</span>{" "}
-                      {caja.codigosSIE.length === 0
+                      <span className="font-semibold">Equipos / Codigos:</span>{" "}
+                      {caja.equipos.length === 0
                         ? "-"
-                        : caja.codigosSIE
-                            .map((codigo) => `${codigo.codigo}${codigo.talla ? ` (${codigo.talla})` : ""}`)
-                            .join(", ")}
+                        : caja.equipos
+                            .map((equipo) => {
+                              if (equipo.sinCodigo || equipo.codigosSIE.length === 0) {
+                                return `${equipo.itemNombre}: S/Codigo`;
+                              }
+                              const codigosEquipo = equipo.codigosSIE
+                                .map((codigo) => `${codigo.codigo}${codigo.talla ? ` (${codigo.talla})` : ""}`)
+                                .join(", ");
+                              return `${equipo.itemNombre}: ${codigosEquipo}`;
+                            })
+                            .join(" | ")}
                     </p>
                     <p>
                       <span className="font-semibold">Talles:</span> {caja.tallas.length > 0 ? caja.tallas.join(", ") : "-"}

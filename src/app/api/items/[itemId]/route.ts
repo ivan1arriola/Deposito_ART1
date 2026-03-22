@@ -53,7 +53,25 @@ type DeleteImpactData = {
       totalStock: number;
       movimientosQueSeEliminan: number;
       movimientosQueSeActualizan: number;
+      totalCodigosSIE: number;
+      totalCodigosSIEEnCajas: number;
+      totalAparicionesEquipoEnCajas: number;
+      totalCajasAfectadas: number;
+      cajasQueQuedanSinEquipos: number;
     };
+    codigosSIE: Array<{
+      codigo: string;
+      talla: string | null;
+      aparicionesEnCajas: number;
+    }>;
+    cajas: Array<{
+      codigoDepositoGeneral: number;
+      estanteria: string;
+      totalEquiposEnCaja: number;
+      tieneRelacionEquipoDirecta: boolean;
+      codigosSIERelacionados: string[];
+      quedaSinEquipos: boolean;
+    }>;
     registros: Array<{
       movimientoId: string;
       fecha: string;
@@ -94,7 +112,7 @@ async function buildDeleteImpactData(
   );
   const affectedStockOperacionIds = Array.from(new Set(stockRefs.map((ref) => ref.stockOperacionId.toString()))).map((id) => BigInt(id));
 
-  const [movimientos, stockOperaciones] = await Promise.all([
+  const [movimientos, stockOperaciones, codigosSIE, cajaItemRefs] = await Promise.all([
     affectedMovimientoIds.length > 0
       ? tx.movimiento.findMany({
           where: { movimientoId: { in: affectedMovimientoIds } },
@@ -130,7 +148,53 @@ async function buildDeleteImpactData(
           },
         })
       : Promise.resolve([]),
+    tx.itemCodigoSIE.findMany({
+      where: { itemId },
+      select: {
+        codigo: true,
+        talla: true,
+        _count: {
+          select: { cajas: true },
+        },
+      },
+      orderBy: [{ codigo: "asc" }],
+    }),
+    tx.cajaItem.findMany({
+      where: { itemId },
+      select: { codigoDepositoGeneral: true },
+    }),
   ]);
+
+  const cajaIdsConRelacionEquipo = Array.from(
+    new Set(cajaItemRefs.map((entry) => entry.codigoDepositoGeneral)),
+  );
+
+  const cajasAfectadas = await tx.caja.findMany({
+    where: {
+      OR: [
+        { codigosSIE: { some: { itemCodigoSIE: { itemId } } } },
+        ...(cajaIdsConRelacionEquipo.length > 0
+          ? [{ codigoDepositoGeneral: { in: cajaIdsConRelacionEquipo } }]
+          : []),
+      ],
+    },
+    select: {
+      codigoDepositoGeneral: true,
+      estanteria: true,
+      _count: {
+        select: { items: true },
+      },
+      items: {
+        where: { itemId },
+        select: { itemId: true },
+      },
+      codigosSIE: {
+        where: { itemCodigoSIE: { itemId } },
+        select: { codigoSIE: true },
+      },
+    },
+    orderBy: [{ codigoDepositoGeneral: "asc" }],
+  });
 
   const normalizedRegistros = movimientos
     .map((movimiento) => {
@@ -165,10 +229,36 @@ async function buildDeleteImpactData(
     }))
     .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.movimientoId.localeCompare(a.movimientoId));
 
+  const normalizedCodigosSIE = codigosSIE.map((codigo) => ({
+    codigo: codigo.codigo,
+    talla: codigo.talla,
+    aparicionesEnCajas: codigo._count.cajas,
+  }));
+
+  const normalizedCajas = cajasAfectadas.map((caja) => {
+    const codigosSIERelacionados = Array.from(
+      new Set(caja.codigosSIE.map((codigo) => codigo.codigoSIE)),
+    ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+    const tieneRelacionEquipoDirecta = caja.items.length > 0;
+    const quedaSinEquipos = tieneRelacionEquipoDirecta ? caja._count.items <= 1 : false;
+
+    return {
+      codigoDepositoGeneral: caja.codigoDepositoGeneral,
+      estanteria: caja.estanteria,
+      totalEquiposEnCaja: caja._count.items,
+      tieneRelacionEquipoDirecta,
+      codigosSIERelacionados,
+      quedaSinEquipos,
+    };
+  });
+
   const movimientosQueSeEliminan =
     normalizedRegistros.filter((mov) => mov.seEliminaMovimiento).length +
     normalizedStock.filter((mov) => mov.seEliminaMovimiento).length;
   const totalMovimientos = normalizedRegistros.length + normalizedStock.length;
+  const totalAparicionesEquipoEnCajas = new Set(cajaItemRefs.map((entry) => entry.codigoDepositoGeneral)).size;
+  const totalCodigosSIEEnCajas = normalizedCodigosSIE.reduce((acc, codigo) => acc + codigo.aparicionesEnCajas, 0);
+  const cajasQueQuedanSinEquipos = normalizedCajas.filter((caja) => caja.quedaSinEquipos).length;
 
   return {
     impacto: {
@@ -182,7 +272,14 @@ async function buildDeleteImpactData(
         totalStock: normalizedStock.length,
         movimientosQueSeEliminan,
         movimientosQueSeActualizan: totalMovimientos - movimientosQueSeEliminan,
+        totalCodigosSIE: normalizedCodigosSIE.length,
+        totalCodigosSIEEnCajas,
+        totalAparicionesEquipoEnCajas,
+        totalCajasAfectadas: normalizedCajas.length,
+        cajasQueQuedanSinEquipos,
       },
+      codigosSIE: normalizedCodigosSIE,
+      cajas: normalizedCajas,
       registros: normalizedRegistros,
       stock: normalizedStock,
     },
@@ -546,6 +643,15 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
       await tx.stockOperacionItem.deleteMany({
         where: { itemId },
       });
+      await tx.cajaItemCodigoSIE.deleteMany({
+        where: { itemCodigoSIE: { itemId } },
+      });
+      await tx.itemCodigoSIE.deleteMany({
+        where: { itemId },
+      });
+      await tx.cajaItem.deleteMany({
+        where: { itemId },
+      });
 
       if (affectedMovimientoIds.length > 0) {
         await tx.movimiento.deleteMany({
@@ -585,7 +691,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
       detalle: {
         nombre: deletionResult.removed.nombre,
         impacto: deletionResult.impacto.resumen,
-        advertencia: "Accion destructiva. Se elimino el equipo y los movimientos vacios relacionados.",
+        advertencia:
+          "Accion destructiva. Se elimino el equipo junto a sus codigos SIE, apariciones en cajas y movimientos vacios relacionados.",
       },
     });
 

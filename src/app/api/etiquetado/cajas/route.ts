@@ -7,23 +7,30 @@ type CreateCajaPayload = {
   codigoDepositoGeneral?: string | number;
   cantidad?: string | number;
   estanteria?: string;
+  itemIds?: Array<string | number>;
   codigosSIE?: string[];
 };
 
 function hasEtiquetadoDelegates() {
   const candidate = prisma as typeof prisma & {
+    item?: unknown;
     estanteria?: unknown;
     itemCodigoSIE?: unknown;
     caja?: unknown;
+    cajaItem?: unknown;
     cajaItemCodigoSIE?: unknown;
   };
   return (
+    typeof candidate.item !== "undefined" &&
     typeof candidate.estanteria !== "undefined" &&
     typeof candidate.itemCodigoSIE !== "undefined" &&
     typeof candidate.caja !== "undefined" &&
+    typeof candidate.cajaItem !== "undefined" &&
     typeof candidate.cajaItemCodigoSIE !== "undefined"
   );
 }
+
+const SIE_CODE_REGEX = /^(?:\d{8}|[A-Z]{3}\d{2})$/;
 
 function parseCodigoDepositoGeneral(value: unknown) {
   const parsed = Number(value);
@@ -37,6 +44,12 @@ function parseCantidad(value: unknown) {
   return parsed;
 }
 
+function parseItemId(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!/^\d+$/.test(raw)) return null;
+  return BigInt(raw);
+}
+
 function normalizeEstanteria(value: unknown) {
   const normalized = String(value ?? "").trim().toUpperCase();
   if (!/^[A-Z0-9]$/.test(normalized)) return null;
@@ -45,8 +58,7 @@ function normalizeEstanteria(value: unknown) {
 
 function normalizeCodigoSIE(value: unknown) {
   const normalized = String(value ?? "").trim().toUpperCase();
-  if (normalized.length < 3 || normalized.length > 40) return null;
-  if (!/^[A-Z0-9\-./]+$/.test(normalized)) return null;
+  if (!SIE_CODE_REGEX.test(normalized)) return null;
   return normalized;
 }
 
@@ -65,26 +77,54 @@ export async function POST(request: Request) {
   const codigoDepositoGeneral = parseCodigoDepositoGeneral(body.codigoDepositoGeneral);
   const cantidad = parseCantidad(body.cantidad);
   const estanteria = normalizeEstanteria(body.estanteria);
-  const codigosSIE = Array.from(
-    new Set((body.codigosSIE ?? []).map(normalizeCodigoSIE).filter((codigo): codigo is string => codigo !== null)),
-  );
+  const rawItemIds = Array.isArray(body.itemIds) ? body.itemIds : [];
+  const itemIdsParsed = rawItemIds.map(parseItemId);
+  if (itemIdsParsed.some((itemId) => itemId === null)) {
+    return NextResponse.json({ error: "Equipos invalidos seleccionados." }, { status: 400 });
+  }
+  const itemIds = Array.from(
+    new Set((itemIdsParsed as bigint[]).map((itemId) => itemId.toString())),
+  ).map((itemId) => BigInt(itemId));
 
-  if (codigoDepositoGeneral === null || cantidad === null || !estanteria) {
+  const rawCodigosSIE = Array.isArray(body.codigosSIE) ? body.codigosSIE : [];
+  const codigosSIENormalizados = rawCodigosSIE.map(normalizeCodigoSIE);
+  if (codigosSIENormalizados.some((codigo) => codigo === null)) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo de caja, cantidad y estanteria son obligatorios." },
+      { error: "Codigos SIE invalidos. Formatos validos: 8 digitos o 3 letras y 2 numeros." },
+      { status: 400 },
+    );
+  }
+  const codigosSIE = Array.from(new Set(codigosSIENormalizados as string[]));
+
+  if (codigoDepositoGeneral === null || cantidad === null || !estanteria || itemIds.length === 0) {
+    return NextResponse.json(
+      { error: "Payload invalido. codigo de caja, cantidad, estanteria y equipos son obligatorios." },
       { status: 400 },
     );
   }
 
-  const estanteriaRegistrada = await prisma.estanteria.findFirst({
-    where: { codigo: estanteria },
-    select: { codigo: true },
-  });
+  const [estanteriaRegistrada, itemsFound] = await Promise.all([
+    prisma.estanteria.findFirst({
+      where: { codigo: estanteria },
+      select: { codigo: true },
+    }),
+    prisma.item.findMany({
+      where: { itemId: { in: itemIds } },
+      select: { itemId: true, nombre: true },
+    }),
+  ]);
+
   if (!estanteriaRegistrada) {
     return NextResponse.json({ error: "La estanteria no existe. Registrala primero." }, { status: 400 });
   }
+  if (itemsFound.length !== itemIds.length) {
+    return NextResponse.json({ error: "Uno o mas equipos seleccionados no existen." }, { status: 400 });
+  }
 
-  let itemNombres: string[] = [];
+  const itemIdSet = new Set(itemIds.map((itemId) => itemId.toString()));
+  const itemNameById = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
+  const itemNombres = Array.from(itemNameById.values()).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+
   if (codigosSIE.length > 0) {
     const codesFound = await prisma.itemCodigoSIE.findMany({
       where: {
@@ -93,6 +133,7 @@ export async function POST(request: Request) {
       include: {
         item: {
           select: {
+            itemId: true,
             nombre: true,
           },
         },
@@ -107,9 +148,19 @@ export async function POST(request: Request) {
       );
     }
 
-    itemNombres = Array.from(new Set(codesFound.map((entry) => entry.item.nombre))).sort((a, b) =>
-      a.localeCompare(b, "es", { sensitivity: "base" }),
+    const codigosFueraDeEquipos = Array.from(
+      new Set(
+        codesFound
+          .filter((entry) => !itemIdSet.has(entry.item.itemId.toString()))
+          .map((entry) => entry.codigo),
+      ),
     );
+    if (codigosFueraDeEquipos.length > 0) {
+      return NextResponse.json(
+        { error: `Estos codigos SIE no pertenecen a los equipos seleccionados: ${codigosFueraDeEquipos.join(", ")}` },
+        { status: 400 },
+      );
+    }
   }
 
   try {
@@ -120,6 +171,13 @@ export async function POST(request: Request) {
           estanteria,
           cantidad,
         },
+      });
+
+      await tx.cajaItem.createMany({
+        data: itemIds.map((itemId) => ({
+          codigoDepositoGeneral,
+          itemId,
+        })),
       });
 
       if (codigosSIE.length > 0) {
@@ -139,6 +197,7 @@ export async function POST(request: Request) {
       entidadId: String(codigoDepositoGeneral),
       detalle: {
         codigoDepositoGeneral,
+        itemIds: itemIds.map((itemId) => itemId.toString()),
         itemNombres,
         cantidad,
         estanteria,

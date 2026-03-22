@@ -144,7 +144,7 @@ CREATE TABLE "item_codigo_sie" (
   "codigo" TEXT PRIMARY KEY,
   "talla" TEXT,
   "item_id" BIGINT NOT NULL REFERENCES "item"("item_id") ON DELETE CASCADE,
-  CONSTRAINT "item_codigo_sie_codigo_formato_chk" CHECK ("codigo" ~ '^[A-Z0-9./-]{3,40}$'),
+  CONSTRAINT "item_codigo_sie_codigo_formato_chk" CHECK ("codigo" ~ '^([0-9]{8}|[A-Z]{3}[0-9]{2})$'),
   CONSTRAINT "item_codigo_sie_codigo_item_uq" UNIQUE ("codigo", "item_id")
 );
 
@@ -158,6 +158,22 @@ CREATE TABLE "caja" (
   CONSTRAINT "caja_estanteria_formato_chk" CHECK ("estanteria" ~ '^[A-Z0-9]$'),
   CONSTRAINT "caja_cantidad_chk" CHECK ("cantidad" > 0)
 );
+
+CREATE TABLE "caja_item" (
+  "codigo_deposito_general" INTEGER NOT NULL,
+  "item_id" BIGINT NOT NULL,
+  PRIMARY KEY ("codigo_deposito_general", "item_id"),
+  CONSTRAINT "caja_item_caja_fk"
+    FOREIGN KEY ("codigo_deposito_general")
+    REFERENCES "caja"("codigo_deposito_general")
+    ON DELETE CASCADE,
+  CONSTRAINT "caja_item_item_fk"
+    FOREIGN KEY ("item_id")
+    REFERENCES "item"("item_id")
+    ON DELETE RESTRICT
+);
+
+CREATE INDEX "caja_item_item_id_idx" ON "caja_item"("item_id");
 
 CREATE TABLE "caja_item_codigo_sie" (
   "codigo_deposito_general" INTEGER NOT NULL,
