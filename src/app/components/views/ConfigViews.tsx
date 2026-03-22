@@ -677,7 +677,7 @@ export function ConfigViews(props: ConfigViewsProps) {
         <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Usuarios registrados</h2>
           <p className="mt-1 text-xs text-stone-600">
-            Desde esta vista puedes editar, activar, desactivar o eliminar usuarios existentes. Las altas nuevas se hacen desde el menú `Configuracion`.
+            Desde esta vista puedes editar, activar, desactivar o eliminar usuarios existentes. Las altas nuevas se hacen desde el menú `Configuración`.
           </p>
           <form onSubmit={props.onCreateUsuario} className="hidden mt-3 space-y-3">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -897,5 +897,4 @@ export function ConfigViews(props: ConfigViewsProps) {
 
   return null;
 }
-
 

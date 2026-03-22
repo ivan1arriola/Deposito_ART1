@@ -104,12 +104,12 @@ const icons = {
 
 const configViews: Array<NavOption<ConfigView>> = [
   { view: "grados", label: "Grados registrados", icon: icons.resumen },
-  { view: "baterias", label: "Baterias registradas", icon: icons.cajas },
+  { view: "baterias", label: "Baterías registradas", icon: icons.cajas },
   { view: "firmas", label: "Firmas institucionales", icon: icons.lock, adminOnly: true },
   { view: "recordatorios", label: "Recordatorios", icon: icons.bell },
   { view: "usuarios", label: "Usuarios registrados", icon: icons.users, adminOnly: true },
   { view: "usuario_nuevo", label: "Alta de usuario", icon: icons.altas, adminOnly: true },
-  { view: "auditoria", label: "Auditoria detallada", icon: icons.audit, adminOnly: true },
+  { view: "auditoria", label: "Auditoría detallada", icon: icons.audit, adminOnly: true },
 ];
 
 const createViews: Array<NavOption<CreateView>> = [
@@ -122,14 +122,14 @@ const stockViews: Array<NavOption<StockView>> = [
   { view: "equipo_nuevo", label: "Alta de equipo", shortLabel: "Alta Eq.", icon: icons.altas, writeOnly: true },
   { view: "equipos", label: "Equipos registrados", shortLabel: "Equipos", icon: icons.stock },
   { view: "stock_total", label: "Total de items", shortLabel: "Total", icon: icons.resumen },
-  { view: "stock_actual", label: "Deposito interno", shortLabel: "Deposito", icon: icons.stock },
+  { view: "stock_actual", label: "Depósito interno", shortLabel: "Depósito", icon: icons.stock },
   { view: "stock_alta", label: "Alta de stock", shortLabel: "Alta", icon: icons.altas },
   { view: "stock_baja", label: "Baja de stock", shortLabel: "Baja", icon: icons.minus },
   { view: "stock_historial", label: "Historial", shortLabel: "Historial", icon: icons.history },
 ];
 
 const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
-  { view: "etiquetado_codigos_sie", label: "Codigos SIE", shortLabel: "Codigos", icon: icons.codigo },
+  { view: "etiquetado_codigos_sie", label: "Códigos SIE", shortLabel: "Códigos", icon: icons.codigo },
   { view: "etiquetado_listado_cajas", label: "Listado de cajas", shortLabel: "Cajas", icon: icons.cajas },
   { view: "etiquetado_imprimir_todas", label: "Imprimir todas", shortLabel: "Imprimir", icon: icons.imprimir },
 ];
@@ -137,7 +137,7 @@ const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
 const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen">>> = [
   { view: "personal", label: "Personal subalterno", icon: icons.personal },
   { view: "hoja_matrix", label: "Hoja matriz", icon: icons.matrix },
-  { view: "equipo_resumen", label: "Resumen de equipo en baterias", icon: icons.resumenEquipo },
+  { view: "equipo_resumen", label: "Resumen de equipo en baterías", icon: icons.resumenEquipo },
 ];
 
 const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficiales" | "oficiales_suboficiales_resumen">>> = [
@@ -403,7 +403,7 @@ export function MainNavigation({
     >
       {!embedded ? (
         <Typography variant="subtitle2" sx={{ color: "var(--EscudoAzul)", fontWeight: 700, letterSpacing: 1 }}>
-          NAVEGACION
+          NAVEGACIÓN
         </Typography>
       ) : null}
 
@@ -491,7 +491,7 @@ export function MainNavigation({
               ) : null}
 
               <Box ref={configMenuRef}>
-                <ExpandedMenuGroup title="Configuracion" icon={icons.config} compact={embedded}>
+                <ExpandedMenuGroup title="Configuración" icon={icons.config} compact={embedded}>
                   {filteredConfigViews.map((item) => (
                     <Button
                       key={item.view}
@@ -521,7 +521,7 @@ export function MainNavigation({
                 startIcon={icons.prestamos}
                 sx={navButtonSx(activeView === "formularios", embedded)}
               >
-                Prestamos
+                Préstamos
               </Button>
             </>
           ) : (
@@ -703,7 +703,7 @@ export function MainNavigation({
               ) : null}
 
               <Button variant="outlined" onClick={() => handleSelectView("formularios")} startIcon={icons.prestamos} sx={navButtonSx(activeView === "formularios", embedded)}>
-                Prestamos
+                Préstamos
               </Button>
 
               <Box ref={configMenuRef}>
@@ -717,7 +717,7 @@ export function MainNavigation({
                   aria-controls="menu-configuracion"
                   sx={navButtonSx(isConfigView || isMenuOpen("config"), embedded)}
                 >
-                  Configuracion
+                  Configuración
                 </Button>
                 <Menu
                   id="menu-configuracion"
@@ -725,10 +725,10 @@ export function MainNavigation({
                   open={isMenuOpen("config")}
                   onClose={() => closeMenu("config")}
                   PaperProps={{ sx: { ...menuPaperSx(embedded), width: "min(420px, calc(100vw - 2rem))" } }}
-                  MenuListProps={{ "aria-label": "Vistas de configuracion" }}
+                  MenuListProps={{ "aria-label": "Vistas de configuración" }}
                 >
                   <Typography variant="overline" sx={menuHeaderSx}>
-                    Vistas de configuracion
+                    Vistas de configuración
                   </Typography>
                   <Divider sx={menuDividerSx} />
                   {filteredConfigViews.map((item) => (

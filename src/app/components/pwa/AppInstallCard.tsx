@@ -26,14 +26,14 @@ export function AppInstallCard({ compact = false }: AppInstallCardProps) {
 
     if (isMobile) {
       return {
-        full: "En Chrome mobile, abre el menu (tres puntos) y toca 'Instalar aplicacion'.",
-        compact: "Chrome mobile: menu (tres puntos) > Instalar aplicacion.",
+        full: "En Chrome mobile, abre el menú (tres puntos) y toca 'Instalar aplicación'.",
+        compact: "Chrome mobile: menú (tres puntos) > Instalar aplicación.",
       };
     }
 
     return {
-      full: "En Chrome escritorio, usa el icono de instalacion en la barra de direcciones (a la derecha).",
-      compact: "Chrome escritorio: usa el icono de instalacion de la barra.",
+      full: "En Chrome escritorio, usa el ícono de instalación en la barra de direcciones (a la derecha).",
+      compact: "Chrome escritorio: usa el ícono de instalación de la barra.",
     };
   }, []);
 
@@ -115,8 +115,8 @@ export function AppInstallCard({ compact = false }: AppInstallCardProps) {
   const summaryText =
     installState === "available"
       ? compact
-        ? "Instalala para abrir rapido desde Inicio."
-        : "Instalala para abrir rapido desde el inicio y usarla como app en escritorio o mobile."
+        ? "Instálala para abrir rápido desde Inicio."
+        : "Instálala para abrir rápido desde el inicio y usarla como app en escritorio o mobile."
       : compact
         ? manualMessages.compact
         : manualMessages.full;
@@ -128,8 +128,8 @@ export function AppInstallCard({ compact = false }: AppInstallCardProps) {
         ? "Instalar app"
         : "Descargar app"
       : compact
-        ? "Como instalar"
-        : "Ver como descargar app";
+        ? "Cómo instalar"
+        : "Ver cómo descargar app";
 
   return (
     <section
@@ -138,8 +138,8 @@ export function AppInstallCard({ compact = false }: AppInstallCardProps) {
     >
       <div className={`flex flex-col gap-3 ${compact ? "" : "sm:flex-row sm:items-center sm:justify-between"}`}>
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Aplicacion instalable</p>
-          <h2 className={`${compact ? "text-sm sm:text-base" : "text-base sm:text-lg"} font-bold text-stone-900`}>Instala Deposito ART1 en Chrome</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Aplicación instalable</p>
+          <h2 className={`${compact ? "text-sm sm:text-base" : "text-base sm:text-lg"} font-bold text-stone-900`}>Instala Depósito ART1 en Chrome</h2>
           <p className={`${compact ? "text-xs" : "text-sm"} mt-1 text-stone-700`}>{summaryText}</p>
         </div>
 

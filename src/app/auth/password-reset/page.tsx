@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
@@ -26,7 +26,7 @@ export default function PasswordResetPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!hasToken) {
-      setError("El enlace es invalido.");
+      setError("El enlace es inválido.");
       return;
     }
     if (newPassword.trim().length < 8) {
@@ -34,7 +34,7 @@ export default function PasswordResetPage() {
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError("La confirmacion no coincide.");
+      setError("La confirmación no coincide.");
       return;
     }
 
@@ -65,14 +65,14 @@ export default function PasswordResetPage() {
         <h1 className="text-2xl font-black text-stone-900">Restablecer contraseña</h1>
         {!hasToken ? (
           <div className="mt-3 space-y-3">
-            <p className="text-sm text-stone-700">El enlace es invalido o no contiene token.</p>
+            <p className="text-sm text-stone-700">El enlace es inválido o no contiene token.</p>
             <Link href="/" className="inline-block rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-800">
               Volver al inicio
             </Link>
           </div>
         ) : state === "success" ? (
           <div className="mt-3 space-y-3">
-            <p className="text-sm text-emerald-700">Contrasena actualizada correctamente.</p>
+            <p className="text-sm text-emerald-700">Contraseña actualizada correctamente.</p>
             <Link href="/" className="inline-block rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-800">
               Ir a iniciar sesión
             </Link>
@@ -107,3 +107,4 @@ export default function PasswordResetPage() {
     </main>
   );
 }
+

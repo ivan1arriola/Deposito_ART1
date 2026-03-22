@@ -1075,7 +1075,7 @@ export default function Home() {
         return;
       }
 
-      setStatus("Registrando estanteria...");
+      setStatus("Registrando estantería...");
       try {
         await api("/api/etiquetado/estanterias", {
           method: "POST",
@@ -1085,7 +1085,7 @@ export default function Home() {
         setStatus("Estanteria registrada.");
         await loadEtiquetadoData();
       } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo registrar la estanteria.");
+        setStatus(error instanceof Error ? error.message : "No se pudo registrar la estantería.");
       }
     },
     [canWrite, loadEtiquetadoData],
@@ -1098,7 +1098,7 @@ export default function Home() {
         return;
       }
 
-      setStatus("Eliminando estanteria...");
+      setStatus("Eliminando estantería...");
       try {
         await api(`/api/etiquetado/estanterias/${encodeURIComponent(codigo)}/${encodeURIComponent(String(piso))}`, {
           method: "DELETE",
@@ -1106,7 +1106,7 @@ export default function Home() {
         setStatus("Estanteria eliminada.");
         await loadEtiquetadoData();
       } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo eliminar la estanteria.");
+        setStatus(error instanceof Error ? error.message : "No se pudo eliminar la estantería.");
       }
     },
     [canWrite, loadEtiquetadoData],
@@ -1119,17 +1119,17 @@ export default function Home() {
         return;
       }
 
-      setStatus("Registrando codigo SIE...");
+      setStatus("Registrando código SIE...");
       try {
         await api("/api/etiquetado/codigos-sie", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(input),
         });
-        setStatus("Codigo SIE registrado.");
+        setStatus("Código SIE registrado.");
         await loadEtiquetadoData();
       } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo registrar el codigo SIE.");
+        setStatus(error instanceof Error ? error.message : "No se pudo registrar el código SIE.");
       }
     },
     [canWrite, loadEtiquetadoData],
@@ -1142,7 +1142,7 @@ export default function Home() {
         return;
       }
 
-      setStatus("Actualizando codigo SIE...");
+      setStatus("Actualizando código SIE...");
       try {
         await api(`/api/etiquetado/codigos-sie/${encodeURIComponent(input.originalCodigo)}`, {
           method: "PUT",
@@ -1153,10 +1153,10 @@ export default function Home() {
             itemId: input.itemId,
           }),
         });
-        setStatus("Codigo SIE actualizado.");
+        setStatus("Código SIE actualizado.");
         await loadEtiquetadoData();
       } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo actualizar el codigo SIE.");
+        setStatus(error instanceof Error ? error.message : "No se pudo actualizar el código SIE.");
       }
     },
     [canWrite, loadEtiquetadoData],
@@ -1169,15 +1169,15 @@ export default function Home() {
         return;
       }
 
-      setStatus("Eliminando codigo SIE...");
+      setStatus("Eliminando código SIE...");
       try {
         await api(`/api/etiquetado/codigos-sie/${encodeURIComponent(codigo)}`, {
           method: "DELETE",
         });
-        setStatus("Codigo SIE eliminado.");
+        setStatus("Código SIE eliminado.");
         await loadEtiquetadoData();
       } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo eliminar el codigo SIE.");
+        setStatus(error instanceof Error ? error.message : "No se pudo eliminar el código SIE.");
       }
     },
     [canWrite, loadEtiquetadoData],
@@ -1607,12 +1607,12 @@ export default function Home() {
       const cajasImpacto = impacto.cajas.map((caja) => {
         const detalles = [
           caja.tieneRelacionEquipoDirecta ? "incluye este equipo" : null,
-          caja.codigosSIERelacionados.length > 0 ? `codigos SIE: ${caja.codigosSIERelacionados.join(", ")}` : null,
+          caja.codigosSIERelacionados.length > 0 ? `códigos SIE: ${caja.codigosSIERelacionados.join(", ")}` : null,
           caja.quedaSinEquipos ? "queda sin equipos seleccionados" : null,
         ]
           .filter((detail): detail is string => detail !== null)
           .join(" | ");
-        return `- Caja ${caja.codigoDepositoGeneral} (nombre estanteria ${caja.estanteria}) | equipos: ${caja.totalEquiposEnCaja}${detalles ? ` | ${detalles}` : ""}`;
+        return `- Caja ${caja.codigoDepositoGeneral} (nombre estantería ${caja.estanteria}) | equipos: ${caja.totalEquiposEnCaja}${detalles ? ` | ${detalles}` : ""}`;
       });
       const resumen = impacto.resumen;
       const messageLines = [
@@ -1620,12 +1620,12 @@ export default function Home() {
         `Movimientos afectados: ${resumen.totalMovimientos} (registros: ${resumen.totalRegistros}, stock: ${resumen.totalStock}).`,
         `Movimientos que quedaran vacios y se eliminaran: ${resumen.movimientosQueSeEliminan}.`,
         `Movimientos que conservaran otros equipos: ${resumen.movimientosQueSeActualizan}.`,
-        `Codigos SIE a eliminar: ${resumen.totalCodigosSIE} (apariciones en cajas por codigo: ${resumen.totalCodigosSIEEnCajas}).`,
+        `Códigos SIE a eliminar: ${resumen.totalCodigosSIE} (apariciones en cajas por código: ${resumen.totalCodigosSIEEnCajas}).`,
         `Apariciones directas del equipo en cajas: ${resumen.totalAparicionesEquipoEnCajas}.`,
-        `Cajas afectadas (equipo/codigos): ${resumen.totalCajasAfectadas}.`,
+        `Cajas afectadas (equipo/códigos): ${resumen.totalCajasAfectadas}.`,
         `Cajas que quedan sin equipos seleccionados: ${resumen.cajasQueQuedanSinEquipos}.`,
         "",
-        "Codigos SIE afectados:",
+        "Códigos SIE afectados:",
         ...(codigosSIEImpacto.length > 0 ? codigosSIEImpacto : ["- Ninguno"]),
         "",
         "Cajas afectadas:",
@@ -3806,7 +3806,7 @@ export default function Home() {
           <div className="relative hidden border-r border-stone-300/60 p-8 lg:flex lg:items-center lg:justify-center xl:p-10">
             <Image
               src="/assets/logo-deposito.png"
-              alt="Logo Deposito"
+              alt="Logo Depósito"
               width={420}
               height={420}
               priority
@@ -3819,7 +3819,7 @@ export default function Home() {
               <div className="mb-4 flex justify-center lg:hidden">
                 <Image
                   src="/assets/logo-deposito.png"
-                  alt="Logo Deposito"
+                  alt="Logo Depósito"
                   width={220}
                   height={220}
                   priority
@@ -4556,4 +4556,3 @@ export default function Home() {
     </main>
   );
 }
-

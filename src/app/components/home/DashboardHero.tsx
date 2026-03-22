@@ -115,7 +115,7 @@ export function DashboardHero({
             <Box sx={{ width: { xs: 72, sm: 84 }, flexShrink: 0 }}>
               <Image
                 src="/assets/logo-deposito.png"
-                alt="Logo Deposito"
+                alt="Logo Depósito"
                 width={360}
                 height={430}
                 priority
@@ -138,16 +138,16 @@ export function DashboardHero({
                   color: "#FFCC00",
                 }}
               >
-                {'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1'}
+                {'Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1'}
               </Typography>
               <Typography sx={{ fontSize: { xs: 30, sm: 38 }, fontWeight: 900, lineHeight: 1.01, mt: 0.35 }}>
-                Deposito General
+                Depósito General
               </Typography>
             </Box>
 
             <IconButton
               type="button"
-              aria-label="Abrir menu"
+              aria-label="Abrir menú"
               onClick={() => setMobileMenuOpen(true)}
               sx={{
                 color: "common.white",
@@ -179,10 +179,10 @@ export function DashboardHero({
                   color: "#FFCC00",
                 }}
               >
-                {'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No. 1'}
+                {'Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1'}
               </Typography>
               <Typography sx={{ fontSize: { md: 56, lg: 64, xl: 72 }, fontWeight: 900, lineHeight: 0.98, mt: 0.35 }}>
-                Deposito General
+                Depósito General
               </Typography>
             </Box>
 
@@ -213,7 +213,7 @@ export function DashboardHero({
                   Recargar
                 </Button>
                 <Button type="button" onClick={onLogout} size="small" color="error" variant="contained" sx={{ borderRadius: 1.5, minHeight: 34 }}>
-                  Cerrar sesion
+                  Cerrar sesión
                 </Button>
               </Stack>
 
@@ -231,7 +231,7 @@ export function DashboardHero({
             <Box sx={{ flexShrink: 0, pt: 0.25, width: { md: 170, lg: 220, xl: 240 } }}>
               <Image
                 src="/assets/logo-deposito.png"
-                alt="Logo Deposito"
+                alt="Logo Depósito"
                 width={360}
                 height={430}
                 priority
@@ -277,9 +277,9 @@ export function DashboardHero({
         <Stack spacing={1.5}>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "var(--EscudoAzul)" }}>
-              Menu
+              Menú
             </Typography>
-            <IconButton type="button" aria-label="Cerrar menu" onClick={closeMobileMenu}>
+            <IconButton type="button" aria-label="Cerrar menú" onClick={closeMobileMenu}>
               <CloseRoundedIcon />
             </IconButton>
           </Stack>
@@ -302,7 +302,7 @@ export function DashboardHero({
               Recargar
             </Button>
             <Button type="button" onClick={handleMobileLogout} fullWidth color="error" variant="contained" sx={{ borderRadius: 1.5 }}>
-              Cerrar sesion
+              Cerrar sesión
             </Button>
           </Stack>
 
@@ -318,7 +318,7 @@ export function DashboardHero({
             <Box sx={{ width: { xs: 180, sm: 210 } }}>
               <Image
                 src="/assets/logo-deposito.png"
-                alt="Logo Deposito"
+                alt="Logo Depósito"
                 width={360}
                 height={430}
                 priority
