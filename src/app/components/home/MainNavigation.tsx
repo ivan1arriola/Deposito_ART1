@@ -308,7 +308,6 @@ export function MainNavigation({
   expandSubmenus = false,
 }: MainNavigationProps) {
   const [menuAnchors, setMenuAnchors] = useState<Partial<Record<MenuKey, HTMLElement | null>>>({});
-  const isConfigMenuOpen = Boolean(menuAnchors.config) && showConfigViews;
 
   const isPersonalView = activeView === "personal" || activeView === "hoja_matrix" || activeView === "equipo_resumen";
   const isOficialesSuboficialesView =
@@ -345,9 +344,19 @@ export function MainNavigation({
         xl: embedded ? "repeat(3, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
       };
 
+  function getValidAnchor(menu: MenuKey) {
+    const anchor = menuAnchors[menu];
+    if (!anchor) return null;
+    if (!anchor.isConnected) return null;
+    const rect = anchor.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return null;
+    return anchor;
+  }
+
   function isMenuOpen(menu: MenuKey) {
-    if (menu === "config") return isConfigMenuOpen;
-    return Boolean(menuAnchors[menu]);
+    const hasValidAnchor = Boolean(getValidAnchor(menu));
+    if (menu === "config") return hasValidAnchor && showConfigViews;
+    return hasValidAnchor;
   }
 
   function closeAllMenus() {
@@ -541,7 +550,7 @@ export function MainNavigation({
                 </Button>
                 <Menu
                   id="menu-personal-subalterno"
-                  anchorEl={menuAnchors.personal}
+                  anchorEl={getValidAnchor("personal")}
                   open={isMenuOpen("personal")}
                   onClose={() => closeMenu("personal")}
                   PaperProps={{ sx: menuPaperSx(embedded) }}
@@ -575,7 +584,7 @@ export function MainNavigation({
                 </Button>
                 <Menu
                   id="menu-oficiales-suboficiales"
-                  anchorEl={menuAnchors.oficiales}
+                  anchorEl={getValidAnchor("oficiales")}
                   open={isMenuOpen("oficiales")}
                   onClose={() => closeMenu("oficiales")}
                   PaperProps={{ sx: menuPaperSx(embedded) }}
@@ -609,7 +618,7 @@ export function MainNavigation({
                 </Button>
                 <Menu
                   id="menu-stock"
-                  anchorEl={menuAnchors.stock}
+                  anchorEl={getValidAnchor("stock")}
                   open={isMenuOpen("stock")}
                   onClose={() => closeMenu("stock")}
                   PaperProps={{ sx: menuPaperSx(embedded) }}
@@ -643,7 +652,7 @@ export function MainNavigation({
                 </Button>
                 <Menu
                   id="menu-etiquetado"
-                  anchorEl={menuAnchors.etiquetado}
+                  anchorEl={getValidAnchor("etiquetado")}
                   open={isMenuOpen("etiquetado")}
                   onClose={() => closeMenu("etiquetado")}
                   PaperProps={{ sx: menuPaperSx(embedded) }}
@@ -682,7 +691,7 @@ export function MainNavigation({
                   </Button>
                   <Menu
                     id="menu-altas"
-                    anchorEl={menuAnchors.create}
+                    anchorEl={getValidAnchor("create")}
                     open={isMenuOpen("create")}
                     onClose={() => closeMenu("create")}
                     PaperProps={{ sx: menuPaperSx(embedded) }}
@@ -721,7 +730,7 @@ export function MainNavigation({
                 </Button>
                 <Menu
                   id="menu-configuracion"
-                  anchorEl={menuAnchors.config}
+                  anchorEl={getValidAnchor("config")}
                   open={isMenuOpen("config")}
                   onClose={() => closeMenu("config")}
                   PaperProps={{ sx: { ...menuPaperSx(embedded), width: "min(420px, calc(100vw - 2rem))" } }}

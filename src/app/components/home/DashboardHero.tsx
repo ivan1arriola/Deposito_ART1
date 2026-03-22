@@ -314,23 +314,6 @@ export function DashboardHero({
 
           <Divider />
 
-          <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
-            <Box sx={{ width: { xs: 180, sm: 210 } }}>
-              <Image
-                src="/assets/logo-deposito.png"
-                alt="Logo Depósito"
-                width={360}
-                height={430}
-                priority
-                style={{
-                  width: "100%",
-                  height: "auto",
-                  objectFit: "contain",
-                }}
-              />
-            </Box>
-          </Box>
-
           <MainNavigation
             activeView={activeView}
             canWrite={canWrite}
