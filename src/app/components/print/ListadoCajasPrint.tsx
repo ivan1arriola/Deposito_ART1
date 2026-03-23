@@ -1,5 +1,26 @@
 import type { CajaListadoPrintData } from "@/lib/etiquetado-data";
 
+function getContiguousRowSpans(
+  rows: CajaListadoPrintData[],
+  valueSelector: (row: CajaListadoPrintData) => string | number,
+) {
+  const spans = Array.from({ length: rows.length }, () => 0);
+  let startIndex = 0;
+
+  while (startIndex < rows.length) {
+    const startValue = valueSelector(rows[startIndex]);
+    let endIndex = startIndex + 1;
+    while (endIndex < rows.length && valueSelector(rows[endIndex]) === startValue) {
+      endIndex += 1;
+    }
+
+    spans[startIndex] = endIndex - startIndex;
+    startIndex = endIndex;
+  }
+
+  return spans;
+}
+
 function buildPrintStyles() {
   return `
     * {
@@ -95,7 +116,8 @@ function buildPrintStyles() {
     .listado-cajas-table th {
       border: 0.35mm solid #8f8f8f;
       background: #efeee7;
-      text-align: left;
+      text-align: center;
+      vertical-align: middle;
       padding: 1.8mm 1.7mm;
       font-size: 10px;
       font-weight: 700;
@@ -106,7 +128,8 @@ function buildPrintStyles() {
     .listado-cajas-table td {
       border: 0.3mm solid #b8b8b8;
       padding: 1.8mm 1.7mm;
-      vertical-align: top;
+      text-align: center;
+      vertical-align: middle;
       line-height: 1.25;
       word-break: break-word;
     }
@@ -119,21 +142,25 @@ function buildPrintStyles() {
     .listado-col-piso {
       width: 11%;
       text-align: center;
+      vertical-align: middle;
     }
 
     .listado-col-estante {
       width: 12%;
       text-align: center;
+      vertical-align: middle;
     }
 
     .listado-col-caja {
       width: 16%;
       text-align: center;
       font-weight: 700;
+      vertical-align: middle;
     }
 
     .listado-col-contenido {
       width: 47%;
+      text-align: center;
     }
 
     .listado-col-cantidad {
@@ -193,6 +220,14 @@ export function ListadoCajasPrintTable({
   cajas: CajaListadoPrintData[];
   generatedAt: string;
 }) {
+  const totalCajas = new Set(cajas.map((caja) => caja.codigoDepositoGeneral)).size;
+  const pisoRowSpans = getContiguousRowSpans(cajas, (row) => row.piso);
+  const estanteRowSpans = getContiguousRowSpans(cajas, (row) => `${row.piso}::${row.estanteria}`);
+  const cajaRowSpans = getContiguousRowSpans(
+    cajas,
+    (row) => `${row.piso}::${row.estanteria}::${String(row.codigoDepositoGeneral)}`,
+  );
+
   return (
     <main className="listado-cajas-sheet">
       <section className="listado-cajas-frame">
@@ -202,7 +237,7 @@ export function ListadoCajasPrintTable({
             <h1 className="listado-cajas-title">Listado de Cajas</h1>
           </div>
           <p className="listado-cajas-meta">
-            Total cajas: {cajas.length}
+            Total cajas: {totalCajas}
             <br />
             Generado: {generatedAt}
           </p>
@@ -219,11 +254,23 @@ export function ListadoCajasPrintTable({
             </tr>
           </thead>
           <tbody>
-            {cajas.map((caja) => (
-              <tr key={`listado-caja-${caja.codigoDepositoGeneral}`}>
-                <td className="listado-col-piso">{caja.piso}</td>
-                <td className="listado-col-estante">{caja.estanteria}</td>
-                <td className="listado-col-caja">{caja.codigoDepositoGeneral}</td>
+            {cajas.map((caja, index) => (
+              <tr key={`listado-caja-${caja.codigoDepositoGeneral}-${caja.contenido}-${index}`}>
+                {pisoRowSpans[index] > 0 ? (
+                  <td className="listado-col-piso" rowSpan={pisoRowSpans[index]}>
+                    {caja.piso}
+                  </td>
+                ) : null}
+                {estanteRowSpans[index] > 0 ? (
+                  <td className="listado-col-estante" rowSpan={estanteRowSpans[index]}>
+                    {caja.estanteria}
+                  </td>
+                ) : null}
+                {cajaRowSpans[index] > 0 ? (
+                  <td className="listado-col-caja" rowSpan={cajaRowSpans[index]}>
+                    {caja.codigoDepositoGeneral}
+                  </td>
+                ) : null}
                 <td className="listado-col-contenido">{caja.contenido}</td>
                 <td className="listado-col-cantidad">{caja.cantidad}</td>
               </tr>
