@@ -16,13 +16,14 @@ export interface HojaMatrixViewProps {
 export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixViewProps) {
   const [viewMode, setViewMode] = useState<"all" | "battery">("all");
   const [selectedBattery, setSelectedBattery] = useState<string | null>(null);
-  const title = viewMode === "all" ? "Hoja matriz de subalternos (unidad)" : "Hoja matriz de subalternos por batería";
+  const [previewRequested, setPreviewRequested] = useState(false);
+  const title = viewMode === "all" ? "Hoja matriz de subalternos (unidad)" : "Hoja matriz de subalternos por bateria";
 
   const bateriaOptions = useMemo(() => {
     if (!data) return [] as string[];
     const labels = new Map<string, number | null>();
     for (const row of data.rows) {
-      const label = row.bateria ?? "Sin batería";
+      const label = row.bateria ?? "Sin bateria";
       const current = labels.get(label);
       if (current === undefined || compareOptionalOrder(row.bateriaOrden, current) < 0) {
         labels.set(label, row.bateriaOrden);
@@ -38,6 +39,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
   }, [data]);
 
   const handleLoad = async () => {
+    setPreviewRequested(false);
     await onReload();
   };
 
@@ -69,6 +71,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
   })();
 
   const printDisabled = viewMode === "battery" && !selectedBattery;
+  const previewDisabled = printDisabled || !data;
 
   return (
     <section className="mt-6 rounded-2xl border border-stone-300 bg-white p-4 shadow-none">
@@ -76,7 +79,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
         <div>
           <h2 className="text-base font-semibold text-stone-900">{title}</h2>
           <p className="mt-1 text-xs text-stone-600">
-            En unidad se ordena por grado, batería y apellido. En batería se ordena por grado y apellido.
+            En unidad se ordena por grado, bateria y apellido. En bateria se ordena por grado y apellido.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -98,6 +101,14 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
             ) : (
               "Cargar Matriz"
             )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreviewRequested(true)}
+            disabled={previewDisabled}
+            className="rounded bg-amber-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Mostrar Vista Previa
           </button>
           <button
             type="button"
@@ -126,6 +137,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
             onClick={() => {
               setViewMode("all");
               setSelectedBattery(null);
+              setPreviewRequested(false);
             }}
             className={`rounded px-3 py-2 text-xs font-semibold transition ${
               viewMode === "all"
@@ -137,27 +149,33 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
           </button>
           <button
             type="button"
-            onClick={() => setViewMode("battery")}
+            onClick={() => {
+              setViewMode("battery");
+              setPreviewRequested(false);
+            }}
             className={`rounded px-3 py-2 text-xs font-semibold transition ${
               viewMode === "battery"
                 ? "bg-stone-900 text-white"
                 : "border border-stone-300 bg-white text-stone-700"
             }`}
           >
-            Ver por batería
+            Ver por bateria
           </button>
         </div>
 
         {viewMode === "battery" ? (
           <div className="mt-3 flex flex-wrap gap-2">
             {bateriaOptions.length === 0 ? (
-              <span className="text-xs text-stone-500">Cargue los datos para ver las baterías disponibles.</span>
+              <span className="text-xs text-stone-500">Cargue los datos para ver las baterias disponibles.</span>
             ) : (
               bateriaOptions.map((label) => (
                 <button
                   key={label}
                   type="button"
-                  onClick={() => setSelectedBattery(label)}
+                  onClick={() => {
+                    setSelectedBattery(label);
+                    setPreviewRequested(false);
+                  }}
                   className={`rounded px-3 py-2 text-xs font-semibold transition ${
                     selectedBattery === label
                       ? "bg-emerald-600 text-white"
@@ -185,14 +203,20 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
       ) : null}
 
       {viewMode === "battery" && !selectedBattery && data ? (
-        <p className="mt-3 text-xs font-semibold text-stone-600">Seleccione una batería para mostrar la matriz.</p>
+        <p className="mt-3 text-xs font-semibold text-stone-600">Seleccione una bateria para mostrar la matriz.</p>
       ) : null}
 
-      {data ? (
+      {data && !previewRequested ? (
+        <p className="mt-3 text-xs font-semibold text-stone-600">
+          La vista previa no se carga automaticamente. Presione &quot;Mostrar Vista Previa&quot; para abrirla.
+        </p>
+      ) : null}
+
+      {data && previewRequested ? (
         <div className="mt-4 overflow-hidden rounded-2xl border border-stone-300 bg-stone-100">
           <iframe
             key={previewHref}
-            title={viewMode === "all" ? "Vista previa de hoja matriz de subalternos (unidad)" : "Vista previa de hoja matriz de subalternos por batería"}
+            title={viewMode === "all" ? "Vista previa de hoja matriz de subalternos (unidad)" : "Vista previa de hoja matriz de subalternos por bateria"}
             src={previewHref}
             className="h-[80vh] min-h-[900px] w-full bg-white"
           />
@@ -207,4 +231,3 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
     </section>
   );
 }
-

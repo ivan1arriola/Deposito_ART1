@@ -8,9 +8,14 @@ import type { HojaMatrixRow } from "@/types/views";
 export const runtime = "nodejs";
 
 const FONT_TEXT = 10;
-const FONT_NUMBERS = 14;
-const FONT_TITLES = 12;
+const FONT_NUMBERS = 10;
+const FONT_TITLES = 10;
 const ROW_HEIGHT = 20;
+const ITEM_COLUMN_WIDTH = 5.5;
+const GRADE_COLUMN_MIN_WIDTH = 8;
+const GRADE_COLUMN_MAX_WIDTH = 16;
+const NAME_COLUMN_MIN_WIDTH = 18;
+const NAME_COLUMN_MAX_WIDTH = 44;
 
 function sanitizeFilePart(value: string) {
   return value
@@ -88,6 +93,10 @@ function thinBorder() {
   };
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
 export async function GET(request: Request) {
   const auth = await authorizeRequest(request, "read_data");
   if (!auth.ok) return auth.response;
@@ -123,29 +132,38 @@ export async function GET(request: Request) {
   const lastCol = firstItemCol + equipmentColumnCount - 1;
   const topStartRow = 1;
   const topEndRow = 8;
+  const logoEndRow = 4;
+  const titleStartRow = logoEndRow + 1;
   const labelRow = topEndRow + 1;
-  const equipmentAreaWidth = 62;
-  const equipmentColumnWidth = equipmentAreaWidth / equipmentColumnCount;
+
+  const longestGrade = data.rows.reduce((max, row) => Math.max(max, row.gradoAbreviacion.length), "Grado".length);
+  const longestName = data.rows.reduce((max, row) => Math.max(max, buildDisplayName(row).length), "Nombre".length);
+  const gradeColumnWidth = clamp(longestGrade + 2, GRADE_COLUMN_MIN_WIDTH, GRADE_COLUMN_MAX_WIDTH);
+  const nameColumnWidth = clamp(longestName + 2, NAME_COLUMN_MIN_WIDTH, NAME_COLUMN_MAX_WIDTH);
 
   worksheet.getColumn(1).width = 6;
-  worksheet.getColumn(2).width = 11;
-  worksheet.getColumn(3).width = 32;
+  worksheet.getColumn(2).width = gradeColumnWidth;
+  worksheet.getColumn(3).width = nameColumnWidth;
   for (let col = firstItemCol; col <= lastCol; col += 1) {
-    worksheet.getColumn(col).width = equipmentColumnWidth;
+    worksheet.getColumn(col).width = ITEM_COLUMN_WIDTH;
   }
 
   for (let row = topStartRow; row <= labelRow; row += 1) {
     worksheet.getRow(row).height = ROW_HEIGHT;
   }
 
-  worksheet.mergeCells(topStartRow, 1, topEndRow, 3);
-  const titleCell = worksheet.getCell(topStartRow, 1);
+  worksheet.mergeCells(topStartRow, 1, logoEndRow, 3);
+  const logoAreaCell = worksheet.getCell(topStartRow, 1);
+  logoAreaCell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD9D9D9" },
+  };
+
+  worksheet.mergeCells(titleStartRow, 1, topEndRow, 3);
+  const titleCell = worksheet.getCell(titleStartRow, 1);
   titleCell.value = {
     richText: [
-      {
-        text: "\n\n\n\n",
-        font: { name: "Times New Roman", size: FONT_TEXT },
-      },
       {
         text: 'Grupo "Brig. Gral. Manuel Oribe" de\nArtilleria 105mm No.1.-\n',
         font: { name: "Times New Roman", size: FONT_TEXT, bold: true },
@@ -337,6 +355,21 @@ export async function GET(request: Request) {
     };
   }
 
+  // El bloque superior izquierdo debe verse como un unico rectangulo (sin linea interna entre logo y texto).
+  for (let c = 1; c <= 3; c += 1) {
+    const upperCell = worksheet.getCell(logoEndRow, c);
+    upperCell.border = {
+      ...upperCell.border,
+      bottom: undefined,
+    };
+
+    const lowerCell = worksheet.getCell(titleStartRow, c);
+    lowerCell.border = {
+      ...lowerCell.border,
+      top: undefined,
+    };
+  }
+
   worksheet.views = [{ state: "frozen", ySplit: labelRow }];
 
   try {
@@ -345,13 +378,15 @@ export async function GET(request: Request) {
       filename: logoPath,
       extension: "jpeg",
     });
+
     const logoSourceWidth = 1210;
     const logoSourceHeight = 1225;
-    const logoTargetHeight = 105;
+    const logoTargetHeight = 114;
     const logoTargetWidth = Math.round((logoTargetHeight * logoSourceWidth) / logoSourceHeight);
 
     worksheet.addImage(logoImageId, {
-      tl: { col: 2.0, row: 0.2 },
+      // Posicion replicada desde la planilla de referencia adjunta por el usuario.
+      tl: { col: 1.6, row: 0.177 },
       ext: { width: logoTargetWidth, height: logoTargetHeight },
       editAs: "oneCell",
     });
