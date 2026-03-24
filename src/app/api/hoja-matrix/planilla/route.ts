@@ -1,0 +1,356 @@
+import { NextResponse } from "next/server";
+import path from "node:path";
+import ExcelJS from "exceljs";
+import { authorizeRequest } from "@/lib/auth";
+import { SIN_BATERIA_LABEL, getHojaMatrixData } from "@/lib/hoja-matrix";
+import type { HojaMatrixRow } from "@/types/views";
+
+export const runtime = "nodejs";
+
+function sanitizeFilePart(value: string) {
+  return value
+    .replace(/[^\w\-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+type PrintableRow =
+  | {
+      kind: "grade";
+      label: string;
+    }
+  | {
+      kind: "battery";
+      label: string;
+    }
+  | {
+      kind: "person";
+      number: number;
+      grade: string;
+      name: string;
+      totales: number[];
+    };
+
+function buildDisplayName(row: HojaMatrixRow) {
+  return [row.nombre1, row.apellido1].filter(Boolean).join(" ").trim();
+}
+
+function buildPrintableRows(rows: HojaMatrixRow[], includeBatterySeparators: boolean): PrintableRow[] {
+  const printableRows: PrintableRow[] = [];
+  let currentGrade = "";
+  let currentBattery = "";
+  let counter = 0;
+
+  for (const row of rows) {
+    const batteryLabel = row.bateria ?? SIN_BATERIA_LABEL;
+
+    if (row.gradoAbreviacion !== currentGrade) {
+      currentGrade = row.gradoAbreviacion;
+      currentBattery = "";
+      printableRows.push({
+        kind: "grade",
+        label: row.gradoAbreviacion.toUpperCase(),
+      });
+    }
+
+    if (includeBatterySeparators && batteryLabel !== currentBattery) {
+      currentBattery = batteryLabel;
+      printableRows.push({
+        kind: "battery",
+        label: batteryLabel,
+      });
+    }
+
+    counter += 1;
+    printableRows.push({
+      kind: "person",
+      number: counter,
+      grade: row.gradoAbreviacion,
+      name: buildDisplayName(row),
+      totales: row.totales,
+    });
+  }
+
+  return printableRows;
+}
+
+function thinBorder() {
+  return {
+    top: { style: "thin" as const, color: { argb: "FF000000" } },
+    left: { style: "thin" as const, color: { argb: "FF000000" } },
+    bottom: { style: "thin" as const, color: { argb: "FF000000" } },
+    right: { style: "thin" as const, color: { argb: "FF000000" } },
+  };
+}
+
+export async function GET(request: Request) {
+  const auth = await authorizeRequest(request, "read_data");
+  if (!auth.ok) return auth.response;
+
+  const { searchParams } = new URL(request.url);
+  const bateria = searchParams.get("bateria")?.trim() || null;
+  const data = await getHojaMatrixData({ bateria });
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Deposito General";
+  workbook.created = new Date();
+
+  const worksheet = workbook.addWorksheet("Hoja Matriz");
+  worksheet.pageSetup = {
+    paperSize: 9, // A4
+    orientation: "landscape",
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    margins: {
+      left: 0.2,
+      right: 0.2,
+      top: 0.25,
+      bottom: 0.25,
+      header: 0.1,
+      footer: 0.1,
+    },
+  };
+
+  const firstItemCol = 4; // D
+  const itemCount = data.items.length;
+  const lastCol = Math.max(firstItemCol, firstItemCol + itemCount - 1);
+  const topStartRow = 1;
+  const topEndRow = 8;
+  const labelRow = topEndRow + 1;
+
+  worksheet.getColumn(1).width = 6;
+  worksheet.getColumn(2).width = 11;
+  worksheet.getColumn(3).width = 32;
+  for (let col = firstItemCol; col <= lastCol; col += 1) {
+    worksheet.getColumn(col).width = 4.8;
+  }
+
+  for (let row = topStartRow; row <= topEndRow; row += 1) {
+    worksheet.getRow(row).height = 22;
+  }
+  worksheet.getRow(labelRow).height = 30;
+
+  worksheet.mergeCells(topStartRow, 1, topEndRow, 3);
+  const titleCell = worksheet.getCell(topStartRow, 1);
+  titleCell.value = {
+    richText: [
+      {
+        text: 'Grupo "Brig. Gral. Manuel Oribe" de\nArtilleria 105mm No.1.-\n\n',
+        font: { name: "Times New Roman", size: 13, bold: true },
+      },
+      {
+        text: "HOJA MATRIZ\n",
+        font: { name: "Times New Roman", size: 30, bold: true },
+      },
+      {
+        text: bateria ? bateria.toUpperCase() : "UNIDAD",
+        font: { name: "Times New Roman", size: 24, bold: true },
+      },
+    ],
+  };
+  titleCell.alignment = {
+    horizontal: "center",
+    vertical: "middle",
+    wrapText: true,
+  };
+  titleCell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD9D9D9" },
+  };
+
+  for (let index = 0; index < itemCount; index += 1) {
+    const col = firstItemCol + index;
+    worksheet.mergeCells(topStartRow, col, topEndRow, col);
+    const headerCell = worksheet.getCell(topStartRow, col);
+    headerCell.value = data.items[index].nombre;
+    headerCell.alignment = {
+      horizontal: "center",
+      vertical: "middle",
+      textRotation: 90,
+      wrapText: true,
+    };
+    headerCell.font = {
+      name: "Times New Roman",
+      size: 11,
+      bold: true,
+    };
+    headerCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFD9D9D9" },
+    };
+  }
+
+  const nCell = worksheet.getCell(labelRow, 1);
+  nCell.value = "N°";
+  nCell.font = { name: "Times New Roman", size: 16, bold: true };
+  nCell.alignment = { horizontal: "center", vertical: "middle" };
+  nCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
+
+  const gradeCell = worksheet.getCell(labelRow, 2);
+  gradeCell.value = "Grado";
+  gradeCell.font = { name: "Times New Roman", size: 16, bold: true };
+  gradeCell.alignment = { horizontal: "center", vertical: "middle" };
+  gradeCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
+
+  const nameCell = worksheet.getCell(labelRow, 3);
+  nameCell.value = "Nombre";
+  nameCell.font = { name: "Times New Roman", size: 16, bold: true };
+  nameCell.alignment = { horizontal: "center", vertical: "middle" };
+  nameCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
+
+  if (itemCount > 0) {
+    worksheet.mergeCells(labelRow, firstItemCol, labelRow, lastCol);
+  }
+  const equipCell = worksheet.getCell(labelRow, firstItemCol);
+  equipCell.value = "EQUIPO";
+  equipCell.font = { name: "Times New Roman", size: 18, bold: true };
+  equipCell.alignment = { horizontal: "center", vertical: "middle" };
+  equipCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
+
+  const includeBatterySeparators = bateria === null;
+  const printableRows = buildPrintableRows(data.rows, includeBatterySeparators);
+  const totalsByItem = Array.from({ length: data.items.length }, () => 0);
+  for (const row of data.rows) {
+    row.totales.forEach((value, idx) => {
+      totalsByItem[idx] += value;
+    });
+  }
+
+  let currentRow = labelRow + 1;
+  for (const row of printableRows) {
+    if (row.kind === "grade") {
+      worksheet.mergeCells(currentRow, 1, currentRow, lastCol);
+      const cell = worksheet.getCell(currentRow, 1);
+      cell.value = row.label.endsWith(".") ? row.label : `${row.label}.`;
+      cell.font = { name: "Times New Roman", size: 23, bold: true };
+      cell.alignment = { horizontal: "left", vertical: "middle" };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFB8C4D6" } };
+      worksheet.getRow(currentRow).height = 42;
+      currentRow += 1;
+      continue;
+    }
+
+    if (row.kind === "battery") {
+      worksheet.mergeCells(currentRow, 1, currentRow, lastCol);
+      const cell = worksheet.getCell(currentRow, 1);
+      cell.value = row.label;
+      cell.font = { name: "Times New Roman", size: 17, bold: true };
+      cell.alignment = { horizontal: "left", vertical: "middle" };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFC9CFD8" } };
+      worksheet.getRow(currentRow).height = 28;
+      currentRow += 1;
+      continue;
+    }
+
+    worksheet.getRow(currentRow).height = 30;
+    const numberCell = worksheet.getCell(currentRow, 1);
+    numberCell.value = row.number;
+    numberCell.font = { name: "Times New Roman", size: 16, bold: true };
+    numberCell.alignment = { horizontal: "center", vertical: "middle" };
+
+    const rowGradeCell = worksheet.getCell(currentRow, 2);
+    rowGradeCell.value = row.grade;
+    rowGradeCell.font = { name: "Times New Roman", size: 16, bold: true };
+    rowGradeCell.alignment = { horizontal: "center", vertical: "middle" };
+
+    const rowNameCell = worksheet.getCell(currentRow, 3);
+    rowNameCell.value = row.name;
+    rowNameCell.font = { name: "Times New Roman", size: 18, bold: false };
+    rowNameCell.alignment = { horizontal: "left", vertical: "middle" };
+
+    row.totales.forEach((value, index) => {
+      const col = firstItemCol + index;
+      const valueCell = worksheet.getCell(currentRow, col);
+      valueCell.value = value;
+      valueCell.font = {
+        name: "Arial",
+        size: 16,
+        bold: true,
+        color: value < 0 ? { argb: "FFCC0000" } : undefined,
+      };
+      valueCell.alignment = { horizontal: "center", vertical: "middle" };
+    });
+
+    currentRow += 1;
+  }
+
+  worksheet.getRow(currentRow).height = 34;
+  worksheet.mergeCells(currentRow, 1, currentRow, 3);
+  const totalLabelCell = worksheet.getCell(currentRow, 1);
+  totalLabelCell.value = "TOTAL";
+  totalLabelCell.font = { name: "Times New Roman", size: 22, bold: true };
+  totalLabelCell.alignment = { horizontal: "center", vertical: "middle" };
+  totalLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
+
+  totalsByItem.forEach((value, index) => {
+    const col = firstItemCol + index;
+    const totalCell = worksheet.getCell(currentRow, col);
+    totalCell.value = value;
+    totalCell.font = {
+      name: "Arial",
+      size: 16,
+      bold: true,
+      color: value < 0 ? { argb: "FFCC0000" } : { argb: "FFCC0000" },
+    };
+    totalCell.alignment = { horizontal: "center", vertical: "middle" };
+    totalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
+  });
+
+  for (let r = topStartRow; r <= currentRow; r += 1) {
+    for (let c = 1; c <= lastCol; c += 1) {
+      worksheet.getCell(r, c).border = thinBorder();
+    }
+  }
+
+  for (let c = 1; c <= lastCol; c += 1) {
+    worksheet.getCell(topStartRow, c).border = {
+      ...worksheet.getCell(topStartRow, c).border,
+      top: { style: "medium", color: { argb: "FF000000" } },
+    };
+    worksheet.getCell(currentRow, c).border = {
+      ...worksheet.getCell(currentRow, c).border,
+      bottom: { style: "medium", color: { argb: "FF000000" } },
+    };
+  }
+  for (let r = topStartRow; r <= currentRow; r += 1) {
+    worksheet.getCell(r, 1).border = {
+      ...worksheet.getCell(r, 1).border,
+      left: { style: "medium", color: { argb: "FF000000" } },
+    };
+    worksheet.getCell(r, lastCol).border = {
+      ...worksheet.getCell(r, lastCol).border,
+      right: { style: "medium", color: { argb: "FF000000" } },
+    };
+  }
+
+  worksheet.views = [{ state: "frozen", ySplit: labelRow }];
+
+  try {
+    const logoPath = path.join(process.cwd(), "public", "assets", "logo-artilleria.jpg");
+    const logoImageId = workbook.addImage({
+      filename: logoPath,
+      extension: "jpeg",
+    });
+    worksheet.addImage(logoImageId, "A1:C4");
+  } catch (error) {
+    console.warn("No se pudo cargar el logo para la planilla de hoja matriz:", error);
+  }
+
+  const workbookBuffer = await workbook.xlsx.writeBuffer();
+  const buffer = Buffer.isBuffer(workbookBuffer) ? workbookBuffer : Buffer.from(workbookBuffer);
+
+  const batterySuffix = bateria ? `_${sanitizeFilePart(bateria)}` : "_unidad";
+  const fileName = `hoja_matriz${batterySuffix}.xlsx`;
+
+  return new NextResponse(buffer, {
+    headers: {
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename=\"${fileName}\"`,
+      "Cache-Control": "no-store",
+      "Content-Length": String(buffer.length),
+    },
+  });
+}

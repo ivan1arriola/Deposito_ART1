@@ -59,6 +59,15 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
     return `/hoja-matriz?${params.toString()}`;
   })();
 
+  const spreadsheetHref = (() => {
+    const params = new URLSearchParams();
+    if (viewMode === "battery" && selectedBattery) {
+      params.set("bateria", selectedBattery);
+    }
+    const query = params.toString();
+    return query ? `/api/hoja-matrix/planilla?${query}` : "/api/hoja-matrix/planilla";
+  })();
+
   const printDisabled = viewMode === "battery" && !selectedBattery;
 
   return (
@@ -97,6 +106,14 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
             className="rounded bg-indigo-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             Imprimir / Guardar PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => window.open(spreadsheetHref, "_blank", "noopener,noreferrer")}
+            disabled={printDisabled}
+            className="rounded bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Descargar Planilla (LibreOffice Calc)
           </button>
         </div>
       </div>
