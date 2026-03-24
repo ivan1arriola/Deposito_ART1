@@ -7,6 +7,11 @@ import type { HojaMatrixRow } from "@/types/views";
 
 export const runtime = "nodejs";
 
+const FONT_TEXT = 10;
+const FONT_NUMBERS = 14;
+const FONT_TITLES = 12;
+const ROW_HEIGHT = 20;
+
 function sanitizeFilePart(value: string) {
   return value
     .replace(/[^\w\-]+/g, "_")
@@ -114,38 +119,44 @@ export async function GET(request: Request) {
 
   const firstItemCol = 4; // D
   const itemCount = data.items.length;
-  const lastCol = Math.max(firstItemCol, firstItemCol + itemCount - 1);
+  const equipmentColumnCount = Math.max(itemCount, 1);
+  const lastCol = firstItemCol + equipmentColumnCount - 1;
   const topStartRow = 1;
   const topEndRow = 8;
   const labelRow = topEndRow + 1;
+  const equipmentAreaWidth = 62;
+  const equipmentColumnWidth = equipmentAreaWidth / equipmentColumnCount;
 
   worksheet.getColumn(1).width = 6;
   worksheet.getColumn(2).width = 11;
   worksheet.getColumn(3).width = 32;
   for (let col = firstItemCol; col <= lastCol; col += 1) {
-    worksheet.getColumn(col).width = 4.8;
+    worksheet.getColumn(col).width = equipmentColumnWidth;
   }
 
-  for (let row = topStartRow; row <= topEndRow; row += 1) {
-    worksheet.getRow(row).height = 22;
+  for (let row = topStartRow; row <= labelRow; row += 1) {
+    worksheet.getRow(row).height = ROW_HEIGHT;
   }
-  worksheet.getRow(labelRow).height = 30;
 
   worksheet.mergeCells(topStartRow, 1, topEndRow, 3);
   const titleCell = worksheet.getCell(topStartRow, 1);
   titleCell.value = {
     richText: [
       {
-        text: 'Grupo "Brig. Gral. Manuel Oribe" de\nArtilleria 105mm No.1.-\n\n',
-        font: { name: "Times New Roman", size: 13, bold: true },
+        text: "\n\n\n\n",
+        font: { name: "Times New Roman", size: FONT_TEXT },
+      },
+      {
+        text: 'Grupo "Brig. Gral. Manuel Oribe" de\nArtilleria 105mm No.1.-\n',
+        font: { name: "Times New Roman", size: FONT_TEXT, bold: true },
       },
       {
         text: "HOJA MATRIZ\n",
-        font: { name: "Times New Roman", size: 30, bold: true },
+        font: { name: "Times New Roman", size: FONT_TITLES, bold: true },
       },
       {
         text: bateria ? bateria.toUpperCase() : "UNIDAD",
-        font: { name: "Times New Roman", size: 24, bold: true },
+        font: { name: "Times New Roman", size: FONT_TITLES, bold: true },
       },
     ],
   };
@@ -173,7 +184,7 @@ export async function GET(request: Request) {
     };
     headerCell.font = {
       name: "Times New Roman",
-      size: 11,
+      size: FONT_TITLES,
       bold: true,
     };
     headerCell.fill = {
@@ -185,19 +196,19 @@ export async function GET(request: Request) {
 
   const nCell = worksheet.getCell(labelRow, 1);
   nCell.value = "N°";
-  nCell.font = { name: "Times New Roman", size: 16, bold: true };
+  nCell.font = { name: "Times New Roman", size: FONT_TITLES, bold: true };
   nCell.alignment = { horizontal: "center", vertical: "middle" };
   nCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
 
   const gradeCell = worksheet.getCell(labelRow, 2);
   gradeCell.value = "Grado";
-  gradeCell.font = { name: "Times New Roman", size: 16, bold: true };
+  gradeCell.font = { name: "Times New Roman", size: FONT_TITLES, bold: true };
   gradeCell.alignment = { horizontal: "center", vertical: "middle" };
   gradeCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
 
   const nameCell = worksheet.getCell(labelRow, 3);
   nameCell.value = "Nombre";
-  nameCell.font = { name: "Times New Roman", size: 16, bold: true };
+  nameCell.font = { name: "Times New Roman", size: FONT_TITLES, bold: true };
   nameCell.alignment = { horizontal: "center", vertical: "middle" };
   nameCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
 
@@ -206,7 +217,7 @@ export async function GET(request: Request) {
   }
   const equipCell = worksheet.getCell(labelRow, firstItemCol);
   equipCell.value = "EQUIPO";
-  equipCell.font = { name: "Times New Roman", size: 18, bold: true };
+  equipCell.font = { name: "Times New Roman", size: FONT_TITLES, bold: true };
   equipCell.alignment = { horizontal: "center", vertical: "middle" };
   equipCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
 
@@ -225,10 +236,10 @@ export async function GET(request: Request) {
       worksheet.mergeCells(currentRow, 1, currentRow, lastCol);
       const cell = worksheet.getCell(currentRow, 1);
       cell.value = row.label.endsWith(".") ? row.label : `${row.label}.`;
-      cell.font = { name: "Times New Roman", size: 23, bold: true };
+      cell.font = { name: "Times New Roman", size: FONT_TITLES, bold: true };
       cell.alignment = { horizontal: "left", vertical: "middle" };
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFB8C4D6" } };
-      worksheet.getRow(currentRow).height = 42;
+      worksheet.getRow(currentRow).height = ROW_HEIGHT;
       currentRow += 1;
       continue;
     }
@@ -237,28 +248,28 @@ export async function GET(request: Request) {
       worksheet.mergeCells(currentRow, 1, currentRow, lastCol);
       const cell = worksheet.getCell(currentRow, 1);
       cell.value = row.label;
-      cell.font = { name: "Times New Roman", size: 17, bold: true };
+      cell.font = { name: "Times New Roman", size: FONT_TEXT, bold: true };
       cell.alignment = { horizontal: "left", vertical: "middle" };
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFC9CFD8" } };
-      worksheet.getRow(currentRow).height = 28;
+      worksheet.getRow(currentRow).height = ROW_HEIGHT;
       currentRow += 1;
       continue;
     }
 
-    worksheet.getRow(currentRow).height = 30;
+    worksheet.getRow(currentRow).height = ROW_HEIGHT;
     const numberCell = worksheet.getCell(currentRow, 1);
     numberCell.value = row.number;
-    numberCell.font = { name: "Times New Roman", size: 16, bold: true };
+    numberCell.font = { name: "Times New Roman", size: FONT_NUMBERS, bold: true };
     numberCell.alignment = { horizontal: "center", vertical: "middle" };
 
     const rowGradeCell = worksheet.getCell(currentRow, 2);
     rowGradeCell.value = row.grade;
-    rowGradeCell.font = { name: "Times New Roman", size: 16, bold: true };
+    rowGradeCell.font = { name: "Times New Roman", size: FONT_TEXT, bold: true };
     rowGradeCell.alignment = { horizontal: "center", vertical: "middle" };
 
     const rowNameCell = worksheet.getCell(currentRow, 3);
     rowNameCell.value = row.name;
-    rowNameCell.font = { name: "Times New Roman", size: 18, bold: false };
+    rowNameCell.font = { name: "Times New Roman", size: FONT_TEXT, bold: false };
     rowNameCell.alignment = { horizontal: "left", vertical: "middle" };
 
     row.totales.forEach((value, index) => {
@@ -267,7 +278,7 @@ export async function GET(request: Request) {
       valueCell.value = value;
       valueCell.font = {
         name: "Arial",
-        size: 16,
+        size: FONT_NUMBERS,
         bold: true,
         color: value < 0 ? { argb: "FFCC0000" } : undefined,
       };
@@ -277,11 +288,11 @@ export async function GET(request: Request) {
     currentRow += 1;
   }
 
-  worksheet.getRow(currentRow).height = 34;
+  worksheet.getRow(currentRow).height = ROW_HEIGHT;
   worksheet.mergeCells(currentRow, 1, currentRow, 3);
   const totalLabelCell = worksheet.getCell(currentRow, 1);
   totalLabelCell.value = "TOTAL";
-  totalLabelCell.font = { name: "Times New Roman", size: 22, bold: true };
+  totalLabelCell.font = { name: "Times New Roman", size: FONT_TITLES, bold: true };
   totalLabelCell.alignment = { horizontal: "center", vertical: "middle" };
   totalLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
 
@@ -291,7 +302,7 @@ export async function GET(request: Request) {
     totalCell.value = value;
     totalCell.font = {
       name: "Arial",
-      size: 16,
+      size: FONT_NUMBERS,
       bold: true,
       color: value < 0 ? { argb: "FFCC0000" } : { argb: "FFCC0000" },
     };
@@ -334,9 +345,22 @@ export async function GET(request: Request) {
       filename: logoPath,
       extension: "jpeg",
     });
-    worksheet.addImage(logoImageId, "A1:C4");
+    const logoSourceWidth = 1210;
+    const logoSourceHeight = 1225;
+    const logoTargetHeight = 105;
+    const logoTargetWidth = Math.round((logoTargetHeight * logoSourceWidth) / logoSourceHeight);
+
+    worksheet.addImage(logoImageId, {
+      tl: { col: 2.0, row: 0.2 },
+      ext: { width: logoTargetWidth, height: logoTargetHeight },
+      editAs: "oneCell",
+    });
   } catch (error) {
     console.warn("No se pudo cargar el logo para la planilla de hoja matriz:", error);
+  }
+
+  for (let row = topStartRow; row <= currentRow; row += 1) {
+    worksheet.getRow(row).height = ROW_HEIGHT;
   }
 
   const workbookBuffer = await workbook.xlsx.writeBuffer();
