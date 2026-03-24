@@ -149,27 +149,200 @@ function toCajaModel(caja: EtiquetaCajaPrintData): Caja {
 }
 
 function getLayoutClass(totalEquipos: number): string {
-  if (totalEquipos <= 2) return "grid-cols-2";
+  if (totalEquipos === 1) return "grid-cols-1";
+  if (totalEquipos === 2) return "grid-cols-2";
   if (totalEquipos === 3) return "grid-cols-3";
   if (totalEquipos === 4) return "grid-cols-2";
   return "grid-cols-3";
 }
 
-function getNameSizeClass(totalEquipos: number): string {
-  if (totalEquipos <= 2) return "text-[42px] leading-[0.9]";
+function getNameSizeClass(
+  totalEquipos: number,
+  totalCodigos: number,
+  orientacion: EtiquetaOrientacion,
+): string {
+  if (totalEquipos === 1) {
+    if (orientacion === "vertical") {
+      if (totalCodigos <= 3) return "text-[66px] leading-[0.88]";
+      if (totalCodigos <= 8) return "text-[58px] leading-[0.9]";
+      if (totalCodigos <= 14) return "text-[50px] leading-[0.92]";
+      if (totalCodigos <= 24) return "text-[42px] leading-[0.94]";
+      return "text-[34px] leading-[0.96]";
+    }
+
+    if (totalCodigos <= 3) return "text-[74px] leading-[0.88]";
+    if (totalCodigos <= 8) return "text-[66px] leading-[0.9]";
+    if (totalCodigos <= 14) return "text-[58px] leading-[0.92]";
+    if (totalCodigos <= 24) return "text-[48px] leading-[0.94]";
+    if (totalCodigos <= 36) return "text-[40px] leading-[0.96]";
+    return "text-[34px] leading-[0.98]";
+  }
+
+  if (totalEquipos === 2) return "text-[42px] leading-[0.9]";
   if (totalEquipos === 3) return "text-[34px] leading-[0.9]";
   if (totalEquipos === 4) return "text-[28px] leading-[0.92]";
   return "text-[26px] leading-[0.92]";
 }
 
-function getQtySizeClass(totalEquipos: number): string {
-  if (totalEquipos <= 2) return "text-[44px]";
+function getQtySizeClass(
+  totalEquipos: number,
+  totalCodigos: number,
+  orientacion: EtiquetaOrientacion,
+): string {
+  if (totalEquipos === 1) {
+    if (orientacion === "vertical") {
+      if (totalCodigos <= 8) return "text-[82px]";
+      if (totalCodigos <= 14) return "text-[72px]";
+      if (totalCodigos <= 24) return "text-[62px]";
+      return "text-[52px]";
+    }
+
+    if (totalCodigos <= 8) return "text-[88px]";
+    if (totalCodigos <= 14) return "text-[76px]";
+    if (totalCodigos <= 24) return "text-[66px]";
+    if (totalCodigos <= 36) return "text-[58px]";
+    return "text-[50px]";
+  }
+
+  if (totalEquipos === 2) return "text-[44px]";
   if (totalEquipos === 3) return "text-[38px]";
   if (totalEquipos === 4) return "text-[34px]";
   return "text-[32px]";
 }
 
-function getCodigoLayout(totalCodigos: number, orientacion: EtiquetaOrientacion): CodigoLayout {
+function getCodigoLayout(totalCodigos: number, orientacion: EtiquetaOrientacion, totalEquipos: number): CodigoLayout {
+  if (totalEquipos === 1) {
+    if (orientacion === "vertical") {
+      if (totalCodigos <= 4) {
+        return {
+          columns: 1,
+          valueSizeClass: "text-[26px]",
+          rowGapClass: "space-y-1.5",
+          rowPaddingClass: "pb-1.5",
+          talleColumnWidth: "72px",
+          separatorWidth: "12px",
+        };
+      }
+
+      if (totalCodigos <= 8) {
+        return {
+          columns: 1,
+          valueSizeClass: "text-[20px]",
+          rowGapClass: "space-y-1",
+          rowPaddingClass: "pb-1",
+          talleColumnWidth: "64px",
+          separatorWidth: "12px",
+        };
+      }
+
+      if (totalCodigos <= 14) {
+        return {
+          columns: 2,
+          valueSizeClass: "text-[15px]",
+          rowGapClass: "space-y-0.5",
+          rowPaddingClass: "pb-0.5",
+          talleColumnWidth: "52px",
+          separatorWidth: "10px",
+        };
+      }
+
+      if (totalCodigos <= 24) {
+        return {
+          columns: 2,
+          valueSizeClass: "text-[12px]",
+          rowGapClass: "space-y-0",
+          rowPaddingClass: "pb-0",
+          talleColumnWidth: "42px",
+          separatorWidth: "8px",
+        };
+      }
+
+      if (totalCodigos <= 36) {
+        return {
+          columns: 3,
+          valueSizeClass: "text-[10px]",
+          rowGapClass: "space-y-0",
+          rowPaddingClass: "pb-0",
+          talleColumnWidth: "36px",
+          separatorWidth: "6px",
+        };
+      }
+
+      return {
+        columns: 3,
+        valueSizeClass: "text-[9px]",
+        rowGapClass: "space-y-0",
+        rowPaddingClass: "pb-0",
+        talleColumnWidth: "32px",
+        separatorWidth: "6px",
+      };
+    }
+
+    if (totalCodigos <= 3) {
+      return {
+        columns: 1,
+        valueSizeClass: "text-[34px]",
+        rowGapClass: "space-y-1.5",
+        rowPaddingClass: "pb-1.5",
+        talleColumnWidth: "84px",
+        separatorWidth: "12px",
+      };
+    }
+
+    if (totalCodigos <= 8) {
+      return {
+        columns: 1,
+        valueSizeClass: "text-[24px]",
+        rowGapClass: "space-y-1",
+        rowPaddingClass: "pb-1",
+        talleColumnWidth: "70px",
+        separatorWidth: "12px",
+      };
+    }
+
+    if (totalCodigos <= 14) {
+      return {
+        columns: 2,
+        valueSizeClass: "text-[16px]",
+        rowGapClass: "space-y-0.5",
+        rowPaddingClass: "pb-0.5",
+        talleColumnWidth: "54px",
+        separatorWidth: "10px",
+      };
+    }
+
+    if (totalCodigos <= 24) {
+      return {
+        columns: 2,
+        valueSizeClass: "text-[13px]",
+        rowGapClass: "space-y-0",
+        rowPaddingClass: "pb-0",
+        talleColumnWidth: "46px",
+        separatorWidth: "8px",
+      };
+    }
+
+    if (totalCodigos <= 36) {
+      return {
+        columns: 3,
+        valueSizeClass: "text-[11px]",
+        rowGapClass: "space-y-0",
+        rowPaddingClass: "pb-0",
+        talleColumnWidth: "40px",
+        separatorWidth: "6px",
+      };
+    }
+
+    return {
+      columns: 3,
+      valueSizeClass: "text-[10px]",
+      rowGapClass: "space-y-0",
+      rowPaddingClass: "pb-0",
+      talleColumnWidth: "34px",
+      separatorWidth: "6px",
+    };
+  }
+
   if (orientacion === "vertical") {
     if (totalCodigos <= 4) {
       return {
@@ -276,24 +449,41 @@ function EquipoCard({
   orientacion: EtiquetaOrientacion;
 }) {
   const codigos = equipo.codigos.length > 0 ? equipo.codigos : [{ codigo: "Sin código", talle: "-" }];
-  const codigoLayout = getCodigoLayout(codigos.length, orientacion);
+  const codigoLayout = getCodigoLayout(codigos.length, orientacion, totalEquipos);
   const codigoColumns = buildCodigoColumns(codigos, codigoLayout.columns);
   const visibleCodigoColumns = codigoColumns.length;
+  const isSingleEquipo = totalEquipos === 1;
+  const qtyLabelClass = isSingleEquipo ? "text-[14px]" : "text-[10px]";
+  const codigoHeaderClass = isSingleEquipo ? "text-[14px]" : "text-[10px]";
+  const codigoHeaderPaddingClass = isSingleEquipo ? "px-4 py-1.5" : "px-3 py-1";
+  const codigoSectionPaddingClass = isSingleEquipo ? "px-4 py-3" : "px-3 py-2";
+  const cardPaddingClass = isSingleEquipo ? "px-4 py-4" : "px-3 py-3";
+  const qtyTopPaddingClass = isSingleEquipo ? "pt-2.5 mt-2.5" : "pt-1.5 mt-1.5";
 
   return (
-    <div className="rounded-[14px] border-[2px] border-black px-3 py-3 grid grid-rows-[auto_minmax(0,1fr)] gap-2 min-h-0 overflow-hidden">
+    <div
+      className={`rounded-[14px] border-[2px] border-black grid grid-rows-[auto_minmax(0,1fr)] gap-2 min-h-0 overflow-hidden ${cardPaddingClass}`}
+    >
       <div className="shrink-0">
-        <div className={`font-black uppercase tracking-tight break-words ${getNameSizeClass(totalEquipos)}`}>
+        <div
+          className={`font-black uppercase tracking-tight break-words ${getNameSizeClass(
+            totalEquipos,
+            codigos.length,
+            orientacion,
+          )}`}
+        >
           {equipo.nombre}
         </div>
-        <div className="text-right leading-none pt-1.5 border-t border-black/20 mt-1.5">
-          <div className="text-[10px] font-extrabold uppercase tracking-tight">Cant.</div>
-          <div className={`${getQtySizeClass(totalEquipos)} font-black`}>{equipo.cantidad}</div>
+        <div className={`text-right leading-none border-t border-black/20 ${qtyTopPaddingClass}`}>
+          <div className={`${qtyLabelClass} font-extrabold uppercase tracking-tight`}>Cant.</div>
+          <div className={`${getQtySizeClass(totalEquipos, codigos.length, orientacion)} font-black`}>
+            {equipo.cantidad}
+          </div>
         </div>
       </div>
 
       <div className="min-h-0 overflow-hidden grid grid-rows-[auto_minmax(0,1fr)]">
-        <div className="bg-neutral-200 px-3 py-1 border-t border-b border-neutral-300">
+        <div className={`bg-neutral-200 ${codigoHeaderPaddingClass} border-t border-b border-neutral-300`}>
           <div
             className="grid gap-x-3"
             style={{ gridTemplateColumns: `repeat(${visibleCodigoColumns}, minmax(0,1fr))` }}
@@ -306,16 +496,16 @@ function EquipoCard({
                   gridTemplateColumns: `minmax(0,1fr) ${codigoLayout.separatorWidth} ${codigoLayout.talleColumnWidth}`,
                 }}
               >
-                <div className="text-[10px] font-extrabold uppercase tracking-tight">Código:</div>
+                <div className={`${codigoHeaderClass} font-extrabold uppercase tracking-tight`}>Código:</div>
                 <div className="h-full w-px bg-black/40 justify-self-center" aria-hidden="true" />
-                <div className="text-[10px] font-extrabold uppercase tracking-tight text-right">Talle:</div>
+                <div className={`${codigoHeaderClass} font-extrabold uppercase tracking-tight text-right`}>Talle:</div>
               </div>
             ))}
           </div>
         </div>
 
         <div
-          className="px-3 py-2 min-h-0 grid gap-x-3"
+          className={`${codigoSectionPaddingClass} min-h-0 grid gap-x-3`}
           style={{ gridTemplateColumns: `repeat(${visibleCodigoColumns}, minmax(0,1fr))` }}
         >
           {codigoColumns.map((column, columnIndex) => (
