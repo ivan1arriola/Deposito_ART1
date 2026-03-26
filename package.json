@@ -1,12 +1,12 @@
 {
   "name": "deposito-art1",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
     "predev": "prisma generate",
     "dev": "node scripts/dev-with-qr.mjs",
-    "prebuild": "npm run check:encoding && prisma generate",
+    "prebuild": "npm run check:encoding && npm run check:spanish && prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -18,6 +18,8 @@
     "refactor:gate": "node scripts/refactor-metrics.mjs --fail-on-high-risk",
     "check:encoding": "node scripts/check-utf8.mjs",
     "check:encoding:fix": "node scripts/check-utf8.mjs --fix-bom",
+    "check:spanish": "node scripts/check-spanish-integrity.mjs",
+    "precommit": "node scripts/bump-version-precommit.mjs",
     "prisma:generate": "prisma generate",
     "db:rebuild": "prisma db execute --schema prisma/schema.prisma --file prisma/schema-base.sql && prisma generate",
     "prisma:studio": "prisma studio",

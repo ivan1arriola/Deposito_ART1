@@ -7,6 +7,7 @@ import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
+import { normalizeOutputText } from "@/lib/spanish-text";
 
 const MM_TO_PT = 2.834645669;
 const A4_WIDTH = 210 * MM_TO_PT;
@@ -86,8 +87,7 @@ function formatDateUy(value: Date) {
 }
 
 function sanitizeForPdf(value: string | null | undefined) {
-  if (!value) return "";
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return normalizeOutputText(value);
 }
 
 function fullName(apellido1: string, apellido2: string | null, nombre1: string, nombre2: string | null) {

@@ -1,4 +1,5 @@
 import { TALLA_LABELS, TALLA_OPTIONS, type TallaKey, normalizeTallaValue } from "./tallas";
+import { stripDiacritics } from "./spanish-text";
 
 const VESTUARIO_KEYWORDS: Record<TallaKey, string[]> = {
   PARKA: ["PARKA"],
@@ -9,10 +10,7 @@ const VESTUARIO_KEYWORDS: Record<TallaKey, string[]> = {
 };
 
 function normalizeText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toUpperCase();
+  return stripDiacritics(value).toUpperCase();
 }
 
 function inferTallaKeyFromItemName(nombreItem: string): TallaKey | null {

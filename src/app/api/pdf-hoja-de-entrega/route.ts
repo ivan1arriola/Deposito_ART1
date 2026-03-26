@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { formatDateOnlyForDisplay, formatDateTimeForDisplay } from "@/lib/date-helpers";
+import { normalizeOutputText } from "@/lib/spanish-text";
 
 interface MatrixRow {
   item: string;
@@ -57,17 +58,7 @@ const MARGINS = {
 
 // Función para sanitizar texto para WinAnsi encoding
 function sanitizeForPDF(text: string | null | undefined): string {
-  if (!text) return "";
-  
-  // Reemplazar caracteres con diacritos con sus equivalentes ASCII
-  const charMap: { [key: string]: string } = {
-    "á": "a", "é": "e", "í": "i", "ó": "o", "ú": "u",
-    "Á": "A", "É": "E", "Í": "I", "Ó": "O", "Ú": "U",
-    "ñ": "n", "Ñ": "N",
-    "à": "a", "è": "e", "ì": "i", "ò": "o", "ù": "u",
-  };
-
-  return text.replace(/./g, (char) => charMap[char] || char);
+  return normalizeOutputText(text);
 }
 
 export async function POST(request: NextRequest): Promise<Response> {

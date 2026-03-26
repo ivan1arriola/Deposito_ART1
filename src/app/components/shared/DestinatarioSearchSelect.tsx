@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { formatUruguayanCi } from "@/lib/ci";
+import { normalizeSearchText } from "@/lib/spanish-text";
 
 export type DestinatarioOption = {
   ci: string;
@@ -17,11 +18,7 @@ type DestinatarioSearchSelectProps = {
 };
 
 function normalizeText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
+  return normalizeSearchText(value);
 }
 
 export function DestinatarioSearchSelect({

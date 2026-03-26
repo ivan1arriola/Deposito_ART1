@@ -1,9 +1,8 @@
 import { compareOptionalOrder } from "@/lib/catalog-order";
+import { stripDiacritics } from "@/lib/spanish-text";
 
 function normalizeRank(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+  return stripDiacritics(value)
     .replace(/[º°]/g, "")
     .replace(/[."']/g, " ")
     .replace(/\s+/g, " ")

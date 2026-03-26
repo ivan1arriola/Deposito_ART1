@@ -1,5 +1,6 @@
 import { TALLA_KEYS, TALLA_LABELS, TALLA_OPTIONS, type TallaKey, normalizeTallaValue } from "@/lib/tallas";
 import { formatDateOnlyForDisplay, getTodayDateInput as getTodayDateInputHelper } from "@/lib/date-helpers";
+import { normalizeSearchText } from "@/lib/spanish-text";
 import type { Personal, Role, Rango, Talla } from "@/types/entities";
 import type { PersonalForm } from "@/types/forms";
 
@@ -46,13 +47,7 @@ export function nombresLabel(persona: Personal) {
  * Normaliza un término de búsqueda removiendo acentos y caracteres especiales
  */
 export function normalizeSearchTerm(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[."']/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+  return normalizeSearchText(value);
 }
 
 /**
