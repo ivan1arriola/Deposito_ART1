@@ -266,15 +266,16 @@ export function PersonalSection({
       />
 
       <section className="rounded-2xl border border-stone-200 bg-white/90 p-3 sm:p-4">
-        <PaginationControls
-          page={personalPage}
-          pageSize={personalPageSize}
-          totalItems={personalFiltrado.length}
-          itemLabel="subalternos"
-          onPageChange={onPersonalPageChange}
-          onPageSizeChange={onPersonalPageSizeChange}
-          className="hidden md:flex"
-        />
+        <div className="hidden md:block">
+          <PaginationControls
+            page={personalPage}
+            pageSize={personalPageSize}
+            totalItems={personalFiltrado.length}
+            itemLabel="subalternos"
+            onPageChange={onPersonalPageChange}
+            onPageSizeChange={onPersonalPageSizeChange}
+          />
+        </div>
 
         <PersonalCardsMobile
           personas={personalFiltradoPaginado}
@@ -293,14 +294,14 @@ export function PersonalSection({
 
         <div className="mt-3 md:hidden">
           <PaginationControls
-              page={personalPage}
-              pageSize={personalPageSize}
-              totalItems={personalFiltrado.length}
-              itemLabel="subalternos"
-              onPageChange={onPersonalPageChange}
-              onPageSizeChange={onPersonalPageSizeChange}
-              className="mt-1"
-            />
+            page={personalPage}
+            pageSize={personalPageSize}
+            totalItems={personalFiltrado.length}
+            itemLabel="subalternos"
+            onPageChange={onPersonalPageChange}
+            onPageSizeChange={onPersonalPageSizeChange}
+            className="mt-1"
+          />
         </div>
 
         <PersonalTableDesktop
@@ -318,15 +319,16 @@ export function PersonalSection({
           onOpenSheet={onOpenDeliverySheet}
         />
 
-        <PaginationControls
-          page={personalPage}
-          pageSize={personalPageSize}
-          totalItems={personalFiltrado.length}
-          itemLabel="subalternos"
-          onPageChange={onPersonalPageChange}
-          onPageSizeChange={onPersonalPageSizeChange}
-          className="mt-4 hidden md:flex"
-        />
+        <div className="mt-4 hidden md:block">
+          <PaginationControls
+            page={personalPage}
+            pageSize={personalPageSize}
+            totalItems={personalFiltrado.length}
+            itemLabel="subalternos"
+            onPageChange={onPersonalPageChange}
+            onPageSizeChange={onPersonalPageSizeChange}
+          />
+        </div>
       </section>
 
       {editPersonalCi ? (
