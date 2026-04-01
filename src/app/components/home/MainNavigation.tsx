@@ -140,10 +140,11 @@ const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix
   { view: "equipo_resumen", label: "Resumen de equipo en baterías", icon: icons.resumenEquipo },
 ];
 
-const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficiales" | "oficiales_suboficiales_resumen">>> = [
+const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficiales" | "oficiales_resumen" | "suboficiales_resumen">>> = [
   { view: "oficiales", label: "Oficiales", icon: icons.oficiales },
   { view: "suboficiales", label: "Suboficiales", icon: icons.oficiales },
-  { view: "oficiales_suboficiales_resumen", label: "Resumen de talles (ambos)", icon: icons.resumen },
+  { view: "oficiales_resumen", label: "Resumen de talles (oficiales)", icon: icons.resumen },
+  { view: "suboficiales_resumen", label: "Resumen de talles (suboficiales)", icon: icons.resumen },
 ];
 
 function navButtonSx(active: boolean, compact: boolean) {
@@ -311,7 +312,10 @@ export function MainNavigation({
 
   const isPersonalView = activeView === "personal" || activeView === "hoja_matrix" || activeView === "equipo_resumen";
   const isOficialesSuboficialesView =
-    activeView === "oficiales" || activeView === "suboficiales" || activeView === "oficiales_suboficiales_resumen";
+    activeView === "oficiales" ||
+    activeView === "suboficiales" ||
+    activeView === "oficiales_resumen" ||
+    activeView === "suboficiales_resumen";
   const isStockView =
     activeView === "stock" ||
     activeView === "equipos" ||

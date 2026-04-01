@@ -8,7 +8,8 @@ export type MainView =
   | "personal"
   | "oficiales"
   | "suboficiales"
-  | "oficiales_suboficiales_resumen"
+  | "oficiales_resumen"
+  | "suboficiales_resumen"
   | "personal_nuevo"
   | "oficial_nuevo"
   | "suboficial_nuevo"
@@ -207,4 +208,3 @@ export type ConfirmDialogState = {
   tone: "danger" | "neutral";
   onConfirm: () => Promise<void> | void;
 };
-

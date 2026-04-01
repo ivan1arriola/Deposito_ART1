@@ -4526,9 +4526,19 @@ export default function Home() {
         />
       ) : null}
 
-      {activeView === "oficiales_suboficiales_resumen" ? (
+      {activeView === "oficiales_resumen" ? (
         <OficialesSuboficialesResumenView
           oficialesSuboficiales={oficialesSuboficiales}
+          viewType="OFICIAL"
+          loading={loading}
+          onReload={() => reloadCurrentViewData(true)}
+        />
+      ) : null}
+
+      {activeView === "suboficiales_resumen" ? (
+        <OficialesSuboficialesResumenView
+          oficialesSuboficiales={oficialesSuboficiales}
+          viewType="SUBOFICIAL"
           loading={loading}
           onReload={() => reloadCurrentViewData(true)}
         />
