@@ -178,9 +178,16 @@ function rangoLooksLikeSargento(rango: { abreviacion: string; nombreCompleto: st
   return hasSargento && !hasPrimero;
 }
 
+function isAbortError(error: unknown) {
+  if (error instanceof DOMException) return error.name === "AbortError";
+  if (error instanceof Error) return error.name === "AbortError";
+  return false;
+}
+
 export default function Home() {
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
   const [status, setStatus] = useState(STATUS_VERIFYING_SESSION);
+  const [activeView, setActiveView] = useState<MainView>("personal");
   const {
     loading,
     initMessage,
@@ -212,6 +219,7 @@ export default function Home() {
     hojaMatrixLoading,
     hojaMatrixError,
     loadData,
+    loadAdminData,
     loadHojaMatrix,
     equipoResumenData,
     equipoResumenLoading,
@@ -224,7 +232,7 @@ export default function Home() {
     setStockError,
     loadStockData,
     clearLoadedData: clearLoadedDataState,
-  } = useHomeData({ onStatusChange: setStatus });
+  } = useHomeData({ onStatusChange: setStatus, activeView });
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -304,7 +312,6 @@ export default function Home() {
   const [registroViewer, setRegistroViewer] = useState<RegistroViewerState | null>(null);
   const [registroViewerPage, setRegistroViewerPage] = useState(1);
   const [registroViewerPageSize, setRegistroViewerPageSize] = useState(20);
-  const [activeView, setActiveView] = useState<MainView>("personal");
   const [fichaViewingCi, setFichaViewingCi] = useState<string | null>(null);
   const [showConfigViews, setShowConfigViews] = useState(false);
   const [etiquetadoData, setEtiquetadoData] = useState<EtiquetadoDashboardData | null>(null);
@@ -316,6 +323,8 @@ export default function Home() {
   const [recordatoriosSaving, setRecordatoriosSaving] = useState(false);
   const [recordatoriosError, setRecordatoriosError] = useState<string | null>(null);
   const recordatorioToastShownRef = useRef<string | null>(null);
+  const recordatoriosRequestRef = useRef<{ id: number; controller: AbortController | null }>({ id: 0, controller: null });
+  const etiquetadoRequestRef = useRef<{ id: number; controller: AbortController | null }>({ id: 0, controller: null });
   const configMenuRef = useRef<HTMLDivElement | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const [confirmDialogBusy, setConfirmDialogBusy] = useState(false);
@@ -607,27 +616,45 @@ export default function Home() {
     }
   }, [inAdminConfigView, isAdmin]);
 
+  useEffect(() => {
+    if (!currentUser || currentUser.rol !== "ADMIN") return;
+    if (!(inAdminConfigView || activeView === "usuario_nuevo")) return;
+    void loadAdminData();
+  }, [activeView, currentUser, inAdminConfigView, loadAdminData]);
+
   const loadRecordatorios = useCallback(async () => {
     if (!currentUser) {
+      recordatoriosRequestRef.current.controller?.abort();
+      recordatoriosRequestRef.current.controller = null;
       setRecordatorioTasks([]);
       setRecordatorioConfig({ mostrarMuneco: true });
       setRecordatoriosError(null);
       return;
     }
 
+    recordatoriosRequestRef.current.controller?.abort();
+    const controller = new AbortController();
+    const requestId = recordatoriosRequestRef.current.id + 1;
+    recordatoriosRequestRef.current = { id: requestId, controller };
+
     setRecordatoriosLoading(true);
     setRecordatoriosError(null);
     try {
       const [tasksData, configData] = await Promise.all([
-        api<RecordatorioTarea[]>("/api/tareas"),
-        api<RecordatorioConfig>("/api/tareas/config"),
+        api<RecordatorioTarea[]>("/api/tareas", { signal: controller.signal }),
+        api<RecordatorioConfig>("/api/tareas/config", { signal: controller.signal }),
       ]);
+
+      if (recordatoriosRequestRef.current.id !== requestId) return;
       setRecordatorioTasks(tasksData);
       setRecordatorioConfig(configData);
     } catch (error: unknown) {
+      if (isAbortError(error)) return;
+      if (recordatoriosRequestRef.current.id !== requestId) return;
       const message = error instanceof Error ? error.message : "No se pudieron cargar los recordatorios.";
       setRecordatoriosError(message);
     } finally {
+      if (recordatoriosRequestRef.current.id !== requestId) return;
       setRecordatoriosLoading(false);
     }
   }, [currentUser]);
@@ -728,6 +755,13 @@ export default function Home() {
     }
     void loadRecordatorios();
   }, [currentUser, loadRecordatorios]);
+
+  useEffect(() => {
+    return () => {
+      recordatoriosRequestRef.current.controller?.abort();
+      etiquetadoRequestRef.current.controller?.abort();
+    };
+  }, []);
 
   const pendingRecordatorios = useMemo(
     () => recordatorioTasks.filter((task) => !task.completada),
@@ -972,6 +1006,10 @@ export default function Home() {
     await loadStockData(activeStockLoadProfile.options);
   }, [activeStockLoadProfile, loadStockData]);
 
+  const reloadAdminData = useCallback(async (showSpinner = false) => {
+    await Promise.all([loadData(showSpinner), loadAdminData()]);
+  }, [loadAdminData, loadData]);
+
   useEffect(() => {
     if (!activeStockLoadProfile) return;
     if (stockLoading) return;
@@ -1023,14 +1061,23 @@ export default function Home() {
   );
 
   const loadEtiquetadoData = useCallback(async () => {
+    etiquetadoRequestRef.current.controller?.abort();
+    const controller = new AbortController();
+    const requestId = etiquetadoRequestRef.current.id + 1;
+    etiquetadoRequestRef.current = { id: requestId, controller };
+
     setEtiquetadoLoading(true);
     setEtiquetadoError(null);
     try {
-      const data = await api<EtiquetadoDashboardData>("/api/etiquetado/dashboard");
+      const data = await api<EtiquetadoDashboardData>("/api/etiquetado/dashboard", { signal: controller.signal });
+      if (etiquetadoRequestRef.current.id !== requestId) return;
       setEtiquetadoData(data);
     } catch (error: unknown) {
+      if (isAbortError(error)) return;
+      if (etiquetadoRequestRef.current.id !== requestId) return;
       setEtiquetadoError(error instanceof Error ? error.message : "No se pudo cargar el modulo de etiquetado.");
     } finally {
+      if (etiquetadoRequestRef.current.id !== requestId) return;
       setEtiquetadoLoading(false);
     }
   }, []);
@@ -1043,9 +1090,72 @@ export default function Home() {
     void loadEtiquetadoData();
   }, [activeEtiquetadoSection, etiquetadoData, etiquetadoError, etiquetadoLoading, loadEtiquetadoData]);
 
+  useEffect(() => {
+    if (activeEtiquetadoSection) return;
+    etiquetadoRequestRef.current.controller?.abort();
+    etiquetadoRequestRef.current.controller = null;
+  }, [activeEtiquetadoSection]);
+
   const reloadEtiquetadoData = useCallback(async () => {
     await loadEtiquetadoData();
   }, [loadEtiquetadoData]);
+
+  const reloadCurrentViewData = useCallback(
+    async (showSpinner = false) => {
+      if (!currentUser) {
+        await loadData(showSpinner);
+        return;
+      }
+
+      if (activeStockLoadProfile) {
+        await reloadActiveStockData();
+        return;
+      }
+
+      if (activeEtiquetadoSection) {
+        await reloadEtiquetadoData();
+        return;
+      }
+
+      if (activeView === "hoja_matrix") {
+        await loadHojaMatrix();
+        return;
+      }
+
+      if (activeView === "equipo_resumen") {
+        await loadEquipoResumen();
+        return;
+      }
+
+      if (activeView === "recordatorios") {
+        await loadRecordatorios();
+        return;
+      }
+
+      if (inAdminConfigView || activeView === "usuario_nuevo") {
+        if (currentUser.rol === "ADMIN") {
+          await reloadAdminData(showSpinner);
+          return;
+        }
+      }
+
+      await loadData(showSpinner);
+    },
+    [
+      activeEtiquetadoSection,
+      activeStockLoadProfile,
+      activeView,
+      currentUser,
+      inAdminConfigView,
+      loadData,
+      loadEquipoResumen,
+      loadHojaMatrix,
+      loadRecordatorios,
+      reloadActiveStockData,
+      reloadAdminData,
+      reloadEtiquetadoData,
+    ],
+  );
 
   const createEtiquetadoItem = useCallback(
     async (input: { nombre: string }) => {
@@ -3187,7 +3297,7 @@ export default function Home() {
             setNewMailReferencia("");
             setNewRole("EDITOR");
             setStatus("Usuario creado.");
-            await loadData();
+            await loadAdminData();
           },
           onError: (message) => setStatus(message),
         });
@@ -3195,7 +3305,7 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [isAdmin, newUserRangoId, newNombre, newApellido, newUsername, newPassword, newPasswordConfirm, newMailReferencia, newRole, loadData],
+    [isAdmin, newUserRangoId, newNombre, newApellido, newUsername, newPassword, newPasswordConfirm, newMailReferencia, newRole, loadAdminData],
   );
 
   const changeUserRole = useCallback(
@@ -3312,7 +3422,7 @@ export default function Home() {
         onSuccess: async () => {
           setStatus("Rol actualizado.");
           setUserRoleDialog(null);
-          await loadData();
+          await loadAdminData();
         },
         onError: (message) => setStatus(message),
       });
@@ -3321,7 +3431,7 @@ export default function Home() {
     } finally {
       setUserRoleSaving(false);
     }
-  }, [userRoleDialog, loadData]);
+  }, [userRoleDialog, loadAdminData]);
 
   const submitUserPasswordChange = useCallback(async () => {
     if (!userPasswordDialog) return;
@@ -3342,7 +3452,7 @@ export default function Home() {
         onSuccess: async () => {
           setStatus("Contraseña de usuario actualizada.");
           setUserPasswordDialog(null);
-          await loadData();
+          await loadAdminData();
         },
         onError: (message) => setStatus(message),
       });
@@ -3351,7 +3461,7 @@ export default function Home() {
     } finally {
       setUserPasswordSaving(false);
     }
-  }, [userPasswordDialog, loadData]);
+  }, [userPasswordDialog, loadAdminData]);
 
   const submitUsernameChange = useCallback(async () => {
     if (!usernameDialog) return;
@@ -3383,7 +3493,19 @@ export default function Home() {
           const isSelfUpdate = currentUser?.usuarioId === usernameDialog.usuarioId;
           setStatus(isSelfUpdate ? `Tu usuario ahora es ${nextUsername}.` : `Usuario actualizado a ${nextUsername}.`);
           setUsernameDialog(null);
-          await loadData(isSelfUpdate);
+          if (isSelfUpdate && isAdmin) {
+            await Promise.all([loadData(true), loadAdminData()]);
+            return;
+          }
+          if (isSelfUpdate) {
+            await loadData(true);
+            return;
+          }
+          if (isAdmin) {
+            await loadAdminData();
+            return;
+          }
+          await loadData(false);
         },
         onError: (message) => setStatus(message),
       });
@@ -3392,7 +3514,7 @@ export default function Home() {
     } finally {
       setUsernameSaving(false);
     }
-  }, [canManageOwnAccount, usernameDialog, currentUser, loadData]);
+  }, [canManageOwnAccount, usernameDialog, currentUser, isAdmin, loadAdminData, loadData]);
 
   const toggleUserActive = useCallback(
     async (usuario: UsuarioAdmin) => {
@@ -3404,7 +3526,7 @@ export default function Home() {
         await toggleUserActiveHandler(usuario.usuarioId, !usuario.activo, {
           onSuccess: async () => {
             setStatus("Estado de usuario actualizado.");
-            await loadData();
+            await loadAdminData();
           },
           onError: (message) => setStatus(message),
         });
@@ -3412,7 +3534,7 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [isAdmin, loadData],
+    [isAdmin, loadAdminData],
   );
 
   const confirmUserEmail = useCallback(
@@ -3440,7 +3562,7 @@ export default function Home() {
             await confirmUserEmailHandler(usuario.usuarioId, {
               onSuccess: async () => {
                 setStatus("Correo confirmado.");
-                await loadData();
+                await loadAdminData();
               },
               onError: (message) => setStatus(message),
             });
@@ -3450,7 +3572,7 @@ export default function Home() {
         },
       });
     },
-    [isAdmin, loadData],
+    [isAdmin, loadAdminData],
   );
 
   const deleteUsuario = useCallback(
@@ -3469,7 +3591,7 @@ export default function Home() {
             await deleteUsuarioHandler(usuario.usuarioId, {
               onSuccess: async () => {
                 setStatus("Usuario eliminado.");
-                await loadData();
+                await loadAdminData();
               },
               onError: (message) => setStatus(message),
             });
@@ -3479,7 +3601,7 @@ export default function Home() {
         },
       });
     },
-    [isAdmin, loadData],
+    [isAdmin, loadAdminData],
   );
 
   const saveFirmaConfig = useCallback(
@@ -3784,14 +3906,23 @@ export default function Home() {
     (normalizedStatus.startsWith("verificando") ||
       normalizedStatus.startsWith("iniciando"));
   const isLoginGlobalBusy = !currentUser && (isPageBootLoading || loginLoading);
+  const loginBusyLabel = loginLoading
+    ? "Validando credenciales y preparando tu sesion..."
+    : isPageBootLoading
+      ? "Verificando sesion activa..."
+      : "Cargando pantalla de acceso...";
   const isAppGlobalBusy =
     !!currentUser &&
     (
       loading ||
       firmaConfigLoading ||
+      firmaConfigSaving ||
       hojaMatrixLoading ||
       equipoResumenLoading ||
       stockLoading ||
+      etiquetadoLoading ||
+      recordatoriosLoading ||
+      recordatoriosSaving ||
       creatingPersonal ||
       creatingOficialSuboficial ||
       mergeEquipoSaving ||
@@ -3808,6 +3939,81 @@ export default function Home() {
       promotingSubalternoCi !== null ||
       confirmDialogBusy
     );
+  const appBusyLabel = useMemo(() => {
+    if (loading) return "Cargando datos principales (personal, rangos, baterias y equipos)...";
+    if (firmaConfigLoading) return "Cargando configuracion de firmas y auditoria...";
+    if (firmaConfigSaving) return "Guardando configuracion de firmas...";
+    if (hojaMatrixLoading) return "Cargando datos y calculando hoja matriz de subalternos...";
+    if (equipoResumenLoading) return "Cargando datos y calculando resumen de equipos por bateria...";
+    if (stockLoading) {
+      if (activeStockLoadProfile?.key === "historial") {
+        return "Cargando historial y calculando impacto de movimientos en stock...";
+      }
+      if (activeStockLoadProfile?.key === "prestamos") {
+        return "Cargando prestamos y estado de devoluciones...";
+      }
+      return "Cargando stock y recalculando totales operativos...";
+    }
+    if (etiquetadoLoading) {
+      if (activeEtiquetadoSection === "codigos_sie") {
+        return "Cargando codigos SIE y validando disponibilidad...";
+      }
+      if (activeEtiquetadoSection === "imprimir_todas") {
+        return "Cargando etiquetas y preparando impresion masiva...";
+      }
+      return "Cargando modulo de etiquetado...";
+    }
+    if (recordatoriosLoading) return "Cargando tareas y recordatorios...";
+    if (recordatoriosSaving) return "Guardando cambios de recordatorios...";
+    if (creatingPersonal) return "Guardando alta de personal y actualizando listados...";
+    if (creatingOficialSuboficial) return "Guardando alta de oficiales/suboficiales...";
+    if (promotingSubalternoCi !== null) return "Procesando ascenso y actualizando datos del legajo...";
+    if (mergeEquipoSaving) return "Reasignando equipo y sincronizando referencias...";
+    if (stockSaving) {
+      return stockDraft.tipo === "EGRESO"
+        ? "Registrando baja de stock y recalculando existencias..."
+        : "Registrando alta de stock y recalculando existencias...";
+    }
+    if (prestamoSaving) return "Registrando prestamo y actualizando stock en tiempo real...";
+    if (returningPrestamoId !== null) return "Registrando devolucion y recalculando stock...";
+    if (editingPrestamoId !== null) return "Actualizando prestamo y validando consistencia...";
+    if (registroSaving) return "Guardando movimiento y actualizando historial...";
+    if (personalObservacionSaving) return "Guardando observacion del personal...";
+    if (changeLoading) return "Actualizando tu contrasena...";
+    if (userRoleSaving) return "Actualizando rol del usuario...";
+    if (userPasswordSaving) return "Actualizando contrasena del usuario...";
+    if (usernameSaving) return "Actualizando datos del usuario...";
+    if (confirmDialogBusy) return "Aplicando cambios solicitados...";
+    return "Actualizando informacion...";
+  }, [
+    activeEtiquetadoSection,
+    activeStockLoadProfile?.key,
+    changeLoading,
+    confirmDialogBusy,
+    creatingOficialSuboficial,
+    creatingPersonal,
+    editingPrestamoId,
+    equipoResumenLoading,
+    etiquetadoLoading,
+    firmaConfigLoading,
+    firmaConfigSaving,
+    hojaMatrixLoading,
+    loading,
+    mergeEquipoSaving,
+    personalObservacionSaving,
+    prestamoSaving,
+    recordatoriosLoading,
+    recordatoriosSaving,
+    registroSaving,
+    returningPrestamoId,
+    stockDraft.tipo,
+    stockLoading,
+    stockSaving,
+    promotingSubalternoCi,
+    userPasswordSaving,
+    userRoleSaving,
+    usernameSaving,
+  ]);
 
   if (!currentUser) {
     return (
@@ -3926,7 +4132,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <LoadingOverlay visible={isLoginGlobalBusy} label={loginLoading ? "Ingresando..." : "Cargando página..."} />
+        <LoadingOverlay visible={isLoginGlobalBusy} label={loginBusyLabel} />
       </main>
     );
   }
@@ -3950,7 +4156,7 @@ export default function Home() {
         roleLabel={roleLabel}
         onSelectView={handleSelectMainView}
         onSetConfigViews={setShowConfigViews}
-        onReload={() => void loadData(true, true)}
+        onReload={() => reloadCurrentViewData(true)}
         onEditOwnUser={changeOwnUsername}
         onChangePassword={() => {
           setChangeCurrentPassword("");
@@ -4304,7 +4510,7 @@ export default function Home() {
           viewType="OFICIAL"
           onOpenCreate={() => openOficialSuboficialCreate("OFICIAL")}
           onStartEdit={startEditOficialSuboficial}
-          onReload={() => loadData(true)}
+          onReload={() => reloadCurrentViewData(true)}
         />
       ) : null}
 
@@ -4316,7 +4522,7 @@ export default function Home() {
           viewType="SUBOFICIAL"
           onOpenCreate={() => openOficialSuboficialCreate("SUBOFICIAL")}
           onStartEdit={startEditOficialSuboficial}
-          onReload={() => loadData(true)}
+          onReload={() => reloadCurrentViewData(true)}
         />
       ) : null}
 
@@ -4324,7 +4530,7 @@ export default function Home() {
         <OficialesSuboficialesResumenView
           oficialesSuboficiales={oficialesSuboficiales}
           loading={loading}
-          onReload={() => loadData(true)}
+          onReload={() => reloadCurrentViewData(true)}
         />
       ) : null}
 
@@ -4564,7 +4770,7 @@ export default function Home() {
         />
       ) : null}
 
-      <LoadingOverlay visible={isAppGlobalBusy} label="Actualizando informacion..." />
+      <LoadingOverlay visible={isAppGlobalBusy} label={appBusyLabel} />
 
     </main>
   );

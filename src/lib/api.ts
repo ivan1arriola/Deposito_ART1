@@ -3,7 +3,20 @@
  */
 
 export async function api<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
+  const method = (init?.method ?? "GET").toUpperCase();
+  const isReadRequest = method === "GET" || method === "HEAD";
+  const headers = new Headers(init?.headers ?? undefined);
+
+  if (isReadRequest) {
+    if (!headers.has("Cache-Control")) headers.set("Cache-Control", "no-cache");
+    if (!headers.has("Pragma")) headers.set("Pragma", "no-cache");
+  }
+
+  const response = await fetch(url, {
+    ...init,
+    ...(isReadRequest ? { cache: init?.cache ?? "no-store" } : {}),
+    headers,
+  });
   const rawBody = await response.text();
   let data: unknown = null;
 

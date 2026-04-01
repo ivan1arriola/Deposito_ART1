@@ -14,6 +14,7 @@ type LoadingInlineProps = {
   tone?: LoadingSpinnerProps["tone"];
   className?: string;
   textClassName?: string;
+  showSpinner?: boolean;
 };
 
 type LoadingOverlayProps = {
@@ -51,10 +52,11 @@ export function LoadingInline({
   tone = "dark",
   className,
   textClassName,
+  showSpinner = false,
 }: LoadingInlineProps) {
   return (
     <Stack direction="row" spacing={1.25} alignItems="center" className={className} role="status" aria-live="polite">
-      <LoadingSpinner size={size} tone={tone} />
+      {showSpinner ? <LoadingSpinner size={size} tone={tone} /> : null}
       <Typography variant="body2" fontWeight={600} className={textClassName} color={tone === "light" ? "common.white" : "text.primary"}>
         {label}
       </Typography>
@@ -68,12 +70,32 @@ export function LoadingOverlay({ visible, label = "Cargando..." }: LoadingOverla
       open={visible}
       sx={{
         zIndex: (theme) => theme.zIndex.modal + 1,
-        bgcolor: "rgba(26, 23, 16, 0.28)",
+        bgcolor: "rgba(12, 10, 9, 0.62)",
+        backdropFilter: "blur(1.5px)",
+        WebkitBackdropFilter: "blur(1.5px)",
       }}
     >
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ px: 3, py: 1.5, borderRadius: 20, bgcolor: "background.paper", border: "1px solid", borderColor: "divider" }}>
+      <Stack
+        direction="row"
+        spacing={1.5}
+        alignItems="center"
+        role="status"
+        aria-live="polite"
+        sx={{
+          width: "min(92vw, 560px)",
+          px: 3,
+          py: 1.5,
+          borderRadius: 20,
+          bgcolor: "background.paper",
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: "0 12px 36px rgba(0,0,0,0.28)",
+        }}
+      >
         <LoadingSpinner size="sm" tone="dark" />
-        <Typography variant="body2" fontWeight={600}>{label}</Typography>
+        <Typography variant="body2" fontWeight={700} sx={{ textAlign: "left" }}>
+          {label}
+        </Typography>
       </Stack>
     </Backdrop>
   );

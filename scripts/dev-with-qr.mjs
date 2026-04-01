@@ -54,8 +54,9 @@ const getPreferredLanIpv4 = () => {
   return candidates[0].address;
 };
 
+const preferredLanHost = process.env.NEXT_DEV_QR_HOST?.trim() || getPreferredLanIpv4();
+
 const resolveQrUrl = (textBuffer) => {
-  const forcedHost = process.env.NEXT_DEV_QR_HOST?.trim();
   const networkMatch = textBuffer.match(/-\s*Network:\s*(https?:\/\/[^\s]+)/i);
   const localMatch = textBuffer.match(/-\s*Local:\s*(https?:\/\/[^\s]+)/i);
   const baseUrl = networkMatch?.[1] ?? localMatch?.[1];
@@ -64,7 +65,7 @@ const resolveQrUrl = (textBuffer) => {
 
   try {
     const parsed = new URL(baseUrl);
-    const localHost = forcedHost || getPreferredLanIpv4();
+    const localHost = preferredLanHost;
     if (!localHost) return parsed.toString();
 
     parsed.hostname = localHost;
@@ -96,9 +97,19 @@ const printQrFromText = (text) => {
   process.stdout.write(`${url}\n\n`);
 };
 
+const childEnv = { ...process.env };
+
+if (!childEnv.NEXT_DEV_ALLOWED_ORIGINS || childEnv.NEXT_DEV_ALLOWED_ORIGINS.trim() === "") {
+  const allowedOrigins = ["localhost", "127.0.0.1"];
+  if (preferredLanHost) {
+    allowedOrigins.unshift(preferredLanHost);
+  }
+  childEnv.NEXT_DEV_ALLOWED_ORIGINS = Array.from(new Set(allowedOrigins)).join(",");
+}
+
 const child = spawn(process.execPath, [nextBinPath, ...nextArgs], {
   stdio: ["inherit", "pipe", "pipe"],
-  env: process.env,
+  env: childEnv,
 });
 
 child.stdout.on("data", (chunk) => {

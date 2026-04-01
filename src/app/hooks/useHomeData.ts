@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { checkDbInitHandler, initializeDatabaseHandler } from "@/lib/handlers-auth";
 import type {
@@ -15,10 +15,11 @@ import type {
   Rango,
   UsuarioAdmin,
 } from "@/types/entities";
-import type { EquipoResumenData, HojaMatrixData, StockDashboardData } from "@/types/views";
+import type { EquipoResumenData, HojaMatrixData, MainView, StockDashboardData } from "@/types/views";
 
 type UseHomeDataOptions = {
   onStatusChange: (message: string) => void;
+  activeView: MainView;
 };
 
 type LoadStockDataOptions = {
@@ -27,7 +28,19 @@ type LoadStockDataOptions = {
   limit?: number;
 };
 
-export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
+type RequestKey = "core" | "admin" | "hojaMatrix" | "equipoResumen" | "stock";
+
+const REQUEST_KEYS: RequestKey[] = ["core", "admin", "hojaMatrix", "equipoResumen", "stock"];
+const ADMIN_VIEWS = new Set<MainView>(["firmas", "usuarios", "auditoria", "usuario_nuevo"]);
+const STOCK_VIEWS = new Set<MainView>(["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos", "formularios"]);
+
+function isAbortError(error: unknown) {
+  if (error instanceof DOMException) return error.name === "AbortError";
+  if (error instanceof Error) return error.name === "AbortError";
+  return false;
+}
+
+export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) {
   const [loading, setLoading] = useState(true);
   const [initMessage, setInitMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
   const [showInitCredentials, setShowInitCredentials] = useState(false);
@@ -63,14 +76,36 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
   const [stockLoading, setStockLoading] = useState(false);
   const [stockError, setStockError] = useState<string | null>(null);
 
-  const clearLoadedData = useCallback(() => {
-    setRangos([]);
-    setRangosOficiales([]);
-    setRangosSuboficiales([]);
-    setBaterias([]);
-    setEquipos([]);
-    setPersonal([]);
-    setOficialesSuboficiales([]);
+  const requestControllersRef = useRef<Partial<Record<RequestKey, AbortController>>>({});
+  const requestIdsRef = useRef<Record<RequestKey, number>>({
+    core: 0,
+    admin: 0,
+    hojaMatrix: 0,
+    equipoResumen: 0,
+    stock: 0,
+  });
+
+  const beginRequest = useCallback((key: RequestKey) => {
+    requestControllersRef.current[key]?.abort();
+    const controller = new AbortController();
+    requestControllersRef.current[key] = controller;
+    const requestId = requestIdsRef.current[key] + 1;
+    requestIdsRef.current[key] = requestId;
+    return { requestId, signal: controller.signal };
+  }, []);
+
+  const isCurrentRequest = useCallback((key: RequestKey, requestId: number) => {
+    return requestIdsRef.current[key] === requestId;
+  }, []);
+
+  const abortAllRequests = useCallback(() => {
+    for (const key of REQUEST_KEYS) {
+      requestControllersRef.current[key]?.abort();
+      requestControllersRef.current[key] = undefined;
+    }
+  }, []);
+
+  const resetAdminData = useCallback(() => {
     setUsuarios([]);
     setAuditoria([]);
     setFirmaConfig(null);
@@ -78,6 +113,18 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     setFirmaConfigLoading(false);
     setFirmaConfigSaving(false);
     setFirmaConfigError(null);
+  }, []);
+
+  const clearLoadedData = useCallback(() => {
+    abortAllRequests();
+    setRangos([]);
+    setRangosOficiales([]);
+    setRangosSuboficiales([]);
+    setBaterias([]);
+    setEquipos([]);
+    setPersonal([]);
+    setOficialesSuboficiales([]);
+    resetAdminData();
     setMovimientosTotal(0);
     setHojaMatrixData(null);
     setHojaMatrixLoading(false);
@@ -88,26 +135,21 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     setStockData(null);
     setStockLoading(false);
     setStockError(null);
-  }, []);
+  }, [abortAllRequests, resetAdminData]);
 
   const loadData = useCallback(
-    async (showSpinner = false, forceCacheReload = false) => {
+    async (showSpinner = false) => {
       if (showSpinner) setLoading(true);
-      const requestInit: RequestInit | undefined = forceCacheReload
-        ? {
-            cache: "no-store",
-            headers: {
-              "Cache-Control": "no-cache",
-              Pragma: "no-cache",
-            },
-          }
-        : undefined;
+      const { requestId, signal } = beginRequest("core");
+      const requestInit: RequestInit = { signal };
 
       try {
         const me = await api<{ user: CurrentUser }>("/api/auth/me", requestInit);
+        if (!isCurrentRequest("core", requestId)) return;
         setCurrentUser(me.user);
 
         await api<DbStatus>("/api/db-status", requestInit);
+        if (!isCurrentRequest("core", requestId)) return;
 
         const [
           rangosData,
@@ -129,6 +171,8 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
           api<{ total: number }>("/api/registros?summary=1", requestInit).catch(() => ({ total: 0 })),
         ]);
 
+        if (!isCurrentRequest("core", requestId)) return;
+
         setRangos(rangosData);
         setRangosOficiales(rangosOficialesData);
         setRangosSuboficiales(rangosSuboficialesData);
@@ -138,36 +182,8 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
         setOficialesSuboficiales(oficialesSuboficialesData);
         setMovimientosTotal(movimientosSummary.total);
 
-        if (me.user.rol === "ADMIN") {
-          setFirmaConfigLoading(true);
-          const [usuariosData, auditoriaData, firmaConfigResult] = await Promise.all([
-            api<UsuarioAdmin[]>("/api/usuarios", requestInit),
-            api<AuditoriaRecord[]>("/api/auditoria?limit=200", requestInit),
-            api<FirmaConfig>("/api/firma-config", requestInit)
-              .then((config) => ({ config, error: null as string | null }))
-              .catch((error: unknown) => ({
-                config: null,
-                error: error instanceof Error ? error.message : "No se pudo cargar la configuración de firmas.",
-              })),
-          ]);
-          setUsuarios(usuariosData);
-          setAuditoria(auditoriaData);
-          setFirmaConfig(firmaConfigResult.config);
-          setFirmaConfigDraft({
-            encargadoRango: firmaConfigResult.config?.encargadoRango ?? "",
-            encargadoNombre: firmaConfigResult.config?.encargadoNombre ?? "",
-            oficialRango: firmaConfigResult.config?.oficialRango ?? "",
-            oficialNombre: firmaConfigResult.config?.oficialNombre ?? "",
-          });
-          setFirmaConfigError(firmaConfigResult.error);
-          setFirmaConfigLoading(false);
-        } else {
-          setUsuarios([]);
-          setAuditoria([]);
-          setFirmaConfig(null);
-          setFirmaConfigDraft({ encargadoRango: "", encargadoNombre: "", oficialRango: "", oficialNombre: "" });
-          setFirmaConfigLoading(false);
-          setFirmaConfigError(null);
+        if (!ADMIN_VIEWS.has(activeView)) {
+          resetAdminData();
         }
 
         setHojaMatrixData(null);
@@ -178,6 +194,7 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
         setStockError(null);
         onStatusChange("Datos actualizados.");
       } catch (error: unknown) {
+        if (isAbortError(error)) return;
         const message = error instanceof Error ? error.message : "No se pudo cargar la información.";
         if (message === "No autenticado.") {
           setCurrentUser(null);
@@ -192,59 +209,141 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
         }
         onStatusChange(message);
       } finally {
-        setFirmaConfigLoading(false);
-        setLoading(false);
+        if (isCurrentRequest("core", requestId)) {
+          setLoading(false);
+        }
       }
     },
-    [clearLoadedData, onStatusChange],
+    [activeView, beginRequest, clearLoadedData, isCurrentRequest, onStatusChange, resetAdminData],
   );
+
+  const loadAdminData = useCallback(async () => {
+    if (currentUser?.rol !== "ADMIN") {
+      resetAdminData();
+      return;
+    }
+
+    setFirmaConfigLoading(true);
+    setFirmaConfigError(null);
+    const { requestId, signal } = beginRequest("admin");
+    const requestInit: RequestInit = { signal };
+
+    try {
+      const [usuariosData, auditoriaData, firmaConfigResult] = await Promise.all([
+        api<UsuarioAdmin[]>("/api/usuarios", requestInit),
+        api<AuditoriaRecord[]>("/api/auditoria?limit=200", requestInit),
+        api<FirmaConfig>("/api/firma-config", requestInit)
+          .then((config) => ({ config, error: null as string | null }))
+          .catch((error: unknown) => ({
+            config: null,
+            error: error instanceof Error ? error.message : "No se pudo cargar la configuración de firmas.",
+          })),
+      ]);
+
+      if (!isCurrentRequest("admin", requestId)) return;
+
+      setUsuarios(usuariosData);
+      setAuditoria(auditoriaData);
+      setFirmaConfig(firmaConfigResult.config);
+      setFirmaConfigDraft({
+        encargadoRango: firmaConfigResult.config?.encargadoRango ?? "",
+        encargadoNombre: firmaConfigResult.config?.encargadoNombre ?? "",
+        oficialRango: firmaConfigResult.config?.oficialRango ?? "",
+        oficialNombre: firmaConfigResult.config?.oficialNombre ?? "",
+      });
+      setFirmaConfigError(firmaConfigResult.error);
+    } catch (error: unknown) {
+      if (isAbortError(error)) return;
+      const message = error instanceof Error ? error.message : "No se pudieron cargar los datos administrativos.";
+      setFirmaConfigError(message);
+    } finally {
+      if (isCurrentRequest("admin", requestId)) {
+        setFirmaConfigLoading(false);
+      }
+    }
+  }, [beginRequest, currentUser?.rol, isCurrentRequest, resetAdminData]);
 
   const loadHojaMatrix = useCallback(async () => {
     setHojaMatrixLoading(true);
     setHojaMatrixError(null);
+    const { requestId, signal } = beginRequest("hojaMatrix");
+    const requestInit: RequestInit = { signal };
+
     try {
-      const data = await api<HojaMatrixData>("/api/hoja-matrix");
+      const data = await api<HojaMatrixData>("/api/hoja-matrix", requestInit);
+      if (!isCurrentRequest("hojaMatrix", requestId)) return;
       setHojaMatrixData(data);
     } catch (error: unknown) {
+      if (isAbortError(error)) return;
+      if (!isCurrentRequest("hojaMatrix", requestId)) return;
       setHojaMatrixError(error instanceof Error ? error.message : "No se pudo cargar la Hoja Matriz.");
     } finally {
-      setHojaMatrixLoading(false);
+      if (isCurrentRequest("hojaMatrix", requestId)) {
+        setHojaMatrixLoading(false);
+      }
     }
-  }, []);
+  }, [beginRequest, isCurrentRequest]);
 
   const loadEquipoResumen = useCallback(async () => {
     setEquipoResumenLoading(true);
     setEquipoResumenError(null);
+    const { requestId, signal } = beginRequest("equipoResumen");
+    const requestInit: RequestInit = { signal };
+
     try {
-      const data = await api<EquipoResumenData>("/api/resumen-equipos");
+      const data = await api<EquipoResumenData>("/api/resumen-equipos", requestInit);
+      if (!isCurrentRequest("equipoResumen", requestId)) return;
       setEquipoResumenData(data);
     } catch (error: unknown) {
+      if (isAbortError(error)) return;
+      if (!isCurrentRequest("equipoResumen", requestId)) return;
       setEquipoResumenError(error instanceof Error ? error.message : "No se pudo cargar el resumen de equipo.");
     } finally {
-      setEquipoResumenLoading(false);
+      if (isCurrentRequest("equipoResumen", requestId)) {
+        setEquipoResumenLoading(false);
+      }
     }
-  }, []);
+  }, [beginRequest, isCurrentRequest]);
 
   const loadStockData = useCallback(async (options: LoadStockDataOptions = {}) => {
     setStockLoading(true);
     setStockError(null);
+    const { requestId, signal } = beginRequest("stock");
+    const requestInit: RequestInit = { signal };
+
     try {
       const params = new URLSearchParams();
       if (options.includeHistorial === false) params.set("includeHistorial", "0");
       if (options.includePrestamos === false) params.set("includePrestamos", "0");
-      if (typeof options.limit === "number" && Number.isInteger(options.limit) && options.limit > 0) {
-        params.set("limit", String(options.limit));
+
+      const fallbackLimit =
+        typeof options.limit === "number"
+          ? options.limit
+          : options.includeHistorial
+            ? 300
+            : options.includePrestamos
+              ? 250
+              : undefined;
+
+      if (typeof fallbackLimit === "number" && Number.isInteger(fallbackLimit) && fallbackLimit > 0) {
+        params.set("limit", String(fallbackLimit));
       }
+
       const query = params.toString();
       const url = query ? `/api/stock?${query}` : "/api/stock";
-      const data = await api<StockDashboardData>(url);
+      const data = await api<StockDashboardData>(url, requestInit);
+      if (!isCurrentRequest("stock", requestId)) return;
       setStockData(data);
     } catch (error: unknown) {
+      if (isAbortError(error)) return;
+      if (!isCurrentRequest("stock", requestId)) return;
       setStockError(error instanceof Error ? error.message : "No se pudo cargar el stock.");
     } finally {
-      setStockLoading(false);
+      if (isCurrentRequest("stock", requestId)) {
+        setStockLoading(false);
+      }
     }
-  }, []);
+  }, [beginRequest, isCurrentRequest]);
 
   useEffect(() => {
     const initDb = async () => {
@@ -284,6 +383,34 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     }, 0);
     return () => window.clearTimeout(timerId);
   }, [loadData]);
+
+  useEffect(() => {
+    if (activeView !== "hoja_matrix") {
+      requestControllersRef.current.hojaMatrix?.abort();
+      requestControllersRef.current.hojaMatrix = undefined;
+    }
+
+    if (activeView !== "equipo_resumen") {
+      requestControllersRef.current.equipoResumen?.abort();
+      requestControllersRef.current.equipoResumen = undefined;
+    }
+
+    if (!STOCK_VIEWS.has(activeView)) {
+      requestControllersRef.current.stock?.abort();
+      requestControllersRef.current.stock = undefined;
+    }
+
+    if (!ADMIN_VIEWS.has(activeView)) {
+      requestControllersRef.current.admin?.abort();
+      requestControllersRef.current.admin = undefined;
+    }
+  }, [activeView]);
+
+  useEffect(() => {
+    return () => {
+      abortAllRequests();
+    };
+  }, [abortAllRequests]);
 
   return {
     loading,
@@ -328,6 +455,7 @@ export function useHomeData({ onStatusChange }: UseHomeDataOptions) {
     stockError,
     setStockError,
     loadData,
+    loadAdminData,
     loadHojaMatrix,
     loadEquipoResumen,
     loadStockData,
