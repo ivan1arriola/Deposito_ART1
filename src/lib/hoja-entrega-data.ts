@@ -135,80 +135,6 @@ type HojaEntregaPersonalRecord = Prisma.PersonalGetPayload<{
   select: typeof hojaEntregaPersonalSelect;
 }>;
 
-const hojaEntregaPersonalBaseSelect = {
-  ci: true,
-  apellido1: true,
-  apellido2: true,
-  nombre1: true,
-  nombre2: true,
-  rango: {
-    select: {
-      abreviacion: true,
-      nombreCompleto: true,
-      orden: true,
-    },
-  },
-  subalterno: {
-    select: {
-      esReingreso: true,
-      fechaIngreso: true,
-      fechaIngresoOriginal: true,
-      bateria: {
-        select: {
-          nombre: true,
-        },
-      },
-    },
-  },
-  tallas: {
-    select: {
-      tallaValor: true,
-      tallaTipo: {
-        select: {
-          nombre: true,
-        },
-      },
-    },
-  },
-  observaciones: {
-    orderBy: { fecha: "asc" },
-    select: {
-      fecha: true,
-      texto: true,
-    },
-  },
-} as const satisfies Prisma.PersonalSelect;
-
-const hojaEntregaMovimientoSelect = {
-  movimientoId: true,
-  personalCi: true,
-  fecha: true,
-  tipo: true,
-  observaciones: true,
-} as const satisfies Prisma.MovimientoSelect;
-
-const hojaEntregaMovimientoItemSelect = {
-  movimientoId: true,
-  cantidad: true,
-  item: {
-    select: {
-      nombre: true,
-    },
-  },
-} as const satisfies Prisma.MovimientoItemSelect;
-
-type HojaEntregaPersonalBaseRecord = Prisma.PersonalGetPayload<{
-  select: typeof hojaEntregaPersonalBaseSelect;
-}>;
-
-type HojaEntregaMovimientoRecord = Prisma.MovimientoGetPayload<{
-  select: typeof hojaEntregaMovimientoSelect;
-}>;
-
-type HojaEntregaMovimientoItemRecord = Prisma.MovimientoItemGetPayload<{
-  select: typeof hojaEntregaMovimientoItemSelect;
-}>;
-
 function aggregateItems(records: MovimientoWithItems[]) {
   const map = new Map<string, number>();
   for (const record of records) {
@@ -260,61 +186,6 @@ function toSixColumns(records: MovimientoWithItems[]): MatrixColumn[] {
   }
 
   return columns.slice(0, 6);
-}
-
-function buildPersonasWithMovimientos(
-  personas: HojaEntregaPersonalBaseRecord[],
-  movimientos: HojaEntregaMovimientoRecord[],
-  movimientoItems: HojaEntregaMovimientoItemRecord[],
-): HojaEntregaPersonalRecord[] {
-  const itemsByMovimientoId = new Map<
-    bigint,
-    Array<{
-      cantidad: number;
-      item: {
-        nombre: string;
-      };
-    }>
-  >();
-
-  for (const movimientoItem of movimientoItems) {
-    const current = itemsByMovimientoId.get(movimientoItem.movimientoId);
-    const normalizedItem = {
-      cantidad: movimientoItem.cantidad,
-      item: {
-        nombre: movimientoItem.item.nombre,
-      },
-    };
-
-    if (current) {
-      current.push(normalizedItem);
-    } else {
-      itemsByMovimientoId.set(movimientoItem.movimientoId, [normalizedItem]);
-    }
-  }
-
-  const movimientosByCi = new Map<string, HojaEntregaPersonalRecord["movimientos"]>();
-
-  for (const movimiento of movimientos) {
-    const current = movimientosByCi.get(movimiento.personalCi);
-    const normalizedMovimiento = {
-      fecha: movimiento.fecha,
-      tipo: movimiento.tipo,
-      observaciones: movimiento.observaciones,
-      items: itemsByMovimientoId.get(movimiento.movimientoId) ?? [],
-    };
-
-    if (current) {
-      current.push(normalizedMovimiento);
-    } else {
-      movimientosByCi.set(movimiento.personalCi, [normalizedMovimiento]);
-    }
-  }
-
-  return personas.map((persona) => ({
-    ...persona,
-    movimientos: movimientosByCi.get(persona.ci) ?? [],
-  }));
 }
 
 function buildMatrix(itemsOrder: string[], entregas: MatrixColumn[], devoluciones: MatrixColumn[]): HojaEntregaMatrixRow[] {
@@ -430,33 +301,13 @@ export async function getHojaEntregaData(ci: string): Promise<HojaEntregaSheetDa
 }
 
 export async function getAllHojasEntregaData(): Promise<HojaEntregaSheetData[]> {
-  const [personasBase, movimientos, movimientoItems, itemCatalog, firmas] = await Promise.all([
+  // Mantener la misma base de datos/mapeo que la hoja individual para evitar divergencias de formato.
+  const [personas, itemCatalog, firmas] = await Promise.all([
     prisma.personal.findMany({
       where: {
         tipo: TipoPersonal.SUBALTERNO,
       },
-      select: hojaEntregaPersonalBaseSelect,
-    }),
-    prisma.movimiento.findMany({
-      where: {
-        tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
-        personal: {
-          tipo: TipoPersonal.SUBALTERNO,
-        },
-      },
-      orderBy: [{ personalCi: "asc" }, { fecha: "asc" }],
-      select: hojaEntregaMovimientoSelect,
-    }),
-    prisma.movimientoItem.findMany({
-      where: {
-        movimiento: {
-          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
-          personal: {
-            tipo: TipoPersonal.SUBALTERNO,
-          },
-        },
-      },
-      select: hojaEntregaMovimientoItemSelect,
+      select: hojaEntregaPersonalSelect,
     }),
     prisma.item.findMany({
       where: { activo: true },
@@ -467,7 +318,6 @@ export async function getAllHojasEntregaData(): Promise<HojaEntregaSheetData[]> 
   ]);
 
   const itemOrder = itemCatalog.map((item) => item.nombre);
-  const personas = buildPersonasWithMovimientos(personasBase, movimientos, movimientoItems);
 
   return [...personas]
     .sort(comparePersonalByHierarchy)
