@@ -12,7 +12,13 @@ import {
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
 import { isValidUruguayanCi } from "@/lib/ci";
-import { prestamoInclude, serializePrestamo, totalUnidadesPrestamo } from "@/lib/prestamos";
+import { prestamoInclude, serializePrestamoWithActuante, totalUnidadesPrestamo } from "@/lib/prestamos";
+import {
+  ensurePrestamoActuanteCompatibility,
+  fetchPrestamoActuanteByMovimientoIds,
+  isSargentoRank,
+  upsertPrestamoActuante,
+} from "@/lib/prestamo-actuante";
 
 type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
 
@@ -26,6 +32,7 @@ type PrestamoItemPayload = {
 type PrestamoPayload = {
   destinatarioTipo: PrestamoDestinatarioTipo | string;
   destinatarioCi: string;
+  actuanteCi: string;
   fechaPrestamo?: string;
   fechaEstimadaDevolucionTexto?: string;
   comentarios?: string;
@@ -75,6 +82,7 @@ function isValidPayload(body: unknown): body is PrestamoPayload {
   const destinatarioCi = String(candidate.destinatarioCi ?? "").trim();
   if (!destinatarioTipo) return false;
   if (!isValidUruguayanCi(destinatarioCi)) return false;
+  if (typeof candidate.actuanteCi !== "string" || String(candidate.actuanteCi).trim() === "") return false;
   if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
   if (candidate.fechaPrestamo !== undefined && typeof candidate.fechaPrestamo !== "string") return false;
   if (candidate.fechaEstimadaDevolucionTexto !== undefined && typeof candidate.fechaEstimadaDevolucionTexto !== "string") return false;
@@ -85,6 +93,7 @@ function isValidPayload(body: unknown): body is PrestamoPayload {
 export async function GET(request: Request) {
   const auth = await authorizeRequest(request, "read_data");
   if (!auth.ok) return auth.response;
+  await ensurePrestamoActuanteCompatibility();
 
   const url = new URL(request.url);
   const status = String(url.searchParams.get("status") ?? "todos").trim().toLowerCase();
@@ -128,12 +137,14 @@ export async function GET(request: Request) {
     take: limit,
   });
 
-  return NextResponse.json(prestamos.map(serializePrestamo));
+  const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds(prestamos.map((prestamo) => prestamo.movimientoId));
+  return NextResponse.json(prestamos.map((prestamo) => serializePrestamoWithActuante(prestamo, actuanteByMovimientoId)));
 }
 
 export async function POST(request: Request) {
   const auth = await authorizeRequest(request, "write_data");
   if (!auth.ok) return auth.response;
+  await ensurePrestamoActuanteCompatibility();
 
   const body = await request.json();
   if (!isValidPayload(body)) {
@@ -145,6 +156,7 @@ export async function POST(request: Request) {
 
   const destinatarioTipo = parseDestinatarioTipo(body.destinatarioTipo);
   const destinatarioCi = body.destinatarioCi.trim();
+  const actuanteCi = String(body.actuanteCi ?? "").trim();
   const fechaPrestamoInput = body.fechaPrestamo?.trim() || getTodayDateInput();
   const fechaPrestamo = parseFechaPrestamo(body.fechaPrestamo);
   if (!destinatarioTipo || !fechaPrestamo) {
@@ -152,6 +164,14 @@ export async function POST(request: Request) {
   }
   if (isDateInputAfterToday(fechaPrestamoInput)) {
     return NextResponse.json({ error: "La fecha del prestamo no puede ser futura." }, { status: 400 });
+  }
+
+  if (actuanteCi === "") {
+    return NextResponse.json({ error: "Debes indicar 'por oden de' para registrar el prestamo." }, { status: 400 });
+  }
+
+  if (!isValidUruguayanCi(actuanteCi)) {
+    return NextResponse.json({ error: "CI invalida en 'por oden de:'." }, { status: 400 });
   }
 
   const parsedItems = body.items
@@ -194,7 +214,7 @@ export async function POST(request: Request) {
   }
 
   const itemIds = Array.from(dedupedItems.keys()).map((itemId) => BigInt(itemId));
-  const [itemsFound, destinatarioPersonal] = await Promise.all([
+  const [itemsFound, destinatarioPersonal, actorRango] = await Promise.all([
     prisma.item.findMany({
       where: { itemId: { in: itemIds } },
       select: { itemId: true, nombre: true },
@@ -219,6 +239,10 @@ export async function POST(request: Request) {
         rango: { select: { abreviacion: true, nombreCompleto: true } },
       },
     }),
+    prisma.rango.findUnique({
+      where: { rangoId: auth.user.rangoId },
+      select: { orden: true },
+    }),
   ]);
 
   if (itemsFound.length !== itemIds.length) {
@@ -234,6 +258,49 @@ export async function POST(request: Request) {
             : "No existe oficial/suboficial para la CI indicada.",
       },
       { status: 404 },
+    );
+  }
+
+  if (actorRango?.orden == null) {
+    return NextResponse.json({ error: "No se pudo determinar el orden del usuario autenticado." }, { status: 400 });
+  }
+
+  const actuanteFound = await prisma.personal.findFirst({
+    where: { ci: actuanteCi },
+    select: {
+      ci: true,
+      tipo: true,
+      apellido1: true,
+      apellido2: true,
+      nombre1: true,
+      nombre2: true,
+      rango: { select: { abreviacion: true, nombreCompleto: true, orden: true } },
+    },
+  });
+
+  if (!actuanteFound) {
+    return NextResponse.json({ error: "No existe personal para la CI indicada en por oden de." }, { status: 404 });
+  }
+
+  const actuanteData = actuanteFound;
+
+  const isEligibleTipo =
+    actuanteData.tipo === TipoPersonal.OFICIAL ||
+    actuanteData.tipo === TipoPersonal.SUBOFICIAL ||
+    (actuanteData.tipo === TipoPersonal.SUBALTERNO &&
+      isSargentoRank(actuanteData.rango.abreviacion, actuanteData.rango.nombreCompleto));
+
+  if (!isEligibleTipo) {
+    return NextResponse.json(
+      { error: "El registro por oden de solo admite oficial, suboficial o sargento." },
+      { status: 400 },
+    );
+  }
+
+  if (actuanteData.rango.orden >= actorRango.orden) {
+    return NextResponse.json(
+      { error: "El registro por oden de debe ser de rango superior al usuario autenticado." },
+      { status: 400 },
     );
   }
 
@@ -282,6 +349,8 @@ export async function POST(request: Request) {
         })),
       });
 
+      await upsertPrestamoActuante(tx, movimiento.movimientoId, actuanteData.ci);
+
       return tx.movimiento.findUniqueOrThrow({
         where: { movimientoId: movimiento.movimientoId },
         include: prestamoInclude,
@@ -310,6 +379,13 @@ export async function POST(request: Request) {
         fechaPrestamo: formatDateOnlyForDisplay(fechaPrestamoInput),
         fechaEstimadaDevolucionTexto,
         comentarios,
+        porOdenDe: {
+          ci: actuanteData.ci,
+          gradoAbreviacion: actuanteData.rango.abreviacion,
+          nombre: `${actuanteData.apellido1} ${actuanteData.apellido2 ?? ""}, ${actuanteData.nombre1} ${actuanteData.nombre2 ?? ""}`
+            .replace(/\s+/g, " ")
+            .trim(),
+        },
         totalEquipos: created.items.length,
         totalUnidades: totalUnidadesPrestamo(created),
         items: created.items.map((item) => ({
@@ -338,7 +414,15 @@ export async function POST(request: Request) {
       // No bloquear prestamo por fallas de push.
     }
 
-    return NextResponse.json(serializePrestamo(created), { status: 201 });
+    const actuanteByMovimientoId = new Map<string, { ci: string; label: string }>();
+    actuanteByMovimientoId.set(created.movimientoId.toString(), {
+      ci: actuanteData.ci,
+      label: `${actuanteData.rango.abreviacion} ${actuanteData.apellido1} ${actuanteData.apellido2 ?? ""}, ${actuanteData.nombre1} ${actuanteData.nombre2 ?? ""}`
+        .replace(/\s+/g, " ")
+        .trim(),
+    });
+
+    return NextResponse.json(serializePrestamoWithActuante(created, actuanteByMovimientoId), { status: 201 });
   } catch {
     return NextResponse.json({ error: "No se pudo registrar el prestamo." }, { status: 500 });
   }

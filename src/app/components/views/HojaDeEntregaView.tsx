@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { extractDateParts, formatDateOnlyForDisplay } from "@/lib/date-helpers";
-import { LoadingInline } from "@/app/components/shared";
 import styles from "./hoja-de-entrega.module.css";
 
 type FichaData = {
@@ -136,17 +135,25 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
     try {
       setStatus("Abriendo vista de impresion...");
       const printUrl = `/hoja-de-entrega/${encodeURIComponent(ci)}?autoprint=1`;
-      const popup = window.open(printUrl, "_blank", "noopener,noreferrer");
+      const popup = window.open(printUrl, "_blank");
 
-      if (!popup) {
-        throw new Error("Permite ventanas emergentes para imprimir o guardar el PDF.");
+      if (popup) {
+        try {
+          popup.opener = null;
+        } catch {
+          // Algunos navegadores restringen esta asignacion; no bloquear flujo.
+        }
+        setStatus("Vista de impresion abierta.");
+        window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
+        return;
       }
 
-      setStatus("Vista de impresion abierta.");
-      window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
+      setStatus("Ventana emergente bloqueada. Abriendo impresion en esta pestaña...");
+      window.setTimeout(() => {
+        window.location.assign(printUrl);
+      }, 120);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Error desconocido";
-      console.error("Error abriendo vista de impresion:", message);
       setStatus(`Error: ${message}`);
       window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
     }
@@ -178,17 +185,9 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
         </button>
       </div>
 
-      <p className={styles.statusLine} role="status">
-        {loading ? (
-          <LoadingInline
-            label={status}
-            size="xs"
-            textClassName="text-xs font-semibold text-stone-700"
-          />
-        ) : (
-          status
-        )}
-      </p>
+      <div className={styles.statusLine} role="status" aria-live="polite">
+        {loading ? <span>{status}</span> : status}
+      </div>
 
       {data ? (
         <div className={styles.sheet}>
@@ -391,4 +390,3 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
     </main>
   );
 }
-

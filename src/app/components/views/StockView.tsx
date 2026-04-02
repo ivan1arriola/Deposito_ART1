@@ -33,7 +33,13 @@ type StockViewProps = {
   prestamoSaving: boolean;
   returningPrestamoId: string | null;
   onPrestamoDraftChange: (
-    field: "destinatarioTipo" | "destinatarioCi" | "fechaPrestamo" | "fechaEstimadaDevolucionTexto" | "comentarios",
+    field:
+      | "destinatarioTipo"
+      | "destinatarioCi"
+      | "actuanteCi"
+      | "fechaPrestamo"
+      | "fechaEstimadaDevolucionTexto"
+      | "comentarios",
     value: string,
   ) => void;
   onPrestamoItemChange: (index: number, field: keyof PrestamoDraftItem, value: string) => void;
@@ -57,6 +63,22 @@ function historyBadgeClass(tipo: "INGRESO" | "EGRESO" | "ENTREGA" | "DEVOLUCION"
 
 function reciboHref(prestamoId: string) {
   return `/api/prestamos/${encodeURIComponent(prestamoId)}/recibo`;
+}
+
+function normalizeRankForActuante(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[º°]/g, "")
+    .replace(/[."']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isSargentoRank(abreviacion: string) {
+  const normalized = normalizeRankForActuante(abreviacion);
+  return normalized.includes("sargento") || normalized.startsWith("sgto");
 }
 
 export function StockView({
@@ -117,6 +139,30 @@ export function StockView({
         label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`,
       }));
   }, [prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales]);
+  const actuanteOptions = useMemo(() => {
+    const oficialesYSuboficiales = oficialesSuboficiales.map((registro) => ({
+      ci: registro.ci,
+      label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`.replace(/\s+/g, " ").trim(),
+    }));
+
+    const sargentos = personal
+      .filter((persona) => isSargentoRank(persona.rango.abreviacion))
+      .map((persona) => ({
+        ci: persona.ci,
+        label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`
+          .replace(/\s+/g, " ")
+          .trim(),
+      }));
+
+    const optionsByCi = new Map<string, { ci: string; label: string }>();
+    for (const option of [...oficialesYSuboficiales, ...sargentos]) {
+      if (!optionsByCi.has(option.ci)) {
+        optionsByCi.set(option.ci, option);
+      }
+    }
+
+    return Array.from(optionsByCi.values()).sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+  }, [oficialesSuboficiales, personal]);
   const [returnDateByPrestamo, setReturnDateByPrestamo] = useState<Record<string, string>>({});
   const [prestamoIdFilter, setPrestamoIdFilter] = useState("");
   const [returnItemsByPrestamo, setReturnItemsByPrestamo] = useState<
@@ -375,6 +421,16 @@ export function StockView({
                     onChange={(ci) => onPrestamoDraftChange("destinatarioCi", ci)}
                   />
                 </div>
+                <div className="text-xs text-stone-700">
+                  Por oden de
+                  <DestinatarioSearchSelect
+                    key="stock-prestamo-actuante"
+                    options={actuanteOptions}
+                    value={prestamoDraft.actuanteCi}
+                    disabled={prestamoSaving}
+                    onChange={(ci) => onPrestamoDraftChange("actuanteCi", ci)}
+                  />
+                </div>
                 <label className="text-xs text-stone-700">
                   Fecha prestamo
                   <DateTextInput
@@ -534,6 +590,7 @@ export function StockView({
                       {prestamo.fechaEstimadaDevolucionTexto ? (
                         <p className="text-xs text-stone-500">Estimado: {prestamo.fechaEstimadaDevolucionTexto}</p>
                       ) : null}
+                      <p className="text-xs text-stone-500">Por oden de: {prestamo.actuanteNombre ?? "No registrado"}</p>
                       {prestamo.fechaDevolucion ? <p className="text-xs text-stone-500">Devuelto: {formatDateOnlyForDisplay(prestamo.fechaDevolucion)}</p> : null}
                     </div>
                     <div className="flex items-center gap-2">
@@ -724,6 +781,7 @@ export function StockView({
 
             <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
               <p className="text-xs text-stone-600">Fecha prestamo: {formatDateOnlyForDisplay(returnDialog.prestamo.fechaPrestamo)}</p>
+              <p className="mt-1 text-xs text-stone-600">Por oden de: {returnDialog.prestamo.actuanteNombre ?? "No registrado"}</p>
               <label className="mt-3 block text-xs text-stone-700">
                 Fecha devolucion
                 <DateTextInput
@@ -779,4 +837,3 @@ export function StockView({
     </section>
   );
 }
-

@@ -2,6 +2,8 @@ import type { Prisma, TipoPersonal } from "@prisma/client";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import type { PrestamoStockEntry } from "@/types/views";
 
+export type PrestamoActuanteByMovimientoId = Map<string, { ci: string; label: string }>;
+
 export const prestamoInclude = {
   personal: {
     include: {
@@ -105,12 +107,20 @@ export function formatPrestamoDestinatario(data: Pick<PrestamoWithRelations, "pe
 }
 
 export function serializePrestamo(prestamo: PrestamoWithRelations): PrestamoStockEntry {
+  return serializePrestamoWithActuante(prestamo, undefined);
+}
+
+export function serializePrestamoWithActuante(
+  prestamo: PrestamoWithRelations,
+  actuanteByMovimientoId?: PrestamoActuanteByMovimientoId,
+): PrestamoStockEntry {
   const destinatario = formatPrestamoDestinatario(prestamo);
   const estado = prestamo.prestamoHistorial ? "DEVUELTO" : "PENDIENTE";
   const reciboNumero =
     prestamo.prestamoHistorial?.reciboNumero ??
     prestamo.prestamoActivo?.reciboNumero ??
     `PR-${prestamo.movimientoId.toString().padStart(8, "0")}`;
+  const actuante = actuanteByMovimientoId?.get(prestamo.movimientoId.toString()) ?? null;
 
   return {
     prestamoId: prestamo.movimientoId.toString(),
@@ -121,6 +131,8 @@ export function serializePrestamo(prestamo: PrestamoWithRelations): PrestamoStoc
     destinatarioEtiqueta: destinatario.etiqueta,
     usuarioEntregaId: prestamo.usuarioEntregaId,
     usuarioEntregaNombre: formatUserLabel(prestamo.usuarioEntrega),
+    actuanteCi: actuante?.ci ?? null,
+    actuanteNombre: actuante?.label ?? null,
     fechaPrestamo: formatDateOnlyFromDate(prestamo.fecha) ?? "",
     fechaEstimadaDevolucionTexto:
       prestamo.prestamoHistorial?.fechaEstimadaDevolucionTexto ??

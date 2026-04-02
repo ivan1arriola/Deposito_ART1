@@ -8,11 +8,13 @@ import {
   Card,
   CardContent,
   Chip,
-  Divider,
+  Drawer,
   IconButton,
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
 import type { RecordatorioTarea } from "@/types/entities";
@@ -23,6 +25,8 @@ type RecordatorioCreateInput = {
   fechaLimite: string | null;
   prioridad: "NORMAL" | "URGENTE";
 };
+
+type TaskFilter = "PENDIENTES" | "URGENTES" | "HECHAS";
 
 type SoldadoRecordatorioWidgetProps = {
   tasks: RecordatorioTarea[];
@@ -41,6 +45,19 @@ function todayIsoDate() {
   return `${year}-${month}-${day}`;
 }
 
+function offsetIsoDate(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isTaskUrgent(task: RecordatorioTarea, todayKey: string) {
+  return task.prioridad === "URGENTE" || Boolean(task.fechaLimite && task.fechaLimite <= todayKey);
+}
+
 function sortPendingTasks(a: RecordatorioTarea, b: RecordatorioTarea) {
   if (a.prioridad !== b.prioridad) return a.prioridad === "URGENTE" ? -1 : 1;
   if (!a.fechaLimite && !b.fechaLimite) return 0;
@@ -48,6 +65,12 @@ function sortPendingTasks(a: RecordatorioTarea, b: RecordatorioTarea) {
   if (!b.fechaLimite) return -1;
   if (a.fechaLimite < b.fechaLimite) return -1;
   if (a.fechaLimite > b.fechaLimite) return 1;
+  return 0;
+}
+
+function sortCompletedTasks(a: RecordatorioTarea, b: RecordatorioTarea) {
+  if (a.updatedAt > b.updatedAt) return -1;
+  if (a.updatedAt < b.updatedAt) return 1;
   return 0;
 }
 
@@ -132,25 +155,66 @@ export function SoldadoRecordatorioWidget({
   onToggleTask,
   onOpenConfig,
 }: SoldadoRecordatorioWidgetProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [open, setOpen] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
+  const [filter, setFilter] = useState<TaskFilter>("PENDIENTES");
+  const [searchText, setSearchText] = useState("");
   const [titulo, setTitulo] = useState("");
   const [nota, setNota] = useState("");
   const [fechaLimite, setFechaLimite] = useState("");
   const [prioridad, setPrioridad] = useState<"NORMAL" | "URGENTE">("NORMAL");
 
+  const todayKey = todayIsoDate();
+
   const pendingTasks = useMemo(
     () => tasks.filter((task) => !task.completada).sort(sortPendingTasks),
     [tasks],
   );
-  const completedCount = tasks.length - pendingTasks.length;
-  const todayKey = todayIsoDate();
-  const urgentCount = useMemo(
-    () => pendingTasks.filter((task) => task.prioridad === "URGENTE" || Boolean(task.fechaLimite && task.fechaLimite <= todayKey)).length,
+  const completedTasks = useMemo(
+    () => tasks.filter((task) => task.completada).sort(sortCompletedTasks),
+    [tasks],
+  );
+  const urgentPendingTasks = useMemo(
+    () => pendingTasks.filter((task) => isTaskUrgent(task, todayKey)),
     [pendingTasks, todayKey],
   );
 
-  const visibleTasks = pendingTasks.slice(0, 4);
+  const urgentCount = urgentPendingTasks.length;
+  const completedCount = completedTasks.length;
+
+  const activeList = useMemo(() => {
+    if (filter === "HECHAS") return completedTasks;
+    if (filter === "URGENTES") return urgentPendingTasks;
+    return pendingTasks;
+  }, [filter, completedTasks, urgentPendingTasks, pendingTasks]);
+
+  const visibleList = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    const filtered = query
+      ? activeList.filter((task) => `${task.titulo} ${task.nota}`.toLowerCase().includes(query))
+      : activeList;
+    return filtered;
+  }, [activeList, searchText]);
+
+  const visibleTasks = visibleList.slice(0, isMobile ? 8 : 6);
+  const hiddenCount = Math.max(0, visibleList.length - visibleTasks.length);
+
+  const canSubmit = !saving && titulo.trim().length >= 2;
+
+  const closePanel = () => {
+    setOpen(false);
+    setShowComposer(false);
+    setSearchText("");
+    setFilter("PENDIENTES");
+  };
+
+  const openComposer = () => {
+    setOpen(true);
+    setShowComposer(true);
+  };
 
   const submit = async () => {
     const titleTrimmed = titulo.trim();
@@ -168,10 +232,293 @@ export function SoldadoRecordatorioWidget({
     setFechaLimite("");
     setPrioridad("NORMAL");
     setShowComposer(false);
+    setFilter("PENDIENTES");
+    setSearchText("");
   };
 
+  const panelContent = (
+    <Box sx={{ p: 1.5 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+            Recordatorios
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {urgentCount > 0
+              ? `${urgentCount} urgente(s) para resolver hoy.`
+              : `${pendingTasks.length} pendiente(s) en seguimiento.`}
+          </Typography>
+        </Box>
+        <Stack direction="row" spacing={0.75}>
+          <Button type="button" onClick={onOpenConfig} size="small" variant="outlined" color="inherit">
+            Config
+          </Button>
+          <Button type="button" onClick={closePanel} size="small" variant="outlined" color="inherit">
+            Cerrar
+          </Button>
+        </Stack>
+      </Stack>
+
+      <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ mt: 1.2 }}>
+        <Button
+          type="button"
+          size="small"
+          variant={filter === "PENDIENTES" ? "contained" : "outlined"}
+          color={filter === "PENDIENTES" ? "primary" : "inherit"}
+          onClick={() => setFilter("PENDIENTES")}
+          sx={{ textTransform: "none" }}
+        >
+          {`Pendientes (${pendingTasks.length})`}
+        </Button>
+        <Button
+          type="button"
+          size="small"
+          variant={filter === "URGENTES" ? "contained" : "outlined"}
+          color={filter === "URGENTES" ? "error" : "inherit"}
+          onClick={() => setFilter("URGENTES")}
+          sx={{ textTransform: "none" }}
+        >
+          {`Urgentes (${urgentCount})`}
+        </Button>
+        <Button
+          type="button"
+          size="small"
+          variant={filter === "HECHAS" ? "contained" : "outlined"}
+          color={filter === "HECHAS" ? "success" : "inherit"}
+          onClick={() => setFilter("HECHAS")}
+          sx={{ textTransform: "none" }}
+        >
+          {`Hechas (${completedCount})`}
+        </Button>
+      </Stack>
+
+      <TextField
+        value={searchText}
+        onChange={(event) => setSearchText(event.target.value)}
+        placeholder="Buscar por titulo o nota"
+        size="small"
+        fullWidth
+        sx={{ mt: 1.2 }}
+      />
+
+      <Box
+        sx={{
+          mt: 1.2,
+          maxHeight: isMobile ? "46vh" : "38vh",
+          overflowY: "auto",
+          pr: 0.2,
+        }}
+      >
+        <Stack spacing={1}>
+          {loading ? <Typography variant="caption" color="text.secondary">Cargando tareas...</Typography> : null}
+          {!loading && visibleTasks.length === 0 ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ border: "1px solid", borderColor: "divider", bgcolor: "action.hover", borderRadius: 1.5, px: 1, py: 1 }}
+            >
+              {filter === "HECHAS"
+                ? "No hay tareas hechas."
+                : filter === "URGENTES"
+                  ? "No hay tareas urgentes."
+                  : "No hay tareas pendientes."}
+            </Typography>
+          ) : null}
+
+          {!loading
+            ? visibleTasks.map((task) => {
+                const taskUrgent = isTaskUrgent(task, todayKey);
+                const isDone = task.completada;
+
+                return (
+                  <Box
+                    key={task.tareaId}
+                    sx={{
+                      borderRadius: 1.5,
+                      border: "1px solid",
+                      borderColor: taskUrgent && !isDone ? "error.light" : "divider",
+                      bgcolor: taskUrgent && !isDone ? "rgba(179,38,30,0.06)" : "action.hover",
+                      px: 1,
+                      py: 1,
+                    }}
+                  >
+                    <Stack direction="row" spacing={1} alignItems="flex-start">
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontWeight: 700,
+                              color: taskUrgent && !isDone ? "error.main" : "text.primary",
+                              textDecoration: isDone ? "line-through" : "none",
+                              opacity: isDone ? 0.8 : 1,
+                            }}
+                          >
+                            {task.titulo}
+                          </Typography>
+                          <Chip
+                            label={task.prioridad === "URGENTE" ? "Urgente" : "Normal"}
+                            size="small"
+                            color={task.prioridad === "URGENTE" ? "error" : "default"}
+                            sx={{ height: 20, fontSize: 10, textTransform: "uppercase", fontWeight: 700 }}
+                          />
+                          {task.fechaLimite ? (
+                            <Chip
+                              label={`Limite ${formatDateOnlyForDisplay(task.fechaLimite)}`}
+                              size="small"
+                              variant="outlined"
+                              color={taskUrgent && !isDone ? "error" : "default"}
+                              sx={{ height: 20, fontSize: 10 }}
+                            />
+                          ) : null}
+                        </Stack>
+                        {task.nota ? (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mt: 0.4, display: "block", textDecoration: isDone ? "line-through" : "none", opacity: isDone ? 0.8 : 1 }}
+                          >
+                            {task.nota}
+                          </Typography>
+                        ) : null}
+                      </Box>
+                      <Button
+                        type="button"
+                        size="small"
+                        variant={isDone ? "outlined" : "contained"}
+                        color={isDone ? "inherit" : "success"}
+                        onClick={() => void onToggleTask(task.tareaId, !isDone)}
+                        sx={{ minWidth: 88, textTransform: "none" }}
+                      >
+                        {isDone ? "Reabrir" : "Hecha"}
+                      </Button>
+                    </Stack>
+                  </Box>
+                );
+              })
+            : null}
+
+          {!loading && hiddenCount > 0 ? (
+            <Typography variant="caption" color="text.secondary">
+              {`Mostrando ${visibleTasks.length} de ${visibleList.length}. Ver el resto en Config.`}
+            </Typography>
+          ) : null}
+        </Stack>
+      </Box>
+
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1.3 }}>
+        <Button
+          type="button"
+          onClick={() => setShowComposer((current) => !current)}
+          size="small"
+          variant="outlined"
+          color="inherit"
+          fullWidth
+          sx={{ textTransform: "none" }}
+        >
+          {showComposer ? "Ocultar carga rapida" : "Nueva tarea rapida"}
+        </Button>
+        <Button
+          type="button"
+          onClick={onOpenConfig}
+          size="small"
+          variant="outlined"
+          color="inherit"
+          fullWidth
+          sx={{ textTransform: "none" }}
+        >
+          Ir a Recordatorios
+        </Button>
+      </Stack>
+
+      {showComposer ? (
+        <Box sx={{ mt: 1.3, borderRadius: 2, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.2 }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, color: "text.secondary" }}>
+            Carga rapida
+          </Typography>
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            <TextField
+              value={titulo}
+              onChange={(event) => setTitulo(event.target.value)}
+              placeholder="Titulo"
+              inputProps={{ maxLength: 140 }}
+              size="small"
+              fullWidth
+            />
+            <TextField
+              value={nota}
+              onChange={(event) => setNota(event.target.value)}
+              placeholder="Nota breve"
+              inputProps={{ maxLength: 2500 }}
+              multiline
+              minRows={2}
+              size="small"
+              fullWidth
+            />
+            <TextField
+              type="date"
+              value={fechaLimite}
+              onChange={(event) => setFechaLimite(event.target.value)}
+              size="small"
+              fullWidth
+            />
+            <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+              <Button type="button" size="small" variant="outlined" color="inherit" onClick={() => setFechaLimite(todayIsoDate())}>
+                Hoy
+              </Button>
+              <Button type="button" size="small" variant="outlined" color="inherit" onClick={() => setFechaLimite(offsetIsoDate(1))}>
+                Manana
+              </Button>
+              <Button type="button" size="small" variant="outlined" color="inherit" onClick={() => setFechaLimite(offsetIsoDate(7))}>
+                +7 dias
+              </Button>
+              <Button type="button" size="small" variant="outlined" color="inherit" onClick={() => setFechaLimite("")}>
+                Sin fecha
+              </Button>
+            </Stack>
+            <TextField
+              select
+              SelectProps={{ native: true }}
+              value={prioridad}
+              onChange={(event) => setPrioridad(event.target.value === "URGENTE" ? "URGENTE" : "NORMAL")}
+              size="small"
+              fullWidth
+            >
+              <option value="NORMAL">Prioridad: Normal</option>
+              <option value="URGENTE">Prioridad: Urgente</option>
+            </TextField>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+              <Button
+                type="button"
+                disabled={!canSubmit}
+                onClick={() => void submit()}
+                variant="contained"
+                size="small"
+                fullWidth
+                sx={{ textTransform: "none" }}
+              >
+                {saving ? "Guardando..." : "Guardar tarea"}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setShowComposer(false)}
+                variant="outlined"
+                size="small"
+                color="inherit"
+                fullWidth
+                sx={{ textTransform: "none" }}
+              >
+                Cancelar
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      ) : null}
+    </Box>
+  );
+
   return (
-    <Box sx={{ position: "fixed", bottom: { xs: 16, md: 24 }, left: { xs: 12, md: 24 }, zIndex: 360 }}>
+    <Box sx={{ position: "fixed", bottom: { xs: 14, md: 24 }, left: { xs: 10, md: 24 }, zIndex: 360 }}>
       <style>{`
         @keyframes soldier-float {
           0%, 100% { transform: translateY(0); }
@@ -336,7 +683,17 @@ export function SoldadoRecordatorioWidget({
           type="button"
           onClick={() => setOpen((current) => !current)}
           aria-expanded={open}
-          sx={{ p: 0, bgcolor: "transparent", "&:hover": { bgcolor: "transparent" } }}
+          sx={{
+            p: 0,
+            borderRadius: 3,
+            bgcolor: "transparent",
+            "&:hover": { bgcolor: "transparent" },
+            "&:focus-visible": {
+              outline: "2px solid",
+              outlineColor: "primary.main",
+              outlineOffset: 2,
+            },
+          }}
           title="Recordatorios del soldado"
         >
           <Box sx={{ position: "relative", display: "inline-flex", alignItems: "flex-end" }}>
@@ -370,199 +727,76 @@ export function SoldadoRecordatorioWidget({
           </Box>
         </IconButton>
 
-        {!open && (urgentCount > 0 || pendingTasks.length > 0) ? (
-          <Button
-            type="button"
-            onClick={() => setOpen(true)}
-            variant="outlined"
-            color={urgentCount > 0 ? "error" : "inherit"}
-            sx={{
-              display: { xs: "none", sm: "inline-flex" },
-              maxWidth: 208,
-              px: 1.5,
-              py: 0.75,
-              borderRadius: 2,
-              textTransform: "none",
-              fontSize: 12,
-              justifyContent: "flex-start",
-              textAlign: "left",
-              bgcolor: urgentCount > 0 ? "error.lighter" : "background.paper",
-            }}
-          >
-            {urgentCount > 0
-              ? `${urgentCount} tarea(s) vencida(s).`
-              : pendingTasks.length > 0
-                ? "Soldado: revisa tus tareas."
-                : "Sin tareas pendientes."}
-          </Button>
+        {!isMobile ? (
+          <Stack spacing={0.8} sx={{ minWidth: 170 }}>
+            <Button
+              type="button"
+              onClick={() => setOpen(true)}
+              variant="outlined"
+              color={urgentCount > 0 ? "error" : "inherit"}
+              size="small"
+              sx={{ textTransform: "none", justifyContent: "flex-start", bgcolor: "background.paper" }}
+            >
+              {urgentCount > 0
+                ? `${urgentCount} urgente(s)`
+                : pendingTasks.length > 0
+                  ? `${pendingTasks.length} pendiente(s)`
+                  : "Sin pendientes"}
+            </Button>
+            <Button
+              type="button"
+              onClick={openComposer}
+              variant="outlined"
+              color="inherit"
+              size="small"
+              sx={{ textTransform: "none", justifyContent: "flex-start", bgcolor: "background.paper" }}
+            >
+              Nueva tarea rapida
+            </Button>
+          </Stack>
         ) : null}
       </Stack>
 
-      {open ? (
+      {!isMobile && open ? (
         <Card
           sx={{
             position: "relative",
             mt: 1,
-            maxHeight: "70vh",
-            width: "min(23.5rem, calc(100vw - 1rem))",
-            overflow: "auto",
+            maxHeight: "72vh",
+            width: "min(26rem, calc(100vw - 1.4rem))",
+            overflow: "hidden",
             borderRadius: 3,
             border: "1px solid",
             borderColor: "divider",
             boxShadow: 10,
           }}
         >
-          <CardContent sx={{ p: 1.5 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Recordatorios</Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
-                {urgentCount > 0
-                  ? `${urgentCount} tarea(s) vencida(s) o para hoy.`
-                  : "Panel compacto para no tapar la vista principal."}
-              </Typography>
-            </Box>
-            <Button type="button" onClick={onOpenConfig} size="small" variant="outlined" color="inherit">
-              Config
-            </Button>
-          </Stack>
-
-          <Stack direction="row" spacing={1} sx={{ mt: 1.25 }}>
-            <Chip label={`Pendientes: ${pendingTasks.length}`} size="small" variant="outlined" />
-            <Chip label={`Hechas: ${completedCount}`} size="small" variant="outlined" />
-            <Chip label={`Urgentes: ${urgentCount}`} size="small" color="error" variant="outlined" />
-          </Stack>
-
-          <Stack spacing={1} sx={{ mt: 1.5 }}>
-            {loading ? <Typography variant="caption" color="text.secondary">Cargando tareas...</Typography> : null}
-            {!loading && visibleTasks.length === 0 ? (
-              <Typography variant="caption" color="text.secondary" sx={{ border: "1px solid", borderColor: "divider", bgcolor: "action.hover", borderRadius: 1.5, px: 1, py: 1 }}>
-                No hay tareas pendientes.
-              </Typography>
-            ) : null}
-            {!loading
-              ? visibleTasks.map((task) => {
-                  const isUrgent = task.prioridad === "URGENTE" || Boolean(task.fechaLimite && task.fechaLimite <= todayKey);
-                  return (
-                    <Box
-                      key={task.tareaId}
-                      sx={{
-                        borderRadius: 1.5,
-                        border: "1px solid",
-                        borderColor: isUrgent ? "error.light" : "divider",
-                        bgcolor: isUrgent ? "rgba(179,38,30,0.06)" : "action.hover",
-                        px: 1,
-                        py: 1,
-                      }}
-                    >
-                      <Stack direction="row" spacing={1} alignItems="flex-start">
-                        <Button
-                          type="button"
-                          onClick={() => void onToggleTask(task.tareaId, !task.completada)}
-                          size="small"
-                          variant="outlined"
-                          color="inherit"
-                          sx={{ minWidth: 0, width: 24, height: 24, p: 0, mt: 0.25 }}
-                          aria-label="Marcar como completada"
-                        >
-                          {task.completada ? "x" : ""}
-                        </Button>
-                        <Box sx={{ minWidth: 0, flex: 1 }}>
-                          <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
-                            <Typography variant="caption" sx={{ fontWeight: 700, color: isUrgent ? "error.main" : "text.primary" }}>
-                              {task.titulo}
-                            </Typography>
-                            <Chip
-                              label={task.prioridad === "URGENTE" ? "Urgente" : "Normal"}
-                              size="small"
-                              color={task.prioridad === "URGENTE" ? "error" : "default"}
-                              sx={{ height: 20, fontSize: 10, textTransform: "uppercase", fontWeight: 700 }}
-                            />
-                          </Stack>
-                          {task.nota ? <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>{task.nota}</Typography> : null}
-                          {task.fechaLimite ? (
-                            <Typography variant="caption" sx={{ mt: 0.5, display: "block", color: isUrgent ? "error.main" : "text.secondary", fontWeight: isUrgent ? 700 : 400 }}>
-                              {`Limite: ${formatDateOnlyForDisplay(task.fechaLimite)}`}
-                            </Typography>
-                          ) : null}
-                        </Box>
-                      </Stack>
-                    </Box>
-                  );
-                })
-              : null}
-            {!loading && pendingTasks.length > visibleTasks.length ? (
-              <Typography variant="caption" color="text.secondary">{`+${pendingTasks.length - visibleTasks.length} tarea(s) mas en Config.`}</Typography>
-            ) : null}
-          </Stack>
-
-          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-            <Button
-              type="button"
-              onClick={() => setShowComposer((current) => !current)}
-              size="small"
-              variant="outlined"
-              color="inherit"
-            >
-              {showComposer ? "Ocultar bloc" : "Abrir bloc"}
-            </Button>
-            <Button type="button" onClick={onOpenConfig} size="small" variant="outlined" color="inherit">
-              Ver todas
-            </Button>
-          </Stack>
-
-          {showComposer ? (
-            <Box sx={{ mt: 1.5, borderRadius: 2, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.2 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, color: "text.secondary" }}>
-                Nueva tarea
-              </Typography>
-              <Stack spacing={1} sx={{ mt: 1 }}>
-                <TextField
-                  value={titulo}
-                  onChange={(event) => setTitulo(event.target.value)}
-                  placeholder="Titulo"
-                  inputProps={{ maxLength: 140 }}
-                  size="small"
-                />
-                <TextField
-                  type="date"
-                  value={fechaLimite}
-                  onChange={(event) => setFechaLimite(event.target.value)}
-                  size="small"
-                />
-                <TextField
-                  select
-                  value={prioridad}
-                  onChange={(event) => setPrioridad(event.target.value === "URGENTE" ? "URGENTE" : "NORMAL")}
-                  size="small"
-                >
-                  <option value="NORMAL">Prioridad: Normal</option>
-                  <option value="URGENTE">Prioridad: Urgente</option>
-                </TextField>
-                <TextField
-                  value={nota}
-                  onChange={(event) => setNota(event.target.value)}
-                  placeholder="Nota breve"
-                  inputProps={{ maxLength: 2500 }}
-                  multiline
-                  minRows={2}
-                  size="small"
-                />
-                <Button
-                  type="button"
-                  disabled={saving || titulo.trim().length < 2}
-                  onClick={() => void submit()}
-                  variant="contained"
-                  size="small"
-                >
-                  {saving ? "Guardando..." : "Agregar tarea"}
-                </Button>
-              </Stack>
-            </Box>
-          ) : null}
-          <Divider sx={{ mt: 0.5, opacity: 0 }} />
-          </CardContent>
+          <CardContent sx={{ p: 0 }}>{panelContent}</CardContent>
         </Card>
+      ) : null}
+
+      {isMobile ? (
+        <Drawer
+          anchor="bottom"
+          open={open}
+          onClose={closePanel}
+          ModalProps={{ keepMounted: true }}
+          PaperProps={{
+            sx: {
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              border: "1px solid",
+              borderColor: "divider",
+              maxHeight: "82vh",
+              overflow: "hidden",
+            },
+          }}
+        >
+          <Box sx={{ py: 0.75, display: "flex", justifyContent: "center" }}>
+            <Box sx={{ width: 44, height: 4, borderRadius: 10, bgcolor: "text.disabled" }} />
+          </Box>
+          {panelContent}
+        </Drawer>
       ) : null}
     </Box>
   );

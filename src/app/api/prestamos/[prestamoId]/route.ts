@@ -10,7 +10,8 @@ import {
   isDateInputAfter,
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
-import { prestamoInclude, serializePrestamo, totalUnidadesPrestamo, type PrestamoWithRelations } from "@/lib/prestamos";
+import { prestamoInclude, serializePrestamoWithActuante, totalUnidadesPrestamo, type PrestamoWithRelations } from "@/lib/prestamos";
+import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
 
 type EditPrestamoPayload = {
   fechaPrestamo?: string;
@@ -187,6 +188,7 @@ export const prestamoByIdRouteTestables = {
 export async function PUT(request: Request, context: { params: Promise<{ prestamoId: string }> }) {
   const auth = await authorizeRequest(request, "write_data");
   if (!auth.ok) return auth.response;
+  await ensurePrestamoActuanteCompatibility();
   if (auth.user.rol !== "ADMIN") {
     return NextResponse.json({ error: "Solo el administrador puede editar prestamos." }, { status: 403 });
   }
@@ -452,7 +454,8 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       },
     });
 
-    return NextResponse.json(serializePrestamo(updated));
+    const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([updated.movimientoId]);
+    return NextResponse.json(serializePrestamoWithActuante(updated, actuanteByMovimientoId));
   } catch {
     return NextResponse.json({ error: "No se pudo editar el prestamo." }, { status: 500 });
   }

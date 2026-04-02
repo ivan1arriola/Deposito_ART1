@@ -12,7 +12,8 @@ import {
   isDateInputAfter,
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
-import { prestamoInclude, serializePrestamo, totalUnidadesPrestamo } from "@/lib/prestamos";
+import { prestamoInclude, serializePrestamoWithActuante, totalUnidadesPrestamo } from "@/lib/prestamos";
+import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
 
 type DevolucionPrestamoPayload = {
   fechaDevolucion?: string;
@@ -56,6 +57,7 @@ function parseEstadoEquipoPrestamo(value: unknown) {
 export async function PUT(request: Request, context: { params: Promise<{ prestamoId: string }> }) {
   const auth = await authorizeRequest(request, "write_data");
   if (!auth.ok) return auth.response;
+  await ensurePrestamoActuanteCompatibility();
 
   const { prestamoId: prestamoIdParam } = await context.params;
   const prestamoId = parsePrestamoId(prestamoIdParam);
@@ -195,7 +197,8 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       // No bloquear devolucion por fallas de push.
     }
 
-    return NextResponse.json(serializePrestamo(updated));
+    const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([updated.movimientoId]);
+    return NextResponse.json(serializePrestamoWithActuante(updated, actuanteByMovimientoId));
   } catch {
     return NextResponse.json({ error: "No se pudo registrar la devolucion del prestamo." }, { status: 500 });
   }

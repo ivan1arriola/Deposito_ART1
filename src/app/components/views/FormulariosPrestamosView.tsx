@@ -43,7 +43,13 @@ type FormulariosPrestamosViewProps = {
   editingPrestamoId: string | null;
   maxDate: string;
   onPrestamoDraftChange: (
-    field: "destinatarioTipo" | "destinatarioCi" | "fechaPrestamo" | "fechaEstimadaDevolucionTexto" | "comentarios",
+    field:
+      | "destinatarioTipo"
+      | "destinatarioCi"
+      | "actuanteCi"
+      | "fechaPrestamo"
+      | "fechaEstimadaDevolucionTexto"
+      | "comentarios",
     value: string,
   ) => void;
   onPrestamoItemChange: (index: number, field: keyof PrestamoDraftItem, value: string) => void;
@@ -69,6 +75,22 @@ function estadoBadgeClass(estado: "PENDIENTE" | "DEVUELTO") {
 
 function reciboHref(prestamoId: string) {
   return `/api/prestamos/${encodeURIComponent(prestamoId)}/recibo`;
+}
+
+function normalizeRankForActuante(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[º°]/g, "")
+    .replace(/[."']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isSargentoRank(abreviacion: string) {
+  const normalized = normalizeRankForActuante(abreviacion);
+  return normalized.includes("sargento") || normalized.startsWith("sgto");
 }
 
 export function FormulariosPrestamosView({
@@ -262,6 +284,30 @@ export function FormulariosPrestamosView({
         label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`,
       }));
   }, [prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales]);
+  const actuanteOptions = useMemo(() => {
+    const oficialesYSuboficiales = oficialesSuboficiales.map((registro) => ({
+      ci: registro.ci,
+      label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`.replace(/\s+/g, " ").trim(),
+    }));
+
+    const sargentos = personal
+      .filter((persona) => isSargentoRank(persona.rango.abreviacion))
+      .map((persona) => ({
+        ci: persona.ci,
+        label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`
+          .replace(/\s+/g, " ")
+          .trim(),
+      }));
+
+    const optionsByCi = new Map<string, { ci: string; label: string }>();
+    for (const option of [...oficialesYSuboficiales, ...sargentos]) {
+      if (!optionsByCi.has(option.ci)) {
+        optionsByCi.set(option.ci, option);
+      }
+    }
+
+    return Array.from(optionsByCi.values()).sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+  }, [oficialesSuboficiales, personal]);
 
   const prestamosVigentes = useMemo(
     () => prestamos.filter((prestamo) => prestamo.estado === "PENDIENTE"),
@@ -297,6 +343,7 @@ export function FormulariosPrestamosView({
                 {prestamo.fechaEstimadaDevolucionTexto ? (
                   <p className="text-xs text-stone-500">Estimado: {prestamo.fechaEstimadaDevolucionTexto}</p>
                 ) : null}
+                <p className="text-xs text-stone-500">Por oden de: {prestamo.actuanteNombre ?? "No registrado"}</p>
               </button>
 
               <div className="flex items-center gap-2">
@@ -437,6 +484,16 @@ export function FormulariosPrestamosView({
                   value={prestamoDraft.destinatarioCi}
                   disabled={prestamoSaving}
                   onChange={(ci) => onPrestamoDraftChange("destinatarioCi", ci)}
+                />
+              </div>
+              <div className="text-xs text-stone-700">
+                Por oden de
+                <DestinatarioSearchSelect
+                  key="formularios-prestamo-actuante"
+                  options={actuanteOptions}
+                  value={prestamoDraft.actuanteCi}
+                  disabled={prestamoSaving}
+                  onChange={(ci) => onPrestamoDraftChange("actuanteCi", ci)}
                 />
               </div>
 
@@ -625,6 +682,7 @@ export function FormulariosPrestamosView({
               <p><span className="font-semibold text-stone-900">Destinatario:</span> {selectedPrestamo.destinatarioEtiqueta}</p>
               <p><span className="font-semibold text-stone-900">CI:</span> {formatUruguayanCi(selectedPrestamo.destinatarioCi)}</p>
               <p><span className="font-semibold text-stone-900">Entregado por:</span> {selectedPrestamo.usuarioEntregaNombre}</p>
+              <p><span className="font-semibold text-stone-900">Por oden de:</span> {selectedPrestamo.actuanteNombre ?? "No registrado"}</p>
               <p>
                 <span className="font-semibold text-stone-900">Recibido por:</span>{" "}
                 {selectedPrestamo.usuarioRecibeDevolucionNombre ?? "Pendiente"}
@@ -1013,4 +1071,3 @@ export function FormulariosPrestamosView({
     </section>
   );
 }
-

@@ -130,6 +130,8 @@ export type PrestamoStockEntry = {
   destinatarioEtiqueta: string;
   usuarioEntregaId: string;
   usuarioEntregaNombre: string;
+  actuanteCi: string | null;
+  actuanteNombre: string | null;
   fechaPrestamo: string;
   fechaEstimadaDevolucionTexto: string | null;
   fechaDevolucion: string | null;

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 
@@ -28,23 +29,34 @@ type FirmaRow = {
   updated_at: Date;
 };
 
-async function ensureFirmaConfigTable() {
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS config_firma (
-      id SMALLINT PRIMARY KEY,
-      encargado_rango TEXT NOT NULL,
-      encargado_nombre TEXT NOT NULL,
-      oficial_rango TEXT NOT NULL,
-      oficial_nombre TEXT NOT NULL,
-      updated_at TIMESTAMPTZ(6) NOT NULL DEFAULT NOW()
-    );
-  `);
+let firmaConfigTableReadyPromise: Promise<void> | null = null;
 
-  await prisma.$executeRaw`
-    INSERT INTO config_firma (id, encargado_rango, encargado_nombre, oficial_rango, oficial_nombre)
-    VALUES (1, ${DEFAULT_FIRMA_CONFIG.encargadoRango}, ${DEFAULT_FIRMA_CONFIG.encargadoNombre}, ${DEFAULT_FIRMA_CONFIG.oficialRango}, ${DEFAULT_FIRMA_CONFIG.oficialNombre})
-    ON CONFLICT (id) DO NOTHING;
-  `;
+async function ensureFirmaConfigTable() {
+  if (!firmaConfigTableReadyPromise) {
+    firmaConfigTableReadyPromise = (async () => {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS config_firma (
+          id SMALLINT PRIMARY KEY,
+          encargado_rango TEXT NOT NULL,
+          encargado_nombre TEXT NOT NULL,
+          oficial_rango TEXT NOT NULL,
+          oficial_nombre TEXT NOT NULL,
+          updated_at TIMESTAMPTZ(6) NOT NULL DEFAULT NOW()
+        );
+      `);
+
+      await prisma.$executeRaw`
+        INSERT INTO config_firma (id, encargado_rango, encargado_nombre, oficial_rango, oficial_nombre)
+        VALUES (1, ${DEFAULT_FIRMA_CONFIG.encargadoRango}, ${DEFAULT_FIRMA_CONFIG.encargadoNombre}, ${DEFAULT_FIRMA_CONFIG.oficialRango}, ${DEFAULT_FIRMA_CONFIG.oficialNombre})
+        ON CONFLICT (id) DO NOTHING;
+      `;
+    })().catch((error) => {
+      firmaConfigTableReadyPromise = null;
+      throw error;
+    });
+  }
+
+  await firmaConfigTableReadyPromise;
 }
 
 function fromRow(row: FirmaRow | undefined): FirmaConfig {
@@ -58,16 +70,43 @@ function fromRow(row: FirmaRow | undefined): FirmaConfig {
   };
 }
 
-export async function getFirmaConfig(): Promise<FirmaConfig> {
-  await ensureFirmaConfigTable();
+function isMissingConfigFirmaTableError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
 
-  const rows = await prisma.$queryRaw<FirmaRow[]>`
+  if (error.code !== "P2010") {
+    return false;
+  }
+
+  const metaCode = typeof error.meta?.code === "string" ? error.meta.code : "";
+  const metaMessage = typeof error.meta?.message === "string" ? error.meta.message : "";
+  return metaCode === "42P01" || metaMessage.toLowerCase().includes("config_firma");
+}
+
+async function queryFirmaConfigRows() {
+  return prisma.$queryRaw<FirmaRow[]>`
     SELECT encargado_rango, encargado_nombre, oficial_rango, oficial_nombre, updated_at
     FROM config_firma
     WHERE id = 1
     LIMIT 1;
   `;
+}
 
+export async function getFirmaConfig(): Promise<FirmaConfig> {
+  try {
+    const rows = await queryFirmaConfigRows();
+    if (rows[0]) {
+      return fromRow(rows[0]);
+    }
+  } catch (error) {
+    if (!isMissingConfigFirmaTableError(error)) {
+      throw error;
+    }
+  }
+
+  await ensureFirmaConfigTable();
+  const rows = await queryFirmaConfigRows();
   return fromRow(rows[0]);
 }
 

@@ -104,6 +104,7 @@ export type PrestamoDraftItem = {
 export type PrestamoDraft = {
   destinatarioTipo: PrestamoDestinatarioTipo;
   destinatarioCi: string;
+  actuanteCi: string;
   fechaPrestamo: string;
   fechaEstimadaDevolucionTexto: string;
   comentarios: string;
@@ -166,6 +167,7 @@ export const EMPTY_STOCK_OPERACION_DRAFT: StockOperacionDraft = {
 export const EMPTY_PRESTAMO_DRAFT: PrestamoDraft = {
   destinatarioTipo: "PERSONAL",
   destinatarioCi: "",
+  actuanteCi: "",
   fechaPrestamo: "",
   fechaEstimadaDevolucionTexto: "",
   comentarios: "",
@@ -178,4 +180,3 @@ export const EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM: PersonalAltaMovimientoForm = {
   comentarios: "",
   items: [{ itemId: "", cantidad: "1" }],
 };
-

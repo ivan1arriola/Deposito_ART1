@@ -3256,6 +3256,10 @@ export default function Home() {
       setStatus("Debes seleccionar un destinatario para el prestamo.");
       return;
     }
+    if (prestamoDraft.actuanteCi.trim() === "") {
+      setStatus("Debes indicar 'por oden de' (oficial, suboficial o sargento).");
+      return;
+    }
     if (!parseDateInput(prestamoDraft.fechaPrestamo).valid) {
       setStatus("La fecha del prestamo debe estar en formato DD/MM/AAAA.");
       return;
@@ -3294,6 +3298,7 @@ export default function Home() {
         body: JSON.stringify({
           destinatarioTipo: prestamoDraft.destinatarioTipo,
           destinatarioCi: prestamoDraft.destinatarioCi.trim(),
+          actuanteCi: prestamoDraft.actuanteCi.trim(),
           fechaPrestamo: prestamoDraft.fechaPrestamo,
           fechaEstimadaDevolucionTexto: prestamoDraft.fechaEstimadaDevolucionTexto.trim() || undefined,
           comentarios: prestamoDraft.comentarios.trim() || undefined,
@@ -4265,6 +4270,31 @@ export default function Home() {
       ? "Verificando sesion activa..."
       : "Cargando pantalla de acceso...";
   const personaProfileLoading = personaProfile?.loading ?? false;
+  const primaryLoadSteps = useMemo(
+    () => [
+      "Consultando base de datos de personal, rangos y baterias...",
+      "Cargando tallas, catalogo de equipos y configuraciones base...",
+      "Consolidando movimientos, prestamos, devoluciones y stock...",
+      "Aplicando permisos de usuario y preparando la interfaz...",
+    ],
+    [],
+  );
+  const [primaryLoadStepIndex, setPrimaryLoadStepIndex] = useState(0);
+
+  useEffect(() => {
+    if (!loading) {
+      setPrimaryLoadStepIndex(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setPrimaryLoadStepIndex((prev) => (prev + 1) % primaryLoadSteps.length);
+    }, 1550);
+
+    return () => window.clearInterval(intervalId);
+  }, [loading, primaryLoadSteps]);
+
+  const primaryLoadingLabel = primaryLoadSteps[primaryLoadStepIndex] ?? primaryLoadSteps[0];
   const isAppGlobalBusy =
     !!currentUser &&
     (
@@ -4295,7 +4325,7 @@ export default function Home() {
       confirmDialogBusy
     );
   const appBusyLabel = useMemo(() => {
-    if (loading) return "Cargando datos principales...";
+    if (loading) return primaryLoadingLabel;
     if (personaProfileLoading) return "Cargando ficha completa y consolidando información de esta persona...";
     if (firmaConfigLoading) return "Cargando configuracion de firmas y auditoria...";
     if (firmaConfigSaving) return "Guardando configuracion de firmas...";
@@ -4342,6 +4372,7 @@ export default function Home() {
     if (confirmDialogBusy) return "Aplicando cambios solicitados...";
     return "Actualizando informacion...";
   }, [
+    primaryLoadingLabel,
     activeEtiquetadoSection,
     activeStockLoadProfile?.key,
     changeLoading,

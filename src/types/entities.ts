@@ -107,6 +107,8 @@ export type PrestamoRecord = {
   destinatarioEtiqueta: string;
   usuarioEntregaId: string;
   usuarioEntregaNombre: string;
+  actuanteCi: string | null;
+  actuanteNombre: string | null;
   fechaPrestamo: string;
   fechaDevolucion: string | null;
   usuarioRecibeDevolucionId: string | null;
@@ -192,4 +194,3 @@ export type DbStatus = {
   dbUser: string | null;
   host: string | null;
 };
-

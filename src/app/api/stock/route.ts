@@ -18,7 +18,8 @@ import {
   movimientoStockDeltaFactor,
   stockOperacionDeltaFactor,
 } from "@/lib/stock";
-import { formatPrestamoDestinatario, prestamoInclude, serializePrestamo } from "@/lib/prestamos";
+import { formatPrestamoDestinatario, prestamoInclude, serializePrestamoWithActuante } from "@/lib/prestamos";
+import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
 import type { StockDashboardData } from "@/types/views";
 
 type StockItemPayload = {
@@ -157,6 +158,9 @@ export async function GET(req: Request) {
   const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 20), 400) : 200;
   const includeHistorial = url.searchParams.get("includeHistorial") !== "0";
   const includePrestamos = url.searchParams.get("includePrestamos") !== "0";
+  if (includePrestamos) {
+    await ensurePrestamoActuanteCompatibility();
+  }
 
   const [items, stockSummaryMaps] = await Promise.all([
     prisma.item.findMany({
@@ -436,11 +440,15 @@ export async function GET(req: Request) {
       }));
   }
 
+  const actuanteByMovimientoId = includePrestamos
+    ? await fetchPrestamoActuanteByMovimientoIds(prestamos.map((prestamo) => prestamo.movimientoId))
+    : new Map<string, { ci: string; label: string }>();
+
   const data: StockDashboardData = {
     generatedAt: formatDateTimeForDisplay(new Date()),
     resumen,
     historial,
-    prestamos: includePrestamos ? prestamos.map(serializePrestamo) : [],
+    prestamos: includePrestamos ? prestamos.map((prestamo) => serializePrestamoWithActuante(prestamo, actuanteByMovimientoId)) : [],
   };
 
   return NextResponse.json(data);

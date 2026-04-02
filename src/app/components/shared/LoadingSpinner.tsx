@@ -55,9 +55,24 @@ export function LoadingInline({
   showSpinner = false,
 }: LoadingInlineProps) {
   return (
-    <Stack direction="row" spacing={1.25} alignItems="center" className={className} role="status" aria-live="polite">
+    <Stack
+      component="span"
+      direction="row"
+      spacing={1.25}
+      alignItems="center"
+      className={className}
+      role="status"
+      aria-live="polite"
+      sx={{ display: "inline-flex" }}
+    >
       {showSpinner ? <LoadingSpinner size={size} tone={tone} /> : null}
-      <Typography variant="body2" fontWeight={600} className={textClassName} color={tone === "light" ? "common.white" : "text.primary"}>
+      <Typography
+        component="span"
+        variant="body2"
+        fontWeight={600}
+        className={textClassName}
+        color={tone === "light" ? "common.white" : "text.primary"}
+      >
         {label}
       </Typography>
     </Stack>
