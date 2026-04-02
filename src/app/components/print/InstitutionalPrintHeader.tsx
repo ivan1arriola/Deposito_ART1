@@ -81,8 +81,8 @@ export function InstitutionalPrintHeader({
   return (
     <header className={className}>
       <div className="institutional-print-header-row institutional-print-header-left">{INSTITUTION_LABEL}</div>
-      <div className="institutional-print-header-row institutional-print-header-center">{APP_LABEL}</div>
       <div className="institutional-print-header-row institutional-print-header-right">{printedAt}</div>
+      <div className="institutional-print-header-row institutional-print-header-center">{APP_LABEL}</div>
     </header>
   );
 }
