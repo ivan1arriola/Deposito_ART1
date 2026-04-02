@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
-import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
+import { HojaEntregaCanonicalSheet } from "@/app/components/print/HojaEntregaCanonicalSheet";
 import {
   getCurrentHojaEntregaPrintDate,
-  HojaEntregaPrintSheet,
-  HojaEntregaPrintStyles,
 } from "@/app/components/print/HojaEntregaPrint";
+import styles from "@/app/components/views/hoja-de-entrega.module.css";
 import { getHojaEntregaData } from "@/lib/hoja-entrega-data";
 
 export const revalidate = 0;
@@ -17,11 +16,11 @@ export default async function HojaEntregaPage({
   searchParams,
 }: {
   params: Promise<{ ci: string }>;
-  searchParams?: Promise<{ autoprint?: string }>;
+  searchParams?: Promise<{ pdf?: string }>;
 }) {
   const { ci } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const shouldAutoPrint = resolvedSearchParams?.autoprint === "1";
+  const isPdfExport = resolvedSearchParams?.pdf === "1";
   const ciValue = decodeURIComponent(ci).trim();
 
   const data = await getHojaEntregaData(ciValue);
@@ -31,10 +30,8 @@ export default async function HojaEntregaPage({
   }
 
   return (
-    <>
-      {shouldAutoPrint ? <AutoPrintOnLoad /> : null}
-      <HojaEntregaPrintStyles />
-      <HojaEntregaPrintSheet data={data} fechaImpresion={getCurrentHojaEntregaPrintDate()} />
-    </>
+    <main className={`${styles.page}${isPdfExport ? ` ${styles.pdfExport}` : ""}`}>
+      <HojaEntregaCanonicalSheet data={data} fechaImpresion={getCurrentHojaEntregaPrintDate()} />
+    </main>
   );
 }

@@ -32,6 +32,7 @@
     "licenses:check:prod": "license-checker-rseidelsohn --production --excludePrivatePackages --onlyAllow \"MIT;ISC;BSD-3-Clause;BSD-2-Clause;Apache-2.0;0BSD;CC-BY-4.0;(MIT AND Zlib);MIT*;Apache-2.0 AND LGPL-3.0-or-later\""
   },
   "dependencies": {
+    "@sparticuz/chromium": "^138.0.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.9",
@@ -47,6 +48,7 @@
     "nodemailer": "^7.0.13",
     "pdf-lib": "^1.17.1",
     "pdfkit": "^0.17.2",
+    "playwright-core": "^1.54.2",
     "qrcode-terminal": "^0.12.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",

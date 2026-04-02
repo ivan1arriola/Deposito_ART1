@@ -2476,28 +2476,28 @@ export default function Home() {
     [isAdmin, loadData, promotingSubalternoCi],
   );
 
-  const openAscensoDeliverySheet = useCallback((ci: string) => {
-    const printUrl = `/hoja-de-entrega/${encodeURIComponent(ci)}?autoprint=1`;
-    const popup = window.open(printUrl, "_blank", "noopener,noreferrer");
-    if (!popup) {
-      setStatus("Debes permitir ventanas emergentes para imprimir la hoja de entrega.");
-      return false;
-    }
-    popup.focus();
-    setStatus("Hoja de entrega abierta (opcional). Tras confirmar el ascenso no podrás imprimir la hoja previa.");
-    return true;
+  const triggerPdfDownload = useCallback((url: string) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.rel = "noopener";
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }, []);
 
+  const openAscensoDeliverySheet = useCallback((ci: string) => {
+    const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf`;
+    triggerPdfDownload(pdfUrl);
+    setStatus("Descargando hoja de entrega en PDF A4 (opcional antes del ascenso).");
+    return true;
+  }, [triggerPdfDownload]);
+
   const printDeliverySheetFromProfile = useCallback((ci: string) => {
-    const printUrl = `/hoja-de-entrega/${encodeURIComponent(ci)}?autoprint=1`;
-    const popup = window.open(printUrl, "_blank", "noopener,noreferrer");
-    if (!popup) {
-      setStatus("Debes permitir ventanas emergentes para imprimir la hoja de entrega.");
-      return;
-    }
-    popup.focus();
-    setStatus("Hoja de entrega abierta para impresión.");
-  }, []);
+    const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf`;
+    triggerPdfDownload(pdfUrl);
+    setStatus("Descargando hoja de entrega en PDF A4.");
+  }, [triggerPdfDownload]);
 
   const printPrestamosFromProfile = useCallback((prestamoIds: string[]) => {
     const ids = Array.from(new Set(prestamoIds.map((id) => id.trim()).filter((id) => id !== "")));
@@ -4037,17 +4037,10 @@ export default function Home() {
       return;
     }
 
-    const popup = window.open("/hojas-de-entrega?autoprint=1", "_blank", "noopener,noreferrer");
-
-    if (!popup) {
-      const message = "Permite ventanas emergentes para imprimir todas las hojas de entrega.";
-      setStatus(message);
-      return;
-    }
-
-    setStatus(`Abriendo hojas de entrega para ${personal.length} personas...`);
-    toast.info(`Abriendo ${personal.length} hojas de entrega.`);
-  }, [personal.length]);
+    triggerPdfDownload("/api/hojas-de-entrega/pdf");
+    setStatus(`Generando PDF A4 de hojas de entrega para ${personal.length} personas...`);
+    toast.info(`Generando PDF A4 de ${personal.length} hojas.`);
+  }, [personal.length, triggerPdfDownload]);
 
   const printPersonnelByBattery = useCallback(() => {
     if (personal.length === 0) {

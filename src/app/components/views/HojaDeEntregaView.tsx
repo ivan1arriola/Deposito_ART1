@@ -133,25 +133,17 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
     if (!data) return;
 
     try {
-      setStatus("Abriendo vista de impresion...");
-      const printUrl = `/hoja-de-entrega/${encodeURIComponent(ci)}?autoprint=1`;
-      const popup = window.open(printUrl, "_blank");
-
-      if (popup) {
-        try {
-          popup.opener = null;
-        } catch {
-          // Algunos navegadores restringen esta asignacion; no bloquear flujo.
-        }
-        setStatus("Vista de impresion abierta.");
-        window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
-        return;
-      }
-
-      setStatus("Ventana emergente bloqueada. Abriendo impresion en esta pestaña...");
-      window.setTimeout(() => {
-        window.location.assign(printUrl);
-      }, 120);
+      setStatus("Generando PDF A4...");
+      const url = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf`;
+      const link = document.createElement("a");
+      link.href = url;
+      link.rel = "noopener";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setStatus("Descarga iniciada.");
+      window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Error desconocido";
       setStatus(`Error: ${message}`);
