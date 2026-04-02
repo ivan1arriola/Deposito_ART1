@@ -15,6 +15,7 @@ type OficialesSuboficialesViewProps = {
   viewType: TipoOficialSuboficial;
   onOpenCreate: () => void;
   onStartEdit: (registro: OficialSuboficial) => void;
+  onOpenProfile: (registro: OficialSuboficial) => void;
   onReload: () => Promise<void>;
 };
 
@@ -30,6 +31,7 @@ export function OficialesSuboficialesView({
   viewType,
   onOpenCreate,
   onStartEdit,
+  onOpenProfile,
   onReload,
 }: OficialesSuboficialesViewProps) {
   const registros = useMemo(
@@ -145,8 +147,15 @@ export function OficialesSuboficialesView({
                         </div>
                       ))}
                     </div>
-                    {canWrite ? (
-                      <div className="mt-3 flex justify-end">
+                    <div className="mt-3 flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onOpenProfile(registro)}
+                        className="rounded border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                      >
+                        Ficha completa
+                      </button>
+                      {canWrite ? (
                         <button
                           type="button"
                           onClick={() => onStartEdit(registro)}
@@ -154,8 +163,8 @@ export function OficialesSuboficialesView({
                         >
                           Editar
                         </button>
-                      </div>
-                    ) : null}
+                      ) : null}
+                    </div>
                   </article>
                 );
               })}
@@ -174,9 +183,7 @@ export function OficialesSuboficialesView({
                     <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Pantalon</th>
                     <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Kepi</th>
                     <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Calzado</th>
-                    {canWrite ? (
-                      <th className="border-b border-stone-200 px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-stone-600">Acciones</th>
-                    ) : null}
+                    <th className="border-b border-stone-200 px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-stone-600">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -195,17 +202,26 @@ export function OficialesSuboficialesView({
                         <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">{talles.PANTALON}</td>
                         <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">{talles.KEPI}</td>
                         <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">{talles.CALZADO}</td>
-                        {canWrite ? (
-                          <td className="border-b border-stone-200 px-3 py-3 text-right">
+                        <td className="border-b border-stone-200 px-3 py-3 text-right">
+                          <div className="inline-flex flex-wrap justify-end gap-2">
                             <button
                               type="button"
-                              onClick={() => onStartEdit(registro)}
-                              className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 transition hover:bg-stone-100"
+                              onClick={() => onOpenProfile(registro)}
+                              className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                             >
-                              Editar
+                              Ficha
                             </button>
-                          </td>
-                        ) : null}
+                            {canWrite ? (
+                              <button
+                                type="button"
+                                onClick={() => onStartEdit(registro)}
+                                className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 transition hover:bg-stone-100"
+                              >
+                                Editar
+                              </button>
+                            ) : null}
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}

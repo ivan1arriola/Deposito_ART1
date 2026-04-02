@@ -48,6 +48,7 @@ type PersonalSectionProps = {
   onOpenRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION") => void;
   onOpenPersonalObservacion: (persona: Personal) => void;
   onOpenRegistroViewer: (persona: Personal) => void;
+  onOpenProfile: (persona: Personal) => void;
   onOpenDeliverySheet: (ci: string) => void;
   onStartEditPersonal: (persona: Personal) => void;
   onCancelEditPersonal: () => void;
@@ -169,6 +170,7 @@ export function PersonalSection({
   onOpenRegistro,
   onOpenPersonalObservacion,
   onOpenRegistroViewer,
+  onOpenProfile,
   onOpenDeliverySheet,
   onStartEditPersonal,
   onCancelEditPersonal,
@@ -289,6 +291,7 @@ export function PersonalSection({
           onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
           onObservacion={onOpenPersonalObservacion}
           onViewMoves={onOpenRegistroViewer}
+          onOpenProfile={onOpenProfile}
           onOpenSheet={onOpenDeliverySheet}
         />
 
@@ -316,6 +319,7 @@ export function PersonalSection({
           onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
           onObservacion={onOpenPersonalObservacion}
           onViewMoves={onOpenRegistroViewer}
+          onOpenProfile={onOpenProfile}
           onOpenSheet={onOpenDeliverySheet}
         />
 

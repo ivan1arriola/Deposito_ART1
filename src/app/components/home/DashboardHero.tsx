@@ -103,7 +103,22 @@ export function DashboardHero({
       />
 
       <Stack spacing={2} sx={{ position: "relative" }}>
-        <Stack spacing={{ xs: 1.5, md: 1.2 }}>
+        <Typography
+          sx={{
+            alignSelf: "flex-start",
+            fontSize: { xs: 9, sm: 10 },
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: { xs: "0.14em", sm: "0.2em" },
+            color: "#FFCC00",
+            lineHeight: 1.1,
+            pl: { xs: 0.25, sm: 0.5 },
+          }}
+        >
+          {'Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1'}
+        </Typography>
+
+        <Stack spacing={{ xs: 1.5, md: 1.35 }}>
           <Box
             sx={{
               display: { xs: "grid", md: "none" },
@@ -129,17 +144,6 @@ export function DashboardHero({
             </Box>
 
             <Box sx={{ minWidth: 0, textAlign: "center" }}>
-              <Typography
-                sx={{
-                  fontSize: { xs: 9, sm: 10 },
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: { xs: "0.14em", sm: "0.2em" },
-                  color: "#FFCC00",
-                }}
-              >
-                {'Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1'}
-              </Typography>
               <Typography sx={{ fontSize: { xs: 30, sm: 38 }, fontWeight: 900, lineHeight: 1.01, mt: 0.35 }}>
                 Depósito General
               </Typography>
@@ -162,73 +166,12 @@ export function DashboardHero({
           <Box
             sx={{
               display: { xs: "none", md: "grid" },
-              gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
-              alignItems: "start",
-              columnGap: 2,
+              gridTemplateColumns: { md: "170px minmax(0, 1fr)", lg: "220px minmax(0, 1fr)", xl: "240px minmax(0, 1fr)" },
+              alignItems: "center",
+              columnGap: { md: 1.25, lg: 1.8 },
             }}
           >
-            <Box />
-
-            <Box sx={{ minWidth: 0, textAlign: "center" }}>
-              <Typography
-                sx={{
-                  fontSize: { xs: 9, sm: 10 },
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: { xs: "0.14em", sm: "0.2em" },
-                  color: "#FFCC00",
-                }}
-              >
-                {'Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1'}
-              </Typography>
-              <Typography sx={{ fontSize: { md: 56, lg: 64, xl: 72 }, fontWeight: 900, lineHeight: 0.98, mt: 0.35 }}>
-                Depósito General
-              </Typography>
-            </Box>
-
-            <Stack spacing={1} sx={{ minWidth: 0, justifySelf: "end", alignItems: "flex-end" }}>
-              <Stack direction="row" spacing={1}>
-                <Chip
-                  size="small"
-                  label={`Usuario: ${currentUser.username}`}
-                  sx={{ color: "common.white", bgcolor: "rgba(0,0,0,0.32)", border: "1px solid rgba(255,255,255,0.2)" }}
-                />
-                <Chip
-                  size="small"
-                  label={`Rol: ${roleLabel(currentUser.rol)}`}
-                  sx={{ color: "common.white", bgcolor: "rgba(0,0,0,0.32)", border: "1px solid rgba(255,255,255,0.2)" }}
-                />
-              </Stack>
-
-              <Stack direction="row" flexWrap="wrap" useFlexGap gap={1} justifyContent="flex-end">
-                <Button
-                  type="button"
-                  onClick={onReload}
-                  disabled={loading}
-                  size="small"
-                  variant="contained"
-                  color="secondary"
-                  sx={{ borderRadius: 1.5, minHeight: 34 }}
-                >
-                  Recargar
-                </Button>
-                <Button type="button" onClick={onLogout} size="small" color="error" variant="contained" sx={{ borderRadius: 1.5, minHeight: 34 }}>
-                  Cerrar sesión
-                </Button>
-              </Stack>
-
-              {!canManageAccount ? (
-                <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.82)", textAlign: "right" }}>
-                  Modo solo lectura: esta cuenta no puede cambiar credenciales ni datos.
-                </Typography>
-              ) : null}
-            </Stack>
-          </Box>
-        </Stack>
-
-        <Box sx={{ display: { xs: "none", md: "block" } }}>
-          <Stack direction="row" alignItems="center" gap={{ md: 1.25, lg: 1.8 }}>
-            <Box sx={{ flexShrink: 0, pt: 0.25, width: { md: 170, lg: 220, xl: 240 } }}>
+            <Box sx={{ width: "100%", flexShrink: 0 }}>
               <Image
                 src="/assets/logo-deposito.png"
                 alt="Logo Depósito"
@@ -243,7 +186,79 @@ export function DashboardHero({
                 }}
               />
             </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+
+            <Stack spacing={1.25} sx={{ minWidth: 0 }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateRows: "auto auto",
+                  rowGap: { md: 0.5, lg: 0.75 },
+                }}
+              >
+                <Stack
+                  spacing={0.7}
+                  sx={{
+                    minWidth: 0,
+                    alignItems: "flex-end",
+                    width: "100%",
+                  }}
+                >
+                  <Stack direction="row" spacing={1} sx={{ width: "100%", justifyContent: "flex-end", flexWrap: "nowrap", alignItems: "center" }}>
+                    <Chip
+                      size="small"
+                      label={`Usuario: ${currentUser.username}`}
+                      sx={{ color: "common.white", bgcolor: "rgba(0,0,0,0.32)", border: "1px solid rgba(255,255,255,0.2)" }}
+                    />
+                    <Chip
+                      size="small"
+                      label={`Rol: ${roleLabel(currentUser.rol)}`}
+                      sx={{ color: "common.white", bgcolor: "rgba(0,0,0,0.32)", border: "1px solid rgba(255,255,255,0.2)" }}
+                    />
+                    <Button
+                      type="button"
+                      onClick={onReload}
+                      disabled={loading}
+                      size="small"
+                      variant="contained"
+                      color="secondary"
+                      sx={{ borderRadius: 1.5, minHeight: 34, whiteSpace: "nowrap" }}
+                    >
+                      Recargar
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={onLogout}
+                      size="small"
+                      color="error"
+                      variant="contained"
+                      sx={{ borderRadius: 1.5, minHeight: 34, whiteSpace: "nowrap" }}
+                    >
+                      Cerrar sesión
+                    </Button>
+                  </Stack>
+
+                  {!canManageAccount ? (
+                    <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.82)", textAlign: "right" }}>
+                      Modo solo lectura: esta cuenta no puede cambiar credenciales ni datos.
+                    </Typography>
+                  ) : null}
+                </Stack>
+
+                <Typography
+                  sx={{
+                    width: "100%",
+                    minWidth: 0,
+                    fontSize: { md: 48, lg: 58, xl: 64 },
+                    fontWeight: 900,
+                    lineHeight: 0.98,
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Depósito General
+                </Typography>
+              </Box>
+
               <MainNavigation
                 activeView={activeView}
                 canWrite={canWrite}
@@ -255,9 +270,9 @@ export function DashboardHero({
                 onSetConfigViews={onSetConfigViews}
                 embedded
               />
-            </Box>
-          </Stack>
-        </Box>
+            </Stack>
+          </Box>
+        </Stack>
       </Stack>
 
       <Drawer

@@ -14,6 +14,7 @@ type PersonalActionsProps = {
   onDevolucion: () => void;
   onObservacion: () => void;
   onViewMoves: () => void;
+  onOpenProfile: () => void;
   onOpenSheet: () => void;
 };
 
@@ -29,6 +30,7 @@ export function PersonalActions({
   onDevolucion,
   onObservacion,
   onViewMoves,
+  onOpenProfile,
   onOpenSheet,
 }: PersonalActionsProps) {
   const actionClass = compact
@@ -88,6 +90,13 @@ export function PersonalActions({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 17h3v4H3v-4zm5-7h3v11H8V10zm5-5h3v16h-3V5zm5 8h3v8h-3v-8z" />
         </svg>
         Ver movimientos
+      </button>
+      <button type="button" onClick={onOpenProfile} className={`${actionWithIconClass} border-slate-700 bg-slate-800 hover:bg-slate-900 ${compact ? "col-span-2" : ""}`}>
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A9 9 0 0112 15a9 9 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+        </svg>
+        Ver ficha completa
       </button>
       <button
         type="button"

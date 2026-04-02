@@ -39,6 +39,7 @@ export type MainView =
   | "etiquetado_registrar_caja"
   | "etiquetado_listado_cajas"
   | "etiquetado_imprimir_todas"
+  | "persona_ficha"
   | "hoja-de-entrega";
 
 export type RegistroTipo = "ENTREGA" | "DEVOLUCION";
@@ -58,6 +59,8 @@ export type RegistroView = {
     detalle: unknown;
   } | null;
   ci: string;
+  usuarioEntregaId: string;
+  usuarioEntregaNombre: string;
   fecha: string;
   tipo: RegistroViewTipo;
   afectaStock: boolean;

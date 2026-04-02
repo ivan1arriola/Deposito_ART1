@@ -23,6 +23,14 @@ import { SoldadoRecordatorioWidget } from "./components/home/SoldadoRecordatorio
 import { AppInstallCard } from "./components/pwa/AppInstallCard";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
 import { MergeEquipoModal } from "./components/modals/MergeEquipoModal";
+import {
+  PersonaProfileView,
+  type PersonaProfileEquipmentRow,
+  type PersonaProfileIdentity,
+  type PersonaProfileState,
+  type PersonaProfileTimelineEntry,
+  type PersonaProfileTipo,
+} from "./components/views/PersonaProfileView";
 import { PersonalSection } from "./components/personal/PersonalSection";
 import { ConfigViews } from "./components/views/ConfigViews";
 import { BateriaCreateView } from "./components/views/BateriaCreateView";
@@ -55,6 +63,7 @@ import type {
   RecordatorioTarea,
   FirmaConfig,
   UsuarioAdmin,
+  Talla,
 } from "@/types/entities";
 import type {
   PersonalForm,
@@ -74,6 +83,7 @@ import type {
   RegistroViewerState,
   ConfirmDialogState,
   AuditFilter,
+  PrestamoStockEntry,
 } from "@/types/views";
 import type { EtiquetadoDashboardData } from "@/types/etiquetado";
 import { ROLE_OPTIONS } from "@/types/entities";
@@ -164,6 +174,16 @@ type StockLoadProfile = {
 };
 
 type EtiquetadoSection = "codigos_sie" | "listado_cajas" | "imprimir_todas";
+
+type HojaEntregaSnapshot = {
+  matrix: Array<{
+    item: string;
+    entregaTotal: number;
+    devolucionTotal: number;
+  }>;
+};
+
+type PersonaProfileReturnView = Extract<MainView, "personal" | "oficiales" | "suboficiales">;
 
 const STATUS_VERIFYING_SESSION = "Verificando sesión...";
 const STATUS_STARTING_SESSION = "Iniciando sesión...";
@@ -312,6 +332,8 @@ export default function Home() {
   const [registroViewer, setRegistroViewer] = useState<RegistroViewerState | null>(null);
   const [registroViewerPage, setRegistroViewerPage] = useState(1);
   const [registroViewerPageSize, setRegistroViewerPageSize] = useState(20);
+  const [personaProfile, setPersonaProfile] = useState<PersonaProfileState | null>(null);
+  const [personaProfileReturnView, setPersonaProfileReturnView] = useState<PersonaProfileReturnView>("personal");
   const [fichaViewingCi, setFichaViewingCi] = useState<string | null>(null);
   const [showConfigViews, setShowConfigViews] = useState(false);
   const [etiquetadoData, setEtiquetadoData] = useState<EtiquetadoDashboardData | null>(null);
@@ -325,6 +347,7 @@ export default function Home() {
   const recordatorioToastShownRef = useRef<string | null>(null);
   const recordatoriosRequestRef = useRef<{ id: number; controller: AbortController | null }>({ id: 0, controller: null });
   const etiquetadoRequestRef = useRef<{ id: number; controller: AbortController | null }>({ id: 0, controller: null });
+  const personaProfileRequestRef = useRef<{ id: number; controller: AbortController | null }>({ id: 0, controller: null });
   const configMenuRef = useRef<HTMLDivElement | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const [confirmDialogBusy, setConfirmDialogBusy] = useState(false);
@@ -760,6 +783,7 @@ export default function Home() {
     return () => {
       recordatoriosRequestRef.current.controller?.abort();
       etiquetadoRequestRef.current.controller?.abort();
+      personaProfileRequestRef.current.controller?.abort();
     };
   }, []);
 
@@ -820,6 +844,13 @@ export default function Home() {
       setActiveView("personal");
     }
   }, [activeView, isAdmin]);
+
+  useEffect(() => {
+    if (activeView === "persona_ficha") return;
+    personaProfileRequestRef.current.controller?.abort();
+    personaProfileRequestRef.current.controller = null;
+    setPersonaProfile(null);
+  }, [activeView]);
 
   useEffect(() => {
     setPersonalPage(1);
@@ -954,6 +985,8 @@ export default function Home() {
     setPersonalObservacionSaving(false);
     setRegistroViewerPage(1);
     setRegistroViewerPageSize(20);
+    setPersonaProfile(null);
+    setPersonaProfileReturnView("personal");
     setConfirmDialog(null);
     setConfirmDialogBusy(false);
     setPersonalPage(1);
@@ -2405,6 +2438,45 @@ export default function Home() {
     return true;
   }, []);
 
+  const printDeliverySheetFromProfile = useCallback((ci: string) => {
+    const printUrl = `/hoja-de-entrega/${encodeURIComponent(ci)}?autoprint=1`;
+    const popup = window.open(printUrl, "_blank", "noopener,noreferrer");
+    if (!popup) {
+      setStatus("Debes permitir ventanas emergentes para imprimir la hoja de entrega.");
+      return;
+    }
+    popup.focus();
+    setStatus("Hoja de entrega abierta para impresión.");
+  }, []);
+
+  const printPrestamosFromProfile = useCallback((prestamoIds: string[]) => {
+    const ids = Array.from(new Set(prestamoIds.map((id) => id.trim()).filter((id) => id !== "")));
+    if (ids.length === 0) {
+      setStatus("Esta persona no tiene préstamos para imprimir.");
+      return;
+    }
+
+    let openedCount = 0;
+    for (const prestamoId of ids) {
+      const popup = window.open(`/api/prestamos/${encodeURIComponent(prestamoId)}/recibo`, "_blank", "noopener,noreferrer");
+      if (popup) {
+        openedCount += 1;
+      }
+    }
+
+    if (openedCount === 0) {
+      setStatus("Debes permitir ventanas emergentes para imprimir recibos de préstamo.");
+      return;
+    }
+
+    if (openedCount < ids.length) {
+      setStatus(`Se abrieron ${openedCount} de ${ids.length} recibos. Revisa el bloqueador de ventanas emergentes.`);
+      return;
+    }
+
+    setStatus(`Se abrieron ${openedCount} recibo(s) de préstamo para impresión.`);
+  }, []);
+
   const deletePersonal = useCallback(
     (ci: string) => {
       if (!canDelete) {
@@ -2481,6 +2553,237 @@ export default function Home() {
   async function openRegistroViewer(persona: Personal) {
     const nombre = `${apellidosLabel(persona)}, ${nombresLabel(persona)}`;
     await loadRegistroViewer(persona.ci, nombre);
+  }
+
+  function resolvePersonaProfileReturnView(tipo: PersonaProfileTipo): PersonaProfileReturnView {
+    if (tipo === "OFICIAL") return "oficiales";
+    if (tipo === "SUBOFICIAL") return "suboficiales";
+    return "personal";
+  }
+
+  function buildSubalternoProfileIdentity(persona: Personal): PersonaProfileIdentity {
+    return {
+      ci: persona.ci,
+      tipo: "SUBALTERNO",
+      apellido: [persona.apellido1, persona.apellido2].filter(Boolean).join(" ").trim(),
+      nombre: [persona.nombre1, persona.nombre2].filter(Boolean).join(" ").trim(),
+      gradoAbreviacion: persona.rango.abreviacion,
+      gradoNombre: persona.rango.nombreCompleto,
+      bateriaNombre: persona.bateria?.nombre ?? null,
+      telefonoContacto: persona.telefonoContacto,
+      esReingreso: persona.esReingreso,
+      fechaIngreso: persona.fechaIngreso,
+      fechaIngresoOriginal: persona.fechaIngresoOriginal,
+      tallas: persona.tallas,
+    };
+  }
+
+  function buildOficialSuboficialProfileIdentity(registro: OficialSuboficial): PersonaProfileIdentity {
+    return {
+      ci: registro.ci,
+      tipo: registro.tipo,
+      apellido: registro.apellido,
+      nombre: registro.nombre,
+      gradoAbreviacion: registro.gradoMando.abreviacion,
+      gradoNombre: registro.gradoMando.nombreCompleto,
+      bateriaNombre: null,
+      telefonoContacto: registro.telefonoContacto,
+      esReingreso: null,
+      fechaIngreso: null,
+      fechaIngresoOriginal: null,
+      tallas: registro.tallas as Talla[],
+    };
+  }
+
+  function buildEquipmentSummaryFromHoja(hojaSnapshot: HojaEntregaSnapshot | null): PersonaProfileEquipmentRow[] {
+    if (!hojaSnapshot) return [];
+    return hojaSnapshot.matrix
+      .map((row) => {
+        const entregado = row.entregaTotal;
+        const saldo = Math.max(row.devolucionTotal, 0);
+        const devuelto = Math.max(entregado - saldo, 0);
+        return {
+          item: row.item,
+          entregado,
+          devuelto,
+          saldo,
+          fuente: "REGISTROS" as const,
+        };
+      })
+      .filter((row) => row.entregado > 0 || row.saldo > 0)
+      .sort((left, right) => left.item.localeCompare(right.item, "es", { sensitivity: "base" }));
+  }
+
+  function buildEquipmentSummaryFromPrestamos(prestamos: PrestamoStockEntry[]): PersonaProfileEquipmentRow[] {
+    const prestadoMap = new Map<string, number>();
+    const devueltoMap = new Map<string, number>();
+    const saldoMap = new Map<string, number>();
+
+    for (const prestamo of prestamos) {
+      for (const item of prestamo.items) {
+        prestadoMap.set(item.nombre, (prestadoMap.get(item.nombre) ?? 0) + item.cantidad);
+        if (prestamo.estado === "DEVUELTO") {
+          devueltoMap.set(item.nombre, (devueltoMap.get(item.nombre) ?? 0) + item.cantidad);
+        } else {
+          saldoMap.set(item.nombre, (saldoMap.get(item.nombre) ?? 0) + item.cantidad);
+        }
+      }
+    }
+
+    return Array.from(new Set([...prestadoMap.keys(), ...devueltoMap.keys(), ...saldoMap.keys()]))
+      .sort((left, right) => left.localeCompare(right, "es", { sensitivity: "base" }))
+      .map((item) => ({
+        item,
+        entregado: prestadoMap.get(item) ?? 0,
+        devuelto: devueltoMap.get(item) ?? 0,
+        saldo: saldoMap.get(item) ?? 0,
+        fuente: "PRESTAMOS" as const,
+      }))
+      .filter((row) => row.entregado > 0 || row.saldo > 0);
+  }
+
+  function buildPersonaProfileTimeline(registros: RegistroView[], prestamos: PrestamoStockEntry[]): PersonaProfileTimelineEntry[] {
+    const registrosTimeline = registros.map((registro) => ({
+      id: `registro-${registro.registroId}`,
+      fecha: registro.fecha,
+      tipo: registro.tipo === "ENTREGA" ? "ENTREGA" : "DEVOLUCION",
+      descripcion: `Registro ${registro.tipo.toLowerCase()} · ${registro.items.reduce((acc, item) => acc + item.cantidad, 0)} unidades`,
+      responsable:
+        registro.usuarioEntregaNombre?.trim() ||
+        registro.auditoria?.usuario?.username ||
+        (registro.usuarioEntregaId ? "Usuario eliminado" : null),
+      estadoPrestamo: null,
+      items: registro.items.map((item) => ({ nombre: item.nombre, cantidad: item.cantidad })),
+    })) satisfies PersonaProfileTimelineEntry[];
+
+    const prestamosTimeline = prestamos.flatMap((prestamo) => {
+      const prestamoEntry: PersonaProfileTimelineEntry = {
+        id: `prestamo-${prestamo.prestamoId}`,
+        fecha: prestamo.fechaPrestamo,
+        tipo: "PRESTAMO",
+        descripcion: `Préstamo ${prestamo.reciboNumero} · ${prestamo.estado.toLowerCase()}`,
+        responsable: prestamo.usuarioEntregaNombre ?? null,
+        estadoPrestamo: prestamo.estado,
+        items: prestamo.items.map((item) => ({ nombre: item.nombre, cantidad: item.cantidad })),
+      };
+
+      if (!prestamo.fechaDevolucion) return [prestamoEntry];
+
+      const devolucionEntry: PersonaProfileTimelineEntry = {
+        id: `prestamo-devolucion-${prestamo.prestamoId}`,
+        fecha: prestamo.fechaDevolucion,
+        tipo: "DEVOLUCION_PRESTAMO",
+        descripcion: `Devolución de préstamo ${prestamo.reciboNumero}`,
+        responsable: prestamo.usuarioRecibeDevolucionNombre ?? prestamo.usuarioEntregaNombre ?? null,
+        estadoPrestamo: "DEVUELTO",
+        items: prestamo.items.map((item) => ({ nombre: item.nombre, cantidad: item.cantidad })),
+      };
+
+      return [prestamoEntry, devolucionEntry];
+    });
+
+    return [...registrosTimeline, ...prestamosTimeline];
+  }
+
+  async function loadPersonaProfile(identity: PersonaProfileIdentity) {
+    personaProfileRequestRef.current.controller?.abort();
+    const controller = new AbortController();
+    const requestId = personaProfileRequestRef.current.id + 1;
+    personaProfileRequestRef.current = { id: requestId, controller };
+
+    setPersonaProfile({
+      identity,
+      loading: true,
+      error: null,
+      registros: [],
+      prestamos: [],
+      observaciones: [],
+      equipmentSummary: [],
+      timeline: [],
+    });
+
+    const requestInit: RequestInit = { signal: controller.signal };
+
+    try {
+      const registrosPromise = api<RegistroView[]>(`/api/registros?ci=${encodeURIComponent(identity.ci)}&limit=300`, requestInit).catch(
+        () => [],
+      );
+      const prestamosPromise = api<PrestamoStockEntry[]>(`/api/prestamos?ci=${encodeURIComponent(identity.ci)}&limit=300`, requestInit).catch(
+        () => [],
+      );
+      const hojaPromise =
+        identity.tipo === "SUBALTERNO"
+          ? api<HojaEntregaSnapshot>(`/api/hoja-de-entrega/${encodeURIComponent(identity.ci)}`, requestInit).catch(() => null)
+          : Promise.resolve(null);
+      const observacionesPromise =
+        identity.tipo === "SUBALTERNO"
+          ? api<PersonalObservacion[]>(`/api/personal/${encodeURIComponent(identity.ci)}/observaciones`, requestInit).catch(() => [])
+          : Promise.resolve([]);
+
+      const [registros, prestamos, hojaSnapshot, observaciones] = await Promise.all([
+        registrosPromise,
+        prestamosPromise,
+        hojaPromise,
+        observacionesPromise,
+      ]);
+
+      if (personaProfileRequestRef.current.id !== requestId) return;
+
+      const equipmentSummary =
+        identity.tipo === "SUBALTERNO"
+          ? buildEquipmentSummaryFromHoja(hojaSnapshot)
+          : buildEquipmentSummaryFromPrestamos(prestamos);
+
+      const timeline = buildPersonaProfileTimeline(registros, prestamos);
+
+      setPersonaProfile({
+        identity,
+        loading: false,
+        error: null,
+        registros,
+        prestamos,
+        observaciones,
+        equipmentSummary,
+        timeline,
+      });
+    } catch (error: unknown) {
+      if (isAbortError(error)) return;
+      if (personaProfileRequestRef.current.id !== requestId) return;
+      setPersonaProfile({
+        identity,
+        loading: false,
+        error: error instanceof Error ? error.message : "No se pudo cargar la ficha completa.",
+        registros: [],
+        prestamos: [],
+        observaciones: [],
+        equipmentSummary: [],
+        timeline: [],
+      });
+    }
+  }
+
+  async function openPersonaProfileFromPersonal(persona: Personal) {
+    setPersonaProfileReturnView("personal");
+    setActiveView("persona_ficha");
+    await loadPersonaProfile(buildSubalternoProfileIdentity(persona));
+  }
+
+  async function openPersonaProfileFromOficialSuboficial(registro: OficialSuboficial) {
+    setPersonaProfileReturnView(resolvePersonaProfileReturnView(registro.tipo));
+    setActiveView("persona_ficha");
+    await loadPersonaProfile(buildOficialSuboficialProfileIdentity(registro));
+  }
+
+  async function reloadPersonaProfile() {
+    if (!personaProfile) return;
+    await loadPersonaProfile(personaProfile.identity);
+  }
+
+  function closePersonaProfileView() {
+    personaProfileRequestRef.current.controller?.abort();
+    personaProfileRequestRef.current.controller = null;
+    setPersonaProfile(null);
+    setActiveView(personaProfileReturnView);
   }
 
   function openRegistro(ci: string, tipo: RegistroTipo) {
@@ -3911,10 +4214,12 @@ export default function Home() {
     : isPageBootLoading
       ? "Verificando sesion activa..."
       : "Cargando pantalla de acceso...";
+  const personaProfileLoading = personaProfile?.loading ?? false;
   const isAppGlobalBusy =
     !!currentUser &&
     (
       loading ||
+      personaProfileLoading ||
       firmaConfigLoading ||
       firmaConfigSaving ||
       hojaMatrixLoading ||
@@ -3941,6 +4246,7 @@ export default function Home() {
     );
   const appBusyLabel = useMemo(() => {
     if (loading) return "Cargando datos principales (personal, rangos, baterias y equipos)...";
+    if (personaProfileLoading) return "Cargando ficha completa y consolidando información de esta persona...";
     if (firmaConfigLoading) return "Cargando configuracion de firmas y auditoria...";
     if (firmaConfigSaving) return "Guardando configuracion de firmas...";
     if (hojaMatrixLoading) return "Cargando datos y calculando hoja matriz de subalternos...";
@@ -3999,6 +4305,7 @@ export default function Home() {
     firmaConfigSaving,
     hojaMatrixLoading,
     loading,
+    personaProfileLoading,
     mergeEquipoSaving,
     personalObservacionSaving,
     prestamoSaving,
@@ -4475,6 +4782,7 @@ export default function Home() {
           onOpenRegistro={(ci, tipo) => openRegistro(ci, tipo)}
           onOpenPersonalObservacion={(persona) => void openPersonalObservacion(persona)}
           onOpenRegistroViewer={(persona) => void openRegistroViewer(persona)}
+          onOpenProfile={(persona) => void openPersonaProfileFromPersonal(persona)}
           onOpenDeliverySheet={(ci) => {
             setActiveView("hoja-de-entrega");
             setFichaViewingCi(ci);
@@ -4510,6 +4818,7 @@ export default function Home() {
           viewType="OFICIAL"
           onOpenCreate={() => openOficialSuboficialCreate("OFICIAL")}
           onStartEdit={startEditOficialSuboficial}
+          onOpenProfile={(registro) => void openPersonaProfileFromOficialSuboficial(registro)}
           onReload={() => reloadCurrentViewData(true)}
         />
       ) : null}
@@ -4522,6 +4831,7 @@ export default function Home() {
           viewType="SUBOFICIAL"
           onOpenCreate={() => openOficialSuboficialCreate("SUBOFICIAL")}
           onStartEdit={startEditOficialSuboficial}
+          onOpenProfile={(registro) => void openPersonaProfileFromOficialSuboficial(registro)}
           onReload={() => reloadCurrentViewData(true)}
         />
       ) : null}
@@ -4763,6 +5073,16 @@ export default function Home() {
         }
         onSubmitPersonalObservacion={() => void savePersonalObservacion()}
       />
+
+      {activeView === "persona_ficha" ? (
+        <PersonaProfileView
+          state={personaProfile}
+          onBack={closePersonaProfileView}
+          onReload={() => void reloadPersonaProfile()}
+          onPrintDeliverySheet={printDeliverySheetFromProfile}
+          onPrintPrestamos={printPrestamosFromProfile}
+        />
+      ) : null}
 
       {activeView === "hoja-de-entrega" && fichaViewingCi ? (
 

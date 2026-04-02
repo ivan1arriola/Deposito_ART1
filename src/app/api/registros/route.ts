@@ -81,6 +81,16 @@ function readRequestMeta(request: Request) {
   return { ip, userAgent };
 }
 
+function formatUsuarioMovimientoLabel(usuario: {
+  rango: { abreviacion: string } | null;
+  apellido: string;
+  nombre: string;
+  username: string;
+}) {
+  const label = `${usuario.rango?.abreviacion ?? ""} ${usuario.apellido}, ${usuario.nombre}`.replace(/\s+/g, " ").trim();
+  return label || usuario.username;
+}
+
 function buildPersonalAuditDetail(personal: {
   ci: string;
   apellido1: string;
@@ -135,6 +145,19 @@ export async function GET(req: Request) {
   const movimientos = await prisma.movimiento.findMany({
     where,
     include: {
+      usuarioEntrega: {
+        select: {
+          usuarioId: true,
+          username: true,
+          nombre: true,
+          apellido: true,
+          rango: {
+            select: {
+              abreviacion: true,
+            },
+          },
+        },
+      },
       items: {
         include: { item: true },
         orderBy: { item: { ordenPdf: "asc" } },
@@ -192,6 +215,8 @@ export async function GET(req: Request) {
         };
       })(),
       ci: movimiento.personalCi,
+      usuarioEntregaId: movimiento.usuarioEntregaId,
+      usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
       fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
       tipo: movimiento.tipo,
       afectaStock: true,

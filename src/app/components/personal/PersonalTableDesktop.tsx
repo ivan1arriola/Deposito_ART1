@@ -21,6 +21,7 @@ type PersonalTableDesktopProps = {
   onDevolucion: (ci: string) => void;
   onObservacion: (persona: Personal) => void;
   onViewMoves: (persona: Personal) => void;
+  onOpenProfile: (persona: Personal) => void;
   onOpenSheet: (ci: string) => void;
 };
 
@@ -36,6 +37,7 @@ export function PersonalTableDesktop({
   onDevolucion,
   onObservacion,
   onViewMoves,
+  onOpenProfile,
   onOpenSheet,
 }: PersonalTableDesktopProps) {
   const [expandedPhoneByCi, setExpandedPhoneByCi] = useState<Record<string, boolean>>({});
@@ -120,6 +122,7 @@ export function PersonalTableDesktop({
                       onDevolucion={() => onDevolucion(persona.ci)}
                       onObservacion={() => onObservacion(persona)}
                       onViewMoves={() => onViewMoves(persona)}
+                      onOpenProfile={() => onOpenProfile(persona)}
                       onOpenSheet={() => onOpenSheet(persona.ci)}
                     />
                   </td>

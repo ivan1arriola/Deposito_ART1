@@ -104,6 +104,8 @@ export type RegistroView = {
     detalle: unknown;
   } | null;
   ci: string;
+  usuarioEntregaId: string;
+  usuarioEntregaNombre: string;
   fecha: string;
   tipo: RegistroViewTipo;
   afectaStock: boolean;

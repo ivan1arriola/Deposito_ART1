@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { TipoMovimiento, TipoPersonal } from "@prisma/client";
+import { Prisma, TipoMovimiento, TipoPersonal } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -88,15 +88,38 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const status = String(url.searchParams.get("status") ?? "todos").trim().toLowerCase();
+  const ci = String(url.searchParams.get("ci") ?? "").trim();
+  const destinatarioTipo = parseDestinatarioTipo(url.searchParams.get("destinatarioTipo"));
   const limitRaw = Number(url.searchParams.get("limit") ?? "200");
   const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 1), 400) : 200;
 
-  const where =
-    status === "pendiente"
-      ? { tipo: TipoMovimiento.PRESTAMO, prestamoActivo: { isNot: null } }
-      : status === "devuelto"
-        ? { tipo: TipoMovimiento.PRESTAMO, prestamoHistorial: { isNot: null } }
-        : { tipo: TipoMovimiento.PRESTAMO };
+  if (ci && !isValidUruguayanCi(ci)) {
+    return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  }
+
+  if (url.searchParams.has("destinatarioTipo") && !destinatarioTipo) {
+    return NextResponse.json({ error: "destinatarioTipo invalido." }, { status: 400 });
+  }
+
+  const where: Prisma.MovimientoWhereInput = { tipo: TipoMovimiento.PRESTAMO };
+  if (status === "pendiente") {
+    where.prestamoActivo = { isNot: null };
+  } else if (status === "devuelto") {
+    where.prestamoHistorial = { isNot: null };
+  }
+  if (ci) {
+    where.personalCi = ci;
+  }
+  if (destinatarioTipo) {
+    where.personal = {
+      tipo:
+        destinatarioTipo === "PERSONAL"
+          ? TipoPersonal.SUBALTERNO
+          : destinatarioTipo === "OFICIAL"
+            ? TipoPersonal.OFICIAL
+            : TipoPersonal.SUBOFICIAL,
+    };
+  }
 
   const prestamos = await prisma.movimiento.findMany({
     where,
