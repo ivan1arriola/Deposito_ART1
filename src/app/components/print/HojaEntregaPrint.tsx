@@ -28,6 +28,27 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
   }
 
   .page {
+    --table-font-size: 7.5px;
+    --table-line-height: 1.2;
+    --table-padding-y: 2px;
+    --table-padding-x: 3px;
+    --header-row-font-size: 9px;
+    --section-title-font-size: 8px;
+    --item-name-font-size: 7px;
+    --obs-title-font-size: 8px;
+    --obs-item-font-size: 8px;
+    --obs-item-line-height: 1.2;
+    --obs-item-gap: 2px;
+    --info-grid-font-size: 11.5px;
+    --info-grid-padding-y: 4px;
+    --info-grid-padding-x: 10px;
+    --info-grid-compact-padding-y: 1px;
+    --info-grid-compact-padding-x: 6px;
+    --firma-gap: 3.5mm;
+    --firma-font-size: 8px;
+    --firma-line-height: 1.25;
+    --firma-margin-left-1: 8mm;
+    --firma-margin-left-2: 16mm;
     width: 210mm;
     height: 297mm;
     min-height: 297mm;
@@ -42,9 +63,76 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     break-inside: avoid-page;
   }
 
-  .page,
-  .page * {
-    font-size: 12px !important;
+  .page.page-compact {
+    --table-font-size: 7px;
+    --table-line-height: 1.1;
+    --table-padding-y: 1.5px;
+    --table-padding-x: 2.5px;
+    --header-row-font-size: 8px;
+    --section-title-font-size: 7.3px;
+    --item-name-font-size: 6.4px;
+    --obs-title-font-size: 7.3px;
+    --obs-item-font-size: 7.1px;
+    --obs-item-line-height: 1.1;
+    --obs-item-gap: 1px;
+    --info-grid-font-size: 10.8px;
+    --info-grid-padding-y: 3px;
+    --info-grid-padding-x: 7px;
+    --info-grid-compact-padding-y: 1px;
+    --info-grid-compact-padding-x: 5px;
+    --firma-gap: 3mm;
+    --firma-font-size: 7.4px;
+    --firma-line-height: 1.15;
+    --firma-margin-left-1: 7mm;
+    --firma-margin-left-2: 14mm;
+  }
+
+  .page.page-dense {
+    --table-font-size: 6.4px;
+    --table-line-height: 1.05;
+    --table-padding-y: 1px;
+    --table-padding-x: 2px;
+    --header-row-font-size: 7.2px;
+    --section-title-font-size: 6.8px;
+    --item-name-font-size: 5.9px;
+    --obs-title-font-size: 6.8px;
+    --obs-item-font-size: 6.4px;
+    --obs-item-line-height: 1.05;
+    --obs-item-gap: 0;
+    --info-grid-font-size: 9.9px;
+    --info-grid-padding-y: 2px;
+    --info-grid-padding-x: 5px;
+    --info-grid-compact-padding-y: 0.8px;
+    --info-grid-compact-padding-x: 4px;
+    --firma-gap: 2.4mm;
+    --firma-font-size: 6.8px;
+    --firma-line-height: 1.05;
+    --firma-margin-left-1: 6mm;
+    --firma-margin-left-2: 12mm;
+  }
+
+  .page.page-ultra {
+    --table-font-size: 6px;
+    --table-line-height: 1;
+    --table-padding-y: 0.8px;
+    --table-padding-x: 1.5px;
+    --header-row-font-size: 6.8px;
+    --section-title-font-size: 6.2px;
+    --item-name-font-size: 5.5px;
+    --obs-title-font-size: 6.2px;
+    --obs-item-font-size: 5.9px;
+    --obs-item-line-height: 1;
+    --obs-item-gap: 0;
+    --info-grid-font-size: 9.1px;
+    --info-grid-padding-y: 1px;
+    --info-grid-padding-x: 4px;
+    --info-grid-compact-padding-y: 0.6px;
+    --info-grid-compact-padding-x: 3px;
+    --firma-gap: 2mm;
+    --firma-font-size: 6.3px;
+    --firma-line-height: 1;
+    --firma-margin-left-1: 5mm;
+    --firma-margin-left-2: 10mm;
   }
 
   .page + .page {
@@ -65,11 +153,11 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
 
   th, td {
     border: 0.8px solid #000;
-    padding: 2px 3px;
+    padding: var(--table-padding-y) var(--table-padding-x);
     text-align: center;
     vertical-align: middle;
-    font-size: 7.5px;
-    line-height: 1.2;
+    font-size: var(--table-font-size);
+    line-height: var(--table-line-height);
     white-space: normal;
     overflow-wrap: break-word;
     word-break: normal;
@@ -86,7 +174,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
 
   td[colspan="15"].center.bold {
     background: #f8f8f8;
-    font-size: 9px;
+    font-size: var(--header-row-font-size);
     padding: 5px 6px;
     font-weight: bold;
   }
@@ -111,14 +199,14 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     background: #d4d4d4;
     font-weight: bold;
     padding: 4px 3px;
-    font-size: 8px;
+    font-size: var(--section-title-font-size);
   }
 
   .date-label {
     background: #e3e3e3;
     font-weight: bold;
     text-align: center;
-    font-size: 7px;
+    font-size: var(--section-title-font-size);
     padding: 2px;
   }
 
@@ -171,7 +259,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
 
   .info-grid-item {
     min-width: 0;
-    padding: 4px 10px;
+    padding: var(--info-grid-padding-y) var(--info-grid-padding-x);
     text-align: left;
     background: #fff;
     border-right: 0.8px solid #000;
@@ -179,7 +267,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     flex-wrap: wrap;
     align-items: baseline;
     gap: 3px;
-    font-size: 11.5px;
+    font-size: var(--info-grid-font-size);
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
@@ -188,7 +276,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
   }
 
   .info-grid-item-compact {
-    padding: 1px 6px;
+    padding: var(--info-grid-compact-padding-y) var(--info-grid-compact-padding-x);
   }
 
   .info-grid-item:last-child {
@@ -208,7 +296,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     text-align: left;
     padding-left: 6px;
     font-weight: 500;
-    font-size: 7px;
+    font-size: var(--item-name-font-size);
     white-space: normal;
     overflow-wrap: break-word;
     line-height: 1.15;
@@ -230,13 +318,30 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
 
   .obs-title {
     font-weight: bold;
-    font-size: 8px;
+    font-size: var(--obs-title-font-size);
     margin-bottom: 3px;
   }
 
+  .obs-cell {
+    padding: 4px !important;
+  }
+
+  .page.page-compact .obs-cell {
+    padding: 3px 4px !important;
+  }
+
+  .page.page-dense .obs-cell {
+    padding: 2px 3px !important;
+  }
+
+  .page.page-ultra .obs-cell {
+    padding: 1px 2px !important;
+  }
+
   .obs-item {
-    font-size: 8px;
-    margin-bottom: 2px;
+    font-size: var(--obs-item-font-size);
+    line-height: var(--obs-item-line-height);
+    margin-bottom: var(--obs-item-gap);
   }
 
   .firma-section {
@@ -244,15 +349,15 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     flex-direction: column;
     margin-top: auto;
     padding: 0 1mm 1.5mm 1mm;
-    gap: 3.5mm;
+    gap: var(--firma-gap);
     page-break-inside: avoid;
     break-inside: avoid-page;
   }
 
   .firma-block {
-    font-size: 8px;
+    font-size: var(--firma-font-size);
     font-family: "Courier New", monospace;
-    line-height: 1.25;
+    line-height: var(--firma-line-height);
     page-break-inside: avoid;
     break-inside: avoid-page;
   }
@@ -262,11 +367,11 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
   }
 
   .firma-level-1 {
-    margin-left: 8mm;
+    margin-left: var(--firma-margin-left-1);
   }
 
   .firma-level-2 {
-    margin-left: 16mm;
+    margin-left: var(--firma-margin-left-2);
   }
 
   .firma-title {
@@ -278,7 +383,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
   }
 
   .firma-name {
-    font-size: 8px;
+    font-size: var(--firma-font-size);
   }
 
   .hoja-entrega-empty {
@@ -325,6 +430,39 @@ export function HojaEntregaPrintEmptyState({ message }: { message: string }) {
   return <main className="hoja-entrega-empty">{message}</main>;
 }
 
+function getHojaCompactClass(data: HojaEntregaSheetData) {
+  if (data.observaciones.length === 0) {
+    return "";
+  }
+
+  const longestObsChars = data.observaciones.reduce((maxChars, observacion) => {
+    return Math.max(maxChars, observacion.texto.length);
+  }, 0);
+
+  const totalObsChars = data.observaciones.reduce((totalChars, observacion) => {
+    return totalChars + observacion.texto.length;
+  }, 0);
+
+  const estimatedObsLines = data.observaciones.reduce((totalLines, observacion) => {
+    const datePrefixChars = 14;
+    return totalLines + Math.ceil((observacion.texto.length + datePrefixChars) / 105);
+  }, 0);
+
+  if (estimatedObsLines >= 14 || totalObsChars >= 2800 || longestObsChars >= 620) {
+    return "page-ultra";
+  }
+
+  if (estimatedObsLines >= 10 || totalObsChars >= 1800 || longestObsChars >= 420) {
+    return "page-dense";
+  }
+
+  if (estimatedObsLines >= 6 || totalObsChars >= 900 || longestObsChars >= 200) {
+    return "page-compact";
+  }
+
+  return "";
+}
+
 export function HojaEntregaPrintSheet({
   data,
   fechaImpresion,
@@ -338,9 +476,11 @@ export function HojaEntregaPrintSheet({
   const ciWarningPrefix = isValidUruguayanCi(data.persona.ci) ? "" : "\u26a0 ";
   const firmaAlistadoNombre = [data.persona.nombre1, data.persona.apellido1].filter(Boolean).join(" ").trim();
   const bottomInfoGridClassName = data.persona.esReingreso ? "info-grid info-grid-5" : "info-grid info-grid-4";
+  const compactClassName = getHojaCompactClass(data);
+  const pageClassName = compactClassName ? `page ${compactClassName}` : "page";
 
   return (
-    <div className="page">
+    <div className={pageClassName}>
       <table>
         <colgroup>
           <col style={{ width: "26%" }} />
@@ -491,7 +631,7 @@ export function HojaEntregaPrintSheet({
           ))}
 
           <tr>
-            <td colSpan={15} className="left" style={{ padding: "4px" }}>
+            <td colSpan={15} className="left obs-cell">
               <div className="obs-title">OBSERVACIONES</div>
               {data.observaciones.map((obs, idx) => (
                 <div key={`${data.persona.ci}-${obs.fecha}-${idx}`} className="obs-item">
