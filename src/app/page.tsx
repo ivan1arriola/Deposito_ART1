@@ -521,6 +521,14 @@ export default function Home() {
     const uniqueUsers = new Map<string, { value: string; label: string }>();
     let hasSystemRecords = false;
 
+    for (const usuario of usuarios) {
+      if (uniqueUsers.has(usuario.usuarioId)) continue;
+      uniqueUsers.set(usuario.usuarioId, {
+        value: usuario.usuarioId,
+        label: `${usuario.username} (${roleLabel(usuario.rol)})`,
+      });
+    }
+
     for (const log of auditoria) {
       if (!log.usuario?.usuarioId) {
         hasSystemRecords = true;
@@ -541,7 +549,7 @@ export default function Home() {
     }
 
     return options;
-  }, [auditoria]);
+  }, [auditoria, usuarios]);
   const auditoriaFiltrada = useMemo(() => {
     let filtered = auditoria;
 

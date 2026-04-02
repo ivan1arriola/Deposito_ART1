@@ -4,15 +4,8 @@ import {
   getHojaEntregaDatePart,
   type HojaEntregaSheetData,
 } from "@/lib/hoja-entrega-data";
-import {
-  formatInstitutionalPrintDate,
-  InstitutionalPrintHeader,
-  INSTITUTIONAL_PRINT_HEADER_STYLES,
-} from "@/app/components/print/InstitutionalPrintHeader";
 
 export const HOJA_ENTREGA_PRINT_STYLES = `
-  ${INSTITUTIONAL_PRINT_HEADER_STYLES}
-
   * {
     margin: 0;
     padding: 0;
@@ -25,11 +18,11 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
   }
 
   body {
-    font-family: "Times New Roman", Times, serif;
+    font-family: "Courier New", "Liberation Mono", monospace;
     font-size: 9px;
     line-height: 1.1;
     color: #000;
-    background: #f4f4f4;
+    background: white;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
@@ -39,7 +32,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     height: 297mm;
     min-height: 297mm;
     padding: 3.5mm 6mm 7mm 6mm;
-    background: #f4f4f4;
+    background: white;
     margin: 0 auto;
     box-sizing: border-box;
     display: flex;
@@ -64,7 +57,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     border: 2px solid #000;
     margin: 0;
     flex: 1 1 auto;
-    background: #f4f4f4;
+    background: white;
     table-layout: fixed;
     page-break-inside: avoid;
     break-inside: avoid-page;
@@ -148,7 +141,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
 
   .info-grid-shell {
     padding: 0 !important;
-    background: #f4f4f4;
+    background: #fff;
   }
 
   .info-grid-shell-top {
@@ -180,7 +173,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     min-width: 0;
     padding: 4px 10px;
     text-align: left;
-    background: #f4f4f4;
+    background: #fff;
     border-right: 0.8px solid #000;
     display: flex;
     flex-wrap: wrap;
@@ -207,11 +200,11 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
   }
 
   .item-row td {
-    background: #f4f4f4;
+    background: #fff;
   }
 
   .item-row td:first-child {
-    background: #f4f4f4;
+    background: #fff;
     text-align: left;
     padding-left: 6px;
     font-weight: 500;
@@ -219,7 +212,6 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     white-space: normal;
     overflow-wrap: break-word;
     line-height: 1.15;
-    text-transform: uppercase;
   }
 
   .item-row td.bold {
@@ -259,7 +251,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
 
   .firma-block {
     font-size: 8px;
-    font-family: "Times New Roman", Times, serif;
+    font-family: "Courier New", monospace;
     line-height: 1.25;
     page-break-inside: avoid;
     break-inside: avoid-page;
@@ -294,7 +286,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     min-height: 297mm;
     margin: 0 auto;
     padding: 18mm 10mm;
-    background: #f4f4f4;
+    background: #fff;
     font-size: 11px;
   }
 
@@ -325,12 +317,6 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
   }
 `;
 
-function toPrintUppercase(value: string | null | undefined) {
-  const text = String(value ?? "").trim();
-  if (!text) return "-";
-  return text.toLocaleUpperCase("es-UY");
-}
-
 export function HojaEntregaPrintStyles() {
   return <style>{HOJA_ENTREGA_PRINT_STYLES}</style>;
 }
@@ -352,11 +338,9 @@ export function HojaEntregaPrintSheet({
   const ciWarningPrefix = isValidUruguayanCi(data.persona.ci) ? "" : "\u26a0 ";
   const firmaAlistadoNombre = [data.persona.nombre1, data.persona.apellido1].filter(Boolean).join(" ").trim();
   const bottomInfoGridClassName = data.persona.esReingreso ? "info-grid info-grid-5" : "info-grid info-grid-4";
-  const institutionalPrintDate = formatInstitutionalPrintDate();
 
   return (
     <div className="page">
-      <InstitutionalPrintHeader printedAt={institutionalPrintDate} compact />
       <table>
         <colgroup>
           <col style={{ width: "26%" }} />
@@ -365,6 +349,17 @@ export function HojaEntregaPrintSheet({
           ))}
         </colgroup>
         <tbody>
+          <tr>
+            <td colSpan={15} className="center bold">
+              Grupo &quot;Brig.Gral.Manuel Oribe&quot; de Artillería 105mm No.1.-
+            </td>
+          </tr>
+          <tr>
+            <td colSpan={15} className="center bold">
+              {"ADMINISTRACION - S4"}
+            </td>
+          </tr>
+
           <tr>
             <td colSpan={15} className="info-grid-shell info-grid-shell-top">
               <div className="info-grid info-grid-3">
@@ -483,7 +478,7 @@ export function HojaEntregaPrintSheet({
 
           {data.matrix.map((row) => (
             <tr key={`${data.persona.ci}-${row.item}`} className="item-row">
-              <td className="left">{toPrintUppercase(row.item)}</td>
+              <td className="left">{row.item}</td>
               {row.entrega.slice(0, 6).map((qty, i) => (
                 <td key={`e-${data.persona.ci}-${row.item}-${i}`}>{qty || ""}</td>
               ))}
