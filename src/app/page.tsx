@@ -361,6 +361,8 @@ export default function Home() {
   const [personalPageSize, setPersonalPageSize] = useState(25);
   const [auditPage, setAuditPage] = useState(1);
   const [auditPageSize, setAuditPageSize] = useState(25);
+  const [bulkDeliveryPdfLoading, setBulkDeliveryPdfLoading] = useState(false);
+  const [bulkDeliveryPdfStepIndex, setBulkDeliveryPdfStepIndex] = useState(0);
   const lastToastStatusRef = useRef<string | null>(null);
 
   const isAdmin = currentUser?.rol === "ADMIN";
@@ -4031,16 +4033,72 @@ export default function Home() {
     setConfirmDialog(null);
   }
 
-  const printAllDeliverySheets = useCallback(() => {
+  const printAllDeliverySheets = useCallback(async () => {
     if (personal.length === 0) {
       toast.info("No hay personal para imprimir.");
       return;
     }
 
-    triggerPdfDownload("/api/hojas-de-entrega/pdf");
+    if (bulkDeliveryPdfLoading) return;
+
+    setBulkDeliveryPdfLoading(true);
+    setBulkDeliveryPdfStepIndex(0);
     setStatus(`Generando PDF A4 de hojas de entrega para ${personal.length} personas...`);
     toast.info(`Generando PDF A4 de ${personal.length} hojas.`);
-  }, [personal.length, triggerPdfDownload]);
+    try {
+      const response = await fetch("/api/hojas-de-entrega/pdf", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        let message = "No se pudo generar el PDF de hojas de entrega.";
+        try {
+          const payload = (await response.json()) as { error?: string };
+          if (typeof payload.error === "string" && payload.error.trim() !== "") {
+            message = payload.error;
+          }
+        } catch {
+          // Ignorar parseo fallido y conservar mensaje por defecto.
+        }
+        throw new Error(message);
+      }
+
+      setStatus("PDF generado. Iniciando descarga...");
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const disposition = response.headers.get("Content-Disposition");
+      const fileNameMatch = disposition?.match(/filename\*?=(?:UTF-8''|\"?)([^\";]+)/i);
+      const rawFileName = fileNameMatch?.[1]?.trim().replace(/^\"|\"$/g, "");
+      const fallbackFileName = "hoja-entrega-unidad.pdf";
+      let fileName = rawFileName || fallbackFileName;
+
+      if (rawFileName) {
+        try {
+          fileName = decodeURIComponent(rawFileName);
+        } catch {
+          fileName = rawFileName;
+        }
+      }
+
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = fileName;
+      link.rel = "noopener";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_500);
+
+      setStatus(`Descarga iniciada (${fileName}).`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "No se pudo generar el PDF de hojas de entrega.";
+      setStatus(`Error al generar PDF de hojas de entrega: ${message}`);
+    } finally {
+      setBulkDeliveryPdfLoading(false);
+    }
+  }, [bulkDeliveryPdfLoading, personal.length]);
 
   const printPersonnelByBattery = useCallback(() => {
     if (personal.length === 0) {
@@ -4288,10 +4346,37 @@ export default function Home() {
   }, [loading, primaryLoadSteps]);
 
   const primaryLoadingLabel = primaryLoadSteps[primaryLoadStepIndex] ?? primaryLoadSteps[0];
+  const bulkDeliveryPdfSteps = useMemo(
+    () => [
+      `Preparando ${personal.length} hoja(s) de entrega en formato A4...`,
+      "Consultando personal, tallas y movimientos para cada hoja...",
+      "Armando tablas de equipo, observaciones y firmas...",
+      "Compaginando paginas A4 en blanco y negro...",
+      "Finalizando archivo PDF y preparando descarga...",
+    ],
+    [personal.length],
+  );
+
+  useEffect(() => {
+    if (!bulkDeliveryPdfLoading) {
+      setBulkDeliveryPdfStepIndex(0);
+      return;
+    }
+
+    setBulkDeliveryPdfStepIndex(0);
+    const intervalId = window.setInterval(() => {
+      setBulkDeliveryPdfStepIndex((prev) => Math.min(prev + 1, bulkDeliveryPdfSteps.length - 1));
+    }, 2_100);
+
+    return () => window.clearInterval(intervalId);
+  }, [bulkDeliveryPdfLoading, bulkDeliveryPdfSteps.length]);
+
+  const bulkDeliveryPdfLabel = bulkDeliveryPdfSteps[bulkDeliveryPdfStepIndex] ?? bulkDeliveryPdfSteps[0];
   const isAppGlobalBusy =
     !!currentUser &&
     (
       loading ||
+      bulkDeliveryPdfLoading ||
       personaProfileLoading ||
       firmaConfigLoading ||
       firmaConfigSaving ||
@@ -4319,6 +4404,7 @@ export default function Home() {
     );
   const appBusyLabel = useMemo(() => {
     if (loading) return primaryLoadingLabel;
+    if (bulkDeliveryPdfLoading) return bulkDeliveryPdfLabel;
     if (personaProfileLoading) return "Cargando ficha completa y consolidando información de esta persona...";
     if (firmaConfigLoading) return "Cargando configuracion de firmas y auditoria...";
     if (firmaConfigSaving) return "Guardando configuracion de firmas...";
@@ -4365,6 +4451,8 @@ export default function Home() {
     if (confirmDialogBusy) return "Aplicando cambios solicitados...";
     return "Actualizando informacion...";
   }, [
+    bulkDeliveryPdfLabel,
+    bulkDeliveryPdfLoading,
     primaryLoadingLabel,
     activeEtiquetadoSection,
     activeStockLoadProfile?.key,
