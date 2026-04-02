@@ -66,34 +66,73 @@ export type HojaEntregaSheetData = {
   observaciones: HojaObservacion[];
 };
 
-const hojaEntregaPersonalInclude = {
-  rango: true,
+const hojaEntregaPersonalSelect = {
+  ci: true,
+  apellido1: true,
+  apellido2: true,
+  nombre1: true,
+  nombre2: true,
+  rango: {
+    select: {
+      abreviacion: true,
+      nombreCompleto: true,
+      orden: true,
+    },
+  },
   subalterno: {
-    include: {
-      bateria: true,
+    select: {
+      esReingreso: true,
+      fechaIngreso: true,
+      fechaIngresoOriginal: true,
+      bateria: {
+        select: {
+          nombre: true,
+        },
+      },
     },
   },
   tallas: {
-    include: { tallaTipo: true },
+    select: {
+      tallaValor: true,
+      tallaTipo: {
+        select: {
+          nombre: true,
+        },
+      },
+    },
   },
   movimientos: {
     where: {
       tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
     },
     orderBy: { fecha: "asc" },
-    include: {
+    select: {
+      fecha: true,
+      tipo: true,
+      observaciones: true,
       items: {
-        include: { item: true },
+        select: {
+          cantidad: true,
+          item: {
+            select: {
+              nombre: true,
+            },
+          },
+        },
       },
     },
   },
   observaciones: {
     orderBy: { fecha: "asc" },
+    select: {
+      fecha: true,
+      texto: true,
+    },
   },
-} as const satisfies Prisma.PersonalInclude;
+} as const satisfies Prisma.PersonalSelect;
 
 type HojaEntregaPersonalRecord = Prisma.PersonalGetPayload<{
-  include: typeof hojaEntregaPersonalInclude;
+  select: typeof hojaEntregaPersonalSelect;
 }>;
 
 function aggregateItems(records: MovimientoWithItems[]) {
@@ -150,15 +189,12 @@ function toSixColumns(records: MovimientoWithItems[]): MatrixColumn[] {
 }
 
 function buildMatrix(itemsOrder: string[], entregas: MatrixColumn[], devoluciones: MatrixColumn[]): HojaEntregaMatrixRow[] {
+  const entregaMaps = entregas.map((column) => new Map(column.items.map((item) => [item.nombre, item.cantidad])));
+  const devolucionMaps = devoluciones.map((column) => new Map(column.items.map((item) => [item.nombre, item.cantidad])));
+
   return itemsOrder.map((itemName) => {
-    const entrega = Array.from({ length: 6 }, (_, idx) => {
-      const found = entregas[idx]?.items.find((item) => item.nombre === itemName);
-      return found?.cantidad ?? 0;
-    });
-    const devolucion = Array.from({ length: 6 }, (_, idx) => {
-      const found = devoluciones[idx]?.items.find((item) => item.nombre === itemName);
-      return found?.cantidad ?? 0;
-    });
+    const entrega = Array.from({ length: 6 }, (_, idx) => entregaMaps[idx]?.get(itemName) ?? 0);
+    const devolucion = Array.from({ length: 6 }, (_, idx) => devolucionMaps[idx]?.get(itemName) ?? 0);
     const entregaTotal = entrega.reduce((acc, value) => acc + value, 0);
     const devolucionRegistradaTotal = devolucion.reduce((acc, value) => acc + value, 0);
 
@@ -243,7 +279,7 @@ export async function getHojaEntregaData(ci: string): Promise<HojaEntregaSheetDa
         ci,
         tipo: TipoPersonal.SUBALTERNO,
       },
-      include: hojaEntregaPersonalInclude,
+      select: hojaEntregaPersonalSelect,
     }),
     prisma.item.findMany({
       where: { activo: true },
@@ -270,7 +306,7 @@ export async function getAllHojasEntregaData(): Promise<HojaEntregaSheetData[]> 
       where: {
         tipo: TipoPersonal.SUBALTERNO,
       },
-      include: hojaEntregaPersonalInclude,
+      select: hojaEntregaPersonalSelect,
     }),
     prisma.item.findMany({
       where: { activo: true },
