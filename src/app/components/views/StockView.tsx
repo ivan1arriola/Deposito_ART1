@@ -7,6 +7,7 @@ import { LoadingInline } from "@/app/components/shared";
 import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers";
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
 import { formatUruguayanCi } from "@/lib/ci";
+import { normalizeSearchText } from "@/lib/spanish-text";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import type { Equipo, OficialSuboficial, Personal } from "@/types/entities";
 import type { PrestamoDraft, PrestamoDraftItem, PrestamoEstadoEquipo, StockOperacionDraft, StockOperacionDraftItem } from "@/types/forms";
@@ -66,14 +67,7 @@ function reciboHref(prestamoId: string) {
 }
 
 function normalizeRankForActuante(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[º°]/g, "")
-    .replace(/[."']/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+  return normalizeSearchText(value.replace(/[º°]/g, ""));
 }
 
 function isSargentoRank(abreviacion: string) {

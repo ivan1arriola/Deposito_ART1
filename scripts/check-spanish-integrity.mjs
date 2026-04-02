@@ -103,14 +103,14 @@ for (const filePath of listTrackedFiles()) {
     const nfdMatch = text.match(NFD_NORMALIZE_RE);
     if (nfdMatch && nfdMatch.index !== undefined) {
       findings.push(
-        `[SPANISH] ${filePath}:${lineNumberAt(text, nfdMatch.index)} usa normalize(\"NFD\") fuera del modulo permitido`,
+        `[SPANISH] ${filePath}:${lineNumberAt(text, nfdMatch.index)} usa normalize(\"NFD\") fuera del módulo permitido`,
       );
     }
 
     const diacriticsMatch = text.match(DIACRITICS_CLASS_RE);
     if (diacriticsMatch && diacriticsMatch.index !== undefined) {
       findings.push(
-        `[SPANISH] ${filePath}:${lineNumberAt(text, diacriticsMatch.index)} usa clase de diacriticos fuera del modulo permitido`,
+        `[SPANISH] ${filePath}:${lineNumberAt(text, diacriticsMatch.index)} usa clase de diacríticos fuera del módulo permitido`,
       );
     }
   }
@@ -118,13 +118,13 @@ for (const filePath of listTrackedFiles()) {
   const transliterationMatch = text.match(TRANSLITERATION_PAIR_RE);
   if (transliterationMatch && transliterationMatch.index !== undefined) {
     findings.push(
-      `[SPANISH] ${filePath}:${lineNumberAt(text, transliterationMatch.index)} contiene transliteracion manual acento->ASCII`,
+      `[SPANISH] ${filePath}:${lineNumberAt(text, transliterationMatch.index)} contiene transliteración manual acento->ASCII`,
     );
   }
 }
 
 if (findings.length > 0) {
-  console.error("Se detectaron riesgos de perdida de caracteres en espanol:");
+  console.error("Se detectaron riesgos de pérdida de caracteres en español:");
   for (const finding of findings) {
     console.error(`- ${finding}`);
   }
@@ -132,4 +132,4 @@ if (findings.length > 0) {
   process.exit(1);
 }
 
-console.log("OK: no se detectaron riesgos de eliminacion de tildes/Ñ fuera de los modulos permitidos.");
+console.log("OK: no se detectaron riesgos de eliminación de tildes/Ñ fuera de los módulos permitidos.");
