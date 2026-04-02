@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
+import { formatHojaEntregaDisplayDate, getAllHojasEntregaData } from "@/lib/hoja-entrega-data";
 import { buildUnidadHojasEntregaFileName } from "@/lib/server/pdf-filename";
-import { renderA4PdfFromUrl } from "@/lib/server/render-a4-pdf-from-html";
+import { renderHojasEntregaPdf } from "@/lib/server/render-hoja-entrega-react-pdf";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,13 +12,14 @@ export async function GET(request: Request) {
   const auth = await authorizeRequest(request, "read_data");
   if (!auth.ok) return auth.response;
 
-  const origin = new URL(request.url).origin;
-  const renderUrl = `${origin}/hojas-de-entrega?pdf=1`;
-  const pdfBytes = await renderA4PdfFromUrl(renderUrl, {
-    cookieHeader: request.headers.get("cookie"),
-    pageNumbersIfMultipage: true,
-    pageNumberLabel: "hoja",
-    readySelector: "[data-hojas-entrega-ready='1']",
+  const hojas = await getAllHojasEntregaData();
+  if (hojas.length === 0) {
+    return NextResponse.json({ error: "No hay personal para generar hojas de entrega." }, { status: 404 });
+  }
+
+  const pdfBytes = await renderHojasEntregaPdf(hojas, formatHojaEntregaDisplayDate(new Date()), {
+    includePageNumbers: true,
+    pageNumberLabel: "Hoja",
   });
 
   const fileName = buildUnidadHojasEntregaFileName();

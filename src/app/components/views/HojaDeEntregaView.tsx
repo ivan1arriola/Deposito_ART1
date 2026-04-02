@@ -112,6 +112,7 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
   const [data, setData] = useState<FichaData | null>(null);
   const [status, setStatus] = useState("Cargando hoja de entrega...");
   const [loading, setLoading] = useState(true);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,26 +141,56 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
   }, [ci]);
 
   const exportPdf = useCallback(async () => {
-    if (!data) return;
+    if (!data || pdfDownloading) return;
 
+    setPdfDownloading(true);
     try {
-      setStatus("Generando PDF A4...");
-      const url = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf`;
+      setStatus("Generando PDF A4... esto puede tardar unos segundos.");
+      const response = await fetch(`/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf`, {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        let message = "No se pudo generar el PDF.";
+        try {
+          const payload = (await response.json()) as { error?: string };
+          if (typeof payload.error === "string" && payload.error.trim() !== "") {
+            message = payload.error;
+          }
+        } catch {
+          // Ignorar errores de parseo y usar mensaje por defecto.
+        }
+        throw new Error(message);
+      }
+
+      setStatus("PDF generado. Iniciando descarga...");
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const disposition = response.headers.get("Content-Disposition");
+      const match = disposition?.match(/filename=\"?([^\";]+)\"?/i);
+      const fallbackFileName = `hoja-entrega-${ci}.pdf`;
+      const fileName = match?.[1]?.trim() || fallbackFileName;
+
       const link = document.createElement("a");
-      link.href = url;
+      link.href = objectUrl;
+      link.download = fileName;
       link.rel = "noopener";
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
       setStatus("Descarga iniciada.");
       window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Error desconocido";
       setStatus(`Error: ${message}`);
       window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
+    } finally {
+      setPdfDownloading(false);
     }
-  }, [ci, data]);
+  }, [ci, data, pdfDownloading]);
 
   const fechaImpresion = formatDisplayDate(new Date());
   const canonicalData = useMemo(() => (data ? toCanonicalData(data) : null), [data]);
@@ -174,10 +205,10 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
           type="button"
           className={styles.button}
           onClick={exportPdf}
-          disabled={!canonicalData}
+          disabled={!canonicalData || pdfDownloading}
           aria-label="Imprimir o guardar hoja de entrega como PDF"
         >
-          Imprimir / Guardar PDF
+          {pdfDownloading ? "Generando PDF..." : "Imprimir / Guardar PDF"}
         </button>
       </div>
 

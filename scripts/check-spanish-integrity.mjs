@@ -89,7 +89,12 @@ const findings = [];
 for (const filePath of listTrackedFiles()) {
   if (shouldSkipFile(filePath)) continue;
 
-  const content = readFileSync(filePath);
+  let content;
+  try {
+    content = readFileSync(filePath);
+  } catch {
+    continue;
+  }
   if (isLikelyBinary(content)) continue;
 
   let text;

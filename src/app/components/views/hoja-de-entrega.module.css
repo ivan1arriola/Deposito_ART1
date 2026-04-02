@@ -442,10 +442,11 @@
 .observacionesCell > div:first-child {
   font-weight: bold;
   font-size: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   text-transform: uppercase;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid #666;
   padding-bottom: 2px;
+  text-align: center;
 }
 
 .observacionesCell > div:not(:first-child) {
@@ -529,140 +530,11 @@
   color: #000 !important;
 }
 
-.pdfExport .sheet {
-  margin: 0 auto;
-  width: 210mm;
-  height: 297mm;
-  min-height: 297mm;
-  padding: 2.6mm 4.8mm 4.2mm 4.8mm;
-  gap: 1.2mm;
-  border: none !important;
-  box-shadow: none !important;
-}
-
 .pdfExport .sheet,
 .pdfExport .sheet * {
   color: #000 !important;
   box-shadow: none !important;
   text-shadow: none !important;
-}
-
-.pdfExport .table {
-  font-size: 6.6px;
-  line-height: 1.05;
-}
-
-.pdfExport .table th,
-.pdfExport .table td {
-  border-color: #000 !important;
-  border-width: 0.8px !important;
-  background: #fff !important;
-  color: #000 !important;
-  padding: 1px 2px !important;
-  font-size: 6.55px !important;
-  line-height: 1.04 !important;
-}
-
-.pdfExport .table tr td.bold[rowspan],
-.pdfExport .table tr td.center.bold {
-  background: #fff !important;
-  font-size: 6.9px !important;
-  padding: 1.5px 2px !important;
-}
-
-.pdfExport .table td[colspan="15"].center.bold {
-  background: #fff !important;
-  font-size: 7.2px !important;
-  padding: 2px 3px !important;
-}
-
-.pdfExport .table td[colspan="15"].left.bold {
-  background: #fff !important;
-  padding: 2px 4px !important;
-}
-
-.pdfExport .dateRow td,
-.pdfExport .dateLabel,
-.pdfExport .itemRow td.bold,
-.pdfExport .table td.bold[style*="font-size"],
-.pdfExport .tCol,
-.pdfExport .vestuarioHeaderCell,
-.pdfExport .vestuarioDateMarker,
-.pdfExport .infoGridShell,
-.pdfExport .infoGridItem,
-.pdfExport .observacionesCell {
-  background: #fff !important;
-}
-
-.pdfExport .infoGridItem {
-  padding: 1px 4px;
-  font-size: 8.2px;
-  gap: 0;
-  line-height: 1.02;
-}
-
-.pdfExport .infoGridItemCompact {
-  padding: 0.5px 3px !important;
-}
-
-.pdfExport .headerInfoLabel {
-  font-size: 7px;
-}
-
-.pdfExport .headerInfoValue {
-  font-size: 8px;
-  line-height: 1;
-}
-
-.pdfExport .dateLabel {
-  font-size: 5.8px !important;
-  padding: 0.6px 1px !important;
-}
-
-.pdfExport .itemRow td:first-child {
-  font-size: 5.7px !important;
-  line-height: 1.02 !important;
-  padding-left: 3px !important;
-}
-
-.pdfExport .observacionesCell {
-  padding: 2px 3px !important;
-}
-
-.pdfExport .observacionesCell > div:first-child {
-  font-size: 6.4px !important;
-  margin-bottom: 1px;
-  padding-bottom: 1px;
-}
-
-.pdfExport .observacionesCell > div:not(:first-child) {
-  font-size: 5.8px !important;
-  margin-bottom: 1px;
-  padding-left: 2px;
-  line-height: 1.08;
-}
-
-.pdfExport .firmaSection {
-  margin-top: auto;
-  gap: 1.5mm;
-  padding: 0 0.5mm 0.3mm 0.5mm;
-}
-
-.pdfExport .firmaBlock {
-  font-size: 6px;
-  line-height: 1.02;
-}
-
-.pdfExport .firmaName {
-  font-size: 5.9px;
-}
-
-.pdfExport .firmaLevel1 {
-  margin-left: 5mm;
-}
-
-.pdfExport .firmaLevel2 {
-  margin-left: 10mm;
 }
 
 

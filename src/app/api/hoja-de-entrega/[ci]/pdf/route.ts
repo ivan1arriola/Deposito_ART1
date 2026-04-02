@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { isValidUruguayanCi } from "@/lib/ci";
-import { getHojaEntregaData } from "@/lib/hoja-entrega-data";
+import { formatHojaEntregaDisplayDate, getHojaEntregaData } from "@/lib/hoja-entrega-data";
 import { buildSingleHojaEntregaFileName } from "@/lib/server/pdf-filename";
-import { renderA4PdfFromUrl } from "@/lib/server/render-a4-pdf-from-html";
+import { renderHojasEntregaPdf } from "@/lib/server/render-hoja-entrega-react-pdf";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,25 +22,21 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     return NextResponse.json({ error: "CI invalida." }, { status: 400 });
   }
 
-  const data = await getHojaEntregaData(ciValue);
-  if (!data) {
+  const hoja = await getHojaEntregaData(ciValue);
+  if (!hoja) {
     return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
   }
 
-  const origin = new URL(request.url).origin;
-  const renderUrl = `${origin}/hoja-de-entrega/${encodeURIComponent(ciValue)}?pdf=1`;
-  const pdfBytes = await renderA4PdfFromUrl(renderUrl, {
-    cookieHeader: request.headers.get("cookie"),
-    pageNumbersIfMultipage: true,
-    pageNumberLabel: "hoja",
-    readySelector: "[data-hoja-entrega-ready='1']",
+  const pdfBytes = await renderHojasEntregaPdf([hoja], formatHojaEntregaDisplayDate(new Date()), {
+    includePageNumbers: true,
+    pageNumberLabel: "Hoja",
   });
 
   const fileName = buildSingleHojaEntregaFileName({
-    ci: data.persona.ci,
-    grado: data.persona.rangoAbreviacion,
-    apellido: data.persona.apellido1,
-    nombre: data.persona.nombre1,
+    ci: hoja.persona.ci,
+    grado: hoja.persona.rangoAbreviacion,
+    apellido: hoja.persona.apellido1,
+    nombre: hoja.persona.nombre1,
   });
   const pdfArrayBuffer = Uint8Array.from(pdfBytes).buffer;
   const pdfBlob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
