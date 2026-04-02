@@ -62,6 +62,12 @@ function formatDisplayDate(value: string | Date | null | undefined) {
   return formatDateOnlyForDisplay(value, "-");
 }
 
+function toPrintUppercase(value: string | null | undefined) {
+  const text = String(value ?? "").trim();
+  if (!text) return "-";
+  return text.toLocaleUpperCase("es-UY");
+}
+
 async function api<T>(url: string): Promise<T> {
   const response = await fetch(url, { cache: "no-store" });
   const rawBody = await response.text();
@@ -344,7 +350,7 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
 
               {data.matrix.map((row) => (
                 <tr key={row.item} className={styles.itemRow}>
-                  <td className={styles.left}>{row.item}</td>
+                  <td className={styles.left}>{toPrintUppercase(row.item)}</td>
                   {row.entrega.slice(0, 6).map((qty, i) => (
                     <td key={`e-${row.item}-${i}`}>{qty || ""}</td>
                   ))}
@@ -391,4 +397,3 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
     </main>
   );
 }
-

@@ -256,7 +256,7 @@ export async function GET(request: Request) {
       cell.value = row.label.endsWith(".") ? row.label : `${row.label}.`;
       cell.font = { name: "Times New Roman", size: FONT_TITLES, bold: true };
       cell.alignment = { horizontal: "left", vertical: "middle" };
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFB8C4D6" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE6E6E6" } };
       worksheet.getRow(currentRow).height = ROW_HEIGHT;
       currentRow += 1;
       continue;
@@ -268,7 +268,7 @@ export async function GET(request: Request) {
       cell.value = row.label;
       cell.font = { name: "Times New Roman", size: FONT_TEXT, bold: true };
       cell.alignment = { horizontal: "left", vertical: "middle" };
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFC9CFD8" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF2F2F2" } };
       worksheet.getRow(currentRow).height = ROW_HEIGHT;
       currentRow += 1;
       continue;
@@ -298,7 +298,6 @@ export async function GET(request: Request) {
         name: "Arial",
         size: FONT_NUMBERS,
         bold: true,
-        color: value < 0 ? { argb: "FFCC0000" } : undefined,
       };
       valueCell.alignment = { horizontal: "center", vertical: "middle" };
     });
@@ -312,7 +311,7 @@ export async function GET(request: Request) {
   totalLabelCell.value = "TOTAL";
   totalLabelCell.font = { name: "Times New Roman", size: FONT_TITLES, bold: true };
   totalLabelCell.alignment = { horizontal: "center", vertical: "middle" };
-  totalLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
+  totalLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEDEDED" } };
 
   totalsByItem.forEach((value, index) => {
     const col = firstItemCol + index;
@@ -322,10 +321,9 @@ export async function GET(request: Request) {
       name: "Arial",
       size: FONT_NUMBERS,
       bold: true,
-      color: value < 0 ? { argb: "FFCC0000" } : { argb: "FFCC0000" },
     };
     totalCell.alignment = { horizontal: "center", vertical: "middle" };
-    totalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
+    totalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEDEDED" } };
   });
 
   for (let r = topStartRow; r <= currentRow; r += 1) {

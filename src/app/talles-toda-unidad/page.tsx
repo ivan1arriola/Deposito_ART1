@@ -1,4 +1,9 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
+import {
+  formatInstitutionalPrintDate,
+  InstitutionalPrintHeader,
+  INSTITUTIONAL_PRINT_HEADER_STYLES,
+} from "@/app/components/print/InstitutionalPrintHeader";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { tallasMap } from "@/lib/form-mappers";
@@ -88,7 +93,9 @@ export default async function TallesTodaUnidadPage({
   const oficiales = oficialesSuboficiales.filter((registro) => registro.tipo === TipoPersonal.OFICIAL);
   const suboficiales = oficialesSuboficiales.filter((registro) => registro.tipo === TipoPersonal.SUBOFICIAL);
 
-  const generatedAt = formatDateTimeForDisplay(new Date());
+  const printedAt = new Date();
+  const generatedAt = formatDateTimeForDisplay(printedAt);
+  const institutionalPrintDate = formatInstitutionalPrintDate(printedAt);
 
   return (
     <>
@@ -99,6 +106,8 @@ export default async function TallesTodaUnidadPage({
           margin: 6mm;
         }
 
+        ${INSTITUTIONAL_PRINT_HEADER_STYLES}
+
         * {
           box-sizing: border-box;
         }
@@ -106,8 +115,8 @@ export default async function TallesTodaUnidadPage({
         html, body {
           margin: 0;
           padding: 0;
-          background: #e7e5e4;
-          color: #111827;
+          background: #e7e7e7;
+          color: #000;
           font-family: "Times New Roman", serif;
         }
 
@@ -116,7 +125,7 @@ export default async function TallesTodaUnidadPage({
           max-width: 198mm;
           margin: 0 auto;
           padding: 6mm;
-          background: #ffffff;
+          background: #f4f4f4;
         }
 
         .header {
@@ -149,7 +158,7 @@ export default async function TallesTodaUnidadPage({
         }
 
         .table-wrap {
-          border: 1px solid #111827;
+          border: 1px solid #000;
         }
 
         table {
@@ -164,13 +173,13 @@ export default async function TallesTodaUnidadPage({
 
         th,
         td {
-          border: 1px solid #111827;
+          border: 1px solid #000;
           padding: 1.3mm 1.1mm;
           vertical-align: middle;
         }
 
         th {
-          background: #f5f5f4;
+          background: #f5f5f5;
           font-size: 10pt;
           font-weight: 700;
           text-align: left;
@@ -262,7 +271,7 @@ export default async function TallesTodaUnidadPage({
 
         @media print {
           html, body {
-            background: #ffffff;
+            background: #f4f4f4;
           }
 
           .sheet {
@@ -273,6 +282,7 @@ export default async function TallesTodaUnidadPage({
         }
       `}</style>
       <main className="sheet">
+        <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <header className="header">
           <h1 className="title">Talles de toda la unidad</h1>
           <p className="subtitle">Consolidado nominal de oficiales, suboficiales y subalternos.</p>

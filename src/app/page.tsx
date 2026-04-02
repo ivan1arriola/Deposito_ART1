@@ -189,6 +189,8 @@ const STATUS_VERIFYING_SESSION = "Verificando sesión...";
 const STATUS_STARTING_SESSION = "Iniciando sesión...";
 const STATUS_ENTER_CREDENTIALS = "Ingresa tus credenciales.";
 const STATUS_SESSION_CLOSED = "Sesion cerrada. Ingresa tus credenciales.";
+const AUDIT_USER_FILTER_ALL = "__ALL__";
+const AUDIT_USER_FILTER_SYSTEM = "__SYSTEM__";
 
 function rangoLooksLikeSargento(rango: { abreviacion: string; nombreCompleto: string } | null | undefined) {
   if (!rango) return false;
@@ -354,6 +356,7 @@ export default function Home() {
   const [creatingPersonal, setCreatingPersonal] = useState(false);
   const [creatingOficialSuboficial, setCreatingOficialSuboficial] = useState(false);
   const [auditFilter, setAuditFilter] = useState<AuditFilter>("TODOS");
+  const [auditUserFilter, setAuditUserFilter] = useState<string>(AUDIT_USER_FILTER_ALL);
   const [personalPage, setPersonalPage] = useState(1);
   const [personalPageSize, setPersonalPageSize] = useState(25);
   const [auditPage, setAuditPage] = useState(1);
@@ -514,15 +517,48 @@ export default function Home() {
 
     return dynamic;
   }, [personal, oficialesSuboficiales, newPersonal, newOficialSuboficial, editPersonal]);
+  const auditUserOptions = useMemo(() => {
+    const uniqueUsers = new Map<string, { value: string; label: string }>();
+    let hasSystemRecords = false;
+
+    for (const log of auditoria) {
+      if (!log.usuario?.usuarioId) {
+        hasSystemRecords = true;
+        continue;
+      }
+      if (uniqueUsers.has(log.usuario.usuarioId)) continue;
+      uniqueUsers.set(log.usuario.usuarioId, {
+        value: log.usuario.usuarioId,
+        label: `${log.usuario.username} (${roleLabel(log.usuario.rol)})`,
+      });
+    }
+
+    const dynamicOptions = Array.from(uniqueUsers.values()).sort((a, b) => a.label.localeCompare(b.label, "es"));
+    const options = [{ value: AUDIT_USER_FILTER_ALL, label: "Todos los usuarios" }, ...dynamicOptions];
+
+    if (hasSystemRecords) {
+      options.splice(1, 0, { value: AUDIT_USER_FILTER_SYSTEM, label: "Sistema (sin usuario)" });
+    }
+
+    return options;
+  }, [auditoria]);
   const auditoriaFiltrada = useMemo(() => {
+    let filtered = auditoria;
+
     if (auditFilter === "MOVIMIENTOS") {
-      return auditoria.filter((log) => log.entidad === "REGISTRO");
+      filtered = filtered.filter((log) => log.entidad === "REGISTRO");
+    } else if (auditFilter === "AUTENTICACION") {
+      filtered = filtered.filter((log) => log.entidad === "AUTH");
     }
-    if (auditFilter === "AUTENTICACION") {
-      return auditoria.filter((log) => log.entidad === "AUTH");
+
+    if (auditUserFilter === AUDIT_USER_FILTER_SYSTEM) {
+      filtered = filtered.filter((log) => !log.usuario?.usuarioId);
+    } else if (auditUserFilter !== AUDIT_USER_FILTER_ALL) {
+      filtered = filtered.filter((log) => log.usuario?.usuarioId === auditUserFilter || log.usuarioId === auditUserFilter);
     }
-    return auditoria;
-  }, [auditFilter, auditoria]);
+
+    return filtered;
+  }, [auditFilter, auditUserFilter, auditoria]);
   const auditTotalPages = Math.max(1, Math.ceil(auditoriaFiltrada.length / auditPageSize));
   const auditPageSafe = Math.min(auditPage, auditTotalPages);
   const auditoriaFiltradaPaginada = useMemo(() => {
@@ -872,8 +908,13 @@ export default function Home() {
   }, [registroViewerPage, registroViewerTotalPages]);
 
   useEffect(() => {
+    if (auditUserOptions.some((option) => option.value === auditUserFilter)) return;
+    setAuditUserFilter(AUDIT_USER_FILTER_ALL);
+  }, [auditUserFilter, auditUserOptions]);
+
+  useEffect(() => {
     setAuditPage(1);
-  }, [auditFilter, auditPageSize]);
+  }, [auditFilter, auditPageSize, auditUserFilter]);
 
   useEffect(() => {
     if (auditPage <= auditTotalPages) return;
@@ -991,6 +1032,7 @@ export default function Home() {
     setConfirmDialogBusy(false);
     setPersonalPage(1);
     setPersonalPageSize(25);
+    setAuditUserFilter(AUDIT_USER_FILTER_ALL);
     setAuditPage(1);
     setAuditPageSize(25);
     setEquipoOrderDraftIds(null);
@@ -4245,7 +4287,7 @@ export default function Home() {
       confirmDialogBusy
     );
   const appBusyLabel = useMemo(() => {
-    if (loading) return "Cargando datos principales (personal, rangos, baterias y equipos)...";
+    if (loading) return "Cargando datos principales...";
     if (personaProfileLoading) return "Cargando ficha completa y consolidando información de esta persona...";
     if (firmaConfigLoading) return "Cargando configuracion de firmas y auditoria...";
     if (firmaConfigSaving) return "Guardando configuracion de firmas...";
@@ -4325,17 +4367,15 @@ export default function Home() {
   if (!currentUser) {
     return (
       <main className="relative mx-auto flex min-h-dvh w-full max-w-7xl items-center justify-center px-3 py-4 sm:px-6 sm:py-6">
-        <section className="relative grid w-full max-w-[1120px] max-h-[min(88vh,780px)] overflow-hidden rounded-[28px] border border-stone-300/70 bg-white/90 shadow-[0_24px_70px_rgba(17,24,39,0.16)] lg:grid-cols-[1fr_minmax(360px,440px)]">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(141,132,91,0.16),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(102,112,77,0.14),transparent_42%)]" />
-
-          <div className="relative hidden border-r border-stone-300/60 p-8 lg:flex lg:items-center lg:justify-center xl:p-10">
+        <section className="ej-login-shell lg:grid-cols-[1fr_minmax(360px,440px)]">
+          <div className="ej-login-aside relative hidden p-8 lg:flex lg:items-center lg:justify-center xl:p-10">
             <Image
               src="/assets/logo-deposito.png"
               alt="Logo Depósito"
               width={420}
               height={420}
               priority
-              className="h-auto w-full max-w-[clamp(300px,34vw,460px)] object-contain drop-shadow-[0_18px_34px_rgba(17,24,39,0.22)]"
+              className="h-auto w-full max-w-[clamp(300px,34vw,460px)] object-contain"
             />
           </div>
 
@@ -4348,21 +4388,21 @@ export default function Home() {
                   width={220}
                   height={220}
                   priority
-                  className="h-auto w-36 object-contain drop-shadow-[0_14px_28px_rgba(17,24,39,0.22)] sm:w-44"
+                  className="h-auto w-36 object-contain sm:w-44"
                 />
               </div>
-              <div className="rounded-2xl border border-stone-200/80 bg-white/75 p-4 shadow-sm sm:p-5">
-              <h1 className="mt-1 text-3xl font-black tracking-tight text-stone-900 sm:text-4xl">Iniciar sesión</h1>
-              <p className="mt-2 text-sm text-stone-600" suppressHydrationWarning>{status}</p>
+              <div className="ej-login-card p-4 sm:p-5">
+              <h1 className="ej-login-title mt-1 text-3xl font-black tracking-tight sm:text-4xl">Iniciar sesión</h1>
+              <p className="ej-login-status mt-2 text-sm" suppressHydrationWarning>{status}</p>
 
               {initMessage && showInitCredentials && initCredentials && (
                 <div className={`mt-4 rounded-2xl border px-3 py-2 text-sm ${
                   initMessage.type === "success"
-                    ? "border-green-300/70 bg-green-50/80 text-green-900"
-                    : "border-blue-300/70 bg-blue-50/80 text-blue-900"
+                    ? "border-[rgb(31,103,40,0.45)] bg-[rgb(31,103,40,0.1)] text-[var(--color-text-primary)]"
+                    : "border-[rgb(27,117,170,0.45)] bg-[rgb(27,117,170,0.1)] text-[var(--color-text-primary)]"
                 }`}>
                   <p className="font-semibold">{initMessage.text}</p>
-                  <div className="mt-3 space-y-1 rounded border border-current/20 bg-white/60 p-2 text-xs">
+                  <div className="mt-3 space-y-1 rounded border border-current/20 bg-[var(--color-surface-base)] p-2 text-xs">
                     <p><strong>Usuario:</strong> <code className="font-mono">{initCredentials.username}</code></p>
                     <p><strong>Contrasena:</strong> <code className="font-mono">{initCredentials.password}</code></p>
                   </div>
@@ -4382,19 +4422,19 @@ export default function Home() {
                   value={loginUsername}
                   onChange={(event) => setLoginUsername(event.target.value)}
                   placeholder="Usuario"
-                  className="w-full rounded-2xl border border-stone-300/90 bg-white/90 px-3 py-2 text-sm"
+                  className="ej-login-input px-3 py-2 text-sm"
                 />
                 <input
                   value={loginPassword}
                   onChange={(event) => setLoginPassword(event.target.value)}
                   placeholder="Contrasena"
                   type="password"
-                  className="w-full rounded-2xl border border-stone-300/90 bg-white/90 px-3 py-2 text-sm"
+                  className="ej-login-input px-3 py-2 text-sm"
                 />
                 <button
                   type="submit"
                   disabled={loading || loginLoading}
-                  className="w-full rounded-2xl bg-stone-900 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:opacity-60"
+                  className="ej-login-submit px-3 py-2.5 text-sm disabled:opacity-60"
                 >
                   {loading || loginLoading ? "Ingresando..." : "Entrar"}
                 </button>
@@ -4408,29 +4448,29 @@ export default function Home() {
                     setResetRequestMessage("");
                     setResetUsername((current) => current || loginUsername.trim());
                   }}
-                  className="text-xs font-semibold text-stone-700 underline underline-offset-2 hover:text-stone-900"
+                  className="ej-login-link text-xs font-semibold underline underline-offset-2"
                 >
                   {showResetRequest ? "Ocultar recuperación de contraseña" : "Olvidé mi contraseña"}
                 </button>
               </div>
 
               {showResetRequest ? (
-                <form onSubmit={requestPasswordReset} className="mt-3 space-y-2 rounded-2xl border border-stone-300 bg-stone-50/90 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Recuperar acceso</p>
+                <form onSubmit={requestPasswordReset} className="ej-login-reset mt-3 space-y-2 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Recuperar acceso</p>
                   <input
                     value={resetUsername}
                     onChange={(event) => setResetUsername(event.target.value)}
                     placeholder="Usuario"
-                    className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
+                    className="ej-login-input px-3 py-2 text-sm"
                   />
                   <button
                     type="submit"
                     disabled={resetRequestLoading}
-                    className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-100 disabled:opacity-60"
+                    className="w-full rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:opacity-60"
                   >
                     {resetRequestLoading ? "Enviando..." : "Enviar enlace mágico"}
                   </button>
-                  {resetRequestMessage ? <p className="text-xs text-stone-600">{resetRequestMessage}</p> : null}
+                  {resetRequestMessage ? <p className="text-xs text-[var(--color-text-secondary)]">{resetRequestMessage}</p> : null}
                 </form>
               ) : null}
               </div>
@@ -4539,6 +4579,8 @@ export default function Home() {
           firmaConfigSaving={firmaConfigSaving}
           firmaConfigError={firmaConfigError}
           auditFilter={auditFilter}
+          auditUserFilter={auditUserFilter}
+          auditUserOptions={auditUserOptions}
           auditPage={auditPage}
           auditPageSize={auditPageSize}
           auditoriaFiltradaPaginada={auditoriaFiltradaPaginada}
@@ -4595,6 +4637,7 @@ export default function Home() {
           onFirmaConfigDraftChange={(key, value) => setFirmaConfigDraft((prev) => ({ ...prev, [key]: value }))}
           onSaveFirmaConfig={(event) => void saveFirmaConfig(event)}
           onAuditFilterChange={setAuditFilter}
+          onAuditUserFilterChange={setAuditUserFilter}
           onAuditPageChange={setAuditPage}
           onAuditPageSizeChange={setAuditPageSize}
           onNavigateView={(view) => setActiveView(view)}

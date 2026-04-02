@@ -70,9 +70,7 @@ export function LoadingOverlay({ visible, label = "Cargando..." }: LoadingOverla
       open={visible}
       sx={{
         zIndex: (theme) => theme.zIndex.modal + 1,
-        bgcolor: "rgba(12, 10, 9, 0.62)",
-        backdropFilter: "blur(1.5px)",
-        WebkitBackdropFilter: "blur(1.5px)",
+        bgcolor: "var(--color-overlay-dim)",
       }}
     >
       <Stack
@@ -82,18 +80,19 @@ export function LoadingOverlay({ visible, label = "Cargando..." }: LoadingOverla
         role="status"
         aria-live="polite"
         sx={{
-          width: "min(92vw, 560px)",
-          px: 3,
-          py: 1.5,
-          borderRadius: 20,
-          bgcolor: "background.paper",
+          width: "fit-content",
+          maxWidth: "min(92vw, 500px)",
+          px: 2.25,
+          py: 1.2,
+          borderRadius: 1.5,
+          bgcolor: "var(--color-surface-base)",
           border: "1px solid",
-          borderColor: "divider",
-          boxShadow: "0 12px 36px rgba(0,0,0,0.28)",
+          borderColor: "var(--color-border-subtle)",
+          boxShadow: "var(--shadow-sm)",
         }}
       >
         <LoadingSpinner size="sm" tone="dark" />
-        <Typography variant="body2" fontWeight={700} sx={{ textAlign: "left" }}>
+        <Typography variant="body2" fontWeight={700} sx={{ textAlign: "left", lineHeight: 1.25 }}>
           {label}
         </Typography>
       </Stack>

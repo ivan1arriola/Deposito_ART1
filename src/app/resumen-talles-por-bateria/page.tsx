@@ -1,4 +1,9 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
+import {
+  formatInstitutionalPrintDate,
+  InstitutionalPrintHeader,
+  INSTITUTIONAL_PRINT_HEADER_STYLES,
+} from "@/app/components/print/InstitutionalPrintHeader";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
@@ -108,7 +113,9 @@ export default async function ResumenTallesPorBateriaPage({
     };
   });
 
-  const generatedAt = formatDateTimeForDisplay(new Date());
+  const printedAt = new Date();
+  const generatedAt = formatDateTimeForDisplay(printedAt);
+  const institutionalPrintDate = formatInstitutionalPrintDate(printedAt);
 
   return (
     <>
@@ -119,6 +126,8 @@ export default async function ResumenTallesPorBateriaPage({
           margin: 8mm;
         }
 
+        ${INSTITUTIONAL_PRINT_HEADER_STYLES}
+
         * {
           box-sizing: border-box;
         }
@@ -126,8 +135,8 @@ export default async function ResumenTallesPorBateriaPage({
         html, body {
           margin: 0;
           padding: 0;
-          background: #e7e5e4;
-          color: #111827;
+          background: #e7e7e7;
+          color: #000;
           font-family: "Times New Roman", serif;
         }
 
@@ -136,7 +145,7 @@ export default async function ResumenTallesPorBateriaPage({
           max-width: 198mm;
           margin: 0 auto;
           padding: 8mm;
-          background: #ffffff;
+          background: #f4f4f4;
         }
 
         .header {
@@ -159,13 +168,13 @@ export default async function ResumenTallesPorBateriaPage({
         .section {
           margin-top: 3.5mm;
           break-inside: avoid;
-          border: 1px solid #111827;
+          border: 1px solid #000;
         }
 
         .section-header {
           padding: 1.8mm 2.2mm;
-          border-bottom: 1px solid #111827;
-          background: #e7e5e4;
+          border-bottom: 1px solid #000;
+          background: #e7e7e7;
         }
 
         .section-title {
@@ -187,14 +196,14 @@ export default async function ResumenTallesPorBateriaPage({
 
         th,
         td {
-          border: 1px solid #111827;
+          border: 1px solid #000;
           padding: 1.4mm 1.2mm;
           text-align: center;
           vertical-align: middle;
         }
 
         thead th {
-          background: #f5f5f4;
+          background: #f5f5f5;
           font-size: 7.4pt;
           font-weight: 700;
         }
@@ -221,7 +230,7 @@ export default async function ResumenTallesPorBateriaPage({
 
         @media print {
           html, body {
-            background: #ffffff;
+            background: #f4f4f4;
           }
 
           .sheet {
@@ -232,6 +241,7 @@ export default async function ResumenTallesPorBateriaPage({
         }
       `}</style>
       <main className="sheet">
+        <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <header className="header">
           <h1 className="title">Resumen de talles por bateria</h1>
           <p className="subtitle">Frecuencia absoluta de talles para subalternos, desagregada por bateria.</p>

@@ -159,9 +159,9 @@ function navButtonSx(active: boolean, compact: boolean) {
     minHeight: compact ? { xs: 36, sm: 40 } : 44,
     borderRadius: compact ? 1.5 : 2,
     borderWidth: "1px",
-    borderColor: active ? "var(--EscudoVerde)" : "var(--brand-sand)",
-    bgcolor: active ? "var(--EscudoAmarillo)" : "var(--Blanco)",
-    color: active ? "var(--EscudoAzul)" : "var(--foreground)",
+    borderColor: active ? "var(--color-ejercito-gold)" : "var(--color-border-subtle)",
+    bgcolor: active ? "var(--color-ejercito-gold)" : "var(--color-surface-base)",
+    color: active ? "var(--color-ejercito-black)" : "var(--color-text-primary)",
     fontWeight: compact ? 700 : 600,
     fontSize: compact ? { xs: 12, sm: 13 } : 14,
     textTransform: "none",
@@ -176,8 +176,8 @@ function navButtonSx(active: boolean, compact: boolean) {
       margin: 0,
     },
     "&:hover": {
-      borderColor: active ? "var(--EscudoVerde)" : "var(--brand-moss)",
-      bgcolor: active ? "var(--EscudoAmarillo)" : "var(--EscudoGris)",
+      borderColor: active ? "var(--color-ejercito-gold)" : "var(--color-ejercito-blue)",
+      bgcolor: active ? "var(--color-ejercito-gold)" : "var(--color-surface-muted)",
     },
   };
 }
@@ -190,16 +190,16 @@ function inlineSubmenuButtonSx(active: boolean, compact: boolean) {
     minHeight: compact ? 34 : 38,
     borderRadius: 1.25,
     borderWidth: "1px",
-    borderColor: active ? "var(--EscudoVerde)" : compact ? "rgba(255,255,255,0.3)" : "var(--brand-sand)",
-    bgcolor: active ? "var(--EscudoAmarillo)" : compact ? "rgba(0,0,0,0.22)" : "var(--Blanco)",
-    color: active ? "var(--EscudoAzul)" : compact ? "common.white" : "var(--foreground)",
+    borderColor: active ? "var(--color-ejercito-gold)" : compact ? "rgba(255,255,255,0.36)" : "var(--color-border-subtle)",
+    bgcolor: active ? "var(--color-ejercito-gold)" : compact ? "rgba(255,255,255,0.12)" : "var(--color-surface-base)",
+    color: active ? "var(--color-ejercito-black)" : compact ? "common.white" : "var(--color-text-primary)",
     fontSize: compact ? 12 : 13,
     fontWeight: 600,
     textTransform: "none",
     px: 1.25,
     "&:hover": {
-      borderColor: active ? "var(--EscudoVerde)" : "var(--brand-moss)",
-      bgcolor: active ? "var(--EscudoAmarillo)" : compact ? "rgba(0,0,0,0.3)" : "var(--EscudoGris)",
+      borderColor: active ? "var(--color-ejercito-gold)" : "var(--color-ejercito-blue)",
+      bgcolor: active ? "var(--color-ejercito-gold)" : compact ? "rgba(255,255,255,0.18)" : "var(--color-surface-muted)",
     },
   };
 }
@@ -212,38 +212,38 @@ function menuPaperSx(compact: boolean) {
     width: compact ? "min(330px, calc(100vw - 1.25rem))" : "min(360px, calc(100vw - 2rem))",
     maxWidth: "calc(100vw - 2rem)",
     border: "1px solid",
-    borderColor: "var(--brand-sand)",
-    bgcolor: "var(--Blanco)",
-    color: "var(--foreground)",
+    borderColor: "var(--color-border-subtle)",
+    bgcolor: "var(--color-surface-base)",
+    color: "var(--color-text-primary)",
   };
 }
 
 const menuHeaderSx = {
   px: 2,
   py: 0.75,
-  color: "var(--EscudoAzul)",
+  color: "var(--color-ejercito-blue)",
   fontWeight: 700,
   letterSpacing: 0.6,
 };
 
 const menuDividerSx = {
   mb: 0.5,
-  borderColor: "var(--brand-sand)",
+  borderColor: "var(--color-border-subtle)",
 };
 
 const menuItemSx = {
   borderRadius: 1,
   mx: 0.5,
-  color: "var(--foreground)",
+  color: "var(--color-text-primary)",
   "&:hover": {
-    bgcolor: "var(--EscudoGris)",
+    bgcolor: "var(--color-surface-muted)",
   },
   "&.Mui-selected": {
-    bgcolor: "var(--EscudoAmarillo)",
-    color: "var(--EscudoAzul)",
+    bgcolor: "var(--color-ejercito-gold)",
+    color: "var(--color-ejercito-black)",
   },
   "&.Mui-selected:hover": {
-    bgcolor: "var(--EscudoAmarillo)",
+    bgcolor: "var(--color-ejercito-gold)",
   },
 };
 
@@ -263,14 +263,14 @@ function ExpandedMenuGroup({
       sx={{
         borderRadius: 1.75,
         border: "1px solid",
-        borderColor: compact ? "rgba(255,255,255,0.24)" : "var(--brand-sand)",
-        bgcolor: compact ? "rgba(0,0,0,0.16)" : "rgba(255,255,255,0.52)",
+        borderColor: compact ? "rgba(255,255,255,0.28)" : "var(--color-border-subtle)",
+        bgcolor: compact ? "rgba(255,255,255,0.08)" : "var(--color-surface-muted)",
         p: 1,
       }}
     >
       <Stack direction="row" alignItems="center" gap={0.9} sx={{ px: 0.5, pb: 0.8 }}>
-        <Box sx={{ color: compact ? "common.white" : "var(--EscudoAzul)", display: "inline-flex" }}>{icon}</Box>
-        <Typography sx={{ fontSize: compact ? 12 : 13, fontWeight: 800, color: compact ? "common.white" : "var(--EscudoAzul)" }}>
+        <Box sx={{ color: compact ? "common.white" : "var(--color-ejercito-blue)", display: "inline-flex" }}>{icon}</Box>
+        <Typography sx={{ fontSize: compact ? 12 : 13, fontWeight: 800, color: compact ? "common.white" : "var(--color-ejercito-blue)" }}>
           {title}
         </Typography>
       </Stack>
@@ -407,15 +407,14 @@ export function MainNavigation({
         borderRadius: embedded ? 2 : 3,
         position: "relative",
         zIndex: 220,
-        bgcolor: embedded ? "rgba(0,0,0,0.24)" : "var(--EscudoGris)",
-        borderColor: embedded ? "rgba(255,255,255,0.24)" : "var(--brand-sand)",
-        color: embedded ? "common.white" : "var(--foreground)",
-        backdropFilter: embedded ? "blur(4px)" : undefined,
-        fontFamily: 'var(--fuentePrincipal, "Liberation Sans", sans-serif)',
+        bgcolor: embedded ? "rgba(255,255,255,0.08)" : "var(--color-surface-muted)",
+        borderColor: embedded ? "rgba(255,255,255,0.24)" : "var(--color-border-subtle)",
+        color: embedded ? "common.white" : "var(--color-text-primary)",
+        fontFamily: 'var(--fuentePrincipal, "Helvetica Neue", Helvetica, Arial, sans-serif)',
       }}
     >
       {!embedded ? (
-        <Typography variant="subtitle2" sx={{ color: "var(--EscudoAzul)", fontWeight: 700, letterSpacing: 1 }}>
+        <Typography variant="subtitle2" sx={{ color: "var(--color-ejercito-blue)", fontWeight: 700, letterSpacing: 1 }}>
           NAVEGACIÓN
         </Typography>
       ) : null}

@@ -86,8 +86,21 @@ function formatDateUy(value: Date) {
   }).format(value);
 }
 
+function formatLongDateUy(value: Date) {
+  return new Intl.DateTimeFormat("es-UY", {
+    timeZone: "America/Montevideo",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(value);
+}
+
 function sanitizeForPdf(value: string | null | undefined) {
   return normalizeOutputText(value);
+}
+
+function toPrintUppercase(value: string | null | undefined) {
+  return sanitizeForPdf(value).toLocaleUpperCase("es-UY");
 }
 
 function fullName(apellido1: string, apellido2: string | null, nombre1: string, nombre2: string | null) {
@@ -336,6 +349,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
 
   const fechaRecibo = formatDateUy(prestamo.createdAt);
   const horaRecibo = formatTimeUy(prestamo.createdAt);
+  const fechaImpresionCabecera = `Montevideo, ${formatLongDateUy(new Date())}`;
   const now = new Date();
   const fechaImpresion = `${formatDateUy(now)} ${formatTimeUy(now)}`;
 
@@ -370,14 +384,14 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
 
   const rows: TableRow[] = prestamo.items.map((item) => ({
     cantidad: String(item.cantidad),
-    efecto: item.item.nombre,
+    efecto: toPrintUppercase(item.item.nombre),
     estado: item.estadoDevolucion ?? item.estadoEntrega,
     observaciones: item.comentarioDevolucion?.trim() || item.comentarioEntrega?.trim() || "-",
   }));
 
   const pdfDoc = await PDFDocument.create();
-  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const regular = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+  const bold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
   const watermarkBytes = await loadWatermarkBytes();
   const watermarkImage: PDFImage | null = watermarkBytes ? await pdfDoc.embedPng(watermarkBytes) : null;
 
@@ -411,8 +425,8 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     drawRectTop(page, PAGE_MARGIN_X, PAGE_MARGIN_Y, A4_WIDTH - PAGE_MARGIN_X * 2, A4_HEIGHT - PAGE_MARGIN_Y * 2);
     drawWatermark(page, innerX, innerW);
 
-    const topUnit = 'GRUPO "BRIG. GRAL. MANUEL ORIBE" DE ARTILLERIA 105 MM N° 1';
-    const title = "DEPOSITO GENERAL - S4";
+    const topUnit = 'GRUPO "BRIG. GRAL. MANUEL ORIBE" DE ARTILLERIA 105MM NO. 1';
+    const title = "DEPOSITO GENERAL";
     const subtitle = "RECIBO DE PRESTAMO";
 
     const topUnitSize = 8;
@@ -423,20 +437,21 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     const titleAreaX = innerX;
     const titleAreaW = innerW - metaBlockWidth - metaGap;
     const metaRightX = innerX + innerW - 4;
-    const topUnitTop = Math.max(4, PAGE_MARGIN_Y - 12);
+    const topUnitTop = yStart + 2;
+    const titleTop = yStart + 13;
+    const subtitleTop = yStart + 31;
 
-    drawTextAt(page, bold, topUnit, innerX + centerTextX(topUnit, innerW, bold, topUnitSize), topUnitTop, topUnitSize);
+    drawTextAt(page, bold, topUnit, titleAreaX, topUnitTop, topUnitSize);
+    drawTextRight(page, bold, fechaImpresionCabecera, metaRightX, topUnitTop, topUnitSize);
 
-    let y = yStart;
-    drawTextAt(page, bold, title, titleAreaX + centerTextX(title, titleAreaW, bold, titleSize), y, titleSize);
-    y += 18;
-    drawTextAt(page, regular, subtitle, titleAreaX + centerTextX(subtitle, titleAreaW, regular, subtitleSize), y, subtitleSize);
+    drawTextAt(page, bold, title, titleAreaX + centerTextX(title, titleAreaW, bold, titleSize), titleTop, titleSize);
+    drawTextAt(page, regular, subtitle, titleAreaX + centerTextX(subtitle, titleAreaW, regular, subtitleSize), subtitleTop, subtitleSize);
 
-    drawTextRight(page, bold, `Recibo N.o: ${reciboNumero}`, metaRightX, yStart + 8, 9);
-    drawTextRight(page, bold, `Fecha: ${fechaRecibo}`, metaRightX, yStart + 19, 9);
-    drawTextRight(page, bold, `Hora: ${horaRecibo}`, metaRightX, yStart + 30, 9);
+    drawTextRight(page, bold, `Recibo N.o: ${reciboNumero}`, metaRightX, titleTop + 3, 9);
+    drawTextRight(page, bold, `Fecha: ${fechaRecibo}`, metaRightX, titleTop + 14, 9);
+    drawTextRight(page, bold, `Hora: ${horaRecibo}`, metaRightX, titleTop + 25, 9);
 
-    const dividerY = yStart + 42;
+    const dividerY = yStart + 47;
     drawHorizontalLine(page, innerX, dividerY, innerW, 1);
     return { nextY: dividerY + 8 };
   }

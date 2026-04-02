@@ -1,5 +1,10 @@
 import Image from "next/image";
 import type { EtiquetaCajaPrintData } from "@/lib/etiquetado-data";
+import {
+  formatInstitutionalPrintDate,
+  InstitutionalPrintHeader,
+  INSTITUTIONAL_PRINT_HEADER_STYLES,
+} from "@/app/components/print/InstitutionalPrintHeader";
 
 export type EtiquetaOrientacion = "horizontal" | "vertical";
 
@@ -39,6 +44,8 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
   const pageSize = `${pageWidth} ${pageHeight}`;
 
   return `
+    ${INSTITUTIONAL_PRINT_HEADER_STYLES}
+
     @page {
       size: ${pageSize};
       margin: 0;
@@ -57,6 +64,7 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
 
     body {
       background: #e5e5e5;
+      font-family: "Times New Roman", Times, serif;
       print-color-adjust: exact;
       -webkit-print-color-adjust: exact;
     }
@@ -101,7 +109,7 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #fff;
+      background: #f4f4f4;
       color: #111;
       text-align: center;
       font-size: 18px;
@@ -110,7 +118,7 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
 
     @media print {
       html, body {
-        background: #fff;
+        background: #f4f4f4;
       }
 
       main {
@@ -131,6 +139,11 @@ function normalizeValue(value: string | null | undefined, fallback: string) {
   return normalized && normalized.length > 0 ? normalized : fallback;
 }
 
+function toPrintUppercase(value: string | null | undefined, fallback = "-") {
+  const normalized = normalizeValue(value, fallback);
+  return normalized.toLocaleUpperCase("es-UY");
+}
+
 function toCajaModel(caja: EtiquetaCajaPrintData): Caja {
   return {
     identificador: `Caja N°${caja.codigoDepositoGeneral}`,
@@ -138,7 +151,7 @@ function toCajaModel(caja: EtiquetaCajaPrintData): Caja {
     estante: normalizeValue(caja.estanteria, "-"),
     destino: DESTINO_CAJA,
     equipos: caja.equipos.map((equipo) => ({
-      nombre: normalizeValue(equipo.itemNombre, "-"),
+      nombre: toPrintUppercase(equipo.itemNombre),
       cantidad: equipo.cantidad,
       codigos: equipo.codigosSIE.map((codigo) => ({
         codigo: normalizeValue(codigo.codigo, "Sin código"),
@@ -556,6 +569,7 @@ export function EtiquetaCajaPrintSheet({
   caja: EtiquetaCajaPrintData;
   orientacion: EtiquetaOrientacion;
 }) {
+  const institutionalPrintDate = formatInstitutionalPrintDate();
   const cajaModel = toCajaModel(caja);
   const totalEquipos = cajaModel.equipos.length;
   const totalUnidades = cajaModel.equipos.reduce((acc, equipo) => acc + equipo.cantidad, 0);
@@ -564,7 +578,11 @@ export function EtiquetaCajaPrintSheet({
   return (
     <section className="etiqueta-sheet" data-orientacion={orientacion}>
       <div className="bg-white shadow-2xl border-[3px] border-black rounded-[18px] p-[10px] w-full h-full">
-        <div className="w-full h-full rounded-[14px] border-[2px] border-black p-4 flex flex-col gap-3 text-black font-sans overflow-hidden">
+        <div
+          className="w-full h-full rounded-[14px] border-[2px] border-black p-4 flex flex-col gap-2 text-black overflow-hidden"
+          style={{ fontFamily: '"Times New Roman", Times, serif' }}
+        >
+          <InstitutionalPrintHeader printedAt={institutionalPrintDate} compact />
           <div className="grid grid-cols-[1fr_1fr] gap-3 shrink-0">
             <div className="rounded-[14px] border-[2px] border-black px-4 py-3 flex flex-col justify-center min-w-0">
               <div className="text-[13px] font-extrabold uppercase tracking-tight">Etiqueta de caja</div>

@@ -24,12 +24,12 @@ export function BateriaCreateView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
-        <div className="border-b border-stone-200 bg-[linear-gradient(135deg,#f8fafc_0%,#eef6e7_55%,#fff8db_100%)] px-4 py-5 sm:px-6">
+        <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">Nueva vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-stone-900">Registrar batería</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva vista</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Registrar batería</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
                 Define una nueva batería y su orden institucional.
               </p>
             </div>
@@ -37,7 +37,7 @@ export function BateriaCreateView({
               type="button"
               onClick={onBack}
               disabled={saving}
-              className="rounded-2xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 disabled:opacity-50"
+              className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:opacity-50"
             >
               Volver
             </button>
@@ -69,16 +69,16 @@ export function BateriaCreateView({
             </label>
           </div>
 
-          <aside className="rounded-2xl border border-stone-200 bg-stone-950 p-4 text-white shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lime-300">Alta inmediata</p>
-            <p className="mt-3 text-sm leading-6 text-white/80">
+          <aside className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-ejercito-blue)] p-4 text-white shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">Alta inmediata</p>
+            <p className="mt-3 text-sm leading-6 text-white/85">
               La batería queda disponible para asignar personal apenas se registre.
             </p>
             <button
               type="button"
               onClick={onCreate}
               disabled={saving || nombre.trim() === ""}
-              className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-lime-400 px-4 py-3 text-sm font-bold text-stone-950 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-stone-700 disabled:text-stone-300"
+              className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
             >
               {saving ? "Creando..." : "Registrar batería"}
             </button>

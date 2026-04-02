@@ -1,4 +1,9 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
+import {
+  formatInstitutionalPrintDate,
+  InstitutionalPrintHeader,
+  INSTITUTIONAL_PRINT_HEADER_STYLES,
+} from "@/app/components/print/InstitutionalPrintHeader";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { tallasMap } from "@/lib/form-mappers";
@@ -8,9 +13,8 @@ import { TALLA_KEYS, TALLA_LABELS } from "@/lib/tallas";
 import { TipoPersonal } from "@prisma/client";
 
 export const revalidate = 0;
-export const metadata = {
-  title: "Talles de Oficiales y Suboficiales",
-};
+
+type PrintTipoFilter = "todos" | "oficial" | "suboficial";
 
 function buildApellidos(persona: { apellido1: string; apellido2: string | null }) {
   return `${persona.apellido1} ${persona.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
@@ -20,17 +24,64 @@ function buildNombres(persona: { nombre1: string; nombre2: string | null }) {
   return `${persona.nombre1} ${persona.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
 }
 
+function parseTipoFilter(value: string | undefined): PrintTipoFilter {
+  if (value === "oficial") return "oficial";
+  if (value === "suboficial") return "suboficial";
+  return "todos";
+}
+
+function tipoFilterConfig(filter: PrintTipoFilter) {
+  if (filter === "oficial") {
+    return {
+      where: { tipo: TipoPersonal.OFICIAL },
+      title: "Talles de oficiales",
+      subtitle: "Listado nominal de talles, uno por uno, para oficiales.",
+      metaLabel: "Total oficiales",
+    };
+  }
+  if (filter === "suboficial") {
+    return {
+      where: { tipo: TipoPersonal.SUBOFICIAL },
+      title: "Talles de suboficiales",
+      subtitle: "Listado nominal de talles, uno por uno, para suboficiales.",
+      metaLabel: "Total suboficiales",
+    };
+  }
+  return {
+    where: { tipo: { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] } },
+    title: "Talles de oficiales y suboficiales",
+    subtitle: "Listado nominal de talles, uno por uno, para oficiales y suboficiales.",
+    metaLabel: "Total registros",
+  };
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tipo?: string }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const filter = parseTipoFilter(resolvedSearchParams?.tipo);
+  const config = tipoFilterConfig(filter);
+
+  return {
+    title: config.title,
+  };
+}
+
 export default async function TallesOficialesSuboficialesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ autoprint?: string }>;
+  searchParams?: Promise<{ autoprint?: string; tipo?: string }>;
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const shouldAutoPrint = resolvedSearchParams?.autoprint === "1";
+  const tipoFilter = parseTipoFilter(resolvedSearchParams?.tipo);
+  const filterConfig = tipoFilterConfig(tipoFilter);
 
   const [registros, firmas] = await Promise.all([
     prisma.personal.findMany({
-      where: { tipo: { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] } },
+      where: filterConfig.where,
       select: {
         ci: true,
         tipo: true,
@@ -63,7 +114,9 @@ export default async function TallesOficialesSuboficialesPage({
     return a.ci.localeCompare(b.ci, "es", { sensitivity: "base" });
   });
 
-  const generatedAt = formatDateTimeForDisplay(new Date());
+  const printedAt = new Date();
+  const generatedAt = formatDateTimeForDisplay(printedAt);
+  const institutionalPrintDate = formatInstitutionalPrintDate(printedAt);
 
   return (
     <>
@@ -74,6 +127,8 @@ export default async function TallesOficialesSuboficialesPage({
           margin: 6mm;
         }
 
+        ${INSTITUTIONAL_PRINT_HEADER_STYLES}
+
         * {
           box-sizing: border-box;
         }
@@ -81,8 +136,8 @@ export default async function TallesOficialesSuboficialesPage({
         html, body {
           margin: 0;
           padding: 0;
-          background: #e7e5e4;
-          color: #111827;
+          background: #e7e7e7;
+          color: #000;
           font-family: "Times New Roman", serif;
         }
 
@@ -91,7 +146,7 @@ export default async function TallesOficialesSuboficialesPage({
           max-width: 198mm;
           margin: 0 auto;
           padding: 6mm;
-          background: #ffffff;
+          background: #f4f4f4;
         }
 
         .header {
@@ -112,7 +167,7 @@ export default async function TallesOficialesSuboficialesPage({
         }
 
         .table-wrap {
-          border: 1px solid #111827;
+          border: 1px solid #000;
         }
 
         table {
@@ -127,13 +182,13 @@ export default async function TallesOficialesSuboficialesPage({
 
         th,
         td {
-          border: 1px solid #111827;
+          border: 1px solid #000;
           padding: 1.3mm 1.1mm;
           vertical-align: middle;
         }
 
         th {
-          background: #f5f5f4;
+          background: #f5f5f5;
           font-size: 10pt;
           font-weight: 700;
           text-align: left;
@@ -225,7 +280,7 @@ export default async function TallesOficialesSuboficialesPage({
 
         @media print {
           html, body {
-            background: #ffffff;
+            background: #f4f4f4;
           }
 
           .sheet {
@@ -236,10 +291,11 @@ export default async function TallesOficialesSuboficialesPage({
         }
       `}</style>
       <main className="sheet">
+        <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <header className="header">
-          <h1 className="title">Talles de oficiales y suboficiales</h1>
-          <p className="subtitle">Listado nominal de talles, uno por uno, para oficiales y suboficiales.</p>
-          <p className="meta">{`Generado: ${generatedAt} | Total registros: ${registros.length}`}</p>
+          <h1 className="title">{filterConfig.title}</h1>
+          <p className="subtitle">{filterConfig.subtitle}</p>
+          <p className="meta">{`Generado: ${generatedAt} | ${filterConfig.metaLabel}: ${registros.length}`}</p>
         </header>
 
         <section className="table-wrap">

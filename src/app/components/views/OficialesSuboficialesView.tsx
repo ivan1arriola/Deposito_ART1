@@ -87,7 +87,7 @@ export function OficialesSuboficialesView({
               <button
                 type="button"
                 onClick={onOpenCreate}
-                className="rounded bg-lime-500 px-3 py-2 text-xs font-semibold text-stone-900 transition hover:bg-lime-400"
+                className="rounded bg-[var(--color-ejercito-gold)] px-3 py-2 text-xs font-semibold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800]"
               >
                 {createLabel}
               </button>

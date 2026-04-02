@@ -54,6 +54,18 @@ export function DashboardHero({
   onLogout,
 }: DashboardHeroProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const desktopTopControlSx = {
+    width: "100%",
+    minWidth: 0,
+    minHeight: 40,
+    height: 40,
+    borderRadius: 999,
+    whiteSpace: "nowrap" as const,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 700,
+  };
 
   function closeMobileMenu() {
     setMobileMenuOpen(false);
@@ -84,35 +96,50 @@ export function DashboardHero({
         borderRadius: { xs: 3, sm: 4 },
         px: { xs: 2, sm: 3 },
         py: { xs: 2, sm: 2.5 },
-        border: "1px solid rgba(255,255,255,0.12)",
-        background:
-          "linear-gradient(132deg, rgba(34,34,26,0.95) 0%, rgba(68,79,51,0.92) 58%, rgba(112,104,72,0.88) 100%)",
+        border: "1px solid rgba(20,20,18,0.65)",
+        backgroundColor: "#5f6c46",
+        backgroundImage:
+          "linear-gradient(90deg, rgba(24,27,21,0.5) 0%, rgba(255,255,255,0.04) 40%, rgba(24,27,21,0.45) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 2px, rgba(0,0,0,0) 2px 7px)",
         color: "common.white",
-        boxShadow: "0 28px 80px rgba(15,23,42,0.28)",
+        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.09), var(--shadow-md)",
       }}
     >
-      <Box
-        aria-hidden
-        sx={{
-          pointerEvents: "none",
-          position: "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(circle at top right, rgba(186,176,140,0.22), transparent 35%), radial-gradient(circle at bottom left, rgba(102,112,77,0.34), transparent 36%)",
-        }}
-      />
+      {[
+        { top: 8, left: 8 },
+        { top: 8, right: 8 },
+        { bottom: 8, left: 8 },
+        { bottom: 8, right: 8 },
+      ].map((corner) => (
+        <Box
+          key={`hero-corner-${Object.entries(corner)
+            .map(([axis, value]) => `${axis}-${value}`)
+            .join("-")}`}
+          aria-hidden
+          sx={{
+            position: "absolute",
+            width: 12,
+            height: 12,
+            borderRadius: "50%",
+            border: "1px solid rgba(0,0,0,0.65)",
+            background: "radial-gradient(circle at 30% 30%, #d8d8d8 0%, #898989 45%, #4d4d4d 100%)",
+            ...corner,
+          }}
+        />
+      ))}
 
       <Stack spacing={2} sx={{ position: "relative" }}>
         <Typography
           sx={{
-            alignSelf: "flex-start",
+            alignSelf: { xs: "flex-start", md: "center" },
             fontSize: { xs: 9, sm: 10 },
             fontWeight: 700,
             textTransform: "uppercase",
             letterSpacing: { xs: "0.14em", sm: "0.2em" },
-            color: "#FFCC00",
+            color: "rgba(255,224,150,0.9)",
             lineHeight: 1.1,
             pl: { xs: 0.25, sm: 0.5 },
+            textAlign: { xs: "left", md: "center" },
+            textShadow: "0 1px 1px rgba(0,0,0,0.55)",
           }}
         >
           {'Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1'}
@@ -138,13 +165,21 @@ export function DashboardHero({
                   width: "100%",
                   height: "auto",
                   objectFit: "contain",
-                  filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.28))",
                 }}
               />
             </Box>
 
             <Box sx={{ minWidth: 0, textAlign: "center" }}>
-              <Typography sx={{ fontSize: { xs: 30, sm: 38 }, fontWeight: 900, lineHeight: 1.01, mt: 0.35 }}>
+              <Typography
+                sx={{
+                  fontSize: { xs: 30, sm: 38 },
+                  fontWeight: 900,
+                  lineHeight: 1.01,
+                  mt: 0.35,
+                  letterSpacing: "-0.015em",
+                  WebkitTextStroke: "0.4px rgba(0,0,0,0.32)",
+                }}
+              >
                 Depósito General
               </Typography>
             </Box>
@@ -155,8 +190,8 @@ export function DashboardHero({
               onClick={() => setMobileMenuOpen(true)}
               sx={{
                 color: "common.white",
-                border: "1px solid rgba(255,255,255,0.28)",
-                bgcolor: "rgba(0,0,0,0.24)",
+                border: "1px solid rgba(255,255,255,0.24)",
+                bgcolor: "rgba(22,26,20,0.45)",
               }}
             >
               <MenuRoundedIcon />
@@ -182,7 +217,6 @@ export function DashboardHero({
                   width: "100%",
                   height: "auto",
                   objectFit: "contain",
-                  filter: "drop-shadow(0 10px 22px rgba(0,0,0,0.35))",
                 }}
               />
             </Box>
@@ -199,20 +233,52 @@ export function DashboardHero({
                   spacing={0.7}
                   sx={{
                     minWidth: 0,
-                    alignItems: "flex-end",
+                    alignItems: "stretch",
                     width: "100%",
                   }}
                 >
-                  <Stack direction="row" spacing={1} sx={{ width: "100%", justifyContent: "flex-end", flexWrap: "nowrap", alignItems: "center" }}>
+                  <Box
+                    sx={{
+                      width: "100%",
+                      display: "grid",
+                      gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                      columnGap: { md: 1, lg: 1.25 },
+                      alignItems: "center",
+                    }}
+                  >
                     <Chip
                       size="small"
                       label={`Usuario: ${currentUser.username}`}
-                      sx={{ color: "common.white", bgcolor: "rgba(0,0,0,0.32)", border: "1px solid rgba(255,255,255,0.2)" }}
+                      sx={{
+                        ...desktopTopControlSx,
+                        color: "common.white",
+                        bgcolor: "rgba(22,26,20,0.5)",
+                        border: "1px solid rgba(255,255,255,0.22)",
+                        "& .MuiChip-label": {
+                          width: "100%",
+                          px: 1.2,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          textAlign: "center",
+                        },
+                      }}
                     />
                     <Chip
                       size="small"
                       label={`Rol: ${roleLabel(currentUser.rol)}`}
-                      sx={{ color: "common.white", bgcolor: "rgba(0,0,0,0.32)", border: "1px solid rgba(255,255,255,0.2)" }}
+                      sx={{
+                        ...desktopTopControlSx,
+                        color: "common.white",
+                        bgcolor: "rgba(22,26,20,0.5)",
+                        border: "1px solid rgba(255,255,255,0.22)",
+                        "& .MuiChip-label": {
+                          width: "100%",
+                          px: 1.2,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          textAlign: "center",
+                        },
+                      }}
                     />
                     <Button
                       type="button"
@@ -221,7 +287,15 @@ export function DashboardHero({
                       size="small"
                       variant="contained"
                       color="secondary"
-                      sx={{ borderRadius: 1.5, minHeight: 34, whiteSpace: "nowrap" }}
+                      sx={{
+                        ...desktopTopControlSx,
+                        bgcolor: "rgba(34,40,30,0.88)",
+                        color: "common.white",
+                        border: "1px solid rgba(255,255,255,0.26)",
+                        "&:hover": {
+                          bgcolor: "rgba(34,40,30,1)",
+                        },
+                      }}
                     >
                       Recargar
                     </Button>
@@ -231,14 +305,17 @@ export function DashboardHero({
                       size="small"
                       color="error"
                       variant="contained"
-                      sx={{ borderRadius: 1.5, minHeight: 34, whiteSpace: "nowrap" }}
+                      sx={{
+                        ...desktopTopControlSx,
+                        border: "1px solid rgba(0,0,0,0.42)",
+                      }}
                     >
                       Cerrar sesión
                     </Button>
-                  </Stack>
+                  </Box>
 
                   {!canManageAccount ? (
-                    <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.82)", textAlign: "right" }}>
+                    <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.9)", textAlign: "right" }}>
                       Modo solo lectura: esta cuenta no puede cambiar credenciales ni datos.
                     </Typography>
                   ) : null}
@@ -253,6 +330,9 @@ export function DashboardHero({
                     lineHeight: 0.98,
                     textAlign: "center",
                     whiteSpace: "nowrap",
+                    letterSpacing: "-0.018em",
+                    WebkitTextStroke: "0.55px rgba(0,0,0,0.48)",
+                    textShadow: "0 2px 3px rgba(0,0,0,0.5)",
                   }}
                 >
                   Depósito General
@@ -284,7 +364,7 @@ export function DashboardHero({
           sx: {
             width: "min(96vw, 520px)",
             p: 1.5,
-            bgcolor: "var(--EscudoGris)",
+            bgcolor: "var(--color-surface-base)",
             color: "var(--foreground)",
           },
         }}
@@ -351,8 +431,8 @@ export function DashboardHero({
           { label: "Movimientos", value: movimientosTotal },
         ].map((metric) => (
           <Grid key={metric.label} size={{ xs: 6, sm: 3 }}>
-            <Paper sx={{ borderRadius: 1.5, border: "1px solid rgba(186,176,140,0.35)", bgcolor: "rgba(0,0,0,0.3)", px: 1.25, py: 1 }}>
-              <Typography sx={{ fontSize: { xs: 9, sm: 10 }, textTransform: "uppercase", letterSpacing: "0.08em", color: "#BAB08C" }}>
+            <Paper sx={{ borderRadius: 1.5, border: "1px solid rgba(255,255,255,0.24)", bgcolor: "rgba(18,22,16,0.42)", px: 1.25, py: 1 }}>
+              <Typography sx={{ fontSize: { xs: 9, sm: 10 }, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,224,150,0.9)" }}>
                 {metric.label}
               </Typography>
               <Typography sx={{ fontSize: { xs: 19, sm: 22 }, fontWeight: 800, color: "common.white", lineHeight: 1.1 }}>

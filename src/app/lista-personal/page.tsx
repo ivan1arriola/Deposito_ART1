@@ -1,4 +1,9 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
+import {
+  formatInstitutionalPrintDate,
+  InstitutionalPrintHeader,
+  INSTITUTIONAL_PRINT_HEADER_STYLES,
+} from "@/app/components/print/InstitutionalPrintHeader";
 import { compareOptionalOrder } from "@/lib/catalog-order";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
@@ -106,7 +111,9 @@ export default async function ListaPersonalPage({
     group.personal.sort(comparePersonalByHierarchy);
   }
 
-  const generatedAt = formatDateTimeForDisplay(new Date());
+  const printedAt = new Date();
+  const generatedAt = formatDateTimeForDisplay(printedAt);
+  const institutionalPrintDate = formatInstitutionalPrintDate(printedAt);
 
   return (
     <>
@@ -117,6 +124,8 @@ export default async function ListaPersonalPage({
           margin: 10mm;
         }
 
+        ${INSTITUTIONAL_PRINT_HEADER_STYLES}
+
         * {
           box-sizing: border-box;
         }
@@ -124,8 +133,8 @@ export default async function ListaPersonalPage({
         html, body {
           margin: 0;
           padding: 0;
-          background: #e7e5e4;
-          color: #111827;
+          background: #e7e7e7;
+          color: #000;
           font-family: "Times New Roman", serif;
         }
 
@@ -134,7 +143,7 @@ export default async function ListaPersonalPage({
           max-width: 190mm;
           margin: 0 auto;
           padding: 8mm;
-          background: #ffffff;
+          background: #f4f4f4;
         }
 
         .title {
@@ -165,7 +174,7 @@ export default async function ListaPersonalPage({
         }
 
         .table-wrap {
-          border: 1px solid #111827;
+          border: 1px solid #000;
         }
 
         table {
@@ -188,13 +197,13 @@ export default async function ListaPersonalPage({
         }
 
         th, td {
-          border: 1px solid #111827;
+          border: 1px solid #000;
           padding: 2.4mm 2.2mm;
           vertical-align: middle;
         }
 
         thead th {
-          background: #e7e5e4;
+          background: #e7e7e7;
           font-size: 11pt;
           font-weight: 700;
           text-align: left;
@@ -220,7 +229,7 @@ export default async function ListaPersonalPage({
 
         @media print {
           html, body {
-            background: #ffffff;
+            background: #f4f4f4;
           }
 
           .sheet {
@@ -241,6 +250,7 @@ export default async function ListaPersonalPage({
         }
       `}</style>
       <main className="sheet">
+        <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <h1 className="title">Lista de Subalternos por Bateria</h1>
         <p className="meta">{`Generado: ${generatedAt} | Total subalternos: ${personal.length}`}</p>
 

@@ -57,7 +57,7 @@ export function SmallActionButton(props: {
     edit: "primary",
     delete: "error",
     ok: "success",
-    neutral: "inherit",
+    neutral: "secondary",
   } as const;
 
   const getIcon = () => {
@@ -92,7 +92,11 @@ export function SmallActionButton(props: {
       color={colorByTone[props.tone]}
       startIcon={getIcon()}
       className={props.className}
-      sx={{ borderRadius: 2, minHeight: 32 }}
+      sx={{
+        borderRadius: 1.5,
+        minHeight: 32,
+        borderColor: props.tone === "neutral" ? "var(--color-border-strong)" : undefined,
+      }}
     >
       {props.text}
     </Button>
@@ -120,7 +124,7 @@ export function PaginationControls(props: {
       spacing={2}
       alignItems={{ xs: "stretch", sm: "center" }}
       justifyContent="space-between"
-      sx={{ border: "1px solid", borderColor: "divider", bgcolor: "action.hover", borderRadius: 2, p: 1.5 }}
+      sx={{ border: "1px solid", borderColor: "divider", bgcolor: "var(--color-surface-muted)", borderRadius: 1.5, p: 1.5 }}
       className={props.className}
     >
       <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5 }}>

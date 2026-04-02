@@ -1,4 +1,9 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
+import {
+  formatInstitutionalPrintDate,
+  InstitutionalPrintHeader,
+  INSTITUTIONAL_PRINT_HEADER_STYLES,
+} from "@/app/components/print/InstitutionalPrintHeader";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
@@ -70,7 +75,9 @@ export default async function ResumenTallasUnidadPage({
 
   const firmas = await getFirmaConfig();
   const resumen = buildTallasResumen(personal);
-  const generatedAt = formatDateTimeForDisplay(new Date());
+  const printedAt = new Date();
+  const generatedAt = formatDateTimeForDisplay(printedAt);
+  const institutionalPrintDate = formatInstitutionalPrintDate(printedAt);
 
   return (
     <>
@@ -81,6 +88,8 @@ export default async function ResumenTallasUnidadPage({
           margin: 6mm;
         }
 
+        ${INSTITUTIONAL_PRINT_HEADER_STYLES}
+
         * {
           box-sizing: border-box;
         }
@@ -88,8 +97,8 @@ export default async function ResumenTallasUnidadPage({
         html, body {
           margin: 0;
           padding: 0;
-          background: #e7e5e4;
-          color: #111827;
+          background: #e7e7e7;
+          color: #000;
           font-family: "Times New Roman", serif;
         }
 
@@ -98,7 +107,7 @@ export default async function ResumenTallasUnidadPage({
           max-width: 198mm;
           margin: 0 auto;
           padding: 6mm;
-          background: #ffffff;
+          background: #f4f4f4;
         }
 
         .header {
@@ -124,13 +133,13 @@ export default async function ResumenTallasUnidadPage({
 
         .section {
           break-inside: avoid;
-          border: 1px solid #111827;
+          border: 1px solid #000;
         }
 
         .section-header {
           padding: 1.6mm 2.2mm;
-          border-bottom: 1px solid #111827;
-          background: #e7e5e4;
+          border-bottom: 1px solid #000;
+          background: #e7e7e7;
         }
 
         .section-title {
@@ -150,14 +159,14 @@ export default async function ResumenTallasUnidadPage({
         }
 
         th, td {
-          border: 1px solid #111827;
+          border: 1px solid #000;
           padding: 1.2mm 0.9mm;
           text-align: center;
           vertical-align: middle;
         }
 
         thead th {
-          background: #f5f5f4;
+          background: #f5f5f5;
           font-size: 7.2pt;
           font-weight: 700;
         }
@@ -169,7 +178,7 @@ export default async function ResumenTallasUnidadPage({
 
         td.row-label {
           width: 16%;
-          background: #fafaf9;
+          background: #fafafa;
           font-weight: 700;
         }
 
@@ -219,7 +228,7 @@ export default async function ResumenTallasUnidadPage({
 
         @media print {
           html, body {
-            background: #ffffff;
+            background: #f4f4f4;
           }
 
           .sheet {
@@ -230,6 +239,7 @@ export default async function ResumenTallasUnidadPage({
         }
       `}</style>
       <main className="sheet">
+        <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <header className="header">
           <h1 className="title">Resumen de Talles de Subalternos</h1>
           <p className="subtitle">Cantidades absolutas de cada talle en subalternos, agrupadas por vestimenta.</p>

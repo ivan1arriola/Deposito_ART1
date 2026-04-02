@@ -1,4 +1,9 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
+import {
+  formatInstitutionalPrintDate,
+  InstitutionalPrintHeader,
+  INSTITUTIONAL_PRINT_HEADER_STYLES,
+} from "@/app/components/print/InstitutionalPrintHeader";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
@@ -7,6 +12,8 @@ import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
 import { TipoPersonal } from "@prisma/client";
 
 export const revalidate = 0;
+
+type PrintTipoFilter = "todos" | "oficial" | "suboficial";
 
 type ResumenTalla = {
   key: TallaKey;
@@ -41,26 +48,67 @@ function buildTallasResumen(personas: Array<{ tallas: Parameters<typeof tallasMa
   });
 }
 
-export async function generateMetadata() {
+function parseTipoFilter(value: string | undefined): PrintTipoFilter {
+  if (value === "oficial") return "oficial";
+  if (value === "suboficial") return "suboficial";
+  return "todos";
+}
+
+function tipoFilterConfig(filter: PrintTipoFilter) {
+  if (filter === "oficial") {
+    return {
+      where: { tipo: TipoPersonal.OFICIAL },
+      title: "Resumen de Talles de Oficiales",
+      subtitle: "Cantidades absolutas de cada talle para oficiales.",
+      metaLabel: "Total oficiales",
+    };
+  }
+  if (filter === "suboficial") {
+    return {
+      where: { tipo: TipoPersonal.SUBOFICIAL },
+      title: "Resumen de Talles de Suboficiales",
+      subtitle: "Cantidades absolutas de cada talle para suboficiales.",
+      metaLabel: "Total suboficiales",
+    };
+  }
   return {
+    where: {
+      tipo: {
+        in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL],
+      },
+    },
     title: "Resumen de Talles de Oficiales y Suboficiales",
+    subtitle: "Cantidades absolutas de cada talle, agrupadas por vestimenta.",
+    metaLabel: "Total oficiales/suboficiales",
+  };
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tipo?: string }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const filter = parseTipoFilter(resolvedSearchParams?.tipo);
+  const config = tipoFilterConfig(filter);
+
+  return {
+    title: config.title,
   };
 }
 
 export default async function ResumenTallasOficialesSuboficialesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ autoprint?: string }>;
+  searchParams?: Promise<{ autoprint?: string; tipo?: string }>;
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const shouldAutoPrint = resolvedSearchParams?.autoprint === "1";
+  const tipoFilter = parseTipoFilter(resolvedSearchParams?.tipo);
+  const filterConfig = tipoFilterConfig(tipoFilter);
 
   const personal = await prisma.personal.findMany({
-    where: {
-      tipo: {
-        in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL],
-      },
-    },
+    where: filterConfig.where,
     select: {
       ci: true,
       tallas: {
@@ -72,7 +120,9 @@ export default async function ResumenTallasOficialesSuboficialesPage({
 
   const firmas = await getFirmaConfig();
   const resumen = buildTallasResumen(personal);
-  const generatedAt = formatDateTimeForDisplay(new Date());
+  const printedAt = new Date();
+  const generatedAt = formatDateTimeForDisplay(printedAt);
+  const institutionalPrintDate = formatInstitutionalPrintDate(printedAt);
 
   return (
     <>
@@ -83,6 +133,8 @@ export default async function ResumenTallasOficialesSuboficialesPage({
           margin: 6mm;
         }
 
+        ${INSTITUTIONAL_PRINT_HEADER_STYLES}
+
         * {
           box-sizing: border-box;
         }
@@ -90,8 +142,8 @@ export default async function ResumenTallasOficialesSuboficialesPage({
         html, body {
           margin: 0;
           padding: 0;
-          background: #e7e5e4;
-          color: #111827;
+          background: #e7e7e7;
+          color: #000;
           font-family: "Times New Roman", serif;
         }
 
@@ -100,7 +152,7 @@ export default async function ResumenTallasOficialesSuboficialesPage({
           max-width: 198mm;
           margin: 0 auto;
           padding: 6mm;
-          background: #ffffff;
+          background: #f4f4f4;
         }
 
         .header {
@@ -126,13 +178,13 @@ export default async function ResumenTallasOficialesSuboficialesPage({
 
         .section {
           break-inside: avoid;
-          border: 1px solid #111827;
+          border: 1px solid #000;
         }
 
         .section-header {
           padding: 1.6mm 2.2mm;
-          border-bottom: 1px solid #111827;
-          background: #e7e5e4;
+          border-bottom: 1px solid #000;
+          background: #e7e7e7;
         }
 
         .section-title {
@@ -152,14 +204,14 @@ export default async function ResumenTallasOficialesSuboficialesPage({
         }
 
         th, td {
-          border: 1px solid #111827;
+          border: 1px solid #000;
           padding: 1.2mm 0.9mm;
           text-align: center;
           vertical-align: middle;
         }
 
         thead th {
-          background: #f5f5f4;
+          background: #f5f5f5;
           font-size: 7.2pt;
           font-weight: 700;
         }
@@ -171,7 +223,7 @@ export default async function ResumenTallasOficialesSuboficialesPage({
 
         td.row-label {
           width: 16%;
-          background: #fafaf9;
+          background: #fafafa;
           font-weight: 700;
         }
 
@@ -221,7 +273,7 @@ export default async function ResumenTallasOficialesSuboficialesPage({
 
         @media print {
           html, body {
-            background: #ffffff;
+            background: #f4f4f4;
           }
 
           .sheet {
@@ -232,10 +284,11 @@ export default async function ResumenTallasOficialesSuboficialesPage({
         }
       `}</style>
       <main className="sheet">
+        <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <header className="header">
-          <h1 className="title">Resumen de Talles de Oficiales y Suboficiales</h1>
-          <p className="subtitle">Cantidades absolutas de cada talle, agrupadas por vestimenta.</p>
-          <p className="meta">{`Generado: ${generatedAt} | Total oficiales/suboficiales: ${personal.length}`}</p>
+          <h1 className="title">{filterConfig.title}</h1>
+          <p className="subtitle">{filterConfig.subtitle}</p>
+          <p className="meta">{`Generado: ${generatedAt} | ${filterConfig.metaLabel}: ${personal.length}`}</p>
         </header>
 
         <section className="sections">

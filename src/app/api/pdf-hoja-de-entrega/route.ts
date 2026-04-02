@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PDFDocument, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { formatDateOnlyForDisplay, formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { normalizeOutputText } from "@/lib/spanish-text";
@@ -61,10 +61,21 @@ function sanitizeForPDF(text: string | null | undefined): string {
   return normalizeOutputText(text);
 }
 
+function formatInstitutionalPrintDate(date = new Date()) {
+  const formattedDate = new Intl.DateTimeFormat("es-UY", {
+    timeZone: "America/Montevideo",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+  return `Montevideo, ${formattedDate}`;
+}
+
 export async function POST(request: NextRequest): Promise<Response> {
   try {
     const body = (await request.json()) as FichaDataRequest;
     const fechaImpresion = sanitizeForPDF(formatDateTimeForDisplay(new Date()));
+    const institutionalPrintDate = sanitizeForPDF(formatInstitutionalPrintDate(new Date()));
 
     if (!body.persona?.ci) {
       return NextResponse.json({ error: "CI is required" }, { status: 400 });
@@ -75,6 +86,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     
     // Registrar fontkit para soporte UTF-8 con fuentes estándar
     pdfDoc.registerFontkit(fontkit);
+    const headerBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
 
     const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
 
@@ -96,43 +108,53 @@ export async function POST(request: NextRequest): Promise<Response> {
       borderWidth: 1,
     });
 
-    // Crest box
-    const crestSize = 28 * MM_TO_PT;
-    const crestX = topbarX + 6 * MM_TO_PT;
-    const crestY = topbarY + 2 * MM_TO_PT;
+    const topbarPaddingX = 4 * MM_TO_PT;
+    const groupLabel = 'Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1';
+    const appLabel = "Deposito General";
+    const documentLabel = "HOJA DE ENTREGA";
 
-    page.drawRectangle({
-      x: crestX,
-      y: crestY,
-      width: crestSize,
-      height: crestSize,
-      borderColor: rgb(0, 0, 0),
-      borderWidth: 1,
+    const groupSize = 9;
+    const titleSize = 20;
+    const documentSize = 11;
+    const dateSize = 9;
+
+    const groupY = topbarY + topbarHeight - 5 * MM_TO_PT;
+    const titleY = topbarY + topbarHeight - 13.2 * MM_TO_PT;
+    const documentY = topbarY + topbarHeight - 19.2 * MM_TO_PT;
+
+    page.drawText(groupLabel, {
+      x: topbarX + topbarPaddingX,
+      y: groupY,
+      size: groupSize,
+      font: headerBoldFont,
+      color: rgb(0, 0, 0),
+      maxWidth: pageWidth * 0.62,
     });
 
-    page.drawText("ESCUDO\nEJÉRCITO\nNACIONAL", {
-      x: crestX + 2,
-      y: crestY + 8,
-      size: 8,
+    const dateWidth = headerBoldFont.widthOfTextAtSize(institutionalPrintDate, dateSize);
+    page.drawText(institutionalPrintDate, {
+      x: topbarX + pageWidth - topbarPaddingX - dateWidth,
+      y: groupY,
+      size: dateSize,
+      font: headerBoldFont,
       color: rgb(0, 0, 0),
     });
 
-    // Texto lado derecho del topbar
-    const headtxtX = crestX + crestSize + 10 * MM_TO_PT;
-    const headtxtWidth = pageWidth - (crestSize + 16 * MM_TO_PT);
-
-    page.drawText('Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm N° 1', {
-      x: headtxtX,
-      y: topbarY + 20 * MM_TO_PT,
-      size: 14,
+    const titleWidth = headerBoldFont.widthOfTextAtSize(appLabel, titleSize);
+    page.drawText(appLabel, {
+      x: topbarX + (pageWidth - titleWidth) / 2,
+      y: titleY,
+      size: titleSize,
+      font: headerBoldFont,
       color: rgb(0, 0, 0),
-      maxWidth: headtxtWidth,
     });
 
-    page.drawText("ADMINISTRACIÓN - S4", {
-      x: headtxtX,
-      y: topbarY + 6 * MM_TO_PT,
-      size: 10,
+    const documentWidth = headerBoldFont.widthOfTextAtSize(documentLabel, documentSize);
+    page.drawText(documentLabel, {
+      x: topbarX + (pageWidth - documentWidth) / 2,
+      y: documentY,
+      size: documentSize,
+      font: headerBoldFont,
       color: rgb(0, 0, 0),
     });
 

@@ -38,6 +38,10 @@ type AuditoriaRecord = {
   ciReferencias?: AuditCiReferences;
   createdAt: string;
 };
+type AuditUserOption = {
+  value: string;
+  label: string;
+};
 
 interface ConfigViewsProps {
   activeView: "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
@@ -88,6 +92,8 @@ interface ConfigViewsProps {
   firmaConfigError: string | null;
   // Auditoria state
   auditFilter: "TODOS" | "MOVIMIENTOS" | "AUTENTICACION";
+  auditUserFilter: string;
+  auditUserOptions: AuditUserOption[];
   auditPage: number;
   auditPageSize: number;
   auditoriaFiltradaPaginada: AuditoriaRecord[];
@@ -150,6 +156,7 @@ interface ConfigViewsProps {
   onSaveFirmaConfig: (event: FormEvent<HTMLFormElement>) => void;
   // Auditoria callbacks
   onAuditFilterChange: (filter: "TODOS" | "MOVIMIENTOS" | "AUTENTICACION") => void;
+  onAuditUserFilterChange: (value: string) => void;
   onAuditPageChange: (page: number) => void;
   onAuditPageSizeChange: (size: number) => void;
   onNavigateView: (view: MainView) => void;
@@ -830,38 +837,54 @@ export function ConfigViews(props: ConfigViewsProps) {
           <p className="mt-1 text-xs text-stone-600">
             Cada registro muestra quién hizo la acción, sobre qué entidad y el detalle guardado en la tabla de auditoría.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => props.onAuditFilterChange("TODOS")}
-              className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                props.auditFilter === "TODOS" ? "bg-stone-800 text-white" : "border border-stone-300 bg-white text-stone-700"
-              }`}
-            >
-              Todo
-            </button>
-            <button
-              type="button"
-              onClick={() => props.onAuditFilterChange("MOVIMIENTOS")}
-              className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                props.auditFilter === "MOVIMIENTOS"
-                  ? "bg-stone-800 text-white"
-                  : "border border-stone-300 bg-white text-stone-700"
-              }`}
-            >
-              Solo movimientos
-            </button>
-            <button
-              type="button"
-              onClick={() => props.onAuditFilterChange("AUTENTICACION")}
-              className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                props.auditFilter === "AUTENTICACION"
-                  ? "bg-stone-800 text-white"
-                  : "border border-stone-300 bg-white text-stone-700"
-              }`}
-            >
-              Solo autenticación
-            </button>
+          <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-center">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => props.onAuditFilterChange("TODOS")}
+                className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                  props.auditFilter === "TODOS" ? "bg-stone-800 text-white" : "border border-stone-300 bg-white text-stone-700"
+                }`}
+              >
+                Todo
+              </button>
+              <button
+                type="button"
+                onClick={() => props.onAuditFilterChange("MOVIMIENTOS")}
+                className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                  props.auditFilter === "MOVIMIENTOS"
+                    ? "bg-stone-800 text-white"
+                    : "border border-stone-300 bg-white text-stone-700"
+                }`}
+              >
+                Solo movimientos
+              </button>
+              <button
+                type="button"
+                onClick={() => props.onAuditFilterChange("AUTENTICACION")}
+                className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                  props.auditFilter === "AUTENTICACION"
+                    ? "bg-stone-800 text-white"
+                    : "border border-stone-300 bg-white text-stone-700"
+                }`}
+              >
+                Solo autenticación
+              </button>
+            </div>
+            <label className="grid grid-cols-[84px_minmax(0,1fr)] items-center gap-2 rounded border border-stone-300 bg-stone-100 px-2 py-1.5">
+              <span className="text-xs font-semibold text-stone-700">Usuario</span>
+              <select
+                value={props.auditUserFilter}
+                onChange={(event) => props.onAuditUserFilterChange(event.target.value)}
+                className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-800"
+              >
+                {props.auditUserOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
             {props.auditoriaFiltradaPaginada.map((log) => (
@@ -897,4 +920,3 @@ export function ConfigViews(props: ConfigViewsProps) {
 
   return null;
 }
-

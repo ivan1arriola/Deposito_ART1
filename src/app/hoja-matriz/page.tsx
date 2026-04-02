@@ -1,5 +1,10 @@
 import Image from "next/image";
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
+import {
+  formatInstitutionalPrintDate,
+  InstitutionalPrintHeader,
+  INSTITUTIONAL_PRINT_HEADER_STYLES,
+} from "@/app/components/print/InstitutionalPrintHeader";
 import { compareOptionalOrder } from "@/lib/catalog-order";
 import { compareRanks } from "@/lib/rank-order";
 import { SIN_BATERIA_LABEL, getHojaMatrixData } from "@/lib/hoja-matrix";
@@ -176,11 +181,14 @@ export default async function HojaMatrizPage({
   const sections = buildSections(data.rows, selectedBattery);
   const grandTotals = buildGrandTotals(data.rows, data.items.length);
   const itemColumnWidth = `calc((100% - ${LEFT_COLUMNS_WIDTH_MM}mm) / ${Math.max(data.items.length, 1)})`;
+  const institutionalPrintDate = formatInstitutionalPrintDate(new Date());
 
   return (
     <>
       {shouldAutoPrint ? <AutoPrintOnLoad /> : null}
       <style>{`
+          ${INSTITUTIONAL_PRINT_HEADER_STYLES}
+
           * {
             margin: 0;
             padding: 0;
@@ -195,7 +203,7 @@ export default async function HojaMatrizPage({
           body {
             font-family: "Times New Roman", Times, serif;
             color: #000;
-            background: #fff;
+            background: #f4f4f4;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
           }
@@ -204,7 +212,7 @@ export default async function HojaMatrizPage({
             width: 210mm;
             margin: 0 auto;
             padding: 6mm 4mm 8mm;
-            background: #fff;
+            background: #f4f4f4;
           }
 
           .matrix-sheet + .matrix-sheet {
@@ -213,12 +221,16 @@ export default async function HojaMatrizPage({
             page-break-before: always;
           }
 
+          .matrix-page-header {
+            margin-bottom: 2.2mm;
+          }
+
           .matrix-table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
             border: 2px solid #000;
-            background: #fff;
+            background: #f4f4f4;
           }
 
           .matrix-table col.col-number {
@@ -247,9 +259,9 @@ export default async function HojaMatrizPage({
           }
 
           .identity-block {
-            height: 52mm;
+            height: 45mm;
             padding: 0;
-            background: #fff;
+            background: #f4f4f4;
           }
 
           .identity-inner {
@@ -258,8 +270,8 @@ export default async function HojaMatrizPage({
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2mm;
-            padding: 2.5mm 2mm;
+            gap: 1.2mm;
+            padding: 2.2mm 2mm;
           }
 
           .identity-logo {
@@ -275,7 +287,7 @@ export default async function HojaMatrizPage({
           }
 
           .identity-battery {
-            font-size: 18pt;
+            font-size: 16pt;
             line-height: 1;
             font-weight: 700;
             text-align: center;
@@ -284,7 +296,7 @@ export default async function HojaMatrizPage({
           .item-header {
             height: 52mm;
             padding: 0;
-            background: #fff;
+            background: #f4f4f4;
           }
 
           .item-header span {
@@ -304,18 +316,18 @@ export default async function HojaMatrizPage({
           .left-header {
             font-size: 12pt;
             padding: 2mm 1mm;
-            background: #fff;
+            background: #f4f4f4;
           }
 
           .equipment-header {
             font-size: 12pt;
             font-weight: 700;
             letter-spacing: 0.03em;
-            background: #fff;
+            background: #f4f4f4;
           }
 
           .grade-separator td {
-            background: #dbe8f8;
+            background: #efefef;
             text-align: left;
             font-size: 15pt;
             font-weight: 700;
@@ -324,7 +336,7 @@ export default async function HojaMatrizPage({
           }
 
           .battery-separator td {
-            background: #eef3fb;
+            background: #f6f6f6;
             text-align: left;
             font-size: 11pt;
             font-weight: 700;
@@ -350,7 +362,7 @@ export default async function HojaMatrizPage({
           }
 
           .person-row .value-cell {
-            font-family: "Arial", "Liberation Sans", sans-serif;
+            font-family: "Times New Roman", Times, serif;
             font-size: 10.4pt;
             line-height: 1.05;
             font-weight: 700;
@@ -359,13 +371,13 @@ export default async function HojaMatrizPage({
           }
 
           .negative {
-            color: #c00;
+            color: #000;
           }
 
           .total-row td {
-            background: #fff200;
+            background: #efefef;
             font-weight: 700;
-            color: #c00;
+            color: #000;
             height: 11mm;
             padding: 0.45mm 0.35mm;
           }
@@ -380,7 +392,7 @@ export default async function HojaMatrizPage({
           .total-row .total-value {
             display: block;
             width: 100%;
-            font-family: "Arial Narrow", "Liberation Sans Narrow", Arial, sans-serif;
+            font-family: "Times New Roman", Times, serif;
             font-size: 9.2pt;
             line-height: 1.05;
             letter-spacing: -0.01em;
@@ -407,7 +419,7 @@ export default async function HojaMatrizPage({
 
           @media print {
             body {
-              background: #fff;
+              background: #f4f4f4;
             }
 
             .matrix-document {
@@ -438,6 +450,7 @@ export default async function HojaMatrizPage({
         <main className="matrix-document">
           {sections.map((section, sectionIndex) => (
             <section key={section.headingLabel} className="matrix-sheet">
+              <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
               <table className="matrix-table">
                 <colgroup>
                   <col className="col-number" />
@@ -459,13 +472,12 @@ export default async function HojaMatrizPage({
                           height={200}
                           unoptimized
                         />
-                        <div className="identity-group">{'Grupo "Brig. Gral. Manuel Oribe" de Artilleria 105mm No.1.-'}</div>
                         <div className="identity-battery">{section.headingLabel}</div>
                       </div>
                     </th>
                     {data.items.map((item) => (
                       <th key={item.itemId} className="item-header">
-                        <span>{item.nombre}</span>
+                        <span>{item.nombre.toLocaleUpperCase("es-UY")}</span>
                       </th>
                     ))}
                   </tr>

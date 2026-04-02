@@ -1,4 +1,9 @@
 import type { CajaListadoPrintData } from "@/lib/etiquetado-data";
+import {
+  formatInstitutionalPrintDate,
+  InstitutionalPrintHeader,
+  INSTITUTIONAL_PRINT_HEADER_STYLES,
+} from "@/app/components/print/InstitutionalPrintHeader";
 
 function getContiguousRowSpans(
   rows: CajaListadoPrintData[],
@@ -21,8 +26,16 @@ function getContiguousRowSpans(
   return spans;
 }
 
+function toPrintUppercase(value: string | null | undefined) {
+  const text = String(value ?? "").trim();
+  if (!text) return "-";
+  return text.toLocaleUpperCase("es-UY");
+}
+
 function buildPrintStyles() {
   return `
+    ${INSTITUTIONAL_PRINT_HEADER_STYLES}
+
     * {
       box-sizing: border-box;
     }
@@ -37,7 +50,7 @@ function buildPrintStyles() {
     body {
       font-family: "Times New Roman", "Liberation Serif", serif;
       color: #101010;
-      background: #fff;
+      background: #f4f4f4;
       print-color-adjust: exact;
       -webkit-print-color-adjust: exact;
     }
@@ -47,21 +60,21 @@ function buildPrintStyles() {
       min-height: 297mm;
       margin: 0 auto;
       padding: 10mm 9mm;
-      background: #fff;
+      background: #f4f4f4;
     }
 
     .listado-cajas-frame {
       position: relative;
       border: 1.1mm solid #2f2f2f;
       padding: 4.2mm;
-      background: linear-gradient(145deg, #ffffff 0%, #f5f5ef 100%);
+      background: #f4f4f4;
     }
 
     .listado-cajas-frame::before {
       content: "";
       position: absolute;
       inset: 1.6mm;
-      border: 0.35mm solid #8f885e;
+      border: 0.35mm solid #8f8f8f;
       pointer-events: none;
     }
 
@@ -106,7 +119,7 @@ function buildPrintStyles() {
       table-layout: fixed;
       font-size: 11px;
       border: 0.4mm solid #8f8f8f;
-      background: #fff;
+      background: #f4f4f4;
     }
 
     .listado-cajas-table thead {
@@ -115,7 +128,7 @@ function buildPrintStyles() {
 
     .listado-cajas-table th {
       border: 0.35mm solid #8f8f8f;
-      background: #efeee7;
+      background: #efefef;
       text-align: center;
       vertical-align: middle;
       padding: 1.8mm 1.7mm;
@@ -191,7 +204,7 @@ function buildPrintStyles() {
 
     @media print {
       body {
-        background: #fff;
+        background: #f4f4f4;
       }
 
       .listado-cajas-sheet {
@@ -220,6 +233,7 @@ export function ListadoCajasPrintTable({
   cajas: CajaListadoPrintData[];
   generatedAt: string;
 }) {
+  const institutionalPrintDate = formatInstitutionalPrintDate();
   const totalCajas = new Set(cajas.map((caja) => caja.codigoDepositoGeneral)).size;
   const pisoRowSpans = getContiguousRowSpans(cajas, (row) => row.piso);
   const estanteRowSpans = getContiguousRowSpans(cajas, (row) => `${row.piso}::${row.estanteria}`);
@@ -231,6 +245,7 @@ export function ListadoCajasPrintTable({
   return (
     <main className="listado-cajas-sheet">
       <section className="listado-cajas-frame">
+        <InstitutionalPrintHeader printedAt={institutionalPrintDate} compact />
         <header className="listado-cajas-header">
           <div>
             <p className="listado-cajas-subtitle">Deposito General</p>
@@ -271,7 +286,7 @@ export function ListadoCajasPrintTable({
                     {caja.codigoDepositoGeneral}
                   </td>
                 ) : null}
-                <td className="listado-col-contenido">{caja.contenido}</td>
+                <td className="listado-col-contenido">{toPrintUppercase(caja.contenido)}</td>
                 <td className="listado-col-cantidad">{caja.cantidad}</td>
               </tr>
             ))}

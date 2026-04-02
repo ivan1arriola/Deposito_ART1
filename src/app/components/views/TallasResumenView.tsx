@@ -25,6 +25,23 @@ type AccordionCardProps = {
   children: ReactNode;
 };
 
+type QuickPrintLinkProps = {
+  href: string;
+  label: string;
+  className: string;
+};
+
+function QuickPrintLink({ href, label, className }: QuickPrintLinkProps) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className={className}>
+      <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9V4h12v5M6 17h12v3H6v-3zm-2-2h16a2 2 0 002-2v-2a2 2 0 00-2-2H4a2 2 0 00-2 2v2a2 2 0 002 2z" />
+      </svg>
+      <span>{label}</span>
+    </a>
+  );
+}
+
 function AccordionCard({ title, description, open, onToggle, badge, children }: AccordionCardProps) {
   return (
     <article className="ej-card rounded-2xl p-4">
@@ -61,7 +78,7 @@ function AccordionCard({ title, description, open, onToggle, badge, children }: 
 
 export function TallasResumenView({ personal, baterias, oficialesSuboficiales }: TallasResumenViewProps) {
   const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>({
-    subalternos_unidad: true,
+    subalternos_unidad: false,
     subalternos_bateria: false,
     oficiales_suboficiales: false,
   });
@@ -431,52 +448,59 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales }:
       <article className="ej-card rounded-2xl p-4">
         <div className="mb-3">
           <h2 className="text-base font-semibold text-stone-900">Impresion de talles</h2>
-          <p className="mt-1 text-xs text-stone-600">Accesos directos para imprimir nominas y resumenes de talles.</p>
+          <p className="mt-1 text-xs text-stone-600">
+            Selecciona directamente el boton de lo que quieres imprimir. Cada accion indica grupo y tipo de documento.
+          </p>
         </div>
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
           <section className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Subalternos</p>
             <p className="mt-1 text-xs text-emerald-900/80">Acciones de impresion para personal subalterno.</p>
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <a
+              <QuickPrintLink
                 href="/talles-subalternos?autoprint=1"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800"
-              >
-                Nomina
-              </a>
-              <a
+                label="Imprimir nomina de subalternos"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800"
+              />
+              <QuickPrintLink
                 href="/resumen-tallas-unidad?autoprint=1"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-200"
-              >
-                Resumen
-              </a>
+                label="Imprimir resumen de subalternos"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-200"
+              />
             </div>
           </section>
 
           <section className="rounded-xl border border-sky-200 bg-sky-50/40 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">Oficiales y Suboficiales</p>
-            <p className="mt-1 text-xs text-sky-900/80">Acciones de impresion para oficiales y suboficiales.</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">Oficiales</p>
+            <p className="mt-1 text-xs text-sky-900/80">Acciones de impresion para personal oficial.</p>
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <a
-                href="/talles-oficiales-suboficiales?autoprint=1"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-lg border border-sky-700 bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-800"
-              >
-                Nomina
-              </a>
-              <a
-                href="/resumen-tallas-oficiales-suboficiales?autoprint=1"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-lg border border-sky-300 bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-900 transition hover:bg-sky-200"
-              >
-                Resumen
-              </a>
+              <QuickPrintLink
+                href="/talles-oficiales-suboficiales?autoprint=1&tipo=oficial"
+                label="Imprimir nomina de oficiales"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-sky-700 bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-800"
+              />
+              <QuickPrintLink
+                href="/resumen-tallas-oficiales-suboficiales?autoprint=1&tipo=oficial"
+                label="Imprimir resumen de oficiales"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-sky-300 bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-900 transition hover:bg-sky-200"
+              />
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-800">Suboficiales</p>
+            <p className="mt-1 text-xs text-indigo-900/80">Acciones de impresion para personal suboficial.</p>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <QuickPrintLink
+                href="/talles-oficiales-suboficiales?autoprint=1&tipo=suboficial"
+                label="Imprimir nomina de suboficiales"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-700 bg-indigo-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-800"
+              />
+              <QuickPrintLink
+                href="/resumen-tallas-oficiales-suboficiales?autoprint=1&tipo=suboficial"
+                label="Imprimir resumen de suboficiales"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-300 bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-900 transition hover:bg-indigo-200"
+              />
             </div>
           </section>
 
@@ -484,22 +508,16 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales }:
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Toda la unidad</p>
             <p className="mt-1 text-xs text-amber-900/80">Consolidado general de toda la unidad.</p>
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <a
+              <QuickPrintLink
                 href="/talles-toda-unidad?autoprint=1"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-lg border border-amber-700 bg-amber-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-800"
-              >
-                Nomina completa
-              </a>
-              <a
+                label="Imprimir nomina de toda la unidad"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-700 bg-amber-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-800"
+              />
+              <QuickPrintLink
                 href="/resumen-tallas-toda-unidad?autoprint=1"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-200"
-              >
-                Resumen completo
-              </a>
+                label="Imprimir resumen de toda la unidad"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-200"
+              />
             </div>
           </section>
 
@@ -507,14 +525,11 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales }:
             <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">Por bateria</p>
             <p className="mt-1 text-xs text-rose-900/80">Frecuencia absoluta de talles para cada bateria.</p>
             <div className="mt-3 grid grid-cols-1 gap-2">
-              <a
+              <QuickPrintLink
                 href="/resumen-talles-por-bateria?autoprint=1"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-lg border border-rose-700 bg-rose-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-800"
-              >
-                Resumen por bateria
-              </a>
+                label="Imprimir resumen por bateria"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-700 bg-rose-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-800"
+              />
             </div>
           </section>
         </div>

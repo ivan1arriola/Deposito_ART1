@@ -93,6 +93,7 @@ export function ActionMenu(props: {
           size={props.compact ? "small" : "medium"}
           endIcon={<MoreVertRoundedIcon fontSize="small" />}
           onClick={(event) => setAnchorEl(event.currentTarget)}
+          sx={{ borderColor: "var(--color-border-subtle)" }}
         >
           {props.buttonLabel}
         </Button>
@@ -101,6 +102,7 @@ export function ActionMenu(props: {
           size={props.compact ? "small" : "medium"}
           onClick={(event) => setAnchorEl(event.currentTarget)}
           aria-label="Abrir menu de acciones"
+          sx={{ border: "1px solid", borderColor: "var(--color-border-subtle)", borderRadius: 1.5 }}
         >
           <MoreVertRoundedIcon fontSize="small" />
         </IconButton>
@@ -112,6 +114,12 @@ export function ActionMenu(props: {
         onClose={() => setAnchorEl(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
+        PaperProps={{
+          sx: {
+            border: "1px solid var(--color-border-subtle)",
+            boxShadow: "var(--shadow-sm)",
+          },
+        }}
       >
         {props.actions.map((action, idx) => (
           <MenuItem

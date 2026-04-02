@@ -27,13 +27,13 @@ export function Card(props: {
       bgcolor: "background.paper",
       border: "1px solid",
       borderColor: "divider",
-      boxShadow: "0 8px 20px rgb(0 0 0 / 10%)",
+      boxShadow: "var(--shadow-xs)",
     },
     elevated: {
       bgcolor: "background.paper",
       border: "1px solid",
       borderColor: "divider",
-      boxShadow: 3,
+      boxShadow: "var(--shadow-sm)",
     },
     outlined: {
       bgcolor: "background.paper",
@@ -48,14 +48,14 @@ export function Card(props: {
       className={props.className}
       sx={{
         borderRadius: 3,
-        transition: "transform 180ms ease, box-shadow 180ms ease",
+        transition: "box-shadow 160ms ease, border-color 160ms ease",
         ...(variantSx[variant] ?? variantSx.default),
         ...(paddingSx[padding] ?? paddingSx.md),
         ...(hover
           ? {
               "&:hover": {
-                boxShadow: 6,
-                transform: "translateY(-2px)",
+                boxShadow: "var(--shadow-sm)",
+                borderColor: "var(--color-border-strong)",
               },
             }
           : null),
@@ -117,9 +117,9 @@ export function StatCard(props: {
         borderRadius: 2,
         border: "1px solid",
         borderColor: "divider",
-        boxShadow: 1,
-        transition: "box-shadow 180ms ease",
-        "&:hover": { boxShadow: 3 },
+        boxShadow: "var(--shadow-xs)",
+        transition: "box-shadow 160ms ease, border-color 160ms ease",
+        "&:hover": { boxShadow: "var(--shadow-sm)", borderColor: "var(--color-border-strong)" },
       }}
     >
       <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1.5}>
@@ -178,7 +178,7 @@ export function EmptyState(props: {
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 2,
-        border: "2px dashed",
+        border: "1px dashed",
         borderColor: "divider",
         bgcolor: "action.hover",
         px: 3,
@@ -211,14 +211,6 @@ export function Badge(props: {
 }) {
   const { variant = "default", size = "md" } = props;
 
-  const colorByVariant = {
-    default: "default",
-    success: "success",
-    error: "error",
-    warning: "warning",
-    info: "info",
-  } as const;
-
   const sizeByVariant = {
     sm: "small",
     md: "medium",
@@ -231,13 +223,47 @@ export function Badge(props: {
     lg: { px: 1 },
   };
 
+  const toneSx = {
+    default: {
+      bgcolor: "var(--color-surface-muted)",
+      color: "var(--color-text-primary)",
+      borderColor: "var(--color-border-subtle)",
+    },
+    success: {
+      bgcolor: "rgb(31 103 40 / 14%)",
+      color: "var(--color-text-primary)",
+      borderColor: "rgb(31 103 40 / 40%)",
+    },
+    error: {
+      bgcolor: "rgb(207 15 33 / 14%)",
+      color: "var(--color-text-primary)",
+      borderColor: "rgb(207 15 33 / 40%)",
+    },
+    warning: {
+      bgcolor: "rgb(255 204 0 / 24%)",
+      color: "var(--color-ejercito-black)",
+      borderColor: "rgb(255 204 0 / 45%)",
+    },
+    info: {
+      bgcolor: "rgb(27 117 170 / 14%)",
+      color: "var(--color-text-primary)",
+      borderColor: "rgb(27 117 170 / 40%)",
+    },
+  } as const;
+
   return (
     <Chip
       label={props.children}
       size={sizeByVariant[size]}
-      color={colorByVariant[variant]}
+      color="default"
       className={props.className}
-      sx={{ borderRadius: 999, fontWeight: 700, ...paddingSx[size] }}
+      sx={{
+        borderRadius: 999,
+        fontWeight: 700,
+        border: "1px solid",
+        ...paddingSx[size],
+        ...toneSx[variant],
+      }}
     />
   );
 }

@@ -67,25 +67,25 @@ export function OficialSuboficialCreateView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
-        <div className="border-b border-stone-200 bg-[linear-gradient(135deg,#f8fafc_0%,#eef6e7_55%,#fff8db_100%)] px-4 py-5 sm:px-6">
+        <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">Nueva vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-stone-900">{headerTitle}</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva vista</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">{headerTitle}</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
                 {headerDescription}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-full border border-lime-700/20 bg-lime-100/80 px-3 py-1 text-xs font-semibold text-lime-950">
+              <span className="inline-flex items-center rounded-full border border-[rgb(0,56,133,0.25)] bg-[rgb(0,56,133,0.1)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
                 {`Campos obligatorios: ${requiredCompleted}/${requiredFields.length}`}
               </span>
               <button
                 type="button"
                 onClick={onBack}
                 disabled={saving}
-                className="rounded-2xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Volver al listado
               </button>
@@ -278,16 +278,16 @@ export function OficialSuboficialCreateView({
                 </div>
               </article>
 
-              <article className="rounded-2xl border border-stone-200 bg-stone-950 p-4 text-white shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lime-300">Alta inmediata</p>
-                <p className="mt-3 text-sm leading-6 text-white/80">
+              <article className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-ejercito-blue)] p-4 text-white shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">Alta inmediata</p>
+                <p className="mt-3 text-sm leading-6 text-white/85">
                   Al confirmar, el registro queda disponible en la vista de {TYPE_LABEL[form.tipo].toLowerCase()}.
                 </p>
 
                 <button
                   type="submit"
                   disabled={!canSubmit}
-                  className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-lime-400 px-4 py-3 text-sm font-bold text-stone-950 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:bg-stone-700 disabled:text-stone-300"
+                  className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
                 >
                   {saving ? (isEditMode ? "Guardando..." : "Registrando...") : submitLabel}
                 </button>

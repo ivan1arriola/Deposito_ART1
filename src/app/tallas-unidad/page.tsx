@@ -1,4 +1,9 @@
 import { AutoPrintOnLoad } from "@/app/components/AutoPrintOnLoad";
+import {
+  formatInstitutionalPrintDate,
+  InstitutionalPrintHeader,
+  INSTITUTIONAL_PRINT_HEADER_STYLES,
+} from "@/app/components/print/InstitutionalPrintHeader";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
@@ -52,7 +57,9 @@ export default async function TallasUnidadPage({
 
   personal.sort(comparePersonalByHierarchy);
 
-  const generatedAt = formatDateTimeForDisplay(new Date());
+  const printedAt = new Date();
+  const generatedAt = formatDateTimeForDisplay(printedAt);
+  const institutionalPrintDate = formatInstitutionalPrintDate(printedAt);
 
   return (
     <>
@@ -63,6 +70,8 @@ export default async function TallasUnidadPage({
           margin: 8mm;
         }
 
+        ${INSTITUTIONAL_PRINT_HEADER_STYLES}
+
         * {
           box-sizing: border-box;
         }
@@ -70,8 +79,8 @@ export default async function TallasUnidadPage({
         html, body {
           margin: 0;
           padding: 0;
-          background: #e7e5e4;
-          color: #111827;
+          background: #e7e7e7;
+          color: #000;
           font-family: "Times New Roman", serif;
         }
 
@@ -80,7 +89,7 @@ export default async function TallasUnidadPage({
           max-width: 277mm;
           margin: 0 auto;
           padding: 8mm;
-          background: #ffffff;
+          background: #f4f4f4;
         }
 
         .header {
@@ -104,7 +113,7 @@ export default async function TallasUnidadPage({
         }
 
         .table-wrap {
-          border: 1px solid #111827;
+          border: 1px solid #000;
         }
 
         table {
@@ -130,13 +139,13 @@ export default async function TallasUnidadPage({
         }
 
         th, td {
-          border: 1px solid #111827;
+          border: 1px solid #000;
           padding: 1.8mm 1.6mm;
           vertical-align: middle;
         }
 
         thead th {
-          background: #e7e5e4;
+          background: #e7e7e7;
           font-size: 9pt;
           font-weight: 700;
           text-align: center;
@@ -147,7 +156,7 @@ export default async function TallasUnidadPage({
         }
 
         tbody tr:nth-child(even) {
-          background: #f5f5f4;
+          background: #f5f5f5;
         }
 
         .cell-center {
@@ -170,7 +179,7 @@ export default async function TallasUnidadPage({
 
         @media print {
           html, body {
-            background: #ffffff;
+            background: #f4f4f4;
           }
 
           .sheet {
@@ -181,6 +190,7 @@ export default async function TallasUnidadPage({
         }
       `}</style>
       <main className="sheet">
+        <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <header className="header">
           <h1 className="title">Tabla de Talles de Subalternos</h1>
           <p className="subtitle">Personal subalterno con talles registrados para parka, camisaco, pantalon, kepi y calzado.</p>

@@ -131,16 +131,16 @@ export function AdminPushNotifications() {
   }
 
   return (
-    <article className="rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#BAB08C]">Notificaciones admin</p>
-      <p className="mt-2 text-sm text-white/90">{message}</p>
+    <article className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--color-ejercito-blue)]">Notificaciones admin</p>
+      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{message}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {(state === "ready" || state === "error" || state === "blocked") ? (
           <button
             type="button"
             onClick={() => void activate()}
             disabled={busy}
-            className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/15 disabled:opacity-50"
+            className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:opacity-50"
           >
             {busy ? "Activando..." : "Activar notificaciones"}
           </button>

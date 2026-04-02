@@ -48,6 +48,16 @@ const FONTS = {
   smallSize: 9,
 };
 
+function formatInstitutionalPrintDate(date = new Date()) {
+  const formattedDate = new Intl.DateTimeFormat("es-UY", {
+    timeZone: "America/Montevideo",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+  return `Montevideo, ${formattedDate}`;
+}
+
 function drawTableCell(
   doc: PDFKit.PDFDocument,
   x: number,
@@ -117,28 +127,54 @@ export async function POST(request: NextRequest): Promise<Response> {
       const pageWidth = doc.page.width - MARGINS.left - MARGINS.right;
       const pageHeight = doc.page.height - MARGINS.top - MARGINS.bottom;
       let currentY = MARGINS.top;
+      const institutionalPrintDate = formatInstitutionalPrintDate(new Date());
 
       // ===== TOPBAR =====
-      const topbarHeight = 24 * MM_TO_PT;
+      const topbarHeight = 26 * MM_TO_PT;
       const topbarX = MARGINS.left;
       const topbarY = currentY;
+      const topbarPaddingX = 4 * MM_TO_PT;
 
       doc.lineWidth(1).strokeColor(COLORS.border).rect(topbarX, topbarY, pageWidth, topbarHeight).stroke();
 
       doc
-        .fontSize(14)
-        
+        .font(FONTS.bold)
+        .fontSize(10)
         .fillColor("#000000")
-        .text('Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm N° 1', topbarX + 4 * MM_TO_PT, topbarY + 3 * MM_TO_PT, {
-          width: pageWidth - 8 * MM_TO_PT,
+        .text('Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1', topbarX + topbarPaddingX, topbarY + 2 * MM_TO_PT, {
+          width: pageWidth * 0.62,
+          align: "left",
+          lineBreak: false,
         });
 
       doc
-        .fontSize(11)
-        
+        .font(FONTS.bold)
+        .fontSize(10)
         .fillColor("#000000")
-        .text("HOJA MATRIZ - DISTRIBUCIÓN DE EQUIPO", topbarX + 4 * MM_TO_PT, topbarY + 12 * MM_TO_PT, {
-          width: pageWidth - 8 * MM_TO_PT,
+        .text(institutionalPrintDate, topbarX + pageWidth * 0.55, topbarY + 2 * MM_TO_PT, {
+          width: pageWidth * 0.45 - topbarPaddingX,
+          align: "right",
+          lineBreak: false,
+        });
+
+      doc
+        .font(FONTS.bold)
+        .fontSize(28)
+        .fillColor("#000000")
+        .text("Deposito General", topbarX + topbarPaddingX, topbarY + 9 * MM_TO_PT, {
+          width: pageWidth - topbarPaddingX * 2,
+          align: "center",
+          lineBreak: false,
+        });
+
+      doc
+        .font(FONTS.bold)
+        .fontSize(14)
+        .fillColor("#000000")
+        .text("HOJA MATRIZ - DISTRIBUCION DE EQUIPO", topbarX + topbarPaddingX, topbarY + 18 * MM_TO_PT, {
+          width: pageWidth - topbarPaddingX * 2,
+          align: "center",
+          lineBreak: false,
         });
 
       currentY += topbarHeight + 3 * MM_TO_PT;
@@ -335,4 +371,3 @@ export async function POST(request: NextRequest): Promise<Response> {
     );
   }
 }
-

@@ -7,6 +7,7 @@ type PersonalActionsProps = {
   editing: boolean;
   tallasOpen: boolean;
   compact?: boolean;
+  showTallasAction?: boolean;
   onToggleEdit: () => void;
   onDelete: () => void;
   onToggleTallas: () => void;
@@ -23,6 +24,7 @@ export function PersonalActions({
   editing,
   tallasOpen,
   compact = false,
+  showTallasAction = true,
   onToggleEdit,
   onDelete,
   onToggleTallas,
@@ -57,12 +59,14 @@ export function PersonalActions({
           />
         </>
       ) : null}
-      <button type="button" onClick={onToggleTallas} className={`${actionWithIconClass} border-stone-500 bg-stone-600 hover:bg-stone-700`}>
-        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m6 10V7M4 19h16" />
-        </svg>
-        {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
-      </button>
+      {showTallasAction ? (
+        <button type="button" onClick={onToggleTallas} className={`${actionWithIconClass} border-stone-500 bg-stone-600 hover:bg-stone-700`}>
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m6 10V7M4 19h16" />
+          </svg>
+          {tallasOpen ? "Ocultar tallas" : "Ver tallas"}
+        </button>
+      ) : null}
       {canWrite ? (
         <>
           <button type="button" onClick={onEntrega} className={`${actionWithIconClass} border-emerald-600 bg-emerald-700 hover:bg-emerald-800`}>

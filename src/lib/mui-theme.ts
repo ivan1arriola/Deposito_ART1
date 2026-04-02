@@ -1,62 +1,90 @@
-import { createTheme, responsiveFontSizes } from "@mui/material/styles";
+import { alpha, createTheme, responsiveFontSizes } from "@mui/material/styles";
+import { appFontStack, designTokens } from "@/lib/design-tokens";
+
+const colors = designTokens.color;
+const radius = designTokens.radius;
+const shadow = designTokens.shadow;
 
 const baseTheme = createTheme({
   palette: {
     mode: "light",
+    common: {
+      white: colors.ejercito.white,
+      black: colors.ejercito.black,
+    },
     primary: {
-      main: "#5A6640",
-      light: "#7F8E5A",
-      dark: "#3F4A2D",
-      contrastText: "#FFFFFF",
+      main: colors.ejercito.blue,
+      dark: "#002B66",
+      light: "#1A4E98",
+      contrastText: colors.ejercito.white,
     },
     secondary: {
-      main: "#8D845B",
-      light: "#BAB08C",
-      dark: "#6E6645",
-      contrastText: "#1E1A14",
-    },
-    background: {
-      default: "#E9E5D2",
-      paper: "#FFFFFF",
-    },
-    text: {
-      primary: "#23201A",
-      secondary: "#4B473D",
+      main: colors.ejercito.brown,
+      dark: "#382612",
+      light: "#6B4F32",
+      contrastText: colors.ejercito.white,
     },
     error: {
-      main: "#B3261E",
+      main: colors.ejercito.red,
+      contrastText: colors.ejercito.white,
     },
     warning: {
-      main: "#9A6700",
+      main: colors.ejercito.gold,
+      dark: "#CC9E00",
+      contrastText: colors.ejercito.black,
     },
     success: {
-      main: "#2E7D32",
+      main: colors.ejercito.green,
+      contrastText: colors.ejercito.white,
+    },
+    info: {
+      main: colors.ejercito.lightBlue,
+      contrastText: colors.ejercito.white,
+    },
+    background: {
+      default: colors.neutral[100],
+      paper: colors.neutral[0],
+    },
+    text: {
+      primary: colors.neutral[900],
+      secondary: colors.neutral[700],
+    },
+    divider: colors.neutral[300],
+    action: {
+      active: colors.neutral[700],
+      hover: alpha(colors.ejercito.blue, 0.05),
+      selected: alpha(colors.ejercito.blue, 0.09),
+      focus: alpha(colors.ejercito.gold, 0.28),
+      disabled: alpha(colors.neutral[900], 0.35),
+      disabledBackground: alpha(colors.neutral[900], 0.1),
     },
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   typography: {
-    fontFamily: '"Liberation Sans", "Segoe UI", sans-serif',
-    h1: { fontWeight: 700 },
-    h2: { fontWeight: 700 },
-    h3: { fontWeight: 700 },
-    h4: { fontWeight: 700 },
-    h5: { fontWeight: 700 },
-    h6: { fontWeight: 700 },
+    fontFamily: appFontStack,
+    h1: { fontWeight: designTokens.typography.weights.heavy },
+    h2: { fontWeight: designTokens.typography.weights.heavy },
+    h3: { fontWeight: designTokens.typography.weights.bold },
+    h4: { fontWeight: designTokens.typography.weights.bold },
+    h5: { fontWeight: designTokens.typography.weights.bold },
+    h6: { fontWeight: designTokens.typography.weights.bold },
     button: {
-      fontWeight: 600,
+      fontWeight: designTokens.typography.weights.semibold,
       textTransform: "none",
-      letterSpacing: 0.2,
+      letterSpacing: 0.1,
+    },
+    overline: {
+      fontWeight: designTokens.typography.weights.bold,
+      letterSpacing: 1,
     },
   },
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        body: {
-          backgroundImage:
-            "radial-gradient(circle at 12% 8%, rgb(141 132 91 / 18%) 0, transparent 34%), radial-gradient(circle at 88% 14%, rgb(102 112 77 / 16%) 0, transparent 36%), linear-gradient(180deg, rgb(244 241 228 / 96%) 0%, rgb(233 229 210 / 92%) 100%)",
-          backgroundAttachment: "fixed",
+        "*, *::before, *::after": {
+          boxSizing: "border-box",
         },
       },
     },
@@ -66,7 +94,16 @@ const baseTheme = createTheme({
       },
       styleOverrides: {
         root: {
-          border: "1px solid rgba(141,132,91,0.25)",
+          border: `1px solid ${colors.neutral[300]}`,
+          boxShadow: shadow.xs,
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          border: `1px solid ${colors.neutral[300]}`,
+          boxShadow: shadow.xs,
         },
       },
     },
@@ -76,8 +113,137 @@ const baseTheme = createTheme({
       },
       styleOverrides: {
         root: {
-          borderRadius: 10,
-          minHeight: 40,
+          borderRadius: radius.sm,
+          minHeight: 38,
+          boxShadow: "none",
+          "&:focus-visible": {
+            outline: `2px solid ${colors.ejercito.gold}`,
+            outlineOffset: 2,
+          },
+        },
+        containedPrimary: {
+          backgroundColor: colors.ejercito.blue,
+          "&:hover": {
+            backgroundColor: "#002F70",
+            boxShadow: "none",
+          },
+        },
+        containedSecondary: {
+          backgroundColor: colors.ejercito.brown,
+          "&:hover": {
+            backgroundColor: "#3F2B16",
+            boxShadow: "none",
+          },
+        },
+        containedError: {
+          backgroundColor: colors.ejercito.red,
+          "&:hover": {
+            backgroundColor: "#B10D1C",
+            boxShadow: "none",
+          },
+        },
+        outlined: {
+          borderColor: colors.neutral[400],
+          color: colors.neutral[900],
+          "&:hover": {
+            borderColor: colors.ejercito.blue,
+            backgroundColor: alpha(colors.ejercito.blue, 0.05),
+          },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: radius.pill,
+          border: `1px solid ${colors.neutral[300]}`,
+          backgroundColor: colors.neutral[50],
+          color: colors.neutral[900],
+          fontWeight: designTokens.typography.weights.semibold,
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          backgroundColor: colors.neutral[0],
+          borderRadius: radius.sm,
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: colors.neutral[400],
+          },
+          "&:hover .MuiOutlinedInput-notchedOutline": {
+            borderColor: colors.neutral[600],
+          },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: colors.ejercito.blue,
+            borderWidth: 2,
+          },
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          color: colors.neutral[700],
+          "&.Mui-focused": {
+            color: colors.ejercito.blue,
+          },
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        head: {
+          backgroundColor: colors.neutral[100],
+          color: colors.neutral[800],
+          fontWeight: designTokens.typography.weights.bold,
+          borderBottom: `1px solid ${colors.neutral[300]}`,
+          textTransform: "uppercase",
+          letterSpacing: 0.4,
+          fontSize: 12,
+        },
+        body: {
+          borderBottom: `1px solid ${colors.neutral[200]}`,
+        },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          borderRadius: radius.sm,
+          border: `1px solid ${colors.neutral[300]}`,
+        },
+        standardInfo: {
+          backgroundColor: alpha(colors.ejercito.lightBlue, 0.12),
+          color: colors.neutral[900],
+        },
+        standardSuccess: {
+          backgroundColor: alpha(colors.ejercito.green, 0.12),
+          color: colors.neutral[900],
+        },
+        standardWarning: {
+          backgroundColor: alpha(colors.ejercito.gold, 0.18),
+          color: colors.neutral[900],
+        },
+        standardError: {
+          backgroundColor: alpha(colors.ejercito.red, 0.12),
+          color: colors.neutral[900],
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: radius.lg,
+          border: `1px solid ${colors.neutral[300]}`,
+          boxShadow: shadow.md,
+        },
+      },
+    },
+    MuiBackdrop: {
+      styleOverrides: {
+        root: {
+          backgroundColor: colors.overlay.dim,
         },
       },
     },

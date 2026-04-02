@@ -32,7 +32,7 @@ export function ConfirmDialog(props: {
             onClick={props.onCancel}
             disabled={props.isLoading}
             variant="outlined"
-            color="inherit"
+            color="secondary"
             sx={{ minWidth: 120 }}
           >
             {props.cancelText || "Cancelar"}
