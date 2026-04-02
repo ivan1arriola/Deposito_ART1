@@ -21,7 +21,10 @@ export default async function HojasDeEntregaPage({
   const fechaImpresion = getCurrentHojaEntregaPrintDate();
 
   return (
-    <main className={`${styles.page}${isPdfExport ? ` ${styles.pdfExport}` : ""}`}>
+    <main
+      className={`${styles.page}${isPdfExport ? ` ${styles.pdfExport}` : ""}`}
+      data-hojas-entrega-ready="1"
+    >
       {hojas.length === 0 ? (
         <div className={styles.statusLine}>No hay personal para generar hojas de entrega.</div>
       ) : (

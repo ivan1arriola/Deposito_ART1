@@ -6,6 +6,7 @@ type RenderA4PdfOptions = {
   cookieHeader?: string | null;
   pageNumbersIfMultipage?: boolean;
   pageNumberLabel?: string;
+  readySelector?: string;
 };
 
 async function openChromium() {
@@ -79,16 +80,25 @@ export async function renderA4PdfFromUrl(url: string, options: RenderA4PdfOption
   const browser = await openChromium();
 
   try {
-    const page = await browser.newPage();
-    if (options.cookieHeader && options.cookieHeader.trim() !== "") {
-      await page.setExtraHTTPHeaders({ cookie: options.cookieHeader });
-    }
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      extraHTTPHeaders:
+        options.cookieHeader && options.cookieHeader.trim() !== ""
+          ? { cookie: options.cookieHeader }
+          : undefined,
+    });
+    const page = await context.newPage();
 
     await page.emulateMedia({ media: "print" });
     await page.goto(url, {
-      waitUntil: "networkidle",
+      waitUntil: "domcontentloaded",
       timeout: 120_000,
     });
+    if (options.readySelector) {
+      await page.waitForSelector(options.readySelector, {
+        timeout: 60_000,
+      });
+    }
 
     const pdfBytes = await page.pdf({
       format: "A4",

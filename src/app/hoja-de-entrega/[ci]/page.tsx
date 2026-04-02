@@ -30,7 +30,10 @@ export default async function HojaEntregaPage({
   }
 
   return (
-    <main className={`${styles.page}${isPdfExport ? ` ${styles.pdfExport}` : ""}`}>
+    <main
+      className={`${styles.page}${isPdfExport ? ` ${styles.pdfExport}` : ""}`}
+      data-hoja-entrega-ready="1"
+    >
       <HojaEntregaCanonicalSheet data={data} fechaImpresion={getCurrentHojaEntregaPrintDate()} />
     </main>
   );

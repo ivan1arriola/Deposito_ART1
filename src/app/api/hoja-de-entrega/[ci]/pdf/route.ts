@@ -33,6 +33,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     cookieHeader: request.headers.get("cookie"),
     pageNumbersIfMultipage: true,
     pageNumberLabel: "hoja",
+    readySelector: "[data-hoja-entrega-ready='1']",
   });
 
   const fileName = buildSingleHojaEntregaFileName({
