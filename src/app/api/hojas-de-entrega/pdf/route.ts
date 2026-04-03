@@ -23,6 +23,9 @@ export async function GET(request: Request) {
   });
 
   const fileName = buildUnidadHojasEntregaFileName();
+  const requestUrl = new URL(request.url);
+  const inline = requestUrl.searchParams.get("inline") === "1";
+  const contentDisposition = `${inline ? "inline" : "attachment"}; filename="${fileName}"`;
   const pdfArrayBuffer = Uint8Array.from(pdfBytes).buffer;
   const pdfBlob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
 
@@ -30,7 +33,7 @@ export async function GET(request: Request) {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Content-Disposition": contentDisposition,
       "Cache-Control": "no-store",
     },
   });

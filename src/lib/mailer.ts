@@ -5,6 +5,7 @@ type MailPayload = {
   subject: string;
   text: string;
   html: string;
+  attachments?: NonNullable<nodemailer.SendMailOptions["attachments"]>;
 };
 
 type MailerConfig = {
@@ -69,5 +70,6 @@ export async function sendMail(payload: MailPayload) {
     subject: payload.subject,
     text: payload.text,
     html: payload.html,
+    attachments: payload.attachments,
   });
 }

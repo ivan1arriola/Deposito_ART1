@@ -10,7 +10,22 @@ type HojaEntregaCanonicalSheetProps = {
   fechaImpresion: string;
 };
 
+function getSheetDensity(data: HojaEntregaSheetData) {
+  const rowCount = data.matrix.length;
+  const obsCount = data.observaciones.length;
+
+  if (rowCount >= 25 || obsCount >= 3) return "tight";
+  if (rowCount >= 21 || obsCount >= 2) return "compact";
+  return "normal";
+}
+
 export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaCanonicalSheetProps) {
+  const density = getSheetDensity(data);
+  const densityClassName =
+    density === "tight" ? styles.sheetTight : density === "compact" ? styles.sheetCompact : "";
+  const maxObservaciones = density === "tight" ? 2 : 3;
+  const observacionesVisibles = data.observaciones.slice(0, maxObservaciones);
+
   const nombreCompleto = `${data.persona.apellido1} ${data.persona.apellido2 || ""}`.trim();
   const nombresCompleto = `${data.persona.nombre1} ${data.persona.nombre2 || ""}`.trim();
   const firmaAlistadoNombre = [data.persona.nombre1, data.persona.apellido1].filter(Boolean).join(" ").trim();
@@ -22,7 +37,7 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
     data.persona.esReingreso ? `${styles.infoGrid} ${styles.infoGrid5}` : `${styles.infoGrid} ${styles.infoGrid4}`;
 
   return (
-    <div className={styles.sheet}>
+    <div className={`${styles.sheet}${densityClassName ? ` ${densityClassName}` : ""}`}>
       <table className={styles.table}>
         <colgroup>
           <col className={styles.itemColumn} />
@@ -190,7 +205,8 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
           <tr>
             <td colSpan={15} className={styles.observacionesCell}>
               <div>OBSERVACIONES</div>
-              {data.observaciones.map((obs, idx) => (
+              {observacionesVisibles.length === 0 ? <div> </div> : null}
+              {observacionesVisibles.map((obs, idx) => (
                 <div key={`${data.persona.ci}-${obs.fecha}-${idx}`}>
                   {getHojaEntregaDatePart(obs.fecha, "day")}/{getHojaEntregaDatePart(obs.fecha, "month")}/{getHojaEntregaDatePart(obs.fecha, "year")} - {obs.texto}
                 </div>
@@ -201,17 +217,17 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
       </table>
 
       <div className={styles.firmaSection}>
-        <div className={`${styles.firmaBlock} ${styles.firmaLevel0}`}>
+        <div className={styles.firmaBlock}>
           <div className={styles.firmaTitle}>Firma del alistado:</div>
           <div className={`${styles.firmaRole} ${styles.firmaLevel1}`}>{data.persona.rangoAbreviacion}</div>
           <div className={`${styles.firmaName} ${styles.firmaLevel2}`}>{firmaAlistadoNombre}</div>
         </div>
-        <div className={`${styles.firmaBlock} ${styles.firmaLevel1}`}>
+        <div className={styles.firmaBlock}>
           <div className={styles.firmaTitle}>{data.firmas.encargadoTexto}</div>
           <div className={`${styles.firmaRole} ${styles.firmaLevel1}`}>{data.firmas.encargadoRango}</div>
           <div className={`${styles.firmaName} ${styles.firmaLevel2}`}>{data.firmas.encargadoNombre}</div>
         </div>
-        <div className={`${styles.firmaBlock} ${styles.firmaLevel2}`}>
+        <div className={styles.firmaBlock}>
           <div className={styles.firmaTitle}>{data.firmas.oficialTexto}</div>
           <div className={`${styles.firmaRole} ${styles.firmaLevel1}`}>{data.firmas.oficialRango}</div>
           <div className={`${styles.firmaName} ${styles.firmaLevel2}`}>{data.firmas.oficialNombre}</div>

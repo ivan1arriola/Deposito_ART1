@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { HojaEntregaCanonicalSheet } from "@/app/components/print/HojaEntregaCanonicalSheet";
 import {
   getCurrentHojaEntregaPrintDate,
@@ -17,6 +18,11 @@ export default async function HojasDeEntregaPage({
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const isPdfExport = resolvedSearchParams?.pdf === "1";
+
+  if (isPdfExport) {
+    redirect("/api/hojas-de-entrega/pdf");
+  }
+
   const hojas = await getAllHojasEntregaData();
   const fechaImpresion = getCurrentHojaEntregaPrintDate();
 

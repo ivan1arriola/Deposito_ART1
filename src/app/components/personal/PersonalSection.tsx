@@ -40,6 +40,7 @@ type PersonalSectionProps = {
   onPersonalPageChange: (page: number) => void;
   onPersonalPageSizeChange: (pageSize: number) => void;
   onPrintAllDeliverySheets: () => void;
+  onEmailAllDeliverySheets: () => void;
   onPrintPersonnelByBattery: () => void;
   onOpenMassEntrega: () => void;
   onOpenCreate: () => void;
@@ -162,6 +163,7 @@ export function PersonalSection({
   onPersonalPageChange,
   onPersonalPageSizeChange,
   onPrintAllDeliverySheets,
+  onEmailAllDeliverySheets,
   onPrintPersonnelByBattery,
   onOpenMassEntrega,
   onOpenCreate,
@@ -193,8 +195,8 @@ export function PersonalSection({
   const canShowAscensoBlock = Boolean(isAdmin && editingPersona && canPromoteEditPersonalToSuboficial);
 
   const actionGridClass = canWrite
-    ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
-    : "grid-cols-1 sm:grid-cols-3";
+    ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-5"
+    : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4";
 
   return (
     <section className="mt-6 space-y-4">
@@ -233,6 +235,14 @@ export function PersonalSection({
             className="h-11 w-full rounded-xl bg-indigo-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             Imprimir todas las hojas
+          </button>
+          <button
+            type="button"
+            onClick={onEmailAllDeliverySheets}
+            disabled={loading || personal.length === 0}
+            className="h-11 w-full rounded-xl bg-slate-700 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Enviar PDF por correo
           </button>
           <button
             type="button"

@@ -135,6 +135,146 @@
   break-inside: avoid-page;
 }
 
+.sheetCompact .table th,
+.sheetCompact .table td {
+  font-size: 7px;
+  line-height: 1.1;
+  padding: 1.5px 2.5px;
+}
+
+.sheetCompact .table tr td.bold[rowspan],
+.sheetCompact .table tr td.center.bold {
+  font-size: 7.8px;
+  padding: 4px 3px;
+}
+
+.sheetCompact .table td[colspan="15"].center.bold {
+  font-size: 8.4px;
+  padding: 4px 5px;
+}
+
+.sheetCompact .dateLabel {
+  font-size: 6.6px;
+  padding: 1.5px;
+}
+
+.sheetCompact .itemRow td:first-child {
+  font-size: 6.5px;
+  line-height: 1.1;
+}
+
+.sheetCompact .infoGridItem {
+  font-size: 10.5px;
+  padding: 3px 8px;
+}
+
+.sheetCompact .infoGridItemCompact {
+  padding: 1px 5px;
+}
+
+.sheetCompact .observacionesCell > div:first-child {
+  font-size: 7.2px;
+  margin-bottom: 2px;
+  padding-bottom: 1px;
+}
+
+.sheetCompact .observacionesCell > div:not(:first-child) {
+  font-size: 6.9px;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.sheetCompact .firmaSection {
+  gap: 2.8mm;
+}
+
+.sheetCompact .firmaBlock,
+.sheetCompact .firmaName {
+  font-size: 7.2px;
+  line-height: 1.5;
+}
+
+.sheetCompact .firmaLevel1 {
+  margin-left: 7mm;
+}
+
+.sheetCompact .firmaLevel2 {
+  margin-left: 14mm;
+}
+
+.sheetTight .table th,
+.sheetTight .table td {
+  font-size: 6.35px;
+  line-height: 1.03;
+  padding: 1px 2px;
+}
+
+.sheetTight .table tr td.bold[rowspan],
+.sheetTight .table tr td.center.bold {
+  font-size: 6.9px;
+  padding: 3px 2px;
+}
+
+.sheetTight .table td[colspan="15"].center.bold {
+  font-size: 7.3px;
+  padding: 3px 4px;
+}
+
+.sheetTight .dateLabel {
+  font-size: 6px;
+  padding: 1px;
+}
+
+.sheetTight .itemRow td:first-child {
+  font-size: 5.9px;
+  line-height: 1.04;
+}
+
+.sheetTight .infoGridItem {
+  font-size: 9.4px;
+  padding: 2px 6px;
+  gap: 0;
+  line-height: 1.05;
+}
+
+.sheetTight .infoGridItemCompact {
+  padding: 0.8px 4px;
+}
+
+.sheetTight .observacionesCell {
+  padding: 2px 4px;
+}
+
+.sheetTight .observacionesCell > div:first-child {
+  font-size: 6.4px;
+  margin-bottom: 1px;
+  padding-bottom: 1px;
+}
+
+.sheetTight .observacionesCell > div:not(:first-child) {
+  font-size: 6.1px;
+  margin-bottom: 1px;
+  line-height: 1.08;
+}
+
+.sheetTight .firmaSection {
+  gap: 2.1mm;
+}
+
+.sheetTight .firmaBlock,
+.sheetTight .firmaName {
+  font-size: 6.45px;
+  line-height: 1.5;
+}
+
+.sheetTight .firmaLevel1 {
+  margin-left: 6mm;
+}
+
+.sheetTight .firmaLevel2 {
+  margin-left: 12mm;
+}
+
 .frame {
   background: var(--color-surface);
   padding: 3mm;
@@ -480,7 +620,7 @@
   font-size: 8px;
   font-family: var(--font-family-mono);
   page-break-inside: avoid;
-  line-height: 1.25;
+  line-height: 1.5;
   break-inside: avoid-page;
 }
 
@@ -497,7 +637,7 @@
 }
 
 .firmaTitle {
-  margin-bottom: 1px;
+  margin-bottom: 0;
 }
 
 .firmaRole {
@@ -580,11 +720,11 @@
 
   .sheet {
     margin: 0;
-    height: 297mm;
+    height: auto;
     padding: 3.5mm 6mm 7mm 6mm;
     max-width: none;
-    width: 210mm;
-    min-height: 297mm;
+    width: 100%;
+    min-height: 0;
     box-shadow: none;
     border: none;
   }
@@ -601,6 +741,7 @@
     width: 100%;
     font-size: 7.5px;
     table-layout: fixed;
+    flex: 0 0 auto;
   }
 
   .table tbody tr {
@@ -617,9 +758,14 @@
 
   .sign,
   .firmaSection {
-    margin-top: auto;
+    margin-top: 2mm;
     padding: 0;
     gap: 3.5mm;
+  }
+
+  .sheetCompact .firmaSection,
+  .sheetTight .firmaSection {
+    margin-top: 1.5mm;
   }
 
   .signBlock,

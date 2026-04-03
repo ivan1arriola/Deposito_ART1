@@ -1,10 +1,7 @@
 import "server-only";
 
 import React from "react";
-import {
-  formatUruguayanCi,
-  isValidUruguayanCi,
-} from "@/lib/ci";
+import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { PDFDocument } from "pdf-lib";
 import {
   getHojaEntregaDatePart,
@@ -16,23 +13,152 @@ type RenderHojasEntregaPdfOptions = {
   includePageNumbers?: boolean;
 };
 
-const ITEM_COL_WIDTH = 26;
+type DatePart = "day" | "month" | "year";
+
+type HeaderInfoCell = {
+  width: string;
+  label: string;
+  value: string;
+  align?: "left" | "center";
+  minHeight?: number;
+};
+
+type DateRowConfig = {
+  key: string;
+  label: string;
+  part: DatePart;
+  showTMarkers: boolean;
+  mergedVariant: "top" | "middle" | "bottom";
+};
+
+type DensityProfile = {
+  id:
+    | "normal"
+    | "compact"
+    | "tight"
+    | "ultra"
+    | "micro"
+    | "nano"
+    | "pico"
+    | "atomic";
+  scale: number;
+};
+
+const ITEM_COL_WIDTH = 38;
 const DATA_COL_WIDTH = (100 - ITEM_COL_WIDTH) / 14;
+
+const A4_PAGE_HEIGHT = 841.89;
+const A4_MARGIN_X = 14;
+const A4_MARGIN_TOP = 10;
+const A4_MARGIN_BOTTOM = 10;
+const A4_CONTENT_HEIGHT = A4_PAGE_HEIGHT - A4_MARGIN_TOP - A4_MARGIN_BOTTOM;
+
+const BORDER = "#000000";
+const BG_WHITE = "#ffffff";
+const BG_MID = "#d9d9d9";
+const BG_TOTAL = "#efefef";
+
+const DATE_ROW_CONFIGS: DateRowConfig[] = [
+  { key: "day", label: "DÍA", part: "day", showTMarkers: false, mergedVariant: "top" },
+  { key: "month", label: "MES", part: "month", showTMarkers: true, mergedVariant: "middle" },
+  { key: "year", label: "AÑO", part: "year", showTMarkers: false, mergedVariant: "bottom" },
+];
+
+const DENSITY_PROFILES: DensityProfile[] = [
+  { id: "normal", scale: 1.26 },
+  { id: "compact", scale: 1.18 },
+  { id: "tight", scale: 1.1 },
+  { id: "ultra", scale: 1.02 },
+  { id: "micro", scale: 0.94 },
+  { id: "nano", scale: 0.88 },
+  { id: "pico", scale: 0.82 },
+  { id: "atomic", scale: 0.76 },
+];
+
+function scaled(profile: DensityProfile, value: number, min = 0) {
+  const output = Number((value * profile.scale).toFixed(2));
+  return Math.max(min, output);
+}
 
 function widthPct(value: number) {
   return `${value}%`;
 }
 
-function renderDate(value: string | null | undefined, part: "day" | "month" | "year") {
+function renderDate(value: string | null | undefined, part: DatePart) {
   return getHojaEntregaDatePart(value, part);
+}
+
+function formatShortDate(value: string | null | undefined) {
+  if (!value) return "-";
+  return `${renderDate(value, "day")}/${renderDate(value, "month")}/${renderDate(value, "year")}`;
+}
+
+function formatQuantity(value: number) {
+  return value === 0 ? "" : String(value);
+}
+
+function formatTotal(value: number) {
+  return String(value ?? 0);
 }
 
 function buildAlistadoNombre(data: HojaEntregaSheetData) {
   return [data.persona.nombre1, data.persona.apellido1].filter(Boolean).join(" ").trim();
 }
 
+function buildApellidos(data: HojaEntregaSheetData) {
+  return `${data.persona.apellido1} ${data.persona.apellido2 ?? ""}`.trim();
+}
+
+function buildNombres(data: HojaEntregaSheetData) {
+  return `${data.persona.nombre1} ${data.persona.nombre2 ?? ""}`.trim();
+}
+
 function normalizeSixDates(values: Array<{ fecha: string | null }>) {
   return Array.from({ length: 6 }, (_, index) => values[index]?.fecha ?? null);
+}
+
+function buildHeaderInfoRows(
+  data: HojaEntregaSheetData,
+  fechaImpresion: string,
+  ciDisplay: string,
+): HeaderInfoCell[][] {
+  const ingresoLabel = data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:";
+
+  return [
+    [
+      {
+        width: "30%",
+        label: "Grado:",
+        value: data.persona.rango,
+        minHeight: 22,
+      },
+      {
+        width: "35%",
+        label: "Apellidos:",
+        value: buildApellidos(data),
+        minHeight: 22,
+      },
+      {
+        width: "35%",
+        label: "Nombres:",
+        value: buildNombres(data),
+        minHeight: 22,
+      },
+    ],
+    [
+      { width: "16%", label: "Parka:", value: data.persona.tallas.PARKA, minHeight: 14 },
+      { width: "19%", label: "Camisaco:", value: data.persona.tallas.CAMISACO, minHeight: 14 },
+      { width: "20%", label: "Pantalón:", value: data.persona.tallas.PANTALON, minHeight: 14 },
+      { width: "20%", label: "Kepí:", value: data.persona.tallas.KEPI, minHeight: 14 },
+      { width: "25%", label: "Calzado:", value: data.persona.tallas.CALZADO, minHeight: 14 },
+    ],
+    [
+      { width: "22%", label: "C.I:", value: ciDisplay, minHeight: 14 },
+      { width: "25%", label: "Batería:", value: data.persona.bateria || "Cdo. y Serv.", minHeight: 14 },
+      { width: "25%", label: ingresoLabel, value: formatShortDate(data.persona.fechaIngreso), minHeight: 14 },
+      { width: "28%", label: "Fecha de impresión:", value: fechaImpresion, minHeight: 14 },
+    ],
+  ];
 }
 
 export async function renderHojasEntregaPdf(
@@ -43,396 +169,533 @@ export async function renderHojasEntregaPdf(
   const ReactPdf = await import("@react-pdf/renderer");
   const { Document, Page, Text, View, StyleSheet, pdf } = ReactPdf;
 
-  const styles = StyleSheet.create({
-    page: {
-      paddingHorizontal: 8,
-      paddingTop: 8,
-      paddingBottom: 10,
-      fontFamily: "Courier",
-      fontSize: 8,
-      color: "#000000",
-      backgroundColor: "#ffffff",
-    },
-    table: {
-      borderTopWidth: 2,
-      borderLeftWidth: 2,
-      borderRightWidth: 2,
-      borderBottomWidth: 2,
-      borderColor: "#000000",
-    },
-    row: {
-      flexDirection: "row",
-      width: "100%",
-    },
-    cell: {
-      borderRightWidth: 1,
-      borderBottomWidth: 1,
-      borderColor: "#000000",
-      paddingHorizontal: 4,
-      paddingVertical: 2.5,
-      justifyContent: "center",
-    },
-    center: {
-      textAlign: "center",
-    },
-    left: {
-      textAlign: "left",
-    },
-    bold: {
-      fontWeight: 700,
-    },
-    headerRowCell: {
-      paddingVertical: 7,
-      backgroundColor: "#ececec",
-      textAlign: "center",
-      fontWeight: 700,
-      fontSize: 10,
-    },
-    infoCell: {
-      minHeight: 36,
-    },
-    infoLabel: {
-      fontWeight: 700,
-      marginBottom: 1,
-      fontSize: 8.5,
-    },
-    infoValue: {
-      fontSize: 8.5,
-      fontWeight: 700,
-      lineHeight: 1.1,
-    },
-    sectionHeader: {
-      backgroundColor: "#d9d9d9",
-      fontWeight: 700,
-      textAlign: "center",
-      fontSize: 9.5,
-      minHeight: 34,
-    },
-    dateCell: {
-      backgroundColor: "#e6e6e6",
-      fontWeight: 700,
-      textAlign: "center",
-      minHeight: 29,
-    },
-    tMergedTop: {
-      backgroundColor: "#d9d9d9",
-      borderBottomWidth: 0,
-      minHeight: 34,
-    },
-    tMergedMiddle: {
-      backgroundColor: "#d9d9d9",
-      borderTopWidth: 0,
-      borderBottomWidth: 0,
-      minHeight: 29,
-    },
-    tMergedBottom: {
-      backgroundColor: "#d9d9d9",
-      borderTopWidth: 0,
-      minHeight: 29,
-    },
-    itemName: {
-      textAlign: "left",
-      fontSize: 7.2,
-      fontWeight: 500,
-      lineHeight: 1.12,
-      minHeight: 20,
-    },
-    totalCell: {
-      backgroundColor: "#efefef",
-      fontWeight: 700,
-    },
-    observacionesCell: {
-      minHeight: 30,
-      paddingVertical: 4,
-      paddingHorizontal: 6,
-    },
-    observacionesTitle: {
-      textAlign: "center",
-      fontWeight: 700,
-      borderBottomWidth: 0.7,
-      borderColor: "#000000",
-      paddingBottom: 2,
-      marginBottom: 2,
-    },
-    observacionLine: {
-      fontSize: 7.2,
-      lineHeight: 1.15,
-      marginBottom: 1,
-    },
-    firmas: {
-      marginTop: 7,
-      paddingHorizontal: 2,
-      gap: 5,
-    },
-    firmaBlock: {
-      fontSize: 8,
-      lineHeight: 1.2,
-    },
-    firmaNivel1: {
-      marginLeft: 16,
-    },
-    firmaNivel2: {
-      marginLeft: 32,
-    },
-    firmaCargo: {
-      fontWeight: 700,
-    },
-    pageNumber: {
-      position: "absolute",
-      right: 10,
-      bottom: 6,
-      fontSize: 8,
-      fontFamily: "Helvetica",
-    },
-  });
-
   const pageNumberLabel = options.pageNumberLabel ?? "Hoja";
   const includePageNumbers = options.includePageNumbers ?? true;
 
-  const HojaEntregaSheetPage = ({ data }: { data: HojaEntregaSheetData }) => {
-    const apellidos = `${data.persona.apellido1} ${data.persona.apellido2 ?? ""}`.trim();
-    const nombres = `${data.persona.nombre1} ${data.persona.nombre2 ?? ""}`.trim();
-    const alistadoNombre = buildAlistadoNombre(data);
-    const entregaCols = normalizeSixDates(data.entregas);
-    const devolCols = normalizeSixDates(data.devoluciones);
-    const ciPrefix = isValidUruguayanCi(data.persona.ci) ? "" : "⚠ ";
-    const ciDisplay = `${ciPrefix}${formatUruguayanCi(data.persona.ci)}`;
+  const renderSingleHojaBytesWithProfile = async (
+    hoja: HojaEntregaSheetData,
+    profile: DensityProfile,
+  ) => {
+    const signatureTab = scaled(profile, 14, 8);
+    const signatureLineHeight = scaled(profile, 9.9, 7.05);
 
-    return (
-      <Page size="A4" style={styles.page}>
-        <View style={styles.table}>
-          <View style={styles.row}>
-            <View style={[styles.cell, { width: "100%" }]}>
-              <Text style={styles.headerRowCell}>
-                Grupo "Brig.Gral.Manuel Oribe" de Artillería 105mm No.1.-
+    const styles = StyleSheet.create({
+      page: {
+        paddingLeft: A4_MARGIN_X,
+        paddingRight: A4_MARGIN_X,
+        paddingTop: A4_MARGIN_TOP,
+        paddingBottom: A4_MARGIN_BOTTOM,
+        fontFamily: "Courier",
+        fontSize: scaled(profile, 6.7, 4.6),
+        color: "#000000",
+        backgroundColor: "#ffffff",
+      },
+
+      sheet: {
+        height: A4_CONTENT_HEIGHT,
+        flexDirection: "column",
+      },
+
+      content: {
+        flexGrow: 1,
+        flexDirection: "column",
+      },
+
+      table: {
+        width: "100%",
+        borderWidth: scaled(profile, 1, 0.55),
+        borderColor: BORDER,
+        flexDirection: "column",
+        flexGrow: 1,
+      },
+
+      matrixSection: {
+        flexGrow: 1,
+        flexDirection: "column",
+      },
+
+      row: {
+        flexDirection: "row",
+        width: "100%",
+      },
+
+      matrixRow: {
+        flexGrow: 1,
+      },
+
+      cell: {
+        borderRightWidth: scaled(profile, 0.75, 0.42),
+        borderBottomWidth: scaled(profile, 0.75, 0.42),
+        borderColor: BORDER,
+        paddingHorizontal: scaled(profile, 1.4, 0.7),
+        paddingVertical: scaled(profile, 0.24, 0.05),
+        justifyContent: "center",
+      },
+
+      noRightBorder: {
+        borderRightWidth: 0,
+      },
+
+      center: {
+        textAlign: "center",
+      },
+
+      left: {
+        textAlign: "left",
+      },
+
+      topTitleCell: {
+        backgroundColor: BG_WHITE,
+        paddingVertical: scaled(profile, 1.5, 0.7),
+        minHeight: scaled(profile, 18, 12),
+      },
+
+      topTitle: {
+        textAlign: "center",
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 8.1, 5.8),
+      },
+
+      subTitleCell: {
+        backgroundColor: BG_WHITE,
+        paddingVertical: scaled(profile, 1.4, 0.65),
+        minHeight: scaled(profile, 16.5, 11.5),
+      },
+
+      subTitle: {
+        textAlign: "center",
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 7.9, 5.7),
+      },
+
+      infoCell: {
+        backgroundColor: BG_WHITE,
+        justifyContent: "flex-start",
+        paddingTop: scaled(profile, 0.8, 0.25),
+        paddingBottom: scaled(profile, 0.8, 0.25),
+      },
+
+      infoLabel: {
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 6.6, 4.8),
+        marginBottom: scaled(profile, 0.1, 0.02),
+        lineHeight: 1,
+      },
+
+      infoValue: {
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 7.2, 5.2),
+        lineHeight: 1,
+      },
+
+      sectionHeader: {
+        backgroundColor: BG_MID,
+        minHeight: scaled(profile, 14.5, 9.2),
+        paddingVertical: 0,
+        justifyContent: "center",
+      },
+
+      sectionHeaderText: {
+        textAlign: "center",
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 7.2, 5),
+      },
+
+      dateLabelCell: {
+        backgroundColor: BG_MID,
+        minHeight: scaled(profile, 11.2, 7.5),
+        paddingVertical: 0,
+        justifyContent: "center",
+      },
+
+      dateLabelText: {
+        textAlign: "center",
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 6.7, 4.7),
+      },
+
+      dateValueCell: {
+        backgroundColor: BG_MID,
+        minHeight: scaled(profile, 11.2, 7.5),
+        paddingVertical: 0,
+        justifyContent: "center",
+      },
+
+      dateValueText: {
+        textAlign: "center",
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 6.7, 4.7),
+      },
+
+      tMergedTop: {
+        backgroundColor: BG_MID,
+        borderBottomWidth: 0,
+        minHeight: scaled(profile, 11.2, 7.5),
+        paddingVertical: 0,
+        justifyContent: "center",
+      },
+
+      tMergedMiddle: {
+        backgroundColor: BG_MID,
+        borderTopWidth: 0,
+        borderBottomWidth: 0,
+        minHeight: scaled(profile, 11.2, 7.5),
+        paddingVertical: 0,
+        justifyContent: "center",
+      },
+
+      tMergedBottom: {
+        backgroundColor: BG_MID,
+        borderTopWidth: 0,
+        minHeight: scaled(profile, 11.2, 7.5),
+        paddingVertical: 0,
+        justifyContent: "center",
+      },
+
+      tText: {
+        textAlign: "center",
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 6.8, 4.8),
+      },
+
+      itemCell: {
+        backgroundColor: BG_WHITE,
+        minHeight: scaled(profile, 11.2, 7.4),
+        paddingVertical: 0,
+        justifyContent: "center",
+      },
+
+      itemName: {
+        textAlign: "left",
+        fontSize: scaled(profile, 6.55, 4.6),
+        lineHeight: 1,
+      },
+
+      qtyCell: {
+        backgroundColor: BG_WHITE,
+        minHeight: scaled(profile, 11.2, 7.4),
+        paddingVertical: 0,
+        justifyContent: "center",
+      },
+
+      qtyText: {
+        textAlign: "center",
+        fontSize: scaled(profile, 6.9, 4.8),
+      },
+
+      totalCell: {
+        backgroundColor: BG_TOTAL,
+        minHeight: scaled(profile, 11.2, 7.4),
+        paddingVertical: 0,
+        justifyContent: "center",
+      },
+
+      totalText: {
+        textAlign: "center",
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 6.9, 4.8),
+      },
+
+      observacionesWrapper: {
+        backgroundColor: BG_WHITE,
+        minHeight: scaled(profile, 19, 12),
+        paddingTop: scaled(profile, 0.6, 0.2),
+        paddingBottom: scaled(profile, 0.9, 0.25),
+        paddingHorizontal: scaled(profile, 1.5, 0.8),
+        justifyContent: "flex-start",
+      },
+
+      observacionesTitle: {
+        textAlign: "center",
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 7.2, 5),
+        marginBottom: scaled(profile, 0.8, 0.18),
+      },
+
+      observacionLine: {
+        fontSize: scaled(profile, 6.3, 4.4),
+        lineHeight: 1.2,
+        marginBottom: 0,
+        textAlign: "center",
+      },
+
+      firmas: {
+        marginTop: scaled(profile, 8, 4), // Margen superior añadido
+        marginBottom: scaled(profile, 8, 4), // Margen inferior añadido
+        paddingLeft: 0,
+        paddingRight: 0,
+        flexShrink: 0,
+      },
+
+      firmaBlock: {
+        marginBottom: scaled(profile, 4.5, 2.5),
+      },
+
+      firmaTitulo: {
+        fontSize: scaled(profile, 6.6, 4.7),
+        lineHeight: signatureLineHeight,
+      },
+      firmaCargo: {
+        marginLeft: signatureTab,
+        fontFamily: "Courier-Bold",
+        fontSize: scaled(profile, 6.6, 4.7),
+        lineHeight: signatureLineHeight,
+      },
+      firmaNombre: {
+        marginLeft: signatureTab * 2,
+        fontSize: scaled(profile, 6.6, 4.7),
+        lineHeight: signatureLineHeight,
+      },
+      firmaBlockLast: {
+        marginBottom: 0,
+      },
+
+      pageNumber: {
+        position: "absolute",
+        right: A4_MARGIN_X,
+        bottom: 4,
+        fontSize: scaled(profile, 5.2, 3.8),
+        fontFamily: "Helvetica",
+      },
+    });
+
+    const HeaderInfoRow = ({ cells }: { cells: HeaderInfoCell[] }) => (
+      <View style={styles.row}>
+        {cells.map((cell, index) => {
+          const isLast = index === cells.length - 1;
+
+          return (
+            <View
+              key={`${cell.label}-${index}`}
+              style={[
+                styles.cell,
+                styles.infoCell,
+                { width: cell.width, minHeight: cell.minHeight ?? 14 },
+                isLast ? styles.noRightBorder : {},
+              ]}
+            >
+              {cell.label ? <Text style={styles.infoLabel}>{cell.label}</Text> : null}
+              <Text style={[styles.infoValue, cell.align === "center" ? styles.center : styles.left]}>
+                {cell.value || " "}
               </Text>
             </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.cell, { width: "100%" }]}>
-              <Text style={styles.headerRowCell}>ADMINISTRACIÓN - S4</Text>
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.cell, styles.infoCell, { width: "30%" }]}>
-              <Text style={styles.infoLabel}>Grado:</Text>
-              <Text style={styles.infoValue}>{data.persona.rango}</Text>
-            </View>
-            <View style={[styles.cell, styles.infoCell, { width: "35%" }]}>
-              <Text style={styles.infoLabel}>Apellidos:</Text>
-              <Text style={styles.infoValue}>{apellidos}</Text>
-            </View>
-            <View style={[styles.cell, styles.infoCell, { width: "35%" }]}>
-              <Text style={styles.infoLabel}>Nombres:</Text>
-              <Text style={styles.infoValue}>{nombres}</Text>
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.cell, styles.infoCell, { width: "20%" }]}>
-              <Text style={styles.infoLabel}>Parka:</Text>
-              <Text style={styles.infoValue}>{data.persona.tallas.PARKA}</Text>
-            </View>
-            <View style={[styles.cell, styles.infoCell, { width: "20%" }]}>
-              <Text style={styles.infoLabel}>Camisaco:</Text>
-              <Text style={styles.infoValue}>{data.persona.tallas.CAMISACO}</Text>
-            </View>
-            <View style={[styles.cell, styles.infoCell, { width: "24%" }]}>
-              <Text style={styles.infoLabel}>Pantalón:</Text>
-              <Text style={styles.infoValue}>{data.persona.tallas.PANTALON}</Text>
-            </View>
-            <View style={[styles.cell, styles.infoCell, { width: "20%" }]}>
-              <Text style={styles.infoLabel}>Kepí:</Text>
-              <Text style={styles.infoValue}>{data.persona.tallas.KEPI}</Text>
-            </View>
-            <View style={[styles.cell, styles.infoCell, { width: "16%" }]}>
-              <Text style={styles.infoLabel}>Calzado:</Text>
-              <Text style={styles.infoValue}>{data.persona.tallas.CALZADO}</Text>
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.cell, styles.infoCell, { width: "22%" }]}>
-              <Text style={styles.infoLabel}>C.I:</Text>
-              <Text style={styles.infoValue}>{ciDisplay}</Text>
-            </View>
-            <View style={[styles.cell, styles.infoCell, { width: "25%" }]}>
-              <Text style={styles.infoLabel}>Batería:</Text>
-              <Text style={styles.infoValue}>{data.persona.bateria || "Cdo. y Serv."}</Text>
-            </View>
-            <View style={[styles.cell, styles.infoCell, { width: "25%" }]}>
-              <Text style={styles.infoLabel}>
-                {data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:"}
-              </Text>
-              <Text style={styles.infoValue}>
-                {data.persona.fechaIngreso
-                  ? `${renderDate(data.persona.fechaIngreso, "day")}/${renderDate(data.persona.fechaIngreso, "month")}/${renderDate(data.persona.fechaIngreso, "year")}`
-                  : "-"}
-              </Text>
-            </View>
-            <View style={[styles.cell, styles.infoCell, { width: "28%" }]}>
-              <Text style={styles.infoLabel}>Fecha de impresión:</Text>
-              <Text style={styles.infoValue}>{fechaImpresion}</Text>
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.cell, styles.sectionHeader, { width: widthPct(ITEM_COL_WIDTH) }]}>
-              <Text>EQUIPO</Text>
-            </View>
-            <View style={[styles.cell, styles.sectionHeader, { width: widthPct(DATA_COL_WIDTH * 6) }]}>
-              <Text>ENTREGAS</Text>
-            </View>
-            <View style={[styles.cell, styles.tMergedTop, { width: widthPct(DATA_COL_WIDTH) }]} />
-            <View style={[styles.cell, styles.sectionHeader, { width: widthPct(DATA_COL_WIDTH * 6) }]}>
-              <Text>DEVOLUCIONES</Text>
-            </View>
-            <View style={[styles.cell, styles.tMergedTop, { width: widthPct(DATA_COL_WIDTH) }]} />
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.cell, styles.dateCell, { width: widthPct(ITEM_COL_WIDTH) }]}>
-              <Text>DÍA</Text>
-            </View>
-            {entregaCols.map((value, idx) => (
-              <View key={`eday-${idx}`} style={[styles.cell, styles.dateCell, { width: widthPct(DATA_COL_WIDTH) }]}>
-                <Text>{renderDate(value, "day")}</Text>
-              </View>
-            ))}
-            <View style={[styles.cell, styles.tMergedMiddle, { width: widthPct(DATA_COL_WIDTH) }]} />
-            {devolCols.map((value, idx) => (
-              <View key={`dday-${idx}`} style={[styles.cell, styles.dateCell, { width: widthPct(DATA_COL_WIDTH) }]}>
-                <Text>{renderDate(value, "day")}</Text>
-              </View>
-            ))}
-            <View style={[styles.cell, styles.tMergedMiddle, { width: widthPct(DATA_COL_WIDTH) }]} />
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.cell, styles.dateCell, { width: widthPct(ITEM_COL_WIDTH) }]}>
-              <Text>MES</Text>
-            </View>
-            {entregaCols.map((value, idx) => (
-              <View key={`emonth-${idx}`} style={[styles.cell, styles.dateCell, { width: widthPct(DATA_COL_WIDTH) }]}>
-                <Text>{renderDate(value, "month")}</Text>
-              </View>
-            ))}
-            <View style={[styles.cell, styles.tMergedMiddle, { width: widthPct(DATA_COL_WIDTH) }]}>
-              <Text style={styles.center}>T</Text>
-            </View>
-            {devolCols.map((value, idx) => (
-              <View key={`dmonth-${idx}`} style={[styles.cell, styles.dateCell, { width: widthPct(DATA_COL_WIDTH) }]}>
-                <Text>{renderDate(value, "month")}</Text>
-              </View>
-            ))}
-            <View style={[styles.cell, styles.tMergedMiddle, { width: widthPct(DATA_COL_WIDTH) }]}>
-              <Text style={styles.center}>T</Text>
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.cell, styles.dateCell, { width: widthPct(ITEM_COL_WIDTH) }]}>
-              <Text>AÑO</Text>
-            </View>
-            {entregaCols.map((value, idx) => (
-              <View key={`eyear-${idx}`} style={[styles.cell, styles.dateCell, { width: widthPct(DATA_COL_WIDTH) }]}>
-                <Text>{renderDate(value, "year")}</Text>
-              </View>
-            ))}
-            <View style={[styles.cell, styles.tMergedBottom, { width: widthPct(DATA_COL_WIDTH) }]} />
-            {devolCols.map((value, idx) => (
-              <View key={`dyear-${idx}`} style={[styles.cell, styles.dateCell, { width: widthPct(DATA_COL_WIDTH) }]}>
-                <Text>{renderDate(value, "year")}</Text>
-              </View>
-            ))}
-            <View style={[styles.cell, styles.tMergedBottom, { width: widthPct(DATA_COL_WIDTH) }]} />
-          </View>
-
-          {data.matrix.map((row, index) => (
-            <View key={`${row.item}-${index}`} style={styles.row}>
-              <View style={[styles.cell, { width: widthPct(ITEM_COL_WIDTH) }]}>
-                <Text style={styles.itemName}>{row.item}</Text>
-              </View>
-              {row.entrega.slice(0, 6).map((qty, idx) => (
-                <View key={`en-${index}-${idx}`} style={[styles.cell, { width: widthPct(DATA_COL_WIDTH) }]}>
-                  <Text style={styles.center}>{qty || ""}</Text>
-                </View>
-              ))}
-              <View style={[styles.cell, styles.totalCell, { width: widthPct(DATA_COL_WIDTH) }]}>
-                <Text style={[styles.bold, styles.center]}>{row.entregaTotal}</Text>
-              </View>
-              {row.devolucion.slice(0, 6).map((qty, idx) => (
-                <View key={`de-${index}-${idx}`} style={[styles.cell, { width: widthPct(DATA_COL_WIDTH) }]}>
-                  <Text style={styles.center}>{qty || ""}</Text>
-                </View>
-              ))}
-              <View style={[styles.cell, styles.totalCell, { width: widthPct(DATA_COL_WIDTH) }]}>
-                <Text style={[styles.bold, styles.center]}>{row.devolucionTotal}</Text>
-              </View>
-            </View>
-          ))}
-
-          <View style={styles.row}>
-            <View style={[styles.cell, styles.observacionesCell, { width: "100%" }]}>
-              <Text style={styles.observacionesTitle}>OBSERVACIONES</Text>
-              {data.observaciones.length === 0 ? (
-                <Text style={styles.observacionLine}> </Text>
-              ) : (
-                data.observaciones.map((obs, index) => (
-                  <Text key={`${obs.fecha}-${index}`} style={styles.observacionLine}>
-                    {renderDate(obs.fecha, "day")}/{renderDate(obs.fecha, "month")}/{renderDate(obs.fecha, "year")} - {" "}
-                    {obs.texto}
-                  </Text>
-                ))
-              )}
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.firmas}>
-          <View style={styles.firmaBlock}>
-            <Text>Firma del alistado:</Text>
-            <Text style={[styles.firmaCargo, styles.firmaNivel1]}>{data.persona.rangoAbreviacion}</Text>
-            <Text style={styles.firmaNivel2}>{alistadoNombre}</Text>
-          </View>
-
-          <View style={[styles.firmaBlock, styles.firmaNivel1]}>
-            <Text>{data.firmas.encargadoTexto}</Text>
-            <Text style={[styles.firmaCargo, styles.firmaNivel1]}>{data.firmas.encargadoRango}</Text>
-            <Text style={styles.firmaNivel2}>{data.firmas.encargadoNombre}</Text>
-          </View>
-
-          <View style={[styles.firmaBlock, styles.firmaNivel2]}>
-            <Text>{data.firmas.oficialTexto}</Text>
-            <Text style={[styles.firmaCargo, styles.firmaNivel1]}>{data.firmas.oficialRango}</Text>
-            <Text style={styles.firmaNivel2}>{data.firmas.oficialNombre}</Text>
-          </View>
-        </View>
-
-        {includePageNumbers ? (
-          <Text
-            fixed
-            style={styles.pageNumber}
-            render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) =>
-              `${pageNumberLabel} ${pageNumber} de ${totalPages}`
-            }
-          />
-        ) : null}
-      </Page>
+          );
+        })}
+      </View>
     );
-  };
 
-  const renderSingleHojaBytes = async (hoja: HojaEntregaSheetData) => {
+    const HojaEntregaSheetPage = ({ data }: { data: HojaEntregaSheetData }) => {
+      const alistadoNombre = buildAlistadoNombre(data);
+      const entregaCols = normalizeSixDates(data.entregas);
+      const devolCols = normalizeSixDates(data.devoluciones);
+      const ciPrefix = isValidUruguayanCi(data.persona.ci) ? "" : "⚠ ";
+      const ciDisplay = `${ciPrefix}${formatUruguayanCi(data.persona.ci)}`;
+      const headerInfoRows = buildHeaderInfoRows(data, fechaImpresion, ciDisplay);
+
+      const itemWidthStyle = { width: widthPct(ITEM_COL_WIDTH) };
+      const dataWidthStyle = { width: widthPct(DATA_COL_WIDTH) };
+      const sixDataWidthStyle = { width: widthPct(DATA_COL_WIDTH * 6) };
+
+      return (
+        <Page size="A4" style={styles.page}>
+          <View style={styles.sheet} wrap={false}>
+            <View style={styles.content}>
+              <View style={styles.table}>
+                <View style={styles.row}>
+                  <View style={[styles.cell, styles.topTitleCell, styles.noRightBorder, { width: "100%" }]}>
+                    <Text style={styles.topTitle}>
+                      {'Grupo "Brig.Gral.Manuel Oribe" de Artillería 105mm No.1.-'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.row}>
+                  <View style={[styles.cell, styles.subTitleCell, styles.noRightBorder, { width: "100%" }]}>
+                    <Text style={styles.subTitle}>ADMINISTRACIÓN - S4</Text>
+                  </View>
+                </View>
+
+                {headerInfoRows.map((row, index) => (
+                  <HeaderInfoRow key={`info-row-${index}`} cells={row} />
+                ))}
+
+                <View style={styles.row}>
+                  <View style={[styles.cell, styles.sectionHeader, itemWidthStyle]}>
+                    <Text style={styles.sectionHeaderText}>EQUIPO</Text>
+                  </View>
+
+                  <View style={[styles.cell, styles.sectionHeader, sixDataWidthStyle]}>
+                    <Text style={styles.sectionHeaderText}>ENTREGAS</Text>
+                  </View>
+
+                  <View style={[styles.cell, styles.sectionHeader, dataWidthStyle]} />
+
+                  <View style={[styles.cell, styles.sectionHeader, sixDataWidthStyle]}>
+                    <Text style={styles.sectionHeaderText}>DEVOLUCIONES</Text>
+                  </View>
+
+                  <View style={[styles.cell, styles.sectionHeader, styles.noRightBorder, dataWidthStyle]} />
+                </View>
+
+                {DATE_ROW_CONFIGS.map((config) => {
+                  const mergedStyle =
+                    config.mergedVariant === "top"
+                      ? styles.tMergedTop
+                      : config.mergedVariant === "middle"
+                      ? styles.tMergedMiddle
+                      : styles.tMergedBottom;
+
+                  return (
+                    <View key={config.key} style={styles.row}>
+                      <View style={[styles.cell, styles.dateLabelCell, itemWidthStyle]}>
+                        <Text style={styles.dateLabelText}>{config.label}</Text>
+                      </View>
+
+                      {entregaCols.map((value, idx) => (
+                        <View
+                          key={`${config.key}-entrega-${idx}`}
+                          style={[styles.cell, styles.dateValueCell, dataWidthStyle]}
+                        >
+                          <Text style={styles.dateValueText}>{renderDate(value, config.part)}</Text>
+                        </View>
+                      ))}
+
+                      <View style={[styles.cell, mergedStyle, dataWidthStyle]}>
+                        {config.showTMarkers ? <Text style={styles.tText}>T</Text> : null}
+                      </View>
+
+                      {devolCols.map((value, idx) => (
+                        <View
+                          key={`${config.key}-devol-${idx}`}
+                          style={[styles.cell, styles.dateValueCell, dataWidthStyle]}
+                        >
+                          <Text style={styles.dateValueText}>{renderDate(value, config.part)}</Text>
+                        </View>
+                      ))}
+
+                      <View style={[styles.cell, mergedStyle, styles.noRightBorder, dataWidthStyle]}>
+                        {config.showTMarkers ? <Text style={styles.tText}>T</Text> : null}
+                      </View>
+                    </View>
+                  );
+                })}
+
+                <View style={styles.matrixSection}>
+                  {data.matrix.map((row, index) => (
+                    <View key={`${row.item}-${index}`} style={[styles.row, styles.matrixRow]}>
+                      <View style={[styles.cell, styles.itemCell, itemWidthStyle]}>
+                        <Text style={styles.itemName}>{row.item}</Text>
+                      </View>
+
+                      {row.entrega.slice(0, 6).map((qty, idx) => (
+                        <View key={`entrega-${index}-${idx}`} style={[styles.cell, styles.qtyCell, dataWidthStyle]}>
+                          <Text style={styles.qtyText}>{formatQuantity(qty)}</Text>
+                        </View>
+                      ))}
+
+                      <View style={[styles.cell, styles.totalCell, dataWidthStyle]}>
+                        <Text style={styles.totalText}>{formatTotal(row.entregaTotal)}</Text>
+                      </View>
+
+                      {row.devolucion.slice(0, 6).map((qty, idx) => (
+                        <View key={`devolucion-${index}-${idx}`} style={[styles.cell, styles.qtyCell, dataWidthStyle]}>
+                          <Text style={styles.qtyText}>{formatQuantity(qty)}</Text>
+                        </View>
+                      ))}
+
+                      <View style={[styles.cell, styles.totalCell, styles.noRightBorder, dataWidthStyle]}>
+                        <Text style={styles.totalText}>{formatTotal(row.devolucionTotal)}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={styles.row}>
+                  <View
+                    style={[
+                      styles.cell,
+                      styles.observacionesWrapper,
+                      styles.noRightBorder,
+                      { width: "100%" },
+                    ]}
+                  >
+                    <Text style={styles.observacionesTitle}>OBSERVACIONES</Text>
+
+                    {data.observaciones.length === 0 ? (
+                      <Text style={styles.observacionLine}> </Text>
+                    ) : (
+                      data.observaciones.map((obs, index) => (
+                        <Text key={`${obs.fecha}-${index}`} style={styles.observacionLine}>
+                          {`${renderDate(obs.fecha, "day")}/${renderDate(obs.fecha, "month")}/${renderDate(obs.fecha, "year")} - ${obs.texto}`}
+                        </Text>
+                      ))
+                    )}
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.firmas}>
+                <View style={styles.firmaBlock}>
+                  <Text style={styles.firmaTitulo}>Firma del alistado:</Text>
+                  <Text style={styles.firmaCargo}>{data.persona.rangoAbreviacion}</Text>
+                  <Text style={styles.firmaNombre}>{alistadoNombre}</Text>
+                </View>
+
+                <View style={styles.firmaBlock}>
+                  <Text style={styles.firmaTitulo}>{data.firmas.encargadoTexto}</Text>
+                  <Text style={styles.firmaCargo}>{data.firmas.encargadoRango}</Text>
+                  <Text style={styles.firmaNombre}>{data.firmas.encargadoNombre}</Text>
+                </View>
+
+                <View style={[styles.firmaBlock, styles.firmaBlockLast]}>
+                  <Text style={styles.firmaTitulo}>{data.firmas.oficialTexto}</Text>
+                  <Text style={styles.firmaCargo}>{data.firmas.oficialRango}</Text>
+                  <Text style={styles.firmaNombre}>{data.firmas.oficialNombre}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {includePageNumbers ? (
+            <Text
+              fixed
+              style={styles.pageNumber}
+              render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) =>
+                totalPages > 1 ? `${pageNumberLabel} ${pageNumber} de ${totalPages}` : ""
+              }
+            />
+          ) : null}
+        </Page>
+      );
+    };
+
     const HojaEntregaPdfDocument = () => (
       <Document title="Hoja de Entrega" author="Deposito ART1">
         <HojaEntregaSheetPage data={hoja} />
       </Document>
     );
+
     const blob = await pdf(<HojaEntregaPdfDocument />).toBlob();
     const arrayBuffer = await blob.arrayBuffer();
     return new Uint8Array(arrayBuffer);
+  };
+
+  const renderSingleHojaBestFitBytes = async (hoja: HojaEntregaSheetData) => {
+    let bestProfileId: DensityProfile["id"] | null = null;
+
+    for (const profile of DENSITY_PROFILES) {
+      const bytes = await renderSingleHojaBytesWithProfile(hoja, profile);
+      bestProfileId = profile.id;
+
+      const pageCount = (await PDFDocument.load(bytes)).getPageCount();
+      if (pageCount === 1) {
+        return bytes;
+      }
+    }
+
+    throw new Error(
+      `La hoja de entrega de ${buildAlistadoNombre(hoja)} no entra completa en una sola página A4 incluso con el perfil más compacto (${bestProfileId}). No se generó un PDF cortado.`,
+    );
   };
 
   if (hojas.length === 0) {
@@ -440,16 +703,16 @@ export async function renderHojasEntregaPdf(
   }
 
   if (hojas.length === 1) {
-    return renderSingleHojaBytes(hojas[0]);
+    return renderSingleHojaBestFitBytes(hojas[0]);
   }
 
-  // Generamos cada persona por separado para que el contador de páginas
-  // se reinicie por hoja (Hoja 1 de N por persona) y luego unimos todo.
   const mergedPdf = await PDFDocument.create();
+
   for (const hoja of hojas) {
-    const singleBytes = await renderSingleHojaBytes(hoja);
+    const singleBytes = await renderSingleHojaBestFitBytes(hoja);
     const singlePdf = await PDFDocument.load(singleBytes);
     const copiedPages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
+
     for (const page of copiedPages) {
       mergedPdf.addPage(page);
     }

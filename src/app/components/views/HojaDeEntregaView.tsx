@@ -140,47 +140,21 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
     };
   }, [ci]);
 
-  const exportPdf = useCallback(async () => {
+  const exportPdf = useCallback(() => {
     if (!data || pdfDownloading) return;
 
     setPdfDownloading(true);
     try {
-      setStatus("Generando PDF A4... esto puede tardar unos segundos.");
-      const response = await fetch(`/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf`, {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        let message = "No se pudo generar el PDF.";
-        try {
-          const payload = (await response.json()) as { error?: string };
-          if (typeof payload.error === "string" && payload.error.trim() !== "") {
-            message = payload.error;
-          }
-        } catch {
-          // Ignorar errores de parseo y usar mensaje por defecto.
-        }
-        throw new Error(message);
-      }
-
-      setStatus("PDF generado. Iniciando descarga...");
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const disposition = response.headers.get("Content-Disposition");
-      const match = disposition?.match(/filename=\"?([^\";]+)\"?/i);
-      const fallbackFileName = `hoja-entrega-${ci}.pdf`;
-      const fileName = match?.[1]?.trim() || fallbackFileName;
-
+      setStatus("Descargando PDF A4...");
+      const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf`;
       const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = fileName;
+      link.href = pdfUrl;
       link.rel = "noopener";
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(objectUrl);
+
       setStatus("Descarga iniciada.");
       window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
     } catch (error: unknown) {
