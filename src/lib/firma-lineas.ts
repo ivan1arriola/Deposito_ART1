@@ -19,6 +19,34 @@ export type FirmasHojaEntregaInput = FirmasInstitucionalesInput & {
   alistadoNombre: string;
 };
 
+function buildFirmaAutoridadLineas(input: {
+  keyPrefix: string;
+  texto: string;
+  rango: string;
+  nombre: string;
+  startIndentLevel?: number;
+}): FirmaLinea[] {
+  const startIndentLevel = input.startIndentLevel ?? 1;
+  return [
+    {
+      key: `${input.keyPrefix}-texto`,
+      text: input.texto,
+      indentLevel: startIndentLevel,
+    },
+    {
+      key: `${input.keyPrefix}-rango`,
+      text: input.rango,
+      indentLevel: startIndentLevel + 1,
+      isBold: true,
+    },
+    {
+      key: `${input.keyPrefix}-nombre`,
+      text: input.nombre,
+      indentLevel: startIndentLevel + 2,
+    },
+  ];
+}
+
 export function buildFirmasInstitucionalesLineas(
   input: FirmasInstitucionalesInput,
   startIndentLevel = 0,
@@ -77,6 +105,18 @@ export function buildFirmasHojaEntregaLineas(input: FirmasHojaEntregaInput): Fir
       text: input.alistadoNombre,
       indentLevel: 2,
     },
-    ...buildFirmasInstitucionalesLineas(input, 3),
+    ...buildFirmaAutoridadLineas({
+      keyPrefix: "encargado",
+      texto: input.encargadoTexto,
+      rango: input.encargadoRango,
+      nombre: input.encargadoNombre,
+    }),
+    ...buildFirmaAutoridadLineas({
+      keyPrefix: "oficial",
+      texto: input.oficialTexto,
+      rango: input.oficialRango,
+      nombre: input.oficialNombre,
+      startIndentLevel: 2,
+    }),
   ];
 }

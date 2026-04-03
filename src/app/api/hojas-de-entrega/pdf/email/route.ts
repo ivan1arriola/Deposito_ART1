@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
@@ -6,12 +6,120 @@ import { formatHojaEntregaDisplayDate, getAllHojasEntregaData } from "@/lib/hoja
 import { sendMail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
 import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
+import {
+  completeHojasEntregaEmailJob,
+  createHojasEntregaEmailJob,
+  failHojasEntregaEmailJob,
+  findActiveHojasEntregaEmailJob,
+  setHojasEntregaEmailJobProgress,
+} from "@/lib/server/hojas-entrega-email-jobs";
 import { buildUnidadHojasEntregaFileName } from "@/lib/server/pdf-filename";
 import { renderHojasEntregaPdf } from "@/lib/server/render-hoja-entrega-react-pdf";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
+
+async function runHojasEntregaEmailJob(input: {
+  jobId: string;
+  recipient: string;
+  requesterLabel: string;
+  username: string;
+  usuarioId: string;
+}) {
+  try {
+    setHojasEntregaEmailJobProgress(input.jobId, {
+      step: "loading-data",
+      progress: 18,
+      message: "Consultando personal, tallas y movimientos para generar las hojas de entrega...",
+      to: input.recipient,
+    });
+
+    const hojas = await getAllHojasEntregaData();
+    if (hojas.length === 0) {
+      throw new Error("No hay personal para generar hojas de entrega.");
+    }
+
+    const fechaImpresion = formatHojaEntregaDisplayDate(new Date());
+    setHojasEntregaEmailJobProgress(input.jobId, {
+      step: "rendering-pdf",
+      progress: 48,
+      message: `Generando PDF A4 consolidado de ${hojas.length} hoja(s)...`,
+      to: input.recipient,
+      hojas: hojas.length,
+    });
+
+    const pdfBytes = await renderHojasEntregaPdf(hojas, fechaImpresion, {
+      includePageNumbers: true,
+      pageNumberLabel: "Hoja",
+    });
+
+    const fileName = buildUnidadHojasEntregaFileName();
+    setHojasEntregaEmailJobProgress(input.jobId, {
+      step: "preparing-email",
+      progress: 76,
+      message: `Adjuntando ${fileName} al mensaje de correo...`,
+      to: input.recipient,
+      hojas: hojas.length,
+      fileName,
+    });
+
+    setHojasEntregaEmailJobProgress(input.jobId, {
+      step: "sending-email",
+      progress: 90,
+      message: `Enviando correo a ${input.recipient} y confirmando entrega al servidor SMTP...`,
+      to: input.recipient,
+      hojas: hojas.length,
+      fileName,
+    });
+
+    await sendMail({
+      to: input.recipient,
+      subject: `Hojas de entrega unidad - ${fechaImpresion}`,
+      text:
+        `Se adjunta el PDF consolidado de hojas de entrega de la unidad.\n\n` +
+        `Total de hojas: ${hojas.length}\n` +
+        `Fecha de impresion: ${fechaImpresion}\n` +
+        `Usuario solicitante: ${input.requesterLabel || input.username}\n` +
+        `Archivo adjunto: ${fileName}\n`,
+      html:
+        "<p>Se adjunta el PDF consolidado de hojas de entrega de la unidad.</p>" +
+        `<p><strong>Total de hojas:</strong> ${hojas.length}<br/>` +
+        `<strong>Fecha de impresion:</strong> ${fechaImpresion}<br/>` +
+        `<strong>Usuario solicitante:</strong> ${input.requesterLabel || input.username}<br/>` +
+        `<strong>Archivo adjunto:</strong> ${fileName}</p>`,
+      attachments: [
+        {
+          filename: fileName,
+          content: Buffer.from(pdfBytes),
+          contentType: "application/pdf",
+        },
+      ],
+    });
+
+    await logAudit({
+      usuarioId: input.usuarioId,
+      accion: "HOJAS_ENTREGA_PDF_EMAIL_SENT",
+      entidad: "HOJA_ENTREGA",
+      detalle: {
+        to: input.recipient,
+        fileName,
+        hojas: hojas.length,
+        fechaImpresion,
+      },
+    });
+
+    completeHojasEntregaEmailJob(input.jobId, {
+      to: input.recipient,
+      fileName,
+      hojas: hojas.length,
+      message: `PDF enviado por correo a ${input.recipient}.`,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "No se pudo enviar el PDF por correo.";
+    failHojasEntregaEmailJob(input.jobId, message);
+  }
+}
 
 export async function POST(request: Request) {
   const auth = await authorizeRequest(request, "read_data");
@@ -56,62 +164,40 @@ export async function POST(request: Request) {
       );
     }
 
-    const hojas = await getAllHojasEntregaData();
-    if (hojas.length === 0) {
-      return NextResponse.json({ error: "No hay personal para generar hojas de entrega." }, { status: 404 });
+    const existingJob = findActiveHojasEntregaEmailJob(usuario.usuarioId);
+    if (existingJob) {
+      return NextResponse.json(
+        {
+          error: "Ya hay un envio de hojas de entrega en curso para este usuario.",
+          job: existingJob,
+        },
+        { status: 409 },
+      );
     }
 
-    const fechaImpresion = formatHojaEntregaDisplayDate(new Date());
-    const pdfBytes = await renderHojasEntregaPdf(hojas, fechaImpresion, {
-      includePageNumbers: true,
-      pageNumberLabel: "Hoja",
-    });
-    const fileName = buildUnidadHojasEntregaFileName();
     const requesterLabel = [usuario.rango.abreviacion, usuario.nombre, usuario.apellido].filter(Boolean).join(" ").trim();
-
-    await sendMail({
+    const job = createHojasEntregaEmailJob({
+      userId: usuario.usuarioId,
       to: recipient,
-      subject: `Hojas de entrega unidad - ${fechaImpresion}`,
-      text:
-        `Se adjunta el PDF consolidado de hojas de entrega de la unidad.\n\n` +
-        `Total de hojas: ${hojas.length}\n` +
-        `Fecha de impresion: ${fechaImpresion}\n` +
-        `Usuario solicitante: ${requesterLabel || usuario.username}\n` +
-        `Archivo adjunto: ${fileName}\n`,
-      html:
-        "<p>Se adjunta el PDF consolidado de hojas de entrega de la unidad.</p>" +
-        `<p><strong>Total de hojas:</strong> ${hojas.length}<br/>` +
-        `<strong>Fecha de impresion:</strong> ${fechaImpresion}<br/>` +
-        `<strong>Usuario solicitante:</strong> ${requesterLabel || usuario.username}<br/>` +
-        `<strong>Archivo adjunto:</strong> ${fileName}</p>`,
-      attachments: [
-        {
-          filename: fileName,
-          content: Buffer.from(pdfBytes),
-          contentType: "application/pdf",
-        },
-      ],
+      message: "Solicitud aceptada. Iniciando envio del PDF en segundo plano...",
     });
 
-    await logAudit({
-      usuarioId: usuario.usuarioId,
-      accion: "HOJAS_ENTREGA_PDF_EMAIL_SENT",
-      entidad: "HOJA_ENTREGA",
-      detalle: {
-        to: recipient,
-        fileName,
-        hojas: hojas.length,
-        fechaImpresion,
-      },
+    after(async () => {
+      await runHojasEntregaEmailJob({
+        jobId: job.jobId,
+        recipient,
+        requesterLabel,
+        username: usuario.username,
+        usuarioId: usuario.usuarioId,
+      });
     });
 
     return NextResponse.json({
       ok: true,
-      to: recipient,
-      hojas: hojas.length,
-      fileName,
-      message: "PDF enviado por correo correctamente.",
-    });
+      accepted: true,
+      message: "Envio iniciado en segundo plano.",
+      job,
+    }, { status: 202 });
   } catch (error: unknown) {
     if (isPrismaDatabaseUnavailable(error)) {
       return NextResponse.json(

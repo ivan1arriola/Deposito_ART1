@@ -52,7 +52,7 @@ export function PersonalFilters({
   }, [bateriaFilter, searchApellidos, searchCedula, searchNombres]);
 
   return (
-    <section className={`rounded-2xl border border-stone-200 bg-stone-50/80 p-3 sm:p-4 ${className ?? ""}`}>
+    <section className={`rounded-[28px] border border-[rgba(88,80,58,0.18)] bg-[linear-gradient(180deg,rgba(247,244,234,0.96)_0%,rgba(232,228,213,0.94)_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] sm:p-4 ${className ?? ""}`}>
       <div className="flex flex-col gap-3 sm:min-h-[74px] sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-stone-900">Filtros de subalternos</p>
@@ -67,14 +67,14 @@ export function PersonalFilters({
             type="button"
             onClick={onClear}
             disabled={!hasFilters}
-            className="rounded-lg bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-xl border border-[rgba(36,43,30,0.76)] bg-[linear-gradient(180deg,rgba(67,78,53,0.98)_0%,rgba(43,52,35,0.98)_100%)] px-3 py-2 text-xs font-bold text-[rgba(245,239,219,0.96)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Limpiar filtros
           </button>
           <button
             type="button"
             onClick={() => setShowMobileFilters((current) => !current)}
-            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 md:hidden"
+            className="rounded-xl border border-[rgba(95,86,61,0.26)] bg-[linear-gradient(180deg,rgba(250,248,240,0.96)_0%,rgba(237,233,220,0.94)_100%)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] md:hidden"
           >
             {showMobileFilters ? "Ocultar filtros" : "Mostrar filtros"}
           </button>
@@ -122,8 +122,8 @@ export function PersonalFilters({
                   aria-pressed={isActive}
                   className={`h-11 w-full rounded-xl border px-3 text-xs font-semibold transition sm:text-sm ${
                     isActive
-                      ? "border-stone-800 bg-stone-800 text-white"
-                      : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+                      ? "border-[rgba(145,111,26,0.78)] bg-[linear-gradient(180deg,rgba(255,210,74,0.98)_0%,rgba(214,170,38,0.98)_100%)] text-[var(--color-ejercito-black)] shadow-[inset_0_1px_0_rgba(255,255,255,0.34)]"
+                      : "border-[rgba(95,86,61,0.24)] bg-[linear-gradient(180deg,rgba(250,248,240,0.96)_0%,rgba(237,233,220,0.94)_100%)] text-[var(--color-text-primary)] hover:bg-[rgba(94,107,72,0.12)]"
                   }`}
                 >
                   {option.label}

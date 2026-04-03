@@ -26,12 +26,12 @@
   --color-neutral-900: #17212B;
 
   /* Semánticos */
-  --color-surface-canvas: var(--color-neutral-100);
-  --color-surface-base: var(--color-neutral-0);
-  --color-surface-muted: var(--color-neutral-50);
+  --color-surface-canvas: #D7DDCC;
+  --color-surface-base: #F0EBD9;
+  --color-surface-muted: #E4DECB;
   --color-surface-strong: var(--color-ejercito-blue);
-  --color-border-subtle: var(--color-neutral-300);
-  --color-border-strong: var(--color-neutral-500);
+  --color-border-subtle: #B7B09A;
+  --color-border-strong: #8C8369;
   --color-text-primary: var(--color-neutral-900);
   --color-text-secondary: var(--color-neutral-700);
   --color-text-inverse: var(--color-ejercito-white);
@@ -107,7 +107,7 @@ body {
   margin: 0;
   background-color: var(--color-camo-base);
   background-image:
-    linear-gradient(rgb(239 242 236 / 66%), rgb(239 242 236 / 66%)),
+    linear-gradient(rgb(233 236 224 / 68%), rgb(233 236 224 / 68%)),
     var(--background-camo-pattern);
   background-size: auto, 224px 224px;
   background-repeat: no-repeat, repeat;
@@ -142,7 +142,7 @@ textarea {
   min-height: 40px;
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
-  background: var(--color-surface-base);
+  background: linear-gradient(180deg, rgb(250 248 241 / 96%) 0%, rgb(239 235 223 / 98%) 100%);
   color: var(--color-text-primary);
   transition: border-color 0.14s ease, box-shadow 0.14s ease;
 }
@@ -191,28 +191,28 @@ input[type="radio"] {
 .ej-surface {
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--color-surface-base);
+  background: linear-gradient(180deg, rgb(248 246 238 / 96%) 0%, rgb(232 228 214 / 98%) 100%);
   box-shadow: var(--shadow-xs);
 }
 
 .ej-surface-muted {
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--color-surface-muted);
+  background: linear-gradient(180deg, rgb(236 232 217 / 94%) 0%, rgb(226 221 204 / 98%) 100%);
 }
 
 .ej-header,
 .ej-footer {
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-  background: var(--color-surface-base);
+  background: linear-gradient(180deg, rgb(248 246 238 / 96%) 0%, rgb(232 228 214 / 98%) 100%);
   color: var(--color-text-primary);
 }
 
 .ej-navigation {
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-  background: var(--color-surface-base);
+  background: linear-gradient(180deg, rgb(248 246 238 / 96%) 0%, rgb(232 228 214 / 98%) 100%);
 }
 
 /* Bloques heredados */
@@ -224,7 +224,7 @@ input[type="radio"] {
 
 .ej-card {
   border: 1px solid var(--color-border-subtle);
-  background: var(--color-surface-base);
+  background: linear-gradient(180deg, rgb(248 246 238 / 96%) 0%, rgb(232 228 214 / 98%) 100%);
   box-shadow: var(--shadow-xs);
 }
 
@@ -313,13 +313,13 @@ input[type="radio"] {
   width: 100%;
   border-collapse: collapse;
   border: 1px solid var(--color-border-subtle);
-  background: var(--color-surface-base);
+  background: linear-gradient(180deg, rgb(248 246 238 / 96%) 0%, rgb(232 228 214 / 98%) 100%);
 }
 
 .ej-table th {
   border-bottom: 1px solid var(--color-border-subtle);
-  background: var(--color-neutral-100);
-  color: var(--color-text-secondary);
+  background: #d5d0bb;
+  color: #4d351d;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-size: 12px;

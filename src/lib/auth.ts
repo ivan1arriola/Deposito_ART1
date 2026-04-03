@@ -14,6 +14,7 @@ export type AuthUser = {
   nombre: string;
   apellido: string;
   username: string;
+  mailReferencia: string | null;
   rol: UserRole;
   activo: boolean;
 };
@@ -78,6 +79,7 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
             nombre: true,
             apellido: true,
             username: true,
+            mailReferencia: true,
             rol: true,
             activo: true,
             rango: {
@@ -101,6 +103,7 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
             nombre: usuario.nombre,
             apellido: usuario.apellido,
             username: usuario.username,
+            mailReferencia: usuario.mailReferencia,
             rol: usuario.rol,
             activo: usuario.activo,
           };

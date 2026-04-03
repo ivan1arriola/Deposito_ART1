@@ -53,6 +53,7 @@ const A4_MARGIN_X = 14;
 const A4_MARGIN_TOP = 10;
 const A4_MARGIN_BOTTOM = 10;
 const A4_CONTENT_HEIGHT = A4_PAGE_HEIGHT - A4_MARGIN_TOP - A4_MARGIN_BOTTOM;
+const PT_PER_MM = 72 / 25.4;
 
 const BORDER = "#000000";
 const BG_WHITE = "#ffffff";
@@ -79,6 +80,13 @@ const DENSITY_PROFILES: DensityProfile[] = [
 function scaled(profile: DensityProfile, value: number, min = 0) {
   const output = Number((value * profile.scale).toFixed(2));
   return Math.max(min, output);
+}
+
+function getSignatureTabSize(profile: DensityProfile) {
+  if (profile.id === "normal") return 8 * PT_PER_MM;
+  if (profile.id === "compact") return 7 * PT_PER_MM;
+  if (profile.id === "tight") return 6 * PT_PER_MM;
+  return 5 * PT_PER_MM;
 }
 
 function widthPct(value: number) {
@@ -177,7 +185,7 @@ export async function renderHojasEntregaPdf(
     hoja: HojaEntregaSheetData,
     profile: DensityProfile,
   ) => {
-    const signatureTab = scaled(profile, 14, 8);
+    const signatureTab = getSignatureTabSize(profile);
     const signatureLineHeight = 1.5;
 
     const styles = StyleSheet.create({

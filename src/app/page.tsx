@@ -116,6 +116,7 @@ import {
 import { normalizeSearchTerm } from "@/lib/search";
 import { moveIdInOrder, compareTallaOptions } from "@/lib/array-utils";
 import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
+import type { HojasEntregaEmailJobSnapshot } from "@/lib/hojas-entrega-email-job";
 
 // Importar handlers de operaciones
 import {
@@ -191,6 +192,18 @@ const STATUS_ENTER_CREDENTIALS = "Ingresa tus credenciales.";
 const STATUS_SESSION_CLOSED = "Sesion cerrada. Ingresa tus credenciales.";
 const AUDIT_USER_FILTER_ALL = "__ALL__";
 const AUDIT_USER_FILTER_SYSTEM = "__SYSTEM__";
+const BULK_DELIVERY_EMAIL_TOAST_ID = "bulk-delivery-email-job";
+
+function isActiveHojasEntregaEmailJob(job: HojasEntregaEmailJobSnapshot | null | undefined) {
+  return job?.status === "queued" || job?.status === "running";
+}
+
+function describeHojasEntregaEmailJob(job: HojasEntregaEmailJobSnapshot) {
+  const progressLabel = job.progress > 0 && job.progress < 100 ? ` (${job.progress}%)` : "";
+  const fileLabel = job.fileName ? `\nArchivo: ${job.fileName}` : "";
+  const recipientLabel = job.to ? `\nDestino: ${job.to}` : "";
+  return `${job.message}${progressLabel}${recipientLabel}${fileLabel}`;
+}
 
 function rangoLooksLikeSargento(rango: { abreviacion: string; nombreCompleto: string } | null | undefined) {
   if (!rango) return false;
@@ -363,12 +376,19 @@ export default function Home() {
   const [auditPageSize, setAuditPageSize] = useState(25);
   const [bulkDeliveryPdfLoading, setBulkDeliveryPdfLoading] = useState(false);
   const [bulkDeliveryPdfStepIndex, setBulkDeliveryPdfStepIndex] = useState(0);
-  const [bulkDeliveryEmailLoading, setBulkDeliveryEmailLoading] = useState(false);
-  const [bulkDeliveryEmailStepIndex, setBulkDeliveryEmailStepIndex] = useState(0);
+  const [bulkDeliveryEmailJob, setBulkDeliveryEmailJob] = useState<HojasEntregaEmailJobSnapshot | null>(null);
+  const bulkDeliveryEmailPollTimeoutRef = useRef<number | null>(null);
   const lastToastStatusRef = useRef<string | null>(null);
 
   const isAdmin = currentUser?.rol === "ADMIN";
   const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
+  const currentUserReferenceEmail = typeof currentUser?.mailReferencia === "string" ? currentUser.mailReferencia.trim() : "";
+  const bulkDeliveryEmailBusy = isActiveHojasEntregaEmailJob(bulkDeliveryEmailJob);
+  const bulkDeliveryEmailDisabledReason = bulkDeliveryEmailBusy
+    ? "Ya hay un envio de hojas de entrega en curso. Puedes seguirlo desde la notificacion flotante."
+    : !currentUserReferenceEmail
+      ? "Configura un correo de referencia en tu usuario para habilitar este envio."
+      : null;
   const canManageOwnAccount = canWrite;
   const canDelete = canWrite;
   const canDeleteRegistros = isAdmin;
@@ -4035,13 +4055,116 @@ export default function Home() {
     setConfirmDialog(null);
   }
 
+  const clearBulkDeliveryEmailPolling = useCallback(() => {
+    if (bulkDeliveryEmailPollTimeoutRef.current !== null) {
+      window.clearTimeout(bulkDeliveryEmailPollTimeoutRef.current);
+      bulkDeliveryEmailPollTimeoutRef.current = null;
+    }
+  }, []);
+
+  const syncBulkDeliveryEmailToast = useCallback((job: HojasEntregaEmailJobSnapshot) => {
+    const description = describeHojasEntregaEmailJob(job);
+
+    if (job.status === "completed") {
+      toast.success(job.to ? `PDF enviado a ${job.to}` : "PDF enviado por correo.", {
+        id: BULK_DELIVERY_EMAIL_TOAST_ID,
+        description,
+        duration: 8000,
+      });
+      return;
+    }
+
+    if (job.status === "failed") {
+      toast.error("Error al enviar PDF por correo.", {
+        id: BULK_DELIVERY_EMAIL_TOAST_ID,
+        description,
+        duration: 9000,
+      });
+      return;
+    }
+
+    toast.loading("Enviando PDF por correo en segundo plano...", {
+      id: BULK_DELIVERY_EMAIL_TOAST_ID,
+      description,
+      duration: Infinity,
+    });
+  }, []);
+
+  const pollBulkDeliveryEmailJob = useCallback(
+    async (jobId: string) => {
+      try {
+        const response = await fetch(`/api/hojas-de-entrega/pdf/email/${encodeURIComponent(jobId)}`, {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const rawBody = await response.text();
+        let payload: { error?: string; job?: HojasEntregaEmailJobSnapshot } | null = null;
+        if (rawBody) {
+          try {
+            payload = JSON.parse(rawBody) as { error?: string; job?: HojasEntregaEmailJobSnapshot };
+          } catch {
+            payload = null;
+          }
+        }
+
+        if (!response.ok) {
+          const message =
+            payload && typeof payload.error === "string" && payload.error.trim() !== ""
+              ? payload.error
+              : "No se pudo consultar el estado del envio.";
+          throw new Error(message);
+        }
+
+        if (!payload?.job) {
+          throw new Error("El servidor no devolvio el estado del envio.");
+        }
+
+        const nextJob = payload.job;
+        setBulkDeliveryEmailJob(nextJob);
+        syncBulkDeliveryEmailToast(nextJob);
+
+        if (nextJob.status === "completed") {
+          clearBulkDeliveryEmailPolling();
+          setStatus(nextJob.to ? `PDF enviado por correo a ${nextJob.to}.` : "PDF enviado por correo.");
+          return;
+        }
+
+        if (nextJob.status === "failed") {
+          clearBulkDeliveryEmailPolling();
+          setStatus(`Error al enviar PDF por correo: ${nextJob.error ?? nextJob.message}`);
+          return;
+        }
+
+        clearBulkDeliveryEmailPolling();
+        bulkDeliveryEmailPollTimeoutRef.current = window.setTimeout(() => {
+          void pollBulkDeliveryEmailJob(jobId);
+        }, 1200);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "No se pudo consultar el estado del envio.";
+
+        toast.loading("Enviando PDF por correo en segundo plano...", {
+          id: BULK_DELIVERY_EMAIL_TOAST_ID,
+          description: `Seguimos consultando el estado del envio...\n${message}`,
+          duration: Infinity,
+        });
+
+        clearBulkDeliveryEmailPolling();
+        bulkDeliveryEmailPollTimeoutRef.current = window.setTimeout(() => {
+          void pollBulkDeliveryEmailJob(jobId);
+        }, 2500);
+      }
+    },
+    [clearBulkDeliveryEmailPolling, syncBulkDeliveryEmailToast],
+  );
+
   const printAllDeliverySheets = useCallback(async () => {
     if (personal.length === 0) {
       toast.info("No hay personal para imprimir.");
       return;
     }
 
-    if (bulkDeliveryPdfLoading || bulkDeliveryEmailLoading) {
+    if (bulkDeliveryPdfLoading) {
       setStatus("Ya hay una generación de PDF de hojas de entrega en curso.");
       return;
     }
@@ -4103,7 +4226,7 @@ export default function Home() {
     } finally {
       setBulkDeliveryPdfLoading(false);
     }
-  }, [bulkDeliveryEmailLoading, bulkDeliveryPdfLoading, personal.length]);
+  }, [bulkDeliveryPdfLoading, personal.length]);
 
   const emailAllDeliverySheets = useCallback(async () => {
     if (personal.length === 0) {
@@ -4111,15 +4234,18 @@ export default function Home() {
       return;
     }
 
-    if (bulkDeliveryPdfLoading || bulkDeliveryEmailLoading) {
-      setStatus("Ya hay una generación de PDF de hojas de entrega en curso.");
+    if (bulkDeliveryPdfLoading) {
+      setStatus("Ya hay una generación local de PDF de hojas de entrega en curso.");
       return;
     }
 
-    setBulkDeliveryEmailLoading(true);
-    setBulkDeliveryEmailStepIndex(0);
-    setStatus(`Generando PDF A4 y enviando ${personal.length} hojas al correo del usuario...`);
-    toast.info(`Preparando envio por correo de ${personal.length} hojas.`);
+    if (isActiveHojasEntregaEmailJob(bulkDeliveryEmailJob)) {
+      setStatus("Ya hay un envio de hojas de entrega ejecutandose en segundo plano.");
+      syncBulkDeliveryEmailToast(bulkDeliveryEmailJob);
+      return;
+    }
+
+    setStatus(`Iniciando envio en segundo plano de ${personal.length} hojas de entrega...`);
 
     try {
       const response = await fetch("/api/hojas-de-entrega/pdf/email", {
@@ -4128,38 +4254,60 @@ export default function Home() {
       });
 
       const rawBody = await response.text();
-      let payload: { error?: string; message?: string; to?: string; fileName?: string; hojas?: number } | null = null;
+      let payload: { error?: string; message?: string; job?: HojasEntregaEmailJobSnapshot } | null = null;
       if (rawBody) {
         try {
-          payload = JSON.parse(rawBody) as { error?: string; message?: string; to?: string; fileName?: string; hojas?: number };
+          payload = JSON.parse(rawBody) as { error?: string; message?: string; job?: HojasEntregaEmailJobSnapshot };
         } catch {
           payload = null;
         }
+      }
+
+      if (response.status === 409 && payload?.job) {
+        const existingJob = payload.job;
+        setBulkDeliveryEmailJob(existingJob);
+        syncBulkDeliveryEmailToast(existingJob);
+        clearBulkDeliveryEmailPolling();
+        bulkDeliveryEmailPollTimeoutRef.current = window.setTimeout(() => {
+          void pollBulkDeliveryEmailJob(existingJob.jobId);
+        }, 250);
+        setStatus("El envio ya estaba en curso. Se retomó el seguimiento.");
+        return;
       }
 
       if (!response.ok) {
         const message =
           payload && typeof payload.error === "string" && payload.error.trim() !== ""
             ? payload.error
-            : "No se pudo enviar el PDF por correo.";
+            : "No se pudo iniciar el envio del PDF por correo.";
         throw new Error(message);
       }
 
-      const sentTo = payload && typeof payload.to === "string" ? payload.to : "";
-      if (sentTo) {
-        setStatus(`PDF enviado por correo a ${sentTo}.`);
-        toast.success(`PDF enviado a ${sentTo}.`);
-      } else {
-        setStatus("PDF enviado por correo.");
-        toast.success("PDF enviado por correo.");
+      if (!payload?.job) {
+        throw new Error("El servidor no devolvio el seguimiento del envio.");
       }
+
+      const startedJob = payload.job;
+      setBulkDeliveryEmailJob(startedJob);
+      syncBulkDeliveryEmailToast(startedJob);
+      clearBulkDeliveryEmailPolling();
+      bulkDeliveryEmailPollTimeoutRef.current = window.setTimeout(() => {
+        void pollBulkDeliveryEmailJob(startedJob.jobId);
+      }, 250);
+      setStatus(payload.message || "Envio de PDF iniciado en segundo plano.");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo enviar el PDF por correo.";
-      setStatus(`Error al enviar PDF por correo: ${message}`);
-    } finally {
-      setBulkDeliveryEmailLoading(false);
+      const message = error instanceof Error ? error.message : "No se pudo iniciar el envio del PDF por correo.";
+      setStatus(`Error al iniciar envio de PDF por correo: ${message}`);
+      toast.error("No se pudo iniciar el envio por correo.", { description: message });
     }
-  }, [bulkDeliveryEmailLoading, bulkDeliveryPdfLoading, personal.length]);
+  }, [
+    bulkDeliveryEmailJob,
+    bulkDeliveryPdfLoading,
+    clearBulkDeliveryEmailPolling,
+    personal.length,
+    pollBulkDeliveryEmailJob,
+    syncBulkDeliveryEmailToast,
+  ]);
 
   const printPersonnelByBattery = useCallback(() => {
     if (personal.length === 0) {
@@ -4433,38 +4581,19 @@ export default function Home() {
   }, [bulkDeliveryPdfLoading, bulkDeliveryPdfSteps.length]);
 
   const bulkDeliveryPdfLabel = bulkDeliveryPdfSteps[bulkDeliveryPdfStepIndex] ?? bulkDeliveryPdfSteps[0];
-  const bulkDeliveryEmailSteps = useMemo(
-    () => [
-      `Preparando ${personal.length} hoja(s) para envio por correo...`,
-      "Consultando datos de personal y configuraciones de hoja de entrega...",
-      "Generando PDF A4 consolidado en blanco y negro...",
-      "Adjuntando archivo PDF al mensaje de correo...",
-      "Enviando correo y confirmando entrega al servidor SMTP...",
-    ],
-    [personal.length],
-  );
-
   useEffect(() => {
-    if (!bulkDeliveryEmailLoading) {
-      setBulkDeliveryEmailStepIndex(0);
-      return;
-    }
+    return () => {
+      if (bulkDeliveryEmailPollTimeoutRef.current !== null) {
+        window.clearTimeout(bulkDeliveryEmailPollTimeoutRef.current);
+      }
+    };
+  }, []);
 
-    setBulkDeliveryEmailStepIndex(0);
-    const intervalId = window.setInterval(() => {
-      setBulkDeliveryEmailStepIndex((prev) => Math.min(prev + 1, bulkDeliveryEmailSteps.length - 1));
-    }, 2_250);
-
-    return () => window.clearInterval(intervalId);
-  }, [bulkDeliveryEmailLoading, bulkDeliveryEmailSteps.length]);
-
-  const bulkDeliveryEmailLabel = bulkDeliveryEmailSteps[bulkDeliveryEmailStepIndex] ?? bulkDeliveryEmailSteps[0];
   const isAppGlobalBusy =
     !!currentUser &&
     (
       loading ||
       bulkDeliveryPdfLoading ||
-      bulkDeliveryEmailLoading ||
       personaProfileLoading ||
       firmaConfigLoading ||
       firmaConfigSaving ||
@@ -4492,7 +4621,6 @@ export default function Home() {
     );
   const appBusyLabel = useMemo(() => {
     if (loading) return primaryLoadingLabel;
-    if (bulkDeliveryEmailLoading) return bulkDeliveryEmailLabel;
     if (bulkDeliveryPdfLoading) return bulkDeliveryPdfLabel;
     if (personaProfileLoading) return "Cargando ficha completa y consolidando información de esta persona...";
     if (firmaConfigLoading) return "Cargando configuracion de firmas y auditoria...";
@@ -4540,8 +4668,6 @@ export default function Home() {
     if (confirmDialogBusy) return "Aplicando cambios solicitados...";
     return "Actualizando informacion...";
   }, [
-    bulkDeliveryEmailLabel,
-    bulkDeliveryEmailLoading,
     bulkDeliveryPdfLabel,
     bulkDeliveryPdfLoading,
     primaryLoadingLabel,
@@ -5029,6 +5155,8 @@ export default function Home() {
           onPersonalPageSizeChange={setPersonalPageSize}
           onPrintAllDeliverySheets={printAllDeliverySheets}
           onEmailAllDeliverySheets={emailAllDeliverySheets}
+          emailAllDeliverySheetsBusy={bulkDeliveryEmailBusy}
+          emailAllDeliverySheetsDisabledReason={bulkDeliveryEmailDisabledReason}
           onPrintPersonnelByBattery={printPersonnelByBattery}
           onOpenMassEntrega={() => openMassRegistro("ENTREGA")}
           onOpenCreate={() => setActiveView("personal_nuevo")}
