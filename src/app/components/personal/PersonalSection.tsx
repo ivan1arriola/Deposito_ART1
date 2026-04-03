@@ -349,11 +349,15 @@ export function PersonalSection({
           />
           <QuickActionButton
             eyebrow={emailAllDeliverySheetsBusy ? "En curso" : "Correo"}
-            title={emailAllDeliverySheetsBusy ? "Cancelar envio en segundo plano" : "Enviar hojas al correo de referencia"}
+            title={
+              emailAllDeliverySheetsBusy
+                ? "Cancelar envio de hojas de entrega en segundo plano"
+                : "Enviar hojas de entrega al correo de referencia"
+            }
             description={
               emailAllDeliverySheetsBusy
                 ? "Detiene el seguimiento actual y solicita cancelar el envio en el servidor."
-                : "Genera el PDF consolidado y lo envia a tu correo configurado."
+                : "Genera el PDF consolidado de hojas de entrega y lo envia a tu correo configurado."
             }
             icon={<ForwardToInboxOutlinedIcon fontSize="small" />}
             tone="slate"

@@ -710,7 +710,11 @@ export function SoldadoRecordatorioWidget({
         }
       `}</style>
 
-      <Stack direction="row" alignItems="flex-end" spacing={1}>
+      <Stack
+        direction={isMobile ? "row" : "column"}
+        alignItems={isMobile ? "flex-end" : "flex-start"}
+        spacing={isMobile ? 1 : 0.85}
+      >
         <IconButton
           type="button"
           onClick={() => setOpen((current) => !current)}

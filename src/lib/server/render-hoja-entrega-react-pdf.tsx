@@ -189,7 +189,7 @@ export async function renderHojasEntregaPdf(
     const signatureLineHeight = 1.5;
     const signatureFontSize = scaled(profile, 6.6, 4.7);
     const signatureMonospaceCharWidth = signatureFontSize * 0.6;
-    const institutionalSignatureGap = scaled(profile, 2.2, 1.2);
+    const signatureBlockGap = scaled(profile, 3.4, 1.8);
 
     const styles = StyleSheet.create({
       page: {
@@ -204,7 +204,7 @@ export async function renderHojasEntregaPdf(
       },
 
       sheet: {
-        height: A4_CONTENT_HEIGHT,
+        minHeight: A4_CONTENT_HEIGHT,
         flexDirection: "column",
       },
 
@@ -295,7 +295,7 @@ export async function renderHojasEntregaPdf(
       },
 
       infoValue: {
-        fontFamily: "Courier-Bold",
+        fontFamily: "Courier",
         fontSize: scaled(profile, 7.2, 5.2),
         lineHeight: 1,
       },
@@ -514,7 +514,7 @@ export async function renderHojasEntregaPdf(
 
       return (
         <Page size="A4" style={styles.page}>
-          <View style={styles.sheet} wrap={false}>
+          <View style={styles.sheet}>
             <View style={styles.content}>
               <View style={styles.table}>
                 <View style={styles.row}>
@@ -658,7 +658,10 @@ export async function renderHojasEntregaPdf(
                       styles.firmaLineRow,
                       {
                         paddingLeft: getFirmaLineBaseIndentPt(linea, signatureTab),
-                        marginTop: linea.key === "oficial-texto" ? institutionalSignatureGap : 0,
+                        marginTop:
+                          linea.key === "encargado-texto" || linea.key === "oficial-texto"
+                            ? signatureBlockGap
+                            : 0,
                       },
                     ]}
                   >
