@@ -1,5 +1,6 @@
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
-import { buildFirmasHojaEntregaLineas, getFirmaLineIndentCss } from "@/lib/firma-lineas";
+import { FirmaLineasHtml } from "@/app/components/shared/FirmaLineasHtml";
+import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
 import {
   formatHojaEntregaDisplayDate,
   getHojaEntregaDatePart,
@@ -629,15 +630,12 @@ export function HojaEntregaPrintSheet({
       </table>
 
       <div className="firma-section">
-        {firmaLineas.map((linea) => (
-          <div
-            key={`${data.persona.ci}-${linea.key}`}
-            className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
-            style={{ marginLeft: getFirmaLineIndentCss(linea) }}
-          >
-            {linea.text}
-          </div>
-        ))}
+        <FirmaLineasHtml
+          lineas={firmaLineas}
+          lineClassName="firma-line"
+          lineStrongClassName="firma-strong"
+          keyPrefix={data.persona.ci}
+        />
       </div>
     </div>
   );

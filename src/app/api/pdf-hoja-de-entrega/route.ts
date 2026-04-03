@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { formatDateOnlyForDisplay, formatDateTimeForDisplay } from "@/lib/date-helpers";
-import { buildFirmasHojaEntregaLineas, getFirmaLineIndentPt } from "@/lib/firma-lineas";
+import { buildFirmasHojaEntregaLineas, getFirmaLineBaseIndentPt, getFirmaLineInlineOffsetPt } from "@/lib/firma-lineas";
 import { normalizeOutputText } from "@/lib/spanish-text";
 
 interface MatrixRow {
@@ -320,7 +320,8 @@ export async function POST(request: NextRequest): Promise<Response> {
         x:
           signAreaX +
           4 * MM_TO_PT +
-          getFirmaLineIndentPt(linea, signTab, signMonospaceCharWidth),
+          getFirmaLineBaseIndentPt(linea, signTab) +
+          getFirmaLineInlineOffsetPt(linea, signMonospaceCharWidth),
         y: signTextTop - signLineHeight * index,
         size: signTextSize,
         color: rgb(0, 0, 0),

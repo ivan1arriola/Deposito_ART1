@@ -2,7 +2,7 @@ import "server-only";
 
 import React from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
-import { buildFirmasHojaEntregaLineas, getFirmaLineIndentPt } from "@/lib/firma-lineas";
+import { buildFirmasHojaEntregaLineas, getFirmaLineBaseIndentPt, getFirmaLineInlineOffsetPt } from "@/lib/firma-lineas";
 import { PDFDocument } from "pdf-lib";
 import {
   getHojaEntregaDatePart,
@@ -437,6 +437,15 @@ export async function renderHojasEntregaPdf(
         paddingRight: 0,
         flexShrink: 0,
       },
+      firmaLineRow: {
+        width: "100%",
+        flexDirection: "row",
+        paddingLeft: 0,
+      },
+      firmaInlineSpacer: {
+        width: 0,
+        flexShrink: 0,
+      },
       firmaLine: {
         fontSize: signatureFontSize,
         lineHeight: signatureLineHeight,
@@ -642,22 +651,34 @@ export async function renderHojasEntregaPdf(
 
               <View style={styles.firmas}>
                 {firmaLineas.map((linea) => (
-                  <Text
+                  <View
                     key={linea.key}
                     style={[
-                      styles.firmaLine,
-                      linea.isBold ? styles.firmaLineStrong : {},
+                      styles.firmaLineRow,
                       {
-                        marginLeft: getFirmaLineIndentPt(
-                          linea,
-                          signatureTab,
-                          signatureMonospaceCharWidth,
-                        ),
+                        paddingLeft: getFirmaLineBaseIndentPt(linea, signatureTab),
                       },
                     ]}
                   >
-                    {linea.text}
-                  </Text>
+                    {(linea.inlineOffsetChars ?? 0) > 0 ? (
+                      <View
+                        style={[
+                          styles.firmaInlineSpacer,
+                          {
+                            width: getFirmaLineInlineOffsetPt(linea, signatureMonospaceCharWidth),
+                          },
+                        ]}
+                      />
+                    ) : null}
+                    <Text
+                      style={[
+                        styles.firmaLine,
+                        linea.isBold ? styles.firmaLineStrong : {},
+                      ]}
+                    >
+                      {linea.text}
+                    </Text>
+                  </View>
                 ))}
               </View>
             </View>

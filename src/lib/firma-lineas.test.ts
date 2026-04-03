@@ -1,4 +1,11 @@
-import { buildFirmasHojaEntregaLineas, buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
+import {
+  buildFirmasHojaEntregaLineas,
+  buildFirmasInstitucionalesLineas,
+  getFirmaLineBaseIndentCss,
+  getFirmaLineBaseIndentPt,
+  getFirmaLineInlineOffsetCss,
+  getFirmaLineInlineOffsetPt,
+} from "@/lib/firma-lineas";
 
 describe("buildFirmasHojaEntregaLineas", () => {
   it("reinicia la sangria en cada bloque de firma de la hoja de entrega", () => {
@@ -78,5 +85,27 @@ describe("buildFirmasInstitucionalesLineas", () => {
     );
 
     expect(lineas.map((linea) => linea.indentLevel)).toEqual([2, 2, 2, 3, 3, 3]);
+  });
+});
+
+describe("firma indent helpers", () => {
+  it("separa la sangria base del offset inline", () => {
+    const linea = {
+      indentLevel: 2,
+      inlineOffsetChars: 5,
+    };
+
+    expect(getFirmaLineBaseIndentCss(linea)).toBe("calc(2 * var(--firma-tab-size))");
+    expect(getFirmaLineInlineOffsetCss(linea)).toBe("5ch");
+  });
+
+  it("calcula sangria base y offset inline en puntos para PDF", () => {
+    const linea = {
+      indentLevel: 3,
+      inlineOffsetChars: 4,
+    };
+
+    expect(getFirmaLineBaseIndentPt(linea, 10)).toBe(30);
+    expect(getFirmaLineInlineOffsetPt(linea, 2.5)).toBe(10);
   });
 });

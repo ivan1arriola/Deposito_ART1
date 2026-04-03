@@ -4,9 +4,10 @@ import {
   InstitutionalPrintHeader,
   INSTITUTIONAL_PRINT_HEADER_STYLES,
 } from "@/app/components/print/InstitutionalPrintHeader";
+import { FirmaLineasHtml } from "@/app/components/shared/FirmaLineasHtml";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
-import { buildFirmasInstitucionalesLineas, getFirmaLineIndentCss } from "@/lib/firma-lineas";
+import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
 import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
@@ -282,15 +283,12 @@ export default async function TallesSubalternosPage({
         </section>
 
         <section className="firma-section">
-          {firmaLineas.map((linea) => (
-            <div
-              key={linea.key}
-              className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
-              style={{ marginLeft: getFirmaLineIndentCss(linea) }}
-            >
-              {linea.text}
-            </div>
-          ))}
+          <FirmaLineasHtml
+            lineas={firmaLineas}
+            lineClassName="firma-line"
+            lineStrongClassName="firma-strong"
+            keyPrefix="subalternos"
+          />
         </section>
       </main>
     </>
