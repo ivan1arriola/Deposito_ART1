@@ -6,6 +6,7 @@ import {
 } from "@/app/components/print/InstitutionalPrintHeader";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
+import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
 import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy, compareRanks } from "@/lib/rank-order";
@@ -96,6 +97,14 @@ export default async function TallesTodaUnidadPage({
   const printedAt = new Date();
   const generatedAt = formatDateTimeForDisplay(printedAt);
   const institutionalPrintDate = formatInstitutionalPrintDate(printedAt);
+  const firmaLineas = buildFirmasInstitucionalesLineas({
+    encargadoTexto: TEXTO_ENCARGADO,
+    encargadoRango: firmas.encargadoRango,
+    encargadoNombre: firmas.encargadoNombre,
+    oficialTexto: TEXTO_OFICIAL,
+    oficialRango: firmas.oficialRango,
+    oficialNombre: firmas.oficialNombre,
+  });
 
   return (
     <>
@@ -227,36 +236,20 @@ export default async function TallesTodaUnidadPage({
 
         .firma-section {
           margin-top: 6mm;
+          --firma-tab-size: 8mm;
           display: grid;
-          gap: 3.2mm;
+          gap: 0;
         }
 
-        .firma-block {
+        .firma-line {
+          font-size: 8pt;
+          line-height: 1.5;
+          margin: 0;
           break-inside: avoid;
         }
 
-        .firma-title {
-          font-size: 8pt;
-          line-height: 1.25;
-        }
-
-        .firma-role {
-          margin-top: 1mm;
-          font-size: 8pt;
+        .firma-strong {
           font-weight: 700;
-        }
-
-        .firma-name {
-          margin-top: 0.8mm;
-          font-size: 8pt;
-        }
-
-        .firma-level-1 {
-          padding-left: 8mm;
-        }
-
-        .firma-level-2 {
-          padding-left: 16mm;
         }
 
         @media screen {
@@ -335,16 +328,15 @@ export default async function TallesTodaUnidadPage({
           </div>
 
           <section className="firma-section">
-            <div className="firma-block firma-level-1">
-              <div className="firma-title">{TEXTO_ENCARGADO}</div>
-              <div className="firma-role firma-level-1">{firmas.encargadoRango}</div>
-              <div className="firma-name firma-level-2">{firmas.encargadoNombre}</div>
-            </div>
-            <div className="firma-block firma-level-2">
-              <div className="firma-title">{TEXTO_OFICIAL}</div>
-              <div className="firma-role firma-level-1">{firmas.oficialRango}</div>
-              <div className="firma-name firma-level-2">{firmas.oficialNombre}</div>
-            </div>
+            {firmaLineas.map((linea) => (
+              <div
+                key={`of-${linea.key}`}
+                className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
+                style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+              >
+                {linea.text}
+              </div>
+            ))}
           </section>
         </section>
 
@@ -394,16 +386,15 @@ export default async function TallesTodaUnidadPage({
           </div>
 
           <section className="firma-section">
-            <div className="firma-block firma-level-1">
-              <div className="firma-title">{TEXTO_ENCARGADO}</div>
-              <div className="firma-role firma-level-1">{firmas.encargadoRango}</div>
-              <div className="firma-name firma-level-2">{firmas.encargadoNombre}</div>
-            </div>
-            <div className="firma-block firma-level-2">
-              <div className="firma-title">{TEXTO_OFICIAL}</div>
-              <div className="firma-role firma-level-1">{firmas.oficialRango}</div>
-              <div className="firma-name firma-level-2">{firmas.oficialNombre}</div>
-            </div>
+            {firmaLineas.map((linea) => (
+              <div
+                key={`sof-${linea.key}`}
+                className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
+                style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+              >
+                {linea.text}
+              </div>
+            ))}
           </section>
         </section>
 
@@ -456,16 +447,15 @@ export default async function TallesTodaUnidadPage({
           </div>
 
           <section className="firma-section">
-            <div className="firma-block firma-level-1">
-              <div className="firma-title">{TEXTO_ENCARGADO}</div>
-              <div className="firma-role firma-level-1">{firmas.encargadoRango}</div>
-              <div className="firma-name firma-level-2">{firmas.encargadoNombre}</div>
-            </div>
-            <div className="firma-block firma-level-2">
-              <div className="firma-title">{TEXTO_OFICIAL}</div>
-              <div className="firma-role firma-level-1">{firmas.oficialRango}</div>
-              <div className="firma-name firma-level-2">{firmas.oficialNombre}</div>
-            </div>
+            {firmaLineas.map((linea) => (
+              <div
+                key={`sub-${linea.key}`}
+                className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
+                style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+              >
+                {linea.text}
+              </div>
+            ))}
           </section>
         </section>
       </main>

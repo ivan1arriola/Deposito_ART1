@@ -1,4 +1,5 @@
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
+import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
 import {
   getHojaEntregaDatePart,
   type HojaEntregaSheetData,
@@ -29,6 +30,16 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
   const nombreCompleto = `${data.persona.apellido1} ${data.persona.apellido2 || ""}`.trim();
   const nombresCompleto = `${data.persona.nombre1} ${data.persona.nombre2 || ""}`.trim();
   const firmaAlistadoNombre = [data.persona.nombre1, data.persona.apellido1].filter(Boolean).join(" ").trim();
+  const firmaLineas = buildFirmasHojaEntregaLineas({
+    alistadoRango: data.persona.rangoAbreviacion,
+    alistadoNombre: firmaAlistadoNombre,
+    encargadoTexto: data.firmas.encargadoTexto,
+    encargadoRango: data.firmas.encargadoRango,
+    encargadoNombre: data.firmas.encargadoNombre,
+    oficialTexto: data.firmas.oficialTexto,
+    oficialRango: data.firmas.oficialRango,
+    oficialNombre: data.firmas.oficialNombre,
+  });
   const ciValida = isValidUruguayanCi(data.persona.ci);
   const ciWarningPrefix = ciValida ? "" : "\u26a0 ";
   const entregaCols = Array.from({ length: 6 }, (_, idx) => data.entregas[idx]?.fecha ?? null);
@@ -217,21 +228,15 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
       </table>
 
       <div className={styles.firmaSection}>
-        <div className={styles.firmaBlock}>
-          <div className={styles.firmaTitle}>Firma del alistado:</div>
-          <div className={`${styles.firmaRole} ${styles.firmaLevel1}`}>{data.persona.rangoAbreviacion}</div>
-          <div className={`${styles.firmaName} ${styles.firmaLevel2}`}>{firmaAlistadoNombre}</div>
-        </div>
-        <div className={styles.firmaBlock}>
-          <div className={styles.firmaTitle}>{data.firmas.encargadoTexto}</div>
-          <div className={`${styles.firmaRole} ${styles.firmaLevel1}`}>{data.firmas.encargadoRango}</div>
-          <div className={`${styles.firmaName} ${styles.firmaLevel2}`}>{data.firmas.encargadoNombre}</div>
-        </div>
-        <div className={styles.firmaBlock}>
-          <div className={styles.firmaTitle}>{data.firmas.oficialTexto}</div>
-          <div className={`${styles.firmaRole} ${styles.firmaLevel1}`}>{data.firmas.oficialRango}</div>
-          <div className={`${styles.firmaName} ${styles.firmaLevel2}`}>{data.firmas.oficialNombre}</div>
-        </div>
+        {firmaLineas.map((linea) => (
+          <div
+            key={`${data.persona.ci}-${linea.key}`}
+            className={`${styles.firmaLine}${linea.isBold ? ` ${styles.firmaLineStrong}` : ""}`}
+            style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+          >
+            {linea.text}
+          </div>
+        ))}
       </div>
     </div>
   );

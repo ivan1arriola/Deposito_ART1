@@ -185,21 +185,12 @@
 }
 
 .sheetCompact .firmaSection {
-  gap: 2.8mm;
+  --firma-tab-size: 7mm;
 }
 
-.sheetCompact .firmaBlock,
-.sheetCompact .firmaName {
+.sheetCompact .firmaLine {
   font-size: 7.2px;
   line-height: 1.5;
-}
-
-.sheetCompact .firmaLevel1 {
-  margin-left: 7mm;
-}
-
-.sheetCompact .firmaLevel2 {
-  margin-left: 14mm;
 }
 
 .sheetTight .table th,
@@ -258,21 +249,12 @@
 }
 
 .sheetTight .firmaSection {
-  gap: 2.1mm;
+  --firma-tab-size: 6mm;
 }
 
-.sheetTight .firmaBlock,
-.sheetTight .firmaName {
+.sheetTight .firmaLine {
   font-size: 6.45px;
   line-height: 1.5;
-}
-
-.sheetTight .firmaLevel1 {
-  margin-left: 6mm;
-}
-
-.sheetTight .firmaLevel2 {
-  margin-left: 12mm;
 }
 
 .frame {
@@ -607,61 +589,27 @@
 
 /* ===== SECCIÓN DE FIRMAS ===== */
 .firmaSection {
+  --firma-tab-size: 8mm;
   margin-top: auto;
   padding: 0 1mm 1.5mm 1mm;
   display: flex;
   flex-direction: column;
-  gap: 3.5mm;
+  gap: 0;
   page-break-inside: avoid;
   break-inside: avoid-page;
 }
 
-.firmaBlock {
+.firmaLine {
   font-size: 8px;
   font-family: var(--font-family-mono);
   page-break-inside: avoid;
   line-height: 1.5;
   break-inside: avoid-page;
+  margin: 0;
 }
 
-.firmaLevel0 {
-  margin-left: 0;
-}
-
-.firmaLevel1 {
-  margin-left: 8mm;
-}
-
-.firmaLevel2 {
-  margin-left: 16mm;
-}
-
-.firmaTitle {
-  margin-bottom: 0;
-}
-
-.firmaRole {
+.firmaLineStrong {
   font-weight: bold;
-}
-
-.firmaName {
-  font-size: 8px;
-}
-
-.firmaInlineRow {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 12mm;
-  align-items: baseline;
-}
-
-.firmaInlineName {
-  min-width: 0;
-}
-
-.firmaInlineRow .firmaLevel1,
-.firmaInlineRow .firmaLevel2 {
-  margin-left: 0;
 }
 
 .pdfExport {
@@ -769,7 +717,7 @@
   }
 
   .signBlock,
-  .firmaBlock {
+  .firmaLine {
     page-break-inside: avoid;
   }
 }

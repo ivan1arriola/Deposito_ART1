@@ -1,4 +1,5 @@
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
+import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
 import {
   formatHojaEntregaDisplayDate,
   getHojaEntregaDatePart,
@@ -44,11 +45,9 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     --info-grid-padding-x: 10px;
     --info-grid-compact-padding-y: 1px;
     --info-grid-compact-padding-x: 6px;
-    --firma-gap: 3.5mm;
+    --firma-tab-size: 8mm;
     --firma-font-size: 8px;
-    --firma-line-height: 1.25;
-    --firma-margin-left-1: 8mm;
-    --firma-margin-left-2: 16mm;
+    --firma-line-height: 1.5;
     width: 210mm;
     height: 297mm;
     min-height: 297mm;
@@ -80,11 +79,9 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     --info-grid-padding-x: 7px;
     --info-grid-compact-padding-y: 1px;
     --info-grid-compact-padding-x: 5px;
-    --firma-gap: 3mm;
+    --firma-tab-size: 7mm;
     --firma-font-size: 7.4px;
-    --firma-line-height: 1.15;
-    --firma-margin-left-1: 7mm;
-    --firma-margin-left-2: 14mm;
+    --firma-line-height: 1.5;
   }
 
   .page.page-dense {
@@ -104,11 +101,9 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     --info-grid-padding-x: 5px;
     --info-grid-compact-padding-y: 0.8px;
     --info-grid-compact-padding-x: 4px;
-    --firma-gap: 2.4mm;
+    --firma-tab-size: 6mm;
     --firma-font-size: 6.8px;
-    --firma-line-height: 1.05;
-    --firma-margin-left-1: 6mm;
-    --firma-margin-left-2: 12mm;
+    --firma-line-height: 1.5;
   }
 
   .page.page-ultra {
@@ -128,11 +123,9 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     --info-grid-padding-x: 4px;
     --info-grid-compact-padding-y: 0.6px;
     --info-grid-compact-padding-x: 3px;
-    --firma-gap: 2mm;
+    --firma-tab-size: 5mm;
     --firma-font-size: 6.3px;
-    --firma-line-height: 1;
-    --firma-margin-left-1: 5mm;
-    --firma-margin-left-2: 10mm;
+    --firma-line-height: 1.5;
   }
 
   .page + .page {
@@ -349,41 +342,22 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     flex-direction: column;
     margin-top: auto;
     padding: 0 1mm 1.5mm 1mm;
-    gap: var(--firma-gap);
+    gap: 0;
     page-break-inside: avoid;
     break-inside: avoid-page;
   }
 
-  .firma-block {
+  .firma-line {
     font-size: var(--firma-font-size);
     font-family: "Courier New", monospace;
     line-height: var(--firma-line-height);
     page-break-inside: avoid;
     break-inside: avoid-page;
+    margin: 0;
   }
 
-  .firma-level-0 {
-    margin-left: 0;
-  }
-
-  .firma-level-1 {
-    margin-left: var(--firma-margin-left-1);
-  }
-
-  .firma-level-2 {
-    margin-left: var(--firma-margin-left-2);
-  }
-
-  .firma-title {
-    margin-bottom: 1px;
-  }
-
-  .firma-role {
+  .firma-strong {
     font-weight: bold;
-  }
-
-  .firma-name {
-    font-size: var(--firma-font-size);
   }
 
   .hoja-entrega-empty {
@@ -475,6 +449,16 @@ export function HojaEntregaPrintSheet({
   const ciFormateado = formatUruguayanCi(data.persona.ci);
   const ciWarningPrefix = isValidUruguayanCi(data.persona.ci) ? "" : "\u26a0 ";
   const firmaAlistadoNombre = [data.persona.nombre1, data.persona.apellido1].filter(Boolean).join(" ").trim();
+  const firmaLineas = buildFirmasHojaEntregaLineas({
+    alistadoRango: data.persona.rangoAbreviacion,
+    alistadoNombre: firmaAlistadoNombre,
+    encargadoTexto: data.firmas.encargadoTexto,
+    encargadoRango: data.firmas.encargadoRango,
+    encargadoNombre: data.firmas.encargadoNombre,
+    oficialTexto: data.firmas.oficialTexto,
+    oficialRango: data.firmas.oficialRango,
+    oficialNombre: data.firmas.oficialNombre,
+  });
   const bottomInfoGridClassName = data.persona.esReingreso ? "info-grid info-grid-5" : "info-grid info-grid-4";
   const compactClassName = getHojaCompactClass(data);
   const pageClassName = compactClassName ? `page ${compactClassName}` : "page";
@@ -644,21 +628,15 @@ export function HojaEntregaPrintSheet({
       </table>
 
       <div className="firma-section">
-        <div className="firma-block firma-level-0">
-          <div className="firma-title">Firma del alistado:</div>
-          <div className="firma-role firma-level-1">{data.persona.rangoAbreviacion}</div>
-          <div className="firma-name firma-level-2">{firmaAlistadoNombre}</div>
-        </div>
-        <div className="firma-block firma-level-1">
-          <div className="firma-title">{data.firmas.encargadoTexto}</div>
-          <div className="firma-role firma-level-1">{data.firmas.encargadoRango}</div>
-          <div className="firma-name firma-level-2">{data.firmas.encargadoNombre}</div>
-        </div>
-        <div className="firma-block firma-level-2">
-          <div className="firma-title">{data.firmas.oficialTexto}</div>
-          <div className="firma-role firma-level-1">{data.firmas.oficialRango}</div>
-          <div className="firma-name firma-level-2">{data.firmas.oficialNombre}</div>
-        </div>
+        {firmaLineas.map((linea) => (
+          <div
+            key={`${data.persona.ci}-${linea.key}`}
+            className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
+            style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+          >
+            {linea.text}
+          </div>
+        ))}
       </div>
     </div>
   );

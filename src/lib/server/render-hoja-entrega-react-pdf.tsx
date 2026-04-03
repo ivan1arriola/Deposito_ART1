@@ -2,6 +2,7 @@ import "server-only";
 
 import React from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
+import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
 import { PDFDocument } from "pdf-lib";
 import {
   getHojaEntregaDatePart,
@@ -177,7 +178,7 @@ export async function renderHojasEntregaPdf(
     profile: DensityProfile,
   ) => {
     const signatureTab = scaled(profile, 14, 8);
-    const signatureLineHeight = scaled(profile, 9.9, 7.05);
+    const signatureLineHeight = 1.5;
 
     const styles = StyleSheet.create({
       page: {
@@ -427,27 +428,12 @@ export async function renderHojasEntregaPdf(
         flexShrink: 0,
       },
 
-      firmaBlock: {
-        marginBottom: scaled(profile, 4.5, 2.5),
-      },
-
-      firmaTitulo: {
+      firmaLine: {
         fontSize: scaled(profile, 6.6, 4.7),
         lineHeight: signatureLineHeight,
       },
-      firmaCargo: {
-        marginLeft: signatureTab,
+      firmaLineStrong: {
         fontFamily: "Courier-Bold",
-        fontSize: scaled(profile, 6.6, 4.7),
-        lineHeight: signatureLineHeight,
-      },
-      firmaNombre: {
-        marginLeft: signatureTab * 2,
-        fontSize: scaled(profile, 6.6, 4.7),
-        lineHeight: signatureLineHeight,
-      },
-      firmaBlockLast: {
-        marginBottom: 0,
       },
 
       pageNumber: {
@@ -486,6 +472,16 @@ export async function renderHojasEntregaPdf(
 
     const HojaEntregaSheetPage = ({ data }: { data: HojaEntregaSheetData }) => {
       const alistadoNombre = buildAlistadoNombre(data);
+      const firmaLineas = buildFirmasHojaEntregaLineas({
+        alistadoRango: data.persona.rangoAbreviacion,
+        alistadoNombre,
+        encargadoTexto: data.firmas.encargadoTexto,
+        encargadoRango: data.firmas.encargadoRango,
+        encargadoNombre: data.firmas.encargadoNombre,
+        oficialTexto: data.firmas.oficialTexto,
+        oficialRango: data.firmas.oficialRango,
+        oficialNombre: data.firmas.oficialNombre,
+      });
       const entregaCols = normalizeSixDates(data.entregas);
       const devolCols = normalizeSixDates(data.devoluciones);
       const ciPrefix = isValidUruguayanCi(data.persona.ci) ? "" : "⚠ ";
@@ -635,23 +631,18 @@ export async function renderHojasEntregaPdf(
               </View>
 
               <View style={styles.firmas}>
-                <View style={styles.firmaBlock}>
-                  <Text style={styles.firmaTitulo}>Firma del alistado:</Text>
-                  <Text style={styles.firmaCargo}>{data.persona.rangoAbreviacion}</Text>
-                  <Text style={styles.firmaNombre}>{alistadoNombre}</Text>
-                </View>
-
-                <View style={styles.firmaBlock}>
-                  <Text style={styles.firmaTitulo}>{data.firmas.encargadoTexto}</Text>
-                  <Text style={styles.firmaCargo}>{data.firmas.encargadoRango}</Text>
-                  <Text style={styles.firmaNombre}>{data.firmas.encargadoNombre}</Text>
-                </View>
-
-                <View style={[styles.firmaBlock, styles.firmaBlockLast]}>
-                  <Text style={styles.firmaTitulo}>{data.firmas.oficialTexto}</Text>
-                  <Text style={styles.firmaCargo}>{data.firmas.oficialRango}</Text>
-                  <Text style={styles.firmaNombre}>{data.firmas.oficialNombre}</Text>
-                </View>
+                {firmaLineas.map((linea) => (
+                  <Text
+                    key={linea.key}
+                    style={[
+                      styles.firmaLine,
+                      linea.isBold ? styles.firmaLineStrong : {},
+                      { marginLeft: signatureTab * linea.indentLevel },
+                    ]}
+                  >
+                    {linea.text}
+                  </Text>
+                ))}
               </View>
             </View>
           </View>

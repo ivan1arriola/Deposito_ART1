@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { formatDateOnlyForDisplay, formatDateTimeForDisplay } from "@/lib/date-helpers";
+import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
 import { normalizeOutputText } from "@/lib/spanish-text";
 
 interface MatrixRow {
@@ -280,8 +281,8 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     currentY = box1Y - 4 * MM_TO_PT;
 
-    // ===== SECCIÓN DE FIRMAS (simplificado) =====
-    const signAreaHeight = 30 * MM_TO_PT;
+    // ===== SECCIÓN DE FIRMAS =====
+    const signAreaHeight = 44 * MM_TO_PT;
     const signAreaX = MARGINS.left;
     const signAreaY = currentY - signAreaHeight;
 
@@ -294,28 +295,30 @@ export async function POST(request: NextRequest): Promise<Response> {
       borderWidth: 1,
     });
 
-    const colWidth = pageWidth / 3;
-    const signLabelY = signAreaY + signAreaHeight - 12 * MM_TO_PT;
-
-    page.drawText("Firma del alistado:", {
-      x: signAreaX + 4 * MM_TO_PT,
-      y: signLabelY,
-      size: 10,
-      color: rgb(0, 0, 0),
+    const firmaLineas = buildFirmasHojaEntregaLineas({
+      alistadoRango: sanitizeForPDF(body.persona.gradoPersonal),
+      alistadoNombre: sanitizeForPDF(
+        `${body.persona.nombre1 ?? ""} ${body.persona.apellido1 ?? ""}`.replace(/\s+/g, " ").trim(),
+      ),
+      encargadoTexto: sanitizeForPDF(body.firmas.encargadoTexto),
+      encargadoRango: sanitizeForPDF(body.firmas.encargadoRango),
+      encargadoNombre: sanitizeForPDF(body.firmas.encargadoNombre),
+      oficialTexto: sanitizeForPDF(body.firmas.oficialTexto),
+      oficialRango: sanitizeForPDF(body.firmas.oficialRango),
+      oficialNombre: sanitizeForPDF(body.firmas.oficialNombre),
     });
+    const signTextSize = 8;
+    const signLineHeight = signTextSize * 1.5;
+    const signTab = 4 * MM_TO_PT;
+    const signTextTop = signAreaY + signAreaHeight - 5 * MM_TO_PT - signTextSize;
 
-    page.drawText(sanitizeForPDF(body.firmas.encargadoTexto), {
-      x: signAreaX + colWidth + 4 * MM_TO_PT,
-      y: signLabelY,
-      size: 10,
-      color: rgb(0, 0, 0),
-    });
-
-    page.drawText(sanitizeForPDF(body.firmas.oficialTexto), {
-      x: signAreaX + colWidth * 2 + 4 * MM_TO_PT,
-      y: signLabelY,
-      size: 10,
-      color: rgb(0, 0, 0),
+    firmaLineas.forEach((linea, index) => {
+      page.drawText(linea.text, {
+        x: signAreaX + 4 * MM_TO_PT + signTab * linea.indentLevel,
+        y: signTextTop - signLineHeight * index,
+        size: signTextSize,
+        color: rgb(0, 0, 0),
+      });
     });
 
     // Convertir PDF a bytes
