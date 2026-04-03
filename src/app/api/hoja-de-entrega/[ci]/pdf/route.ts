@@ -49,7 +49,11 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": contentDisposition,
-      "Cache-Control": "no-store",
+      "X-Hoja-Entrega-Pdf-Layout": "firmas-v2",
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+      "Surrogate-Control": "no-store",
     },
   });
 }

@@ -146,7 +146,7 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
     setPdfDownloading(true);
     try {
       setStatus("Descargando PDF A4...");
-      const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf`;
+      const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?ts=${Date.now()}`;
       const link = document.createElement("a");
       link.href = pdfUrl;
       link.rel = "noopener";

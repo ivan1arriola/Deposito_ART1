@@ -65,6 +65,7 @@ export type CurrentUser = {
   nombre: string;
   apellido: string;
   username: string;
+  mailReferencia: string | null;
   rol: Role;
 };
 

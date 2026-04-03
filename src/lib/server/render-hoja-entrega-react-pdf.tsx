@@ -2,7 +2,7 @@ import "server-only";
 
 import React from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
-import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
+import { buildFirmasHojaEntregaLineas, getFirmaLineIndentPt } from "@/lib/firma-lineas";
 import { PDFDocument } from "pdf-lib";
 import {
   getHojaEntregaDatePart,
@@ -187,6 +187,8 @@ export async function renderHojasEntregaPdf(
   ) => {
     const signatureTab = getSignatureTabSize(profile);
     const signatureLineHeight = 1.5;
+    const signatureFontSize = scaled(profile, 6.6, 4.7);
+    const signatureMonospaceCharWidth = signatureFontSize * 0.6;
 
     const styles = StyleSheet.create({
       page: {
@@ -435,9 +437,8 @@ export async function renderHojasEntregaPdf(
         paddingRight: 0,
         flexShrink: 0,
       },
-
       firmaLine: {
-        fontSize: scaled(profile, 6.6, 4.7),
+        fontSize: signatureFontSize,
         lineHeight: signatureLineHeight,
       },
       firmaLineStrong: {
@@ -489,6 +490,7 @@ export async function renderHojasEntregaPdf(
         oficialTexto: data.firmas.oficialTexto,
         oficialRango: data.firmas.oficialRango,
         oficialNombre: data.firmas.oficialNombre,
+        encargadoStartIndentLevel: 1,
       });
       const entregaCols = normalizeSixDates(data.entregas);
       const devolCols = normalizeSixDates(data.devoluciones);
@@ -645,7 +647,13 @@ export async function renderHojasEntregaPdf(
                     style={[
                       styles.firmaLine,
                       linea.isBold ? styles.firmaLineStrong : {},
-                      { marginLeft: signatureTab * linea.indentLevel },
+                      {
+                        marginLeft: getFirmaLineIndentPt(
+                          linea,
+                          signatureTab,
+                          signatureMonospaceCharWidth,
+                        ),
+                      },
                     ]}
                   >
                     {linea.text}

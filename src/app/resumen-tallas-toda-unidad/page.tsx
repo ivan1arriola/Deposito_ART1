@@ -5,7 +5,7 @@ import {
   INSTITUTIONAL_PRINT_HEADER_STYLES,
 } from "@/app/components/print/InstitutionalPrintHeader";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
-import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
+import { buildFirmasInstitucionalesLineas, getFirmaLineIndentCss } from "@/lib/firma-lineas";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
@@ -275,7 +275,7 @@ export default async function ResumenTallasTodaUnidadPage({
             <div
               key={linea.key}
               className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
-              style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+              style={{ marginLeft: getFirmaLineIndentCss(linea) }}
             >
               {linea.text}
             </div>

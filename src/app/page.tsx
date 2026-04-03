@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 import {
   FormEvent,
   useCallback,
@@ -220,6 +221,7 @@ function isAbortError(error: unknown) {
 }
 
 export default function Home() {
+  const { data: session } = useSession();
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
   const [status, setStatus] = useState(STATUS_VERIFYING_SESSION);
   const [activeView, setActiveView] = useState<MainView>("personal");
@@ -382,7 +384,11 @@ export default function Home() {
 
   const isAdmin = currentUser?.rol === "ADMIN";
   const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
-  const currentUserReferenceEmail = typeof currentUser?.mailReferencia === "string" ? currentUser.mailReferencia.trim() : "";
+  const sessionReferenceEmail = typeof session?.user?.email === "string" ? session.user.email.trim() : "";
+  const currentUserReferenceEmail =
+    typeof currentUser?.mailReferencia === "string" && currentUser.mailReferencia.trim() !== ""
+      ? currentUser.mailReferencia.trim()
+      : sessionReferenceEmail;
   const bulkDeliveryEmailBusy = isActiveHojasEntregaEmailJob(bulkDeliveryEmailJob);
   const bulkDeliveryEmailDisabledReason = bulkDeliveryEmailBusy
     ? "Ya hay un envio de hojas de entrega en curso. Puedes seguirlo desde la notificacion flotante."
@@ -2511,14 +2517,14 @@ export default function Home() {
   }, []);
 
   const openAscensoDeliverySheet = useCallback((ci: string) => {
-    const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf`;
+    const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?ts=${Date.now()}`;
     triggerPdfDownload(pdfUrl);
     setStatus("Descargando hoja de entrega en PDF A4 (opcional antes del ascenso).");
     return true;
   }, [triggerPdfDownload]);
 
   const printDeliverySheetFromProfile = useCallback((ci: string) => {
-    const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf`;
+    const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?ts=${Date.now()}`;
     triggerPdfDownload(pdfUrl);
     setStatus("Descargando hoja de entrega en PDF A4.");
   }, [triggerPdfDownload]);

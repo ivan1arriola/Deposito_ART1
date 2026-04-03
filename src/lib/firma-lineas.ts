@@ -3,6 +3,7 @@ export type FirmaLinea = {
   text: string;
   indentLevel: number;
   isBold?: boolean;
+  inlineOffsetChars?: number;
 };
 
 export type FirmasInstitucionalesInput = {
@@ -17,106 +18,146 @@ export type FirmasInstitucionalesInput = {
 export type FirmasHojaEntregaInput = FirmasInstitucionalesInput & {
   alistadoRango: string;
   alistadoNombre: string;
+  encargadoStartIndentLevel?: number;
 };
 
-function buildFirmaAutoridadLineas(input: {
+export type FirmaBloqueInput = {
   keyPrefix: string;
-  texto: string;
-  rango: string;
+  titulo: string;
+  grado: string;
   nombre: string;
-  startIndentLevel?: number;
+  indentOffsetLevel?: number;
+  titleKeySuffix?: string;
+  gradeKeySuffix?: string;
+  nameKeySuffix?: string;
+};
+
+function countMonospaceChars(value: string) {
+  return Array.from(value).length;
+}
+
+function buildFirmaBloqueLineas(input: {
+  bloque: FirmaBloqueInput;
+  baseIndentLevel: number;
 }): FirmaLinea[] {
-  const startIndentLevel = input.startIndentLevel ?? 1;
+  const indentLevel = input.baseIndentLevel + (input.bloque.indentOffsetLevel ?? 0);
+  const titleKeySuffix = input.bloque.titleKeySuffix ?? "titulo";
+  const gradeKeySuffix = input.bloque.gradeKeySuffix ?? "grado";
+  const nameKeySuffix = input.bloque.nameKeySuffix ?? "nombre";
+  const inlineOffsetChars = countMonospaceChars(input.bloque.grado);
+
   return [
     {
-      key: `${input.keyPrefix}-texto`,
-      text: input.texto,
-      indentLevel: startIndentLevel,
+      key: `${input.bloque.keyPrefix}-${titleKeySuffix}`,
+      text: input.bloque.titulo,
+      indentLevel,
     },
     {
-      key: `${input.keyPrefix}-rango`,
-      text: input.rango,
-      indentLevel: startIndentLevel + 1,
+      key: `${input.bloque.keyPrefix}-${gradeKeySuffix}`,
+      text: input.bloque.grado,
+      indentLevel,
       isBold: true,
     },
     {
-      key: `${input.keyPrefix}-nombre`,
-      text: input.nombre,
-      indentLevel: startIndentLevel + 2,
+      key: `${input.bloque.keyPrefix}-${nameKeySuffix}`,
+      text: input.bloque.nombre,
+      indentLevel,
+      inlineOffsetChars,
     },
   ];
+}
+
+export function buildFirmasLineas(input: {
+  bloques: FirmaBloqueInput[];
+  baseIndentLevel?: number;
+}): FirmaLinea[] {
+  const baseIndentLevel = input.baseIndentLevel ?? 0;
+  return input.bloques.flatMap((bloque) =>
+    buildFirmaBloqueLineas({
+      bloque,
+      baseIndentLevel,
+    }),
+  );
+}
+
+export function getFirmaLineIndentCss(linea: Pick<FirmaLinea, "indentLevel" | "inlineOffsetChars">): string {
+  const inlineOffsetChars = linea.inlineOffsetChars ?? 0;
+  if (inlineOffsetChars <= 0) {
+    return `calc(${linea.indentLevel} * var(--firma-tab-size))`;
+  }
+
+  return `calc(${linea.indentLevel} * var(--firma-tab-size) + ${inlineOffsetChars}ch)`;
+}
+
+export function getFirmaLineIndentPt(
+  linea: Pick<FirmaLinea, "indentLevel" | "inlineOffsetChars">,
+  tabSizePt: number,
+  monospaceCharWidthPt: number,
+): number {
+  return tabSizePt * linea.indentLevel + monospaceCharWidthPt * (linea.inlineOffsetChars ?? 0);
 }
 
 export function buildFirmasInstitucionalesLineas(
   input: FirmasInstitucionalesInput,
   startIndentLevel = 0,
 ): FirmaLinea[] {
-  return [
-    {
-      key: "encargado-texto",
-      text: input.encargadoTexto,
-      indentLevel: startIndentLevel,
-    },
-    {
-      key: "encargado-rango",
-      text: input.encargadoRango,
-      indentLevel: startIndentLevel + 1,
-      isBold: true,
-    },
-    {
-      key: "encargado-nombre",
-      text: input.encargadoNombre,
-      indentLevel: startIndentLevel + 2,
-    },
-    {
-      key: "oficial-texto",
-      text: input.oficialTexto,
-      indentLevel: startIndentLevel + 3,
-    },
-    {
-      key: "oficial-rango",
-      text: input.oficialRango,
-      indentLevel: startIndentLevel + 4,
-      isBold: true,
-    },
-    {
-      key: "oficial-nombre",
-      text: input.oficialNombre,
-      indentLevel: startIndentLevel + 5,
-    },
-  ];
+  return buildFirmasLineas({
+    baseIndentLevel: startIndentLevel,
+    bloques: [
+      {
+        keyPrefix: "encargado",
+        titulo: input.encargadoTexto,
+        grado: input.encargadoRango,
+        nombre: input.encargadoNombre,
+        indentOffsetLevel: 0,
+        titleKeySuffix: "texto",
+        gradeKeySuffix: "rango",
+      },
+      {
+        keyPrefix: "oficial",
+        titulo: input.oficialTexto,
+        grado: input.oficialRango,
+        nombre: input.oficialNombre,
+        indentOffsetLevel: 1,
+        titleKeySuffix: "texto",
+        gradeKeySuffix: "rango",
+      },
+    ],
+  });
 }
 
 export function buildFirmasHojaEntregaLineas(input: FirmasHojaEntregaInput): FirmaLinea[] {
-  return [
-    {
-      key: "alistado-titulo",
-      text: "Firma del alistado:",
-      indentLevel: 0,
-    },
-    {
-      key: "alistado-rango",
-      text: input.alistadoRango,
-      indentLevel: 1,
-      isBold: true,
-    },
-    {
-      key: "alistado-nombre",
-      text: input.alistadoNombre,
-      indentLevel: 2,
-    },
-    ...buildFirmaAutoridadLineas({
-      keyPrefix: "encargado",
-      texto: input.encargadoTexto,
-      rango: input.encargadoRango,
-      nombre: input.encargadoNombre,
-    }),
-    ...buildFirmaAutoridadLineas({
-      keyPrefix: "oficial",
-      texto: input.oficialTexto,
-      rango: input.oficialRango,
-      nombre: input.oficialNombre,
-      startIndentLevel: 2,
-    }),
-  ];
+  const encargadoStartIndentLevel = input.encargadoStartIndentLevel ?? 1;
+
+  return buildFirmasLineas({
+    baseIndentLevel: 0,
+    bloques: [
+      {
+        keyPrefix: "alistado",
+        titulo: "Firma del alistado:",
+        grado: input.alistadoRango,
+        nombre: input.alistadoNombre,
+        indentOffsetLevel: 0,
+        gradeKeySuffix: "rango",
+      },
+      {
+        keyPrefix: "encargado",
+        titulo: input.encargadoTexto,
+        grado: input.encargadoRango,
+        nombre: input.encargadoNombre,
+        indentOffsetLevel: encargadoStartIndentLevel,
+        titleKeySuffix: "texto",
+        gradeKeySuffix: "rango",
+      },
+      {
+        keyPrefix: "oficial",
+        titulo: input.oficialTexto,
+        grado: input.oficialRango,
+        nombre: input.oficialNombre,
+        indentOffsetLevel: encargadoStartIndentLevel + 1,
+        titleKeySuffix: "texto",
+        gradeKeySuffix: "rango",
+      },
+    ],
+  });
 }

@@ -34,6 +34,7 @@ export async function GET(request: Request) {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": contentDisposition,
+      "X-Hoja-Entrega-Pdf-Layout": "firmas-v2",
       "Cache-Control": "no-store",
     },
   });

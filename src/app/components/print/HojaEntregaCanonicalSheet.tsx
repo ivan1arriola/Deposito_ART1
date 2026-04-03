@@ -1,5 +1,5 @@
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
-import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
+import { buildFirmasHojaEntregaLineas, getFirmaLineIndentCss } from "@/lib/firma-lineas";
 import {
   getHojaEntregaDatePart,
   type HojaEntregaSheetData,
@@ -39,6 +39,7 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
     oficialTexto: data.firmas.oficialTexto,
     oficialRango: data.firmas.oficialRango,
     oficialNombre: data.firmas.oficialNombre,
+    encargadoStartIndentLevel: 1,
   });
   const ciValida = isValidUruguayanCi(data.persona.ci);
   const ciWarningPrefix = ciValida ? "" : "\u26a0 ";
@@ -232,7 +233,7 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
           <div
             key={`${data.persona.ci}-${linea.key}`}
             className={`${styles.firmaLine}${linea.isBold ? ` ${styles.firmaLineStrong}` : ""}`}
-            style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+            style={{ marginLeft: getFirmaLineIndentCss(linea) }}
           >
             {linea.text}
           </div>

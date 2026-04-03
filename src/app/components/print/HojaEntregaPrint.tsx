@@ -1,5 +1,5 @@
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
-import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
+import { buildFirmasHojaEntregaLineas, getFirmaLineIndentCss } from "@/lib/firma-lineas";
 import {
   formatHojaEntregaDisplayDate,
   getHojaEntregaDatePart,
@@ -458,6 +458,7 @@ export function HojaEntregaPrintSheet({
     oficialTexto: data.firmas.oficialTexto,
     oficialRango: data.firmas.oficialRango,
     oficialNombre: data.firmas.oficialNombre,
+    encargadoStartIndentLevel: 1,
   });
   const bottomInfoGridClassName = data.persona.esReingreso ? "info-grid info-grid-5" : "info-grid info-grid-4";
   const compactClassName = getHojaCompactClass(data);
@@ -632,7 +633,7 @@ export function HojaEntregaPrintSheet({
           <div
             key={`${data.persona.ci}-${linea.key}`}
             className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
-            style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+            style={{ marginLeft: getFirmaLineIndentCss(linea) }}
           >
             {linea.text}
           </div>

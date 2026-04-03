@@ -6,7 +6,7 @@ import {
 } from "@/app/components/print/InstitutionalPrintHeader";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
-import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
+import { buildFirmasInstitucionalesLineas, getFirmaLineIndentCss } from "@/lib/firma-lineas";
 import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy, compareRanks } from "@/lib/rank-order";
@@ -332,7 +332,7 @@ export default async function TallesTodaUnidadPage({
               <div
                 key={`of-${linea.key}`}
                 className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
-                style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+                style={{ marginLeft: getFirmaLineIndentCss(linea) }}
               >
                 {linea.text}
               </div>
@@ -390,7 +390,7 @@ export default async function TallesTodaUnidadPage({
               <div
                 key={`sof-${linea.key}`}
                 className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
-                style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+                style={{ marginLeft: getFirmaLineIndentCss(linea) }}
               >
                 {linea.text}
               </div>
@@ -451,7 +451,7 @@ export default async function TallesTodaUnidadPage({
               <div
                 key={`sub-${linea.key}`}
                 className={`firma-line${linea.isBold ? " firma-strong" : ""}`}
-                style={{ marginLeft: `calc(${linea.indentLevel} * var(--firma-tab-size))` }}
+                style={{ marginLeft: getFirmaLineIndentCss(linea) }}
               >
                 {linea.text}
               </div>

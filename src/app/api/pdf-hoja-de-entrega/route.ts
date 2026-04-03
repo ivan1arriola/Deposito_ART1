@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { formatDateOnlyForDisplay, formatDateTimeForDisplay } from "@/lib/date-helpers";
-import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
+import { buildFirmasHojaEntregaLineas, getFirmaLineIndentPt } from "@/lib/firma-lineas";
 import { normalizeOutputText } from "@/lib/spanish-text";
 
 interface MatrixRow {
@@ -306,15 +306,21 @@ export async function POST(request: NextRequest): Promise<Response> {
       oficialTexto: sanitizeForPDF(body.firmas.oficialTexto),
       oficialRango: sanitizeForPDF(body.firmas.oficialRango),
       oficialNombre: sanitizeForPDF(body.firmas.oficialNombre),
+      encargadoStartIndentLevel: 1,
     });
     const signTextSize = 8;
     const signLineHeight = signTextSize * 1.5;
-    const signTab = 4 * MM_TO_PT;
+    // Mantiene la misma sangria visual que la hoja canonica y el PDF React.
+    const signTab = 8 * MM_TO_PT;
+    const signMonospaceCharWidth = signTextSize * 0.6;
     const signTextTop = signAreaY + signAreaHeight - 5 * MM_TO_PT - signTextSize;
 
     firmaLineas.forEach((linea, index) => {
       page.drawText(linea.text, {
-        x: signAreaX + 4 * MM_TO_PT + signTab * linea.indentLevel,
+        x:
+          signAreaX +
+          4 * MM_TO_PT +
+          getFirmaLineIndentPt(linea, signTab, signMonospaceCharWidth),
         y: signTextTop - signLineHeight * index,
         size: signTextSize,
         color: rgb(0, 0, 0),
