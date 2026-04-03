@@ -195,7 +195,9 @@ const AUDIT_USER_FILTER_ALL = "__ALL__";
 const AUDIT_USER_FILTER_SYSTEM = "__SYSTEM__";
 const BULK_DELIVERY_EMAIL_TOAST_ID = "bulk-delivery-email-job";
 
-function isActiveHojasEntregaEmailJob(job: HojasEntregaEmailJobSnapshot | null | undefined) {
+function isActiveHojasEntregaEmailJob(
+  job: HojasEntregaEmailJobSnapshot | null | undefined,
+): job is HojasEntregaEmailJobSnapshot & { status: "queued" | "running" } {
   return job?.status === "queued" || job?.status === "running";
 }
 
