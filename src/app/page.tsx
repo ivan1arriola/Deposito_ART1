@@ -208,6 +208,52 @@ function describeHojasEntregaEmailJob(job: HojasEntregaEmailJobSnapshot) {
   return `${job.message}${progressLabel}${recipientLabel}${fileLabel}`;
 }
 
+function syncBulkDeliveryEmailToast(
+  job: HojasEntregaEmailJobSnapshot,
+  onCancel?: (jobId: string) => void,
+) {
+  const description = describeHojasEntregaEmailJob(job);
+
+  if (job.status === "completed") {
+    toast.success(job.to ? `PDF enviado a ${job.to}` : "PDF enviado por correo.", {
+      id: BULK_DELIVERY_EMAIL_TOAST_ID,
+      description,
+      duration: 8000,
+    });
+    return;
+  }
+
+  if (job.status === "failed") {
+    toast.error("Error al enviar PDF por correo.", {
+      id: BULK_DELIVERY_EMAIL_TOAST_ID,
+      description,
+      duration: 9000,
+    });
+    return;
+  }
+
+  if (job.status === "cancelled") {
+    toast.info("Envio cancelado.", {
+      id: BULK_DELIVERY_EMAIL_TOAST_ID,
+      description,
+      duration: 7000,
+    });
+    return;
+  }
+
+  toast.loading("Enviando PDF por correo en segundo plano...", {
+    id: BULK_DELIVERY_EMAIL_TOAST_ID,
+    description,
+    duration: Infinity,
+    cancel: onCancel
+      ? {
+          label: "Cancelar",
+          onClick: () => onCancel(job.jobId),
+        }
+      : undefined,
+  });
+}
+
 function rangoLooksLikeSargento(rango: { abreviacion: string; nombreCompleto: string } | null | undefined) {
   if (!rango) return false;
   const normalized = normalizeSearchTerm(`${rango.abreviacion} ${rango.nombreCompleto}`);
@@ -4070,33 +4116,124 @@ export default function Home() {
     }
   }, []);
 
-  const syncBulkDeliveryEmailToast = useCallback((job: HojasEntregaEmailJobSnapshot) => {
-    const description = describeHojasEntregaEmailJob(job);
+  const cancelBulkDeliveryEmailJobById = useCallback(
+    async (jobId: string) => {
+      clearBulkDeliveryEmailPolling();
 
-    if (job.status === "completed") {
-      toast.success(job.to ? `PDF enviado a ${job.to}` : "PDF enviado por correo.", {
-        id: BULK_DELIVERY_EMAIL_TOAST_ID,
-        description,
-        duration: 8000,
+      const buildLocalCancelledJob = (
+        previous: HojasEntregaEmailJobSnapshot,
+        message: string,
+      ): HojasEntregaEmailJobSnapshot => ({
+        ...previous,
+        status: "cancelled",
+        step: "cancelled",
+        progress: 100,
+        message,
+        error: null,
+        updatedAt: new Date().toISOString(),
       });
+
+      try {
+        const response = await fetch(`/api/hojas-de-entrega/pdf/email/${encodeURIComponent(jobId)}`, {
+          method: "DELETE",
+          cache: "no-store",
+        });
+
+        const rawBody = await response.text();
+        let payload: { error?: string; message?: string; job?: HojasEntregaEmailJobSnapshot } | null = null;
+        if (rawBody) {
+          try {
+            payload = JSON.parse(rawBody) as { error?: string; message?: string; job?: HojasEntregaEmailJobSnapshot };
+          } catch {
+            payload = null;
+          }
+        }
+
+        if (response.status === 409 && payload?.job) {
+          setBulkDeliveryEmailJob(payload.job);
+          syncBulkDeliveryEmailToast(payload.job);
+          setStatus(payload.error || payload.message || payload.job.message);
+          return;
+        }
+
+        if (response.status === 404) {
+          const message =
+            payload && typeof payload.error === "string" && payload.error.trim() !== ""
+              ? payload.error
+              : "No se encontro el seguimiento del envio solicitado.";
+
+          setBulkDeliveryEmailJob((prev) => {
+            if (!prev || prev.jobId !== jobId) return prev;
+            return buildLocalCancelledJob(prev, "Seguimiento cancelado localmente por el usuario.");
+          });
+
+          toast.info("Seguimiento cancelado.", {
+            id: BULK_DELIVERY_EMAIL_TOAST_ID,
+            description: `${message}\nEl seguimiento local se detuvo.`,
+            duration: 7000,
+          });
+          setStatus("Seguimiento del envio cancelado localmente.");
+          return;
+        }
+
+        if (!response.ok) {
+          const message =
+            payload && typeof payload.error === "string" && payload.error.trim() !== ""
+              ? payload.error
+              : "No se pudo cancelar el envio.";
+          throw new Error(message);
+        }
+
+        const cancelledJob = payload?.job;
+        if (cancelledJob) {
+          setBulkDeliveryEmailJob(cancelledJob);
+          syncBulkDeliveryEmailToast(cancelledJob);
+          setStatus(payload?.message || cancelledJob.message || "Envio cancelado por el usuario.");
+          return;
+        }
+
+        setBulkDeliveryEmailJob((prev) => {
+          if (!prev || prev.jobId !== jobId) return prev;
+          return buildLocalCancelledJob(prev, "Envio cancelado por el usuario.");
+        });
+        toast.info("Envio cancelado.", {
+          id: BULK_DELIVERY_EMAIL_TOAST_ID,
+          description: "Se detuvo el seguimiento del envio en segundo plano.",
+          duration: 7000,
+        });
+        setStatus("Envio cancelado por el usuario.");
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "No se pudo cancelar el envio.";
+        setBulkDeliveryEmailJob((prev) => {
+          if (!prev || prev.jobId !== jobId) return prev;
+          return buildLocalCancelledJob(prev, "Seguimiento cancelado localmente por el usuario.");
+        });
+
+        toast.info("Seguimiento cancelado.", {
+          id: BULK_DELIVERY_EMAIL_TOAST_ID,
+          description: `Se detuvo el seguimiento local del envio.\n${message}`,
+          duration: 7000,
+        });
+        setStatus(`Seguimiento cancelado localmente: ${message}`);
+      }
+    },
+    [clearBulkDeliveryEmailPolling],
+  );
+
+  const onBulkDeliveryEmailToastCancel = useCallback(
+    (jobId: string) => {
+      void cancelBulkDeliveryEmailJobById(jobId);
+    },
+    [cancelBulkDeliveryEmailJobById],
+  );
+
+  const cancelBulkDeliveryEmailJob = useCallback(() => {
+    if (!isActiveHojasEntregaEmailJob(bulkDeliveryEmailJob)) {
+      setStatus("No hay un envio de hojas de entrega en curso para cancelar.");
       return;
     }
-
-    if (job.status === "failed") {
-      toast.error("Error al enviar PDF por correo.", {
-        id: BULK_DELIVERY_EMAIL_TOAST_ID,
-        description,
-        duration: 9000,
-      });
-      return;
-    }
-
-    toast.loading("Enviando PDF por correo en segundo plano...", {
-      id: BULK_DELIVERY_EMAIL_TOAST_ID,
-      description,
-      duration: Infinity,
-    });
-  }, []);
+    void cancelBulkDeliveryEmailJobById(bulkDeliveryEmailJob.jobId);
+  }, [bulkDeliveryEmailJob, cancelBulkDeliveryEmailJobById]);
 
   const pollBulkDeliveryEmailJob = useCallback(
     async (jobId: string) => {
@@ -4121,7 +4258,9 @@ export default function Home() {
             payload && typeof payload.error === "string" && payload.error.trim() !== ""
               ? payload.error
               : "No se pudo consultar el estado del envio.";
-          throw new Error(message);
+          const pollError = new Error(message) as Error & { status?: number };
+          pollError.status = response.status;
+          throw pollError;
         }
 
         if (!payload?.job) {
@@ -4130,7 +4269,7 @@ export default function Home() {
 
         const nextJob = payload.job;
         setBulkDeliveryEmailJob(nextJob);
-        syncBulkDeliveryEmailToast(nextJob);
+        syncBulkDeliveryEmailToast(nextJob, onBulkDeliveryEmailToastCancel);
 
         if (nextJob.status === "completed") {
           clearBulkDeliveryEmailPolling();
@@ -4144,17 +4283,55 @@ export default function Home() {
           return;
         }
 
+        if (nextJob.status === "cancelled") {
+          clearBulkDeliveryEmailPolling();
+          setStatus(nextJob.message || "Envio cancelado por el usuario.");
+          return;
+        }
+
         clearBulkDeliveryEmailPolling();
         bulkDeliveryEmailPollTimeoutRef.current = window.setTimeout(() => {
           void pollBulkDeliveryEmailJob(jobId);
         }, 1200);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "No se pudo consultar el estado del envio.";
+        const statusCode = typeof (error as { status?: unknown })?.status === "number"
+          ? (error as { status: number }).status
+          : null;
+
+        if (statusCode === 404) {
+          clearBulkDeliveryEmailPolling();
+
+          setBulkDeliveryEmailJob((prev) => {
+            if (!prev || prev.jobId !== jobId) return prev;
+            return {
+              ...prev,
+              status: "failed",
+              step: "failed",
+              progress: 100,
+              message,
+              error: message,
+              updatedAt: new Date().toISOString(),
+            };
+          });
+
+          toast.error("Seguimiento del envio no disponible.", {
+            id: BULK_DELIVERY_EMAIL_TOAST_ID,
+            description: `${message}\nPuedes iniciar un nuevo envio cuando lo necesites.`,
+            duration: 9000,
+          });
+          setStatus(`No se pudo continuar el seguimiento del envio: ${message}`);
+          return;
+        }
 
         toast.loading("Enviando PDF por correo en segundo plano...", {
           id: BULK_DELIVERY_EMAIL_TOAST_ID,
           description: `Seguimos consultando el estado del envio...\n${message}`,
           duration: Infinity,
+          cancel: {
+            label: "Cancelar",
+            onClick: () => onBulkDeliveryEmailToastCancel(jobId),
+          },
         });
 
         clearBulkDeliveryEmailPolling();
@@ -4163,7 +4340,7 @@ export default function Home() {
         }, 2500);
       }
     },
-    [clearBulkDeliveryEmailPolling, syncBulkDeliveryEmailToast],
+    [clearBulkDeliveryEmailPolling, onBulkDeliveryEmailToastCancel],
   );
 
   const printAllDeliverySheets = useCallback(async () => {
@@ -4249,7 +4426,7 @@ export default function Home() {
 
     if (isActiveHojasEntregaEmailJob(bulkDeliveryEmailJob)) {
       setStatus("Ya hay un envio de hojas de entrega ejecutandose en segundo plano.");
-      syncBulkDeliveryEmailToast(bulkDeliveryEmailJob);
+      syncBulkDeliveryEmailToast(bulkDeliveryEmailJob, onBulkDeliveryEmailToastCancel);
       return;
     }
 
@@ -4274,7 +4451,7 @@ export default function Home() {
       if (response.status === 409 && payload?.job) {
         const existingJob = payload.job;
         setBulkDeliveryEmailJob(existingJob);
-        syncBulkDeliveryEmailToast(existingJob);
+        syncBulkDeliveryEmailToast(existingJob, onBulkDeliveryEmailToastCancel);
         clearBulkDeliveryEmailPolling();
         bulkDeliveryEmailPollTimeoutRef.current = window.setTimeout(() => {
           void pollBulkDeliveryEmailJob(existingJob.jobId);
@@ -4297,7 +4474,7 @@ export default function Home() {
 
       const startedJob = payload.job;
       setBulkDeliveryEmailJob(startedJob);
-      syncBulkDeliveryEmailToast(startedJob);
+      syncBulkDeliveryEmailToast(startedJob, onBulkDeliveryEmailToastCancel);
       clearBulkDeliveryEmailPolling();
       bulkDeliveryEmailPollTimeoutRef.current = window.setTimeout(() => {
         void pollBulkDeliveryEmailJob(startedJob.jobId);
@@ -4312,9 +4489,9 @@ export default function Home() {
     bulkDeliveryEmailJob,
     bulkDeliveryPdfLoading,
     clearBulkDeliveryEmailPolling,
+    onBulkDeliveryEmailToastCancel,
     personal.length,
     pollBulkDeliveryEmailJob,
-    syncBulkDeliveryEmailToast,
   ]);
 
   const printPersonnelByBattery = useCallback(() => {
@@ -5163,6 +5340,7 @@ export default function Home() {
           onPersonalPageSizeChange={setPersonalPageSize}
           onPrintAllDeliverySheets={printAllDeliverySheets}
           onEmailAllDeliverySheets={emailAllDeliverySheets}
+          onCancelEmailAllDeliverySheets={cancelBulkDeliveryEmailJob}
           emailAllDeliverySheetsBusy={bulkDeliveryEmailBusy}
           emailAllDeliverySheetsDisabledReason={bulkDeliveryEmailDisabledReason}
           onPrintPersonnelByBattery={printPersonnelByBattery}

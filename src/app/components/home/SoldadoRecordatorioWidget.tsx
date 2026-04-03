@@ -1,5 +1,7 @@
 "use client";
 
+import AddTaskRoundedIcon from "@mui/icons-material/AddTaskRounded";
+import ChecklistRoundedIcon from "@mui/icons-material/ChecklistRounded";
 import { useMemo, useState } from "react";
 import {
   Badge,
@@ -184,6 +186,36 @@ export function SoldadoRecordatorioWidget({
 
   const urgentCount = urgentPendingTasks.length;
   const completedCount = completedTasks.length;
+  const hasPendingTasks = pendingTasks.length > 0;
+  const statusHeadline =
+    urgentCount > 0
+      ? `${urgentCount} urgente(s)`
+      : hasPendingTasks
+        ? `${pendingTasks.length} pendiente(s)`
+        : "Sin pendientes";
+  const statusCaption =
+    urgentCount > 0 ? "Requiere atencion hoy" : hasPendingTasks ? "Hay tareas en seguimiento" : "Todo al dia";
+  const statusSurface =
+    urgentCount > 0
+      ? {
+          backgroundImage: "linear-gradient(138deg, #7f1d1d 0%, #b91c1c 100%)",
+          borderColor: "rgba(127, 29, 29, 0.74)",
+          color: "#fff1f2",
+          mutedColor: "rgba(255, 241, 242, 0.84)",
+        }
+      : hasPendingTasks
+        ? {
+            backgroundImage: "linear-gradient(138deg, #3f5038 0%, #5f704f 100%)",
+            borderColor: "rgba(63, 80, 56, 0.72)",
+            color: "#f5f2e7",
+            mutedColor: "rgba(245, 242, 231, 0.84)",
+          }
+        : {
+            backgroundImage: "linear-gradient(138deg, #f3f4ef 0%, #e5e7dc 100%)",
+            borderColor: "rgba(120, 128, 104, 0.36)",
+            color: "#2f3a2d",
+            mutedColor: "rgba(47, 58, 45, 0.72)",
+          };
 
   const activeList = useMemo(() => {
     if (filter === "HECHAS") return completedTasks;
@@ -728,28 +760,84 @@ export function SoldadoRecordatorioWidget({
         </IconButton>
 
         {!isMobile ? (
-          <Stack spacing={0.8} sx={{ minWidth: 170 }}>
+          <Stack
+            spacing={1}
+            sx={{
+              minWidth: 196,
+              p: 0.75,
+              borderRadius: 3,
+              bgcolor: "rgba(255, 255, 255, 0.42)",
+              border: "1px solid",
+              borderColor: "rgba(126, 121, 102, 0.2)",
+              boxShadow: "0 8px 22px rgba(28, 33, 24, 0.14)",
+              backdropFilter: "blur(1.5px)",
+            }}
+          >
             <Button
               type="button"
               onClick={() => setOpen(true)}
               variant="outlined"
-              color={urgentCount > 0 ? "error" : "inherit"}
+              color="inherit"
               size="small"
-              sx={{ textTransform: "none", justifyContent: "flex-start", bgcolor: "background.paper" }}
+              startIcon={<ChecklistRoundedIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                textTransform: "none",
+                justifyContent: "flex-start",
+                alignItems: "stretch",
+                minHeight: 56,
+                px: 1.35,
+                py: 0.85,
+                borderRadius: 2.25,
+                border: "1px solid",
+                borderColor: statusSurface.borderColor,
+                backgroundImage: statusSurface.backgroundImage,
+                color: statusSurface.color,
+                boxShadow: "0 8px 18px rgba(20, 28, 19, 0.2)",
+                "&:hover": {
+                  borderColor: statusSurface.borderColor,
+                  backgroundImage: statusSurface.backgroundImage,
+                  filter: "brightness(0.97)",
+                },
+                "& .MuiButton-startIcon": {
+                  mt: 0.1,
+                  mr: 1,
+                },
+              }}
             >
-              {urgentCount > 0
-                ? `${urgentCount} urgente(s)`
-                : pendingTasks.length > 0
-                  ? `${pendingTasks.length} pendiente(s)`
-                  : "Sin pendientes"}
+              <Stack spacing={0.1} sx={{ textAlign: "left", alignItems: "flex-start" }}>
+                <Typography component="span" sx={{ fontSize: 15, fontWeight: 800, lineHeight: 1.14, letterSpacing: 0.08 }}>
+                  {statusHeadline}
+                </Typography>
+                <Typography component="span" sx={{ fontSize: 11, fontWeight: 600, color: statusSurface.mutedColor, lineHeight: 1.18 }}>
+                  {statusCaption}
+                </Typography>
+              </Stack>
             </Button>
             <Button
               type="button"
               onClick={openComposer}
-              variant="outlined"
+              variant="contained"
               color="inherit"
               size="small"
-              sx={{ textTransform: "none", justifyContent: "flex-start", bgcolor: "background.paper" }}
+              startIcon={<AddTaskRoundedIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                textTransform: "none",
+                justifyContent: "flex-start",
+                minHeight: 48,
+                px: 1.35,
+                py: 0.7,
+                borderRadius: 2.25,
+                color: "#f4f7f5",
+                backgroundImage: "linear-gradient(135deg, #36524f 0%, #4f7469 100%)",
+                boxShadow: "0 9px 18px rgba(18, 41, 36, 0.24)",
+                "&:hover": {
+                  backgroundImage: "linear-gradient(135deg, #2f4744 0%, #44655b 100%)",
+                  boxShadow: "0 11px 20px rgba(18, 41, 36, 0.29)",
+                },
+                "& .MuiButton-startIcon": {
+                  mr: 0.95,
+                },
+              }}
             >
               Nueva tarea rapida
             </Button>

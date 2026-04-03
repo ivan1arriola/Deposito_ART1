@@ -11,6 +11,7 @@ import {
   createHojasEntregaEmailJob,
   failHojasEntregaEmailJob,
   findActiveHojasEntregaEmailJob,
+  isHojasEntregaEmailJobCancelled,
   setHojasEntregaEmailJobProgress,
 } from "@/lib/server/hojas-entrega-email-jobs";
 import { buildUnidadHojasEntregaFileName } from "@/lib/server/pdf-filename";
@@ -20,6 +21,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
+function throwIfHojasEntregaEmailJobCancelled(jobId: string) {
+  if (isHojasEntregaEmailJobCancelled(jobId)) {
+    throw new Error("Envio cancelado por el usuario.");
+  }
+}
+
 async function runHojasEntregaEmailJob(input: {
   jobId: string;
   recipient: string;
@@ -28,6 +35,7 @@ async function runHojasEntregaEmailJob(input: {
   usuarioId: string;
 }) {
   try {
+    throwIfHojasEntregaEmailJobCancelled(input.jobId);
     setHojasEntregaEmailJobProgress(input.jobId, {
       step: "loading-data",
       progress: 18,
@@ -40,6 +48,7 @@ async function runHojasEntregaEmailJob(input: {
       throw new Error("No hay personal para generar hojas de entrega.");
     }
 
+    throwIfHojasEntregaEmailJobCancelled(input.jobId);
     const fechaImpresion = formatHojaEntregaDisplayDate(new Date());
     setHojasEntregaEmailJobProgress(input.jobId, {
       step: "rendering-pdf",
@@ -54,6 +63,7 @@ async function runHojasEntregaEmailJob(input: {
       pageNumberLabel: "Hoja",
     });
 
+    throwIfHojasEntregaEmailJobCancelled(input.jobId);
     const fileName = buildUnidadHojasEntregaFileName();
     setHojasEntregaEmailJobProgress(input.jobId, {
       step: "preparing-email",
@@ -73,6 +83,7 @@ async function runHojasEntregaEmailJob(input: {
       fileName,
     });
 
+    throwIfHojasEntregaEmailJobCancelled(input.jobId);
     await sendMail({
       to: input.recipient,
       subject: `Hojas de entrega unidad - ${fechaImpresion}`,
@@ -116,6 +127,9 @@ async function runHojasEntregaEmailJob(input: {
       message: `PDF enviado por correo a ${input.recipient}.`,
     });
   } catch (error: unknown) {
+    if (isHojasEntregaEmailJobCancelled(input.jobId)) {
+      return;
+    }
     const message = error instanceof Error ? error.message : "No se pudo enviar el PDF por correo.";
     failHojasEntregaEmailJob(input.jobId, message);
   }

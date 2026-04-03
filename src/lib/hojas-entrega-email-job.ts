@@ -1,4 +1,4 @@
-export type HojasEntregaEmailJobStatus = "queued" | "running" | "completed" | "failed";
+export type HojasEntregaEmailJobStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
 
 export type HojasEntregaEmailJobStep =
   | "queued"
@@ -7,7 +7,8 @@ export type HojasEntregaEmailJobStep =
   | "preparing-email"
   | "sending-email"
   | "completed"
-  | "failed";
+  | "failed"
+  | "cancelled";
 
 export type HojasEntregaEmailJobSnapshot = {
   jobId: string;

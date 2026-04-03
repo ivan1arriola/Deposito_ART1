@@ -31,7 +31,7 @@ function getStore() {
 }
 
 function isFinished(status: HojasEntregaEmailJobStatus) {
-  return status === "completed" || status === "failed";
+  return status === "completed" || status === "failed" || status === "cancelled";
 }
 
 function cleanupExpiredJobs(store = getStore()) {
@@ -117,6 +117,9 @@ export function updateHojasEntregaEmailJob(jobId: string, patch: HojasEntregaEma
 
   const job = store.get(jobId);
   if (!job) return null;
+  if (job.status === "cancelled" && patch.status !== "cancelled") {
+    return toSnapshot(job);
+  }
 
   const next: HojasEntregaEmailJobRecord = {
     ...job,
@@ -171,4 +174,38 @@ export function setHojasEntregaEmailJobProgress(
     hojas: input.hojas,
     error: null,
   });
+}
+
+export function cancelHojasEntregaEmailJob(
+  jobId: string,
+  userId: string,
+  message = "Envio cancelado por el usuario.",
+): HojasEntregaEmailJobSnapshot | null {
+  const store = getStore();
+  cleanupExpiredJobs(store);
+
+  const job = store.get(jobId);
+  if (!job || job.userId !== userId) return null;
+  if (isFinished(job.status)) return toSnapshot(job);
+
+  const next: HojasEntregaEmailJobRecord = {
+    ...job,
+    status: "cancelled",
+    step: "cancelled",
+    progress: 100,
+    message,
+    error: null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  store.set(jobId, next);
+  return toSnapshot(next);
+}
+
+export function isHojasEntregaEmailJobCancelled(jobId: string): boolean {
+  const store = getStore();
+  cleanupExpiredJobs(store);
+
+  const job = store.get(jobId);
+  return job?.status === "cancelled";
 }

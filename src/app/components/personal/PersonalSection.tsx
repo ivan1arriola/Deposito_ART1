@@ -46,6 +46,7 @@ type PersonalSectionProps = {
   onPersonalPageSizeChange: (pageSize: number) => void;
   onPrintAllDeliverySheets: () => void;
   onEmailAllDeliverySheets: () => void;
+  onCancelEmailAllDeliverySheets: () => void;
   emailAllDeliverySheetsBusy: boolean;
   emailAllDeliverySheetsDisabledReason: string | null;
   onPrintPersonnelByBattery: () => void;
@@ -269,6 +270,7 @@ export function PersonalSection({
   onPersonalPageSizeChange,
   onPrintAllDeliverySheets,
   onEmailAllDeliverySheets,
+  onCancelEmailAllDeliverySheets,
   emailAllDeliverySheetsBusy,
   emailAllDeliverySheetsDisabledReason,
   onPrintPersonnelByBattery,
@@ -347,17 +349,17 @@ export function PersonalSection({
           />
           <QuickActionButton
             eyebrow={emailAllDeliverySheetsBusy ? "En curso" : "Correo"}
-            title={emailAllDeliverySheetsBusy ? "Enviando hojas en segundo plano" : "Enviar hojas al correo de referencia"}
+            title={emailAllDeliverySheetsBusy ? "Cancelar envio en segundo plano" : "Enviar hojas al correo de referencia"}
             description={
               emailAllDeliverySheetsBusy
-                ? "El progreso sigue visible en la notificacion flotante hasta completar el envio."
+                ? "Detiene el seguimiento actual y solicita cancelar el envio en el servidor."
                 : "Genera el PDF consolidado y lo envia a tu correo configurado."
             }
             icon={<ForwardToInboxOutlinedIcon fontSize="small" />}
             tone="slate"
-            onClick={onEmailAllDeliverySheets}
-            disabled={loading || personal.length === 0 || emailAllDeliverySheetsBusy || Boolean(emailAllDeliverySheetsDisabledReason)}
-            tooltip={emailAllDeliverySheetsDisabledReason}
+            onClick={emailAllDeliverySheetsBusy ? onCancelEmailAllDeliverySheets : onEmailAllDeliverySheets}
+            disabled={loading || personal.length === 0 || (!emailAllDeliverySheetsBusy && Boolean(emailAllDeliverySheetsDisabledReason))}
+            tooltip={emailAllDeliverySheetsBusy ? null : emailAllDeliverySheetsDisabledReason}
           />
           <QuickActionButton
             eyebrow="Listado"

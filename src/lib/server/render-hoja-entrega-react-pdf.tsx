@@ -189,6 +189,7 @@ export async function renderHojasEntregaPdf(
     const signatureLineHeight = 1.5;
     const signatureFontSize = scaled(profile, 6.6, 4.7);
     const signatureMonospaceCharWidth = signatureFontSize * 0.6;
+    const institutionalSignatureGap = scaled(profile, 2.2, 1.2);
 
     const styles = StyleSheet.create({
       page: {
@@ -657,6 +658,7 @@ export async function renderHojasEntregaPdf(
                       styles.firmaLineRow,
                       {
                         paddingLeft: getFirmaLineBaseIndentPt(linea, signatureTab),
+                        marginTop: linea.key === "oficial-texto" ? institutionalSignatureGap : 0,
                       },
                     ]}
                   >
