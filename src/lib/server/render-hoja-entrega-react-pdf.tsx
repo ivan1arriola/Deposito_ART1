@@ -2,7 +2,7 @@ import "server-only";
 
 import React from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
-import { buildFirmasHojaEntregaLineas, getFirmaLineBaseIndentPt, getFirmaLineInlineOffsetPt } from "@/lib/firma-lineas";
+import { buildFirmasHojaEntregaLineas, getFirmaLineBaseIndentPt, type FirmaLinea } from "@/lib/firma-lineas";
 import { PDFDocument } from "pdf-lib";
 import {
   getHojaEntregaDatePart,
@@ -30,6 +30,21 @@ type DateRowConfig = {
   part: DatePart;
   showTMarkers: boolean;
   mergedVariant: "top" | "middle" | "bottom";
+};
+
+type FirmaBloqueId = "alistado" | "encargado" | "oficial";
+
+type FirmaLineaTipo = "titulo" | "rango" | "nombre";
+
+type FirmaLineaConMeta = {
+  linea: FirmaLinea;
+  bloqueId: FirmaBloqueId;
+  tipo: FirmaLineaTipo;
+};
+
+type FirmaBloque = {
+  id: FirmaBloqueId;
+  lineas: FirmaLineaConMeta[];
 };
 
 type DensityProfile = {
@@ -65,6 +80,8 @@ const DATE_ROW_CONFIGS: DateRowConfig[] = [
   { key: "month", label: "MES", part: "month", showTMarkers: true, mergedVariant: "middle" },
   { key: "year", label: "AÑO", part: "year", showTMarkers: false, mergedVariant: "bottom" },
 ];
+
+const FIRMA_BLOQUE_ORDEN: FirmaBloqueId[] = ["alistado", "encargado", "oficial"];
 
 const DENSITY_PROFILES: DensityProfile[] = [
   { id: "normal", scale: 1.26 },
@@ -170,6 +187,42 @@ function buildHeaderInfoRows(
   ];
 }
 
+function parseFirmaBloqueId(linea: FirmaLinea): FirmaBloqueId {
+  const prefix = linea.key.split("-", 1)[0];
+  if (prefix === "encargado" || prefix === "oficial") {
+    return prefix;
+  }
+  return "alistado";
+}
+
+function parseFirmaLineaTipo(linea: FirmaLinea): FirmaLineaTipo {
+  if (linea.key.endsWith("-nombre")) return "nombre";
+  if (linea.key.endsWith("-rango") || linea.key.endsWith("-grado")) return "rango";
+  return "titulo";
+}
+
+function buildFirmaBloques(lineas: FirmaLinea[]): FirmaBloque[] {
+  const grouped: Record<FirmaBloqueId, FirmaLineaConMeta[]> = {
+    alistado: [],
+    encargado: [],
+    oficial: [],
+  };
+
+  for (const linea of lineas) {
+    const bloqueId = parseFirmaBloqueId(linea);
+    grouped[bloqueId].push({
+      linea,
+      bloqueId,
+      tipo: parseFirmaLineaTipo(linea),
+    });
+  }
+
+  return FIRMA_BLOQUE_ORDEN.map((id) => ({
+    id,
+    lineas: grouped[id],
+  })).filter((bloque) => bloque.lineas.length > 0);
+}
+
 export async function renderHojasEntregaPdf(
   hojas: HojaEntregaSheetData[],
   fechaImpresion: string,
@@ -186,10 +239,11 @@ export async function renderHojasEntregaPdf(
     profile: DensityProfile,
   ) => {
     const signatureTab = getSignatureTabSize(profile);
-    const signatureLineHeight = 1.5;
+    const signatureLineHeight = 1.2;
     const signatureFontSize = scaled(profile, 6.6, 4.7);
-    const signatureMonospaceCharWidth = signatureFontSize * 0.6;
-    const signatureBlockGap = scaled(profile, 3.4, 1.8);
+    const signatureBlockSeparatorGap = scaled(profile, 13.5, 9);
+    const signatureNameGap = scaled(profile, 8.2, 6.2);
+    const signatureNameIndentExtra = signatureTab * 1.25;
 
     const styles = StyleSheet.create({
       page: {
@@ -296,6 +350,7 @@ export async function renderHojasEntregaPdf(
 
       infoValue: {
         fontFamily: "Courier",
+        fontWeight: "normal",
         fontSize: scaled(profile, 7.2, 5.2),
         lineHeight: 1,
       },
@@ -335,7 +390,8 @@ export async function renderHojasEntregaPdf(
 
       dateValueText: {
         textAlign: "center",
-        fontFamily: "Courier-Bold",
+        fontFamily: "Courier",
+        fontWeight: "normal",
         fontSize: scaled(profile, 6.7, 4.7),
       },
 
@@ -366,7 +422,8 @@ export async function renderHojasEntregaPdf(
 
       tText: {
         textAlign: "center",
-        fontFamily: "Courier-Bold",
+        fontFamily: "Courier",
+        fontWeight: "normal",
         fontSize: scaled(profile, 6.8, 4.8),
       },
 
@@ -404,7 +461,8 @@ export async function renderHojasEntregaPdf(
 
       totalText: {
         textAlign: "center",
-        fontFamily: "Courier-Bold",
+        fontFamily: "Courier",
+        fontWeight: "normal",
         fontSize: scaled(profile, 6.9, 4.8),
       },
 
@@ -432,8 +490,10 @@ export async function renderHojasEntregaPdf(
       },
 
       firmas: {
-        marginTop: scaled(profile, 8, 4), // Margen superior añadido
-        marginBottom: scaled(profile, 8, 4), // Margen inferior añadido
+        marginTop: scaled(profile, 13, 8),
+        marginBottom: scaled(profile, 11, 7),
+        paddingTop: scaled(profile, 2.2, 1.2),
+        paddingBottom: scaled(profile, 1.8, 1),
         paddingLeft: 0,
         paddingRight: 0,
         flexShrink: 0,
@@ -443,9 +503,9 @@ export async function renderHojasEntregaPdf(
         flexDirection: "row",
         paddingLeft: 0,
       },
-      firmaInlineSpacer: {
-        width: 0,
-        flexShrink: 0,
+      firmaBlock: {
+        width: "100%",
+        paddingBottom: scaled(profile, 0.6, 0.4),
       },
       firmaLine: {
         fontSize: signatureFontSize,
@@ -500,8 +560,9 @@ export async function renderHojasEntregaPdf(
         oficialTexto: data.firmas.oficialTexto,
         oficialRango: data.firmas.oficialRango,
         oficialNombre: data.firmas.oficialNombre,
-        encargadoStartIndentLevel: 1,
+        encargadoStartIndentLevel: 0,
       });
+      const firmaBloques = buildFirmaBloques(firmaLineas);
       const entregaCols = normalizeSixDates(data.entregas);
       const devolCols = normalizeSixDates(data.devoluciones);
       const ciPrefix = isValidUruguayanCi(data.persona.ci) ? "" : "⚠ ";
@@ -651,40 +712,45 @@ export async function renderHojasEntregaPdf(
               </View>
 
               <View style={styles.firmas}>
-                {firmaLineas.map((linea) => (
-                  <View
-                    key={linea.key}
-                    style={[
-                      styles.firmaLineRow,
-                      {
-                        paddingLeft: getFirmaLineBaseIndentPt(linea, signatureTab),
-                        marginTop:
-                          linea.key === "encargado-texto" || linea.key === "oficial-texto"
-                            ? signatureBlockGap
-                            : 0,
-                      },
-                    ]}
-                  >
-                    {(linea.inlineOffsetChars ?? 0) > 0 ? (
-                      <View
-                        style={[
-                          styles.firmaInlineSpacer,
-                          {
-                            width: getFirmaLineInlineOffsetPt(linea, signatureMonospaceCharWidth),
-                          },
-                        ]}
-                      />
-                    ) : null}
-                    <Text
+                {firmaBloques.map((bloque, blockIndex) => {
+                  const isLastBlock = blockIndex === firmaBloques.length - 1;
+                  const blockIndentLevel = bloque.id === "alistado" ? 0 : 1;
+
+                  return (
+                    <View
+                      key={`firma-bloque-${bloque.id}-${blockIndex}`}
                       style={[
-                        styles.firmaLine,
-                        linea.isBold ? styles.firmaLineStrong : {},
+                        styles.firmaBlock,
+                        !isLastBlock ? { marginBottom: signatureBlockSeparatorGap } : {},
                       ]}
                     >
-                      {linea.text}
-                    </Text>
-                  </View>
-                ))}
+                      {bloque.lineas.map(({ linea, tipo }, lineIndex) => (
+                        <View
+                          key={`${linea.key}-${lineIndex}`}
+                          style={[
+                            styles.firmaLineRow,
+                            {
+                              paddingLeft: getFirmaLineBaseIndentPt(
+                                { indentLevel: blockIndentLevel },
+                                signatureTab,
+                              ) + (tipo === "nombre" ? signatureNameIndentExtra : 0),
+                              marginTop: tipo === "nombre" ? signatureNameGap : 0,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.firmaLine,
+                              linea.isBold ? styles.firmaLineStrong : {},
+                            ]}
+                          >
+                            {linea.text}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })}
               </View>
             </View>
           </View>

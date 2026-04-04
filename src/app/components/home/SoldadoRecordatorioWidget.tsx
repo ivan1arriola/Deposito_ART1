@@ -87,59 +87,105 @@ function MiniSoldadoAvatar({ urgent }: { urgent: boolean }) {
       <span className="soldier-shadow absolute bottom-[4px] h-[10px] w-12 rounded-full bg-black/20 blur-[2px]" />
       <span className="absolute bottom-[28px] h-9 w-9 rounded-full bg-emerald-200/15 blur-[8px]" />
       <svg viewBox="0 0 120 120" className="relative h-[76px] w-[76px] drop-shadow-[0_3px_4px_rgba(0,0,0,0.24)]">
+        <defs>
+          <linearGradient id="soldier-cloth" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#869465" />
+            <stop offset="100%" stopColor="#5f6d49" />
+          </linearGradient>
+          <linearGradient id="soldier-pack" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#667551" />
+            <stop offset="100%" stopColor="#46553a" />
+          </linearGradient>
+          <linearGradient id="soldier-helmet" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#74815a" />
+            <stop offset="100%" stopColor="#556340" />
+          </linearGradient>
+          <linearGradient id="soldier-skin" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f4ccb0" />
+            <stop offset="100%" stopColor="#ddb08d" />
+          </linearGradient>
+          <linearGradient id="soldier-boot" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3a3632" />
+            <stop offset="100%" stopColor="#1f1d1b" />
+          </linearGradient>
+        </defs>
+
         <g className="soldier-pack soldier-svg-part">
-          <rect x="35" y="52" width="50" height="34" rx="12" fill="#5f6d49" stroke="#435236" strokeWidth="3" />
-          <rect x="42" y="58" width="10" height="20" rx="3" fill="#6c7a53" />
-          <rect x="68" y="58" width="10" height="20" rx="3" fill="#6c7a53" />
-          <rect x="57.5" y="54" width="5" height="28" rx="2.5" fill="#3e4b31" />
+          <rect x="33" y="51" width="54" height="37" rx="13" fill="url(#soldier-pack)" stroke="#3b4632" strokeWidth="3" />
+          <rect x="39" y="56" width="11" height="22" rx="3.2" fill="#6e7d57" />
+          <rect x="70" y="56" width="11" height="22" rx="3.2" fill="#6e7d57" />
+          <rect x="57.4" y="54" width="5.2" height="31" rx="2.6" fill="#35422e" />
+          <rect x="79.4" y="57" width="6.3" height="15" rx="2.2" fill="#3e4a34" />
+          <line x1="82.5" y1="57" x2="84.5" y2="42" stroke="#2f3b2a" strokeWidth="2" className="soldier-radio-antenna" />
+        </g>
+
+        <g className="soldier-rifle soldier-svg-part">
+          <rect x="95.5" y="58" width="7" height="35" rx="3" fill="#3f3932" stroke="#2c2824" strokeWidth="2" />
+          <rect x="101.8" y="56" width="2.8" height="30" rx="1.2" fill="#1f1d1a" />
+          <rect x="92.8" y="84.6" width="12.4" height="6.4" rx="2.3" fill="#4a4138" />
+          <circle cx="99.2" cy="72" r="1.6" fill="#9d8f70" />
         </g>
 
         <g className="soldier-arm-left soldier-svg-part">
-          <rect x="18" y="56" width="14" height="31" rx="7" fill="#76855a" stroke="#51613b" strokeWidth="3" />
+          <rect x="18" y="56" width="14" height="31" rx="7" fill="url(#soldier-cloth)" stroke="#51613b" strokeWidth="3" />
           <circle cx="25" cy="74" r="3.2" fill="#6b7a4f" />
+          <rect x="20.8" y="69" width="8.6" height="5.2" rx="2.4" fill="#4f5c3d" />
         </g>
         <g className="soldier-arm-right soldier-svg-part">
-          <rect x="88" y="56" width="14" height="31" rx="7" fill="#76855a" stroke="#51613b" strokeWidth="3" />
+          <rect x="88" y="56" width="14" height="31" rx="7" fill="url(#soldier-cloth)" stroke="#51613b" strokeWidth="3" />
           <circle cx="95" cy="74" r="3.2" fill="#6b7a4f" />
+          <rect x="90.8" y="69" width="8.6" height="5.2" rx="2.4" fill="#4f5c3d" />
         </g>
-        <circle cx="26" cy="88" r="6" fill="#f0c6a3" stroke="#c89e7e" strokeWidth="2.5" />
-        <circle cx="94" cy="88" r="6" fill="#f0c6a3" stroke="#c89e7e" strokeWidth="2.5" />
+        <circle cx="26" cy="88" r="6" fill="url(#soldier-skin)" stroke="#c89e7e" strokeWidth="2.5" />
+        <circle cx="94" cy="88" r="6" fill="url(#soldier-skin)" stroke="#c89e7e" strokeWidth="2.5" />
 
         <g className="soldier-torso soldier-svg-part">
-          <rect x="36" y="47" width="48" height="44" rx="14" fill="#7d8a61" stroke="#51613b" strokeWidth="3" />
-          <path d="M38 64 H82" stroke="#5a6842" strokeWidth="2" strokeLinecap="round" />
-          <rect x="41" y="60" width="14" height="15" rx="4" fill="#6a7650" stroke="#51613b" strokeWidth="2" />
-          <rect x="65" y="60" width="14" height="15" rx="4" fill="#6a7650" stroke="#51613b" strokeWidth="2" />
-          <path d="M41 60 L55 60 L53 64 L43 64 Z" fill="#5e6c45" />
-          <path d="M65 60 L79 60 L77 64 L67 64 Z" fill="#5e6c45" />
-          <rect x="58" y="52" width="4" height="36" rx="2" fill="#4f4336" />
+          <rect x="35.5" y="47" width="49" height="44" rx="14" fill="url(#soldier-cloth)" stroke="#51613b" strokeWidth="3" />
+          <path d="M37.5 64 H82.5" stroke="#5a6842" strokeWidth="2" strokeLinecap="round" />
+          <path d="M42 50 L57.5 86" stroke="#47543a" strokeWidth="3.2" strokeLinecap="round" className="soldier-strap" />
+          <path d="M78 50 L62.5 86" stroke="#47543a" strokeWidth="3.2" strokeLinecap="round" className="soldier-strap" />
+          <rect x="40.5" y="60" width="14" height="15.5" rx="4" fill="#6a7650" stroke="#51613b" strokeWidth="2" />
+          <rect x="65.5" y="60" width="14" height="15.5" rx="4" fill="#6a7650" stroke="#51613b" strokeWidth="2" />
+          <path d="M40.5 60 L54.5 60 L52.4 64 L42.6 64 Z" fill="#5e6c45" />
+          <path d="M65.5 60 L79.5 60 L77.4 64 L67.6 64 Z" fill="#5e6c45" />
+          <rect x="57.8" y="52" width="4.4" height="37" rx="2.2" fill="#4f4336" />
           <circle cx="60" cy="66" r="2.4" fill="#d9c46b" />
-          <circle cx="60" cy="74" r="2.4" fill="#d9c46b" />
-          <rect x="47" y="79" width="26" height="7" rx="3.5" fill="#58473b" />
-          <rect x="57" y="79.8" width="6" height="5.2" rx="2" fill="#d1b763" />
+          <circle cx="60" cy="73.7" r="2.4" fill="#d9c46b" />
+          <circle cx="60" cy="81.4" r="2.4" fill="#d9c46b" />
+          <circle cx="60" cy="71.8" r="2.5" fill="#dcc978" stroke="#6c5c3f" strokeWidth="1.2" />
+          <rect x="47" y="79.2" width="26" height="7.6" rx="3.6" fill="#58473b" />
+          <rect x="56.8" y="80" width="6.4" height="5.4" rx="2" fill="#d1b763" />
         </g>
 
-        <rect x="45" y="86" width="12" height="19" rx="6" fill="#76855a" stroke="#51613b" strokeWidth="3" className="soldier-leg-left soldier-svg-part" />
-        <rect x="63" y="86" width="12" height="19" rx="6" fill="#76855a" stroke="#51613b" strokeWidth="3" className="soldier-leg-right soldier-svg-part" />
-        <rect x="39" y="101" width="22" height="9" rx="4.5" fill="#2f2c29" />
-        <rect x="61" y="101" width="22" height="9" rx="4.5" fill="#2f2c29" />
+        <rect x="44.8" y="86" width="12.4" height="19" rx="6" fill="url(#soldier-cloth)" stroke="#51613b" strokeWidth="3" className="soldier-leg-left soldier-svg-part" />
+        <rect x="62.8" y="86" width="12.4" height="19" rx="6" fill="url(#soldier-cloth)" stroke="#51613b" strokeWidth="3" className="soldier-leg-right soldier-svg-part" />
+        <rect x="46.8" y="93.2" width="8.3" height="4.2" rx="2" fill="#4f5f3d" />
+        <rect x="64.8" y="93.2" width="8.3" height="4.2" rx="2" fill="#4f5f3d" />
+        <rect x="38.4" y="101" width="22.8" height="9" rx="4.5" fill="url(#soldier-boot)" />
+        <rect x="60.8" y="101" width="22.8" height="9" rx="4.5" fill="url(#soldier-boot)" />
+        <rect x="40.2" y="105.5" width="19.2" height="1.6" rx="0.8" fill="#5d5750" />
+        <rect x="62.6" y="105.5" width="19.2" height="1.6" rx="0.8" fill="#5d5750" />
 
         <g className="soldier-head soldier-svg-part">
-          <rect x="53" y="41" width="14" height="8" rx="4" fill="#e1b490" />
-          <ellipse cx="60" cy="31" rx="18" ry="15" fill="#f0c6a3" stroke="#c89e7e" strokeWidth="3" />
+          <rect x="53" y="41" width="14" height="8.6" rx="4.2" fill="#dfb28f" />
+          <ellipse cx="60" cy="31" rx="18.2" ry="15.2" fill="url(#soldier-skin)" stroke="#c89e7e" strokeWidth="3" />
           <circle cx="52.5" cy="30.5" r="2.4" fill="#1f2a1b" className="soldier-eye soldier-svg-part" />
           <circle cx="67.5" cy="30.5" r="2.4" fill="#1f2a1b" className="soldier-eye soldier-svg-part" />
           <path d="M49 26.7 Q52 24.8 55.3 26.7" stroke="#5b4031" strokeWidth="1.8" strokeLinecap="round" fill="none" />
           <path d="M64.7 26.7 Q68 24.8 71 26.7" stroke="#5b4031" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+          <path d="M54.3 35.5 L60 32.8 L65.7 35.5" fill="none" stroke="#b58367" strokeWidth="1.2" strokeLinecap="round" />
           <path d="M53.5 37.5 Q60 42.3 66.5 37.5" fill="none" stroke="#865f4b" strokeWidth="2.3" strokeLinecap="round" />
           <path d="M53.8 34.9 Q60 39 66.2 34.9" fill="none" stroke="#6d4938" strokeWidth="1.4" strokeLinecap="round" />
           <ellipse cx="47" cy="36" rx="3.8" ry="2.2" fill="rgba(228,145,132,0.45)" />
           <ellipse cx="73" cy="36" rx="3.8" ry="2.2" fill="rgba(228,145,132,0.45)" />
+          <path d="M44.8 41.4 Q60 46.2 75.2 41.4" fill="none" stroke="#8b684f" strokeWidth="1.8" className="soldier-chinstrap" />
         </g>
 
         <g className="soldier-helmet soldier-svg-part">
-          <path d="M41 23 C43 13, 53 8, 60 8 C67 8, 77 13, 79 23 L79 26 L41 26 Z" fill="#66704d" stroke="#4f5839" strokeWidth="3" />
+          <path d="M41 23 C43 13, 53 8, 60 8 C67 8, 77 13, 79 23 L79 26 L41 26 Z" fill="url(#soldier-helmet)" stroke="#4f5839" strokeWidth="3" />
           <path d="M41 25 C52 29, 68 29, 79 25" fill="#4f5839" />
+          <path d="M49 17.7 C52.2 15.8, 56.8 15.2, 60.3 17.2 C57.7 19.8, 54.2 21.2, 50.2 21.2 Z" fill="#61704c" />
+          <path d="M68 18.5 C71.6 20.1, 73.5 22.5, 72.9 24.8 C69.5 24.2, 66.6 22.5, 64.6 20 Z" fill="#647252" />
           <rect x="49" y="19" width="22" height="6" rx="3" fill="#738159" />
           <circle cx="60" cy="22" r="3" fill="#d9c46b" />
           <path className="soldier-helmet-glint" d="M45 16 L52 16 L46 26 L40 26 Z" fill="rgba(255,255,255,0.28)" />
@@ -603,6 +649,21 @@ export function SoldadoRecordatorioWidget({
           50% { transform: rotate(1deg); }
         }
 
+        @keyframes soldier-rifle-sway {
+          0%, 100% { transform: rotate(0deg) translateY(0); }
+          50% { transform: rotate(1.7deg) translateY(-0.7px); }
+        }
+
+        @keyframes soldier-antenna-bounce {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(2.2deg); }
+        }
+
+        @keyframes soldier-chinstrap-sway {
+          0%, 100% { transform: translateY(0); opacity: 0.85; }
+          50% { transform: translateY(0.45px); opacity: 1; }
+        }
+
         @keyframes soldier-helmet-glint {
           0%, 100% { opacity: 0; transform: translateX(-5px); }
           22% { opacity: 0; transform: translateX(-5px); }
@@ -647,6 +708,22 @@ export function SoldadoRecordatorioWidget({
           animation: soldier-pack-sway 2.1s ease-in-out infinite;
         }
 
+        .soldier-rifle {
+          transform-origin: center bottom;
+          animation: soldier-rifle-sway 2.2s ease-in-out infinite;
+        }
+
+        .soldier-radio-antenna {
+          transform-box: fill-box;
+          transform-origin: bottom center;
+          animation: soldier-antenna-bounce 2.2s ease-in-out infinite;
+        }
+
+        .soldier-strap {
+          transform-origin: center center;
+          animation: soldier-breath 2.4s ease-in-out infinite;
+        }
+
         .soldier-torso {
           transform-origin: center center;
           animation: soldier-breath 2.4s ease-in-out infinite;
@@ -664,6 +741,10 @@ export function SoldadoRecordatorioWidget({
 
         .soldier-helmet-glint {
           animation: soldier-helmet-glint 4.2s ease-in-out infinite;
+        }
+
+        .soldier-chinstrap {
+          animation: soldier-chinstrap-sway 2.4s ease-in-out infinite;
         }
 
         .soldier-arm-left {
@@ -696,10 +777,14 @@ export function SoldadoRecordatorioWidget({
           .soldier-float,
           .soldier-eye,
           .soldier-pack,
+          .soldier-rifle,
+          .soldier-radio-antenna,
+          .soldier-strap,
           .soldier-torso,
           .soldier-head,
           .soldier-helmet,
           .soldier-helmet-glint,
+          .soldier-chinstrap,
           .soldier-arm-left,
           .soldier-arm-right,
           .soldier-leg-left,
