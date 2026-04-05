@@ -43,6 +43,9 @@ DATABASE_URL_UNPOOLED="postgresql://..." # opcional
 WEB_PUSH_PUBLIC_KEY="..."
 WEB_PUSH_PRIVATE_KEY="..."
 WEB_PUSH_SUBJECT="mailto:admin@example.com"
+
+# Opcional: habilita acceso de Soldado Widget como extension externa
+SOLDADO_WIDGET_EXTENSION_TOKEN="token_largo_y_secreto"
 ```
 
 Para generar claves VAPID:
@@ -80,6 +83,22 @@ npm run dev
 - `npm run prisma:studio`: abre Prisma Studio
 - `npm run user:create -- --username <u> --password <p> --role ADMIN|EDITOR`: crea o actualiza usuario
 - `npm run webpush:generate`: genera claves VAPID para notificaciones push
+
+## Extension Soldado Widget
+
+Si defines `SOLDADO_WIDGET_EXTENSION_TOKEN`, queda habilitado el endpoint:
+
+- `GET /api/extensions/soldado-widget/recordatorios?usuarioId=<id>&limit=3`
+
+Requisitos:
+
+- Header `Authorization: Bearer <SOLDADO_WIDGET_EXTENSION_TOKEN>`
+- `usuarioId` valido de un usuario activo
+
+Respuesta:
+
+- resumen con pendientes/urgentes
+- lista acotada de tareas para mostrar en el widget Android
 
 Ejemplo:
 
