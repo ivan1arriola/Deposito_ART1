@@ -12,6 +12,7 @@ type WidgetTokenPayload = {
 
 const TOKEN_VERSION = "v1";
 const DEFAULT_TTL_HOURS = 24 * 30;
+const NEVER_EXPIRES_UNIX_SECONDS = 4_102_444_800; // 2100-01-01T00:00:00Z
 
 function getSecret() {
   const secret =
@@ -44,6 +45,9 @@ function timingSafeEqualString(a: string, b: string) {
 function ttlHoursFromEnv() {
   const raw = process.env.SOLDADO_WIDGET_TOKEN_TTL_HOURS?.trim();
   if (!raw) return DEFAULT_TTL_HOURS;
+
+  if (raw === "0") return 0;
+
   const parsed = Number(raw);
   if (!Number.isInteger(parsed) || parsed < 1) return DEFAULT_TTL_HOURS;
   return Math.min(parsed, 24 * 180);
@@ -61,12 +65,13 @@ export function issueSoldadoWidgetToken(input: { usuarioId: string; username: st
 
   const nowSeconds = Math.floor(Date.now() / 1000);
   const ttlHours = ttlHoursFromEnv();
+  const expSeconds = ttlHours === 0 ? NEVER_EXPIRES_UNIX_SECONDS : nowSeconds + ttlHours * 60 * 60;
   const payload: WidgetTokenPayload = {
     sub: input.usuarioId,
     usr: input.username,
     rol: input.rol,
     iat: nowSeconds,
-    exp: nowSeconds + ttlHours * 60 * 60,
+    exp: expSeconds,
     scope: "soldado-widget",
   };
 

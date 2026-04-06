@@ -47,6 +47,7 @@ WEB_PUSH_SUBJECT="mailto:admin@example.com"
 # Opcional: habilita autenticacion de Soldado Widget
 SOLDADO_WIDGET_AUTH_SECRET="secreto_largo_y_unico"
 # Opcional: expiracion del token de sesion en horas (default: 720 = 30 dias)
+# Usa 0 para sesion sin vencimiento practico (expira en 2100)
 SOLDADO_WIDGET_TOKEN_TTL_HOURS="720"
 ```
 
