@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       data: {
         accion: "CREATE_TAREA_WIDGET",
         entidad: "UsuarioRecordatorioTarea",
-        resultado: `DENIED (invalid_token)`,
+        detalle: { resultado: "DENIED (invalid_token)" },
         usuarioId: null,
       },
     });
@@ -86,7 +86,8 @@ export async function POST(request: Request) {
       data: {
         accion: "CREATE_TAREA_WIDGET",
         entidad: "UsuarioRecordatorioTarea",
-        resultado: `SUCCESS (tareaId: ${tarea.tareaId})`,
+        entidadId: tarea.tareaId.toString(),
+        detalle: { resultado: `SUCCESS (tareaId: ${tarea.tareaId})` },
         usuarioId,
       },
     });
@@ -98,7 +99,9 @@ export async function POST(request: Request) {
       data: {
         accion: "CREATE_TAREA_WIDGET",
         entidad: "UsuarioRecordatorioTarea",
-        resultado: `ERROR: ${error instanceof Error ? error.message : "Unknown error"}`,
+        detalle: {
+          resultado: `ERROR: ${error instanceof Error ? error.message : "Unknown error"}`,
+        },
         usuarioId,
       },
     });

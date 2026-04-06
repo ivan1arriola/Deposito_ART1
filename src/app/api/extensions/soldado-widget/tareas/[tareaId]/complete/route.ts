@@ -10,14 +10,18 @@ function getBearerToken(request: Request) {
   return token.trim();
 }
 
-export async function PATCH(request: Request, { params }: { params: { tareaId: string } }) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ tareaId: string }> }
+) {
   const incomingToken = getBearerToken(request);
   const verification = verifySoldadoWidgetToken(incomingToken);
   if (!verification.ok) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
-  const tareaIdRaw = params.tareaId?.trim() ?? "";
+  const { tareaId: rawTareaId } = await params;
+  const tareaIdRaw = rawTareaId?.trim() ?? "";
   let tareaId: bigint;
   try {
     tareaId = BigInt(tareaIdRaw);

@@ -46,7 +46,7 @@ export async function PUT(
       data: {
         accion: "UPDATE_TAREA_WIDGET",
         entidad: "UsuarioRecordatorioTarea",
-        resultado: `DENIED (invalid_token)`,
+        detalle: { resultado: "DENIED (invalid_token)" },
         usuarioId: null,
       },
     });
@@ -79,7 +79,8 @@ export async function PUT(
         data: {
           accion: "UPDATE_TAREA_WIDGET",
           entidad: "UsuarioRecordatorioTarea",
-          resultado: `DENIED (ownership_check_failed for tareaId ${tareaId})`,
+          entidadId: tareaId,
+          detalle: { resultado: `DENIED (ownership_check_failed for tareaId ${tareaId})` },
           usuarioId,
         },
       });
@@ -129,7 +130,8 @@ export async function PUT(
       data: {
         accion: "UPDATE_TAREA_WIDGET",
         entidad: "UsuarioRecordatorioTarea",
-        resultado: `SUCCESS (tareaId: ${tareaId})`,
+        entidadId: tareaId,
+        detalle: { resultado: `SUCCESS (tareaId: ${tareaId})` },
         usuarioId,
       },
     });
@@ -141,7 +143,10 @@ export async function PUT(
       data: {
         accion: "UPDATE_TAREA_WIDGET",
         entidad: "UsuarioRecordatorioTarea",
-        resultado: `ERROR: ${error instanceof Error ? error.message : "Unknown error"}`,
+        entidadId: tareaId,
+        detalle: {
+          resultado: `ERROR: ${error instanceof Error ? error.message : "Unknown error"}`,
+        },
         usuarioId,
       },
     });
