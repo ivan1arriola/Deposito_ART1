@@ -3586,6 +3586,21 @@ export default function Home() {
         await loginHandler(loginUsername, loginPassword, {
           onSuccess: async () => {
             setLoginPassword("");
+
+            const callbackTarget =
+              typeof window !== "undefined"
+                ? new URLSearchParams(window.location.search).get("widgetAuthCallback")
+                : null;
+
+            if (
+              callbackTarget &&
+              typeof window !== "undefined" &&
+              callbackTarget.startsWith(window.location.origin)
+            ) {
+              window.location.href = callbackTarget;
+              return;
+            }
+
             await loadData(true);
           },
           onError: (message) => setStatus(message),
