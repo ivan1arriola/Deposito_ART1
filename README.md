@@ -44,8 +44,10 @@ WEB_PUSH_PUBLIC_KEY="..."
 WEB_PUSH_PRIVATE_KEY="..."
 WEB_PUSH_SUBJECT="mailto:admin@example.com"
 
-# Opcional: habilita acceso de Soldado Widget como extension externa
-SOLDADO_WIDGET_EXTENSION_TOKEN="token_largo_y_secreto"
+# Opcional: habilita autenticacion de Soldado Widget
+SOLDADO_WIDGET_AUTH_SECRET="secreto_largo_y_unico"
+# Opcional: expiracion del token de sesion en horas (default: 720 = 30 dias)
+SOLDADO_WIDGET_TOKEN_TTL_HOURS="720"
 ```
 
 Para generar claves VAPID:
@@ -86,14 +88,16 @@ npm run dev
 
 ## Extension Soldado Widget
 
-Si defines `SOLDADO_WIDGET_EXTENSION_TOKEN`, queda habilitado el endpoint:
+Si defines `SOLDADO_WIDGET_AUTH_SECRET` (o ya tienes `NEXTAUTH_SECRET`), se habilitan los endpoints:
 
-- `GET /api/extensions/soldado-widget/recordatorios?usuarioId=<id>&limit=3`
+- `POST /api/extensions/soldado-widget/login`
+- `GET /api/extensions/soldado-widget/recordatorios?limit=3`
 
-Requisitos:
+Flujo:
 
-- Header `Authorization: Bearer <SOLDADO_WIDGET_EXTENSION_TOKEN>`
-- `usuarioId` valido de un usuario activo
+- La app Android envia `username` + `password` al endpoint de login.
+- El servidor devuelve `accessToken` de sesion y datos del usuario.
+- El widget usa `Authorization: Bearer <accessToken>` para sincronizar recordatorios del usuario autenticado.
 
 Respuesta:
 

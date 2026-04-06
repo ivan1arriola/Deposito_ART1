@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isSoldadoWidgetAuthEnabled, verifySoldadoWidgetToken } from "@/lib/soldado-widget-auth";
 
 function pad2(value: number) {
   return String(value).padStart(2, "0");
@@ -51,24 +52,21 @@ function serializeTask(task: {
 }
 
 export async function GET(request: Request) {
-  const extensionToken = process.env.SOLDADO_WIDGET_EXTENSION_TOKEN?.trim() ?? "";
-  if (extensionToken === "") {
+  if (!isSoldadoWidgetAuthEnabled()) {
     return NextResponse.json(
-      { error: "Extensiones de widget no habilitadas en este entorno." },
+      { error: "Autenticacion de Soldado Widget no habilitada en este entorno." },
       { status: 503 },
     );
   }
 
   const incomingToken = getBearerToken(request);
-  if (incomingToken === "" || incomingToken !== extensionToken) {
+  const verification = verifySoldadoWidgetToken(incomingToken);
+  if (!verification.ok) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
-  const usuarioId = (searchParams.get("usuarioId") ?? "").trim();
-  if (usuarioId.length < 8 || usuarioId.length > 64) {
-    return NextResponse.json({ error: "usuarioId invalido." }, { status: 400 });
-  }
+  const usuarioId = verification.payload.sub;
 
   const includeCompleted = parseBooleanParam(searchParams.get("includeCompleted"));
   const limit = parseLimit(searchParams.get("limit"));
@@ -107,6 +105,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     usuarioId,
+    username: verification.payload.usr,
     generatedAt: new Date().toISOString(),
     summary: {
       pendingCount,
