@@ -31,11 +31,13 @@ type RecordatorioCreateInput = {
 
 type TaskFilter = "PENDIENTES" | "URGENTES" | "HECHAS";
 type WidgetCorner = "TOP_LEFT" | "TOP_RIGHT" | "BOTTOM_LEFT" | "BOTTOM_RIGHT";
-type SoldierDialogueKind = "TIME_GREETING";
+type SoldierDialogueKind = "TIME_GREETING" | "TASKS_TO_DO";
 
 type SoldierDialogueContext = {
   displayName: string;
   now: Date;
+  pendingCount: number;
+  urgentCount: number;
 };
 
 type SoldierDialogueDefinition = {
@@ -141,12 +143,26 @@ function resolveGreetingByHour(now: Date) {
   return "Buenas noches";
 }
 
+function tasksLabel(count: number) {
+  return count === 1 ? "tarea" : "tareas";
+}
+
 const SOLDIER_DIALOGUES: Record<SoldierDialogueKind, SoldierDialogueDefinition> = {
   TIME_GREETING: {
     kind: "TIME_GREETING",
     buildMessage: ({ displayName, now }) => {
       const greeting = resolveGreetingByHour(now);
       return displayName ? `${greeting}, ${displayName}.` : `${greeting}.`;
+    },
+  },
+  TASKS_TO_DO: {
+    kind: "TASKS_TO_DO",
+    buildMessage: ({ pendingCount, urgentCount }) => {
+      if (pendingCount <= 0) return "Sin tareas pendientes por ahora.";
+      if (urgentCount > 0) {
+        return `${pendingCount} ${tasksLabel(pendingCount)} por hacer, ${urgentCount} urgente(s).`;
+      }
+      return `${pendingCount} ${tasksLabel(pendingCount)} por hacer.`;
     },
   },
 };
@@ -314,6 +330,7 @@ export function SoldadoRecordatorioWidget({
   const [fechaLimite, setFechaLimite] = useState("");
   const [prioridad, setPrioridad] = useState<"NORMAL" | "URGENTE">("NORMAL");
   const widgetContainerRef = useRef<HTMLDivElement | null>(null);
+  const initialDialogueShownRef = useRef(false);
   const dragStateRef = useRef<{
     pointerId: number;
     startX: number;
@@ -382,6 +399,7 @@ export function SoldadoRecordatorioWidget({
   const visibleTasks = activeList.slice(0, isMobile ? 8 : 6);
   const hiddenCount = Math.max(0, activeList.length - visibleTasks.length);
   const isRightCorner = corner === "TOP_RIGHT" || corner === "BOTTOM_RIGHT";
+  const isTopCorner = corner === "TOP_LEFT" || corner === "TOP_RIGHT";
   const avatarSize = isMobile ? 82 : isExtraLargeDesktop ? 132 : isLargeDesktop ? 120 : isDesktop ? 108 : 96;
   const badgeSize = Math.max(20, Math.round(avatarSize * 0.24));
   const badgeFontSize = Math.max(11, Math.round(avatarSize * 0.13));
@@ -407,7 +425,12 @@ export function SoldadoRecordatorioWidget({
   const triggerDialogue = useCallback(
     (kind: SoldierDialogueKind) => {
       const definition = SOLDIER_DIALOGUES[kind];
-      const message = definition.buildMessage({ displayName: displayFirstName, now: new Date() });
+      const message = definition.buildMessage({
+        displayName: displayFirstName,
+        now: new Date(),
+        pendingCount: pendingTasks.length,
+        urgentCount,
+      });
       if (!message) return;
 
       setActiveDialogue({
@@ -415,7 +438,7 @@ export function SoldadoRecordatorioWidget({
         message,
       });
     },
-    [displayFirstName],
+    [displayFirstName, pendingTasks.length, urgentCount],
   );
 
   const dismissDialogue = useCallback(() => {
@@ -423,11 +446,13 @@ export function SoldadoRecordatorioWidget({
   }, []);
 
   useEffect(() => {
+    if (initialDialogueShownRef.current) return;
+    initialDialogueShownRef.current = true;
     const greetingTimerId = window.setTimeout(() => {
-      triggerDialogue("TIME_GREETING");
+      triggerDialogue(pendingTasks.length > 0 ? "TASKS_TO_DO" : "TIME_GREETING");
     }, 80);
     return () => window.clearTimeout(greetingTimerId);
-  }, [triggerDialogue]);
+  }, [pendingTasks.length, triggerDialogue]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1151,7 +1176,9 @@ export function SoldadoRecordatorioWidget({
             <Box
               sx={{
                 position: "absolute",
-                bottom: `calc(100% + ${isMobile ? 8 : 10}px)`,
+                ...(isTopCorner
+                  ? { top: `calc(100% + ${isMobile ? 8 : 10}px)` }
+                  : { bottom: `calc(100% + ${isMobile ? 8 : 10}px)` }),
                 ...(isRightCorner ? { right: 0 } : { left: 0 }),
                 maxWidth: { xs: 190, sm: 230 },
                 borderRadius: 2.25,
@@ -1166,12 +1193,20 @@ export function SoldadoRecordatorioWidget({
                 "&::after": {
                   content: '""',
                   position: "absolute",
-                  bottom: -6,
                   width: 12,
                   height: 12,
                   bgcolor: "rgba(255,255,255,0.97)",
-                  borderRight: "1px solid rgba(123, 116, 96, 0.35)",
-                  borderBottom: "1px solid rgba(123, 116, 96, 0.35)",
+                  ...(isTopCorner
+                    ? {
+                        top: -6,
+                        borderLeft: "1px solid rgba(123, 116, 96, 0.35)",
+                        borderTop: "1px solid rgba(123, 116, 96, 0.35)",
+                      }
+                    : {
+                        bottom: -6,
+                        borderRight: "1px solid rgba(123, 116, 96, 0.35)",
+                        borderBottom: "1px solid rgba(123, 116, 96, 0.35)",
+                      }),
                   transform: "rotate(45deg)",
                   ...(isRightCorner ? { right: 20 } : { left: 20 }),
                 },
