@@ -238,9 +238,6 @@ export function DashboardHero({
                     width: "100%",
                   }}
                 >
-                  <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.9)", textAlign: "right" }}>
-                    {`Version: ${appVersion}`}
-                  </Typography>
                   <Box
                     sx={{
                       width: "100%",
@@ -457,6 +454,17 @@ export function DashboardHero({
           <AdminPushNotifications />
         </Box>
       ) : null}
+
+      <Typography
+        sx={{
+          mt: 1.6,
+          textAlign: "center",
+          fontSize: { xs: 12, sm: 13 },
+          color: "rgba(255,255,255,0.9)",
+        }}
+      >
+        {`Version: ${appVersion}`}
+      </Typography>
     </Paper>
   );
 }
