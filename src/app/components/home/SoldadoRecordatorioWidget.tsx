@@ -49,15 +49,7 @@ type ActiveSoldierDialogue = {
 };
 
 const WIDGET_CORNER_STORAGE_KEY = "soldado-recordatorio-widget-corner";
-const WIDGET_POSITION_STORAGE_KEY = "soldado-recordatorio-widget-position";
 const WIDGET_DRAG_THRESHOLD_PX = 10;
-
-type PersistedWidgetPosition = {
-  left: number;
-  top: number;
-  viewportWidth: number;
-  viewportHeight: number;
-};
 
 type SoldadoRecordatorioWidgetProps = {
   tasks: RecordatorioTarea[];
@@ -132,33 +124,6 @@ function clampWidgetPosition(
     left: clamp(position.left, viewportPadding, Math.max(viewportPadding, maxLeft)),
     top: clamp(position.top, viewportPadding, Math.max(viewportPadding, maxTop)),
   };
-}
-
-function parsePersistedWidgetPosition(value: string | null): PersistedWidgetPosition | null {
-  if (!value) return null;
-  try {
-    const parsed = JSON.parse(value) as Partial<PersistedWidgetPosition>;
-    if (
-      typeof parsed.left !== "number" ||
-      typeof parsed.top !== "number" ||
-      typeof parsed.viewportWidth !== "number" ||
-      typeof parsed.viewportHeight !== "number" ||
-      !Number.isFinite(parsed.left) ||
-      !Number.isFinite(parsed.top) ||
-      !Number.isFinite(parsed.viewportWidth) ||
-      !Number.isFinite(parsed.viewportHeight)
-    ) {
-      return null;
-    }
-    return {
-      left: parsed.left,
-      top: parsed.top,
-      viewportWidth: parsed.viewportWidth,
-      viewportHeight: parsed.viewportHeight,
-    };
-  } catch {
-    return null;
-  }
 }
 
 function normalizeFirstName(displayName: string | null | undefined) {
@@ -336,12 +301,6 @@ export function SoldadoRecordatorioWidget({
   const [controlsOpen, setControlsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPreview, setDragPreview] = useState<{ left: number; top: number } | null>(null);
-  const [storedPosition, setStoredPosition] = useState<{ left: number; top: number } | null>(() => {
-    if (typeof window === "undefined") return null;
-    const parsed = parsePersistedWidgetPosition(window.localStorage.getItem(WIDGET_POSITION_STORAGE_KEY));
-    if (!parsed) return null;
-    return { left: parsed.left, top: parsed.top };
-  });
   const [showComposer, setShowComposer] = useState(false);
   const [filter, setFilter] = useState<TaskFilter>("PENDIENTES");
   const [activeDialogue, setActiveDialogue] = useState<ActiveSoldierDialogue | null>(null);
@@ -440,8 +399,6 @@ export function SoldadoRecordatorioWidget({
   }, [corner, isMobile]);
   const widgetRuntimePositionSx = dragPreview
     ? { top: dragPreview.top, left: dragPreview.left, right: "auto", bottom: "auto" }
-    : storedPosition
-      ? { top: storedPosition.top, left: storedPosition.left, right: "auto", bottom: "auto" }
     : widgetPositionSx;
   const displayFirstName = normalizeFirstName(displayName);
 
@@ -476,61 +433,6 @@ export function SoldadoRecordatorioWidget({
     if (typeof window === "undefined") return;
     window.localStorage.setItem(WIDGET_CORNER_STORAGE_KEY, corner);
   }, [corner]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!storedPosition) return;
-
-    const widgetRect = widgetContainerRef.current?.getBoundingClientRect();
-    if (!widgetRect) return;
-
-    const persisted = parsePersistedWidgetPosition(window.localStorage.getItem(WIDGET_POSITION_STORAGE_KEY));
-    const viewportPadding = isMobile ? 8 : 12;
-    const viewportSize = { width: window.innerWidth, height: window.innerHeight };
-    const widgetSize = { width: widgetRect.width, height: widgetRect.height };
-
-    const scaledCandidate = persisted
-      ? {
-          left: (persisted.left / Math.max(1, persisted.viewportWidth)) * viewportSize.width,
-          top: (persisted.top / Math.max(1, persisted.viewportHeight)) * viewportSize.height,
-        }
-      : storedPosition;
-
-    const clampedPosition = clampWidgetPosition(scaledCandidate, widgetSize, viewportSize, viewportPadding);
-    const didPositionChange =
-      Math.abs(clampedPosition.left - storedPosition.left) > 0.5 || Math.abs(clampedPosition.top - storedPosition.top) > 0.5;
-
-    const nextCorner = resolveCornerFromPoint(
-      clampedPosition.left + widgetSize.width / 2,
-      clampedPosition.top + widgetSize.height / 2,
-      viewportSize.width,
-      viewportSize.height,
-    );
-
-    if (didPositionChange || nextCorner !== corner) {
-      const syncTimerId = window.setTimeout(() => {
-        if (didPositionChange) {
-          setStoredPosition(clampedPosition);
-        }
-        if (nextCorner !== corner) {
-          setCorner(nextCorner);
-        }
-      }, 0);
-      return () => window.clearTimeout(syncTimerId);
-    }
-  }, [corner, isDesktop, isExtraLargeDesktop, isLargeDesktop, isMobile, storedPosition]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!storedPosition) return;
-    const payload: PersistedWidgetPosition = {
-      left: Math.round(storedPosition.left),
-      top: Math.round(storedPosition.top),
-      viewportWidth: window.innerWidth,
-      viewportHeight: window.innerHeight,
-    };
-    window.localStorage.setItem(WIDGET_POSITION_STORAGE_KEY, JSON.stringify(payload));
-  }, [storedPosition]);
 
   const closePanel = () => {
     setOpen(false);
@@ -622,7 +524,6 @@ export function SoldadoRecordatorioWidget({
         },
         viewportPadding,
       );
-      setStoredPosition(droppedPosition);
       const nextCorner = resolveCornerFromPoint(
         droppedPosition.left + state.widgetWidth / 2,
         droppedPosition.top + state.widgetHeight / 2,
