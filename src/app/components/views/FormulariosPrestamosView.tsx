@@ -87,6 +87,12 @@ function isSargentoRank(abreviacion: string) {
   return normalized.includes("sargento") || normalized.startsWith("sgto");
 }
 
+function destinatarioTipoLabel(value: PrestamoDraft["destinatarioTipo"]) {
+  if (value === "OFICIAL") return "Oficiales";
+  if (value === "SUBOFICIAL") return "Suboficiales";
+  return "Subalternos";
+}
+
 export function FormulariosPrestamosView({
   data,
   loading,
@@ -315,32 +321,66 @@ export function FormulariosPrestamosView({
     if (normalizedPrestamoIdFilter === "") return prestamos;
     return prestamos.filter((prestamo) => prestamo.prestamoId.includes(normalizedPrestamoIdFilter));
   }, [prestamos, normalizedPrestamoIdFilter]);
+  const selectedDestinatario = useMemo(
+    () => destinatarioOptions.find((option) => option.ci === prestamoDraft.destinatarioCi) ?? null,
+    [destinatarioOptions, prestamoDraft.destinatarioCi],
+  );
+  const selectedActuante = useMemo(
+    () => actuanteOptions.find((option) => option.ci === prestamoDraft.actuanteCi) ?? null,
+    [actuanteOptions, prestamoDraft.actuanteCi],
+  );
+  const equiposConSeleccion = useMemo(
+    () => prestamoDraft.items.filter((item) => item.itemId.trim() !== "").length,
+    [prestamoDraft.items],
+  );
+  const totalUnidadesPrestadas = useMemo(
+    () => prestamoDraft.items.reduce((total, item) => total + (Number(item.cantidad) > 0 ? Number(item.cantidad) : 0), 0),
+    [prestamoDraft.items],
+  );
 
   function renderPrestamoList(items: StockDashboardData["prestamos"], emptyMessage: string, showReturnAction: boolean) {
     return (
       <div className="space-y-2">
         {items.length === 0 ? <p className="text-sm text-stone-600">{emptyMessage}</p> : null}
         {items.map((prestamo) => (
-          <article key={prestamo.prestamoId} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-            <div className="flex flex-wrap items-start justify-between gap-2">
+          <article key={prestamo.prestamoId} className="rounded-xl border border-stone-200 bg-stone-50 p-3 md:p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <button
                 type="button"
                 onClick={() => setSelectedPrestamo(prestamo)}
-                className="text-left"
+                className="min-w-0 flex-1 text-left"
               >
-                <p className="text-sm font-semibold text-stone-900">{prestamo.reciboNumero}</p>
-                <p className="text-xs text-stone-600">
-                  {prestamo.destinatarioEtiqueta}
-                  {prestamo.destinatarioCi ? ` - CI ${formatUruguayanCi(prestamo.destinatarioCi)}` : ""}
-                </p>
-                <p className="text-xs text-stone-500">Prestado: {formatDateOnlyForDisplay(prestamo.fechaPrestamo)}</p>
-                {prestamo.fechaEstimadaDevolucionTexto ? (
-                  <p className="text-xs text-stone-500">Estimado: {prestamo.fechaEstimadaDevolucionTexto}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-lg font-semibold leading-tight text-stone-900">{prestamo.reciboNumero}</p>
+                  <span className="rounded-full border border-stone-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-stone-600">
+                    ID {prestamo.prestamoId}
+                  </span>
+                </div>
+
+                <p className="mt-1 text-sm font-medium text-stone-800">{prestamo.destinatarioEtiqueta}</p>
+                {prestamo.destinatarioCi ? (
+                  <p className="text-xs text-stone-500">CI {formatUruguayanCi(prestamo.destinatarioCi)}</p>
                 ) : null}
-                <p className="text-xs text-stone-500">Por oden de: {prestamo.actuanteNombre ?? "No registrado"}</p>
+
+                <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-stone-600 sm:grid-cols-2">
+                  <p>
+                    <span className="font-semibold text-stone-700">Prestado:</span> {formatDateOnlyForDisplay(prestamo.fechaPrestamo)}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-stone-700">Estimado:</span>{" "}
+                    {prestamo.fechaEstimadaDevolucionTexto?.trim() ? prestamo.fechaEstimadaDevolucionTexto : "No definido"}
+                  </p>
+                  <p className="sm:col-span-2">
+                    <span className="font-semibold text-stone-700">Por orden de:</span> {prestamo.actuanteNombre ?? "No registrado"}
+                  </p>
+                </div>
+
+                <p className="mt-2 border-t border-stone-200 pt-2 text-xs text-stone-600">
+                  <span className="font-semibold text-stone-700">Registrado por:</span> {prestamo.usuarioEntregaNombre || "No registrado"}
+                </p>
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${estadoBadgeClass(prestamo.estado)}`}>
                   {prestamo.estado}
                 </span>
@@ -420,14 +460,14 @@ export function FormulariosPrestamosView({
             onClick={() => setTab("vigentes")}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${tab === "vigentes" ? "bg-stone-900 text-white" : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"}`}
           >
-            Prestamos vigentes
+            Prestamos vigentes ({prestamosVigentes.length})
           </button>
           <button
             type="button"
             onClick={() => setTab("historial")}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${tab === "historial" ? "bg-stone-900 text-white" : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"}`}
           >
-            Historial de prestamos
+            Historial ({prestamos.length})
           </button>
         </div>
       </article>
@@ -436,7 +476,7 @@ export function FormulariosPrestamosView({
 
       {tab === "vigentes" || tab === "historial" ? (
         <article className="ej-card rounded-2xl p-4">
-          <h3 className="text-sm font-semibold text-stone-900">Buscar hoja por ID</h3>
+          <h3 className="text-sm font-semibold text-stone-900">Buscar prestamo por ID</h3>
           <label className="mt-3 block text-xs text-stone-700">
             ID de prestamo
             <input
@@ -454,155 +494,234 @@ export function FormulariosPrestamosView({
       {tab === "registrar" ? (
         canWrite ? (
           <article className="ej-card rounded-2xl p-4">
-            <h3 className="text-sm font-semibold text-stone-900">Registrar prestamo</h3>
-            <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-              <label className="text-xs text-stone-700">
-                Tipo destinatario
-                <select
-                  value={prestamoDraft.destinatarioTipo}
-                  disabled={prestamoSaving}
-                  onChange={(event) => onPrestamoDraftChange("destinatarioTipo", event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                >
-                  <option value="PERSONAL">Subalternos</option>
-                  <option value="OFICIAL">Oficiales</option>
-                  <option value="SUBOFICIAL">Suboficiales</option>
-                </select>
-              </label>
-
-              <div className="text-xs text-stone-700">
-                Destinatario
-                <DestinatarioSearchSelect
-                  key={prestamoDraft.destinatarioTipo}
-                  options={destinatarioOptions}
-                  value={prestamoDraft.destinatarioCi}
-                  disabled={prestamoSaving}
-                  onChange={(ci) => onPrestamoDraftChange("destinatarioCi", ci)}
-                />
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-stone-900">Registrar prestamo</h3>
+                <p className="mt-1 text-xs text-stone-600">Completa los pasos en orden para evitar errores al guardar.</p>
               </div>
-              <div className="text-xs text-stone-700">
-                Por oden de
-                <DestinatarioSearchSelect
-                  key="formularios-prestamo-actuante"
-                  options={actuanteOptions}
-                  value={prestamoDraft.actuanteCi}
-                  disabled={prestamoSaving}
-                  onChange={(ci) => onPrestamoDraftChange("actuanteCi", ci)}
-                />
-              </div>
-
-              <label className="text-xs text-stone-700">
-                Fecha prestamo
-                <DateTextInput
-                  value={prestamoDraft.fechaPrestamo}
-                  disabled={prestamoSaving}
-                  onChange={(value) => onPrestamoDraftChange("fechaPrestamo", value)}
-                  ariaLabel={`Fecha del prestamo. Maximo ${maxDate}`}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              </label>
-
-              <label className="text-xs text-stone-700">
-                Fecha estimada devolución (texto)
-                <input
-                  value={prestamoDraft.fechaEstimadaDevolucionTexto}
-                  disabled={prestamoSaving}
-                  onChange={(event) => onPrestamoDraftChange("fechaEstimadaDevolucionTexto", event.target.value)}
-                  placeholder="Ej: 10 dias, fin de campana, 2 semanas"
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              </label>
-
-              <label className="text-xs text-stone-700">
-                Comentarios
-                <input
-                  value={prestamoDraft.comentarios}
-                  disabled={prestamoSaving}
-                  onChange={(event) => onPrestamoDraftChange("comentarios", event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              </label>
+              <span className="rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-stone-700">
+                Tipo: {destinatarioTipoLabel(prestamoDraft.destinatarioTipo)}
+              </span>
             </div>
 
-            <div className="mt-3 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos prestados</p>
+            <section className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Resumen rapido</p>
+              <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-amber-900 md:grid-cols-2">
+                <p>
+                  <span className="font-semibold">Destinatario:</span>{" "}
+                  {selectedDestinatario ? selectedDestinatario.label : "Sin seleccionar"}
+                </p>
+                <p>
+                  <span className="font-semibold">Por orden de:</span> {selectedActuante ? selectedActuante.label : "Sin seleccionar"}
+                </p>
+                <p>
+                  <span className="font-semibold">Fecha prestamo:</span> {prestamoDraft.fechaPrestamo.trim() || "Sin definir"}
+                </p>
+                <p>
+                  <span className="font-semibold">Equipos:</span> {equiposConSeleccion}/{prestamoDraft.items.length} seleccionados
+                  {" · "}
+                  {totalUnidadesPrestadas} unidades
+                </p>
+              </div>
+            </section>
+
+            <section className="mt-3 rounded-xl border border-stone-200 bg-stone-50/80 p-3 md:p-4">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-700">1) Destinatario y autorizacion</h4>
+              <p className="mt-1 text-xs text-stone-600">
+                Define a quien se presta y quien autoriza. El destinatario cambia segun el tipo seleccionado.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <label className="text-xs text-stone-700">
+                  Tipo destinatario
+                  <select
+                    value={prestamoDraft.destinatarioTipo}
+                    disabled={prestamoSaving}
+                    onChange={(event) => onPrestamoDraftChange("destinatarioTipo", event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="PERSONAL">Subalternos</option>
+                    <option value="OFICIAL">Oficiales</option>
+                    <option value="SUBOFICIAL">Suboficiales</option>
+                  </select>
+                </label>
+
+                <div className="text-xs text-stone-700">
+                  Destinatario
+                  <DestinatarioSearchSelect
+                    key={prestamoDraft.destinatarioTipo}
+                    options={destinatarioOptions}
+                    value={prestamoDraft.destinatarioCi}
+                    disabled={prestamoSaving}
+                    placeholder={`Buscar ${destinatarioTipoLabel(prestamoDraft.destinatarioTipo).toLowerCase()} por grado, apellido, nombre o CI`}
+                    onChange={(ci) => onPrestamoDraftChange("destinatarioCi", ci)}
+                  />
+                </div>
+
+                <div className="text-xs text-stone-700 md:col-span-2">
+                  Por orden de
+                  <DestinatarioSearchSelect
+                    key="formularios-prestamo-actuante"
+                    options={actuanteOptions}
+                    value={prestamoDraft.actuanteCi}
+                    disabled={prestamoSaving}
+                    placeholder="Buscar oficial, suboficial o sargento por grado, apellido o CI"
+                    onChange={(ci) => onPrestamoDraftChange("actuanteCi", ci)}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="mt-3 rounded-xl border border-stone-200 bg-white p-3 md:p-4">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-700">2) Datos del prestamo</h4>
+              <p className="mt-1 text-xs text-stone-600">Completa fecha, estimacion de devolucion y cualquier observacion relevante.</p>
+              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <label className="text-xs text-stone-700">
+                  Fecha prestamo
+                  <DateTextInput
+                    value={prestamoDraft.fechaPrestamo}
+                    disabled={prestamoSaving}
+                    onChange={(value) => onPrestamoDraftChange("fechaPrestamo", value)}
+                    ariaLabel={`Fecha del prestamo. Maximo ${maxDate}`}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                </label>
+
+                <label className="text-xs text-stone-700">
+                  Fecha estimada devolucion (texto)
+                  <input
+                    value={prestamoDraft.fechaEstimadaDevolucionTexto}
+                    disabled={prestamoSaving}
+                    onChange={(event) => onPrestamoDraftChange("fechaEstimadaDevolucionTexto", event.target.value)}
+                    placeholder="Ej: 10 dias, fin de campana, 2 semanas"
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                </label>
+
+                <label className="text-xs text-stone-700 md:col-span-2">
+                  Comentarios
+                  <input
+                    value={prestamoDraft.comentarios}
+                    disabled={prestamoSaving}
+                    onChange={(event) => onPrestamoDraftChange("comentarios", event.target.value)}
+                    placeholder="Dato adicional del prestamo (opcional)"
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section className="mt-3 rounded-xl border border-stone-200 bg-white p-3 md:p-4">
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-700">3) Equipos prestados</h4>
+                <p className="mt-1 text-xs text-stone-600">Agrega cada equipo una sola vez e indica su estado de entrega.</p>
+              </div>
+
+              {equiposConSeleccion === 0 ? (
+                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Todavia no seleccionaste equipos. Agrega al menos uno para registrar el prestamo.
+                </p>
+              ) : null}
+
+              <div className="mt-3 space-y-2">
+                {prestamoDraft.items.map((item, index) => (
+                  <div
+                    key={`formulario-prestamo-item-${index}`}
+                    className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,1fr)_120px_140px_minmax(0,1fr)_auto]"
+                  >
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Equipo
+                      <select
+                        value={item.itemId}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoItemChange(index, "itemId", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
+                      >
+                        <option value="">Seleccionar equipo</option>
+                        {equiposOrdenados
+                          .filter((equipo) => {
+                            if (equipo.itemId === item.itemId) return true;
+                            return !prestamoDraft.items.some(
+                              (selectedItem, selectedIndex) =>
+                                selectedIndex !== index && selectedItem.itemId === equipo.itemId,
+                            );
+                          })
+                          .map((equipo) => (
+                            <option key={equipo.itemId} value={equipo.itemId}>
+                              {equipo.nombre}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Cantidad
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.cantidad}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoItemChange(index, "cantidad", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
+                      />
+                    </label>
+
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Estado
+                      <select
+                        value={item.estadoEntrega}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoItemChange(index, "estadoEntrega", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
+                      >
+                        {ESTADO_OPTIONS.map((estado) => (
+                          <option key={estado} value={estado}>
+                            {estado}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Comentario
+                      <input
+                        value={item.comentarioEntrega}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoItemChange(index, "comentarioEntrega", event.target.value)}
+                        placeholder="Comentario del equipo (opcional)"
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
+                      />
+                    </label>
+
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => onRemovePrestamoItem(index)}
+                        disabled={prestamoSaving || prestamoDraft.items.length <= 1}
+                        className="w-full rounded bg-rose-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 md:w-auto"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-3">
                 <button
                   type="button"
                   onClick={onAddPrestamoItem}
                   disabled={prestamoSaving}
-                  className="rounded-lg bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50"
                 >
-                  Agregar equipo
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-800 text-sm leading-none text-white">
+                    +
+                  </span>
+                  Agregar
                 </button>
               </div>
+            </section>
 
-              {prestamoDraft.items.map((item, index) => (
-                <div
-                  key={`formulario-prestamo-item-${index}`}
-                  className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,1fr)_120px_140px_minmax(0,1fr)_auto]"
-                >
-                  <select
-                    value={item.itemId}
-                    disabled={prestamoSaving}
-                    onChange={(event) => onPrestamoItemChange(index, "itemId", event.target.value)}
-                    className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  >
-                    <option value="">Seleccionar equipo</option>
-                    {equiposOrdenados
-                      .filter((equipo) => {
-                        if (equipo.itemId === item.itemId) return true;
-                        return !prestamoDraft.items.some(
-                          (selectedItem, selectedIndex) =>
-                            selectedIndex !== index && selectedItem.itemId === equipo.itemId,
-                        );
-                      })
-                      .map((equipo) => (
-                        <option key={equipo.itemId} value={equipo.itemId}>
-                          {equipo.nombre}
-                        </option>
-                      ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={1}
-                    value={item.cantidad}
-                    disabled={prestamoSaving}
-                    onChange={(event) => onPrestamoItemChange(index, "cantidad", event.target.value)}
-                    className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  />
-                  <select
-                    value={item.estadoEntrega}
-                    disabled={prestamoSaving}
-                    onChange={(event) => onPrestamoItemChange(index, "estadoEntrega", event.target.value)}
-                    className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  >
-                    {ESTADO_OPTIONS.map((estado) => (
-                      <option key={estado} value={estado}>
-                        {estado}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    value={item.comentarioEntrega}
-                    disabled={prestamoSaving}
-                    onChange={(event) => onPrestamoItemChange(index, "comentarioEntrega", event.target.value)}
-                    placeholder="Comentario del equipo (opcional)"
-                    className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onRemovePrestamoItem(index)}
-                    disabled={prestamoSaving || prestamoDraft.items.length <= 1}
-                    className="rounded bg-rose-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                  >
-                    Quitar
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 flex justify-end gap-2">
+            <div className="mt-3 flex flex-col-reverse gap-2 border-t border-stone-200 pt-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onSubmitPrestamo}
@@ -676,7 +795,7 @@ export function FormulariosPrestamosView({
               <p><span className="font-semibold text-stone-900">Destinatario:</span> {selectedPrestamo.destinatarioEtiqueta}</p>
               <p><span className="font-semibold text-stone-900">CI:</span> {formatUruguayanCi(selectedPrestamo.destinatarioCi)}</p>
               <p><span className="font-semibold text-stone-900">Entregado por:</span> {selectedPrestamo.usuarioEntregaNombre}</p>
-              <p><span className="font-semibold text-stone-900">Por oden de:</span> {selectedPrestamo.actuanteNombre ?? "No registrado"}</p>
+              <p><span className="font-semibold text-stone-900">Por orden de:</span> {selectedPrestamo.actuanteNombre ?? "No registrado"}</p>
               <p>
                 <span className="font-semibold text-stone-900">Recibido por:</span>{" "}
                 {selectedPrestamo.usuarioRecibeDevolucionNombre ?? "Pendiente"}
