@@ -131,6 +131,17 @@ export function DashboardHero({
       <Stack spacing={2} sx={{ position: "relative" }}>
         <Typography
           sx={{
+            textAlign: "center",
+            fontSize: { xs: 12, sm: 13 },
+            color: "rgba(255,255,255,0.9)",
+            lineHeight: 1.1,
+          }}
+        >
+          {`Version: ${appVersion}`}
+        </Typography>
+
+        <Typography
+          sx={{
             alignSelf: { xs: "flex-start", md: "center" },
             fontSize: { xs: 9, sm: 10 },
             fontWeight: 700,
@@ -227,7 +238,7 @@ export function DashboardHero({
                 sx={{
                   display: "grid",
                   gridTemplateRows: "auto auto",
-                  rowGap: { md: 0.5, lg: 0.75 },
+                  rowGap: { md: 0.85, lg: 1.05 },
                 }}
               >
                 <Stack
@@ -236,6 +247,7 @@ export function DashboardHero({
                     minWidth: 0,
                     alignItems: "stretch",
                     width: "100%",
+                    order: 2,
                   }}
                 >
                   <Box
@@ -326,6 +338,7 @@ export function DashboardHero({
                   sx={{
                     width: "100%",
                     minWidth: 0,
+                    order: 1,
                     fontSize: { md: 48, lg: 58, xl: 64 },
                     fontWeight: 900,
                     lineHeight: 0.98,
@@ -454,17 +467,6 @@ export function DashboardHero({
           <AdminPushNotifications />
         </Box>
       ) : null}
-
-      <Typography
-        sx={{
-          mt: 1.6,
-          textAlign: "center",
-          fontSize: { xs: 12, sm: 13 },
-          color: "rgba(255,255,255,0.9)",
-        }}
-      >
-        {`Version: ${appVersion}`}
-      </Typography>
     </Paper>
   );
 }
