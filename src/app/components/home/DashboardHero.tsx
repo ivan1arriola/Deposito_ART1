@@ -54,6 +54,7 @@ export function DashboardHero({
   onLogout,
 }: DashboardHeroProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
   const desktopTopControlSx = {
     width: "100%",
     minWidth: 0,
@@ -319,6 +320,9 @@ export function DashboardHero({
                       Modo solo lectura: esta cuenta no puede cambiar credenciales ni datos.
                     </Typography>
                   ) : null}
+                  <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.9)", textAlign: "right" }}>
+                    {`Version: ${appVersion}`}
+                  </Typography>
                 </Stack>
 
                 <Typography
@@ -388,6 +392,11 @@ export function DashboardHero({
             <Chip
               size="small"
               label={`Rol: ${roleLabel(currentUser.rol)}`}
+              sx={{ justifyContent: "flex-start", color: "var(--foreground)", bgcolor: "var(--Blanco)", border: "1px solid var(--brand-sand)" }}
+            />
+            <Chip
+              size="small"
+              label={`Version: ${appVersion}`}
               sx={{ justifyContent: "flex-start", color: "var(--foreground)", bgcolor: "var(--Blanco)", border: "1px solid var(--brand-sand)" }}
             />
           </Stack>
