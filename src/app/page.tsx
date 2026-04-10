@@ -5678,6 +5678,7 @@ export default function Home() {
           tasks={recordatorioTasks}
           loading={recordatoriosLoading}
           saving={recordatoriosSaving}
+          displayName={(currentUser.nombre || currentUser.username).trim()}
           onCreateTask={createRecordatorioTask}
           onToggleTask={(tareaId, completada) => updateRecordatorioTask(tareaId, { completada })}
           onOpenConfig={() => setActiveView("recordatorios")}
