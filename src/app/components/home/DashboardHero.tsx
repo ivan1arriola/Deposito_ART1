@@ -238,6 +238,9 @@ export function DashboardHero({
                     width: "100%",
                   }}
                 >
+                  <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.9)", textAlign: "right" }}>
+                    {`Version: ${appVersion}`}
+                  </Typography>
                   <Box
                     sx={{
                       width: "100%",
@@ -320,9 +323,6 @@ export function DashboardHero({
                       Modo solo lectura: esta cuenta no puede cambiar credenciales ni datos.
                     </Typography>
                   ) : null}
-                  <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.9)", textAlign: "right" }}>
-                    {`Version: ${appVersion}`}
-                  </Typography>
                 </Stack>
 
                 <Typography
