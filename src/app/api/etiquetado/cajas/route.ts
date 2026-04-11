@@ -275,7 +275,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "La base de datos de etiquetado esta desactualizada. Ejecuta: npx prisma db execute --schema prisma/schema.prisma --file prisma/upgrade-sie-duplicate-support.sql",
+            "La base de datos de etiquetado esta desactualizada. Ejecuta: npx prisma db execute --file prisma/upgrade-sie-duplicate-support.sql",
         },
         { status: 500 },
       );
