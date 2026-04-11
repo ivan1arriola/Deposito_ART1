@@ -6,6 +6,7 @@ import type {
   HojasEntregaEmailJobStatus,
   HojasEntregaEmailJobStep,
 } from "@/lib/hojas-entrega-email-job";
+import { prisma } from "@/lib/prisma";
 
 type HojasEntregaEmailJobRecord = HojasEntregaEmailJobSnapshot & {
   userId: string;
@@ -15,126 +16,338 @@ type HojasEntregaEmailJobUpdate = Partial<
   Pick<HojasEntregaEmailJobRecord, "status" | "step" | "progress" | "message" | "to" | "fileName" | "hojas" | "error">
 >;
 
-const ACTIVE_JOB_TTL_MS = 30 * 60 * 1000;
-const FINISHED_JOB_TTL_MS = 24 * 60 * 60 * 1000;
+type HojasEntregaEmailJobRow = {
+  job_id: string;
+  user_id: string;
+  status: string;
+  step: string;
+  progress: number;
+  message: string;
+  to_email: string | null;
+  file_name: string | null;
+  hojas: number | null;
+  error: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
 
-function getStore() {
+const VALID_JOB_STATUSES: readonly HojasEntregaEmailJobStatus[] = ["queued", "running", "completed", "failed", "cancelled"];
+const VALID_JOB_STEPS: readonly HojasEntregaEmailJobStep[] = [
+  "queued",
+  "loading-data",
+  "rendering-pdf",
+  "preparing-email",
+  "sending-email",
+  "completed",
+  "failed",
+  "cancelled",
+];
+
+const JOBS_TABLE_DDL = `
+CREATE TABLE IF NOT EXISTS hojas_entrega_email_job (
+  job_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES usuario(usuario_id) ON DELETE CASCADE,
+  status TEXT NOT NULL,
+  step TEXT NOT NULL,
+  progress INTEGER NOT NULL,
+  message TEXT NOT NULL,
+  to_email TEXT NULL,
+  file_name TEXT NULL,
+  hojas INTEGER NULL,
+  error TEXT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+`;
+
+const JOBS_TABLE_INDEXES_DDL = [
+  "CREATE INDEX IF NOT EXISTS idx_hojas_entrega_email_job_user_updated ON hojas_entrega_email_job(user_id, updated_at DESC);",
+  "CREATE INDEX IF NOT EXISTS idx_hojas_entrega_email_job_status_updated ON hojas_entrega_email_job(status, updated_at DESC);",
+  "CREATE UNIQUE INDEX IF NOT EXISTS uq_hojas_entrega_email_job_user_active ON hojas_entrega_email_job(user_id) WHERE status IN ('queued', 'running');",
+];
+
+const JOBS_TABLE_CLEANUP_SQL = `
+DELETE FROM hojas_entrega_email_job
+WHERE
+  (status IN ('completed', 'failed', 'cancelled') AND updated_at < NOW() - INTERVAL '24 hours')
+  OR
+  (status NOT IN ('completed', 'failed', 'cancelled') AND updated_at < NOW() - INTERVAL '30 minutes');
+`;
+const CLEANUP_MIN_INTERVAL_MS = 60_000;
+
+function parseStatus(value: string): HojasEntregaEmailJobStatus {
+  if (VALID_JOB_STATUSES.includes(value as HojasEntregaEmailJobStatus)) {
+    return value as HojasEntregaEmailJobStatus;
+  }
+  return "failed";
+}
+
+function parseStep(value: string): HojasEntregaEmailJobStep {
+  if (VALID_JOB_STEPS.includes(value as HojasEntregaEmailJobStep)) {
+    return value as HojasEntregaEmailJobStep;
+  }
+  return "failed";
+}
+
+function toIsoDate(value: Date | string): string {
+  if (value instanceof Date) return value.toISOString();
+  const parsed = new Date(value);
+  if (Number.isFinite(parsed.getTime())) return parsed.toISOString();
+  return new Date().toISOString();
+}
+
+async function ensureStoreReady() {
   const globalStore = globalThis as typeof globalThis & {
-    __hojasEntregaEmailJobs?: Map<string, HojasEntregaEmailJobRecord>;
+    __hojasEntregaEmailJobsStoreReady?: Promise<void>;
   };
 
-  if (!globalStore.__hojasEntregaEmailJobs) {
-    globalStore.__hojasEntregaEmailJobs = new Map<string, HojasEntregaEmailJobRecord>();
+  if (!globalStore.__hojasEntregaEmailJobsStoreReady) {
+    globalStore.__hojasEntregaEmailJobsStoreReady = (async () => {
+      await prisma.$executeRawUnsafe(JOBS_TABLE_DDL);
+      for (const statement of JOBS_TABLE_INDEXES_DDL) {
+        await prisma.$executeRawUnsafe(statement);
+      }
+    })().catch((error) => {
+      globalStore.__hojasEntregaEmailJobsStoreReady = undefined;
+      throw error;
+    });
   }
 
-  return globalStore.__hojasEntregaEmailJobs;
+  await globalStore.__hojasEntregaEmailJobsStoreReady;
+}
+
+async function cleanupExpiredJobs() {
+  await ensureStoreReady();
+
+  const globalStore = globalThis as typeof globalThis & {
+    __hojasEntregaEmailJobsLastCleanupAt?: number;
+  };
+  const now = Date.now();
+  if (typeof globalStore.__hojasEntregaEmailJobsLastCleanupAt === "number") {
+    const elapsed = now - globalStore.__hojasEntregaEmailJobsLastCleanupAt;
+    if (elapsed >= 0 && elapsed < CLEANUP_MIN_INTERVAL_MS) {
+      return;
+    }
+  }
+
+  globalStore.__hojasEntregaEmailJobsLastCleanupAt = now;
+  await prisma.$executeRawUnsafe(JOBS_TABLE_CLEANUP_SQL);
 }
 
 function isFinished(status: HojasEntregaEmailJobStatus) {
   return status === "completed" || status === "failed" || status === "cancelled";
 }
 
-function cleanupExpiredJobs(store = getStore()) {
-  const now = Date.now();
-  for (const [jobId, job] of store.entries()) {
-    const updatedAtMs = new Date(job.updatedAt).getTime();
-    const ttlMs = isFinished(job.status) ? FINISHED_JOB_TTL_MS : ACTIVE_JOB_TTL_MS;
-    if (!Number.isFinite(updatedAtMs) || now - updatedAtMs > ttlMs) {
-      store.delete(jobId);
-    }
-  }
-}
-
-function toSnapshot(job: HojasEntregaEmailJobRecord): HojasEntregaEmailJobSnapshot {
+function toSnapshot(job: HojasEntregaEmailJobRow): HojasEntregaEmailJobSnapshot {
   return {
-    jobId: job.jobId,
-    status: job.status,
-    step: job.step,
+    jobId: job.job_id,
+    status: parseStatus(job.status),
+    step: parseStep(job.step),
     progress: job.progress,
     message: job.message,
-    to: job.to,
-    fileName: job.fileName,
+    to: job.to_email,
+    fileName: job.file_name,
     hojas: job.hojas,
     error: job.error,
-    createdAt: job.createdAt,
-    updatedAt: job.updatedAt,
+    createdAt: toIsoDate(job.created_at),
+    updatedAt: toIsoDate(job.updated_at),
   };
 }
 
-export function findActiveHojasEntregaEmailJob(userId: string): HojasEntregaEmailJobSnapshot | null {
-  const store = getStore();
-  cleanupExpiredJobs(store);
-
-  for (const job of store.values()) {
-    if (job.userId === userId && !isFinished(job.status)) {
-      return toSnapshot(job);
-    }
-  }
-
-  return null;
+async function getJobById(jobId: string): Promise<HojasEntregaEmailJobRow | null> {
+  await ensureStoreReady();
+  const rows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
+    SELECT
+      job_id,
+      user_id,
+      status,
+      step,
+      progress,
+      message,
+      to_email,
+      file_name,
+      hojas,
+      error,
+      created_at,
+      updated_at
+    FROM hojas_entrega_email_job
+    WHERE job_id = ${jobId}
+    LIMIT 1
+  `;
+  return rows[0] ?? null;
 }
 
-export function createHojasEntregaEmailJob(input: {
+export async function findActiveHojasEntregaEmailJob(userId: string): Promise<HojasEntregaEmailJobSnapshot | null> {
+  await cleanupExpiredJobs();
+
+  const rows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
+    SELECT
+      job_id,
+      user_id,
+      status,
+      step,
+      progress,
+      message,
+      to_email,
+      file_name,
+      hojas,
+      error,
+      created_at,
+      updated_at
+    FROM hojas_entrega_email_job
+    WHERE user_id = ${userId}
+      AND status NOT IN ('completed', 'failed', 'cancelled')
+    ORDER BY updated_at DESC
+    LIMIT 1
+  `;
+
+  return rows[0] ? toSnapshot(rows[0]) : null;
+}
+
+export async function createHojasEntregaEmailJob(input: {
   userId: string;
   to: string | null;
   message: string;
-}): HojasEntregaEmailJobSnapshot {
-  const store = getStore();
-  cleanupExpiredJobs(store);
+}): Promise<HojasEntregaEmailJobSnapshot> {
+  await cleanupExpiredJobs();
 
-  const now = new Date().toISOString();
-  const job: HojasEntregaEmailJobRecord = {
-    jobId: randomUUID(),
-    userId: input.userId,
-    status: "queued",
-    step: "queued",
-    progress: 5,
-    message: input.message,
-    to: input.to,
-    fileName: null,
-    hojas: null,
-    error: null,
-    createdAt: now,
-    updatedAt: now,
-  };
+  const jobId = randomUUID();
+  const rows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
+    INSERT INTO hojas_entrega_email_job (
+      job_id,
+      user_id,
+      status,
+      step,
+      progress,
+      message,
+      to_email,
+      file_name,
+      hojas,
+      error,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ${jobId},
+      ${input.userId},
+      'queued',
+      'queued',
+      5,
+      ${input.message},
+      ${input.to},
+      NULL,
+      NULL,
+      NULL,
+      NOW(),
+      NOW()
+    )
+    RETURNING
+      job_id,
+      user_id,
+      status,
+      step,
+      progress,
+      message,
+      to_email,
+      file_name,
+      hojas,
+      error,
+      created_at,
+      updated_at
+  `;
 
-  store.set(job.jobId, job);
-  return toSnapshot(job);
-}
-
-export function getHojasEntregaEmailJob(jobId: string, userId: string): HojasEntregaEmailJobSnapshot | null {
-  const store = getStore();
-  cleanupExpiredJobs(store);
-
-  const job = store.get(jobId);
-  if (!job || job.userId !== userId) return null;
-  return toSnapshot(job);
-}
-
-export function updateHojasEntregaEmailJob(jobId: string, patch: HojasEntregaEmailJobUpdate): HojasEntregaEmailJobSnapshot | null {
-  const store = getStore();
-  cleanupExpiredJobs(store);
-
-  const job = store.get(jobId);
-  if (!job) return null;
-  if (job.status === "cancelled" && patch.status !== "cancelled") {
-    return toSnapshot(job);
+  const createdJob = rows[0];
+  if (!createdJob) {
+    throw new Error("No se pudo crear el seguimiento del envio.");
   }
 
-  const next: HojasEntregaEmailJobRecord = {
-    ...job,
-    ...patch,
-    updatedAt: new Date().toISOString(),
-  };
-  store.set(jobId, next);
-  return toSnapshot(next);
+  return toSnapshot(createdJob);
 }
 
-export function completeHojasEntregaEmailJob(
+export async function getHojasEntregaEmailJob(jobId: string, userId: string): Promise<HojasEntregaEmailJobSnapshot | null> {
+  await cleanupExpiredJobs();
+
+  const rows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
+    SELECT
+      job_id,
+      user_id,
+      status,
+      step,
+      progress,
+      message,
+      to_email,
+      file_name,
+      hojas,
+      error,
+      created_at,
+      updated_at
+    FROM hojas_entrega_email_job
+    WHERE job_id = ${jobId}
+      AND user_id = ${userId}
+    LIMIT 1
+  `;
+
+  return rows[0] ? toSnapshot(rows[0]) : null;
+}
+
+export async function updateHojasEntregaEmailJob(
+  jobId: string,
+  patch: HojasEntregaEmailJobUpdate,
+): Promise<HojasEntregaEmailJobSnapshot | null> {
+  await cleanupExpiredJobs();
+
+  const currentJob = await getJobById(jobId);
+  if (!currentJob) return null;
+
+  if (parseStatus(currentJob.status) === "cancelled" && patch.status !== "cancelled") {
+    return toSnapshot(currentJob);
+  }
+
+  const nextStatus = patch.status ?? parseStatus(currentJob.status);
+  const nextStep = patch.step ?? parseStep(currentJob.step);
+  const nextProgress = patch.progress ?? currentJob.progress;
+  const nextMessage = patch.message ?? currentJob.message;
+  const nextTo = patch.to !== undefined ? patch.to : currentJob.to_email;
+  const nextFileName = patch.fileName !== undefined ? patch.fileName : currentJob.file_name;
+  const nextHojas = patch.hojas !== undefined ? patch.hojas : currentJob.hojas;
+  const nextError = patch.error !== undefined ? patch.error : currentJob.error;
+
+  const rows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
+    UPDATE hojas_entrega_email_job
+    SET
+      status = ${nextStatus},
+      step = ${nextStep},
+      progress = ${nextProgress},
+      message = ${nextMessage},
+      to_email = ${nextTo},
+      file_name = ${nextFileName},
+      hojas = ${nextHojas},
+      error = ${nextError},
+      updated_at = NOW()
+    WHERE job_id = ${jobId}
+    RETURNING
+      job_id,
+      user_id,
+      status,
+      step,
+      progress,
+      message,
+      to_email,
+      file_name,
+      hojas,
+      error,
+      created_at,
+      updated_at
+  `;
+
+  return rows[0] ? toSnapshot(rows[0]) : null;
+}
+
+export async function completeHojasEntregaEmailJob(
   jobId: string,
   patch: Omit<HojasEntregaEmailJobUpdate, "status" | "step" | "progress" | "error"> & { message: string },
-): HojasEntregaEmailJobSnapshot | null {
-  return updateHojasEntregaEmailJob(jobId, {
+): Promise<HojasEntregaEmailJobSnapshot | null> {
+  return await updateHojasEntregaEmailJob(jobId, {
     ...patch,
     status: "completed",
     step: "completed",
@@ -143,8 +356,8 @@ export function completeHojasEntregaEmailJob(
   });
 }
 
-export function failHojasEntregaEmailJob(jobId: string, message: string): HojasEntregaEmailJobSnapshot | null {
-  return updateHojasEntregaEmailJob(jobId, {
+export async function failHojasEntregaEmailJob(jobId: string, message: string): Promise<HojasEntregaEmailJobSnapshot | null> {
+  return await updateHojasEntregaEmailJob(jobId, {
     status: "failed",
     step: "failed",
     progress: 100,
@@ -153,7 +366,7 @@ export function failHojasEntregaEmailJob(jobId: string, message: string): HojasE
   });
 }
 
-export function setHojasEntregaEmailJobProgress(
+export async function setHojasEntregaEmailJobProgress(
   jobId: string,
   input: {
     step: HojasEntregaEmailJobStep;
@@ -163,8 +376,8 @@ export function setHojasEntregaEmailJobProgress(
     fileName?: string | null;
     hojas?: number | null;
   },
-): HojasEntregaEmailJobSnapshot | null {
-  return updateHojasEntregaEmailJob(jobId, {
+): Promise<HojasEntregaEmailJobSnapshot | null> {
+  return await updateHojasEntregaEmailJob(jobId, {
     status: "running",
     step: input.step,
     progress: input.progress,
@@ -176,36 +389,75 @@ export function setHojasEntregaEmailJobProgress(
   });
 }
 
-export function cancelHojasEntregaEmailJob(
+export async function cancelHojasEntregaEmailJob(
   jobId: string,
   userId: string,
   message = "Envio cancelado por el usuario.",
-): HojasEntregaEmailJobSnapshot | null {
-  const store = getStore();
-  cleanupExpiredJobs(store);
+): Promise<HojasEntregaEmailJobSnapshot | null> {
+  await cleanupExpiredJobs();
 
-  const job = store.get(jobId);
-  if (!job || job.userId !== userId) return null;
-  if (isFinished(job.status)) return toSnapshot(job);
+  const currentRows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
+    SELECT
+      job_id,
+      user_id,
+      status,
+      step,
+      progress,
+      message,
+      to_email,
+      file_name,
+      hojas,
+      error,
+      created_at,
+      updated_at
+    FROM hojas_entrega_email_job
+    WHERE job_id = ${jobId}
+      AND user_id = ${userId}
+    LIMIT 1
+  `;
 
-  const next: HojasEntregaEmailJobRecord = {
-    ...job,
-    status: "cancelled",
-    step: "cancelled",
-    progress: 100,
-    message,
-    error: null,
-    updatedAt: new Date().toISOString(),
-  };
+  const currentJob = currentRows[0];
+  if (!currentJob) return null;
+  if (isFinished(parseStatus(currentJob.status))) return toSnapshot(currentJob);
 
-  store.set(jobId, next);
-  return toSnapshot(next);
+  const updatedRows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
+    UPDATE hojas_entrega_email_job
+    SET
+      status = 'cancelled',
+      step = 'cancelled',
+      progress = 100,
+      message = ${message},
+      error = NULL,
+      updated_at = NOW()
+    WHERE job_id = ${jobId}
+      AND user_id = ${userId}
+    RETURNING
+      job_id,
+      user_id,
+      status,
+      step,
+      progress,
+      message,
+      to_email,
+      file_name,
+      hojas,
+      error,
+      created_at,
+      updated_at
+  `;
+
+  return updatedRows[0] ? toSnapshot(updatedRows[0]) : null;
 }
 
-export function isHojasEntregaEmailJobCancelled(jobId: string): boolean {
-  const store = getStore();
-  cleanupExpiredJobs(store);
+export async function isHojasEntregaEmailJobCancelled(jobId: string): Promise<boolean> {
+  await cleanupExpiredJobs();
 
-  const job = store.get(jobId);
-  return job?.status === "cancelled";
+  const rows = await prisma.$queryRaw<Array<{ status: string }>>`
+    SELECT status
+    FROM hojas_entrega_email_job
+    WHERE job_id = ${jobId}
+    LIMIT 1
+  `;
+  if (!rows[0]) return false;
+  return parseStatus(rows[0].status) === "cancelled";
 }

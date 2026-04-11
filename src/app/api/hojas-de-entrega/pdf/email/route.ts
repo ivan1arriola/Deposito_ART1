@@ -5,7 +5,7 @@ import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address"
 import { formatHojaEntregaDisplayDate, getAllHojasEntregaData } from "@/lib/hoja-entrega-data";
 import { sendMail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
-import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
+import { hasConstraintName, isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
 import {
   completeHojasEntregaEmailJob,
   createHojasEntregaEmailJob,
@@ -21,8 +21,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-function throwIfHojasEntregaEmailJobCancelled(jobId: string) {
-  if (isHojasEntregaEmailJobCancelled(jobId)) {
+async function throwIfHojasEntregaEmailJobCancelled(jobId: string) {
+  if (await isHojasEntregaEmailJobCancelled(jobId)) {
     throw new Error("Envio cancelado por el usuario.");
   }
 }
@@ -35,8 +35,8 @@ async function runHojasEntregaEmailJob(input: {
   usuarioId: string;
 }) {
   try {
-    throwIfHojasEntregaEmailJobCancelled(input.jobId);
-    setHojasEntregaEmailJobProgress(input.jobId, {
+    await throwIfHojasEntregaEmailJobCancelled(input.jobId);
+    await setHojasEntregaEmailJobProgress(input.jobId, {
       step: "loading-data",
       progress: 18,
       message: "Consultando personal, tallas y movimientos para generar las hojas de entrega...",
@@ -48,9 +48,9 @@ async function runHojasEntregaEmailJob(input: {
       throw new Error("No hay personal para generar hojas de entrega.");
     }
 
-    throwIfHojasEntregaEmailJobCancelled(input.jobId);
+    await throwIfHojasEntregaEmailJobCancelled(input.jobId);
     const fechaImpresion = formatHojaEntregaDisplayDate(new Date());
-    setHojasEntregaEmailJobProgress(input.jobId, {
+    await setHojasEntregaEmailJobProgress(input.jobId, {
       step: "rendering-pdf",
       progress: 48,
       message: `Generando PDF A4 consolidado de ${hojas.length} hoja(s)...`,
@@ -63,9 +63,9 @@ async function runHojasEntregaEmailJob(input: {
       pageNumberLabel: "Hoja",
     });
 
-    throwIfHojasEntregaEmailJobCancelled(input.jobId);
+    await throwIfHojasEntregaEmailJobCancelled(input.jobId);
     const fileName = buildUnidadHojasEntregaFileName();
-    setHojasEntregaEmailJobProgress(input.jobId, {
+    await setHojasEntregaEmailJobProgress(input.jobId, {
       step: "preparing-email",
       progress: 76,
       message: `Adjuntando ${fileName} al mensaje de correo...`,
@@ -74,7 +74,7 @@ async function runHojasEntregaEmailJob(input: {
       fileName,
     });
 
-    setHojasEntregaEmailJobProgress(input.jobId, {
+    await setHojasEntregaEmailJobProgress(input.jobId, {
       step: "sending-email",
       progress: 90,
       message: `Enviando correo a ${input.recipient} y confirmando entrega al servidor SMTP...`,
@@ -83,7 +83,7 @@ async function runHojasEntregaEmailJob(input: {
       fileName,
     });
 
-    throwIfHojasEntregaEmailJobCancelled(input.jobId);
+    await throwIfHojasEntregaEmailJobCancelled(input.jobId);
     await sendMail({
       to: input.recipient,
       subject: `Hojas de entrega unidad - ${fechaImpresion}`,
@@ -120,18 +120,18 @@ async function runHojasEntregaEmailJob(input: {
       },
     });
 
-    completeHojasEntregaEmailJob(input.jobId, {
+    await completeHojasEntregaEmailJob(input.jobId, {
       to: input.recipient,
       fileName,
       hojas: hojas.length,
       message: `PDF enviado por correo a ${input.recipient}.`,
     });
   } catch (error: unknown) {
-    if (isHojasEntregaEmailJobCancelled(input.jobId)) {
+    if (await isHojasEntregaEmailJobCancelled(input.jobId)) {
       return;
     }
     const message = error instanceof Error ? error.message : "No se pudo enviar el PDF por correo.";
-    failHojasEntregaEmailJob(input.jobId, message);
+    await failHojasEntregaEmailJob(input.jobId, message);
   }
 }
 
@@ -178,7 +178,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const existingJob = findActiveHojasEntregaEmailJob(usuario.usuarioId);
+    const existingJob = await findActiveHojasEntregaEmailJob(usuario.usuarioId);
     if (existingJob) {
       return NextResponse.json(
         {
@@ -190,7 +190,7 @@ export async function POST(request: Request) {
     }
 
     const requesterLabel = [usuario.rango.abreviacion, usuario.nombre, usuario.apellido].filter(Boolean).join(" ").trim();
-    const job = createHojasEntregaEmailJob({
+    const job = await createHojasEntregaEmailJob({
       userId: usuario.usuarioId,
       to: recipient,
       message: "Solicitud aceptada. Iniciando envio del PDF en segundo plano...",
@@ -213,6 +213,22 @@ export async function POST(request: Request) {
       job,
     }, { status: 202 });
   } catch (error: unknown) {
+    if (hasConstraintName(error, "uq_hojas_entrega_email_job_user_active")) {
+      let existingJob = null;
+      try {
+        existingJob = await findActiveHojasEntregaEmailJob(auth.user.usuarioId);
+      } catch {
+        existingJob = null;
+      }
+      return NextResponse.json(
+        {
+          error: "Ya hay un envio de hojas de entrega en curso para este usuario.",
+          job: existingJob,
+        },
+        { status: 409 },
+      );
+    }
+
     if (isPrismaDatabaseUnavailable(error)) {
       return NextResponse.json(
         { error: "Base de datos no disponible temporalmente. Intenta nuevamente." },

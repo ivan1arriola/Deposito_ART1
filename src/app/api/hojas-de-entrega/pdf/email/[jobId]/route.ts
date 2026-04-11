@@ -27,7 +27,7 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
       return NextResponse.json({ error: "No autenticado." }, { status: 401 });
     }
 
-    const job = getHojasEntregaEmailJob(jobId, usuario.usuarioId);
+    const job = await getHojasEntregaEmailJob(jobId, usuario.usuarioId);
     if (!job) {
       return NextResponse.json({ error: "No se encontro el seguimiento del envio solicitado." }, { status: 404 });
     }
@@ -65,7 +65,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ jobI
       return NextResponse.json({ error: "No autenticado." }, { status: 401 });
     }
 
-    const cancelledJob = cancelHojasEntregaEmailJob(jobId, usuario.usuarioId);
+    const cancelledJob = await cancelHojasEntregaEmailJob(jobId, usuario.usuarioId);
     if (!cancelledJob) {
       return NextResponse.json({ error: "No se encontro el seguimiento del envio solicitado." }, { status: 404 });
     }
