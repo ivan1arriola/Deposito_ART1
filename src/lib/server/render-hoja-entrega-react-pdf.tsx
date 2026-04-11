@@ -3,7 +3,7 @@ import "server-only";
 import React from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { buildFirmasHojaEntregaLineas, getFirmaLineBaseIndentPt, type FirmaLinea } from "@/lib/firma-lineas";
-import { PDFDocument } from "pdf-lib";
+import { ParseSpeeds, PDFDocument } from "pdf-lib";
 import {
   getHojaEntregaDatePart,
   type HojaEntregaSheetData,
@@ -14,6 +14,7 @@ type RenderHojasEntregaPdfOptions = {
   includePageNumbers?: boolean;
   performanceMode?: "adaptive" | "fast-batch";
   fastBatchInitialProfileId?: DensityProfile["id"];
+  adaptiveInitialProfileId?: DensityProfile["id"];
 };
 
 type DatePart = "day" | "month" | "year";
@@ -47,6 +48,15 @@ type FirmaLineaConMeta = {
 type FirmaBloque = {
   id: FirmaBloqueId;
   lineas: FirmaLineaConMeta[];
+};
+
+type PreparedHojaEntregaData = {
+  data: HojaEntregaSheetData;
+  entregaCols: Array<string | null>;
+  devolCols: Array<string | null>;
+  headerInfoRows: HeaderInfoCell[][];
+  firmaBloques: FirmaBloque[];
+  observacionesText: string[];
 };
 
 type DensityProfile = {
@@ -100,15 +110,48 @@ function getDensityProfileById(profileId: DensityProfile["id"]) {
   return DENSITY_PROFILES.find((profile) => profile.id === profileId) ?? DENSITY_PROFILES[0];
 }
 
-function buildFastBatchProfileOrder(initialProfileId: DensityProfile["id"]) {
+function buildTighterProfileOrder(initialProfileId: DensityProfile["id"]) {
   const preferred = getDensityProfileById(initialProfileId);
-  const nextOrder: DensityProfile[] = [preferred];
-  for (const profile of DENSITY_PROFILES) {
-    if (!nextOrder.some((entry) => entry.id === profile.id)) {
-      nextOrder.push(profile);
+  const preferredIndex = DENSITY_PROFILES.findIndex((entry) => entry.id === preferred.id);
+  return DENSITY_PROFILES.slice(preferredIndex >= 0 ? preferredIndex : 0);
+}
+
+function buildHojaDensityScore(hoja: HojaEntregaSheetData) {
+  const entregasConFecha = hoja.entregas.reduce((acc, item) => acc + (item.fecha ? 1 : 0), 0);
+  const devolucionesConFecha = hoja.devoluciones.reduce((acc, item) => acc + (item.fecha ? 1 : 0), 0);
+  const observacionesChars = hoja.observaciones.reduce((acc, item) => acc + item.texto.length, 0);
+  return (
+    hoja.matrix.length * 8 +
+    hoja.observaciones.length * 20 +
+    observacionesChars +
+    entregasConFecha * 4 +
+    devolucionesConFecha * 4
+  );
+}
+
+function pickFastBatchSampleHojas(hojas: HojaEntregaSheetData[], maxItems = 3) {
+  if (hojas.length <= maxItems) return hojas;
+
+  let densestIndex = 0;
+  let densestScore = Number.NEGATIVE_INFINITY;
+  for (let index = 0; index < hojas.length; index += 1) {
+    const nextScore = buildHojaDensityScore(hojas[index]);
+    if (nextScore > densestScore) {
+      densestScore = nextScore;
+      densestIndex = index;
     }
   }
-  return nextOrder;
+
+  const candidates = [0, densestIndex, hojas.length - 1, Math.floor(hojas.length / 2)];
+  const selectedIndexes: number[] = [];
+  for (const candidateIndex of candidates) {
+    if (candidateIndex < 0 || candidateIndex >= hojas.length) continue;
+    if (selectedIndexes.includes(candidateIndex)) continue;
+    selectedIndexes.push(candidateIndex);
+    if (selectedIndexes.length === maxItems) break;
+  }
+
+  return selectedIndexes.map((index) => hojas[index]);
 }
 
 function scaled(profile: DensityProfile, value: number, min = 0) {
@@ -240,6 +283,35 @@ function buildFirmaBloques(lineas: FirmaLinea[]): FirmaBloque[] {
   })).filter((bloque) => bloque.lineas.length > 0);
 }
 
+function prepareHojaEntregaData(data: HojaEntregaSheetData, fechaImpresion: string): PreparedHojaEntregaData {
+  const alistadoNombre = buildAlistadoNombre(data);
+  const firmaLineas = buildFirmasHojaEntregaLineas({
+    alistadoRango: data.persona.rangoAbreviacion,
+    alistadoNombre,
+    encargadoTexto: data.firmas.encargadoTexto,
+    encargadoRango: data.firmas.encargadoRango,
+    encargadoNombre: data.firmas.encargadoNombre,
+    oficialTexto: data.firmas.oficialTexto,
+    oficialRango: data.firmas.oficialRango,
+    oficialNombre: data.firmas.oficialNombre,
+    encargadoStartIndentLevel: 0,
+  });
+  const ciPrefix = isValidUruguayanCi(data.persona.ci) ? "" : "⚠ ";
+  const ciDisplay = `${ciPrefix}${formatUruguayanCi(data.persona.ci)}`;
+
+  return {
+    data,
+    entregaCols: normalizeSixDates(data.entregas),
+    devolCols: normalizeSixDates(data.devoluciones),
+    headerInfoRows: buildHeaderInfoRows(data, fechaImpresion, ciDisplay),
+    firmaBloques: buildFirmaBloques(firmaLineas),
+    observacionesText: data.observaciones.map(
+      (obs) =>
+        `${renderDate(obs.fecha, "day")}/${renderDate(obs.fecha, "month")}/${renderDate(obs.fecha, "year")} - ${obs.texto}`,
+    ),
+  };
+}
+
 export async function renderHojasEntregaPdf(
   hojas: HojaEntregaSheetData[],
   fechaImpresion: string,
@@ -252,9 +324,12 @@ export async function renderHojasEntregaPdf(
   const includePageNumbers = options.includePageNumbers ?? true;
   const performanceMode = options.performanceMode ?? "adaptive";
   const fastBatchInitialProfileId = options.fastBatchInitialProfileId ?? "tight";
+  const adaptiveInitialProfileId =
+    options.adaptiveInitialProfileId ?? (performanceMode === "fast-batch" ? fastBatchInitialProfileId : "normal");
+  const stylesCache = new Map<DensityProfile["id"], ReturnType<typeof StyleSheet.create>>();
 
   const renderHojasBytesWithProfile = async (
-    hojasToRender: HojaEntregaSheetData[],
+    hojasToRender: PreparedHojaEntregaData[],
     profile: DensityProfile,
   ) => {
     const signatureTab = getSignatureTabSize(profile);
@@ -264,7 +339,10 @@ export async function renderHojasEntregaPdf(
     const signatureNameGap = scaled(profile, 8.2, 6.2);
     const signatureNameIndentExtra = signatureTab * 1.25;
 
-    const styles = StyleSheet.create({
+    const cachedStyles = stylesCache.get(profile.id);
+    const styles =
+      cachedStyles ??
+      StyleSheet.create({
       page: {
         paddingLeft: A4_MARGIN_X,
         paddingRight: A4_MARGIN_X,
@@ -541,7 +619,10 @@ export async function renderHojasEntregaPdf(
         fontSize: scaled(profile, 5.2, 3.8),
         fontFamily: "Helvetica",
       },
-    });
+      });
+    if (!cachedStyles) {
+      stylesCache.set(profile.id, styles);
+    }
 
     const HeaderInfoRow = ({ cells }: { cells: HeaderInfoCell[] }) => (
       <View style={styles.row}>
@@ -568,25 +649,8 @@ export async function renderHojasEntregaPdf(
       </View>
     );
 
-    const HojaEntregaSheetPage = ({ data }: { data: HojaEntregaSheetData }) => {
-      const alistadoNombre = buildAlistadoNombre(data);
-      const firmaLineas = buildFirmasHojaEntregaLineas({
-        alistadoRango: data.persona.rangoAbreviacion,
-        alistadoNombre,
-        encargadoTexto: data.firmas.encargadoTexto,
-        encargadoRango: data.firmas.encargadoRango,
-        encargadoNombre: data.firmas.encargadoNombre,
-        oficialTexto: data.firmas.oficialTexto,
-        oficialRango: data.firmas.oficialRango,
-        oficialNombre: data.firmas.oficialNombre,
-        encargadoStartIndentLevel: 0,
-      });
-      const firmaBloques = buildFirmaBloques(firmaLineas);
-      const entregaCols = normalizeSixDates(data.entregas);
-      const devolCols = normalizeSixDates(data.devoluciones);
-      const ciPrefix = isValidUruguayanCi(data.persona.ci) ? "" : "⚠ ";
-      const ciDisplay = `${ciPrefix}${formatUruguayanCi(data.persona.ci)}`;
-      const headerInfoRows = buildHeaderInfoRows(data, fechaImpresion, ciDisplay);
+    const HojaEntregaSheetPage = ({ hoja }: { hoja: PreparedHojaEntregaData }) => {
+      const { data, entregaCols, devolCols, headerInfoRows, firmaBloques, observacionesText } = hoja;
 
       const itemWidthStyle = { width: widthPct(ITEM_COL_WIDTH) };
       const dataWidthStyle = { width: widthPct(DATA_COL_WIDTH) };
@@ -717,12 +781,12 @@ export async function renderHojasEntregaPdf(
                   >
                     <Text style={styles.observacionesTitle}>OBSERVACIONES</Text>
 
-                    {data.observaciones.length === 0 ? (
+                    {observacionesText.length === 0 ? (
                       <Text style={styles.observacionLine}> </Text>
                     ) : (
-                      data.observaciones.map((obs, index) => (
-                        <Text key={`${obs.fecha}-${index}`} style={styles.observacionLine}>
-                          {`${renderDate(obs.fecha, "day")}/${renderDate(obs.fecha, "month")}/${renderDate(obs.fecha, "year")} - ${obs.texto}`}
+                      observacionesText.map((texto, index) => (
+                        <Text key={`observacion-${index}`} style={styles.observacionLine}>
+                          {texto}
                         </Text>
                       ))
                     )}
@@ -791,8 +855,8 @@ export async function renderHojasEntregaPdf(
       <Document title="Hoja de Entrega" author="Deposito ART1">
         {hojasToRender.map((hoja, index) => (
           <HojaEntregaSheetPage
-            key={`${hoja.persona.ci}-${index}`}
-            data={hoja}
+            key={`${hoja.data.persona.ci}-${index}`}
+            hoja={hoja}
           />
         ))}
       </Document>
@@ -803,18 +867,19 @@ export async function renderHojasEntregaPdf(
     return new Uint8Array(arrayBuffer);
   };
 
-  const renderSingleHojaBytesWithProfile = async (hoja: HojaEntregaSheetData, profile: DensityProfile) => {
+  const renderSingleHojaBytesWithProfile = async (hoja: PreparedHojaEntregaData, profile: DensityProfile) => {
     return renderHojasBytesWithProfile([hoja], profile);
   };
 
   const getPdfPageCount = async (bytes: Uint8Array) => {
-    return (await PDFDocument.load(bytes)).getPageCount();
+    return (await PDFDocument.load(bytes, { parseSpeed: ParseSpeeds.Fastest })).getPageCount();
   };
 
-  const renderSingleHojaBestFitBytes = async (hoja: HojaEntregaSheetData) => {
+  const renderSingleHojaBestFitBytes = async (hoja: PreparedHojaEntregaData) => {
     let bestProfileId: DensityProfile["id"] | null = null;
+    const profileOrder = buildTighterProfileOrder(adaptiveInitialProfileId);
 
-    for (const profile of DENSITY_PROFILES) {
+    for (const profile of profileOrder) {
       const bytes = await renderSingleHojaBytesWithProfile(hoja, profile);
       bestProfileId = profile.id;
 
@@ -825,7 +890,7 @@ export async function renderHojasEntregaPdf(
     }
 
     throw new Error(
-      `La hoja de entrega de ${buildAlistadoNombre(hoja)} no entra completa en una sola página A4 incluso con el perfil más compacto (${bestProfileId}). No se generó un PDF cortado.`,
+      `La hoja de entrega de ${buildAlistadoNombre(hoja.data)} no entra completa en una sola página A4 incluso con el perfil más compacto (${bestProfileId}). No se generó un PDF cortado.`,
     );
   };
 
@@ -833,16 +898,32 @@ export async function renderHojasEntregaPdf(
     return new Uint8Array();
   }
 
-  if (hojas.length === 1) {
-    return renderSingleHojaBestFitBytes(hojas[0]);
+  const preparedHojas = hojas.map((hoja) => prepareHojaEntregaData(hoja, fechaImpresion));
+
+  if (preparedHojas.length === 1) {
+    return renderSingleHojaBestFitBytes(preparedHojas[0]);
   }
 
   if (performanceMode === "fast-batch") {
-    const fastProfiles = buildFastBatchProfileOrder(fastBatchInitialProfileId);
+    const fastProfiles = buildTighterProfileOrder(fastBatchInitialProfileId);
+    const fastBatchSample = pickFastBatchSampleHojas(hojas);
+    const preparedFastBatchSample =
+      fastBatchSample.length === hojas.length
+        ? preparedHojas
+        : fastBatchSample.map((hoja) => prepareHojaEntregaData(hoja, fechaImpresion));
+
     for (const profile of fastProfiles) {
-      const bytes = await renderHojasBytesWithProfile(hojas, profile);
+      if (preparedFastBatchSample.length !== preparedHojas.length) {
+        const sampleBytes = await renderHojasBytesWithProfile(preparedFastBatchSample, profile);
+        const samplePageCount = await getPdfPageCount(sampleBytes);
+        if (samplePageCount !== preparedFastBatchSample.length) {
+          continue;
+        }
+      }
+
+      const bytes = await renderHojasBytesWithProfile(preparedHojas, profile);
       const pageCount = await getPdfPageCount(bytes);
-      if (pageCount === hojas.length) {
+      if (pageCount === preparedHojas.length) {
         return bytes;
       }
     }
@@ -850,9 +931,9 @@ export async function renderHojasEntregaPdf(
 
   const mergedPdf = await PDFDocument.create();
 
-  for (const hoja of hojas) {
+  for (const hoja of preparedHojas) {
     const singleBytes = await renderSingleHojaBestFitBytes(hoja);
-    const singlePdf = await PDFDocument.load(singleBytes);
+    const singlePdf = await PDFDocument.load(singleBytes, { parseSpeed: ParseSpeeds.Fastest });
     const copiedPages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
 
     for (const page of copiedPages) {
