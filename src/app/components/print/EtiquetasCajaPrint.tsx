@@ -42,7 +42,6 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
   const pageWidth = orientacion === "horizontal" ? "297mm" : "210mm";
   const pageHeight = orientacion === "horizontal" ? "210mm" : "297mm";
   const pageSize = `${pageWidth} ${pageHeight}`;
-
   return `
     ${INSTITUTIONAL_PRINT_HEADER_STYLES}
 

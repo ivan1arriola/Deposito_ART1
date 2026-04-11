@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
-import type { RecordatorioConfig, RecordatorioTarea, UsuarioAdmin } from "@/types/entities";
+import type { RecordatorioConfig, RecordatorioTarea, SoldadoWidgetVariant, UsuarioAdmin } from "@/types/entities";
 
 type TaskInput = {
   titulo: string;
@@ -25,6 +25,8 @@ type RecordatoriosConfigViewProps = {
   onUpdateTask: (tareaId: string, input: Partial<Omit<TaskInput, "usuarioId">> & { completada?: boolean }) => Promise<void> | void;
   onDeleteTask: (tareaId: string) => Promise<void> | void;
   onToggleWidget: (mostrar: boolean) => Promise<void> | void;
+  soldadoVariant: SoldadoWidgetVariant;
+  onToggleSoldadoVariant: () => void;
   onReload: () => Promise<void> | void;
 };
 
@@ -49,6 +51,8 @@ export function RecordatoriosConfigView({
   onUpdateTask,
   onDeleteTask,
   onToggleWidget,
+  soldadoVariant,
+  onToggleSoldadoVariant,
   onReload,
 }: RecordatoriosConfigViewProps) {
   const [newTitulo, setNewTitulo] = useState("");
@@ -165,6 +169,22 @@ export function RecordatoriosConfigView({
             onChange={(event) => void onToggleWidget(event.target.checked)}
           />
         </label>
+
+        <div className="mt-2 rounded-xl border border-stone-200 bg-white px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-stone-800">Modelo de soldado</p>
+              <p className="text-xs text-stone-600">{soldadoVariant === "CLASICO" ? "Clasico institucional" : "Tactico dinamico"}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onToggleSoldadoVariant}
+              className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+            >
+              {soldadoVariant === "CLASICO" ? "Cambiar a tactico" : "Cambiar a clasico"}
+            </button>
+          </div>
+        </div>
 
         <section className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
           <button

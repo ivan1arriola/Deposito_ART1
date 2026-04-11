@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded";
+import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
@@ -54,6 +55,7 @@ type MainNavigationProps = {
   onSetConfigViews: (open: boolean) => void;
   embedded?: boolean;
   expandSubmenus?: boolean;
+  hideContainerChrome?: boolean;
 };
 
 type MenuKey = "personal" | "oficiales" | "stock" | "etiquetado" | "create" | "config";
@@ -81,6 +83,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 const materialIconProps = { fontSize: "small" as const };
 
 const icons = {
+  dashboard: <DashboardOutlinedIcon {...materialIconProps} />,
   personal: <Groups2OutlinedIcon {...materialIconProps} />,
   oficiales: <MilitaryTechOutlinedIcon {...materialIconProps} />,
   stock: <Inventory2OutlinedIcon {...materialIconProps} />,
@@ -307,9 +310,11 @@ export function MainNavigation({
   onSetConfigViews,
   embedded = false,
   expandSubmenus = false,
+  hideContainerChrome = false,
 }: MainNavigationProps) {
   const [menuAnchors, setMenuAnchors] = useState<Partial<Record<MenuKey, HTMLElement | null>>>({});
 
+  const isDashboardView = activeView === "dashboard";
   const isPersonalView = activeView === "personal" || activeView === "hoja_matrix" || activeView === "equipo_resumen";
   const isOficialesSuboficialesView =
     activeView === "oficiales" ||
@@ -400,16 +405,17 @@ export function MainNavigation({
 
   return (
     <Paper
-      variant="outlined"
+      variant={hideContainerChrome ? "elevation" : "outlined"}
       sx={{
         mt: embedded ? 0 : expandSubmenus ? 0 : 2,
-        p: embedded ? { xs: 1, sm: 1.25 } : expandSubmenus ? { xs: 1.1, sm: 1.4 } : { xs: 2, sm: 2.5 },
+        p: hideContainerChrome ? 0 : embedded ? { xs: 1, sm: 1.25 } : expandSubmenus ? { xs: 1.1, sm: 1.4 } : { xs: 2, sm: 2.5 },
         borderRadius: embedded ? 2 : 3,
         position: "relative",
         zIndex: 220,
-        bgcolor: embedded ? "rgba(255,255,255,0.08)" : "var(--color-surface-muted)",
-        borderColor: embedded ? "rgba(255,255,255,0.24)" : "var(--color-border-subtle)",
+        bgcolor: hideContainerChrome ? "transparent" : embedded ? "rgba(255,255,255,0.08)" : "var(--color-surface-muted)",
+        borderColor: hideContainerChrome ? "transparent" : embedded ? "rgba(255,255,255,0.24)" : "var(--color-border-subtle)",
         color: embedded ? "common.white" : "var(--color-text-primary)",
+        boxShadow: hideContainerChrome ? "none" : undefined,
         fontFamily: 'var(--fuentePrincipal, "Helvetica Neue", Helvetica, Arial, sans-serif)',
       }}
     >
@@ -430,6 +436,15 @@ export function MainNavigation({
         >
           {expandSubmenus ? (
             <>
+              <Button
+                variant="outlined"
+                onClick={() => handleSelectView("dashboard")}
+                startIcon={icons.dashboard}
+                sx={navButtonSx(isDashboardView, embedded)}
+              >
+                Dashboard principal
+              </Button>
+
               <ExpandedMenuGroup title="Personal subalterno" icon={icons.personal} compact={embedded}>
                 {personalViews.map((item) => (
                   <Button
@@ -538,6 +553,15 @@ export function MainNavigation({
             </>
           ) : (
             <>
+              <Button
+                variant="outlined"
+                onClick={() => handleSelectView("dashboard")}
+                startIcon={icons.dashboard}
+                sx={navButtonSx(isDashboardView, embedded)}
+              >
+                Dashboard principal
+              </Button>
+
               <Box>
                 <Button
                   variant="outlined"

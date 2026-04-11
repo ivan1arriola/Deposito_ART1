@@ -5,6 +5,7 @@
 import type { Role } from "./entities";
 
 export type MainView =
+  | "dashboard"
   | "personal"
   | "oficiales"
   | "suboficiales"

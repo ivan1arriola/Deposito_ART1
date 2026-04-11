@@ -20,7 +20,7 @@ import {
   normalizeTallaValue,
 } from "@/lib/tallas";
 import { DashboardHero } from "./components/home/DashboardHero";
-import { SoldadoRecordatorioWidget } from "./components/home/SoldadoRecordatorioWidget";
+import { renderSoldadoRecordatorioWidget } from "./components/home/SoldadoRecordatorioWidgetStrategyImpl";
 import { AppInstallCard } from "./components/pwa/AppInstallCard";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
 import { MergeEquipoModal } from "./components/modals/MergeEquipoModal";
@@ -62,6 +62,7 @@ import type {
   PersonalObservacion,
   RecordatorioConfig,
   RecordatorioTarea,
+  SoldadoWidgetVariant,
   FirmaConfig,
   UsuarioAdmin,
   Talla,
@@ -211,6 +212,7 @@ const BULK_DELIVERY_EMAIL_TOAST_ID = "bulk-delivery-email-job";
 const DEFAULT_BULK_DELIVERY_PDF_MS_PER_HOJA_ESTIMATE = 450;
 const MAX_BULK_DELIVERY_PDF_LOG_ENTRIES = 12;
 const DISPLAY_BULK_DELIVERY_PDF_LOG_ENTRIES = 4;
+const SOLDADO_WIDGET_VARIANT_STORAGE_KEY = "soldado-recordatorio-widget-variant";
 
 function isActiveHojasEntregaEmailJob(
   job: HojasEntregaEmailJobSnapshot | null | undefined,
@@ -333,11 +335,15 @@ function isAbortError(error: unknown) {
   return false;
 }
 
+function isSoldadoWidgetVariant(value: string | null): value is SoldadoWidgetVariant {
+  return value === "CLASICO" || value === "TACTICO";
+}
+
 export default function Home() {
   const { data: session } = useSession();
   const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
   const [status, setStatus] = useState(STATUS_VERIFYING_SESSION);
-  const [activeView, setActiveView] = useState<MainView>("personal");
+  const [activeView, setActiveView] = useState<MainView>("dashboard");
   const {
     loading,
     initMessage,
@@ -472,6 +478,11 @@ export default function Home() {
   const [etiquetadoError, setEtiquetadoError] = useState<string | null>(null);
   const [recordatorioTasks, setRecordatorioTasks] = useState<RecordatorioTarea[]>([]);
   const [recordatorioConfig, setRecordatorioConfig] = useState<RecordatorioConfig>({ mostrarMuneco: true });
+  const [soldadoWidgetVariant, setSoldadoWidgetVariant] = useState<SoldadoWidgetVariant>(() => {
+    if (typeof window === "undefined") return "CLASICO";
+    const stored = window.localStorage.getItem(SOLDADO_WIDGET_VARIANT_STORAGE_KEY);
+    return isSoldadoWidgetVariant(stored) ? stored : "CLASICO";
+  });
   const [recordatoriosLoading, setRecordatoriosLoading] = useState(false);
   const [recordatoriosSaving, setRecordatoriosSaving] = useState(false);
   const [recordatoriosError, setRecordatoriosError] = useState<string | null>(null);
@@ -877,6 +888,11 @@ export default function Home() {
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(SOLDADO_WIDGET_VARIANT_STORAGE_KEY, soldadoWidgetVariant);
+  }, [soldadoWidgetVariant]);
+
   const createRecordatorioTask = useCallback(
     async (input: { titulo: string; nota: string; fechaLimite: string | null; prioridad: "NORMAL" | "URGENTE"; usuarioId?: string }) => {
       setRecordatoriosSaving(true);
@@ -961,6 +977,10 @@ export default function Home() {
     } finally {
       setRecordatoriosSaving(false);
     }
+  }, []);
+
+  const toggleSoldadoWidgetVariant = useCallback(() => {
+    setSoldadoWidgetVariant((current) => (current === "CLASICO" ? "TACTICO" : "CLASICO"));
   }, []);
 
   useEffect(() => {
@@ -1583,19 +1603,24 @@ export default function Home() {
   );
 
   const openEtiquetasPrint = useCallback(
-    (options: { codigos?: number[]; orientacion: "horizontal" | "vertical" }) => {
+    (options: {
+      codigos?: number[];
+      orientacion?: "horizontal" | "vertical";
+    }) => {
       const params = new URLSearchParams();
       params.set("autoprint", "1");
-      params.set("orientacion", options.orientacion);
+      params.set("orientacion", options.orientacion ?? "horizontal");
       if (options.codigos && options.codigos.length > 0) {
         params.set("cajas", options.codigos.join(","));
       }
       const popup = window.open(`/etiquetas-cajas?${params.toString()}`, "_blank", "noopener,noreferrer");
       if (!popup) {
         setStatus("Permite ventanas emergentes para imprimir las etiquetas.");
+        return false;
       }
+      return true;
     },
-    [],
+    [setStatus],
   );
 
   const printEtiquetaCaja = useCallback(
@@ -1606,13 +1631,42 @@ export default function Home() {
   );
 
   const printTodasEtiquetas = useCallback(
-    (orientacion: "horizontal" | "vertical", codigosOrdenados?: number[]) => {
-      const codigos = Array.isArray(codigosOrdenados)
-        ? codigosOrdenados.filter((codigo) => Number.isInteger(codigo) && codigo > 0)
+    (cajas: Array<{ codigoDepositoGeneral: number; orientacion: "horizontal" | "vertical" }>) => {
+      const cajasNormalizadas = Array.isArray(cajas)
+        ? cajas.filter(
+            (entry) =>
+              Number.isInteger(entry.codigoDepositoGeneral) &&
+              entry.codigoDepositoGeneral > 0 &&
+              (entry.orientacion === "horizontal" || entry.orientacion === "vertical"),
+          )
         : [];
-      openEtiquetasPrint({ orientacion, codigos: codigos.length > 0 ? codigos : undefined });
+      const codigosHorizontal = cajasNormalizadas
+        .filter((entry) => entry.orientacion === "horizontal")
+        .map((entry) => entry.codigoDepositoGeneral);
+      const codigosVertical = cajasNormalizadas
+        .filter((entry) => entry.orientacion === "vertical")
+        .map((entry) => entry.codigoDepositoGeneral);
+
+      const openedHorizontal =
+        codigosHorizontal.length > 0
+          ? openEtiquetasPrint({ orientacion: "horizontal", codigos: codigosHorizontal })
+          : true;
+      const openedVertical =
+        codigosVertical.length > 0
+          ? openEtiquetasPrint({ orientacion: "vertical", codigos: codigosVertical })
+          : true;
+
+      if (!openedHorizontal || !openedVertical) {
+        return;
+      }
+
+      if (codigosHorizontal.length > 0 && codigosVertical.length > 0) {
+        setStatus(
+          `Se abrieron 2 impresiones: ${codigosHorizontal.length} horizontal(es) y ${codigosVertical.length} vertical(es).`,
+        );
+      }
     },
-    [openEtiquetasPrint],
+    [openEtiquetasPrint, setStatus],
   );
 
   const printListadoCajas = useCallback(() => {
@@ -5268,7 +5322,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8">
+    <main className={activeView === "dashboard" ? "min-h-screen w-full" : "mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8"}>
       <DashboardHero
         loading={loading}
         currentUser={currentUser}
@@ -5297,28 +5351,30 @@ export default function Home() {
         onLogout={() => void logout()}
       />
 
-      <AppInstallCard />
+      <div>
+        {activeView !== "dashboard" ? <AppInstallCard /> : null}
 
+        {inReminderConfigView ? (
+          <RecordatoriosConfigView
+            tasks={recordatorioTasks}
+            config={recordatorioConfig}
+            isAdmin={isAdmin}
+            currentUserId={currentUser?.usuarioId ?? null}
+            userOptions={usuarios}
+            loading={recordatoriosLoading}
+            saving={recordatoriosSaving}
+            error={recordatoriosError}
+            onCreateTask={createRecordatorioTask}
+            onUpdateTask={updateRecordatorioTask}
+            onDeleteTask={deleteRecordatorioTask}
+            onToggleWidget={updateRecordatorioConfig}
+            soldadoVariant={soldadoWidgetVariant}
+            onToggleSoldadoVariant={toggleSoldadoWidgetVariant}
+            onReload={loadRecordatorios}
+          />
+        ) : null}
 
-      {inReminderConfigView ? (
-        <RecordatoriosConfigView
-          tasks={recordatorioTasks}
-          config={recordatorioConfig}
-          isAdmin={isAdmin}
-          currentUserId={currentUser?.usuarioId ?? null}
-          userOptions={usuarios}
-          loading={recordatoriosLoading}
-          saving={recordatoriosSaving}
-          error={recordatoriosError}
-          onCreateTask={createRecordatorioTask}
-          onUpdateTask={updateRecordatorioTask}
-          onDeleteTask={deleteRecordatorioTask}
-          onToggleWidget={updateRecordatorioConfig}
-          onReload={loadRecordatorios}
-        />
-      ) : null}
-
-      {inCatalogView || (isAdmin && inAdminConfigView) ? (
+        {inCatalogView || (isAdmin && inAdminConfigView) ? (
         <ConfigViews
           activeView={activeView as "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria"}
           isAdmin={isAdmin}
@@ -5432,9 +5488,9 @@ export default function Home() {
           auditEntityLabel={auditEntityLabel}
           renderAuditDetalle={renderAuditDetalle}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "personal_nuevo" ? (
+        {activeView === "personal_nuevo" ? (
         <PersonalCreateView
           ciPlaceholder={ciPlaceholder}
           newPersonal={newPersonal}
@@ -5468,9 +5524,9 @@ export default function Home() {
           onAddMovimientoDraftItem={addNewPersonalMovimientoDraftItem}
           onRemoveMovimientoDraftItem={removeNewPersonalMovimientoDraftItem}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "oficial_nuevo" || activeView === "suboficial_nuevo" ? (
+        {activeView === "oficial_nuevo" || activeView === "suboficial_nuevo" ? (
         <OficialSuboficialCreateView
           mode={editingOficialSuboficialCi ? "edit" : "create"}
           ciPlaceholder={ciPlaceholder}
@@ -5492,9 +5548,9 @@ export default function Home() {
           onSubmit={(event) => void createOficialSuboficial(event)}
           onChange={updateNewOficialSuboficialField}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "equipo_nuevo" ? (
+        {activeView === "equipo_nuevo" ? (
         <EquipoCreateView
           form={newEquipo}
           saving={loading}
@@ -5507,9 +5563,9 @@ export default function Home() {
             }));
           }}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "bateria_nueva" ? (
+        {activeView === "bateria_nueva" ? (
         <BateriaCreateView
           nombre={newBateria}
           orden={newBateriaOrden}
@@ -5520,9 +5576,9 @@ export default function Home() {
           onNombreChange={setNewBateria}
           onOrdenChange={setNewBateriaOrden}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "grado_nuevo" ? (
+        {activeView === "grado_nuevo" ? (
         <RangoCreateView
           abreviacion={newRangoAbreviacion}
           nombreCompleto={newRangoNombreCompleto}
@@ -5535,9 +5591,9 @@ export default function Home() {
           onNombreCompletoChange={setNewRangoNombreCompleto}
           onOrdenChange={setNewRangoOrden}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "usuario_nuevo" ? (
+        {activeView === "usuario_nuevo" ? (
         <UserCreateView
           isAdmin={isAdmin}
           rangoId={newUserRangoId}
@@ -5563,9 +5619,9 @@ export default function Home() {
           roleDescription={roleDescription}
           roleScope={roleScope}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "personal" ? (
+        {activeView === "personal" ? (
         <PersonalSection
           loading={loading}
           personal={personal}
@@ -5638,9 +5694,9 @@ export default function Home() {
           }
           onPrintAscensoDeliverySheet={openAscensoDeliverySheet}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "oficiales" ? (
+        {activeView === "oficiales" ? (
         <OficialesSuboficialesView
           oficialesSuboficiales={oficialesSuboficiales}
           loading={loading}
@@ -5651,9 +5707,9 @@ export default function Home() {
           onOpenProfile={(registro) => void openPersonaProfileFromOficialSuboficial(registro)}
           onReload={() => reloadCurrentViewData(true)}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "suboficiales" ? (
+        {activeView === "suboficiales" ? (
         <OficialesSuboficialesView
           oficialesSuboficiales={oficialesSuboficiales}
           loading={loading}
@@ -5664,45 +5720,45 @@ export default function Home() {
           onOpenProfile={(registro) => void openPersonaProfileFromOficialSuboficial(registro)}
           onReload={() => reloadCurrentViewData(true)}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "oficiales_resumen" ? (
+        {activeView === "oficiales_resumen" ? (
         <OficialesSuboficialesResumenView
           oficialesSuboficiales={oficialesSuboficiales}
           viewType="OFICIAL"
           loading={loading}
           onReload={() => reloadCurrentViewData(true)}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "suboficiales_resumen" ? (
+        {activeView === "suboficiales_resumen" ? (
         <OficialesSuboficialesResumenView
           oficialesSuboficiales={oficialesSuboficiales}
           viewType="SUBOFICIAL"
           loading={loading}
           onReload={() => reloadCurrentViewData(true)}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "hoja_matrix" ? (
+        {activeView === "hoja_matrix" ? (
         <HojaMatrixView
           data={hojaMatrixData}
           loading={hojaMatrixLoading}
           error={hojaMatrixError}
           onReload={loadHojaMatrix}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "equipo_resumen" ? (
+        {activeView === "equipo_resumen" ? (
         <EquipoResumenView
           data={equipoResumenData}
           loading={equipoResumenLoading}
           error={equipoResumenError}
           onReload={loadEquipoResumen}
         />
-      ) : null}
+        ) : null}
 
-      {["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos"].includes(activeView) ? (
+        {["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos"].includes(activeView) ? (
         <StockView
           section={
             activeView === "stock" || activeView === "stock_total"
@@ -5751,9 +5807,9 @@ export default function Home() {
           onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
           onReload={() => void reloadActiveStockData()}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "formularios" ? (
+        {activeView === "formularios" ? (
         <FormulariosPrestamosView
           data={stockData}
           loading={stockLoading}
@@ -5786,9 +5842,9 @@ export default function Home() {
           onDeletePrestamo={(prestamoId) => void deletePrestamo(prestamoId)}
           onReload={() => void reloadActiveStockData()}
         />
-      ) : null}
+        ) : null}
 
-      {inEtiquetadoView && activeEtiquetadoSection ? (
+        {inEtiquetadoView && activeEtiquetadoSection ? (
         <EtiquetadoView
           section={activeEtiquetadoSection}
           data={etiquetadoData}
@@ -5806,15 +5862,15 @@ export default function Home() {
           onDeleteCaja={(codigoDepositoGeneral) => void deleteEtiquetadoCaja(codigoDepositoGeneral)}
           onPrintCaja={(codigoDepositoGeneral, orientacion) => printEtiquetaCaja(codigoDepositoGeneral, orientacion)}
           onPrintListadoCajas={printListadoCajas}
-          onPrintTodas={(orientacion, codigosOrdenados) => printTodasEtiquetas(orientacion, codigosOrdenados)}
+          onPrintTodas={(cajas) => printTodasEtiquetas(cajas)}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "tallas_resumen" ? (
+        {activeView === "tallas_resumen" ? (
         <TallasResumenView personal={personal} baterias={baterias} oficialesSuboficiales={oficialesSuboficiales} />
-      ) : null}
+        ) : null}
 
-      <MergeEquipoModal
+        <MergeEquipoModal
         isOpen={mergeEquipoDialog !== null}
         sourceName={mergeEquipoSource?.nombre ?? ""}
         targetItemId={mergeEquipoDialogTargetId}
@@ -5823,10 +5879,10 @@ export default function Home() {
         onTargetChange={updateMergeEquipoDialogTarget}
         onClose={closeMergeEquipoDialog}
         onSubmit={() => void submitMergeEquipoDialog()}
-      />
+        />
 
-      
-      <HomeDialogsLayer
+        
+        <HomeDialogsLayer
         showChangePassword={showChangePassword}
         changeCurrentPassword={changeCurrentPassword}
         changeNewPassword={changeNewPassword}
@@ -5902,9 +5958,9 @@ export default function Home() {
           setPersonalObservacionDraft((prev) => (prev ? { ...prev, texto: value } : prev))
         }
         onSubmitPersonalObservacion={() => void savePersonalObservacion()}
-      />
+        />
 
-      {activeView === "persona_ficha" ? (
+        {activeView === "persona_ficha" ? (
         <PersonaProfileView
           state={personaProfile}
           onBack={closePersonaProfileView}
@@ -5912,26 +5968,28 @@ export default function Home() {
           onPrintDeliverySheet={printDeliverySheetFromProfile}
           onPrintPrestamos={printPrestamosFromProfile}
         />
-      ) : null}
+        ) : null}
 
-      {activeView === "hoja-de-entrega" && fichaViewingCi ? (
+        {activeView === "hoja-de-entrega" && fichaViewingCi ? (
 
-        <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
-      ) : null}
+          <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
+        ) : null}
 
-      {recordatorioConfig.mostrarMuneco && activeView !== "recordatorios" ? (
-        <SoldadoRecordatorioWidget
-          tasks={recordatorioTasks}
-          loading={recordatoriosLoading}
-          saving={recordatoriosSaving}
-          displayName={(currentUser.nombre || currentUser.username).trim()}
-          onCreateTask={createRecordatorioTask}
-          onToggleTask={(tareaId, completada) => updateRecordatorioTask(tareaId, { completada })}
-          onOpenConfig={() => setActiveView("recordatorios")}
-        />
-      ) : null}
+        {renderSoldadoRecordatorioWidget({
+          activeView,
+          config: recordatorioConfig,
+          tasks: recordatorioTasks,
+          loading: recordatoriosLoading,
+          saving: recordatoriosSaving,
+          displayName: (currentUser.nombre || currentUser.username).trim(),
+          soldadoVariant: soldadoWidgetVariant,
+          onCreateTask: createRecordatorioTask,
+          onToggleTask: (tareaId, completada) => updateRecordatorioTask(tareaId, { completada }),
+          onOpenConfig: () => setActiveView("recordatorios"),
+        })}
 
-      <LoadingOverlay visible={isAppGlobalBusy} label={appBusyLabel} />
+        <LoadingOverlay visible={isAppGlobalBusy} label={appBusyLabel} />
+      </div>
 
     </main>
   );

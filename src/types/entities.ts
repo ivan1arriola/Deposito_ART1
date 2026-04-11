@@ -138,6 +138,8 @@ export type RecordatorioTarea = {
   updatedAt: string;
 };
 
+export type SoldadoWidgetVariant = "CLASICO" | "TACTICO";
+
 export type RecordatorioConfig = {
   mostrarMuneco: boolean;
 };
