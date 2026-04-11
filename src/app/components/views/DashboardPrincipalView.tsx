@@ -172,20 +172,31 @@ export function DashboardPrincipalView({
           <p className="text-xs text-[var(--color-text-secondary)]">Tareas pendientes: {tareasPendientes}</p>
         </div>
 
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {actions
-            .filter((action) => action.visible)
-            .map((action) => (
-              <button
-                key={action.id}
-                type="button"
-                onClick={() => onNavigate(action.view)}
-                className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-4 py-3 text-left transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]"
-              >
-                <p className="text-sm font-black text-[var(--color-text-primary)]">{action.label}</p>
-                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">{action.description}</p>
-              </button>
-            ))}
+        <div className="mt-3 flex justify-end">
+          <details className="group relative w-full sm:max-w-[26rem]">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-4 py-3 text-sm font-black text-[var(--color-text-primary)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]">
+              <span>Menu de accesos rapidos</span>
+              <span className="text-xs font-semibold text-[var(--color-text-secondary)] transition group-open:rotate-180">▼</span>
+            </summary>
+
+            <div className="absolute right-0 z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] p-2 shadow-xl">
+              <div className="flex flex-col gap-2">
+                {actions
+                  .filter((action) => action.visible)
+                  .map((action) => (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onClick={() => onNavigate(action.view)}
+                      className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-left transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]"
+                    >
+                      <p className="text-sm font-black text-[var(--color-text-primary)]">{action.label}</p>
+                      <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{action.description}</p>
+                    </button>
+                  ))}
+              </div>
+            </div>
+          </details>
         </div>
       </article>
     </section>

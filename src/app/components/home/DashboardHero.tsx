@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useState, type RefObject } from "react";
 import { Box, Button, Chip, Collapse, Divider, Drawer, Grid, IconButton, Paper, Stack, Typography } from "@mui/material";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import type { CurrentUser } from "@/types/entities";
 import type { MainView } from "@/types/views";
@@ -55,7 +54,7 @@ export function DashboardHero({
   onLogout,
 }: DashboardHeroProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [desktopAccessOpen, setDesktopAccessOpen] = useState(false);
+  const [desktopNavOpen, setDesktopNavOpen] = useState(true);
   const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
   const isDashboardLanding = activeView === "dashboard";
   const showDbInfoInHero = !isDashboardLanding;
@@ -95,11 +94,6 @@ export function DashboardHero({
     onSelectView(view);
   }
 
-  function handleDesktopSelectView(view: MainView) {
-    setDesktopAccessOpen(false);
-    onSelectView(view);
-  }
-
   return (
     <Paper
       component="section"
@@ -110,7 +104,7 @@ export function DashboardHero({
         borderRadius: isDashboardLanding ? 0 : { xs: 3, sm: 4 },
         minHeight: isDashboardLanding ? "100dvh" : "auto",
         height: isDashboardLanding ? "100dvh" : "auto",
-        px: isDashboardLanding ? { xs: 1.75, sm: 2.5, md: 3.5 } : { xs: 2, sm: 3 },
+        px: isDashboardLanding ? { xs: 2, sm: 3, md: 4.5, lg: 5.5, xl: 6.5 } : { xs: 2, sm: 3 },
         py: isDashboardLanding ? { xs: 2, sm: 2.8, md: 3.3 } : { xs: 2, sm: 2.5 },
         border: "1px solid rgba(20,20,18,0.65)",
         backgroundColor: isDashboardLanding ? "#2f3a2a" : "#5f6c46",
@@ -151,8 +145,8 @@ export function DashboardHero({
         spacing={isDashboardLanding ? { xs: 2, md: 2.8 } : 2}
         sx={{
           position: "relative",
-          maxWidth: isDashboardLanding ? 1360 : undefined,
-          mx: "auto",
+          maxWidth: isDashboardLanding ? "none" : undefined,
+          mx: isDashboardLanding ? 0 : "auto",
           width: "100%",
         }}
       >
@@ -247,13 +241,17 @@ export function DashboardHero({
             sx={{
               display: { xs: "none", md: "grid" },
               gridTemplateColumns: isDashboardLanding
-                ? { md: "190px minmax(0, 1fr)", lg: "225px minmax(0, 1fr)", xl: "245px minmax(0, 1fr)" }
+                ? {
+                    md: "minmax(240px, 22vw) minmax(0, 1fr) minmax(240px, 22vw)",
+                    lg: "minmax(280px, 23vw) minmax(0, 1fr) minmax(280px, 23vw)",
+                    xl: "minmax(320px, 24vw) minmax(0, 1fr) minmax(320px, 24vw)",
+                  }
                 : { md: "170px minmax(0, 1fr)", lg: "220px minmax(0, 1fr)", xl: "240px minmax(0, 1fr)" },
-              alignItems: "center",
-              columnGap: isDashboardLanding ? { md: 2, lg: 2.6 } : { md: 1.25, lg: 1.8 },
+              alignItems: isDashboardLanding ? "start" : "center",
+              columnGap: isDashboardLanding ? { md: 2.8, lg: 3.2, xl: 3.8 } : { md: 1.25, lg: 1.8 },
             }}
           >
-            <Box sx={{ width: "100%", flexShrink: 0 }}>
+            <Box sx={{ width: "100%", flexShrink: 0, gridColumn: isDashboardLanding ? "1" : undefined }}>
               <Image
                 src="/assets/logo-deposito.png"
                 alt="Logo Depósito"
@@ -268,7 +266,7 @@ export function DashboardHero({
               />
             </Box>
 
-            <Stack spacing={isDashboardLanding ? 1.5 : 1.25} sx={{ minWidth: 0 }}>
+            <Stack spacing={isDashboardLanding ? 1.5 : 1.25} sx={{ minWidth: 0, gridColumn: isDashboardLanding ? "2" : undefined }}>
               <Box
                 sx={{
                   display: "grid",
@@ -285,130 +283,89 @@ export function DashboardHero({
                     order: 2,
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: "100%",
-                      display: "grid",
-                      gridTemplateColumns: isDashboardLanding
-                        ? { md: "repeat(2, minmax(0, 1fr))", xl: "repeat(4, minmax(0, 1fr))" }
-                        : "repeat(4, minmax(0, 1fr))",
-                      columnGap: { md: 1, lg: 1.25 },
-                      rowGap: isDashboardLanding ? { md: 0.9, xl: 0 } : 0,
-                      alignItems: "center",
-                      p: isDashboardLanding ? { md: 0.85, lg: 1 } : 0,
-                      borderRadius: isDashboardLanding ? 2 : 0,
-                      bgcolor: isDashboardLanding ? "rgba(9,13,10,0.54)" : "transparent",
-                      border: isDashboardLanding ? "1px solid rgba(255,255,255,0.17)" : "none",
-                    }}
-                  >
-                    {showDbInfoInHero ? (
-                      <>
-                        <Chip
-                          size="small"
-                          label={`Usuario: ${currentUser.username}`}
-                          sx={{
-                            ...desktopTopControlSx,
-                            color: "common.white",
-                            bgcolor: headerControlBg,
-                            border: "1px solid rgba(255,255,255,0.22)",
-                            "& .MuiChip-label": {
-                              width: "100%",
-                              px: 1.2,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              textAlign: "center",
-                            },
-                          }}
-                        />
-                        <Chip
-                          size="small"
-                          label={`Rol: ${roleLabel(currentUser.rol)}`}
-                          sx={{
-                            ...desktopTopControlSx,
-                            color: "common.white",
-                            bgcolor: headerControlBg,
-                            border: "1px solid rgba(255,255,255,0.22)",
-                            "& .MuiChip-label": {
-                              width: "100%",
-                              px: 1.2,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              textAlign: "center",
-                            },
-                          }}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <Chip
-                          size="small"
-                          label="Pantalla de inicio"
-                          sx={{
-                            ...desktopTopControlSx,
-                            color: "common.white",
-                            bgcolor: headerControlBg,
-                            border: "1px solid rgba(255,255,255,0.22)",
-                            "& .MuiChip-label": {
-                              width: "100%",
-                              px: 1.2,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              textAlign: "center",
-                            },
-                          }}
-                        />
-                        <Chip
-                          size="small"
-                          label="Sin datos operativos"
-                          sx={{
-                            ...desktopTopControlSx,
-                            color: "common.white",
-                            bgcolor: headerControlBg,
-                            border: "1px solid rgba(255,255,255,0.22)",
-                            "& .MuiChip-label": {
-                              width: "100%",
-                              px: 1.2,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              textAlign: "center",
-                            },
-                          }}
-                        />
-                      </>
-                    )}
-                    <Button
-                      type="button"
-                      onClick={onReload}
-                      disabled={loading}
-                      size="small"
-                      variant="contained"
-                      color="secondary"
+                  {!isDashboardLanding ? (
+                    <Box
                       sx={{
-                        ...desktopTopControlSx,
-                        bgcolor: "rgba(34,40,30,0.88)",
-                        color: "common.white",
-                        border: "1px solid rgba(255,255,255,0.26)",
-                        "&:hover": {
-                          bgcolor: "rgba(34,40,30,1)",
-                        },
+                        width: "100%",
+                        display: "grid",
+                        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                        columnGap: { md: 1, lg: 1.25 },
+                        rowGap: 0,
+                        alignItems: "center",
                       }}
                     >
-                      Recargar
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={onLogout}
-                      size="small"
-                      color="error"
-                      variant="contained"
-                      sx={{
-                        ...desktopTopControlSx,
-                        border: "1px solid rgba(0,0,0,0.42)",
-                      }}
-                    >
-                      Cerrar sesión
-                    </Button>
-                  </Box>
+                      {showDbInfoInHero ? (
+                        <>
+                          <Chip
+                            size="small"
+                            label={`Usuario: ${currentUser.username}`}
+                            sx={{
+                              ...desktopTopControlSx,
+                              color: "common.white",
+                              bgcolor: headerControlBg,
+                              border: "1px solid rgba(255,255,255,0.22)",
+                              "& .MuiChip-label": {
+                                width: "100%",
+                                px: 1.2,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                textAlign: "center",
+                              },
+                            }}
+                          />
+                          <Chip
+                            size="small"
+                            label={`Rol: ${roleLabel(currentUser.rol)}`}
+                            sx={{
+                              ...desktopTopControlSx,
+                              color: "common.white",
+                              bgcolor: headerControlBg,
+                              border: "1px solid rgba(255,255,255,0.22)",
+                              "& .MuiChip-label": {
+                                width: "100%",
+                                px: 1.2,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                textAlign: "center",
+                              },
+                            }}
+                          />
+                        </>
+                      ) : null}
+                      <Button
+                        type="button"
+                        onClick={onReload}
+                        disabled={loading}
+                        size="small"
+                        variant="contained"
+                        color="secondary"
+                        sx={{
+                          ...desktopTopControlSx,
+                          bgcolor: "rgba(34,40,30,0.88)",
+                          color: "common.white",
+                          border: "1px solid rgba(255,255,255,0.26)",
+                          "&:hover": {
+                            bgcolor: "rgba(34,40,30,1)",
+                          },
+                        }}
+                      >
+                        Recargar
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={onLogout}
+                        size="small"
+                        color="error"
+                        variant="contained"
+                        sx={{
+                          ...desktopTopControlSx,
+                          border: "1px solid rgba(0,0,0,0.42)",
+                        }}
+                      >
+                        Cerrar sesión
+                      </Button>
+                    </Box>
+                  ) : null}
 
                   {!canManageAccount && showDbInfoInHero ? (
                     <Typography sx={{ fontSize: 12, color: "rgba(255,255,255,0.9)", textAlign: "right" }}>
@@ -422,14 +379,17 @@ export function DashboardHero({
                     width: "100%",
                     minWidth: 0,
                     order: 1,
-                    fontSize: isDashboardLanding ? { md: 52, lg: 62, xl: 68 } : { md: 48, lg: 58, xl: 64 },
+                    fontSize: isDashboardLanding ? { md: 62, lg: 72, xl: 82 } : { md: 48, lg: 58, xl: 64 },
                     fontWeight: 900,
-                    lineHeight: 0.98,
+                    lineHeight: 0.94,
                     textAlign: "center",
                     whiteSpace: "nowrap",
-                    letterSpacing: "-0.018em",
-                    WebkitTextStroke: "0.55px rgba(0,0,0,0.48)",
-                    textShadow: "0 2px 3px rgba(0,0,0,0.5)",
+                    letterSpacing: "-0.02em",
+                    background: isDashboardLanding ? "linear-gradient(180deg, #ffffff 0%, #f1f4ea 58%, #d6dfc4 100%)" : "none",
+                    WebkitBackgroundClip: isDashboardLanding ? "text" : "border-box",
+                    WebkitTextFillColor: isDashboardLanding ? "transparent" : "currentColor",
+                    WebkitTextStroke: isDashboardLanding ? "0.7px rgba(0,0,0,0.5)" : "0.55px rgba(0,0,0,0.48)",
+                    textShadow: isDashboardLanding ? "0 5px 16px rgba(0,0,0,0.58)" : "0 2px 3px rgba(0,0,0,0.5)",
                   }}
                 >
                   Depósito General
@@ -437,45 +397,50 @@ export function DashboardHero({
               </Box>
 
               {isDashboardLanding ? (
-                <Stack
-                  spacing={1}
+                <Box
                   sx={{
-                    p: { md: 1, lg: 1.2 },
-                    borderRadius: 2.2,
-                    bgcolor: "rgba(8,12,9,0.5)",
-                    border: "1px solid rgba(255,255,255,0.17)",
+                    mt: { md: 1.2, lg: 1.6 },
+                    width: "100%",
+                    maxWidth: { md: 520, lg: 580, xl: 640 },
+                    alignSelf: "center",
+                    mx: "auto",
+                    p: { md: 1.1, lg: 1.25 },
+                    borderRadius: 2.4,
+                    bgcolor: "rgba(7,11,8,0.58)",
+                    border: "1px solid rgba(255,255,255,0.24)",
+                    backdropFilter: "blur(5px)",
+                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 16px 36px rgba(0,0,0,0.35)",
                   }}
                 >
                   <Button
                     type="button"
-                    onClick={() => setDesktopAccessOpen((current) => !current)}
-                    endIcon={
-                      <ExpandMoreRoundedIcon
-                        sx={{
-                          transform: desktopAccessOpen ? "rotate(180deg)" : "rotate(0deg)",
-                          transition: "transform 180ms ease",
-                        }}
-                      />
-                    }
+                    aria-label="Alternar menu principal"
+                    onClick={() => setDesktopNavOpen((current) => !current)}
+                    startIcon={<MenuRoundedIcon />}
                     sx={{
-                      borderRadius: 999,
-                      border: "1px solid rgba(255,255,255,0.28)",
-                      bgcolor: "rgba(10,14,10,0.76)",
-                      color: "common.white",
+                      width: "100%",
                       minHeight: 44,
-                      px: 2,
-                      justifyContent: "space-between",
+                      px: 1.5,
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.34)",
+                      bgcolor: "rgba(10,14,10,0.84)",
+                      color: "common.white",
+                      justifyContent: "center",
+                      gap: 1,
                       textTransform: "none",
+                      fontSize: 13,
                       fontWeight: 800,
+                      letterSpacing: "0.05em",
                       "&:hover": {
-                        bgcolor: "rgba(10,14,10,0.84)",
+                        bgcolor: "rgba(12,18,12,0.96)",
+                        borderColor: "rgba(255,255,255,0.42)",
                       },
                     }}
                   >
-                    Accesos rápidos
-                    </Button>
+                    Menu principal
+                  </Button>
 
-                  <Collapse in={desktopAccessOpen} timeout={180} unmountOnExit sx={{ pt: 0.2 }}>
+                  <Collapse in={desktopNavOpen} timeout={180} unmountOnExit sx={{ pt: 1 }}>
                     <MainNavigation
                       activeView={activeView}
                       canWrite={canWrite}
@@ -483,14 +448,17 @@ export function DashboardHero({
                       showConfigViews={showConfigViews}
                       isConfigView={isConfigView}
                       configMenuRef={configMenuRef}
-                      onSelectView={handleDesktopSelectView}
+                      onSelectView={onSelectView}
                       onSetConfigViews={onSetConfigViews}
                       embedded
+                      expandSubmenus
                       hideContainerChrome
                     />
                   </Collapse>
-                </Stack>
-              ) : (
+                </Box>
+              ) : null}
+
+              {!isDashboardLanding ? (
                 <MainNavigation
                   activeView={activeView}
                   canWrite={canWrite}
@@ -502,8 +470,10 @@ export function DashboardHero({
                   onSetConfigViews={onSetConfigViews}
                   embedded
                 />
-              )}
+              ) : null}
             </Stack>
+
+            {isDashboardLanding ? <Box aria-hidden sx={{ gridColumn: "3" }} /> : null}
           </Box>
         </Stack>
       </Stack>
