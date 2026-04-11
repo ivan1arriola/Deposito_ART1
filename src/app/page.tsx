@@ -208,6 +208,9 @@ const STATUS_SESSION_CLOSED = "Sesion cerrada. Ingresa tus credenciales.";
 const AUDIT_USER_FILTER_ALL = "__ALL__";
 const AUDIT_USER_FILTER_SYSTEM = "__SYSTEM__";
 const BULK_DELIVERY_EMAIL_TOAST_ID = "bulk-delivery-email-job";
+const DEFAULT_BULK_DELIVERY_PDF_MS_PER_HOJA_ESTIMATE = 450;
+const MAX_BULK_DELIVERY_PDF_LOG_ENTRIES = 12;
+const DISPLAY_BULK_DELIVERY_PDF_LOG_ENTRIES = 4;
 
 function isActiveHojasEntregaEmailJob(
   job: HojasEntregaEmailJobSnapshot | null | undefined,
@@ -247,6 +250,27 @@ function formatDurationForStatus(ms: number | null | undefined) {
   if (typeof ms !== "number" || !Number.isFinite(ms)) return null;
   if (ms < 1000) return `${Math.max(0, Math.round(ms))}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
+}
+
+function formatElapsedTimer(ms: number | null | undefined) {
+  if (typeof ms !== "number" || !Number.isFinite(ms)) return null;
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const seconds = totalSeconds % 60;
+  const minutes = Math.floor(totalSeconds / 60) % 60;
+  const hours = Math.floor(totalSeconds / 3600);
+
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatClockTime(value: Date) {
+  return value.toLocaleTimeString("es-UY", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 function syncBulkDeliveryEmailToast(
@@ -467,8 +491,15 @@ export default function Home() {
   const [auditPageSize, setAuditPageSize] = useState(25);
   const [bulkDeliveryPdfLoading, setBulkDeliveryPdfLoading] = useState(false);
   const [bulkDeliveryPdfPhase, setBulkDeliveryPdfPhase] = useState<BulkDeliveryPdfPhase>("idle");
+  const [bulkDeliveryPdfStartedAtMs, setBulkDeliveryPdfStartedAtMs] = useState<number | null>(null);
+  const [bulkDeliveryPdfElapsedMs, setBulkDeliveryPdfElapsedMs] = useState(0);
+  const [bulkDeliveryPdfMsPerHojaEstimate, setBulkDeliveryPdfMsPerHojaEstimate] = useState(
+    DEFAULT_BULK_DELIVERY_PDF_MS_PER_HOJA_ESTIMATE,
+  );
+  const [bulkDeliveryPdfLogEntries, setBulkDeliveryPdfLogEntries] = useState<string[]>([]);
   const [bulkDeliveryEmailJob, setBulkDeliveryEmailJob] = useState<HojasEntregaEmailJobSnapshot | null>(null);
   const bulkDeliveryEmailPollTimeoutRef = useRef<number | null>(null);
+  const bulkDeliveryPdfLastLoggedPhaseRef = useRef<BulkDeliveryPdfPhase | null>(null);
   const lastToastStatusRef = useRef<string | null>(null);
 
   const isAdmin = currentUser?.rol === "ADMIN";
@@ -4402,6 +4433,19 @@ export default function Home() {
     [clearBulkDeliveryEmailPolling, onBulkDeliveryEmailToastCancel],
   );
 
+  const appendBulkDeliveryPdfLog = useCallback(
+    (message: string) => {
+      const elapsedMs =
+        bulkDeliveryPdfStartedAtMs === null ? 0 : Math.max(0, Date.now() - bulkDeliveryPdfStartedAtMs);
+      const elapsedLabel = formatElapsedTimer(elapsedMs) ?? "00:00";
+      setBulkDeliveryPdfLogEntries((previous) => {
+        const next = [...previous, `${elapsedLabel} | ${message}`];
+        return next.slice(-MAX_BULK_DELIVERY_PDF_LOG_ENTRIES);
+      });
+    },
+    [bulkDeliveryPdfStartedAtMs],
+  );
+
   const printAllDeliverySheets = useCallback(async () => {
     if (personal.length === 0) {
       toast.info("No hay personal para imprimir.");
@@ -4413,6 +4457,10 @@ export default function Home() {
       return;
     }
 
+    bulkDeliveryPdfLastLoggedPhaseRef.current = null;
+    setBulkDeliveryPdfLogEntries([]);
+    setBulkDeliveryPdfStartedAtMs(Date.now());
+    setBulkDeliveryPdfElapsedMs(0);
     setBulkDeliveryPdfLoading(true);
     setBulkDeliveryPdfPhase("requesting");
     setStatus(`Solicitando al servidor la generación del PDF A4 para ${personal.length} hoja(s)...`);
@@ -4440,6 +4488,20 @@ export default function Home() {
       setBulkDeliveryPdfPhase("downloading-response");
       setStatus("Servidor finalizó la generación. Descargando el archivo PDF...");
       const serverMetrics = parseHojasEntregaPdfMetricsHeader(response.headers.get("X-Hoja-Entrega-Pdf-Metrics"));
+      if (
+        serverMetrics?.totalMs !== null &&
+        serverMetrics?.totalMs !== undefined &&
+        serverMetrics?.hojas !== null &&
+        serverMetrics?.hojas !== undefined &&
+        serverMetrics.hojas > 0
+      ) {
+        const measuredMsPerHoja = serverMetrics.totalMs / serverMetrics.hojas;
+        if (Number.isFinite(measuredMsPerHoja) && measuredMsPerHoja > 0) {
+          setBulkDeliveryPdfMsPerHojaEstimate((previous) =>
+            Math.round(previous * 0.7 + measuredMsPerHoja * 0.3),
+          );
+        }
+      }
       const blob = await response.blob();
       setBulkDeliveryPdfPhase("preparing-download");
       setStatus("Archivo PDF recibido. Preparando descarga local...");
@@ -4476,15 +4538,19 @@ export default function Home() {
       const metricsLabel = [loadingLabel, renderingLabel, totalLabel].some(Boolean)
         ? ` Servidor: carga ${loadingLabel ?? "-"}, render ${renderingLabel ?? "-"}, total ${totalLabel ?? "-"}.`
         : "";
+      appendBulkDeliveryPdfLog(`Descarga iniciada: ${fileName}.`);
       setStatus(`Descarga iniciada (${fileName}).${metricsLabel}`);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "No se pudo generar el PDF de hojas de entrega.";
+      appendBulkDeliveryPdfLog(`Error: ${message}`);
       setStatus(`Error al generar PDF de hojas de entrega: ${message}`);
     } finally {
       setBulkDeliveryPdfLoading(false);
       setBulkDeliveryPdfPhase("idle");
+      setBulkDeliveryPdfStartedAtMs(null);
+      setBulkDeliveryPdfElapsedMs(0);
     }
-  }, [bulkDeliveryPdfLoading, personal.length]);
+  }, [appendBulkDeliveryPdfLog, bulkDeliveryPdfLoading, personal.length]);
 
   const emailAllDeliverySheets = useCallback(async () => {
     if (personal.length === 0) {
@@ -4813,25 +4879,140 @@ export default function Home() {
   }, [loading, primaryLoadSteps]);
 
   const primaryLoadingLabel = primaryLoadSteps[primaryLoadStepIndex] ?? primaryLoadSteps[0];
-  const bulkDeliveryPdfLabel = useMemo(() => {
-    if (!bulkDeliveryPdfLoading) return "";
+  useEffect(() => {
+    if (!bulkDeliveryPdfLoading || bulkDeliveryPdfStartedAtMs === null) {
+      setBulkDeliveryPdfElapsedMs(0);
+      return;
+    }
+
+    const refreshElapsed = () => {
+      setBulkDeliveryPdfElapsedMs(Math.max(0, Date.now() - bulkDeliveryPdfStartedAtMs));
+    };
+
+    refreshElapsed();
+    const intervalId = window.setInterval(refreshElapsed, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [bulkDeliveryPdfLoading, bulkDeliveryPdfStartedAtMs]);
+
+  useEffect(() => {
+    if (!bulkDeliveryPdfLoading) {
+      bulkDeliveryPdfLastLoggedPhaseRef.current = null;
+      return;
+    }
+    if (bulkDeliveryPdfLastLoggedPhaseRef.current === bulkDeliveryPdfPhase) return;
+
+    bulkDeliveryPdfLastLoggedPhaseRef.current = bulkDeliveryPdfPhase;
     if (bulkDeliveryPdfPhase === "requesting") {
-      return `Solicitando generación de ${personal.length} hoja(s) de entrega...`;
+      appendBulkDeliveryPdfLog(`Solicitud enviada al servidor (${personal.length} hojas).`);
+      return;
     }
     if (bulkDeliveryPdfPhase === "rendering-server") {
-      return "Servidor generando PDF: consultando datos, armando hojas y compaginando...";
+      appendBulkDeliveryPdfLog("Servidor procesando generacion de hojas y compaginacion.");
+      return;
     }
     if (bulkDeliveryPdfPhase === "downloading-response") {
-      return "Servidor finalizó generación. Descargando archivo PDF...";
+      appendBulkDeliveryPdfLog("Servidor finalizo, iniciando descarga de respuesta.");
+      return;
     }
     if (bulkDeliveryPdfPhase === "preparing-download") {
-      return "Archivo recibido. Preparando descarga local...";
+      appendBulkDeliveryPdfLog("Archivo recibido, preparando descarga local.");
+      return;
     }
     if (bulkDeliveryPdfPhase === "triggering-download") {
-      return "Lanzando descarga en el navegador...";
+      appendBulkDeliveryPdfLog("Lanzando descarga en el navegador.");
     }
-    return `Procesando PDF de ${personal.length} hoja(s)...`;
-  }, [bulkDeliveryPdfLoading, bulkDeliveryPdfPhase, personal.length]);
+  }, [
+    appendBulkDeliveryPdfLog,
+    bulkDeliveryPdfLoading,
+    bulkDeliveryPdfPhase,
+    personal.length,
+  ]);
+
+  const bulkDeliveryPdfLabel = useMemo(() => {
+    if (!bulkDeliveryPdfLoading) return "";
+
+    const lines: string[] = [];
+    const shouldShowEstimate =
+      (bulkDeliveryPdfPhase === "requesting" || bulkDeliveryPdfPhase === "rendering-server") &&
+      personal.length > 0;
+    const estimatedTotalMs = shouldShowEstimate
+      ? Math.max(bulkDeliveryPdfMsPerHojaEstimate * personal.length, 10_000)
+      : null;
+    const remainingMsSigned =
+      typeof estimatedTotalMs === "number" ? estimatedTotalMs - bulkDeliveryPdfElapsedMs : null;
+    const estimatedEndAt =
+      typeof estimatedTotalMs === "number" && bulkDeliveryPdfStartedAtMs !== null
+        ? new Date(bulkDeliveryPdfStartedAtMs + estimatedTotalMs)
+        : null;
+    const progressRatio =
+      typeof estimatedTotalMs === "number" && estimatedTotalMs > 0
+        ? Math.min(1, bulkDeliveryPdfElapsedMs / estimatedTotalMs)
+        : null;
+
+    if (bulkDeliveryPdfPhase === "requesting") {
+      lines.push(`Etapa 0/3: enviando solicitud al servidor para ${personal.length} hoja(s)...`);
+    } else if (bulkDeliveryPdfPhase === "rendering-server") {
+      if (progressRatio !== null && progressRatio < 0.2) {
+        lines.push("Etapa 1/3: consultando datos de personal, tallas y movimientos...");
+      } else if (progressRatio !== null && progressRatio < 0.8) {
+        lines.push("Etapa 2/3: armando hojas de entrega por persona...");
+      } else {
+        lines.push("Etapa 3/3: compaginando PDF consolidado...");
+      }
+    } else if (bulkDeliveryPdfPhase === "downloading-response") {
+      lines.push("Etapa final: servidor completó la generación, descargando archivo...");
+    } else if (bulkDeliveryPdfPhase === "preparing-download") {
+      lines.push("Etapa final: archivo recibido, preparando descarga local...");
+    } else if (bulkDeliveryPdfPhase === "triggering-download") {
+      lines.push("Etapa final: lanzando descarga en el navegador...");
+    } else {
+      lines.push(`Procesando PDF de ${personal.length} hoja(s)...`);
+    }
+
+    const elapsedLabel = formatElapsedTimer(bulkDeliveryPdfElapsedMs);
+    if (elapsedLabel) {
+      lines.push(`Transcurrido: ${elapsedLabel}`);
+    }
+
+    if (typeof remainingMsSigned === "number") {
+      if (remainingMsSigned > 0) {
+        const remainingLabel = formatElapsedTimer(remainingMsSigned);
+        if (remainingLabel) {
+          lines.push(`Restante estimado: ${remainingLabel}`);
+        }
+      } else {
+        const overrunLabel = formatElapsedTimer(Math.abs(remainingMsSigned));
+        if (overrunLabel) {
+          lines.push(`Demora sobre estimado: +${overrunLabel}`);
+        }
+      }
+    }
+
+    if (estimatedEndAt) {
+      if (typeof remainingMsSigned === "number" && remainingMsSigned > 0) {
+        lines.push(`Finaliza aprox: ${formatClockTime(estimatedEndAt)}`);
+      } else {
+        lines.push(`Hora estimada original: ${formatClockTime(estimatedEndAt)}`);
+      }
+    }
+
+    if (bulkDeliveryPdfLogEntries.length > 0) {
+      lines.push("Log de avance:");
+      for (const entry of bulkDeliveryPdfLogEntries.slice(-DISPLAY_BULK_DELIVERY_PDF_LOG_ENTRIES)) {
+        lines.push(`- ${entry}`);
+      }
+    }
+
+    return lines.join("\n");
+  }, [
+    bulkDeliveryPdfElapsedMs,
+    bulkDeliveryPdfLoading,
+    bulkDeliveryPdfLogEntries,
+    bulkDeliveryPdfStartedAtMs,
+    bulkDeliveryPdfMsPerHojaEstimate,
+    bulkDeliveryPdfPhase,
+    personal.length,
+  ]);
   useEffect(() => {
     return () => {
       if (bulkDeliveryEmailPollTimeoutRef.current !== null) {

@@ -107,7 +107,11 @@ export function LoadingOverlay({ visible, label = "Cargando..." }: LoadingOverla
         }}
       >
         <LoadingSpinner size="sm" tone="dark" />
-        <Typography variant="body2" fontWeight={700} sx={{ textAlign: "left", lineHeight: 1.25 }}>
+        <Typography
+          variant="body2"
+          fontWeight={700}
+          sx={{ textAlign: "left", lineHeight: 1.25, whiteSpace: "pre-line" }}
+        >
           {label}
         </Typography>
       </Stack>

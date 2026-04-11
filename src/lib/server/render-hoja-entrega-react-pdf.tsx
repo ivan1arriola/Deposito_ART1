@@ -1,7 +1,6 @@
 import "server-only";
 
 import React from "react";
-import type { DocumentProps } from "@react-pdf/renderer";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { buildFirmasHojaEntregaLineas, getFirmaLineBaseIndentPt, type FirmaLinea } from "@/lib/firma-lineas";
 import { ParseSpeeds, PDFDocument } from "pdf-lib";
@@ -122,7 +121,7 @@ function buildTighterProfileOrder(initialProfileId: DensityProfile["id"]) {
 }
 
 function normalizeFastBatchChunkSize(rawValue: number | undefined) {
-  if (!Number.isFinite(rawValue)) return DEFAULT_FAST_BATCH_CHUNK_SIZE;
+  if (typeof rawValue !== "number" || !Number.isFinite(rawValue)) return DEFAULT_FAST_BATCH_CHUNK_SIZE;
   const parsedValue = Math.floor(rawValue);
   if (parsedValue < 1) return DEFAULT_FAST_BATCH_CHUNK_SIZE;
   return Math.min(parsedValue, MAX_FAST_BATCH_CHUNK_SIZE);
@@ -351,7 +350,7 @@ export async function renderHojasEntregaPdf(
   const stylesCache = new Map<DensityProfile["id"], ReturnType<typeof StyleSheet.create>>();
 
   const renderDocumentToUint8Array = async (document: React.ReactElement) => {
-    const instance = pdf(document as React.ReactElement<DocumentProps>);
+    const instance = pdf(document as Parameters<typeof pdf>[0]);
     if (typeof instance.toBuffer === "function") {
       const renderedBuffer = await instance.toBuffer();
       if (renderedBuffer && typeof renderedBuffer.on === "function") {
