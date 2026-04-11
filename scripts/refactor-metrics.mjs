@@ -7,6 +7,10 @@ const DEFAULT_TARGETS = ["src", "lib", "scripts"];
 const CODE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 const IGNORE_DIRS = new Set(["node_modules", ".next", ".git", "out", "build", "dist"]);
 const IGNORE_FILE_PATTERNS = [/\.d\.ts$/i, /\.test\./i, /\.spec\./i];
+const IGNORE_PATH_PATTERNS = [
+  /^src\/generated\/prisma\//i,
+  /(^|\/)__generated__(\/|$)/i,
+];
 
 function parseArgs(argv) {
   const options = {
@@ -84,6 +88,9 @@ async function collectFiles(targetPath, rootDir, files = []) {
 
     const fullPath = path.join(absoluteTarget, entry.name);
     const relativePath = path.relative(rootDir, fullPath).replace(/\\/g, "/");
+    if (IGNORE_PATH_PATTERNS.some((pattern) => pattern.test(relativePath))) {
+      continue;
+    }
 
     if (entry.isDirectory()) {
       if (IGNORE_DIRS.has(entry.name)) {
