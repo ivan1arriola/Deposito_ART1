@@ -1,6 +1,7 @@
 import "server-only";
 
 import React from "react";
+import type { DocumentProps } from "@react-pdf/renderer";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { buildFirmasHojaEntregaLineas, getFirmaLineBaseIndentPt, type FirmaLinea } from "@/lib/firma-lineas";
 import { ParseSpeeds, PDFDocument } from "pdf-lib";
@@ -14,6 +15,7 @@ type RenderHojasEntregaPdfOptions = {
   includePageNumbers?: boolean;
   performanceMode?: "adaptive" | "fast-batch";
   fastBatchInitialProfileId?: DensityProfile["id"];
+  fastBatchChunkSize?: number;
   adaptiveInitialProfileId?: DensityProfile["id"];
 };
 
@@ -94,6 +96,9 @@ const DATE_ROW_CONFIGS: DateRowConfig[] = [
 ];
 
 const FIRMA_BLOQUE_ORDEN: FirmaBloqueId[] = ["alistado", "encargado", "oficial"];
+const DEFAULT_FAST_BATCH_CHUNK_SIZE = 50;
+const MAX_FAST_BATCH_CHUNK_SIZE = 300;
+const FAST_BATCH_CHUNK_SIZE_ENV_VAR = "HOJAS_ENTREGA_PDF_FAST_BATCH_CHUNK_SIZE";
 
 const DENSITY_PROFILES: DensityProfile[] = [
   { id: "normal", scale: 1.26 },
@@ -114,6 +119,22 @@ function buildTighterProfileOrder(initialProfileId: DensityProfile["id"]) {
   const preferred = getDensityProfileById(initialProfileId);
   const preferredIndex = DENSITY_PROFILES.findIndex((entry) => entry.id === preferred.id);
   return DENSITY_PROFILES.slice(preferredIndex >= 0 ? preferredIndex : 0);
+}
+
+function normalizeFastBatchChunkSize(rawValue: number | undefined) {
+  if (!Number.isFinite(rawValue)) return DEFAULT_FAST_BATCH_CHUNK_SIZE;
+  const parsedValue = Math.floor(rawValue);
+  if (parsedValue < 1) return DEFAULT_FAST_BATCH_CHUNK_SIZE;
+  return Math.min(parsedValue, MAX_FAST_BATCH_CHUNK_SIZE);
+}
+
+function getFastBatchChunkSizeFromEnv() {
+  const raw = process.env[FAST_BATCH_CHUNK_SIZE_ENV_VAR]?.trim();
+  if (!raw) return undefined;
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed)) return undefined;
+  return parsed;
 }
 
 function buildHojaDensityScore(hoja: HojaEntregaSheetData) {
@@ -324,9 +345,50 @@ export async function renderHojasEntregaPdf(
   const includePageNumbers = options.includePageNumbers ?? true;
   const performanceMode = options.performanceMode ?? "adaptive";
   const fastBatchInitialProfileId = options.fastBatchInitialProfileId ?? "tight";
+  const fastBatchChunkSize = normalizeFastBatchChunkSize(options.fastBatchChunkSize ?? getFastBatchChunkSizeFromEnv());
   const adaptiveInitialProfileId =
     options.adaptiveInitialProfileId ?? (performanceMode === "fast-batch" ? fastBatchInitialProfileId : "normal");
   const stylesCache = new Map<DensityProfile["id"], ReturnType<typeof StyleSheet.create>>();
+
+  const renderDocumentToUint8Array = async (document: React.ReactElement) => {
+    const instance = pdf(document as React.ReactElement<DocumentProps>);
+    if (typeof instance.toBuffer === "function") {
+      const renderedBuffer = await instance.toBuffer();
+      if (renderedBuffer && typeof renderedBuffer.on === "function") {
+        const chunks: Buffer[] = [];
+
+        await new Promise<void>((resolve, reject) => {
+          renderedBuffer.on("data", (chunk: Buffer | Uint8Array | ArrayBuffer | string) => {
+            if (Buffer.isBuffer(chunk)) {
+              chunks.push(chunk);
+              return;
+            }
+            if (chunk instanceof Uint8Array) {
+              chunks.push(Buffer.from(chunk));
+              return;
+            }
+            if (chunk instanceof ArrayBuffer) {
+              chunks.push(Buffer.from(chunk));
+              return;
+            }
+            chunks.push(Buffer.from(chunk));
+          });
+          renderedBuffer.on("end", () => resolve());
+          renderedBuffer.on("error", (error: unknown) => reject(error));
+        });
+
+        return new Uint8Array(Buffer.concat(chunks));
+      }
+
+      if (Buffer.isBuffer(renderedBuffer)) return new Uint8Array(renderedBuffer);
+      if (renderedBuffer instanceof Uint8Array) return new Uint8Array(renderedBuffer);
+      if (renderedBuffer instanceof ArrayBuffer) return new Uint8Array(renderedBuffer);
+    }
+
+    const blob = await instance.toBlob();
+    const arrayBuffer = await blob.arrayBuffer();
+    return new Uint8Array(arrayBuffer);
+  };
 
   const renderHojasBytesWithProfile = async (
     hojasToRender: PreparedHojaEntregaData[],
@@ -862,9 +924,7 @@ export async function renderHojasEntregaPdf(
       </Document>
     );
 
-    const blob = await pdf(<HojaEntregaPdfDocument />).toBlob();
-    const arrayBuffer = await blob.arrayBuffer();
-    return new Uint8Array(arrayBuffer);
+    return renderDocumentToUint8Array(<HojaEntregaPdfDocument />);
   };
 
   const renderSingleHojaBytesWithProfile = async (hoja: PreparedHojaEntregaData, profile: DensityProfile) => {
@@ -873,6 +933,37 @@ export async function renderHojasEntregaPdf(
 
   const getPdfPageCount = async (bytes: Uint8Array) => {
     return (await PDFDocument.load(bytes, { parseSpeed: ParseSpeeds.Fastest })).getPageCount();
+  };
+
+  const renderFastBatchBytesForProfile = async (
+    hojasToRender: PreparedHojaEntregaData[],
+    profile: DensityProfile,
+    chunkSize: number,
+  ): Promise<Uint8Array | null> => {
+    if (hojasToRender.length <= chunkSize) {
+      const bytes = await renderHojasBytesWithProfile(hojasToRender, profile);
+      const pageCount = await getPdfPageCount(bytes);
+      return pageCount === hojasToRender.length ? bytes : null;
+    }
+
+    const mergedPdf = await PDFDocument.create();
+
+    for (let start = 0; start < hojasToRender.length; start += chunkSize) {
+      const chunk = hojasToRender.slice(start, start + chunkSize);
+      const chunkBytes = await renderHojasBytesWithProfile(chunk, profile);
+      const chunkPdf = await PDFDocument.load(chunkBytes, { parseSpeed: ParseSpeeds.Fastest });
+
+      if (chunkPdf.getPageCount() !== chunk.length) {
+        return null;
+      }
+
+      const copiedPages = await mergedPdf.copyPages(chunkPdf, chunkPdf.getPageIndices());
+      for (const page of copiedPages) {
+        mergedPdf.addPage(page);
+      }
+    }
+
+    return mergedPdf.save();
   };
 
   const renderSingleHojaBestFitBytes = async (hoja: PreparedHojaEntregaData) => {
@@ -921,9 +1012,8 @@ export async function renderHojasEntregaPdf(
         }
       }
 
-      const bytes = await renderHojasBytesWithProfile(preparedHojas, profile);
-      const pageCount = await getPdfPageCount(bytes);
-      if (pageCount === preparedHojas.length) {
+      const bytes = await renderFastBatchBytesForProfile(preparedHojas, profile, fastBatchChunkSize);
+      if (bytes) {
         return bytes;
       }
     }

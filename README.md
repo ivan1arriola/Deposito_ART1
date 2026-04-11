@@ -49,6 +49,10 @@ SOLDADO_WIDGET_AUTH_SECRET="secreto_largo_y_unico"
 # Opcional: expiracion del token de sesion en horas (default: 720 = 30 dias)
 # Usa 0 para sesion sin vencimiento practico (expira en 2100)
 SOLDADO_WIDGET_TOKEN_TTL_HOURS="720"
+
+# Opcional: tamano de lote para generar PDF consolidado de hojas de entrega
+# Default: 50 | Rango valido: 1..300
+HOJAS_ENTREGA_PDF_FAST_BATCH_CHUNK_SIZE="50"
 ```
 
 Para generar claves VAPID:
