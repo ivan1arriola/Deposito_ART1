@@ -8,7 +8,7 @@ import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
 import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
-import { TipoPersonal } from "@prisma/client";
+import { TipoPersonal } from "@/generated/prisma/client";
 
 export const revalidate = 0;
 export const metadata = {

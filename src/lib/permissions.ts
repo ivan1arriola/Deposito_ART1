@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/generated/prisma/client";
 
 export type Permission = "read_data" | "write_data" | "delete_data" | "manage_users" | "view_audit";
 

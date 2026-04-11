@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { TipoMovimiento } from "@prisma/client";
+import { TipoMovimiento } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";

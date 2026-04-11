@@ -8,7 +8,7 @@ import { compareOptionalOrder } from "@/lib/catalog-order";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
-import { TipoPersonal } from "@prisma/client";
+import { TipoPersonal } from "@/generated/prisma/client";
 
 export const revalidate = 0;
 export const metadata = {

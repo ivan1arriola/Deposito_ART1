@@ -1,10 +1,15 @@
-import { Prisma, TipoMovimiento, TipoPersonal } from "@prisma/client";
+import "server-only";
+import { Prisma, TipoMovimiento, TipoPersonal } from "@/generated/prisma/client";
 import { isValidUruguayanCi } from "@/lib/ci";
-import { extractDateParts, formatDateOnlyForDisplay, formatDateOnlyFromDate } from "@/lib/date-helpers";
+import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { getFirmaConfig, TEXTO_ENCARGADO, TEXTO_OFICIAL } from "@/lib/firma-config";
-import { buildHojaObservaciones, type HojaObservacion } from "@/lib/hoja-entrega-observaciones";
+import { buildHojaObservaciones } from "@/lib/hoja-entrega-observaciones";
+import type { HojaEntregaMatrixRow, HojaEntregaSheetData } from "@/lib/hoja-entrega-sheet";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
+
+export type { HojaEntregaMatrixRow, HojaEntregaSheetData } from "@/lib/hoja-entrega-sheet";
+export { formatHojaEntregaDisplayDate, getHojaEntregaDatePart } from "@/lib/hoja-entrega-sheet";
 
 type MovimientoWithItems = {
   fecha: Date;
@@ -23,48 +28,6 @@ type MatrixColumn = {
   items: Array<{ nombre: string; cantidad: number }>;
 };
 
-export type HojaEntregaMatrixRow = {
-  item: string;
-  entrega: number[];
-  entregaTotal: number;
-  devolucion: number[];
-  devolucionTotal: number;
-};
-
-export type HojaEntregaSheetData = {
-  persona: {
-    ci: string;
-    apellido1: string;
-    apellido2: string | null;
-    nombre1: string;
-    nombre2: string | null;
-    esReingreso: boolean;
-    fechaIngreso: string | null;
-    fechaIngresoOriginal: string | null;
-    rango: string;
-    rangoAbreviacion: string;
-    bateria: string | null;
-    tallas: {
-      PARKA: string;
-      CAMISACO: string;
-      PANTALON: string;
-      KEPI: string;
-      CALZADO: string;
-    };
-  };
-  entregas: Array<{ fecha: string | null }>;
-  devoluciones: Array<{ fecha: string | null }>;
-  matrix: HojaEntregaMatrixRow[];
-  firmas: {
-    encargadoTexto: string;
-    encargadoRango: string;
-    encargadoNombre: string;
-    oficialTexto: string;
-    oficialRango: string;
-    oficialNombre: string;
-  };
-  observaciones: HojaObservacion[];
-};
 
 const hojaEntregaPersonalSelect = {
   ci: true,
@@ -256,16 +219,6 @@ function mapPersonaToHojaEntregaData(
     },
     observaciones: buildHojaObservaciones(persona.observaciones, persona.movimientos),
   };
-}
-
-export function getHojaEntregaDatePart(value: string | null | undefined, part: "day" | "month" | "year"): string {
-  const parts = extractDateParts(value);
-  if (!parts) return "";
-  return parts[part];
-}
-
-export function formatHojaEntregaDisplayDate(value: string | Date | null | undefined) {
-  return formatDateOnlyForDisplay(value, "-");
 }
 
 export async function getHojaEntregaData(ci: string): Promise<HojaEntregaSheetData | null> {

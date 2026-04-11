@@ -1,4 +1,4 @@
-import type { TipoMovimiento } from "@prisma/client";
+import type { TipoMovimiento } from "@/generated/prisma/client";
 import { dateInputToDate, formatDateOnlyForDisplay } from "@/lib/date-helpers";
 
 type PersonalObservacionInput = {

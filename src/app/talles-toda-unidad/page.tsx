@@ -12,7 +12,7 @@ import { tallasMap } from "@/lib/form-mappers";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy, compareRanks } from "@/lib/rank-order";
 import { TALLA_KEYS, TALLA_LABELS } from "@/lib/tallas";
-import { TipoPersonal } from "@prisma/client";
+import { TipoPersonal } from "@/generated/prisma/client";
 
 export const revalidate = 0;
 export const metadata = {

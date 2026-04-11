@@ -1,5 +1,5 @@
 import webpush from "web-push";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type NotificationKind = "LOGIN" | "MOVIMIENTO";

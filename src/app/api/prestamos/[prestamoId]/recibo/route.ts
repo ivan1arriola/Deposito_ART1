@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { TipoMovimiento, type Prisma } from "@prisma/client";
+import { TipoMovimiento, type Prisma } from "@/generated/prisma/client";
 import { readFile } from "fs/promises";
 import path from "path";
 import { PDFDocument, StandardFonts, rgb, type PDFImage, type PDFFont, type PDFPage } from "pdf-lib";

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { Prisma, TipoMovimiento, TipoPersonal } from "@prisma/client";
+import { Prisma, TipoMovimiento, TipoPersonal } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";

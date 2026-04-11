@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { TipoMovimiento, TipoStockOperacion } from "@prisma/client";
-import type { Prisma } from "@prisma/client";
+import { TipoMovimiento, TipoStockOperacion } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { notifyAdminOnMovement } from "@/lib/notify-admins";

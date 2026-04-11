@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { TipoPersonal } from "@prisma/client";
+import { TipoPersonal } from "@/generated/prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { logAudit } from "@/lib/audit";

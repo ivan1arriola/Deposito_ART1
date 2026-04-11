@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
-import type { HojaEntregaSheetData } from "@/lib/hoja-entrega-data";
+import type { HojaEntregaSheetData } from "@/lib/hoja-entrega-sheet";
 import { HojaEntregaCanonicalSheet } from "@/app/components/print/HojaEntregaCanonicalSheet";
 import styles from "./hoja-de-entrega.module.css";
 

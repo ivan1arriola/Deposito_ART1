@@ -1,4 +1,4 @@
-import { Prisma, TipoMovimiento, TipoStockOperacion } from "@prisma/client";
+import { Prisma, TipoMovimiento, TipoStockOperacion } from "@/generated/prisma/client";
 
 type PrismaLike = Pick<Prisma.TransactionClient, "movimiento" | "stockOperacion" | "prestamoActivo">;
 type PrismaRawLike = Pick<Prisma.TransactionClient, "$queryRaw">;

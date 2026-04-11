@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { EstadoEquipoPrestamo, TipoMovimiento, TipoPersonal } from "@prisma/client";
+import { EstadoEquipoPrestamo, TipoMovimiento, TipoPersonal } from "@/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { authorizeRequest, verifyPassword } from "@/lib/auth";
 import { isValidUruguayanCi } from "@/lib/ci";

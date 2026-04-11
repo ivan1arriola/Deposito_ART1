@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/generated/prisma/client";
 
 type WidgetTokenPayload = {
   sub: string;

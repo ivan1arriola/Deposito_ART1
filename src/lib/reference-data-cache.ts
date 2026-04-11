@@ -1,4 +1,4 @@
-import type { TipoPersonal } from "@prisma/client";
+import type { TipoPersonal } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { TALLA_KEYS, type TallaKey } from "@/lib/tallas";
 

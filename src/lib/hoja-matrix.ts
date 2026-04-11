@@ -1,4 +1,4 @@
-import { Prisma, TipoMovimiento, TipoPersonal } from "@prisma/client";
+import { Prisma, TipoMovimiento, TipoPersonal } from "@/generated/prisma/client";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 import { compareOptionalOrder } from "@/lib/catalog-order";

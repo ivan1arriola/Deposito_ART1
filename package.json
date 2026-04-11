@@ -1,6 +1,6 @@
 {
   "name": "deposito-art1",
-  "version": "4.0.5",
+  "version": "4.0.6",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
@@ -24,7 +24,7 @@
     "prisma:generate": "prisma generate",
     "db:rebuild": "prisma db execute --file prisma/schema-base.sql && prisma generate",
     "prisma:studio": "prisma studio",
-    "user:create": "node scripts/create-user.mjs",
+    "user:create": "tsx scripts/create-user.ts",
     "webpush:generate": "node scripts/generate-webpush-keys.mjs",
     "licenses": "license-checker-rseidelsohn --json --out licenses.json",
     "licenses:summary": "license-checker-rseidelsohn --summary",
@@ -73,6 +73,7 @@
     "license-checker-rseidelsohn": "^4.4.2",
     "prisma": "^7.7.0",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.0.18"
   }

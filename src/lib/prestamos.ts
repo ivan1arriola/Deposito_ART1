@@ -1,4 +1,4 @@
-import type { Prisma, TipoPersonal } from "@prisma/client";
+import type { Prisma, TipoPersonal } from "@/generated/prisma/client";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import type { PrestamoStockEntry } from "@/types/views";
 

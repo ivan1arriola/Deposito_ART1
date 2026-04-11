@@ -4,7 +4,7 @@ import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
 import {
   getHojaEntregaDatePart,
   type HojaEntregaSheetData,
-} from "@/lib/hoja-entrega-data";
+} from "@/lib/hoja-entrega-sheet";
 import styles from "@/app/components/views/hoja-de-entrega.module.css";
 
 type HojaEntregaCanonicalSheetProps = {

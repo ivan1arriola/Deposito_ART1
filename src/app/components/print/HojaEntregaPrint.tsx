@@ -5,7 +5,7 @@ import {
   formatHojaEntregaDisplayDate,
   getHojaEntregaDatePart,
   type HojaEntregaSheetData,
-} from "@/lib/hoja-entrega-data";
+} from "@/lib/hoja-entrega-sheet";
 
 export const HOJA_ENTREGA_PRINT_STYLES = `
   * {
