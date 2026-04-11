@@ -385,6 +385,7 @@ export default function Home() {
   } = useHomeData({ onStatusChange: setStatus, activeView });
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [showResetRequest, setShowResetRequest] = useState(false);
   const [resetUsername, setResetUsername] = useState("");
@@ -3661,6 +3662,7 @@ export default function Home() {
         await loginHandler(loginUsername, loginPassword, {
           onSuccess: async () => {
             setLoginPassword("");
+            setShowLoginPassword(false);
 
             const callbackTarget =
               typeof window !== "undefined"
@@ -3761,6 +3763,7 @@ export default function Home() {
           setCurrentUser(null);
           clearLoadedData();
           setLoginPassword("");
+          setShowLoginPassword(false);
           setActiveView("personal");
           setStatus(STATUS_SESSION_CLOSED);
         },
@@ -3770,6 +3773,7 @@ export default function Home() {
       setCurrentUser(null);
       clearLoadedData();
       setLoginPassword("");
+      setShowLoginPassword(false);
       setActiveView("personal");
       setStatus(STATUS_SESSION_CLOSED);
     }
@@ -5193,13 +5197,23 @@ export default function Home() {
                   placeholder="Usuario"
                   className="ej-login-input px-3 py-2 text-sm"
                 />
-                <input
-                  value={loginPassword}
-                  onChange={(event) => setLoginPassword(event.target.value)}
-                  placeholder="Contrasena"
-                  type="password"
-                  className="ej-login-input px-3 py-2 text-sm"
-                />
+                <div className="relative">
+                  <input
+                    value={loginPassword}
+                    onChange={(event) => setLoginPassword(event.target.value)}
+                    placeholder="Contrasena"
+                    type={showLoginPassword ? "text" : "password"}
+                    className="ej-login-input px-3 py-2 pr-20 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword((current) => !current)}
+                    aria-label={showLoginPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+                    className="absolute inset-y-0 right-2 my-1 rounded px-2 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+                  >
+                    {showLoginPassword ? "Ocultar" : "Ver"}
+                  </button>
+                </div>
                 <button
                   type="submit"
                   disabled={loading || loginLoading}

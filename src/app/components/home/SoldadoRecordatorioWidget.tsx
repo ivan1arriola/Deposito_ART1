@@ -167,13 +167,11 @@ const SOLDIER_DIALOGUES: Record<SoldierDialogueKind, SoldierDialogueDefinition> 
   },
 };
 
-function MiniSoldadoAvatar({ urgent, size }: { urgent: boolean; size: number }) {
+function MiniSoldadoAvatar({ size }: { size: number }) {
   const scale = size / 82;
   return (
     <span
-      className={`soldier-avatar soldier-float relative inline-flex items-end justify-center ${
-        urgent ? "soldier-urgent" : ""
-      }`}
+      className="soldier-avatar soldier-float relative inline-flex items-end justify-center"
       style={{ width: `${size}px`, height: `${size}px` }}
       aria-hidden="true"
     >
@@ -181,13 +179,9 @@ function MiniSoldadoAvatar({ urgent, size }: { urgent: boolean; size: number }) 
         className="soldier-shadow absolute rounded-full bg-black/20 blur-[2px]"
         style={{ bottom: `${4 * scale}px`, height: `${10 * scale}px`, width: `${48 * scale}px` }}
       />
-      <span
-        className="absolute rounded-full bg-emerald-200/15 blur-[8px]"
-        style={{ bottom: `${28 * scale}px`, height: `${36 * scale}px`, width: `${36 * scale}px` }}
-      />
       <svg
         viewBox="0 0 120 120"
-        className="relative drop-shadow-[0_3px_4px_rgba(0,0,0,0.24)]"
+        className="relative"
         style={{ width: `${76 * scale}px`, height: `${76 * scale}px` }}
       >
         <defs>
@@ -403,8 +397,10 @@ export function SoldadoRecordatorioWidget({
   const avatarSize = isMobile ? 82 : isExtraLargeDesktop ? 132 : isLargeDesktop ? 120 : isDesktop ? 108 : 96;
   const badgeSize = Math.max(20, Math.round(avatarSize * 0.24));
   const badgeFontSize = Math.max(11, Math.round(avatarSize * 0.13));
-  const urgentChipSize = Math.max(17, Math.round(avatarSize * 0.21));
-  const urgentChipFontSize = Math.max(10, Math.round(avatarSize * 0.12));
+  const urgentPillHeight = Math.max(18, Math.round(avatarSize * 0.22));
+  const urgentPillFontSize = Math.max(9, Math.round(avatarSize * 0.1));
+  const urgentPillMinWidth = Math.max(40, Math.round(avatarSize * 0.52));
+  const urgentIndicatorLabel = urgentCount > 99 ? "Urg 99+" : `Urg ${urgentCount}`;
   const dragHandleSize = Math.max(20, Math.round(avatarSize * 0.24));
   const dragHandleIconSize = Math.max(14, Math.round(avatarSize * 0.17));
   const widgetPositionSx = useMemo(() => {
@@ -951,24 +947,6 @@ export function SoldadoRecordatorioWidget({
           50% { transform: translateY(0.45px); opacity: 1; }
         }
 
-        @keyframes soldier-helmet-glint {
-          0%, 100% { opacity: 0; transform: translateX(-5px); }
-          22% { opacity: 0; transform: translateX(-5px); }
-          35% { opacity: 0.9; transform: translateX(3px); }
-          45% { opacity: 0; transform: translateX(7px); }
-        }
-
-        @keyframes urgent-jitter {
-          0%, 100% { transform: rotate(0deg); }
-          25% { transform: rotate(-1.2deg); }
-          75% { transform: rotate(1.2deg); }
-        }
-
-        @keyframes urgent-pulse {
-          0%, 100% { filter: drop-shadow(0 0 0 rgba(190, 18, 60, 0)); }
-          50% { filter: drop-shadow(0 0 8px rgba(190, 18, 60, 0.62)); }
-        }
-
         .soldier-avatar {
           transform-origin: center bottom;
         }
@@ -1027,7 +1005,7 @@ export function SoldadoRecordatorioWidget({
         }
 
         .soldier-helmet-glint {
-          animation: soldier-helmet-glint 4.2s ease-in-out infinite;
+          opacity: 0.24;
         }
 
         .soldier-chinstrap {
@@ -1054,10 +1032,6 @@ export function SoldadoRecordatorioWidget({
           animation: soldier-leg-right 1.8s ease-in-out infinite;
         }
 
-        .soldier-urgent {
-          animation: soldier-float 2.1s ease-in-out infinite, urgent-pulse 1.5s ease-in-out infinite, urgent-jitter 0.9s ease-in-out infinite;
-        }
-
         @media (prefers-reduced-motion: reduce) {
           .soldier-avatar,
           .soldier-shadow,
@@ -1075,8 +1049,7 @@ export function SoldadoRecordatorioWidget({
           .soldier-arm-left,
           .soldier-arm-right,
           .soldier-leg-left,
-          .soldier-leg-right,
-          .soldier-urgent {
+          .soldier-leg-right {
             animation: none !important;
           }
         }
@@ -1116,7 +1089,7 @@ export function SoldadoRecordatorioWidget({
             <Box sx={{ position: "relative", display: "inline-flex", alignItems: "flex-end" }}>
               <Badge
                 badgeContent={pendingTasks.length}
-                color="primary"
+                color={urgentCount > 0 ? "error" : "primary"}
                 overlap="circular"
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                 sx={{
@@ -1125,26 +1098,30 @@ export function SoldadoRecordatorioWidget({
                     minWidth: badgeSize,
                     height: badgeSize,
                     fontWeight: 700,
+                    boxShadow: "0 0 0 2px rgba(245, 246, 239, 0.95)",
                   },
                 }}
               >
-                <MiniSoldadoAvatar urgent={urgentCount > 0} size={avatarSize} />
+                <MiniSoldadoAvatar size={avatarSize} />
               </Badge>
               {urgentCount > 0 ? (
                 <Chip
-                  label="!"
-                  color="error"
+                  label={urgentIndicatorLabel}
+                  color="default"
                   size="small"
                   sx={{
                     position: "absolute",
-                    top: Math.round(-avatarSize * 0.04),
-                    right: Math.round(-avatarSize * 0.1),
-                    height: urgentChipSize,
-                    minWidth: urgentChipSize,
-                    fontSize: urgentChipFontSize,
+                    top: Math.round(-avatarSize * 0.02),
+                    right: Math.round(-avatarSize * 0.08),
+                    height: urgentPillHeight,
+                    minWidth: urgentPillMinWidth,
+                    fontSize: urgentPillFontSize,
                     fontWeight: 800,
-                    borderRadius: Math.round(urgentChipSize / 2),
-                    "& .MuiChip-label": { px: 0.5, lineHeight: 1 },
+                    borderRadius: Math.round(urgentPillHeight / 2),
+                    color: "#7f1d1d",
+                    bgcolor: "rgba(255, 245, 245, 0.96)",
+                    border: "1px solid rgba(153, 27, 27, 0.42)",
+                    "& .MuiChip-label": { px: 0.85, lineHeight: 1 },
                   }}
                 />
               ) : null}
