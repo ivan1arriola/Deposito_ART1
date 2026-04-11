@@ -2,6 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { normalizePgConnectionStringSecurity } from "../src/lib/postgres-connection";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -9,7 +10,7 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const adapter = new PrismaPg({ connectionString });
+const adapter = new PrismaPg({ connectionString: normalizePgConnectionStringSecurity(connectionString) });
 const prisma = new PrismaClient({ adapter });
 
 function getArg(name: string, fallback = "") {

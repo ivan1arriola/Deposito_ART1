@@ -12,6 +12,8 @@ import {
 type RenderHojasEntregaPdfOptions = {
   pageNumberLabel?: string;
   includePageNumbers?: boolean;
+  performanceMode?: "adaptive" | "fast-batch";
+  fastBatchInitialProfileId?: DensityProfile["id"];
 };
 
 type DatePart = "day" | "month" | "year";
@@ -93,6 +95,21 @@ const DENSITY_PROFILES: DensityProfile[] = [
   { id: "pico", scale: 0.82 },
   { id: "atomic", scale: 0.76 },
 ];
+
+function getDensityProfileById(profileId: DensityProfile["id"]) {
+  return DENSITY_PROFILES.find((profile) => profile.id === profileId) ?? DENSITY_PROFILES[0];
+}
+
+function buildFastBatchProfileOrder(initialProfileId: DensityProfile["id"]) {
+  const preferred = getDensityProfileById(initialProfileId);
+  const nextOrder: DensityProfile[] = [preferred];
+  for (const profile of DENSITY_PROFILES) {
+    if (!nextOrder.some((entry) => entry.id === profile.id)) {
+      nextOrder.push(profile);
+    }
+  }
+  return nextOrder;
+}
 
 function scaled(profile: DensityProfile, value: number, min = 0) {
   const output = Number((value * profile.scale).toFixed(2));
@@ -233,9 +250,11 @@ export async function renderHojasEntregaPdf(
 
   const pageNumberLabel = options.pageNumberLabel ?? "Hoja";
   const includePageNumbers = options.includePageNumbers ?? true;
+  const performanceMode = options.performanceMode ?? "adaptive";
+  const fastBatchInitialProfileId = options.fastBatchInitialProfileId ?? "tight";
 
-  const renderSingleHojaBytesWithProfile = async (
-    hoja: HojaEntregaSheetData,
+  const renderHojasBytesWithProfile = async (
+    hojasToRender: HojaEntregaSheetData[],
     profile: DensityProfile,
   ) => {
     const signatureTab = getSignatureTabSize(profile);
@@ -755,7 +774,7 @@ export async function renderHojasEntregaPdf(
             </View>
           </View>
 
-          {includePageNumbers ? (
+          {includePageNumbers && hojasToRender.length === 1 ? (
             <Text
               fixed
               style={styles.pageNumber}
@@ -770,13 +789,26 @@ export async function renderHojasEntregaPdf(
 
     const HojaEntregaPdfDocument = () => (
       <Document title="Hoja de Entrega" author="Deposito ART1">
-        <HojaEntregaSheetPage data={hoja} />
+        {hojasToRender.map((hoja, index) => (
+          <HojaEntregaSheetPage
+            key={`${hoja.persona.ci}-${index}`}
+            data={hoja}
+          />
+        ))}
       </Document>
     );
 
     const blob = await pdf(<HojaEntregaPdfDocument />).toBlob();
     const arrayBuffer = await blob.arrayBuffer();
     return new Uint8Array(arrayBuffer);
+  };
+
+  const renderSingleHojaBytesWithProfile = async (hoja: HojaEntregaSheetData, profile: DensityProfile) => {
+    return renderHojasBytesWithProfile([hoja], profile);
+  };
+
+  const getPdfPageCount = async (bytes: Uint8Array) => {
+    return (await PDFDocument.load(bytes)).getPageCount();
   };
 
   const renderSingleHojaBestFitBytes = async (hoja: HojaEntregaSheetData) => {
@@ -786,7 +818,7 @@ export async function renderHojasEntregaPdf(
       const bytes = await renderSingleHojaBytesWithProfile(hoja, profile);
       bestProfileId = profile.id;
 
-      const pageCount = (await PDFDocument.load(bytes)).getPageCount();
+      const pageCount = await getPdfPageCount(bytes);
       if (pageCount === 1) {
         return bytes;
       }
@@ -803,6 +835,17 @@ export async function renderHojasEntregaPdf(
 
   if (hojas.length === 1) {
     return renderSingleHojaBestFitBytes(hojas[0]);
+  }
+
+  if (performanceMode === "fast-batch") {
+    const fastProfiles = buildFastBatchProfileOrder(fastBatchInitialProfileId);
+    for (const profile of fastProfiles) {
+      const bytes = await renderHojasBytesWithProfile(hojas, profile);
+      const pageCount = await getPdfPageCount(bytes);
+      if (pageCount === hojas.length) {
+        return bytes;
+      }
+    }
   }
 
   const mergedPdf = await PDFDocument.create();

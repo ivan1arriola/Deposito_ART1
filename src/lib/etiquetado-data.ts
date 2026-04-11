@@ -93,7 +93,7 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
     pisosByEstanteria.set(estanteria.codigo, current);
   }
 
-  return cajas.map((caja) => {
+  const etiquetas = cajas.map((caja) => {
     const codigosSIEConEquipo = caja.codigosSIE
       .map((codigo) => ({
         codigo: codigo.itemCodigoSIE.codigo,
@@ -171,6 +171,22 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
       codigosSIE,
       tallas,
     };
+  });
+
+  if (codigosFiltrados.length === 0) {
+    return etiquetas;
+  }
+
+  const ordenPorCodigo = new Map(codigosFiltrados.map((codigo, index) => [codigo, index]));
+  return etiquetas.sort((a, b) => {
+    const ordenA = ordenPorCodigo.get(a.codigoDepositoGeneral);
+    const ordenB = ordenPorCodigo.get(b.codigoDepositoGeneral);
+    if (typeof ordenA === "number" && typeof ordenB === "number") {
+      return ordenA - ordenB;
+    }
+    if (typeof ordenA === "number") return -1;
+    if (typeof ordenB === "number") return 1;
+    return a.codigoDepositoGeneral - b.codigoDepositoGeneral;
   });
 }
 

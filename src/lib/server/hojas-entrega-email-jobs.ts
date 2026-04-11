@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import type {
+  HojasEntregaEmailJobMetrics,
   HojasEntregaEmailJobSnapshot,
   HojasEntregaEmailJobStatus,
   HojasEntregaEmailJobStep,
@@ -13,7 +14,10 @@ type HojasEntregaEmailJobRecord = HojasEntregaEmailJobSnapshot & {
 };
 
 type HojasEntregaEmailJobUpdate = Partial<
-  Pick<HojasEntregaEmailJobRecord, "status" | "step" | "progress" | "message" | "to" | "fileName" | "hojas" | "error">
+  Pick<
+    HojasEntregaEmailJobRecord,
+    "status" | "step" | "progress" | "message" | "to" | "fileName" | "hojas" | "error" | "metrics"
+  >
 >;
 
 type HojasEntregaEmailJobRow = {
@@ -27,6 +31,7 @@ type HojasEntregaEmailJobRow = {
   file_name: string | null;
   hojas: number | null;
   error: string | null;
+  metrics_json: unknown | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -55,10 +60,15 @@ CREATE TABLE IF NOT EXISTS hojas_entrega_email_job (
   file_name TEXT NULL,
   hojas INTEGER NULL,
   error TEXT NULL,
+  metrics_json JSONB NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 `;
+
+const JOBS_TABLE_ALTER_DDL = [
+  "ALTER TABLE hojas_entrega_email_job ADD COLUMN IF NOT EXISTS metrics_json JSONB NULL;",
+];
 
 const JOBS_TABLE_INDEXES_DDL = [
   "CREATE INDEX IF NOT EXISTS idx_hojas_entrega_email_job_user_updated ON hojas_entrega_email_job(user_id, updated_at DESC);",
@@ -96,6 +106,34 @@ function toIsoDate(value: Date | string): string {
   return new Date().toISOString();
 }
 
+function normalizeMetricValue(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  if (value < 0) return 0;
+  return Math.round(value);
+}
+
+function normalizeMetrics(value: unknown): HojasEntregaEmailJobMetrics | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<HojasEntregaEmailJobMetrics>;
+  return {
+    loadingMs: normalizeMetricValue(candidate.loadingMs),
+    renderingMs: normalizeMetricValue(candidate.renderingMs),
+    sendingMs: normalizeMetricValue(candidate.sendingMs),
+    totalMs: normalizeMetricValue(candidate.totalMs),
+  };
+}
+
+function parseMetricsJson(value: unknown): HojasEntregaEmailJobMetrics | null {
+  if (typeof value === "string") {
+    try {
+      return normalizeMetrics(JSON.parse(value));
+    } catch {
+      return null;
+    }
+  }
+  return normalizeMetrics(value);
+}
+
 async function ensureStoreReady() {
   const globalStore = globalThis as typeof globalThis & {
     __hojasEntregaEmailJobsStoreReady?: Promise<void>;
@@ -104,6 +142,9 @@ async function ensureStoreReady() {
   if (!globalStore.__hojasEntregaEmailJobsStoreReady) {
     globalStore.__hojasEntregaEmailJobsStoreReady = (async () => {
       await prisma.$executeRawUnsafe(JOBS_TABLE_DDL);
+      for (const statement of JOBS_TABLE_ALTER_DDL) {
+        await prisma.$executeRawUnsafe(statement);
+      }
       for (const statement of JOBS_TABLE_INDEXES_DDL) {
         await prisma.$executeRawUnsafe(statement);
       }
@@ -149,6 +190,7 @@ function toSnapshot(job: HojasEntregaEmailJobRow): HojasEntregaEmailJobSnapshot 
     fileName: job.file_name,
     hojas: job.hojas,
     error: job.error,
+    metrics: parseMetricsJson(job.metrics_json),
     createdAt: toIsoDate(job.created_at),
     updatedAt: toIsoDate(job.updated_at),
   };
@@ -168,6 +210,7 @@ async function getJobById(jobId: string): Promise<HojasEntregaEmailJobRow | null
       file_name,
       hojas,
       error,
+      metrics_json,
       created_at,
       updated_at
     FROM hojas_entrega_email_job
@@ -192,6 +235,7 @@ export async function findActiveHojasEntregaEmailJob(userId: string): Promise<Ho
       file_name,
       hojas,
       error,
+      metrics_json,
       created_at,
       updated_at
     FROM hojas_entrega_email_job
@@ -224,6 +268,7 @@ export async function createHojasEntregaEmailJob(input: {
       file_name,
       hojas,
       error,
+      metrics_json,
       created_at,
       updated_at
     )
@@ -235,6 +280,7 @@ export async function createHojasEntregaEmailJob(input: {
       5,
       ${input.message},
       ${input.to},
+      NULL,
       NULL,
       NULL,
       NULL,
@@ -252,6 +298,7 @@ export async function createHojasEntregaEmailJob(input: {
       file_name,
       hojas,
       error,
+      metrics_json,
       created_at,
       updated_at
   `;
@@ -279,6 +326,7 @@ export async function getHojasEntregaEmailJob(jobId: string, userId: string): Pr
       file_name,
       hojas,
       error,
+      metrics_json,
       created_at,
       updated_at
     FROM hojas_entrega_email_job
@@ -311,6 +359,8 @@ export async function updateHojasEntregaEmailJob(
   const nextFileName = patch.fileName !== undefined ? patch.fileName : currentJob.file_name;
   const nextHojas = patch.hojas !== undefined ? patch.hojas : currentJob.hojas;
   const nextError = patch.error !== undefined ? patch.error : currentJob.error;
+  const nextMetrics = patch.metrics !== undefined ? normalizeMetrics(patch.metrics) : parseMetricsJson(currentJob.metrics_json);
+  const nextMetricsJson = nextMetrics ? JSON.stringify(nextMetrics) : null;
 
   const rows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
     UPDATE hojas_entrega_email_job
@@ -323,6 +373,10 @@ export async function updateHojasEntregaEmailJob(
       file_name = ${nextFileName},
       hojas = ${nextHojas},
       error = ${nextError},
+      metrics_json = CASE
+        WHEN ${nextMetricsJson} IS NULL THEN NULL
+        ELSE CAST(${nextMetricsJson} AS jsonb)
+      END,
       updated_at = NOW()
     WHERE job_id = ${jobId}
     RETURNING
@@ -336,6 +390,7 @@ export async function updateHojasEntregaEmailJob(
       file_name,
       hojas,
       error,
+      metrics_json,
       created_at,
       updated_at
   `;
@@ -356,8 +411,13 @@ export async function completeHojasEntregaEmailJob(
   });
 }
 
-export async function failHojasEntregaEmailJob(jobId: string, message: string): Promise<HojasEntregaEmailJobSnapshot | null> {
+export async function failHojasEntregaEmailJob(
+  jobId: string,
+  message: string,
+  patch: Omit<HojasEntregaEmailJobUpdate, "status" | "step" | "progress" | "message" | "error"> = {},
+): Promise<HojasEntregaEmailJobSnapshot | null> {
   return await updateHojasEntregaEmailJob(jobId, {
+    ...patch,
     status: "failed",
     step: "failed",
     progress: 100,
@@ -375,6 +435,7 @@ export async function setHojasEntregaEmailJobProgress(
     to?: string | null;
     fileName?: string | null;
     hojas?: number | null;
+    metrics?: HojasEntregaEmailJobMetrics | null;
   },
 ): Promise<HojasEntregaEmailJobSnapshot | null> {
   return await updateHojasEntregaEmailJob(jobId, {
@@ -385,6 +446,7 @@ export async function setHojasEntregaEmailJobProgress(
     to: input.to,
     fileName: input.fileName,
     hojas: input.hojas,
+    metrics: input.metrics,
     error: null,
   });
 }
@@ -408,6 +470,7 @@ export async function cancelHojasEntregaEmailJob(
       file_name,
       hojas,
       error,
+      metrics_json,
       created_at,
       updated_at
     FROM hojas_entrega_email_job
@@ -442,6 +505,7 @@ export async function cancelHojasEntregaEmailJob(
       file_name,
       hojas,
       error,
+      metrics_json,
       created_at,
       updated_at
   `;

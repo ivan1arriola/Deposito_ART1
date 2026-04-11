@@ -10,6 +10,13 @@ export type HojasEntregaEmailJobStep =
   | "failed"
   | "cancelled";
 
+export type HojasEntregaEmailJobMetrics = {
+  loadingMs: number | null;
+  renderingMs: number | null;
+  sendingMs: number | null;
+  totalMs: number | null;
+};
+
 export type HojasEntregaEmailJobSnapshot = {
   jobId: string;
   status: HojasEntregaEmailJobStatus;
@@ -20,6 +27,7 @@ export type HojasEntregaEmailJobSnapshot = {
   fileName: string | null;
   hojas: number | null;
   error: string | null;
+  metrics?: HojasEntregaEmailJobMetrics | null;
   createdAt: string;
   updatedAt: string;
 };

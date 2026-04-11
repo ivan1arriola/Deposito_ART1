@@ -186,6 +186,20 @@ type HojaEntregaSnapshot = {
 };
 
 type PersonaProfileReturnView = Extract<MainView, "personal" | "oficiales" | "suboficiales">;
+type BulkDeliveryPdfPhase =
+  | "idle"
+  | "requesting"
+  | "rendering-server"
+  | "downloading-response"
+  | "preparing-download"
+  | "triggering-download";
+
+type HojasEntregaPdfServerMetrics = {
+  loadingMs: number | null;
+  renderingMs: number | null;
+  totalMs: number | null;
+  hojas: number | null;
+};
 
 const STATUS_VERIFYING_SESSION = "Verificando sesión...";
 const STATUS_STARTING_SESSION = "Iniciando sesión...";
@@ -206,6 +220,33 @@ function describeHojasEntregaEmailJob(job: HojasEntregaEmailJobSnapshot) {
   const fileLabel = job.fileName ? `\nArchivo: ${job.fileName}` : "";
   const recipientLabel = job.to ? `\nDestino: ${job.to}` : "";
   return `${job.message}${progressLabel}${recipientLabel}${fileLabel}`;
+}
+
+function normalizeDurationMs(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  if (value < 0) return 0;
+  return Math.round(value);
+}
+
+function parseHojasEntregaPdfMetricsHeader(value: string | null): HojasEntregaPdfServerMetrics | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as Partial<HojasEntregaPdfServerMetrics>;
+    return {
+      loadingMs: normalizeDurationMs(parsed.loadingMs),
+      renderingMs: normalizeDurationMs(parsed.renderingMs),
+      totalMs: normalizeDurationMs(parsed.totalMs),
+      hojas: typeof parsed.hojas === "number" && Number.isFinite(parsed.hojas) ? Math.max(0, Math.trunc(parsed.hojas)) : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function formatDurationForStatus(ms: number | null | undefined) {
+  if (typeof ms !== "number" || !Number.isFinite(ms)) return null;
+  if (ms < 1000) return `${Math.max(0, Math.round(ms))}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
 }
 
 function syncBulkDeliveryEmailToast(
@@ -425,7 +466,7 @@ export default function Home() {
   const [auditPage, setAuditPage] = useState(1);
   const [auditPageSize, setAuditPageSize] = useState(25);
   const [bulkDeliveryPdfLoading, setBulkDeliveryPdfLoading] = useState(false);
-  const [bulkDeliveryPdfStepIndex, setBulkDeliveryPdfStepIndex] = useState(0);
+  const [bulkDeliveryPdfPhase, setBulkDeliveryPdfPhase] = useState<BulkDeliveryPdfPhase>("idle");
   const [bulkDeliveryEmailJob, setBulkDeliveryEmailJob] = useState<HojasEntregaEmailJobSnapshot | null>(null);
   const bulkDeliveryEmailPollTimeoutRef = useRef<number | null>(null);
   const lastToastStatusRef = useRef<string | null>(null);
@@ -1533,8 +1574,11 @@ export default function Home() {
   );
 
   const printTodasEtiquetas = useCallback(
-    (orientacion: "horizontal" | "vertical") => {
-      openEtiquetasPrint({ orientacion });
+    (orientacion: "horizontal" | "vertical", codigosOrdenados?: number[]) => {
+      const codigos = Array.isArray(codigosOrdenados)
+        ? codigosOrdenados.filter((codigo) => Number.isInteger(codigo) && codigo > 0)
+        : [];
+      openEtiquetasPrint({ orientacion, codigos: codigos.length > 0 ? codigos : undefined });
     },
     [openEtiquetasPrint],
   );
@@ -4370,10 +4414,11 @@ export default function Home() {
     }
 
     setBulkDeliveryPdfLoading(true);
-    setBulkDeliveryPdfStepIndex(0);
-    setStatus(`Generando PDF A4 de hojas de entrega para ${personal.length} personas...`);
+    setBulkDeliveryPdfPhase("requesting");
+    setStatus(`Solicitando al servidor la generación del PDF A4 para ${personal.length} hoja(s)...`);
     toast.info(`Generando PDF A4 de ${personal.length} hojas.`);
     try {
+      setBulkDeliveryPdfPhase("rendering-server");
       const response = await fetch("/api/hojas-de-entrega/pdf", {
         method: "GET",
         cache: "no-store",
@@ -4392,8 +4437,12 @@ export default function Home() {
         throw new Error(message);
       }
 
-      setStatus("PDF generado. Iniciando descarga...");
+      setBulkDeliveryPdfPhase("downloading-response");
+      setStatus("Servidor finalizó la generación. Descargando el archivo PDF...");
+      const serverMetrics = parseHojasEntregaPdfMetricsHeader(response.headers.get("X-Hoja-Entrega-Pdf-Metrics"));
       const blob = await response.blob();
+      setBulkDeliveryPdfPhase("preparing-download");
+      setStatus("Archivo PDF recibido. Preparando descarga local...");
       const objectUrl = URL.createObjectURL(blob);
       const disposition = response.headers.get("Content-Disposition");
       const fileNameMatch = disposition?.match(/filename\*?=(?:UTF-8''|\"?)([^\";]+)/i);
@@ -4409,6 +4458,8 @@ export default function Home() {
         }
       }
 
+      setBulkDeliveryPdfPhase("triggering-download");
+      setStatus(`Lanzando descarga de ${fileName}...`);
       const link = document.createElement("a");
       link.href = objectUrl;
       link.download = fileName;
@@ -4419,12 +4470,19 @@ export default function Home() {
       document.body.removeChild(link);
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_500);
 
-      setStatus(`Descarga iniciada (${fileName}).`);
+      const loadingLabel = formatDurationForStatus(serverMetrics?.loadingMs);
+      const renderingLabel = formatDurationForStatus(serverMetrics?.renderingMs);
+      const totalLabel = formatDurationForStatus(serverMetrics?.totalMs);
+      const metricsLabel = [loadingLabel, renderingLabel, totalLabel].some(Boolean)
+        ? ` Servidor: carga ${loadingLabel ?? "-"}, render ${renderingLabel ?? "-"}, total ${totalLabel ?? "-"}.`
+        : "";
+      setStatus(`Descarga iniciada (${fileName}).${metricsLabel}`);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "No se pudo generar el PDF de hojas de entrega.";
       setStatus(`Error al generar PDF de hojas de entrega: ${message}`);
     } finally {
       setBulkDeliveryPdfLoading(false);
+      setBulkDeliveryPdfPhase("idle");
     }
   }, [bulkDeliveryPdfLoading, personal.length]);
 
@@ -4755,32 +4813,25 @@ export default function Home() {
   }, [loading, primaryLoadSteps]);
 
   const primaryLoadingLabel = primaryLoadSteps[primaryLoadStepIndex] ?? primaryLoadSteps[0];
-  const bulkDeliveryPdfSteps = useMemo(
-    () => [
-      `Preparando ${personal.length} hoja(s) de entrega en formato A4...`,
-      "Consultando personal, tallas y movimientos para cada hoja...",
-      "Armando tablas de equipo, observaciones y firmas...",
-      "Compaginando paginas A4 en blanco y negro...",
-      "Finalizando archivo PDF y preparando descarga...",
-    ],
-    [personal.length],
-  );
-
-  useEffect(() => {
-    if (!bulkDeliveryPdfLoading) {
-      setBulkDeliveryPdfStepIndex(0);
-      return;
+  const bulkDeliveryPdfLabel = useMemo(() => {
+    if (!bulkDeliveryPdfLoading) return "";
+    if (bulkDeliveryPdfPhase === "requesting") {
+      return `Solicitando generación de ${personal.length} hoja(s) de entrega...`;
     }
-
-    setBulkDeliveryPdfStepIndex(0);
-    const intervalId = window.setInterval(() => {
-      setBulkDeliveryPdfStepIndex((prev) => Math.min(prev + 1, bulkDeliveryPdfSteps.length - 1));
-    }, 2_100);
-
-    return () => window.clearInterval(intervalId);
-  }, [bulkDeliveryPdfLoading, bulkDeliveryPdfSteps.length]);
-
-  const bulkDeliveryPdfLabel = bulkDeliveryPdfSteps[bulkDeliveryPdfStepIndex] ?? bulkDeliveryPdfSteps[0];
+    if (bulkDeliveryPdfPhase === "rendering-server") {
+      return "Servidor generando PDF: consultando datos, armando hojas y compaginando...";
+    }
+    if (bulkDeliveryPdfPhase === "downloading-response") {
+      return "Servidor finalizó generación. Descargando archivo PDF...";
+    }
+    if (bulkDeliveryPdfPhase === "preparing-download") {
+      return "Archivo recibido. Preparando descarga local...";
+    }
+    if (bulkDeliveryPdfPhase === "triggering-download") {
+      return "Lanzando descarga en el navegador...";
+    }
+    return `Procesando PDF de ${personal.length} hoja(s)...`;
+  }, [bulkDeliveryPdfLoading, bulkDeliveryPdfPhase, personal.length]);
   useEffect(() => {
     return () => {
       if (bulkDeliveryEmailPollTimeoutRef.current !== null) {
@@ -5560,7 +5611,7 @@ export default function Home() {
           onDeleteCaja={(codigoDepositoGeneral) => void deleteEtiquetadoCaja(codigoDepositoGeneral)}
           onPrintCaja={(codigoDepositoGeneral, orientacion) => printEtiquetaCaja(codigoDepositoGeneral, orientacion)}
           onPrintListadoCajas={printListadoCajas}
-          onPrintTodas={(orientacion) => printTodasEtiquetas(orientacion)}
+          onPrintTodas={(orientacion, codigosOrdenados) => printTodasEtiquetas(orientacion, codigosOrdenados)}
         />
       ) : null}
 

@@ -58,7 +58,7 @@ type EtiquetadoViewProps = {
   onDeleteCaja: (codigoDepositoGeneral: number) => void;
   onPrintCaja: (codigoDepositoGeneral: number, orientacion: EtiquetaOrientacion) => void;
   onPrintListadoCajas: () => void;
-  onPrintTodas: (orientacion: EtiquetaOrientacion) => void;
+  onPrintTodas: (orientacion: EtiquetaOrientacion, codigosOrdenados?: number[]) => void;
 };
 
 const SECTION_META: Record<EtiquetadoSection, { title: string; description: string }> = {
@@ -92,6 +92,24 @@ function isValidEstanteriaName(value: string) {
 
 function formatEstanteriaLabel(piso: number, nombreEstanteria: string) {
   return `Estanteria P${piso} - ${nombreEstanteria}`;
+}
+
+function moveItem<T>(list: T[], fromIndex: number, toIndex: number) {
+  if (fromIndex === toIndex) return list;
+  if (fromIndex < 0 || fromIndex >= list.length) return list;
+  if (toIndex < 0 || toIndex >= list.length) return list;
+  const next = [...list];
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item);
+  return next;
+}
+
+function buildMassPrintOrder(currentCodes: number[], customOrder: number[]) {
+  const currentCodesSet = new Set(currentCodes);
+  const retained = customOrder.filter((codigo) => currentCodesSet.has(codigo));
+  const retainedSet = new Set(retained);
+  const appended = currentCodes.filter((codigo) => !retainedSet.has(codigo));
+  return [...retained, ...appended];
 }
 
 function renderTag(label: string, tone: "neutral" | "accent" = "neutral") {
@@ -163,8 +181,8 @@ export function EtiquetadoView({
     }
     return map;
   }, [estanteriasList]);
-  const codigosSIEList = codigosSIE ?? [];
-  const cajasList = cajas ?? [];
+  const codigosSIEList = useMemo(() => codigosSIE ?? [], [codigosSIE]);
+  const cajasList = useMemo(() => cajas ?? [], [cajas]);
 
   const [newItemNombre, setNewItemNombre] = useState("");
   const [newEstanteriaCodigo, setNewEstanteriaCodigo] = useState("");
@@ -185,6 +203,7 @@ export function EtiquetadoView({
   const [cajaItemFiltro, setCajaItemFiltro] = useState("");
   const [showCreateCajaForm, setShowCreateCajaForm] = useState(false);
   const [massOrientation, setMassOrientation] = useState<EtiquetaOrientacion>("horizontal");
+  const [massPrintOrder, setMassPrintOrder] = useState<number[]>([]);
 
   const codigoItemIdValue = itemOptions.some((item) => item.itemId === newCodigoItemId)
     ? newCodigoItemId
@@ -307,6 +326,56 @@ export function EtiquetadoView({
       return texto.includes(filtro);
     });
   }, [cajas, cajaFiltro]);
+
+  const massPrintCurrentCodes = useMemo(
+    () => cajasList.map((caja) => caja.codigoDepositoGeneral),
+    [cajasList],
+  );
+
+  const massPrintOrderResolved = useMemo(
+    () => buildMassPrintOrder(massPrintCurrentCodes, massPrintOrder),
+    [massPrintCurrentCodes, massPrintOrder],
+  );
+
+  const massPrintCajasByCodigo = useMemo(
+    () => new Map(cajasList.map((caja) => [caja.codigoDepositoGeneral, caja])),
+    [cajasList],
+  );
+
+  const orderedMassPrintCajas = useMemo(
+    () =>
+      massPrintOrderResolved
+        .map((codigo) => massPrintCajasByCodigo.get(codigo))
+        .filter((caja): caja is NonNullable<typeof caja> => Boolean(caja)),
+    [massPrintOrderResolved, massPrintCajasByCodigo],
+  );
+
+  function moveMassPrintLabel(codigoDepositoGeneral: number, direction: "up" | "down") {
+    setMassPrintOrder((previousOrder) => {
+      const baseOrder = buildMassPrintOrder(massPrintCurrentCodes, previousOrder);
+      const fromIndex = baseOrder.indexOf(codigoDepositoGeneral);
+      if (fromIndex === -1) return previousOrder;
+      const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
+      return moveItem(baseOrder, fromIndex, toIndex);
+    });
+  }
+
+  function updateMassPrintPosition(codigoDepositoGeneral: number, nextPositionRaw: string) {
+    const nextPosition = Number(nextPositionRaw);
+    if (!Number.isInteger(nextPosition)) return;
+
+    setMassPrintOrder((previousOrder) => {
+      const baseOrder = buildMassPrintOrder(massPrintCurrentCodes, previousOrder);
+      const fromIndex = baseOrder.indexOf(codigoDepositoGeneral);
+      if (fromIndex === -1) return previousOrder;
+      const toIndex = Math.max(0, Math.min(baseOrder.length - 1, nextPosition - 1));
+      return moveItem(baseOrder, fromIndex, toIndex);
+    });
+  }
+
+  function resetMassPrintOrder() {
+    setMassPrintOrder(massPrintCurrentCodes);
+  }
 
   function handleCreateItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1126,6 +1195,68 @@ export function EtiquetadoView({
             Se imprimiran {cajasList.length} etiqueta(s), una por hoja A4.
           </p>
 
+          {orderedMassPrintCajas.length > 0 ? (
+            <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Posicion de etiquetas</p>
+                <button
+                  type="button"
+                  onClick={resetMassPrintOrder}
+                  className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+                >
+                  Restablecer orden
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] text-stone-600">
+                Define el orden de impresion antes de enviar todas las etiquetas.
+              </p>
+              <div className="mt-2 max-h-72 space-y-1 overflow-y-auto pr-1">
+                {orderedMassPrintCajas.map((caja, index) => (
+                  <div
+                    key={`mass-print-order-${caja.codigoDepositoGeneral}`}
+                    className="grid grid-cols-[4.8rem_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-stone-200 bg-white px-2.5 py-2"
+                  >
+                    <label className="text-[11px] font-semibold text-stone-600">
+                      Posicion
+                      <input
+                        type="number"
+                        min={1}
+                        max={orderedMassPrintCajas.length}
+                        value={index + 1}
+                        onChange={(event) => updateMassPrintPosition(caja.codigoDepositoGeneral, event.target.value)}
+                        className="mt-1 w-full rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
+                      />
+                    </label>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-stone-900">Caja {caja.codigoDepositoGeneral}</p>
+                      <p className="truncate text-xs text-stone-600">
+                        {estanteriaLabelByCode.get(caja.estanteria) ?? `Estanteria ${caja.estanteria}`} | Cantidad {caja.cantidad}
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveMassPrintLabel(caja.codigoDepositoGeneral, "up")}
+                        disabled={index === 0}
+                        className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveMassPrintLabel(caja.codigoDepositoGeneral, "down")}
+                        disabled={index === orderedMassPrintCajas.length - 1}
+                        className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
@@ -1154,8 +1285,8 @@ export function EtiquetadoView({
           <div className="mt-4 flex justify-end">
             <button
               type="button"
-              onClick={() => onPrintTodas(massOrientation)}
-              disabled={cajasList.length === 0}
+              onClick={() => onPrintTodas(massOrientation, massPrintOrderResolved)}
+              disabled={orderedMassPrintCajas.length === 0}
               className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60"
             >
               Imprimir todas las etiquetas

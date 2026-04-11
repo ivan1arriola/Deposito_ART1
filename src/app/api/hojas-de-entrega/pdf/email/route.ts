@@ -16,6 +16,7 @@ import {
 } from "@/lib/server/hojas-entrega-email-jobs";
 import { buildUnidadHojasEntregaFileName } from "@/lib/server/pdf-filename";
 import { renderHojasEntregaPdf } from "@/lib/server/render-hoja-entrega-react-pdf";
+import type { HojasEntregaEmailJobMetrics } from "@/lib/hojas-entrega-email-job";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,23 +35,40 @@ async function runHojasEntregaEmailJob(input: {
   username: string;
   usuarioId: string;
 }) {
+  const startedAtMs = Date.now();
+  const metrics: HojasEntregaEmailJobMetrics = {
+    loadingMs: null,
+    renderingMs: null,
+    sendingMs: null,
+    totalMs: null,
+  };
+
+  const reportProgress = (payload: Parameters<typeof setHojasEntregaEmailJobProgress>[1]) => {
+    void setHojasEntregaEmailJobProgress(input.jobId, {
+      ...payload,
+      metrics: { ...metrics },
+    }).catch(() => {});
+  };
+
   try {
     await throwIfHojasEntregaEmailJobCancelled(input.jobId);
-    await setHojasEntregaEmailJobProgress(input.jobId, {
+    reportProgress({
       step: "loading-data",
       progress: 18,
       message: "Consultando personal, tallas y movimientos para generar las hojas de entrega...",
       to: input.recipient,
     });
 
+    const loadingStartedAtMs = Date.now();
     const hojas = await getAllHojasEntregaData();
+    metrics.loadingMs = Math.max(0, Date.now() - loadingStartedAtMs);
     if (hojas.length === 0) {
       throw new Error("No hay personal para generar hojas de entrega.");
     }
 
     await throwIfHojasEntregaEmailJobCancelled(input.jobId);
     const fechaImpresion = formatHojaEntregaDisplayDate(new Date());
-    await setHojasEntregaEmailJobProgress(input.jobId, {
+    reportProgress({
       step: "rendering-pdf",
       progress: 48,
       message: `Generando PDF A4 consolidado de ${hojas.length} hoja(s)...`,
@@ -58,14 +76,18 @@ async function runHojasEntregaEmailJob(input: {
       hojas: hojas.length,
     });
 
+    const renderingStartedAtMs = Date.now();
     const pdfBytes = await renderHojasEntregaPdf(hojas, fechaImpresion, {
       includePageNumbers: true,
       pageNumberLabel: "Hoja",
+      performanceMode: "fast-batch",
+      fastBatchInitialProfileId: "tight",
     });
+    metrics.renderingMs = Math.max(0, Date.now() - renderingStartedAtMs);
 
     await throwIfHojasEntregaEmailJobCancelled(input.jobId);
     const fileName = buildUnidadHojasEntregaFileName();
-    await setHojasEntregaEmailJobProgress(input.jobId, {
+    reportProgress({
       step: "preparing-email",
       progress: 76,
       message: `Adjuntando ${fileName} al mensaje de correo...`,
@@ -74,7 +96,7 @@ async function runHojasEntregaEmailJob(input: {
       fileName,
     });
 
-    await setHojasEntregaEmailJobProgress(input.jobId, {
+    reportProgress({
       step: "sending-email",
       progress: 90,
       message: `Enviando correo a ${input.recipient} y confirmando entrega al servidor SMTP...`,
@@ -84,6 +106,7 @@ async function runHojasEntregaEmailJob(input: {
     });
 
     await throwIfHojasEntregaEmailJobCancelled(input.jobId);
+    const sendingStartedAtMs = Date.now();
     await sendMail({
       to: input.recipient,
       subject: `Hojas de entrega unidad - ${fechaImpresion}`,
@@ -107,6 +130,8 @@ async function runHojasEntregaEmailJob(input: {
         },
       ],
     });
+    metrics.sendingMs = Math.max(0, Date.now() - sendingStartedAtMs);
+    metrics.totalMs = Math.max(0, Date.now() - startedAtMs);
 
     await logAudit({
       usuarioId: input.usuarioId,
@@ -117,6 +142,7 @@ async function runHojasEntregaEmailJob(input: {
         fileName,
         hojas: hojas.length,
         fechaImpresion,
+        metrics,
       },
     });
 
@@ -124,14 +150,29 @@ async function runHojasEntregaEmailJob(input: {
       to: input.recipient,
       fileName,
       hojas: hojas.length,
+      metrics,
       message: `PDF enviado por correo a ${input.recipient}.`,
+    });
+
+    console.info("[hojas-entrega-email-job] completed", {
+      jobId: input.jobId,
+      to: input.recipient,
+      hojas: hojas.length,
+      metrics,
     });
   } catch (error: unknown) {
     if (await isHojasEntregaEmailJobCancelled(input.jobId)) {
       return;
     }
     const message = error instanceof Error ? error.message : "No se pudo enviar el PDF por correo.";
-    await failHojasEntregaEmailJob(input.jobId, message);
+    metrics.totalMs = Math.max(0, Date.now() - startedAtMs);
+    await failHojasEntregaEmailJob(input.jobId, message, { metrics });
+    console.error("[hojas-entrega-email-job] failed", {
+      jobId: input.jobId,
+      to: input.recipient,
+      metrics,
+      message,
+    });
   }
 }
 
