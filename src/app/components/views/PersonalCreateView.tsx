@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { ClipboardEvent, FormEvent, KeyboardEvent } from "react";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
@@ -76,6 +76,24 @@ export function PersonalCreateView({
   onAddMovimientoDraftItem,
   onRemoveMovimientoDraftItem,
 }: PersonalCreateViewProps) {
+  const sanitizeCi = (value: string) => value.replace(/\D+/g, "");
+
+  const handleCiChange = (value: string) => {
+    onPersonalChange("ci", sanitizeCi(value));
+  };
+
+  const handleCiPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    const pasted = event.clipboardData.getData("text");
+    onPersonalChange("ci", sanitizeCi(pasted));
+  };
+
+  const handleCiKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "." || event.key === "-") {
+      event.preventDefault();
+    }
+  };
+
   const telefonoContactoLooksValid =
     newPersonal.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(newPersonal.telefonoContacto);
   const fechaActualLabel = newPersonal.esReingreso ? "Fecha de re-ingreso *" : "Fecha de ingreso";
@@ -119,9 +137,13 @@ export function PersonalCreateView({
                     <span className="block text-xs font-medium text-stone-700">Cédula de identidad *</span>
                     <input
                       value={newPersonal.ci}
-                      onChange={(event) => onPersonalChange("ci", event.target.value)}
+                      onChange={(event) => handleCiChange(event.target.value)}
+                      onPaste={handleCiPaste}
+                      onKeyDown={handleCiKeyDown}
                       placeholder={ciPlaceholder}
                       inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={8}
                       className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${ciHasError ? "border-rose-600 bg-rose-50" : "border-stone-300 bg-white"}`}
                     />
                     {ciAlreadyExists && duplicatePersonal ? (

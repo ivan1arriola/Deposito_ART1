@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { ClipboardEvent, FormEvent, KeyboardEvent } from "react";
 import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
 import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import type { Rango } from "@/types/entities";
@@ -54,6 +54,24 @@ export function OficialSuboficialCreateView({
   onSubmit,
   onChange,
 }: OficialSuboficialCreateViewProps) {
+  const sanitizeCi = (value: string) => value.replace(/\D+/g, "");
+
+  const handleCiChange = (value: string) => {
+    onChange("ci", sanitizeCi(value));
+  };
+
+  const handleCiPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    const pasted = event.clipboardData.getData("text");
+    onChange("ci", sanitizeCi(pasted));
+  };
+
+  const handleCiKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "." || event.key === "-") {
+      event.preventDefault();
+    }
+  };
+
   const telefonoLooksValid =
     form.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(form.telefonoContacto);
 
@@ -103,9 +121,13 @@ export function OficialSuboficialCreateView({
                     <span className="block text-xs font-medium text-stone-700">Cedula de identidad *</span>
                     <input
                       value={form.ci}
-                      onChange={(event) => onChange("ci", event.target.value)}
+                      onChange={(event) => handleCiChange(event.target.value)}
+                      onPaste={handleCiPaste}
+                      onKeyDown={handleCiKeyDown}
                       placeholder={ciPlaceholder}
                       inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={8}
                       disabled={disableCi}
                       className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${
                         ciHasError ? "border-rose-600 bg-rose-50" : "border-stone-300 bg-white"
