@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { notifyAdminOnMovement } from "@/lib/notify-admins";
+import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { isValidUruguayanCi } from "@/lib/ci";
 import {
   dateInputToDate,
@@ -395,6 +396,34 @@ export async function POST(req: Request) {
     } catch {
       // No bloquear registro por fallas de push.
     }
+
+    const tipoLabel = tipo === TipoMovimiento.ENTREGA ? "entrega" : "devolucion";
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const resumenItems = itemsDetallados
+      .slice(0, 4)
+      .map((item) => `${item.nombre} x${item.cantidad}`)
+      .join(", ");
+    const resumenItemsLine = itemsDetallados.length > 4 ? `${resumenItems}, ...` : resumenItems;
+
+    await Promise.allSettled(
+      targetCis.map((targetCi) =>
+        sendPersonalMovementEmailNotification({
+          request: req,
+          ci: targetCi,
+          subject: "Notificacion de movimiento - Deposito ART1",
+          headline: `Se registro una ${tipoLabel} de vestuario en tu ficha.`,
+          detailLines: [
+            `Tipo: ${tipo}`,
+            `Fecha: ${formatDateOnlyForDisplay(body.fecha || getTodayDateInput())}`,
+            `Total de unidades: ${totalUnidades}`,
+            `Items: ${resumenItemsLine}`,
+            comentarios ? `Comentarios: ${comentarios}` : "",
+          ],
+          actorLabel,
+          portalPath: "/",
+        }),
+      ),
+    );
 
     if (createdMovimientos.length === 1) {
       return NextResponse.json({ ok: true, registroId: createdMovimientos[0].movimientoId.toString(), createdCount: 1 }, { status: 201 });

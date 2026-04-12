@@ -3,6 +3,7 @@ import { TipoMovimiento } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import {
   dateInputToDate,
   formatDateOnlyFromDate,
@@ -454,6 +455,25 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       },
     });
 
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    await Promise.allSettled([
+      sendPersonalMovementEmailNotification({
+        request,
+        ci: updated.personalCi,
+        subject: "Notificacion de prestamo - Deposito ART1",
+        headline: "Se actualizo un prestamo asociado a tu ficha.",
+        detailLines: [
+          `Recibo: ${afterSnapshot.reciboNumero}`,
+          `Estado: ${afterSnapshot.estado}`,
+          `Fecha prestamo: ${afterSnapshot.fechaPrestamo ?? "-"}`,
+          afterSnapshot.fechaDevolucion ? `Fecha devolucion: ${afterSnapshot.fechaDevolucion}` : "",
+          `Motivo: ${motivo}`,
+        ],
+        actorLabel,
+        portalPath: "/",
+      }),
+    ]);
+
     const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([updated.movimientoId]);
     return NextResponse.json(serializePrestamoWithActuante(updated, actuanteByMovimientoId));
   } catch {
@@ -510,6 +530,23 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
         totalUnidades: totalUnidadesPrestamo(existing),
       },
     });
+
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    await Promise.allSettled([
+      sendPersonalMovementEmailNotification({
+        request,
+        ci: existing.personalCi,
+        subject: "Notificacion de prestamo - Deposito ART1",
+        headline: "Se elimino un prestamo asociado a tu ficha.",
+        detailLines: [
+          `Recibo: ${existing.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo?.reciboNumero ?? `PR-${existing.movimientoId.toString().padStart(8, "0")}`}`,
+          `Estado previo: ${existing.prestamoHistorial ? "DEVUELTO" : "PENDIENTE"}`,
+          `Fecha prestamo: ${formatDateOnlyFromDate(existing.fecha) ?? "-"}`,
+        ],
+        actorLabel,
+        portalPath: "/",
+      }),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch {

@@ -3,6 +3,7 @@ import { TipoMovimiento } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -245,6 +246,25 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       },
     });
 
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    await Promise.allSettled([
+      sendPersonalMovementEmailNotification({
+        request: req,
+        ci: existing.personalCi,
+        subject: "Notificacion de movimiento - Deposito ART1",
+        headline: "Se actualizo un movimiento en tu ficha de vestuario.",
+        detailLines: [
+          `Tipo anterior: ${existing.tipo}`,
+          `Tipo nuevo: ${tipo}`,
+          `Fecha nueva: ${formatDateOnlyForDisplay(body.fecha || getTodayDateInput())}`,
+          `Total unidades nuevo: ${totalUnidadesNuevo}`,
+          comentarios ? `Comentarios: ${comentarios}` : "",
+        ],
+        actorLabel,
+        portalPath: "/",
+      }),
+    ]);
+
     return NextResponse.json({
       ok: true,
       registroId: existing.movimientoId.toString(),
@@ -335,6 +355,24 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
         userAgent: requestMeta.userAgent,
       },
     });
+
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    await Promise.allSettled([
+      sendPersonalMovementEmailNotification({
+        request: req,
+        ci: existing.personalCi,
+        subject: "Notificacion de movimiento - Deposito ART1",
+        headline: "Se elimino un movimiento de tu ficha de vestuario.",
+        detailLines: [
+          `Tipo eliminado: ${existing.tipo}`,
+          `Fecha del registro: ${formatDateOnlyFromDate(existing.fecha) ?? "-"}`,
+          `Total unidades eliminadas: ${totalUnidadesEliminadas}`,
+          existing.observaciones ? `Comentarios: ${existing.observaciones}` : "",
+        ],
+        actorLabel,
+        portalPath: "/",
+      }),
+    ]);
 
     return NextResponse.json({
       ok: true,

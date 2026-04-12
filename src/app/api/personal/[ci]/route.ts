@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidUruguayanCi } from "@/lib/ci";
+import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -306,6 +307,26 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         fechaIngresoOriginal: esReingreso && fechaIngresoOriginalRaw ? formatDateOnlyForDisplay(fechaIngresoOriginalRaw) : null,
       },
     });
+
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    await Promise.allSettled([
+      sendPersonalMovementEmailNotification({
+        request: req,
+        ci: ciDecoded,
+        subject: "Notificacion de datos personales - Deposito ART1",
+        headline: "Se actualizaron datos de tu ficha personal.",
+        detailLines: [
+          `Rango actualizado: ${updated.rango.abreviacion} - ${updated.rango.nombreCompleto}`,
+          bateriaId ? `Bateria: ${updated.subalterno?.bateria?.nombre ?? `ID ${bateriaId}`}` : "Bateria: sin asignar",
+          telefonoContacto ? `Celular: ${telefonoContacto}` : "Celular: sin registrar",
+          `Reingreso: ${esReingreso ? "Si" : "No"}`,
+          fechaIngresoRaw ? `Fecha ingreso: ${formatDateOnlyForDisplay(fechaIngresoRaw)}` : "",
+          esReingreso && fechaIngresoOriginalRaw ? `Ingreso original: ${formatDateOnlyForDisplay(fechaIngresoOriginalRaw)}` : "",
+        ],
+        actorLabel,
+        portalPath: "/",
+      }),
+    ]);
 
     return NextResponse.json(serializePersonal(updated as PersonalWithRelations));
   } catch (error: unknown) {

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { notifyAdminOnMovement } from "@/lib/notify-admins";
+import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -413,6 +414,32 @@ export async function POST(request: Request) {
     } catch {
       // No bloquear prestamo por fallas de push.
     }
+
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const resumenItems = created.items
+      .slice(0, 4)
+      .map((item) => `${item.item.nombre} x${item.cantidad}`)
+      .join(", ");
+    const resumenItemsLine = created.items.length > 4 ? `${resumenItems}, ...` : resumenItems;
+
+    await Promise.allSettled([
+      sendPersonalMovementEmailNotification({
+        request,
+        ci: created.personalCi,
+        subject: "Notificacion de prestamo - Deposito ART1",
+        headline: "Se registro un prestamo de vestuario en tu ficha.",
+        detailLines: [
+          `Recibo: ${created.prestamoActivo?.reciboNumero ?? `PR-${created.movimientoId.toString().padStart(8, "0")}`}`,
+          `Fecha: ${formatDateOnlyForDisplay(fechaPrestamoInput)}`,
+          `Total de unidades: ${totalUnidadesPrestamo(created)}`,
+          `Items: ${resumenItemsLine}`,
+          comentarios ? `Comentarios: ${comentarios}` : "",
+          fechaEstimadaDevolucionTexto ? `Fecha estimada de devolucion: ${fechaEstimadaDevolucionTexto}` : "",
+        ],
+        actorLabel,
+        portalPath: "/",
+      }),
+    ]);
 
     const actuanteByMovimientoId = new Map<string, { ci: string; label: string }>();
     actuanteByMovimientoId.set(created.movimientoId.toString(), {

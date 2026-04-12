@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidUruguayanCi } from "@/lib/ci";
+import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
 import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import { getPrismaErrorCode, hasConstraintName } from "@/lib/prisma-errors";
@@ -249,6 +250,23 @@ export async function PUT(request: Request, context: { params: Promise<{ ci: str
         telefonoContacto,
       },
     });
+
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    await Promise.allSettled([
+      sendPersonalMovementEmailNotification({
+        request,
+        ci: ciDecoded,
+        subject: "Notificacion de datos personales - Deposito ART1",
+        headline: "Se actualizaron datos de tu ficha personal.",
+        detailLines: [
+          `Tipo: ${updated.tipo}`,
+          `Rango actualizado: ${updated.rango.abreviacion} - ${updated.rango.nombreCompleto}`,
+          telefonoContacto ? `Celular: ${telefonoContacto}` : "Celular: sin registrar",
+        ],
+        actorLabel,
+        portalPath: "/",
+      }),
+    ]);
 
     return NextResponse.json(serializeOficialSuboficial(updated as OficialSuboficialRecord));
   } catch (error: unknown) {

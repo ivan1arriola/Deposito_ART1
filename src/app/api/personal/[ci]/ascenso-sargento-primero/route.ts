@@ -5,6 +5,7 @@ import { authorizeRequest, verifyPassword } from "@/lib/auth";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { dateInputToDate, getTodayDateInput } from "@/lib/date-helpers";
 import { logAudit } from "@/lib/audit";
+import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { prisma } from "@/lib/prisma";
 import { normalizeSearchTerm } from "@/lib/search";
 
@@ -304,6 +305,26 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
         itemsPrestamo: result.itemsPrestamo,
       },
     });
+
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    await Promise.allSettled([
+      sendPersonalMovementEmailNotification({
+        request,
+        ci: ciDecoded,
+        subject: "Notificacion de movimiento - Deposito ART1",
+        headline: "Se registro un ascenso y ajuste de vestuario en tu ficha.",
+        detailLines: [
+          `Rango anterior: ${result.persona.rango.abreviacion} - ${result.persona.rango.nombreCompleto}`,
+          `Rango nuevo: ${result.rangoDestino.abreviacion} - ${result.rangoDestino.nombreCompleto}`,
+          `Movimientos de vestuario reemplazados: ${result.movimientosEliminados}`,
+          result.prestamoGenerado
+            ? `Prestamo generado: ${result.prestamoGenerado.reciboNumero} (${result.prestamoGenerado.totalUnidades} unidades)`
+            : "No se genero prestamo por saldo neto cero",
+        ],
+        actorLabel,
+        portalPath: "/",
+      }),
+    ]);
 
     return NextResponse.json({
       ok: true,

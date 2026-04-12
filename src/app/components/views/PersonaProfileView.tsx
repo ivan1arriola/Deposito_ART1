@@ -178,7 +178,7 @@ export function PersonaProfileView({
               disabled={state.loading}
               className="rounded bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-900 disabled:opacity-60"
             >
-              Actualizar ficha
+              Recargar ficha
             </button>
             {showBackButton ? (
               <button
@@ -220,16 +220,19 @@ export function PersonaProfileView({
               <p className="text-sm text-stone-800">
                 <span className="font-semibold">Correo:</span> {state.identity.mailReferencia ?? "No registrado"}
               </p>
-              <p className="text-sm text-stone-800">
-                <span className="font-semibold">Reingreso:</span>{" "}
-                {state.identity.esReingreso === null ? "No aplica" : state.identity.esReingreso ? "Sí" : "No"}
-              </p>
+              {state.identity.esReingreso !== false ? (
+                <p className="text-sm text-stone-800">
+                  <span className="font-semibold">Reingreso:</span> {state.identity.esReingreso ? "Sí" : "No aplica"}
+                </p>
+              ) : null}
               <p className="text-sm text-stone-800">
                 <span className="font-semibold">Fecha ingreso:</span> {state.identity.fechaIngreso ?? "-"}
               </p>
-              <p className="text-sm text-stone-800">
-                <span className="font-semibold">Ingreso original:</span> {state.identity.fechaIngresoOriginal ?? "-"}
-              </p>
+              {state.identity.esReingreso ? (
+                <p className="text-sm text-stone-800">
+                  <span className="font-semibold">Ingreso original:</span> {state.identity.fechaIngresoOriginal ?? "-"}
+                </p>
+              ) : null}
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-5">
               {tallas.map((entry) => (

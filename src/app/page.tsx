@@ -5447,21 +5447,6 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => {
-                    setLoginMode("USUARIO");
-                    setShowResetRequest(false);
-                    setResetRequestMessage("");
-                  }}
-                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                    loginMode === "USUARIO"
-                      ? "bg-[var(--color-ejercito-blue)] text-white"
-                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-base)] hover:text-[var(--color-text-primary)]"
-                  }`}
-                >
-                  Usuario del sistema
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
                     setLoginMode("PERSONAL");
                     setShowResetRequest(false);
                     setResetRequestMessage("");
@@ -5474,12 +5459,30 @@ export default function Home() {
                 >
                   Personal por cédula
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode("USUARIO");
+                    setShowResetRequest(false);
+                    setResetRequestMessage("");
+                  }}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                    loginMode === "USUARIO"
+                      ? "bg-[var(--color-ejercito-blue)] text-white"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-base)] hover:text-[var(--color-text-primary)]"
+                  }`}
+                >
+                  Usuario del sistema
+                </button>
               </div>
 
               {loginMode === "PERSONAL" ? (
-                <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
-                  Ingresa con tu cédula y contraseña. La contraseña inicial es tu misma cédula.
-                </p>
+                <div className="mt-2 space-y-2">
+                  <p className="text-xs text-[var(--color-text-secondary)]">Ingresa con tu cédula y contraseña.</p>
+                  <p className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-900">
+                    <span className="font-semibold">Nota:</span> La contraseña inicial es tu misma cédula.
+                  </p>
+                </div>
               ) : null}
 
               {initMessage && showInitCredentials && initCredentials && (
@@ -5641,7 +5644,7 @@ export default function Home() {
                 onClick={() => void loadPersonalSelfProfile()}
                 className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
               >
-                Actualizar ficha
+                Recargar ficha
               </button>
               <button
                 type="button"

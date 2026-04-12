@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { notifyAdminOnMovement } from "@/lib/notify-admins";
+import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -196,6 +197,30 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     } catch {
       // No bloquear devolucion por fallas de push.
     }
+
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const resumenItems = updated.items
+      .slice(0, 4)
+      .map((item) => `${item.item.nombre} x${item.cantidad}`)
+      .join(", ");
+    const resumenItemsLine = updated.items.length > 4 ? `${resumenItems}, ...` : resumenItems;
+
+    await Promise.allSettled([
+      sendPersonalMovementEmailNotification({
+        request,
+        ci: updated.personalCi,
+        subject: "Notificacion de devolucion - Deposito ART1",
+        headline: "Se registro la devolucion de un prestamo en tu ficha.",
+        detailLines: [
+          `Recibo: ${updated.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo.reciboNumero}`,
+          `Fecha de devolucion: ${formatDateOnlyForDisplay(fechaDevolucionInput)}`,
+          `Total de unidades: ${totalUnidadesPrestamo(updated)}`,
+          `Items: ${resumenItemsLine}`,
+        ],
+        actorLabel,
+        portalPath: "/",
+      }),
+    ]);
 
     const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([updated.movimientoId]);
     return NextResponse.json(serializePrestamoWithActuante(updated, actuanteByMovimientoId));

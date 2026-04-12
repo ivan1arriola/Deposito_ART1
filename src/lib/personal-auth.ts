@@ -114,6 +114,13 @@ export type PersonalSelfContact = {
   mailReferencia: string | null;
 };
 
+export type PersonalNotificationTarget = {
+  ci: string;
+  mailReferencia: string | null;
+  gradoAbreviacion: string;
+  nombreCompleto: string;
+};
+
 function normalizeCiOrNull(ci: string) {
   const normalized = normalizeCi(ci.trim());
   if (!isValidUruguayanCi(normalized)) return null;
@@ -458,6 +465,27 @@ export async function getPersonalSelfContact(ci: string): Promise<PersonalSelfCo
     ci: normalizedCi,
     telefonoContacto: identity.telefonoContacto,
     mailReferencia: credential?.mailReferencia ?? null,
+  };
+}
+
+export async function getPersonalNotificationTarget(ci: string): Promise<PersonalNotificationTarget | null> {
+  await ensurePersonalAuthCompatibility();
+
+  const normalizedCi = normalizeCiOrNull(ci);
+  if (!normalizedCi) return null;
+
+  const [identity, credential] = await Promise.all([
+    fetchPersonalIdentity(normalizedCi),
+    fetchCredentialByCi(normalizedCi),
+  ]);
+
+  if (!identity) return null;
+
+  return {
+    ci: normalizedCi,
+    mailReferencia: credential?.mailReferencia ?? null,
+    gradoAbreviacion: identity.gradoAbreviacion,
+    nombreCompleto: `${identity.apellido}, ${identity.nombre}`.replace(/\s+/g, " ").trim(),
   };
 }
 

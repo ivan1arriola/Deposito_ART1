@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest, invalidateAuthUserCache } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
+import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { getPersonalSelfContact, updatePersonalSelfContact } from "@/lib/personal-auth";
 import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 
@@ -108,6 +109,22 @@ export async function PUT(request: Request) {
       mailReferencia: updated.mailReferencia,
     },
   });
+
+  const actorLabel = `${user.grado} ${user.apellido}, ${user.nombre}`.replace(/\s+/g, " ").trim();
+  await Promise.allSettled([
+    sendPersonalMovementEmailNotification({
+      request,
+      ci: user.personalCi,
+      subject: "Notificacion de datos personales - Deposito ART1",
+      headline: "Se actualizaron datos de contacto de tu ficha personal.",
+      detailLines: [
+        hasTelefonoContacto ? `Celular: ${updated.telefonoContacto ?? "sin registrar"}` : "",
+        hasMailReferencia ? `Correo: ${updated.mailReferencia ?? "sin registrar"}` : "",
+      ],
+      actorLabel,
+      portalPath: "/",
+    }),
+  ]);
 
   invalidateAuthUserCache(user.usuarioId);
   return NextResponse.json(updated);
