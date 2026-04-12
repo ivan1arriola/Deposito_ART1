@@ -399,7 +399,7 @@ export default function Home() {
     loadStockData,
     clearLoadedData: clearLoadedDataState,
   } = useHomeData({ onStatusChange: setStatus, activeView });
-  const [loginMode, setLoginMode] = useState<LoginMode>("USUARIO");
+  const [loginMode, setLoginMode] = useState<LoginMode>("PERSONAL");
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -5545,9 +5545,41 @@ export default function Home() {
                     type="button"
                     onClick={() => setShowLoginPassword((current) => !current)}
                     aria-label={showLoginPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
-                    className="absolute inset-y-0 right-2 my-1 rounded px-2 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+                    className="absolute inset-y-0 right-2 my-1 inline-flex w-8 items-center justify-center rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
                   >
-                    {showLoginPassword ? "Ocultar" : "Ver"}
+                    {showLoginPassword ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12c.92-2.6 2.68-4.8 4.94-6.06" />
+                        <path d="M9.9 4.24A11.24 11.24 0 0 1 12 4c5 0 9.27 3.11 11 8a11.8 11.8 0 0 1-1.67 3.01" />
+                        <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
                   </button>
                 </div>
                 <button
