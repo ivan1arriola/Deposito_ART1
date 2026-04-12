@@ -700,11 +700,30 @@ export default function Home() {
     const uniqueUsers = new Map<string, { value: string; label: string }>();
     let hasSystemRecords = false;
 
+    const buildAuditUserLabel = (usuario: {
+      accountType?: "SISTEMA" | "PERSONAL";
+      apellido?: string;
+      nombre?: string;
+      personalCi?: string | null;
+      username: string;
+      rol: Role;
+    }) => {
+      if (usuario.accountType === "PERSONAL") {
+        const fullName = `${(usuario.apellido ?? "").trim()}, ${(usuario.nombre ?? "").trim()}`.replace(/^,\s*|,\s*$/g, "");
+        const ciRaw = (usuario.personalCi ?? usuario.username).trim();
+        const ciLabel = ciRaw ? formatUruguayanCi(ciRaw) : "CI sin dato";
+        const nameLabel = fullName || "Personal";
+        return `${nameLabel} - ${ciLabel} (${roleLabel(usuario.rol)})`;
+      }
+
+      return `${usuario.username} (${roleLabel(usuario.rol)})`;
+    };
+
     for (const usuario of usuarios) {
       if (uniqueUsers.has(usuario.usuarioId)) continue;
       uniqueUsers.set(usuario.usuarioId, {
         value: usuario.usuarioId,
-        label: `${usuario.username} (${roleLabel(usuario.rol)})`,
+        label: buildAuditUserLabel(usuario),
       });
     }
 
