@@ -82,6 +82,9 @@ export async function PUT(request: Request, context: { params: Promise<{ tareaId
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
+  if (user.accountType !== "SISTEMA") {
+    return NextResponse.json({ error: "Las cuentas de personal no tienen acceso a recordatorios." }, { status: 403 });
+  }
 
   const { tareaId: tareaIdRaw } = await context.params;
   const tareaId = parseTaskId(tareaIdRaw);
@@ -189,6 +192,9 @@ export async function DELETE(request: Request, context: { params: Promise<{ tare
   const user = await getUserFromRequest();
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+  if (user.accountType !== "SISTEMA") {
+    return NextResponse.json({ error: "Las cuentas de personal no tienen acceso a recordatorios." }, { status: 403 });
   }
 
   const { tareaId: tareaIdRaw } = await context.params;

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromRequest, hashPassword, verifyPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { hasPermission } from "@/lib/permissions";
+import { changePersonalPassword } from "@/lib/personal-auth";
 
 type PasswordChangePayload = {
   currentPassword: string;
@@ -25,13 +26,43 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
-  if (!hasPermission(user.rol, "write_data")) {
-    return NextResponse.json({ error: "El rol Solo Lectura no puede cambiar credenciales." }, { status: 403 });
+  if (!hasPermission(user.rol, "change_own_password", user.accountType)) {
+    return NextResponse.json({ error: "No autorizado para cambiar credenciales." }, { status: 403 });
   }
 
   const body = await request.json();
   if (!isValidPayload(body)) {
     return NextResponse.json({ error: "Datos invalidos." }, { status: 400 });
+  }
+
+  if (user.accountType === "PERSONAL") {
+    if (!user.personalCi) {
+      return NextResponse.json({ error: "No se pudo identificar la cuenta de personal." }, { status: 400 });
+    }
+
+    const result = await changePersonalPassword(user.personalCi, body.currentPassword, body.newPassword);
+    if (!result.ok) {
+      if (result.reason === "INVALID_CURRENT_PASSWORD") {
+        return NextResponse.json({ error: "Contrasena actual invalida." }, { status: 400 });
+      }
+      if (result.reason === "NOT_FOUND") {
+        return NextResponse.json({ error: "Cuenta de personal no encontrada." }, { status: 404 });
+      }
+      return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+    }
+
+    await logAudit({
+      usuarioId: null,
+      accion: "PASSWORD_CHANGE_PERSONAL",
+      entidad: "AUTH",
+      entidadId: result.ci,
+      detalle: {
+        accountType: "PERSONAL",
+        ci: result.ci,
+      },
+    });
+
+    return NextResponse.json({ ok: true });
   }
 
   try {

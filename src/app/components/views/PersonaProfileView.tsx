@@ -19,6 +19,7 @@ export type PersonaProfileIdentity = {
   gradoNombre: string;
   bateriaNombre: string | null;
   telefonoContacto: string | null;
+  mailReferencia: string | null;
   esReingreso: boolean | null;
   fechaIngreso: string | null;
   fechaIngresoOriginal: string | null;
@@ -60,6 +61,8 @@ type PersonaProfileViewProps = {
   onReload: () => void;
   onPrintDeliverySheet: (ci: string) => void;
   onPrintPrestamos: (prestamoIds: string[]) => void;
+  allowPrintActions?: boolean;
+  showBackButton?: boolean;
 };
 
 function movementTypeStyles(tipo: PersonaProfileTimelineType) {
@@ -91,7 +94,15 @@ function movementCardClass(entry: PersonaProfileTimelineEntry) {
   return "rounded-lg border border-stone-200 bg-white p-3";
 }
 
-export function PersonaProfileView({ state, onBack, onReload, onPrintDeliverySheet, onPrintPrestamos }: PersonaProfileViewProps) {
+export function PersonaProfileView({
+  state,
+  onBack,
+  onReload,
+  onPrintDeliverySheet,
+  onPrintPrestamos,
+  allowPrintActions = true,
+  showBackButton = true,
+}: PersonaProfileViewProps) {
   if (!state) {
     return (
       <section className="mt-6 space-y-4">
@@ -101,13 +112,15 @@ export function PersonaProfileView({ state, onBack, onReload, onPrintDeliveryShe
               <h2 className="text-base font-semibold text-stone-900">Ficha completa en sistema</h2>
               <p className="mt-1 text-xs text-stone-600">No hay una persona seleccionada para mostrar.</p>
             </div>
-            <button
-              type="button"
-              onClick={onBack}
-              className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-800"
-            >
-              Volver
-            </button>
+            {showBackButton ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-800"
+              >
+                Volver
+              </button>
+            ) : null}
           </div>
         </article>
       </section>
@@ -140,7 +153,7 @@ export function PersonaProfileView({ state, onBack, onReload, onPrintDeliveryShe
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {state.identity.tipo === "SUBALTERNO" ? (
+            {allowPrintActions && state.identity.tipo === "SUBALTERNO" ? (
               <button
                 type="button"
                 onClick={() => onPrintDeliverySheet(state.identity.ci)}
@@ -149,14 +162,16 @@ export function PersonaProfileView({ state, onBack, onReload, onPrintDeliveryShe
                 Imprimir hoja de entrega
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={() => onPrintPrestamos(prestamoIds)}
-              disabled={prestamoIds.length === 0}
-              className="rounded bg-indigo-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600 disabled:hover:bg-stone-300"
-            >
-              {prestamoIds.length > 0 ? `Imprimir préstamos (${prestamoIds.length})` : "Sin préstamos para imprimir"}
-            </button>
+            {allowPrintActions ? (
+              <button
+                type="button"
+                onClick={() => onPrintPrestamos(prestamoIds)}
+                disabled={prestamoIds.length === 0}
+                className="rounded bg-indigo-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600 disabled:hover:bg-stone-300"
+              >
+                {prestamoIds.length > 0 ? `Imprimir préstamos (${prestamoIds.length})` : "Sin préstamos para imprimir"}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onReload}
@@ -165,13 +180,15 @@ export function PersonaProfileView({ state, onBack, onReload, onPrintDeliveryShe
             >
               Actualizar ficha
             </button>
-            <button
-              type="button"
-              onClick={onBack}
-              className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-800"
-            >
-              Volver
-            </button>
+            {showBackButton ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-800"
+              >
+                Volver
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -199,6 +216,9 @@ export function PersonaProfileView({ state, onBack, onReload, onPrintDeliveryShe
               </p>
               <p className="text-sm text-stone-800">
                 <span className="font-semibold">Teléfono:</span> {state.identity.telefonoContacto ?? "No registrado"}
+              </p>
+              <p className="text-sm text-stone-800">
+                <span className="font-semibold">Correo:</span> {state.identity.mailReferencia ?? "No registrado"}
               </p>
               <p className="text-sm text-stone-800">
                 <span className="font-semibold">Reingreso:</span>{" "}

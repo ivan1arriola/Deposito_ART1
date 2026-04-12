@@ -19,6 +19,8 @@ export async function GET() {
         username: user.username,
         mailReferencia: user.mailReferencia,
         rol: user.rol,
+        accountType: user.accountType,
+        personalCi: user.personalCi,
       },
     });
   } catch {

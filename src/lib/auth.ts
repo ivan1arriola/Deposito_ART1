@@ -3,9 +3,12 @@ import { NextResponse } from "next/server";
 import { UserRole } from "@/generated/prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
+import { getPersonalSessionIdentity, parsePersonalUsuarioId } from "@/lib/personal-auth";
 import { prisma } from "@/lib/prisma";
 import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
 import { hasPermission, type Permission } from "@/lib/permissions";
+
+export type AuthAccountType = "SISTEMA" | "PERSONAL";
 
 export type AuthUser = {
   usuarioId: string;
@@ -17,6 +20,8 @@ export type AuthUser = {
   mailReferencia: string | null;
   rol: UserRole;
   activo: boolean;
+  accountType: AuthAccountType;
+  personalCi: string | null;
 };
 
 const AUTH_USER_CACHE_TTL_MS = 10 * 1000;
@@ -63,36 +68,68 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return null;
 
-  const userId = session.user.id;
-  const cached = getCachedAuthUser(userId);
+  const isPersonalAccount =
+    session.user.accountType === "PERSONAL" || parsePersonalUsuarioId(session.user.id) !== null;
+  const accountType: AuthAccountType = isPersonalAccount ? "PERSONAL" : "SISTEMA";
+  const fallbackPersonalCi = parsePersonalUsuarioId(session.user.id);
+  const sessionPersonalCi = session.user.personalCi ?? fallbackPersonalCi;
+  const cacheKey = accountType === "PERSONAL" ? `personal:${sessionPersonalCi ?? "unknown"}` : session.user.id;
+
+  const cached = getCachedAuthUser(cacheKey);
   if (cached !== undefined) return cached;
 
-  if (!authUserInflight.has(userId)) {
-    authUserInflight.set(
-      userId,
-      withPrismaReadRetry(() =>
-        prisma.usuario.findUnique({
-          where: { usuarioId: userId },
-          select: {
-            usuarioId: true,
-            rangoId: true,
-            nombre: true,
-            apellido: true,
-            username: true,
-            mailReferencia: true,
-            rol: true,
+  if (!authUserInflight.has(cacheKey)) {
+    const resolver = accountType === "PERSONAL"
+      ? withPrismaReadRetry(async () => {
+          if (!sessionPersonalCi) {
+            setCachedAuthUser(cacheKey, null);
+            return null;
+          }
+
+          const identity = await getPersonalSessionIdentity(sessionPersonalCi);
+          if (!identity) {
+            setCachedAuthUser(cacheKey, null);
+            return null;
+          }
+
+          const authUser: AuthUser = {
+            usuarioId: session.user.id,
+            rangoId: identity.rangoId,
+            grado: identity.gradoAbreviacion,
+            nombre: identity.nombre,
+            apellido: identity.apellido,
+            username: identity.ci,
+            mailReferencia: identity.mailReferencia,
+            rol: "READ_ONLY",
             activo: true,
-            rango: {
-              select: {
-                abreviacion: true,
+            accountType: "PERSONAL",
+            personalCi: identity.ci,
+          };
+          setCachedAuthUser(cacheKey, authUser);
+          return authUser;
+        })
+      : withPrismaReadRetry(() =>
+          prisma.usuario.findUnique({
+            where: { usuarioId: session.user.id },
+            select: {
+              usuarioId: true,
+              rangoId: true,
+              nombre: true,
+              apellido: true,
+              username: true,
+              mailReferencia: true,
+              rol: true,
+              activo: true,
+              rango: {
+                select: {
+                  abreviacion: true,
+                },
               },
             },
-          },
-        }),
-      )
-        .then((usuario) => {
+          }),
+        ).then((usuario) => {
           if (!usuario || !usuario.activo) {
-            setCachedAuthUser(userId, null);
+            setCachedAuthUser(cacheKey, null);
             return null;
           }
 
@@ -106,17 +143,22 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
             mailReferencia: usuario.mailReferencia,
             rol: usuario.rol,
             activo: usuario.activo,
+            accountType: "SISTEMA",
+            personalCi: null,
           };
-          setCachedAuthUser(userId, authUser);
+          setCachedAuthUser(cacheKey, authUser);
           return authUser;
-        })
-        .finally(() => {
-          authUserInflight.delete(userId);
-        }),
+        });
+
+    authUserInflight.set(
+      cacheKey,
+      resolver.finally(() => {
+        authUserInflight.delete(cacheKey);
+      }),
     );
   }
 
-  return authUserInflight.get(userId) ?? null;
+  return authUserInflight.get(cacheKey) ?? null;
 }
 
 export async function authorizeRequest(
@@ -146,7 +188,7 @@ export async function authorizeRequest(
     };
   }
 
-  if (!hasPermission(user.rol, permission)) {
+  if (!hasPermission(user.rol, permission, user.accountType)) {
     return {
       ok: false,
       response: NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 }),

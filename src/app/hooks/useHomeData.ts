@@ -148,6 +148,12 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
         if (!isCurrentRequest("core", requestId)) return;
         setCurrentUser(me.user);
 
+        if (me.user.accountType === "PERSONAL") {
+          clearLoadedData();
+          onStatusChange("Datos actualizados.");
+          return;
+        }
+
         await api<DbStatus>("/api/db-status", requestInit);
         if (!isCurrentRequest("core", requestId)) return;
 
@@ -218,7 +224,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
   );
 
   const loadAdminData = useCallback(async () => {
-    if (currentUser?.rol !== "ADMIN") {
+    if (currentUser?.accountType !== "SISTEMA" || currentUser.rol !== "ADMIN") {
       resetAdminData();
       return;
     }
@@ -261,7 +267,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
         setFirmaConfigLoading(false);
       }
     }
-  }, [beginRequest, currentUser?.rol, isCurrentRequest, resetAdminData]);
+  }, [beginRequest, currentUser?.accountType, currentUser?.rol, isCurrentRequest, resetAdminData]);
 
   const loadHojaMatrix = useCallback(async () => {
     setHojaMatrixLoading(true);

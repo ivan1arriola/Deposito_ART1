@@ -57,6 +57,7 @@ export type ItemForm = EquipoForm;
 
 // Tipos de autenticación y permisos
 export type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
+export type AccountType = "SISTEMA" | "PERSONAL";
 
 export type CurrentUser = {
   usuarioId: string;
@@ -67,6 +68,8 @@ export type CurrentUser = {
   username: string;
   mailReferencia: string | null;
   rol: Role;
+  accountType: AccountType;
+  personalCi: string | null;
 };
 
 // Tipos de vistas
@@ -150,6 +153,8 @@ export type UsuarioAdmin = {
   activo: boolean;
   createdAt: string;
   updatedAt: string;
+  accountType: AccountType;
+  personalCi: string | null;
 };
 
 export type AuditoriaRecord = {

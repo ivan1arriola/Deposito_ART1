@@ -7,6 +7,12 @@ import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
 import { sendEmailVerificationMagicLinkEmail } from "@/lib/auth-email";
 import { ensurePasswordResetCompatibility } from "@/lib/password-reset";
+import {
+  adminSetPersonalPassword,
+  getPersonalAdminUserByCi,
+  parsePersonalUsuarioId,
+  updatePersonalAccountActive,
+} from "@/lib/personal-auth";
 
 type UsuarioUpdatePayload = {
   rangoId?: number | string;
@@ -71,6 +77,8 @@ function serializeUsuario(usuario: UsuarioRecord) {
     activo: usuario.activo,
     createdAt: formatDateTimeForDisplay(usuario.createdAt),
     updatedAt: formatDateTimeForDisplay(usuario.updatedAt),
+    accountType: "SISTEMA" as const,
+    personalCi: null,
   };
 }
 
@@ -82,8 +90,79 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
 
+  const personalCi = parsePersonalUsuarioId(usuarioId);
+  if (personalCi) {
+    const isAdmin = actor.accountType === "SISTEMA" && actor.rol === "ADMIN";
+    if (!isAdmin) {
+      return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+    }
+
+    const body = (await request.json()) as UsuarioUpdatePayload;
+    const hasUnsupportedFields =
+      body.rangoId !== undefined ||
+      body.nombre !== undefined ||
+      body.apellido !== undefined ||
+      body.usuario !== undefined ||
+      body.mailReferencia !== undefined ||
+      body.confirmarMail !== undefined ||
+      body.rol !== undefined;
+    if (hasUnsupportedFields) {
+      return NextResponse.json(
+        { error: "Las cuentas de personal solo admiten cambio de contrasena y estado." },
+        { status: 400 },
+      );
+    }
+
+    if (body.password === undefined && body.activo === undefined) {
+      return NextResponse.json({ error: "No hay campos para actualizar." }, { status: 400 });
+    }
+
+    if (body.password !== undefined && (typeof body.password !== "string" || body.password.length < 8)) {
+      return NextResponse.json({ error: "Contraseña inválida. Mínimo 8 caracteres." }, { status: 400 });
+    }
+
+    let updated = await getPersonalAdminUserByCi(personalCi);
+    if (!updated) {
+      return NextResponse.json({ error: "Cuenta personal no encontrada." }, { status: 404 });
+    }
+
+    if (body.password !== undefined) {
+      const changed = await adminSetPersonalPassword(personalCi, body.password);
+      if (!changed) {
+        return NextResponse.json({ error: "Cuenta personal no encontrada." }, { status: 404 });
+      }
+      updated = changed;
+    }
+
+    if (body.activo !== undefined) {
+      const changedActive = await updatePersonalAccountActive(personalCi, Boolean(body.activo));
+      if (!changedActive) {
+        return NextResponse.json({ error: "Cuenta personal no encontrada." }, { status: 404 });
+      }
+      updated = changedActive;
+    }
+
+    await logAudit({
+      usuarioId: actor.usuarioId,
+      accion: "UPDATE",
+      entidad: "PERSONAL_AUTH",
+      entidadId: personalCi,
+      detalle: {
+        ci: personalCi,
+        updatedFields: [
+          ...(body.password !== undefined ? ["password"] : []),
+          ...(body.activo !== undefined ? ["activo"] : []),
+        ],
+        activo: updated.activo,
+      },
+    });
+    invalidateAuthUserCache(updated.usuarioId);
+
+    return NextResponse.json(updated);
+  }
+
   const isSelfUpdate = actor.usuarioId === usuarioId;
-  const isAdmin = actor.rol === "ADMIN";
+  const isAdmin = actor.accountType === "SISTEMA" && actor.rol === "ADMIN";
   const isReadOnly = actor.rol === "READ_ONLY";
   if (!isAdmin && !isSelfUpdate) {
     return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
@@ -296,6 +375,14 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
   if (!auth.ok) return auth.response;
 
   const { usuarioId } = await context.params;
+  const personalCi = parsePersonalUsuarioId(usuarioId);
+
+  if (personalCi) {
+    return NextResponse.json(
+      { error: "Las cuentas de personal no se eliminan. Usa activar/desactivar para controlar el acceso." },
+      { status: 400 },
+    );
+  }
 
   if (usuarioId === auth.user.usuarioId) {
     return NextResponse.json({ error: "No puedes eliminar tu propio usuario." }, { status: 400 });

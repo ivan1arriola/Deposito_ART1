@@ -57,6 +57,12 @@ export async function GET(request: Request) {
   if (!user) {
     return buildLoginRedirect(requestUrl);
   }
+  if (user.accountType !== "SISTEMA") {
+    return NextResponse.json(
+      { error: "Este acceso solo está disponible para usuarios operativos del sistema." },
+      { status: 403 },
+    );
+  }
 
   const token = issueSoldadoWidgetToken({
     usuarioId: user.usuarioId,

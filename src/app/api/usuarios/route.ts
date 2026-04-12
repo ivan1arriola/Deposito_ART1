@@ -7,6 +7,7 @@ import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
 import { sendEmailVerificationMagicLinkEmail } from "@/lib/auth-email";
 import { ensurePasswordResetCompatibility } from "@/lib/password-reset";
+import { listPersonalAdminUsers } from "@/lib/personal-auth";
 
 type UsuarioPayload = {
   rangoId: number | string;
@@ -83,6 +84,8 @@ function serializeUsuario(usuario: UsuarioRecord) {
     activo: usuario.activo,
     createdAt: formatDateTimeForDisplay(usuario.createdAt),
     updatedAt: formatDateTimeForDisplay(usuario.updatedAt),
+    accountType: "SISTEMA" as const,
+    personalCi: null,
   };
 }
 
@@ -91,12 +94,26 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
   await ensurePasswordResetCompatibility();
 
-  const usuarios = await prisma.usuario.findMany({
-    orderBy: [{ apellido: "asc" }, { nombre: "asc" }, { username: "asc" }],
-    select: USUARIO_SELECT,
+  const [usuariosSistema, usuariosPersonal] = await Promise.all([
+    prisma.usuario.findMany({
+      orderBy: [{ apellido: "asc" }, { nombre: "asc" }, { username: "asc" }],
+      select: USUARIO_SELECT,
+    }),
+    listPersonalAdminUsers(),
+  ]);
+
+  const usuarios = [
+    ...usuariosSistema.map(serializeUsuario),
+    ...usuariosPersonal,
+  ].sort((left, right) => {
+    const byApellido = left.apellido.localeCompare(right.apellido, "es", { sensitivity: "base" });
+    if (byApellido !== 0) return byApellido;
+    const byNombre = left.nombre.localeCompare(right.nombre, "es", { sensitivity: "base" });
+    if (byNombre !== 0) return byNombre;
+    return left.username.localeCompare(right.username, "es", { sensitivity: "base" });
   });
 
-  return NextResponse.json(usuarios.map(serializeUsuario));
+  return NextResponse.json(usuarios);
 }
 
 export async function POST(request: Request) {

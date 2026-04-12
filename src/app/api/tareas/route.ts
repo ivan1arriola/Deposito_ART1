@@ -73,6 +73,9 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
+  if (user.accountType !== "SISTEMA") {
+    return NextResponse.json({ error: "Las cuentas de personal no tienen acceso a recordatorios." }, { status: 403 });
+  }
 
   const { searchParams } = new URL(request.url);
   const requestedUsuarioId = searchParams.get("usuarioId")?.trim() ?? "";
@@ -104,6 +107,9 @@ export async function POST(request: Request) {
   const user = await getUserFromRequest();
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+  if (user.accountType !== "SISTEMA") {
+    return NextResponse.json({ error: "Las cuentas de personal no tienen acceso a recordatorios." }, { status: 403 });
   }
 
   const body = (await request.json().catch(() => null)) as CreateTaskPayload | null;

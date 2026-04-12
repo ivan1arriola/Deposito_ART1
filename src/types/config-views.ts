@@ -5,6 +5,7 @@
 import { ReactNode, FormEvent } from "react";
 
 export type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
+export type AccountType = "SISTEMA" | "PERSONAL";
 export type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number };
 export type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
 export type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
@@ -21,6 +22,8 @@ export type UsuarioAdmin = {
   activo: boolean;
   createdAt: string;
   updatedAt: string;
+  accountType: AccountType;
+  personalCi: string | null;
 };
 export type FirmaConfig = {
   encargadoRango: string;

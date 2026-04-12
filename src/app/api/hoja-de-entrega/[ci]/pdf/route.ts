@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { authorizeRequest } from "@/lib/auth";
+import { getUserFromRequest } from "@/lib/auth";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { formatHojaEntregaDisplayDate, getHojaEntregaData } from "@/lib/hoja-entrega-data";
+import { hasPermission } from "@/lib/permissions";
 import { buildSingleHojaEntregaFileName } from "@/lib/server/pdf-filename";
 import { renderHojasEntregaPdf } from "@/lib/server/render-hoja-entrega-react-pdf";
 
@@ -10,9 +11,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(request: Request, context: { params: Promise<{ ci: string }> }) {
-  const auth = await authorizeRequest(request, "read_data");
-  if (!auth.ok) return auth.response;
-
   const { ci } = await context.params;
   const ciValue = decodeURIComponent(ci).trim();
   if (!ciValue) {
@@ -20,6 +18,19 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
   }
   if (!isValidUruguayanCi(ciValue)) {
     return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  }
+
+  const user = await getUserFromRequest();
+  if (!user) {
+    return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
+  if (user.accountType === "PERSONAL") {
+    if (!user.personalCi || user.personalCi !== ciValue) {
+      return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+    }
+  } else if (!hasPermission(user.rol, "read_data", user.accountType)) {
+    return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
   }
 
   const hoja = await getHojaEntregaData(ciValue);

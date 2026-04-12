@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, ReactNode } from "react";
+import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { formatAuditEntityId, type AuditCiReferences } from "@/lib/audit-helpers";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { MainView } from "@/types/views";
@@ -25,6 +25,8 @@ type UsuarioAdmin = {
   activo: boolean;
   createdAt: string;
   updatedAt: string;
+  accountType: "SISTEMA" | "PERSONAL";
+  personalCi: string | null;
 };
 type FirmaConfig = { encargadoRango: string; encargadoNombre: string; oficialRango: string; oficialNombre: string; updatedAt: string | null };
 type AuditoriaRecord = {
@@ -42,6 +44,7 @@ type AuditUserOption = {
   value: string;
   label: string;
 };
+type UserAccountType = UsuarioAdmin["accountType"];
 
 interface ConfigViewsProps {
   activeView: "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
@@ -171,6 +174,10 @@ interface ConfigViewsProps {
 }
 
 const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "READ_ONLY"];
+const USER_ACCOUNT_TYPE_TABS: Array<{ value: UserAccountType; label: string }> = [
+  { value: "SISTEMA", label: "Usuarios de sistema" },
+  { value: "PERSONAL", label: "Usuarios de personal" },
+];
 const RANGO_TIPO_LABEL: Record<RangoTipo, string> = {
   SUBALTERNO: "Personal Subalterno",
   OFICIAL: "Senores Oficiales",
@@ -178,6 +185,41 @@ const RANGO_TIPO_LABEL: Record<RangoTipo, string> = {
 };
 
 export function ConfigViews(props: ConfigViewsProps) {
+  const [activeUserAccountTypeTab, setActiveUserAccountTypeTab] = useState<UserAccountType>("SISTEMA");
+  const [personalUsersSearch, setPersonalUsersSearch] = useState("");
+  const usuariosSistema = useMemo(
+    () => props.usuarios.filter((usuario) => usuario.accountType === "SISTEMA"),
+    [props.usuarios]
+  );
+  const usuariosPersonal = useMemo(
+    () => props.usuarios.filter((usuario) => usuario.accountType === "PERSONAL"),
+    [props.usuarios]
+  );
+  const personalUsersSearchTerm = personalUsersSearch.trim().toLowerCase();
+  const usuariosPersonalFiltrados = useMemo(() => {
+    if (!personalUsersSearchTerm) {
+      return usuariosPersonal;
+    }
+
+    return usuariosPersonal.filter((usuario) => {
+      const fullName = `${usuario.nombre} ${usuario.apellido}`;
+      const invertedFullName = `${usuario.apellido}, ${usuario.nombre}`;
+      const searchableFields = [
+        usuario.personalCi ?? "",
+        usuario.username,
+        usuario.nombre,
+        usuario.apellido,
+        fullName,
+        invertedFullName,
+        usuario.grado,
+        usuario.mailReferencia ?? "",
+      ];
+
+      return searchableFields.some((field) => field.toLowerCase().includes(personalUsersSearchTerm));
+    });
+  }, [usuariosPersonal, personalUsersSearchTerm]);
+  const usuariosFiltradosPorTipo = activeUserAccountTypeTab === "SISTEMA" ? usuariosSistema : usuariosPersonalFiltrados;
+
   if (props.activeView === "grados") {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
@@ -774,55 +816,101 @@ export function ConfigViews(props: ConfigViewsProps) {
               Crear usuario
             </button>
           </form>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {USER_ACCOUNT_TYPE_TABS.map((tab) => {
+              const isActive = activeUserAccountTypeTab === tab.value;
+              const count = tab.value === "SISTEMA" ? usuariosSistema.length : usuariosPersonal.length;
 
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setActiveUserAccountTypeTab(tab.value)}
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                    isActive
+                      ? "border-stone-900 bg-stone-900 text-white"
+                      : "border-stone-300 bg-white text-stone-700 hover:border-stone-500 hover:bg-stone-50"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[11px] ${
+                      isActive ? "bg-white/20 text-white" : "bg-stone-200 text-stone-700"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {activeUserAccountTypeTab === "PERSONAL" ? (
+            <label className="mt-3 block">
+              <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Buscar personal</span>
+              <input
+                type="search"
+                value={personalUsersSearch}
+                onChange={(event) => setPersonalUsersSearch(event.target.value)}
+                placeholder="Buscar por cédula, nombre, apellido, usuario o mail"
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+          ) : null}
           <div className="mt-3 space-y-2">
-            {props.usuarios.map((usuario) => (
-              <div key={usuario.usuarioId} className="rounded-lg bg-stone-100/80 p-2">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-stone-900">{`${usuario.grado} ${usuario.apellido}, ${usuario.nombre}`}</p>
-                    <p className="mt-1 text-xs text-stone-600">{`Usuario: ${usuario.username}`}</p>
-                    <p className="text-xs text-stone-600">
-                      {usuario.mailReferencia
-                        ? `Mail de referencia: ${usuario.mailReferencia} (${usuario.mailVerificadaAt ? "verificado" : "no verificado"})`
-                        : "Mail de referencia: sin dato"}
-                    </p>
-                    <p className="mt-1 text-xs text-stone-500">{props.roleDescription(usuario.rol)}</p>
-                    <p className="text-xs text-stone-600">{usuario.activo ? "Activo" : "Inactivo"}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <SmallActionButton
-                      text="Datos"
-                      tone="edit"
-                      onClick={() => props.onEditUsuario(usuario)}
-                    />
-                    <SmallActionButton
-                      text="Editar rol"
-                      tone="edit"
-                      onClick={() => props.onChangeUserRole(usuario)}
-                    />
-                    <SmallActionButton
-                      text="Contraseña"
-                      tone="edit"
-                      onClick={() => props.onChangeUserPassword(usuario)}
-                    />
-                    {usuario.mailReferencia && !usuario.mailVerificadaAt ? (
+            {usuariosFiltradosPorTipo.map((usuario) => {
+              const isPersonalAccount = usuario.accountType === "PERSONAL";
+
+              return (
+                <div key={usuario.usuarioId} className="rounded-lg bg-stone-100/80 p-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-stone-900">{`${usuario.grado} ${usuario.apellido}, ${usuario.nombre}`}</p>
+                      <p className="mt-1 text-xs text-stone-600">
+                        {`Usuario: ${usuario.username}${isPersonalAccount ? " (acceso por cédula)" : ""}`}
+                      </p>
+                      <p className="text-xs text-stone-600">
+                        {usuario.mailReferencia
+                          ? `Mail de referencia: ${usuario.mailReferencia} (${usuario.mailVerificadaAt ? "verificado" : "no verificado"})`
+                          : "Mail de referencia: sin dato"}
+                      </p>
+                      <p className="mt-1 text-xs text-stone-500">
+                        {isPersonalAccount ? "Cuenta de personal: acceso de solo consulta a su ficha." : props.roleDescription(usuario.rol)}
+                      </p>
+                      <p className="text-xs text-stone-600">{usuario.activo ? "Activo" : "Inactivo"}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {!isPersonalAccount ? (
+                        <SmallActionButton text="Datos" tone="edit" onClick={() => props.onEditUsuario(usuario)} />
+                      ) : null}
+                      {!isPersonalAccount ? (
+                        <SmallActionButton text="Editar rol" tone="edit" onClick={() => props.onChangeUserRole(usuario)} />
+                      ) : null}
+                      <SmallActionButton text="Contraseña" tone="edit" onClick={() => props.onChangeUserPassword(usuario)} />
+                      {!isPersonalAccount && usuario.mailReferencia && !usuario.mailVerificadaAt ? (
+                        <SmallActionButton text="Confirmar correo" tone="ok" onClick={() => props.onConfirmUserEmail(usuario)} />
+                      ) : null}
                       <SmallActionButton
-                        text="Confirmar correo"
-                        tone="ok"
-                        onClick={() => props.onConfirmUserEmail(usuario)}
+                        text={usuario.activo ? "Desactivar" : "Activar"}
+                        tone="neutral"
+                        onClick={() => props.onToggleUserActive(usuario)}
                       />
-                    ) : null}
-                    <SmallActionButton
-                      text={usuario.activo ? "Desactivar" : "Activar"}
-                      tone="neutral"
-                      onClick={() => props.onToggleUserActive(usuario)}
-                    />
-                    <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteUsuario(usuario)} />
+                      {!isPersonalAccount ? (
+                        <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteUsuario(usuario)} />
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+            {usuariosFiltradosPorTipo.length === 0 ? (
+              <p className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-600">
+                {activeUserAccountTypeTab === "SISTEMA"
+                  ? "No hay usuarios de sistema para mostrar."
+                  : personalUsersSearchTerm
+                    ? "No hay coincidencias para esa búsqueda en usuarios de personal."
+                    : "No hay usuarios de personal para mostrar."}
+              </p>
+            ) : null}
           </div>
         </article>
       </section>

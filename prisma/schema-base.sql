@@ -410,6 +410,17 @@ CREATE TABLE "observacion" (
 
 CREATE INDEX "observacion_ci_fecha_idx" ON "observacion"("ci", "fecha" DESC);
 
+CREATE TABLE "personal_auth" (
+  "ci" TEXT PRIMARY KEY REFERENCES "personal"("ci") ON DELETE CASCADE,
+  "password_hash" TEXT NOT NULL,
+  "mail_referencia" TEXT,
+  "activo" BOOLEAN NOT NULL DEFAULT TRUE,
+  "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+  "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
+);
+
+CREATE INDEX "personal_auth_activo_idx" ON "personal_auth"("activo");
+
 CREATE TABLE "usuario" (
   "usuario_id" TEXT PRIMARY KEY,
   "grado_id" SMALLINT NOT NULL REFERENCES "grado"("grado_id"),

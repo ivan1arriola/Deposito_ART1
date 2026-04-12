@@ -3,6 +3,7 @@
  */
 
 export type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
+export type AccountType = "SISTEMA" | "PERSONAL";
 
 export const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "READ_ONLY"];
 
@@ -153,6 +154,8 @@ export type CurrentUser = {
   username: string;
   mailReferencia: string | null;
   rol: Role;
+  accountType: AccountType;
+  personalCi: string | null;
 };
 
 export type FirmaConfig = {
@@ -177,6 +180,8 @@ export type UsuarioAdmin = {
   activo: boolean;
   createdAt: string;
   updatedAt: string;
+  accountType: AccountType;
+  personalCi: string | null;
 };
 
 export type AuditoriaRecord = {

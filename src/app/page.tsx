@@ -23,6 +23,8 @@ import { DashboardHero } from "./components/home/DashboardHero";
 import { renderSoldadoRecordatorioWidget } from "./components/home/SoldadoRecordatorioWidgetStrategyImpl";
 import { AppInstallCard } from "./components/pwa/AppInstallCard";
 import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
+import { ChangePasswordModal } from "./components/modals/ChangePasswordModal";
+import { PersonalContactModal } from "./components/modals/PersonalContactModal";
 import { MergeEquipoModal } from "./components/modals/MergeEquipoModal";
 import {
   PersonaProfileView,
@@ -118,6 +120,7 @@ import {
 import { normalizeSearchTerm } from "@/lib/search";
 import { moveIdInOrder, compareTallaOptions } from "@/lib/array-utils";
 import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
+import { isValidEmailAddress } from "@/lib/email-address";
 import type { HojasEntregaEmailJobSnapshot } from "@/lib/hojas-entrega-email-job";
 
 // Importar handlers de operaciones
@@ -177,6 +180,13 @@ type StockLoadProfile = {
 };
 
 type EtiquetadoSection = "codigos_sie" | "listado_cajas" | "imprimir_todas";
+type LoginMode = "USUARIO" | "PERSONAL";
+type PersonalSelfProfileResponse = Omit<PersonaProfileState, "loading" | "error">;
+type PersonalSelfContactResponse = {
+  ci: string;
+  telefonoContacto: string | null;
+  mailReferencia: string | null;
+};
 
 type HojaEntregaSnapshot = {
   matrix: Array<{
@@ -389,6 +399,7 @@ export default function Home() {
     loadStockData,
     clearLoadedData: clearLoadedDataState,
   } = useHomeData({ onStatusChange: setStatus, activeView });
+  const [loginMode, setLoginMode] = useState<LoginMode>("USUARIO");
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -402,6 +413,10 @@ export default function Home() {
   const [changeNewPassword, setChangeNewPassword] = useState("");
   const [changeConfirmPassword, setChangeConfirmPassword] = useState("");
   const [changeLoading, setChangeLoading] = useState(false);
+  const [showPersonalContactModal, setShowPersonalContactModal] = useState(false);
+  const [personalContactTelefono, setPersonalContactTelefono] = useState("");
+  const [personalContactMail, setPersonalContactMail] = useState("");
+  const [personalContactSaving, setPersonalContactSaving] = useState(false);
   const [userRoleDialog, setUserRoleDialog] = useState<UserRoleDialogState | null>(null);
   const [userRoleSaving, setUserRoleSaving] = useState(false);
   const [userPasswordDialog, setUserPasswordDialog] = useState<UserPasswordDialogState | null>(null);
@@ -470,6 +485,7 @@ export default function Home() {
   const [registroViewerPage, setRegistroViewerPage] = useState(1);
   const [registroViewerPageSize, setRegistroViewerPageSize] = useState(20);
   const [personaProfile, setPersonaProfile] = useState<PersonaProfileState | null>(null);
+  const [personalSelfProfile, setPersonalSelfProfile] = useState<PersonaProfileState | null>(null);
   const [personaProfileReturnView, setPersonaProfileReturnView] = useState<PersonaProfileReturnView>("personal");
   const [fichaViewingCi, setFichaViewingCi] = useState<string | null>(null);
   const [showConfigViews, setShowConfigViews] = useState(false);
@@ -514,8 +530,9 @@ export default function Home() {
   const bulkDeliveryPdfLastLoggedPhaseRef = useRef<BulkDeliveryPdfPhase | null>(null);
   const lastToastStatusRef = useRef<string | null>(null);
 
-  const isAdmin = currentUser?.rol === "ADMIN";
-  const canWrite = currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR";
+  const isPersonalAccount = currentUser?.accountType === "PERSONAL";
+  const isAdmin = currentUser?.accountType === "SISTEMA" && currentUser?.rol === "ADMIN";
+  const canWrite = currentUser?.accountType === "SISTEMA" && (currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR");
   const sessionReferenceEmail = typeof session?.user?.email === "string" ? session.user.email.trim() : "";
   const currentUserReferenceEmail =
     typeof currentUser?.mailReferencia === "string" && currentUser.mailReferencia.trim() !== ""
@@ -527,7 +544,7 @@ export default function Home() {
     : !currentUserReferenceEmail
       ? "Configura un correo de referencia en tu usuario para habilitar este envio."
       : null;
-  const canManageOwnAccount = canWrite;
+  const canManageOwnAccount = canWrite || isPersonalAccount;
   const canDelete = canWrite;
   const canDeleteRegistros = isAdmin;
   const canRegisterPersonal = canWrite && rangos.length > 0;
@@ -853,6 +870,14 @@ export default function Home() {
 
   const loadRecordatorios = useCallback(async () => {
     if (!currentUser) {
+      recordatoriosRequestRef.current.controller?.abort();
+      recordatoriosRequestRef.current.controller = null;
+      setRecordatorioTasks([]);
+      setRecordatorioConfig({ mostrarMuneco: true });
+      setRecordatoriosError(null);
+      return;
+    }
+    if (currentUser.accountType !== "SISTEMA") {
       recordatoriosRequestRef.current.controller?.abort();
       recordatoriosRequestRef.current.controller = null;
       setRecordatorioTasks([]);
@@ -1206,6 +1231,7 @@ export default function Home() {
     setRegistroViewerPage(1);
     setRegistroViewerPageSize(20);
     setPersonaProfile(null);
+    setPersonalSelfProfile(null);
     setPersonaProfileReturnView("personal");
     setConfirmDialog(null);
     setConfirmDialogBusy(false);
@@ -2829,6 +2855,7 @@ export default function Home() {
       gradoNombre: persona.rango.nombreCompleto,
       bateriaNombre: persona.bateria?.nombre ?? null,
       telefonoContacto: persona.telefonoContacto,
+      mailReferencia: null,
       esReingreso: persona.esReingreso,
       fechaIngreso: persona.fechaIngreso,
       fechaIngresoOriginal: persona.fechaIngresoOriginal,
@@ -2846,6 +2873,7 @@ export default function Home() {
       gradoNombre: registro.gradoMando.nombreCompleto,
       bateriaNombre: null,
       telefonoContacto: registro.telefonoContacto,
+      mailReferencia: null,
       esReingreso: null,
       fechaIngreso: null,
       fechaIngresoOriginal: null,
@@ -3043,6 +3071,88 @@ export default function Home() {
     setPersonaProfile(null);
     setActiveView(personaProfileReturnView);
   }
+
+  const loadPersonalSelfProfile = useCallback(async () => {
+    if (!currentUser || currentUser.accountType !== "PERSONAL") return;
+
+    setPersonalSelfProfile((previous) => ({
+      identity:
+        previous?.identity ?? {
+          ci: currentUser.personalCi ?? currentUser.username,
+          tipo: "SUBALTERNO",
+          apellido: currentUser.apellido,
+          nombre: currentUser.nombre,
+          gradoAbreviacion: currentUser.grado,
+          gradoNombre: currentUser.grado,
+          bateriaNombre: null,
+          telefonoContacto: null,
+          mailReferencia: currentUser.mailReferencia ?? null,
+          esReingreso: null,
+          fechaIngreso: null,
+          fechaIngresoOriginal: null,
+          tallas: [],
+        },
+      loading: true,
+      error: null,
+      registros: previous?.registros ?? [],
+      prestamos: previous?.prestamos ?? [],
+      observaciones: previous?.observaciones ?? [],
+      equipmentSummary: previous?.equipmentSummary ?? [],
+      timeline: previous?.timeline ?? [],
+    }));
+
+    try {
+      const profile = await api<PersonalSelfProfileResponse>("/api/personal/self/profile");
+      setPersonalSelfProfile({
+        ...profile,
+        loading: false,
+        error: null,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "No se pudo cargar tu ficha personal.";
+      setPersonalSelfProfile((previous) =>
+        previous
+          ? {
+              ...previous,
+              loading: false,
+              error: message,
+            }
+          : {
+              identity: {
+                ci: currentUser.personalCi ?? currentUser.username,
+                tipo: "SUBALTERNO",
+                apellido: currentUser.apellido,
+                nombre: currentUser.nombre,
+                gradoAbreviacion: currentUser.grado,
+                gradoNombre: currentUser.grado,
+                bateriaNombre: null,
+                telefonoContacto: null,
+                mailReferencia: currentUser.mailReferencia ?? null,
+                esReingreso: null,
+                fechaIngreso: null,
+                fechaIngresoOriginal: null,
+                tallas: [],
+              },
+              loading: false,
+              error: message,
+              registros: [],
+              prestamos: [],
+              observaciones: [],
+              equipmentSummary: [],
+              timeline: [],
+            },
+      );
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser || currentUser.accountType !== "PERSONAL") {
+      setPersonalSelfProfile(null);
+      setShowPersonalContactModal(false);
+      return;
+    }
+    void loadPersonalSelfProfile();
+  }, [currentUser, loadPersonalSelfProfile]);
 
   function openRegistro(ci: string, tipo: RegistroTipo) {
     if (!canWrite) {
@@ -3709,14 +3819,27 @@ export default function Home() {
   const login = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      const usernameInput = loginUsername.trim();
+      if (usernameInput === "") {
+        setStatus(loginMode === "PERSONAL" ? "Ingresa tu cédula." : "Ingresa tu usuario.");
+        return;
+      }
+
+      const username = loginMode === "PERSONAL" ? normalizeCi(usernameInput) : usernameInput;
+      if (loginMode === "PERSONAL" && !isValidUruguayanCi(username)) {
+        setStatus("La cédula ingresada no es válida.");
+        return;
+      }
+
       setLoginLoading(true);
       setStatus(STATUS_STARTING_SESSION);
 
       try {
-        await loginHandler(loginUsername, loginPassword, {
+        await loginHandler(username, loginPassword, {
           onSuccess: async () => {
             setLoginPassword("");
             setShowLoginPassword(false);
+            setPersonalSelfProfile(null);
 
             const callbackTarget =
               typeof window !== "undefined"
@@ -3742,13 +3865,17 @@ export default function Home() {
         setLoginLoading(false);
       }
     },
-    [loginUsername, loginPassword, loadData],
+    [loginMode, loginUsername, loginPassword, loadData],
   );
 
   const requestPasswordReset = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (resetRequestLoading) return;
+      if (loginMode === "PERSONAL") {
+        setResetRequestMessage("Las cuentas de personal no usan enlace por mail. Solicita cambio al administrador.");
+        return;
+      }
 
       const username = resetUsername.trim();
       if (username === "") {
@@ -3773,7 +3900,7 @@ export default function Home() {
         setResetRequestLoading(false);
       }
     },
-    [resetRequestLoading, resetUsername],
+    [loginMode, resetRequestLoading, resetUsername],
   );
 
   const submitChangePassword = useCallback(async () => {
@@ -3810,6 +3937,73 @@ export default function Home() {
     }
   }, [canManageOwnAccount, changeCurrentPassword, changeNewPassword, changeConfirmPassword]);
 
+  const submitPersonalContactUpdate = useCallback(async () => {
+    if (!currentUser || currentUser.accountType !== "PERSONAL") return;
+
+    const trimmedTelefono = personalContactTelefono.trim();
+    const trimmedMail = personalContactMail.trim();
+
+    if (trimmedTelefono !== "" && !isValidUruguayanMobileNumber(trimmedTelefono)) {
+      setStatus("El celular debe ser un número uruguayo válido.");
+      return;
+    }
+    if (trimmedMail !== "" && !isValidEmailAddress(trimmedMail)) {
+      setStatus("El correo electrónico no es válido.");
+      return;
+    }
+
+    setPersonalContactSaving(true);
+    try {
+      const updated = await api<PersonalSelfContactResponse>("/api/personal/self/contact", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telefonoContacto: trimmedTelefono === "" ? null : trimmedTelefono,
+          mailReferencia: trimmedMail === "" ? null : trimmedMail,
+        }),
+      });
+
+      setPersonalSelfProfile((previous) =>
+        previous
+          ? {
+              ...previous,
+              identity: {
+                ...previous.identity,
+                telefonoContacto: updated.telefonoContacto,
+                mailReferencia: updated.mailReferencia,
+              },
+            }
+          : previous,
+      );
+
+      setShowPersonalContactModal(false);
+      setStatus("Datos de contacto actualizados.");
+      await loadPersonalSelfProfile();
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "No se pudo actualizar el contacto.");
+    } finally {
+      setPersonalContactSaving(false);
+    }
+  }, [currentUser, loadPersonalSelfProfile, personalContactMail, personalContactTelefono]);
+
+  const openOwnDeliverySheetPdf = useCallback(() => {
+    if (!currentUser || currentUser.accountType !== "PERSONAL") return;
+
+    const ci = currentUser.personalCi ?? currentUser.username;
+    const popup = window.open(
+      `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?inline=1&ts=${Date.now()}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    if (!popup) {
+      setStatus("Debes permitir ventanas emergentes para ver la hoja de entrega en PDF.");
+      return;
+    }
+
+    setStatus("Abriendo hoja de entrega en PDF.");
+  }, [currentUser]);
+
   const logout = useCallback(async () => {
     try {
       await logoutHandler({
@@ -3818,6 +4012,9 @@ export default function Home() {
           clearLoadedData();
           setLoginPassword("");
           setShowLoginPassword(false);
+          setShowPersonalContactModal(false);
+          setPersonalContactTelefono("");
+          setPersonalContactMail("");
           setActiveView("personal");
           setStatus(STATUS_SESSION_CLOSED);
         },
@@ -3828,6 +4025,9 @@ export default function Home() {
       clearLoadedData();
       setLoginPassword("");
       setShowLoginPassword(false);
+      setShowPersonalContactModal(false);
+      setPersonalContactTelefono("");
+      setPersonalContactMail("");
       setActiveView("personal");
       setStatus(STATUS_SESSION_CLOSED);
     }
@@ -3898,6 +4098,10 @@ export default function Home() {
         setStatus("Solo el administrador puede cambiar roles.");
         return;
       }
+      if (usuario.accountType === "PERSONAL") {
+        setStatus("Las cuentas de personal no admiten cambio de rol.");
+        return;
+      }
       setUserRoleDialog({
         usuarioId: usuario.usuarioId,
         username: usuario.username,
@@ -3966,6 +4170,10 @@ export default function Home() {
         setStatus("Solo el administrador puede editar usuarios ajenos.");
         return;
       }
+      if (usuario.accountType === "PERSONAL") {
+        setStatus("Las cuentas de personal no admiten edición de datos de usuario.");
+        return;
+      }
 
       openUsernameDialog(usuario, {
         title: "Editar usuario",
@@ -3977,6 +4185,10 @@ export default function Home() {
 
   const changeOwnUsername = useCallback(() => {
     if (!currentUser) return;
+    if (currentUser.accountType !== "SISTEMA") {
+      setStatus("Las cuentas de personal no permiten editar datos de acceso.");
+      return;
+    }
     if (!canManageOwnAccount) {
       setStatus("El rol Solo Lectura no puede cambiar credenciales ni datos.");
       return;
@@ -4049,6 +4261,10 @@ export default function Home() {
 
   const submitUsernameChange = useCallback(async () => {
     if (!usernameDialog) return;
+    if (usernameDialog.usuarioId.startsWith("personal:")) {
+      setStatus("Las cuentas de personal no admiten edición de datos.");
+      return;
+    }
     if (!canManageOwnAccount) {
       setStatus("El rol Solo Lectura no puede cambiar credenciales ni datos.");
       return;
@@ -4163,6 +4379,10 @@ export default function Home() {
     (usuario: UsuarioAdmin) => {
       if (!isAdmin) {
         setStatus("Solo el administrador puede eliminar usuarios.");
+        return;
+      }
+      if (usuario.accountType === "PERSONAL") {
+        setStatus("Las cuentas de personal no se eliminan; puedes desactivarlas.");
         return;
       }
       openConfirmDialog({
@@ -5190,6 +5410,7 @@ export default function Home() {
     userRoleSaving,
     usernameSaving,
   ]);
+  const personalSelfProfileLoading = personalSelfProfile?.loading ?? false;
 
   if (!currentUser) {
     return (
@@ -5222,6 +5443,45 @@ export default function Home() {
               <h1 className="ej-login-title mt-1 text-3xl font-black tracking-tight sm:text-4xl">Iniciar sesión</h1>
               <p className="ej-login-status mt-2 text-sm" suppressHydrationWarning>{status}</p>
 
+              <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode("USUARIO");
+                    setShowResetRequest(false);
+                    setResetRequestMessage("");
+                  }}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                    loginMode === "USUARIO"
+                      ? "bg-[var(--color-ejercito-blue)] text-white"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-base)] hover:text-[var(--color-text-primary)]"
+                  }`}
+                >
+                  Usuario del sistema
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode("PERSONAL");
+                    setShowResetRequest(false);
+                    setResetRequestMessage("");
+                  }}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                    loginMode === "PERSONAL"
+                      ? "bg-[var(--color-ejercito-blue)] text-white"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-base)] hover:text-[var(--color-text-primary)]"
+                  }`}
+                >
+                  Personal por cédula
+                </button>
+              </div>
+
+              {loginMode === "PERSONAL" ? (
+                <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
+                  Ingresa con tu cédula y contraseña. La contraseña inicial es tu misma cédula.
+                </p>
+              ) : null}
+
               {initMessage && showInitCredentials && initCredentials && (
                 <div className={`mt-4 rounded-2xl border px-3 py-2 text-sm ${
                   initMessage.type === "success"
@@ -5248,7 +5508,7 @@ export default function Home() {
                 <input
                   value={loginUsername}
                   onChange={(event) => setLoginUsername(event.target.value)}
-                  placeholder="Usuario"
+                  placeholder={loginMode === "PERSONAL" ? "Cédula" : "Usuario"}
                   className="ej-login-input px-3 py-2 text-sm"
                 />
                 <div className="relative">
@@ -5277,39 +5537,47 @@ export default function Home() {
                 </button>
               </form>
 
-              <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowResetRequest((current) => !current);
-                    setResetRequestMessage("");
-                    setResetUsername((current) => current || loginUsername.trim());
-                  }}
-                  className="ej-login-link text-xs font-semibold underline underline-offset-2"
-                >
-                  {showResetRequest ? "Ocultar recuperación de contraseña" : "Olvidé mi contraseña"}
-                </button>
-              </div>
+              {loginMode === "USUARIO" ? (
+                <>
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowResetRequest((current) => !current);
+                        setResetRequestMessage("");
+                        setResetUsername((current) => current || loginUsername.trim());
+                      }}
+                      className="ej-login-link text-xs font-semibold underline underline-offset-2"
+                    >
+                      {showResetRequest ? "Ocultar recuperación de contraseña" : "Olvidé mi contraseña"}
+                    </button>
+                  </div>
 
-              {showResetRequest ? (
-                <form onSubmit={requestPasswordReset} className="ej-login-reset mt-3 space-y-2 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Recuperar acceso</p>
-                  <input
-                    value={resetUsername}
-                    onChange={(event) => setResetUsername(event.target.value)}
-                    placeholder="Usuario"
-                    className="ej-login-input px-3 py-2 text-sm"
-                  />
-                  <button
-                    type="submit"
-                    disabled={resetRequestLoading}
-                    className="w-full rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:opacity-60"
-                  >
-                    {resetRequestLoading ? "Enviando..." : "Enviar enlace mágico"}
-                  </button>
-                  {resetRequestMessage ? <p className="text-xs text-[var(--color-text-secondary)]">{resetRequestMessage}</p> : null}
-                </form>
-              ) : null}
+                  {showResetRequest ? (
+                    <form onSubmit={requestPasswordReset} className="ej-login-reset mt-3 space-y-2 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Recuperar acceso</p>
+                      <input
+                        value={resetUsername}
+                        onChange={(event) => setResetUsername(event.target.value)}
+                        placeholder="Usuario"
+                        className="ej-login-input px-3 py-2 text-sm"
+                      />
+                      <button
+                        type="submit"
+                        disabled={resetRequestLoading}
+                        className="w-full rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:opacity-60"
+                      >
+                        {resetRequestLoading ? "Enviando..." : "Enviar enlace mágico"}
+                      </button>
+                      {resetRequestMessage ? <p className="text-xs text-[var(--color-text-secondary)]">{resetRequestMessage}</p> : null}
+                    </form>
+                  ) : null}
+                </>
+              ) : (
+                <p className="mt-3 text-xs text-[var(--color-text-secondary)]">
+                  Si olvidaste la contraseña, solicita el restablecimiento a un administrador.
+                </p>
+              )}
               </div>
 
               <AppInstallCard compact />
@@ -5317,6 +5585,144 @@ export default function Home() {
           </div>
         </section>
         <LoadingOverlay visible={isLoginGlobalBusy} label={loginBusyLabel} />
+      </main>
+    );
+  }
+
+  if (isPersonalAccount) {
+    const personalCi = currentUser.personalCi ?? currentUser.username;
+    const personalFullName = `${currentUser.apellido}, ${currentUser.nombre}`.replace(/\s+/g, " ").trim();
+    const personalProfileState: PersonaProfileState = personalSelfProfile ?? {
+      identity: {
+        ci: personalCi,
+        tipo: "SUBALTERNO",
+        apellido: currentUser.apellido,
+        nombre: currentUser.nombre,
+        gradoAbreviacion: currentUser.grado,
+        gradoNombre: currentUser.grado,
+        bateriaNombre: null,
+        telefonoContacto: null,
+        mailReferencia: currentUser.mailReferencia ?? null,
+        esReingreso: null,
+        fechaIngreso: null,
+        fechaIngresoOriginal: null,
+        tallas: [],
+      },
+      loading: true,
+      error: null,
+      registros: [],
+      prestamos: [],
+      observaciones: [],
+      equipmentSummary: [],
+      timeline: [],
+    };
+    const personalBusyLabel = changeLoading
+      ? "Actualizando contraseña..."
+      : personalContactSaving
+        ? "Actualizando datos de contacto..."
+      : personalSelfProfileLoading
+        ? "Cargando tu ficha personal..."
+        : "Actualizando datos de acceso...";
+
+    return (
+      <main className="mx-auto min-h-screen w-full max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
+        <section className="ej-card rounded-2xl p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-black tracking-tight text-[var(--color-text-primary)]">Portal de Personal</h1>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Acceso de solo consulta a tu información.</p>
+              <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
+                {`${currentUser.grado} ${personalFullName} · CI ${formatUruguayanCi(personalCi)}`}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void loadPersonalSelfProfile()}
+                className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+              >
+                Actualizar ficha
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPersonalContactTelefono(personalProfileState.identity.telefonoContacto ?? "");
+                  setPersonalContactMail(personalProfileState.identity.mailReferencia ?? "");
+                  setShowPersonalContactModal(true);
+                }}
+                className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+              >
+                Actualizar contacto
+              </button>
+              <button
+                type="button"
+                onClick={() => openOwnDeliverySheetPdf()}
+                disabled={personalSelfProfile?.identity.tipo !== "SUBALTERNO"}
+                className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                Ver hoja PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setChangeCurrentPassword("");
+                  setChangeNewPassword("");
+                  setChangeConfirmPassword("");
+                  setShowChangePassword(true);
+                }}
+                className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+              >
+                Cambiar contraseña
+              </button>
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className="rounded-xl bg-[var(--color-ejercito-blue)] px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <PersonaProfileView
+          state={personalProfileState}
+          onBack={() => {}}
+          onReload={() => void loadPersonalSelfProfile()}
+          onPrintDeliverySheet={() => {}}
+          onPrintPrestamos={() => {}}
+          allowPrintActions={false}
+          showBackButton={false}
+        />
+
+        <ChangePasswordModal
+          isOpen={showChangePassword}
+          currentPassword={changeCurrentPassword}
+          newPassword={changeNewPassword}
+          confirmPassword={changeConfirmPassword}
+          loading={changeLoading}
+          onCurrentPasswordChange={setChangeCurrentPassword}
+          onNewPasswordChange={setChangeNewPassword}
+          onConfirmPasswordChange={setChangeConfirmPassword}
+          onClose={() => setShowChangePassword(false)}
+          onSubmit={() => void submitChangePassword()}
+        />
+
+        <PersonalContactModal
+          isOpen={showPersonalContactModal}
+          telefonoContacto={personalContactTelefono}
+          mailReferencia={personalContactMail}
+          saving={personalContactSaving}
+          onTelefonoContactoChange={setPersonalContactTelefono}
+          onMailReferenciaChange={setPersonalContactMail}
+          onClose={() => setShowPersonalContactModal(false)}
+          onSubmit={() => void submitPersonalContactUpdate()}
+        />
+
+        <LoadingOverlay
+          visible={loading || personalSelfProfileLoading || changeLoading || personalContactSaving}
+          label={personalBusyLabel}
+        />
       </main>
     );
   }
@@ -5360,7 +5766,7 @@ export default function Home() {
             config={recordatorioConfig}
             isAdmin={isAdmin}
             currentUserId={currentUser?.usuarioId ?? null}
-            userOptions={usuarios}
+            userOptions={usuarios.filter((usuario) => usuario.accountType === "SISTEMA")}
             loading={recordatoriosLoading}
             saving={recordatoriosSaving}
             error={recordatoriosError}
