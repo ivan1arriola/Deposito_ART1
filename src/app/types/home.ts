@@ -2,6 +2,16 @@
 
 import type { PersonalObservacion } from "@/types/entities";
 
+export type PersonalCurrentUser = {
+  accountType: "PERSONAL";
+  personalCi: number | null;
+  username: string;
+  apellido: string;
+  nombre: string;
+  grado: string;
+  mailReferencia?: string | null;
+};
+
 export type PersonalObservacionDraft = {
   ci: string;
   nombre: string;

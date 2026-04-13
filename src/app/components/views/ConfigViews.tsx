@@ -4,42 +4,13 @@ import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { formatAuditEntityId, type AuditCiReferences } from "@/lib/audit-helpers";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { MainView } from "@/types/views";
+import type { AuditoriaRecord, FirmaConfig, Rango, Role, UsuarioAdmin } from "@/types/entities";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 
-type Role = "ADMIN" | "EDITOR" | "READ_ONLY";
 type RangoTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
-type RangoConfig = { rangoId: number; abreviacion: string; nombreCompleto: string; orden: number; tipo?: RangoTipo };
+type RangoConfig = Rango & { tipo?: RangoTipo };
 type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
 type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
-type UsuarioAdmin = {
-  usuarioId: string;
-  rangoId: number;
-  rango: RangoConfig;
-  grado: string;
-  nombre: string;
-  apellido: string;
-  username: string;
-  mailReferencia: string | null;
-  mailVerificadaAt: string | null;
-  rol: Role;
-  activo: boolean;
-  createdAt: string;
-  updatedAt: string;
-  accountType: "SISTEMA" | "PERSONAL";
-  personalCi: string | null;
-};
-type FirmaConfig = { encargadoRango: string; encargadoNombre: string; oficialRango: string; oficialNombre: string; updatedAt: string | null };
-type AuditoriaRecord = {
-  auditoriaId: string;
-  usuarioId: string | null;
-  usuario: { usuarioId: string; username: string; rol: Role } | null;
-  accion: string;
-  entidad: string;
-  entidadId: string | null;
-  detalle: unknown;
-  ciReferencias?: AuditCiReferences;
-  createdAt: string;
-};
 type AuditUserOption = {
   value: string;
   label: string;

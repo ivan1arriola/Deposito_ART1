@@ -2,9 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import {
-  ClipboardEvent,
   FormEvent,
-  KeyboardEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -21,41 +19,25 @@ import {
   normalizeTallaValue,
 } from "@/lib/tallas";
 import { DashboardHero } from "./components/home/DashboardHero";
-import { renderSoldadoRecordatorioWidget } from "./components/home/SoldadoRecordatorioWidgetStrategyImpl";
+import { HomeOverlaysLayer } from "./components/home/overlays/HomeOverlaysLayer";
+import { HomeViewRouter } from "./components/home/HomeViewRouter";
+import { PersonalPortalView } from "./components/home/PersonalPortalView";
 import { LoginScreen } from "./components/auth/LoginScreen";
 import { AppInstallCard } from "./components/pwa/AppInstallCard";
-import { HomeDialogsLayer } from "./components/modals/HomeDialogsLayer";
-import { ChangePasswordModal } from "./components/modals/ChangePasswordModal";
-import { PersonalContactModal } from "./components/modals/PersonalContactModal";
-import { MergeEquipoModal } from "./components/modals/MergeEquipoModal";
 import {
-  PersonaProfileView,
   type PersonaProfileEquipmentRow,
   type PersonaProfileIdentity,
   type PersonaProfileState,
   type PersonaProfileTimelineEntry,
   type PersonaProfileTipo,
 } from "./components/views/PersonaProfileView";
-import { PersonalSection } from "./components/personal/PersonalSection";
 import { ConfigViews } from "./components/views/ConfigViews";
-import { BateriaCreateView } from "./components/views/BateriaCreateView";
-import { EquipoResumenView } from "./components/views/EquipoResumenView";
-import { EquipoCreateView } from "./components/views/EquipoCreateView";
-import { HojaDeEntregaView } from "./components/views/HojaDeEntregaView";
-import { HojaMatrixView } from "./components/views/HojaMatrixView";
-import { FormulariosPrestamosView, type PrestamoEditPayload } from "./components/views/FormulariosPrestamosView";
-import { EtiquetadoView } from "./components/views/EtiquetadoView";
-import { PersonalCreateView } from "./components/views/PersonalCreateView";
-import { OficialSuboficialCreateView } from "./components/views/OficialSuboficialCreateView";
-import { RangoCreateView } from "./components/views/RangoCreateView";
-import { StockView } from "./components/views/StockView";
-import { TallasResumenView } from "./components/views/TallasResumenView";
-import { OficialesSuboficialesView } from "./components/views/OficialesSuboficialesView";
-import { OficialesSuboficialesResumenView } from "./components/views/OficialesSuboficialesResumenView";
+import type { PrestamoEditPayload } from "./components/views/FormulariosPrestamosView";
 import { RecordatoriosConfigView } from "./components/views/RecordatoriosConfigView";
-import { UserCreateView } from "./components/views/UserCreateView";
-import { SmallActionButton, ActionMenu, LoadingOverlay, toast } from "./components/shared";
+import { SmallActionButton, ActionMenu, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
+import { useLoginState } from "./hooks/useLoginState";
+import { useStockPrestamoDraftItems } from "./hooks/useStockPrestamoDraftItems";
 
 // Importar tipos desde archivos de tipos organizados
 import type {
@@ -77,7 +59,6 @@ import type {
   PersonalAltaMovimientoForm,
   EquipoForm,
   PrestamoDraft,
-  PrestamoDraftItem,
   RegistroDraftEquipo,
   RegistroDraft,
   StockOperacionDraft,
@@ -102,6 +83,7 @@ import {
   EMPTY_PRESTAMO_DRAFT,
 } from "@/types/forms";
 import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDialogState, UserRoleDialogState } from "./types/home";
+import type { PersonalCurrentUser } from "./types/home";
 
 // Importar utilidades desde archivos organizados
 import { api } from "@/lib/api";
@@ -182,7 +164,6 @@ type StockLoadProfile = {
 };
 
 type EtiquetadoSection = "codigos_sie" | "listado_cajas" | "imprimir_todas";
-type LoginMode = "USUARIO" | "PERSONAL";
 type PersonalSelfProfileResponse = Omit<PersonaProfileState, "loading" | "error">;
 type PersonalSelfContactResponse = {
   ci: string;
@@ -401,52 +382,29 @@ export default function Home() {
     loadStockData,
     clearLoadedData: clearLoadedDataState,
   } = useHomeData({ onStatusChange: setStatus, activeView });
-  const [loginMode, setLoginMode] = useState<LoginMode>("PERSONAL");
-  const [loginUsername, setLoginUsername] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [showResetRequest, setShowResetRequest] = useState(false);
-  const [resetUsername, setResetUsername] = useState("");
-  const [resetRequestLoading, setResetRequestLoading] = useState(false);
-  const [resetRequestMessage, setResetRequestMessage] = useState("");
-
-  const sanitizeLoginCi = useCallback((value: string) => value.replace(/\D+/g, "").slice(0, 8), []);
-
-  const handleLoginUsernameChange = useCallback(
-    (value: string) => {
-      if (loginMode === "PERSONAL") {
-        setLoginUsername(sanitizeLoginCi(value));
-        return;
-      }
-      setLoginUsername(value);
-    },
-    [loginMode, sanitizeLoginCi],
-  );
-
-  const handleLoginUsernamePaste = useCallback(
-    (event: ClipboardEvent<HTMLInputElement>) => {
-      if (loginMode !== "PERSONAL") return;
-      event.preventDefault();
-      const pasted = event.clipboardData.getData("text");
-      setLoginUsername(sanitizeLoginCi(pasted));
-    },
-    [loginMode, sanitizeLoginCi],
-  );
-
-  const handleLoginUsernameKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLInputElement>) => {
-      if (loginMode !== "PERSONAL") return;
-
-      const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab", "Enter"];
-      if (allowedKeys.includes(event.key) || event.ctrlKey || event.metaKey || event.altKey) return;
-
-      if (!/^[0-9]$/.test(event.key)) {
-        event.preventDefault();
-      }
-    },
-    [loginMode],
-  );
+  const {
+    loginMode,
+    loginUsername,
+    loginPassword,
+    setLoginPassword,
+    showLoginPassword,
+    setShowLoginPassword,
+    loginLoading,
+    setLoginLoading,
+    showResetRequest,
+    resetUsername,
+    setResetUsername,
+    resetRequestLoading,
+    setResetRequestLoading,
+    resetRequestMessage,
+    setResetRequestMessage,
+    handleLoginUsernameChange,
+    handleLoginUsernamePaste,
+    handleLoginUsernameKeyDown,
+    handleSelectPersonalLogin,
+    handleSelectSystemLogin,
+    handleToggleResetRequest,
+  } = useLoginState();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [changeCurrentPassword, setChangeCurrentPassword] = useState("");
   const [changeNewPassword, setChangeNewPassword] = useState("");
@@ -516,6 +474,18 @@ export default function Home() {
   const [stockSaving, setStockSaving] = useState(false);
   const [prestamoDraft, setPrestamoDraft] = useState<PrestamoDraft>({ ...EMPTY_PRESTAMO_DRAFT, fechaPrestamo: getTodayDateInput() });
   const [prestamoSaving, setPrestamoSaving] = useState(false);
+  const {
+    updateStockDraftItem,
+    addStockDraftItem,
+    removeStockDraftItem,
+    updatePrestamoDraftItem,
+    addPrestamoDraftItem,
+    removePrestamoDraftItem,
+  } = useStockPrestamoDraftItems({
+    setStockDraft,
+    setPrestamoDraft,
+    onStatusChange: setStatus,
+  });
   const [returningPrestamoId, setReturningPrestamoId] = useState<string | null>(null);
   const [editingPrestamoId, setEditingPrestamoId] = useState<string | null>(null);
   const [personalObservacionDraft, setPersonalObservacionDraft] = useState<PersonalObservacionDraft | null>(null);
@@ -3526,30 +3496,6 @@ export default function Home() {
     });
   }
 
-  function updateStockDraftItem(index: number, field: keyof RegistroDraftEquipo, value: string) {
-    setStockDraft((prev) => {
-      if (field === "itemId" && value !== "" && prev.items.some((item, itemIndex) => itemIndex !== index && item.itemId === value)) {
-        setStatus("Ese equipo ya fue seleccionado en este movimiento de stock.");
-        return prev;
-      }
-      return {
-        ...prev,
-        items: prev.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
-      };
-    });
-  }
-
-  function addStockDraftItem() {
-    setStockDraft((prev) => ({ ...prev, items: [...prev.items, { itemId: "", cantidad: "1" }] }));
-  }
-
-  function removeStockDraftItem(index: number) {
-    setStockDraft((prev) => {
-      if (prev.items.length <= 1) return prev;
-      return { ...prev, items: prev.items.filter((_, itemIndex) => itemIndex !== index) };
-    });
-  }
-
   async function saveStockOperation() {
     if (stockSaving) return;
     if (!parseDateInput(stockDraft.fecha).valid) {
@@ -3600,30 +3546,6 @@ export default function Home() {
     } finally {
       setStockSaving(false);
     }
-  }
-
-  function updatePrestamoDraftItem(index: number, field: keyof PrestamoDraftItem, value: string) {
-    setPrestamoDraft((prev) => {
-      if (field === "itemId" && value !== "" && prev.items.some((item, itemIndex) => itemIndex !== index && item.itemId === value)) {
-        setStatus("Ese equipo ya fue seleccionado en este prestamo.");
-        return prev;
-      }
-      return {
-        ...prev,
-        items: prev.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
-      };
-    });
-  }
-
-  function addPrestamoDraftItem() {
-    setPrestamoDraft((prev) => ({ ...prev, items: [...prev.items, { itemId: "", cantidad: "1", estadoEntrega: "NUEVO", comentarioEntrega: "" }] }));
-  }
-
-  function removePrestamoDraftItem(index: number) {
-    setPrestamoDraft((prev) => {
-      if (prev.items.length <= 1) return prev;
-      return { ...prev, items: prev.items.filter((_, itemIndex) => itemIndex !== index) };
-    });
   }
 
   async function savePrestamo(printAfterSave = false) {
@@ -3923,7 +3845,7 @@ export default function Home() {
         setLoginLoading(false);
       }
     },
-    [loginMode, loginUsername, loginPassword, loadData],
+    [loginMode, loginUsername, loginPassword, loadData, setLoginLoading, setLoginPassword, setShowLoginPassword],
   );
 
   const requestPasswordReset = useCallback(
@@ -3958,7 +3880,7 @@ export default function Home() {
         setResetRequestLoading(false);
       }
     },
-    [loginMode, resetRequestLoading, resetUsername],
+    [loginMode, resetRequestLoading, resetUsername, setResetRequestLoading, setResetRequestMessage],
   );
 
   const submitChangePassword = useCallback(async () => {
@@ -4089,7 +4011,7 @@ export default function Home() {
       setActiveView("personal");
       setStatus(STATUS_SESSION_CLOSED);
     }
-  }, [clearLoadedData, setCurrentUser]);
+  }, [clearLoadedData, setCurrentUser, setLoginPassword, setShowLoginPassword]);
 
   const createUsuario = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -5468,26 +5390,6 @@ export default function Home() {
     userRoleSaving,
     usernameSaving,
   ]);
-  const personalSelfProfileLoading = personalSelfProfile?.loading ?? false;
-
-  const handleSelectPersonalLogin = useCallback(() => {
-    setLoginMode("PERSONAL");
-    setShowResetRequest(false);
-    setResetRequestMessage("");
-  }, []);
-
-  const handleSelectSystemLogin = useCallback(() => {
-    setLoginMode("USUARIO");
-    setShowResetRequest(false);
-    setResetRequestMessage("");
-  }, []);
-
-  const handleToggleResetRequest = useCallback(() => {
-    setShowResetRequest((current) => !current);
-    setResetRequestMessage("");
-    setResetUsername((current) => current || loginUsername.trim());
-  }, [loginUsername]);
-
   if (!currentUser) {
     return (
       <LoginScreen
@@ -5523,141 +5425,47 @@ export default function Home() {
     );
   }
 
-  if (isPersonalAccount) {
-    const personalCi = currentUser.personalCi ?? currentUser.username;
-    const personalFullName = `${currentUser.apellido}, ${currentUser.nombre}`.replace(/\s+/g, " ").trim();
-    const personalProfileState: PersonaProfileState = personalSelfProfile ?? {
-      identity: {
-        ci: personalCi,
-        tipo: "SUBALTERNO",
-        apellido: currentUser.apellido,
-        nombre: currentUser.nombre,
-        gradoAbreviacion: currentUser.grado,
-        gradoNombre: currentUser.grado,
-        bateriaNombre: null,
-        telefonoContacto: null,
-        mailReferencia: currentUser.mailReferencia ?? null,
-        esReingreso: null,
-        fechaIngreso: null,
-        fechaIngresoOriginal: null,
-        tallas: [],
-      },
-      loading: true,
-      error: null,
-      registros: [],
-      prestamos: [],
-      observaciones: [],
-      equipmentSummary: [],
-      timeline: [],
-    };
-    const personalBusyLabel = changeLoading
-      ? "Actualizando contraseña..."
-      : personalContactSaving
-        ? "Actualizando datos de contacto..."
-      : personalSelfProfileLoading
-        ? "Cargando tu ficha personal..."
-        : "Actualizando datos de acceso...";
+  if (isPersonalAccount && currentUser) {
+    const normalizedPersonalCi =
+      typeof currentUser.personalCi === "string" && /^\d+$/.test(currentUser.personalCi)
+        ? Number.parseInt(currentUser.personalCi, 10)
+        : null;
 
     return (
-      <main className="mx-auto min-h-screen w-full max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
-        <section className="ej-card rounded-2xl p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="text-xl font-black tracking-tight text-[var(--color-text-primary)]">Portal de Personal</h1>
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Acceso de solo consulta a tu información.</p>
-              <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
-                {`${currentUser.grado} ${personalFullName} · CI ${formatUruguayanCi(personalCi)}`}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => void loadPersonalSelfProfile()}
-                className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
-              >
-                Recargar ficha
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPersonalContactTelefono(personalProfileState.identity.telefonoContacto ?? "");
-                  setPersonalContactMail(personalProfileState.identity.mailReferencia ?? "");
-                  setShowPersonalContactModal(true);
-                }}
-                className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
-              >
-                Actualizar contacto
-              </button>
-              <button
-                type="button"
-                onClick={() => openOwnDeliverySheetPdf()}
-                disabled={personalSelfProfile?.identity.tipo !== "SUBALTERNO"}
-                className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-55"
-              >
-                Ver hoja PDF
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setChangeCurrentPassword("");
-                  setChangeNewPassword("");
-                  setChangeConfirmPassword("");
-                  setShowChangePassword(true);
-                }}
-                className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
-              >
-                Cambiar contraseña
-              </button>
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className="rounded-xl bg-[var(--color-ejercito-blue)] px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
-              >
-                Cerrar sesión
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <PersonaProfileView
-          state={personalProfileState}
-          onBack={() => {}}
-          onReload={() => void loadPersonalSelfProfile()}
-          onPrintDeliverySheet={() => {}}
-          onPrintPrestamos={() => {}}
-          allowPrintActions={false}
-          showBackButton={false}
-        />
-
-        <ChangePasswordModal
-          isOpen={showChangePassword}
-          currentPassword={changeCurrentPassword}
-          newPassword={changeNewPassword}
-          confirmPassword={changeConfirmPassword}
-          loading={changeLoading}
-          onCurrentPasswordChange={setChangeCurrentPassword}
-          onNewPasswordChange={setChangeNewPassword}
-          onConfirmPasswordChange={setChangeConfirmPassword}
-          onClose={() => setShowChangePassword(false)}
-          onSubmit={() => void submitChangePassword()}
-        />
-
-        <PersonalContactModal
-          isOpen={showPersonalContactModal}
-          telefonoContacto={personalContactTelefono}
-          mailReferencia={personalContactMail}
-          saving={personalContactSaving}
-          onTelefonoContactoChange={setPersonalContactTelefono}
-          onMailReferenciaChange={setPersonalContactMail}
-          onClose={() => setShowPersonalContactModal(false)}
-          onSubmit={() => void submitPersonalContactUpdate()}
-        />
-
-        <LoadingOverlay
-          visible={loading || personalSelfProfileLoading || changeLoading || personalContactSaving}
-          label={personalBusyLabel}
-        />
-      </main>
+      <PersonalPortalView
+        currentUser={{
+          accountType: "PERSONAL",
+          personalCi: normalizedPersonalCi,
+          username: currentUser.username,
+          apellido: currentUser.apellido,
+          nombre: currentUser.nombre,
+          grado: currentUser.grado,
+          mailReferencia: currentUser.mailReferencia,
+        } as PersonalCurrentUser}
+        personalSelfProfile={personalSelfProfile}
+        loading={loading}
+        changeLoading={changeLoading}
+        personalContactSaving={personalContactSaving}
+        showChangePassword={showChangePassword}
+        changeCurrentPassword={changeCurrentPassword}
+        changeNewPassword={changeNewPassword}
+        changeConfirmPassword={changeConfirmPassword}
+        showPersonalContactModal={showPersonalContactModal}
+        personalContactTelefono={personalContactTelefono}
+        personalContactMail={personalContactMail}
+        setChangeCurrentPassword={setChangeCurrentPassword}
+        setChangeNewPassword={setChangeNewPassword}
+        setChangeConfirmPassword={setChangeConfirmPassword}
+        setShowChangePassword={setShowChangePassword}
+        setPersonalContactTelefono={setPersonalContactTelefono}
+        setPersonalContactMail={setPersonalContactMail}
+        setShowPersonalContactModal={setShowPersonalContactModal}
+        onReloadProfile={loadPersonalSelfProfile}
+        onOpenOwnDeliverySheetPdf={openOwnDeliverySheetPdf}
+        onLogout={logout}
+        onSubmitChangePassword={submitChangePassword}
+        onSubmitPersonalContactUpdate={submitPersonalContactUpdate}
+      />
     );
   }
 
@@ -5830,8 +5638,8 @@ export default function Home() {
         />
         ) : null}
 
-        {activeView === "personal_nuevo" ? (
-        <PersonalCreateView
+        <HomeViewRouter
+          activeView={activeView}
           ciPlaceholder={ciPlaceholder}
           newPersonal={newPersonal}
           duplicatePersonal={duplicatePersonal}
@@ -5848,129 +5656,77 @@ export default function Home() {
           equiposActivos={equiposActivos}
           tallaOptionsByKey={tallaOptionsByKey}
           maxFechaIngreso={maxFechaIngreso}
-          movimientos={newPersonalMovimientos}
-          movimientoDraft={newPersonalMovimientoDraft}
-          movimientoModalEditing={newPersonalMovimientoEditIndex !== null}
-          onBack={() => setActiveView("personal")}
-          onSubmit={(event) => void createPersonal(event)}
-          onPersonalChange={updateNewPersonalField}
-          onOpenMovimientoModal={openNewPersonalMovimientoModal}
-          onCloseMovimientoModal={closeNewPersonalMovimientoModal}
-          onSubmitMovimientoDraft={saveNewPersonalMovimientoFromModal}
-          onEditMovimiento={editNewPersonalMovimiento}
-          onRemoveMovimiento={removeNewPersonalMovimiento}
-          onMovimientoDraftChange={updateNewPersonalMovimientoDraft}
-          onMovimientoDraftItemChange={updateNewPersonalMovimientoDraftItem}
-          onAddMovimientoDraftItem={addNewPersonalMovimientoDraftItem}
-          onRemoveMovimientoDraftItem={removeNewPersonalMovimientoDraftItem}
-        />
-        ) : null}
-
-        {activeView === "oficial_nuevo" || activeView === "suboficial_nuevo" ? (
-        <OficialSuboficialCreateView
-          mode={editingOficialSuboficialCi ? "edit" : "create"}
-          ciPlaceholder={ciPlaceholder}
-          form={newOficialSuboficial}
-          duplicateLabel={duplicateOficialSuboficialLabel}
-          ciHasError={!oficialSuboficialCiLooksValid || oficialSuboficialCiAlreadyExists}
-          ciLooksValid={oficialSuboficialCiLooksValid}
-          ciAlreadyExists={oficialSuboficialCiAlreadyExists}
-          canRegister={canRegisterOficialSuboficial}
-          requiredCompleted={oficialSuboficialRequiredCompleted}
-          requiredFields={oficialSuboficialRequiredFields}
-          canSubmit={canSubmitOficialSuboficial}
-          saving={creatingOficialSuboficial}
-          rangosDisponibles={rangosOficialSuboficialDisponibles}
-          lockTipo
-          disableCi={editingOficialSuboficialCi !== null}
-          tallaOptionsByKey={tallaOptionsByKey}
-          onBack={cancelOficialSuboficialForm}
-          onSubmit={(event) => void createOficialSuboficial(event)}
-          onChange={updateNewOficialSuboficialField}
-        />
-        ) : null}
-
-        {activeView === "equipo_nuevo" ? (
-        <EquipoCreateView
-          form={newEquipo}
-          saving={loading}
-          onBack={() => setActiveView("equipos")}
-          onSubmit={(event) => void createEquipo(event)}
-          onChange={(key, value) => {
-            setNewEquipo((previous) => ({
-              ...previous,
-              [key]: value,
-            }));
-          }}
-        />
-        ) : null}
-
-        {activeView === "bateria_nueva" ? (
-        <BateriaCreateView
-          nombre={newBateria}
-          orden={newBateriaOrden}
-          saving={loading}
-          suggestedOrder={baterias.length + 1}
-          onBack={() => setActiveView("personal")}
-          onCreate={() => void createBateria()}
-          onNombreChange={setNewBateria}
-          onOrdenChange={setNewBateriaOrden}
-        />
-        ) : null}
-
-        {activeView === "grado_nuevo" ? (
-        <RangoCreateView
-          abreviacion={newRangoAbreviacion}
-          nombreCompleto={newRangoNombreCompleto}
-          orden={newRangoOrden}
-          saving={loading}
-          suggestedOrder={rangos.length + 1}
-          onBack={() => setActiveView("personal")}
-          onCreate={() => void createRango()}
-          onAbreviacionChange={setNewRangoAbreviacion}
-          onNombreCompletoChange={setNewRangoNombreCompleto}
-          onOrdenChange={setNewRangoOrden}
-        />
-        ) : null}
-
-        {activeView === "usuario_nuevo" ? (
-        <UserCreateView
+          newPersonalMovimientos={newPersonalMovimientos}
+          newPersonalMovimientoDraft={newPersonalMovimientoDraft}
+          newPersonalMovimientoEditIndex={newPersonalMovimientoEditIndex}
+          setActiveView={setActiveView}
+          createPersonal={createPersonal}
+          updateNewPersonalField={updateNewPersonalField}
+          openNewPersonalMovimientoModal={openNewPersonalMovimientoModal}
+          closeNewPersonalMovimientoModal={closeNewPersonalMovimientoModal}
+          saveNewPersonalMovimientoFromModal={saveNewPersonalMovimientoFromModal}
+          editNewPersonalMovimiento={editNewPersonalMovimiento}
+          removeNewPersonalMovimiento={removeNewPersonalMovimiento}
+          updateNewPersonalMovimientoDraft={updateNewPersonalMovimientoDraft}
+          updateNewPersonalMovimientoDraftItem={updateNewPersonalMovimientoDraftItem}
+          addNewPersonalMovimientoDraftItem={addNewPersonalMovimientoDraftItem}
+          removeNewPersonalMovimientoDraftItem={removeNewPersonalMovimientoDraftItem}
+          editingOficialSuboficialCi={editingOficialSuboficialCi}
+          newOficialSuboficial={newOficialSuboficial}
+          duplicateOficialSuboficialLabel={duplicateOficialSuboficialLabel}
+          oficialSuboficialCiLooksValid={oficialSuboficialCiLooksValid}
+          oficialSuboficialCiAlreadyExists={oficialSuboficialCiAlreadyExists}
+          canRegisterOficialSuboficial={canRegisterOficialSuboficial}
+          oficialSuboficialRequiredCompleted={oficialSuboficialRequiredCompleted}
+          oficialSuboficialRequiredFields={oficialSuboficialRequiredFields}
+          canSubmitOficialSuboficial={canSubmitOficialSuboficial}
+          creatingOficialSuboficial={creatingOficialSuboficial}
+          rangosOficialSuboficialDisponibles={rangosOficialSuboficialDisponibles}
+          cancelOficialSuboficialForm={cancelOficialSuboficialForm}
+          createOficialSuboficial={createOficialSuboficial}
+          updateNewOficialSuboficialField={updateNewOficialSuboficialField}
+          newEquipo={newEquipo}
+          loading={loading}
+          createEquipo={createEquipo}
+          setNewEquipo={setNewEquipo}
+          newBateria={newBateria}
+          newBateriaOrden={newBateriaOrden}
+          createBateria={createBateria}
+          setNewBateria={setNewBateria}
+          setNewBateriaOrden={setNewBateriaOrden}
+          newRangoAbreviacion={newRangoAbreviacion}
+          newRangoNombreCompleto={newRangoNombreCompleto}
+          newRangoOrden={newRangoOrden}
+          createRango={createRango}
+          setNewRangoAbreviacion={setNewRangoAbreviacion}
+          setNewRangoNombreCompleto={setNewRangoNombreCompleto}
+          setNewRangoOrden={setNewRangoOrden}
           isAdmin={isAdmin}
-          rangoId={newUserRangoId}
-          rangoOptions={rangosConfigView}
-          nombre={newNombre}
-          apellido={newApellido}
-          username={newUsername}
-          password={newPassword}
-          passwordConfirm={newPasswordConfirm}
-          mailReferencia={newMailReferencia}
-          role={newRole}
-          onBack={() => setActiveView("usuarios")}
-          onSubmit={(event) => void createUsuario(event)}
-          onRangoIdChange={setNewUserRangoId}
-          onNombreChange={setNewNombre}
-          onApellidoChange={setNewApellido}
-          onUsernameChange={setNewUsername}
-          onPasswordChange={setNewPassword}
-          onPasswordConfirmChange={setNewPasswordConfirm}
-          onMailReferenciaChange={setNewMailReferencia}
-          onRoleChange={setNewRole}
+          newUserRangoId={newUserRangoId}
+          rangosConfigView={rangosConfigView}
+          newNombre={newNombre}
+          newApellido={newApellido}
+          newUsername={newUsername}
+          newPassword={newPassword}
+          newPasswordConfirm={newPasswordConfirm}
+          newMailReferencia={newMailReferencia}
+          newRole={newRole}
+          createUsuario={createUsuario}
+          setNewUserRangoId={setNewUserRangoId}
+          setNewNombre={setNewNombre}
+          setNewApellido={setNewApellido}
+          setNewUsername={setNewUsername}
+          setNewPassword={setNewPassword}
+          setNewPasswordConfirm={setNewPasswordConfirm}
+          setNewMailReferencia={setNewMailReferencia}
+          setNewRole={setNewRole}
           roleLabel={roleLabel}
           roleDescription={roleDescription}
           roleScope={roleScope}
-        />
-        ) : null}
-
-        {activeView === "personal" ? (
-        <PersonalSection
-          loading={loading}
           personal={personal}
           personalFiltrado={personalFiltrado}
           personalFiltradoPaginado={personalFiltradoPaginado}
-          baterias={baterias}
-          rangos={rangos}
           canWrite={canWrite}
-          isAdmin={isAdmin}
           searchCedula={searchCedula}
           searchApellidos={searchApellidos}
           searchNombres={searchNombres}
@@ -5981,354 +5737,181 @@ export default function Home() {
           expandedTallasByCi={expandedTallasByCi}
           editPersonalCi={editPersonalCi}
           editPersonal={editPersonal}
-          tallaOptionsByKey={tallaOptionsByKey}
-          maxFechaIngreso={maxFechaIngreso}
-          onSearchCedulaChange={setSearchCedula}
-          onSearchApellidosChange={setSearchApellidos}
-          onSearchNombresChange={setSearchNombres}
-          onBateriaFilterChange={setBateriaFilter}
-          onClearFilters={() => {
-            setSearchCedula("");
-            setSearchNombres("");
-            setSearchApellidos("");
-            setBateriaFilter("ALL");
-          }}
-          onPersonalPageChange={setPersonalPage}
-          onPersonalPageSizeChange={setPersonalPageSize}
-          onPrintAllDeliverySheets={printAllDeliverySheets}
-          onEmailAllDeliverySheets={emailAllDeliverySheets}
-          onCancelEmailAllDeliverySheets={cancelBulkDeliveryEmailJob}
-          emailAllDeliverySheetsBusy={bulkDeliveryEmailBusy}
-          emailAllDeliverySheetsDisabledReason={bulkDeliveryEmailDisabledReason}
-          onPrintPersonnelByBattery={printPersonnelByBattery}
-          onOpenMassEntrega={() => openMassRegistro("ENTREGA")}
-          onOpenCreate={() => setActiveView("personal_nuevo")}
-          onToggleTallas={toggleTallas}
-          onDeletePersonal={(ci) => void deletePersonal(ci)}
-          onOpenRegistro={(ci, tipo) => openRegistro(ci, tipo)}
-          onOpenPersonalObservacion={(persona) => void openPersonalObservacion(persona)}
-          onOpenRegistroViewer={(persona) => void openRegistroViewer(persona)}
-          onOpenProfile={(persona) => void openPersonaProfileFromPersonal(persona)}
-          onOpenDeliverySheet={(ci) => {
-            setActiveView("hoja-de-entrega");
-            setFichaViewingCi(ci);
-          }}
-          onStartEditPersonal={startEditPersonal}
-          onCancelEditPersonal={() => {
-            setEditPersonalCi(null);
-            setEditPersonal(EMPTY_PERSONAL_FORM);
-          }}
-          onEditPersonalChange={(field, value) =>
-            setEditPersonal((prev) => {
-              const next = { ...prev, [field]: value } as PersonalForm;
-              if (field === "esReingreso" && value === false) {
-                next.fechaIngresoOriginal = "";
-              }
-              return next;
-            })}
-          onSaveEditPersonal={(ci) => void updatePersonal(ci)}
+          setSearchCedula={setSearchCedula}
+          setSearchApellidos={setSearchApellidos}
+          setSearchNombres={setSearchNombres}
+          setBateriaFilter={setBateriaFilter}
+          setPersonalPage={setPersonalPage}
+          setPersonalPageSize={setPersonalPageSize}
+          printAllDeliverySheets={printAllDeliverySheets}
+          emailAllDeliverySheets={emailAllDeliverySheets}
+          cancelBulkDeliveryEmailJob={cancelBulkDeliveryEmailJob}
+          bulkDeliveryEmailBusy={bulkDeliveryEmailBusy}
+          bulkDeliveryEmailDisabledReason={bulkDeliveryEmailDisabledReason}
+          printPersonnelByBattery={printPersonnelByBattery}
+          openMassRegistro={openMassRegistro}
+          toggleTallas={toggleTallas}
+          deletePersonal={deletePersonal}
+          openRegistro={openRegistro}
+          openPersonalObservacion={openPersonalObservacion}
+          openRegistroViewer={openRegistroViewer}
+          openPersonaProfileFromPersonal={openPersonaProfileFromPersonal}
+          setFichaViewingCi={setFichaViewingCi}
+          startEditPersonal={startEditPersonal}
+          setEditPersonalCi={setEditPersonalCi}
+          setEditPersonal={setEditPersonal}
+          updatePersonal={updatePersonal}
           canPromoteEditPersonalToSuboficial={canPromoteEditPersonalToSuboficial}
-          promoteEditPersonalBusy={promotingSubalternoCi !== null}
-          onPromoteEditPersonalToSuboficial={(ci, adminPassword) =>
-            void promoteSargentoToSuboficial(ci, adminPassword)
-          }
-          onPrintAscensoDeliverySheet={openAscensoDeliverySheet}
-        />
-        ) : null}
-
-        {activeView === "oficiales" ? (
-        <OficialesSuboficialesView
+          promotingSubalternoCi={promotingSubalternoCi}
+          promoteSargentoToSuboficial={promoteSargentoToSuboficial}
+          openAscensoDeliverySheet={openAscensoDeliverySheet}
           oficialesSuboficiales={oficialesSuboficiales}
-          loading={loading}
-          canWrite={canWrite}
-          viewType="OFICIAL"
-          onOpenCreate={() => openOficialSuboficialCreate("OFICIAL")}
-          onStartEdit={startEditOficialSuboficial}
-          onOpenProfile={(registro) => void openPersonaProfileFromOficialSuboficial(registro)}
-          onReload={() => reloadCurrentViewData(true)}
-        />
-        ) : null}
-
-        {activeView === "suboficiales" ? (
-        <OficialesSuboficialesView
-          oficialesSuboficiales={oficialesSuboficiales}
-          loading={loading}
-          canWrite={canWrite}
-          viewType="SUBOFICIAL"
-          onOpenCreate={() => openOficialSuboficialCreate("SUBOFICIAL")}
-          onStartEdit={startEditOficialSuboficial}
-          onOpenProfile={(registro) => void openPersonaProfileFromOficialSuboficial(registro)}
-          onReload={() => reloadCurrentViewData(true)}
-        />
-        ) : null}
-
-        {activeView === "oficiales_resumen" ? (
-        <OficialesSuboficialesResumenView
-          oficialesSuboficiales={oficialesSuboficiales}
-          viewType="OFICIAL"
-          loading={loading}
-          onReload={() => reloadCurrentViewData(true)}
-        />
-        ) : null}
-
-        {activeView === "suboficiales_resumen" ? (
-        <OficialesSuboficialesResumenView
-          oficialesSuboficiales={oficialesSuboficiales}
-          viewType="SUBOFICIAL"
-          loading={loading}
-          onReload={() => reloadCurrentViewData(true)}
-        />
-        ) : null}
-
-        {activeView === "hoja_matrix" ? (
-        <HojaMatrixView
-          data={hojaMatrixData}
-          loading={hojaMatrixLoading}
-          error={hojaMatrixError}
-          onReload={loadHojaMatrix}
-        />
-        ) : null}
-
-        {activeView === "equipo_resumen" ? (
-        <EquipoResumenView
-          data={equipoResumenData}
-          loading={equipoResumenLoading}
-          error={equipoResumenError}
-          onReload={loadEquipoResumen}
-        />
-        ) : null}
-
-        {["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos"].includes(activeView) ? (
-        <StockView
-          section={
-            activeView === "stock" || activeView === "stock_total"
-              ? "total"
-              : activeView === "stock_alta"
-              ? "alta"
-              : activeView === "stock_baja"
-                ? "baja"
-                : activeView === "stock_historial"
-                  ? "historial"
-                  : activeView === "stock_prestamos"
-                    ? "prestamos"
-                  : "actual"
-          }
-          data={stockData}
-          loading={stockLoading}
-          error={stockError}
-          canWrite={canWrite}
-          equipos={equiposOrdenados}
-          draft={stockDraft}
-          saving={stockSaving}
-          maxDate={maxFechaIngreso}
-          onDraftChange={(field, value) => setStockDraft((prev) => ({ ...prev, [field]: value }))}
-          onDraftItemChange={updateStockDraftItem}
-          onAddItem={addStockDraftItem}
-          onRemoveItem={removeStockDraftItem}
-          onSubmit={() => void saveStockOperation()}
-          personal={personal}
-          oficialesSuboficiales={oficialesSuboficiales}
+          startEditOficialSuboficial={startEditOficialSuboficial}
+          openOficialSuboficialCreate={openOficialSuboficialCreate}
+          openPersonaProfileFromOficialSuboficial={openPersonaProfileFromOficialSuboficial}
+          reloadCurrentViewData={reloadCurrentViewData}
+          hojaMatrixData={hojaMatrixData}
+          hojaMatrixLoading={hojaMatrixLoading}
+          hojaMatrixError={hojaMatrixError}
+          loadHojaMatrix={loadHojaMatrix}
+          equipoResumenData={equipoResumenData}
+          equipoResumenLoading={equipoResumenLoading}
+          equipoResumenError={equipoResumenError}
+          loadEquipoResumen={loadEquipoResumen}
+          stockData={stockData}
+          stockLoading={stockLoading}
+          stockError={stockError}
+          equiposOrdenados={equiposOrdenados}
+          stockDraft={stockDraft}
+          stockSaving={stockSaving}
+          setStockDraft={setStockDraft}
+          updateStockDraftItem={updateStockDraftItem}
+          addStockDraftItem={addStockDraftItem}
+          removeStockDraftItem={removeStockDraftItem}
+          saveStockOperation={saveStockOperation}
           prestamoDraft={prestamoDraft}
           prestamoSaving={prestamoSaving}
           returningPrestamoId={returningPrestamoId}
-          onPrestamoDraftChange={(field, value) =>
-            setPrestamoDraft((prev) => {
-              if (field === "destinatarioTipo") {
-                return { ...prev, destinatarioTipo: value as PrestamoDraft["destinatarioTipo"], destinatarioCi: "" };
-              }
-              return { ...prev, [field]: value };
-            })
-          }
-          onPrestamoItemChange={updatePrestamoDraftItem}
-          onAddPrestamoItem={addPrestamoDraftItem}
-          onRemovePrestamoItem={removePrestamoDraftItem}
-          onSubmitPrestamo={() => void savePrestamo(false)}
-          onSubmitPrestamoAndPrint={() => void savePrestamo(true)}
-          onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
-          onReload={() => void reloadActiveStockData()}
-        />
-        ) : null}
-
-        {activeView === "formularios" ? (
-        <FormulariosPrestamosView
-          data={stockData}
-          loading={stockLoading}
-          error={stockError}
-          canWrite={canWrite}
-          isAdmin={isAdmin}
-          equipos={equiposOrdenados}
-          personal={personal}
-          oficialesSuboficiales={oficialesSuboficiales}
-          prestamoDraft={prestamoDraft}
-          prestamoSaving={prestamoSaving}
-          returningPrestamoId={returningPrestamoId}
+          setPrestamoDraft={setPrestamoDraft}
+          updatePrestamoDraftItem={updatePrestamoDraftItem}
+          addPrestamoDraftItem={addPrestamoDraftItem}
+          removePrestamoDraftItem={removePrestamoDraftItem}
+          savePrestamo={savePrestamo}
+          returnPrestamo={returnPrestamo}
+          reloadActiveStockData={reloadActiveStockData}
           editingPrestamoId={editingPrestamoId}
-          maxDate={maxFechaIngreso}
-          onPrestamoDraftChange={(field, value) =>
-            setPrestamoDraft((prev) => {
-              if (field === "destinatarioTipo") {
-                return { ...prev, destinatarioTipo: value as PrestamoDraft["destinatarioTipo"], destinatarioCi: "" };
-              }
-              return { ...prev, [field]: value };
-            })
-          }
-          onPrestamoItemChange={updatePrestamoDraftItem}
-          onAddPrestamoItem={addPrestamoDraftItem}
-          onRemovePrestamoItem={removePrestamoDraftItem}
-          onSubmitPrestamo={() => void savePrestamo(false)}
-          onSubmitPrestamoAndPrint={() => void savePrestamo(true)}
-          onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
-          onEditPrestamo={(prestamoId, payload) => editPrestamo(prestamoId, payload)}
-          onDeletePrestamo={(prestamoId) => void deletePrestamo(prestamoId)}
-          onReload={() => void reloadActiveStockData()}
+          editPrestamo={editPrestamo}
+          deletePrestamo={deletePrestamo}
+          inEtiquetadoView={inEtiquetadoView}
+          activeEtiquetadoSection={activeEtiquetadoSection}
+          etiquetadoData={etiquetadoData}
+          etiquetadoLoading={etiquetadoLoading}
+          etiquetadoError={etiquetadoError}
+          reloadEtiquetadoData={reloadEtiquetadoData}
+          createEtiquetadoItem={createEtiquetadoItem}
+          createEtiquetadoEstanteria={createEtiquetadoEstanteria}
+          deleteEtiquetadoEstanteria={deleteEtiquetadoEstanteria}
+          createEtiquetadoCodigoSIE={createEtiquetadoCodigoSIE}
+          updateEtiquetadoCodigoSIE={updateEtiquetadoCodigoSIE}
+          deleteEtiquetadoCodigoSIE={deleteEtiquetadoCodigoSIE}
+          createEtiquetadoCaja={createEtiquetadoCaja}
+          deleteEtiquetadoCaja={deleteEtiquetadoCaja}
+          printEtiquetaCaja={printEtiquetaCaja}
+          printListadoCajas={printListadoCajas}
+          printTodasEtiquetas={printTodasEtiquetas}
+          EMPTY_PERSONAL_FORM={EMPTY_PERSONAL_FORM}
         />
-        ) : null}
 
-        {inEtiquetadoView && activeEtiquetadoSection ? (
-        <EtiquetadoView
-          section={activeEtiquetadoSection}
-          data={etiquetadoData}
-          loading={etiquetadoLoading}
-          error={etiquetadoError}
+        <HomeOverlaysLayer
+          activeView={activeView}
+          mergeEquipoDialog={mergeEquipoDialog}
+          mergeEquipoSource={mergeEquipoSource}
+          mergeEquipoDialogTargetId={mergeEquipoDialogTargetId}
+          mergeEquipoTargetOptions={mergeEquipoTargetOptions}
+          mergeEquipoSaving={mergeEquipoSaving}
+          updateMergeEquipoDialogTarget={updateMergeEquipoDialogTarget}
+          closeMergeEquipoDialog={closeMergeEquipoDialog}
+          submitMergeEquipoDialog={submitMergeEquipoDialog}
+          showChangePassword={showChangePassword}
+          changeCurrentPassword={changeCurrentPassword}
+          changeNewPassword={changeNewPassword}
+          changeConfirmPassword={changeConfirmPassword}
+          changeLoading={changeLoading}
+          setChangeCurrentPassword={setChangeCurrentPassword}
+          setChangeNewPassword={setChangeNewPassword}
+          setChangeConfirmPassword={setChangeConfirmPassword}
+          setShowChangePassword={setShowChangePassword}
+          submitChangePassword={submitChangePassword}
+          userRoleDialog={userRoleDialog}
+          userRoleSaving={userRoleSaving}
+          setUserRoleDialog={setUserRoleDialog}
+          closeUserRoleDialog={closeUserRoleDialog}
+          submitUserRoleChange={submitUserRoleChange}
+          userPasswordDialog={userPasswordDialog}
+          userPasswordSaving={userPasswordSaving}
+          setUserPasswordDialog={setUserPasswordDialog}
+          closeUserPasswordDialog={closeUserPasswordDialog}
+          submitUserPasswordChange={submitUserPasswordChange}
+          usernameDialog={usernameDialog}
+          usernameSaving={usernameSaving}
+          rangosConfigView={rangosConfigView}
+          setUsernameDialog={setUsernameDialog}
+          closeUsernameDialog={closeUsernameDialog}
+          submitUsernameChange={submitUsernameChange}
+          confirmDialog={confirmDialog}
+          confirmDialogBusy={confirmDialogBusy}
+          closeConfirmDialog={closeConfirmDialog}
+          confirmDialogAccept={confirmDialogAccept}
+          registroViewer={registroViewer}
+          registroViewerRowsPaginados={registroViewerRowsPaginados}
+          registroViewerPage={registroViewerPage}
+          registroViewerPageSize={registroViewerPageSize}
           canWrite={canWrite}
-          onReload={() => void reloadEtiquetadoData()}
-          onCreateItem={(input) => void createEtiquetadoItem(input)}
-          onCreateEstanteria={(codigo, piso) => void createEtiquetadoEstanteria(codigo, piso)}
-          onDeleteEstanteria={(codigo, piso) => void deleteEtiquetadoEstanteria(codigo, piso)}
-          onCreateCodigoSIE={(input) => void createEtiquetadoCodigoSIE(input)}
-          onUpdateCodigoSIE={(input) => void updateEtiquetadoCodigoSIE(input)}
-          onDeleteCodigoSIE={(codigoSIEId, codigo) => void deleteEtiquetadoCodigoSIE(codigoSIEId, codigo)}
-          onCreateCaja={(input) => void createEtiquetadoCaja(input)}
-          onDeleteCaja={(codigoDepositoGeneral) => void deleteEtiquetadoCaja(codigoDepositoGeneral)}
-          onPrintCaja={(codigoDepositoGeneral, orientacion) => printEtiquetaCaja(codigoDepositoGeneral, orientacion)}
-          onPrintListadoCajas={printListadoCajas}
-          onPrintTodas={(cajas) => printTodasEtiquetas(cajas)}
+          canDeleteRegistros={canDeleteRegistros}
+          rectifyRegistro={rectifyRegistro}
+          setRegistroViewerPage={setRegistroViewerPage}
+          setRegistroViewerPageSize={setRegistroViewerPageSize}
+          setRegistroViewer={setRegistroViewer}
+          registroDraft={registroDraft}
+          personaRegistro={personaRegistro}
+          personalFiltrado={personalFiltrado}
+          equiposOrdenados={equiposOrdenados}
+          maxFechaIngreso={maxFechaIngreso}
+          registroSaving={registroSaving}
+          setRegistroDraft={setRegistroDraft}
+          toggleRegistroDestinatario={toggleRegistroDestinatario}
+          selectAllRegistroDestinatarios={selectAllRegistroDestinatarios}
+          clearRegistroDestinatarios={clearRegistroDestinatarios}
+          updateRegistroItem={updateRegistroItem}
+          addRegistroItem={addRegistroItem}
+          removeRegistroItem={removeRegistroItem}
+          deleteRegistro={deleteRegistro}
+          saveRegistro={saveRegistro}
+          personalObservacionDraft={personalObservacionDraft}
+          personalObservacionSaving={personalObservacionSaving}
+          setPersonalObservacionDraft={setPersonalObservacionDraft}
+          resetPersonalObservacionForm={resetPersonalObservacionForm}
+          editPersonalObservacion={editPersonalObservacion}
+          deletePersonalObservacion={deletePersonalObservacion}
+          savePersonalObservacion={savePersonalObservacion}
+          personaProfile={personaProfile}
+          closePersonaProfileView={closePersonaProfileView}
+          reloadPersonaProfile={reloadPersonaProfile}
+          printDeliverySheetFromProfile={printDeliverySheetFromProfile}
+          printPrestamosFromProfile={printPrestamosFromProfile}
+          fichaViewingCi={fichaViewingCi}
+          setActiveView={setActiveView}
+          recordatorioConfig={recordatorioConfig}
+          recordatorioTasks={recordatorioTasks}
+          recordatoriosLoading={recordatoriosLoading}
+          recordatoriosSaving={recordatoriosSaving}
+          currentUser={currentUser}
+          soldadoWidgetVariant={soldadoWidgetVariant}
+          createRecordatorioTask={createRecordatorioTask}
+          updateRecordatorioTask={updateRecordatorioTask}
+          isAppGlobalBusy={isAppGlobalBusy}
+          appBusyLabel={appBusyLabel}
         />
-        ) : null}
-
-        {activeView === "tallas_resumen" ? (
-        <TallasResumenView personal={personal} baterias={baterias} oficialesSuboficiales={oficialesSuboficiales} />
-        ) : null}
-
-        <MergeEquipoModal
-        isOpen={mergeEquipoDialog !== null}
-        sourceName={mergeEquipoSource?.nombre ?? ""}
-        targetItemId={mergeEquipoDialogTargetId}
-        targetOptions={mergeEquipoTargetOptions.map((equipo) => ({ itemId: equipo.itemId, nombre: equipo.nombre }))}
-        saving={mergeEquipoSaving}
-        onTargetChange={updateMergeEquipoDialogTarget}
-        onClose={closeMergeEquipoDialog}
-        onSubmit={() => void submitMergeEquipoDialog()}
-        />
-
-        
-        <HomeDialogsLayer
-        showChangePassword={showChangePassword}
-        changeCurrentPassword={changeCurrentPassword}
-        changeNewPassword={changeNewPassword}
-        changeConfirmPassword={changeConfirmPassword}
-        changeLoading={changeLoading}
-        onChangeCurrentPassword={setChangeCurrentPassword}
-        onChangeNewPassword={setChangeNewPassword}
-        onChangeConfirmPassword={setChangeConfirmPassword}
-        onCloseChangePassword={() => setShowChangePassword(false)}
-        onSubmitChangePassword={() => void submitChangePassword()}
-        userRoleDialog={userRoleDialog}
-        userRoleSaving={userRoleSaving}
-        onUserRoleChange={(role) =>
-          setUserRoleDialog((current) => (current ? { ...current, nextRole: role } : current))
-        }
-        onCloseUserRole={closeUserRoleDialog}
-        onSubmitUserRole={() => void submitUserRoleChange()}
-        userPasswordDialog={userPasswordDialog}
-        userPasswordSaving={userPasswordSaving}
-        onUserPasswordChange={(field, value) =>
-          setUserPasswordDialog((current) => (current ? { ...current, [field]: value } : current))
-        }
-        onCloseUserPassword={closeUserPasswordDialog}
-        onSubmitUserPassword={() => void submitUserPasswordChange()}
-        usernameDialog={usernameDialog}
-        usernameSaving={usernameSaving}
-        userRangoOptions={rangosConfigView}
-        onUsernameDialogChange={(field, value) =>
-          setUsernameDialog((current) => (current ? { ...current, [field]: value } : current))
-        }
-        onCloseUsernameDialog={closeUsernameDialog}
-        onSubmitUsernameDialog={() => void submitUsernameChange()}
-        confirmDialog={confirmDialog}
-        confirmDialogBusy={confirmDialogBusy}
-        onCloseConfirmDialog={closeConfirmDialog}
-        onConfirmDialogAccept={() => void confirmDialogAccept()}
-        registroViewer={registroViewer}
-        registroViewerRowsPaginados={registroViewerRowsPaginados}
-        registroViewerPage={registroViewerPage}
-        registroViewerPageSize={registroViewerPageSize}
-        canWrite={canWrite}
-        canDelete={canDeleteRegistros}
-        onRectifyRegistro={rectifyRegistro}
-        onRegistroViewerPageChange={setRegistroViewerPage}
-        onRegistroViewerPageSizeChange={setRegistroViewerPageSize}
-        onCloseRegistroViewer={() => setRegistroViewer(null)}
-        registroDraft={registroDraft}
-        personaRegistro={personaRegistro}
-        personalFiltrado={personalFiltrado}
-        equiposOrdenados={equiposOrdenados}
-        maxFechaIngreso={maxFechaIngreso}
-        registroSaving={registroSaving}
-        onCloseRegistroEditor={() => setRegistroDraft(null)}
-        onRegistroDraftChange={(field, value) => setRegistroDraft((prev) => (prev ? { ...prev, [field]: value } : prev))}
-        onToggleRegistroDestinatario={toggleRegistroDestinatario}
-        onSelectAllRegistroDestinatarios={selectAllRegistroDestinatarios}
-        onClearRegistroDestinatarios={clearRegistroDestinatarios}
-        onRegistroItemChange={updateRegistroItem}
-        onAddRegistroItem={addRegistroItem}
-        onRemoveRegistroItem={removeRegistroItem}
-        onDeleteRegistro={deleteRegistro}
-        onSubmitRegistro={() => void saveRegistro()}
-        personalObservacionDraft={personalObservacionDraft}
-        personalObservacionSaving={personalObservacionSaving}
-        onClosePersonalObservacion={() => setPersonalObservacionDraft(null)}
-        onResetPersonalObservacion={resetPersonalObservacionForm}
-        onEditPersonalObservacion={editPersonalObservacion}
-        onDeletePersonalObservacion={deletePersonalObservacion}
-        onPersonalObservacionDateChange={(value) =>
-          setPersonalObservacionDraft((prev) => (prev ? { ...prev, fecha: value } : prev))
-        }
-        onPersonalObservacionTextChange={(value) =>
-          setPersonalObservacionDraft((prev) => (prev ? { ...prev, texto: value } : prev))
-        }
-        onSubmitPersonalObservacion={() => void savePersonalObservacion()}
-        />
-
-        {activeView === "persona_ficha" ? (
-        <PersonaProfileView
-          state={personaProfile}
-          onBack={closePersonaProfileView}
-          onReload={() => void reloadPersonaProfile()}
-          onPrintDeliverySheet={printDeliverySheetFromProfile}
-          onPrintPrestamos={printPrestamosFromProfile}
-        />
-        ) : null}
-
-        {activeView === "hoja-de-entrega" && fichaViewingCi ? (
-
-          <HojaDeEntregaView ci={fichaViewingCi} onClose={() => setActiveView("personal")} />
-        ) : null}
-
-        {renderSoldadoRecordatorioWidget({
-          activeView,
-          config: recordatorioConfig,
-          tasks: recordatorioTasks,
-          loading: recordatoriosLoading,
-          saving: recordatoriosSaving,
-          displayName: (currentUser.nombre || currentUser.username).trim(),
-          soldadoVariant: soldadoWidgetVariant,
-          onCreateTask: createRecordatorioTask,
-          onToggleTask: (tareaId, completada) => updateRecordatorioTask(tareaId, { completada }),
-          onOpenConfig: () => setActiveView("recordatorios"),
-        })}
-
-        <LoadingOverlay visible={isAppGlobalBusy} label={appBusyLabel} />
       </div>
 
     </main>
