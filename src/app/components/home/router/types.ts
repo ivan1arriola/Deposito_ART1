@@ -172,7 +172,7 @@ export type PersonnelAndSummaryViewsProps = {
   openOficialSuboficialCreate: (tipo: "OFICIAL" | "SUBOFICIAL") => void;
   openPersonaProfileFromOficialSuboficial: (registro: OficialSuboficial) => Promise<void>;
   reloadCurrentViewData: (showSpinner?: boolean) => Promise<void>;
-  hojaMatrixData: unknown;
+  hojaMatrixData: import("@/types/views").HojaMatrixData | null;
   hojaMatrixLoading: boolean;
   hojaMatrixError: string | null;
   loadHojaMatrix: () => Promise<void>;
