@@ -109,7 +109,7 @@ export async function POST(request: Request) {
         {
           error:
             `El codigo SIE ${codigo} ya existe en: ${duplicatesSummary}. ` +
-            "Si deseas registrarlo igual, confirma la accion y vuelve a intentar.",
+            "Si deseas registrarlo igual, confirma la acción y vuelve a intentar.",
         },
         { status: 409 },
       );

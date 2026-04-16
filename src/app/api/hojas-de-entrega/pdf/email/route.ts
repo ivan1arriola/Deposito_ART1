@@ -30,7 +30,7 @@ export const maxDuration = 300;
 
 async function throwIfHojasEntregaEmailJobCancelled(jobId: string) {
   if (await isHojasEntregaEmailJobCancelled(jobId)) {
-    throw new Error("Envio cancelado por el usuario.");
+    throw new Error("Envío cancelado por el usuario.");
   }
 }
 
@@ -140,13 +140,13 @@ async function runHojasEntregaEmailJob(input: {
       text:
         `Se adjunta el PDF consolidado de hojas de entrega de la unidad.\n\n` +
         `Total de hojas: ${hojas.length}\n` +
-        `Fecha de impresion: ${fechaImpresion}\n` +
+        `Fecha de impresión: ${fechaImpresion}\n` +
         `Usuario solicitante: ${input.requesterLabel || input.username}\n` +
         `Archivo adjunto: ${fileName}\n`,
       html:
         "<p>Se adjunta el PDF consolidado de hojas de entrega de la unidad.</p>" +
         `<p><strong>Total de hojas:</strong> ${hojas.length}<br/>` +
-        `<strong>Fecha de impresion:</strong> ${fechaImpresion}<br/>` +
+        `<strong>Fecha de impresión:</strong> ${fechaImpresion}<br/>` +
         `<strong>Usuario solicitante:</strong> ${input.requesterLabel || input.username}<br/>` +
         `<strong>Archivo adjunto:</strong> ${fileName}</p>`,
       attachments: [
@@ -250,7 +250,7 @@ export async function POST(request: Request) {
     if (existingJob) {
       return NextResponse.json(
         {
-          error: "Ya hay un envio de hojas de entrega en curso para este usuario.",
+          error: "Ya hay un envío de hojas de entrega en curso para este usuario.",
           job: existingJob,
         },
         { status: 409 },
@@ -261,7 +261,7 @@ export async function POST(request: Request) {
     const job = await createHojasEntregaEmailJob({
       userId: usuario.usuarioId,
       to: recipient,
-      message: "Solicitud aceptada. Iniciando envio del PDF en segundo plano...",
+      message: "Solicitud aceptada. Iniciando envío del PDF en segundo plano...",
     });
 
     after(async () => {
@@ -277,7 +277,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       accepted: true,
-      message: "Envio iniciado en segundo plano.",
+      message: "Envío iniciado en segundo plano.",
       job,
     }, { status: 202 });
   } catch (error: unknown) {
@@ -290,7 +290,7 @@ export async function POST(request: Request) {
       }
       return NextResponse.json(
         {
-          error: "Ya hay un envio de hojas de entrega en curso para este usuario.",
+          error: "Ya hay un envío de hojas de entrega en curso para este usuario.",
           job: existingJob,
         },
         { status: 409 },
@@ -305,7 +305,7 @@ export async function POST(request: Request) {
     }
 
     const message = error instanceof Error ? error.message : "No se pudo enviar el PDF por correo.";
-    if (message.startsWith("Configuracion SMTP incompleta")) {
+    if (message.startsWith("Configuración SMTP incompleta")) {
       return NextResponse.json(
         { error: "El servicio de correo no esta configurado. Contacta al administrador." },
         { status: 503 },

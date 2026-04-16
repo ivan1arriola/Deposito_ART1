@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     const config = await getFirmaConfig();
     return NextResponse.json(config);
   } catch {
-    return NextResponse.json({ error: "No se pudo leer la configuracion de firmas." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo leer la configuración de firmas." }, { status: 500 });
   }
 }
 
@@ -71,6 +71,6 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(updated);
   } catch {
-    return NextResponse.json({ error: "No se pudo guardar la configuracion de firmas." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo guardar la configuración de firmas." }, { status: 500 });
   }
 }

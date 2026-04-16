@@ -18,7 +18,7 @@ function isValidPayload(body: unknown): body is ResetRequestPayload {
 function genericResponse() {
   return NextResponse.json({
     ok: true,
-    message: "Si el usuario existe y tiene correo configurado, se envio un enlace.",
+    message: "Si el usuario existe y tiene correo configurado, se envió un enlace.",
   });
 }
 

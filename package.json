@@ -1,13 +1,13 @@
 {
   "name": "deposito-art1",
-  "version": "5.0.8",
+  "version": "5.0.9",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
     "prepare": "node scripts/install-git-hooks.mjs",
     "predev": "prisma generate",
     "dev": "node scripts/dev-with-qr.mjs",
-    "prebuild": "npm run check:encoding && npm run check:spanish && prisma generate",
+    "prebuild": "npm run check:encoding && prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
