@@ -2,13 +2,21 @@ import type { Dispatch, FormEvent, SetStateAction } from "react";
 import type { PrestamoEditPayload } from "@/app/components/views/FormulariosPrestamosView";
 import type { MainView } from "@/types/views";
 import type { OficialSuboficial, Personal } from "@/types/entities";
-import type { EquipoForm, OficialSuboficialForm, PersonalForm, PrestamoDraft, PrestamoDraftItem, StockOperacionDraft } from "@/types/forms";
+import type {
+  EquipoForm,
+  OficialSuboficialForm,
+  PersonalAltaMovimientoForm,
+  PersonalForm,
+  PrestamoDraft,
+  PrestamoDraftItem,
+  StockOperacionDraft,
+} from "@/types/forms";
 
 export type CreationViewsProps = {
   activeView: string;
   ciPlaceholder: string;
   newPersonal: PersonalForm;
-  duplicatePersonal: unknown;
+  duplicatePersonal: Personal | null;
   ciHasError: boolean;
   ciLooksValid: boolean;
   ciAlreadyExists: boolean;
@@ -22,8 +30,8 @@ export type CreationViewsProps = {
   equiposActivos: Array<{ itemId: string; nombre: string; activo: boolean; ordenPdf: number }>;
   tallaOptionsByKey: Record<string, string[]>;
   maxFechaIngreso: string;
-  newPersonalMovimientos: Array<unknown>;
-  newPersonalMovimientoDraft: unknown;
+  newPersonalMovimientos: PersonalAltaMovimientoForm[];
+  newPersonalMovimientoDraft: PersonalAltaMovimientoForm | null;
   newPersonalMovimientoEditIndex: number | null;
   setActiveView: Dispatch<SetStateAction<MainView>>;
   createPersonal: (event: FormEvent<HTMLFormElement>) => Promise<void>;
@@ -67,6 +75,7 @@ export type CreationViewsProps = {
   updateNewOficialSuboficialField: (field: keyof OficialSuboficialForm, value: string) => void;
   newEquipo: EquipoForm;
   loading: boolean;
+  creatingEquipo: boolean;
   createEquipo: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   setNewEquipo: (updater: (prev: EquipoForm) => EquipoForm) => void;
   newBateria: string;

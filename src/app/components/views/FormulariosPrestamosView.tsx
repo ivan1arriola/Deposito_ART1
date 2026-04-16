@@ -7,91 +7,20 @@ import { DestinatarioSearchSelect } from "@/app/components/shared/DestinatarioSe
 import { LoadingInline } from "@/app/components/shared";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers";
-import { apellidosLabel, nombresLabel } from "@/lib/formatters";
-import { normalizeSearchText } from "@/lib/spanish-text";
-import type { Equipo, OficialSuboficial, Personal } from "@/types/entities";
-import type { PrestamoDraft, PrestamoDraftItem, PrestamoEstadoEquipo } from "@/types/forms";
+import type { PrestamoEstadoEquipo } from "@/types/forms";
 import type { StockDashboardData } from "@/types/views";
+import { PrestamoList } from "./formularios-prestamos/components/PrestamoList";
+import type { FormulariosPrestamosViewProps, PrestamoEditPayload, PrestamosTab } from "./formularios-prestamos/types";
+import {
+  buildActuanteOptions,
+  buildDestinatarioOptions,
+  destinatarioTipoLabel,
+  ESTADO_OPTIONS,
+  estadoBadgeClass,
+  reciboHref,
+} from "./formularios-prestamos/utils";
 
-export type PrestamoEditPayload = {
-  fechaPrestamo: string;
-  fechaEstimadaDevolucionTexto?: string;
-  fechaDevolucion?: string;
-  comentarios?: string;
-  motivo: string;
-  items: Array<{
-    itemId: string;
-    cantidad: number;
-    estadoEntrega: PrestamoEstadoEquipo;
-    comentarioEntrega?: string;
-    estadoDevolucion?: PrestamoEstadoEquipo;
-    comentarioDevolucion?: string;
-  }>;
-};
-
-type FormulariosPrestamosViewProps = {
-  data: StockDashboardData | null;
-  loading: boolean;
-  error: string | null;
-  canWrite: boolean;
-  isAdmin: boolean;
-  equipos: Equipo[];
-  personal: Personal[];
-  oficialesSuboficiales: OficialSuboficial[];
-  prestamoDraft: PrestamoDraft;
-  prestamoSaving: boolean;
-  returningPrestamoId: string | null;
-  editingPrestamoId: string | null;
-  maxDate: string;
-  onPrestamoDraftChange: (
-    field:
-      | "destinatarioTipo"
-      | "destinatarioCi"
-      | "actuanteCi"
-      | "fechaPrestamo"
-      | "fechaEstimadaDevolucionTexto"
-      | "comentarios",
-    value: string,
-  ) => void;
-  onPrestamoItemChange: (index: number, field: keyof PrestamoDraftItem, value: string) => void;
-  onAddPrestamoItem: () => void;
-  onRemovePrestamoItem: (index: number) => void;
-  onSubmitPrestamo: () => void;
-  onSubmitPrestamoAndPrint: () => void;
-  onReturnPrestamo: (
-    prestamoId: string,
-    fechaDevolucion: string,
-    items?: Array<{ itemId: string; estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion?: string }>,
-  ) => void;
-  onEditPrestamo: (prestamoId: string, payload: PrestamoEditPayload) => Promise<void>;
-  onDeletePrestamo: (prestamoId: string) => void;
-  onReload: () => void;
-};
-
-type PrestamosTab = "registrar" | "vigentes" | "historial";
-
-function estadoBadgeClass(estado: "PENDIENTE" | "DEVUELTO") {
-  return estado === "PENDIENTE" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800";
-}
-
-function reciboHref(prestamoId: string) {
-  return `/api/prestamos/${encodeURIComponent(prestamoId)}/recibo`;
-}
-
-function normalizeRankForActuante(value: string) {
-  return normalizeSearchText(value.replace(/[º°]/g, ""));
-}
-
-function isSargentoRank(abreviacion: string) {
-  const normalized = normalizeRankForActuante(abreviacion);
-  return normalized.includes("sargento") || normalized.startsWith("sgto");
-}
-
-function destinatarioTipoLabel(value: PrestamoDraft["destinatarioTipo"]) {
-  if (value === "OFICIAL") return "Oficiales";
-  if (value === "SUBOFICIAL") return "Suboficiales";
-  return "Subalternos";
-}
+export type { PrestamoEditPayload } from "./formularios-prestamos/types";
 
 export function FormulariosPrestamosView({
   data,
@@ -118,7 +47,6 @@ export function FormulariosPrestamosView({
   onDeletePrestamo,
   onReload,
 }: FormulariosPrestamosViewProps) {
-  const ESTADO_OPTIONS: PrestamoEstadoEquipo[] = ["NUEVO", "BUENO", "REGULAR", "MALO"];
   const [tab, setTab] = useState<PrestamosTab>(canWrite ? "registrar" : "vigentes");
   const [selectedPrestamo, setSelectedPrestamo] = useState<StockDashboardData["prestamos"][number] | null>(null);
   const [prestamoIdFilter, setPrestamoIdFilter] = useState("");
@@ -262,51 +190,10 @@ export function FormulariosPrestamosView({
   );
 
   const destinatarioOptions = useMemo(() => {
-    if (prestamoDraft.destinatarioTipo === "PERSONAL") {
-      return [...personal]
-        .sort((a, b) =>
-          `${apellidosLabel(a)} ${nombresLabel(a)}`.localeCompare(`${apellidosLabel(b)} ${nombresLabel(b)}`, "es", {
-            sensitivity: "base",
-          }),
-        )
-        .map((persona) => ({
-          ci: persona.ci,
-          label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`,
-        }));
-    }
-
-    return oficialesSuboficiales
-      .filter((registro) => (prestamoDraft.destinatarioTipo === "OFICIAL" ? registro.tipo === "OFICIAL" : registro.tipo === "SUBOFICIAL"))
-      .slice()
-      .sort((a, b) => `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`, "es", { sensitivity: "base" }))
-      .map((registro) => ({
-        ci: registro.ci,
-        label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`,
-      }));
+    return buildDestinatarioOptions(prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales);
   }, [prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales]);
   const actuanteOptions = useMemo(() => {
-    const oficialesYSuboficiales = oficialesSuboficiales.map((registro) => ({
-      ci: registro.ci,
-      label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`.replace(/\s+/g, " ").trim(),
-    }));
-
-    const sargentos = personal
-      .filter((persona) => isSargentoRank(persona.rango.abreviacion))
-      .map((persona) => ({
-        ci: persona.ci,
-        label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`
-          .replace(/\s+/g, " ")
-          .trim(),
-      }));
-
-    const optionsByCi = new Map<string, { ci: string; label: string }>();
-    for (const option of [...oficialesYSuboficiales, ...sargentos]) {
-      if (!optionsByCi.has(option.ci)) {
-        optionsByCi.set(option.ci, option);
-      }
-    }
-
-    return Array.from(optionsByCi.values()).sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+    return buildActuanteOptions(oficialesSuboficiales, personal);
   }, [oficialesSuboficiales, personal]);
 
   const prestamosVigentes = useMemo(
@@ -337,95 +224,6 @@ export function FormulariosPrestamosView({
     () => prestamoDraft.items.reduce((total, item) => total + (Number(item.cantidad) > 0 ? Number(item.cantidad) : 0), 0),
     [prestamoDraft.items],
   );
-
-  function renderPrestamoList(items: StockDashboardData["prestamos"], emptyMessage: string, showReturnAction: boolean) {
-    return (
-      <div className="space-y-2">
-        {items.length === 0 ? <p className="text-sm text-stone-600">{emptyMessage}</p> : null}
-        {items.map((prestamo) => (
-          <article key={prestamo.prestamoId} className="rounded-xl border border-stone-200 bg-stone-50 p-3 md:p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => setSelectedPrestamo(prestamo)}
-                className="min-w-0 flex-1 text-left"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-lg font-semibold leading-tight text-stone-900">{prestamo.reciboNumero}</p>
-                  <span className="rounded-full border border-stone-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-stone-600">
-                    ID {prestamo.prestamoId}
-                  </span>
-                </div>
-
-                <p className="mt-1 text-sm font-medium text-stone-800">{prestamo.destinatarioEtiqueta}</p>
-                {prestamo.destinatarioCi ? (
-                  <p className="text-xs text-stone-500">CI {formatUruguayanCi(prestamo.destinatarioCi)}</p>
-                ) : null}
-
-                <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-stone-600 sm:grid-cols-2">
-                  <p>
-                    <span className="font-semibold text-stone-700">Prestado:</span> {formatDateOnlyForDisplay(prestamo.fechaPrestamo)}
-                  </p>
-                  <p>
-                    <span className="font-semibold text-stone-700">Estimado:</span>{" "}
-                    {prestamo.fechaEstimadaDevolucionTexto?.trim() ? prestamo.fechaEstimadaDevolucionTexto : "No definido"}
-                  </p>
-                  <p className="sm:col-span-2">
-                    <span className="font-semibold text-stone-700">Por orden de:</span> {prestamo.actuanteNombre ?? "No registrado"}
-                  </p>
-                </div>
-
-                <p className="mt-2 border-t border-stone-200 pt-2 text-xs text-stone-600">
-                  <span className="font-semibold text-stone-700">Registrado por:</span> {prestamo.usuarioEntregaNombre || "No registrado"}
-                </p>
-              </button>
-
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${estadoBadgeClass(prestamo.estado)}`}>
-                  {prestamo.estado}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPrestamo(prestamo)}
-                  className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100"
-                >
-                  Ver detalle
-                </button>
-                <a
-                  href={reciboHref(prestamo.prestamoId)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100"
-                >
-                  Recibo
-                </a>
-                {isAdmin ? (
-                  <button
-                    type="button"
-                    onClick={() => openEditDialog(prestamo)}
-                    disabled={editingPrestamoId === prestamo.prestamoId}
-                    className="rounded border border-sky-300 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100 disabled:opacity-50"
-                  >
-                    {editingPrestamoId === prestamo.prestamoId ? "Guardando..." : "Editar"}
-                  </button>
-                ) : null}
-                {canWrite && showReturnAction && prestamo.estado === "PENDIENTE" ? (
-                  <button
-                    type="button"
-                    onClick={() => openReturnDialog(prestamo)}
-                    disabled={returningPrestamoId === prestamo.prestamoId}
-                    className="rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
-                  >
-                    {returningPrestamoId === prestamo.prestamoId ? "Guardando..." : "Devolver"}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <section className="mt-6 space-y-4">
@@ -755,13 +553,22 @@ export function FormulariosPrestamosView({
         <article className="ej-card rounded-2xl p-4">
           <h3 className="text-sm font-semibold text-stone-900">Prestamos vigentes</h3>
           <div className="mt-3">
-            {renderPrestamoList(
-              prestamosVigentesFiltrados,
-              normalizedPrestamoIdFilter === ""
-                ? "No hay prestamos vigentes."
-                : `No hay prestamos vigentes para ID ${normalizedPrestamoIdFilter}.`,
-              true,
-            )}
+            <PrestamoList
+              items={prestamosVigentesFiltrados}
+              emptyMessage={
+                normalizedPrestamoIdFilter === ""
+                  ? "No hay prestamos vigentes."
+                  : `No hay prestamos vigentes para ID ${normalizedPrestamoIdFilter}.`
+              }
+              showReturnAction
+              isAdmin={isAdmin}
+              canWrite={canWrite}
+              returningPrestamoId={returningPrestamoId}
+              editingPrestamoId={editingPrestamoId}
+              onSelectPrestamo={setSelectedPrestamo}
+              onOpenEdit={openEditDialog}
+              onOpenReturn={openReturnDialog}
+            />
           </div>
         </article>
       ) : null}
@@ -770,13 +577,22 @@ export function FormulariosPrestamosView({
         <article className="ej-card rounded-2xl p-4">
           <h3 className="text-sm font-semibold text-stone-900">Historial (todos los prestamos)</h3>
           <div className="mt-3">
-            {renderPrestamoList(
-              prestamosFiltrados,
-              normalizedPrestamoIdFilter === ""
-                ? "No hay prestamos registrados."
-                : `No hay prestamos para ID ${normalizedPrestamoIdFilter}.`,
-              false,
-            )}
+            <PrestamoList
+              items={prestamosFiltrados}
+              emptyMessage={
+                normalizedPrestamoIdFilter === ""
+                  ? "No hay prestamos registrados."
+                  : `No hay prestamos para ID ${normalizedPrestamoIdFilter}.`
+              }
+              showReturnAction={false}
+              isAdmin={isAdmin}
+              canWrite={canWrite}
+              returningPrestamoId={returningPrestamoId}
+              editingPrestamoId={editingPrestamoId}
+              onSelectPrestamo={setSelectedPrestamo}
+              onOpenEdit={openEditDialog}
+              onOpenReturn={openReturnDialog}
+            />
           </div>
         </article>
       ) : null}

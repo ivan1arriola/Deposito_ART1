@@ -1,6 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
+import { LoadingInline } from "@/app/components/shared";
 import type { EquipoForm } from "@/types/forms";
 
 type EquipoCreateViewProps = {
@@ -67,7 +68,17 @@ export function EquipoCreateView({ form, saving, onBack, onSubmit, onChange }: E
               disabled={saving || form.nombre.trim() === ""}
               className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
             >
-              {saving ? "Creando..." : "Registrar equipo"}
+              {saving ? (
+                <LoadingInline
+                  label="Creando..."
+                  size="xs"
+                  tone="dark"
+                  showSpinner
+                  textClassName="text-sm font-bold text-[var(--color-ejercito-black)]"
+                />
+              ) : (
+                "Registrar equipo"
+              )}
             </button>
           </aside>
         </form>

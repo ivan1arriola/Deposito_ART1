@@ -114,7 +114,7 @@ describe("Handlers de Usuarios", () => {
   });
 
   describe("changeUserPasswordHandler", () => {
-    it("deberia cambiar la contrasena de otro usuario", async () => {
+    it("deberia cambiar la contraseña de otro usuario", async () => {
       const onSuccess = vi.fn();
       vi.mocked(api).mockResolvedValue({});
 

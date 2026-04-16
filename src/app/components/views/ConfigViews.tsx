@@ -11,6 +11,7 @@ type RangoTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
 type RangoConfig = Rango & { tipo?: RangoTipo };
 type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
 type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
+type EquiposDisplayMode = "por_estado" | "alfabetico";
 type AuditUserOption = {
   value: string;
   label: string;
@@ -158,6 +159,7 @@ const RANGO_TIPO_LABEL: Record<RangoTipo, string> = {
 export function ConfigViews(props: ConfigViewsProps) {
   const [activeUserAccountTypeTab, setActiveUserAccountTypeTab] = useState<UserAccountType>("SISTEMA");
   const [personalUsersSearch, setPersonalUsersSearch] = useState("");
+  const [equiposDisplayMode, setEquiposDisplayMode] = useState<EquiposDisplayMode>("por_estado");
   const usuariosSistema = useMemo(
     () => props.usuarios.filter((usuario) => usuario.accountType === "SISTEMA"),
     [props.usuarios]
@@ -435,60 +437,120 @@ export function ConfigViews(props: ConfigViewsProps) {
           </form>
 
           <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-sm font-semibold text-stone-900">Aparecen en Hoja de Entrega / Hoja Matriz</h3>
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                  {props.equiposActivosEnPantalla.length}
-                </span>
+            <div className="rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">Vista de equipos</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEquiposDisplayMode("por_estado")}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                    equiposDisplayMode === "por_estado"
+                      ? "bg-stone-800 text-white"
+                      : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+                  }`}
+                >
+                  Por estado (hoja / fuera de hoja)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEquiposDisplayMode("alfabetico")}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                    equiposDisplayMode === "alfabetico"
+                      ? "bg-stone-800 text-white"
+                      : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+                  }`}
+                >
+                  Orden alfabético (todos)
+                </button>
               </div>
-              <p className="text-xs text-stone-600 mb-3">
-                Estos equipos se muestran en hoja y mantienen el editor de orden.
+              <p className="mt-2 text-xs text-stone-600">
+                La vista alfabética muestra todos los equipos sin separar por si aparecen o no en hoja de entrega.
               </p>
             </div>
-            {props.equiposActivosEnPantalla.length > 0 ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3">
-                <div>
-                  <p className="text-sm font-semibold text-stone-900">Editor de orden</p>
-                  <p className="text-xs text-stone-600">Los cambios impactan el PDF y las hojas de entrega cuando confirmes.</p>
+
+            {equiposDisplayMode === "alfabetico" ? (
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-stone-900">Todos los equipos (A-Z)</h3>
+                  <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
+                    {equiposOrdenadosAlfabeticamente.length}
+                  </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={props.onResetEquipoOrderDraft}
-                    disabled={!props.canWrite || !props.hasEquipoOrderDraftChanges}
-                    className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Restablecer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={props.onSaveEquipoOrder}
-                    disabled={!props.canWrite || !props.hasEquipoOrderDraftChanges}
-                    className="ej-button rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Guardar orden
-                  </button>
-                </div>
-              </div>
-            ) : null}
-            {props.equiposActivosEnPantalla.length > 0 ? (
-              <div className="space-y-2">
-                {props.equiposActivosEnPantalla.map((equipo) =>
-                  props.renderEquipoCard(equipo, {
-                    reorderableInActiveList: true,
-                    orderIndex: activeOrderById.get(equipo.itemId) ?? -1,
-                    orderCount: props.equiposActivosEnPantalla.length,
-                  }),
+                <p className="mb-3 text-xs text-stone-600">Incluye equipos visibles y ocultos en hoja.</p>
+                {equiposOrdenadosAlfabeticamente.length > 0 ? (
+                  <div className="space-y-2">
+                    {equiposOrdenadosAlfabeticamente.map((equipo) =>
+                      props.renderEquipoCard(equipo, {
+                        reorderableInActiveList: false,
+                      }),
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
+                    <p className="text-sm text-stone-600">No hay equipos registrados.</p>
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                <p className="text-sm text-stone-600">No hay equipos visibles en hoja.</p>
-              </div>
-            )}
-          </div>
+            ) : null}
 
+            {equiposDisplayMode === "por_estado" ? (
+              <>
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-sm font-semibold text-stone-900">Aparecen en Hoja de Entrega / Hoja Matriz</h3>
+                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                      {props.equiposActivosEnPantalla.length}
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-600 mb-3">
+                    Estos equipos se muestran en hoja y mantienen el editor de orden.
+                  </p>
+                </div>
+                {props.equiposActivosEnPantalla.length > 0 ? (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-stone-900">Editor de orden</p>
+                      <p className="text-xs text-stone-600">Los cambios impactan el PDF y las hojas de entrega cuando confirmes.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={props.onResetEquipoOrderDraft}
+                        disabled={!props.canWrite || !props.hasEquipoOrderDraftChanges}
+                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Restablecer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={props.onSaveEquipoOrder}
+                        disabled={!props.canWrite || !props.hasEquipoOrderDraftChanges}
+                        className="ej-button rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Guardar orden
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {props.equiposActivosEnPantalla.length > 0 ? (
+                  <div className="space-y-2">
+                    {props.equiposActivosEnPantalla.map((equipo) =>
+                      props.renderEquipoCard(equipo, {
+                        reorderableInActiveList: true,
+                        orderIndex: activeOrderById.get(equipo.itemId) ?? -1,
+                        orderCount: props.equiposActivosEnPantalla.length,
+                      }),
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
+                    <p className="text-sm text-stone-600">No hay equipos visibles en hoja.</p>
+                  </div>
+                )}
+              </>
+            ) : null}
+
+          {equiposDisplayMode === "por_estado" ? (
           <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
             <div>
               <div className="mb-2 flex items-center gap-2">
@@ -515,6 +577,7 @@ export function ConfigViews(props: ConfigViewsProps) {
               </div>
             )}
           </div>
+          ) : null}
 
           <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
             <div>
@@ -574,6 +637,8 @@ export function ConfigViews(props: ConfigViewsProps) {
               </button>
               <p className="text-xs text-stone-500">Acción irreversible: se recomienda revisar antes de confirmar.</p>
             </div>
+          </div>
+
           </div>
 
         </article>

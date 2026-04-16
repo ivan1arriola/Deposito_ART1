@@ -18,6 +18,7 @@ type RegistroEditorModalProps = {
   onClose: () => void;
   onDateChange: (value: string) => void;
   onComentariosChange: (value: string) => void;
+  onToggleIncluirFueraDeHoja: () => void;
   onToggleDestinatario: (ci: string) => void;
   onSelectAllDestinatarios: () => void;
   onClearDestinatarios: () => void;
@@ -37,6 +38,7 @@ export function RegistroEditorModal({
   onClose,
   onDateChange,
   onComentariosChange,
+  onToggleIncluirFueraDeHoja,
   onToggleDestinatario,
   onSelectAllDestinatarios,
   onClearDestinatarios,
@@ -73,6 +75,8 @@ export function RegistroEditorModal({
   const equiposOrdenadosAlfabeticamente = [...equiposOrdenados].sort((a, b) =>
     a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
   );
+  const canIncludeFueraDeHoja = draft.modo === "crear" && draft.tipo === "ENTREGA";
+  const includeInactiveItems = canIncludeFueraDeHoja && draft.incluirFueraDeHoja;
 
   return (
     <ModalFrame onClose={onClose} size="lg" closeOnBackdrop={false}>
@@ -132,6 +136,21 @@ export function RegistroEditorModal({
           />
         </label>
       </div>
+
+      {canIncludeFueraDeHoja ? (
+        <label className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <input
+            type="checkbox"
+            checked={draft.incluirFueraDeHoja}
+            disabled={saving}
+            onChange={onToggleIncluirFueraDeHoja}
+            className="mt-0.5"
+          />
+          <span>
+            Incluir equipos fuera de hoja de entrega (no visibles en la hoja estándar).
+          </span>
+        </label>
+      ) : null}
 
       {!isRectificacion ? (
         <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
@@ -205,7 +224,7 @@ export function RegistroEditorModal({
               <option value="">Seleccionar equipo</option>
               {equiposOrdenadosAlfabeticamente
                 .filter((catalogItem) => {
-                  if (!catalogItem.activo && catalogItem.itemId !== item.itemId) return false;
+                  if (!includeInactiveItems && !catalogItem.activo && catalogItem.itemId !== item.itemId) return false;
                   if (catalogItem.itemId === item.itemId) return true;
                   return !draft.items.some(
                     (selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId,
@@ -213,7 +232,7 @@ export function RegistroEditorModal({
                 })
                 .map((catalogItem) => (
                   <option key={catalogItem.itemId} value={catalogItem.itemId}>
-                    {catalogItem.nombre}
+                    {catalogItem.activo ? catalogItem.nombre : `${catalogItem.nombre} (fuera de hoja)`}
                   </option>
                 ))}
             </select>

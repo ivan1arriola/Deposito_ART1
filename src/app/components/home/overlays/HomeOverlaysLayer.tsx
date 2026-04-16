@@ -169,6 +169,9 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
         registroSaving={registroSaving}
         onCloseRegistroEditor={() => setRegistroDraft(null)}
         onRegistroDraftChange={(field: "fecha" | "comentarios", value: string) => setRegistroDraft((prev) => (prev ? { ...prev, [field]: value } : prev))}
+        onToggleRegistroIncluirFueraDeHoja={() =>
+          setRegistroDraft((prev) => (prev ? { ...prev, incluirFueraDeHoja: !prev.incluirFueraDeHoja } : prev))
+        }
         onToggleRegistroDestinatario={toggleRegistroDestinatario}
         onSelectAllRegistroDestinatarios={selectAllRegistroDestinatarios}
         onClearRegistroDestinatarios={clearRegistroDestinatarios}

@@ -5,6 +5,7 @@ import { OficialesSuboficialesView } from "@/app/components/views/OficialesSubof
 import { OficialesSuboficialesResumenView } from "@/app/components/views/OficialesSuboficialesResumenView";
 import { HojaMatrixView } from "@/app/components/views/HojaMatrixView";
 import { EquipoResumenView } from "@/app/components/views/EquipoResumenView";
+import { MovimientosFueraHojaView } from "@/app/components/views/MovimientosFueraHojaView";
 import { TallasResumenView } from "@/app/components/views/TallasResumenView";
 import type { PersonalForm } from "@/types/forms";
 import type { PersonnelAndSummaryViewsProps } from "./types";
@@ -205,6 +206,8 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
       {activeView === "equipo_resumen" ? (
         <EquipoResumenView data={equipoResumenData} loading={equipoResumenLoading} error={equipoResumenError} onReload={loadEquipoResumen} />
       ) : null}
+
+      {activeView === "movimientos_fuera_hoja" ? <MovimientosFueraHojaView /> : null}
 
       {activeView === "tallas_resumen" ? (
         <TallasResumenView personal={personal} baterias={baterias} oficialesSuboficiales={oficialesSuboficiales} />

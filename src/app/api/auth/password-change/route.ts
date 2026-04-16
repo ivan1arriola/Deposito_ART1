@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const result = await changePersonalPassword(user.personalCi, body.currentPassword, body.newPassword);
     if (!result.ok) {
       if (result.reason === "INVALID_CURRENT_PASSWORD") {
-        return NextResponse.json({ error: "Contrasena actual invalida." }, { status: 400 });
+        return NextResponse.json({ error: "Contraseña actual invalida." }, { status: 400 });
       }
       if (result.reason === "NOT_FOUND") {
         return NextResponse.json({ error: "Cuenta de personal no encontrada." }, { status: 404 });
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
 
     const ok = await verifyPassword(body.currentPassword, usuario.passwordHash);
     if (!ok) {
-      return NextResponse.json({ error: "Contrasena actual invalida." }, { status: 400 });
+      return NextResponse.json({ error: "Contraseña actual invalida." }, { status: 400 });
     }
 
     const passwordHash = await hashPassword(body.newPassword);
@@ -110,6 +110,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "No se pudo actualizar la contrasena." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo actualizar la contraseña." }, { status: 500 });
   }
 }

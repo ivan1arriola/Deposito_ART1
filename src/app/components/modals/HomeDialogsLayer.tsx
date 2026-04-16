@@ -67,6 +67,7 @@ type HomeDialogsLayerProps = {
   registroSaving: boolean;
   onCloseRegistroEditor: () => void;
   onRegistroDraftChange: (field: "fecha" | "comentarios", value: string) => void;
+  onToggleRegistroIncluirFueraDeHoja: () => void;
   onToggleRegistroDestinatario: (ci: string) => void;
   onSelectAllRegistroDestinatarios: () => void;
   onClearRegistroDestinatarios: () => void;
@@ -135,6 +136,7 @@ export function HomeDialogsLayer({
   registroSaving,
   onCloseRegistroEditor,
   onRegistroDraftChange,
+  onToggleRegistroIncluirFueraDeHoja,
   onToggleRegistroDestinatario,
   onSelectAllRegistroDestinatarios,
   onClearRegistroDestinatarios,
@@ -224,6 +226,7 @@ export function HomeDialogsLayer({
         onClose={onCloseRegistroEditor}
         onDateChange={(value) => onRegistroDraftChange("fecha", value)}
         onComentariosChange={(value) => onRegistroDraftChange("comentarios", value)}
+        onToggleIncluirFueraDeHoja={onToggleRegistroIncluirFueraDeHoja}
         onToggleDestinatario={onToggleRegistroDestinatario}
         onSelectAllDestinatarios={onSelectAllRegistroDestinatarios}
         onClearDestinatarios={onClearRegistroDestinatarios}

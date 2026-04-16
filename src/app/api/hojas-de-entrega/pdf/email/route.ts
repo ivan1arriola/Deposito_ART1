@@ -2,7 +2,11 @@ import { after, NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
-import { formatHojaEntregaDisplayDate, getAllHojasEntregaData } from "@/lib/hoja-entrega-data";
+import {
+  formatHojaEntregaDisplayDate,
+  getAllHojasEntregaData,
+  getMovimientosFueraHojaData,
+} from "@/lib/hoja-entrega-data";
 import { sendMail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
 import { hasConstraintName, isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
@@ -16,7 +20,9 @@ import {
 } from "@/lib/server/hojas-entrega-email-jobs";
 import { buildUnidadHojasEntregaFileName } from "@/lib/server/pdf-filename";
 import { renderHojasEntregaPdf } from "@/lib/server/render-hoja-entrega-react-pdf";
+import { renderMovimientosFueraHojaPdf } from "@/lib/server/render-movimientos-fuera-hoja-react-pdf";
 import type { HojasEntregaEmailJobMetrics } from "@/lib/hojas-entrega-email-job";
+import { ParseSpeeds, PDFDocument } from "pdf-lib";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,7 +66,7 @@ async function runHojasEntregaEmailJob(input: {
     });
 
     const loadingStartedAtMs = Date.now();
-    const hojas = await getAllHojasEntregaData();
+    const [hojas, movimientosFueraHoja] = await Promise.all([getAllHojasEntregaData(), getMovimientosFueraHojaData()]);
     metrics.loadingMs = Math.max(0, Date.now() - loadingStartedAtMs);
     if (hojas.length === 0) {
       throw new Error("No hay personal para generar hojas de entrega.");
@@ -71,18 +77,39 @@ async function runHojasEntregaEmailJob(input: {
     reportProgress({
       step: "rendering-pdf",
       progress: 48,
-      message: `Generando PDF A4 consolidado de ${hojas.length} hoja(s)...`,
+      message: `Generando PDF A4 consolidado de ${hojas.length} hoja(s) con anexo de movimientos fuera de hoja...`,
       to: input.recipient,
       hojas: hojas.length,
     });
 
     const renderingStartedAtMs = Date.now();
-    const pdfBytes = await renderHojasEntregaPdf(hojas, fechaImpresion, {
-      includePageNumbers: true,
-      pageNumberLabel: "Hoja",
-      performanceMode: "fast-batch",
-      fastBatchInitialProfileId: "tight",
-    });
+    const [hojasPdfBytes, fueraHojaPdfBytes] = await Promise.all([
+      renderHojasEntregaPdf(hojas, fechaImpresion, {
+        includePageNumbers: true,
+        pageNumberLabel: "Hoja",
+        performanceMode: "fast-batch",
+        fastBatchInitialProfileId: "tight",
+      }),
+      renderMovimientosFueraHojaPdf(movimientosFueraHoja, fechaImpresion, {
+        pageNumberLabel: "Movimientos fuera de hoja",
+      }),
+    ]);
+
+    const mergedPdf = await PDFDocument.create();
+    const hojasPdf = await PDFDocument.load(hojasPdfBytes, { parseSpeed: ParseSpeeds.Fastest });
+    const fueraHojaPdf = await PDFDocument.load(fueraHojaPdfBytes, { parseSpeed: ParseSpeeds.Fastest });
+
+    const hojasPages = await mergedPdf.copyPages(hojasPdf, hojasPdf.getPageIndices());
+    for (const page of hojasPages) {
+      mergedPdf.addPage(page);
+    }
+
+    const fueraHojaPages = await mergedPdf.copyPages(fueraHojaPdf, fueraHojaPdf.getPageIndices());
+    for (const page of fueraHojaPages) {
+      mergedPdf.addPage(page);
+    }
+
+    const pdfBytes = await mergedPdf.save();
     metrics.renderingMs = Math.max(0, Date.now() - renderingStartedAtMs);
 
     await throwIfHojasEntregaEmailJobCancelled(input.jobId);

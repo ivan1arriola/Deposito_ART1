@@ -46,6 +46,35 @@ const DIACRITICS_CLASS_RE = /\\u0300-\\u036f/;
 const TRANSLITERATION_PAIR_RE =
   /["'`](á|é|í|ó|ú|Á|É|Í|Ó|Ú|ñ|Ñ)["'`]\s*:\s*["'`](a|e|i|o|u|A|E|I|O|U|n|N)["'`]/;
 
+const COMMON_SPANISH_ASCII_MISTAKES = [
+  { wrong: /\bcontrasena\b/gi, correct: "contraseña" },
+  { wrong: /\bcontrasenas\b/gi, correct: "contraseñas" },
+  { wrong: /\bcontrasenia\b/gi, correct: "contraseña" },
+  { wrong: /\bcontrasenias\b/gi, correct: "contraseñas" },
+  { wrong: /\bcontrasenna\b/gi, correct: "contraseña" },
+  { wrong: /\bcontrasennas\b/gi, correct: "contraseñas" },
+  { wrong: /\bdevolucion\b/gi, correct: "devolución" },
+  { wrong: /\bsesion\b/gi, correct: "sesión" },
+  { wrong: /\baccion\b/gi, correct: "acción" },
+  { wrong: /\bconfiguracion\b/gi, correct: "configuración" },
+  { wrong: /\bimpresion\b/gi, correct: "impresión" },
+  { wrong: /\binformacion\b/gi, correct: "información" },
+  { wrong: /\bobservacion\b/gi, correct: "observación" },
+  { wrong: /\benvio\b/gi, correct: "envío" },
+  { wrong: /\benvios\b/gi, correct: "envíos" },
+  { wrong: /\bprestamo\b/gi, correct: "préstamo" },
+  { wrong: /\bprestamos\b/gi, correct: "préstamos" },
+  { wrong: /\bespanol\b/gi, correct: "español" },
+  { wrong: /\bespanola\b/gi, correct: "española" },
+  { wrong: /\bespanoles\b/gi, correct: "españoles" },
+  { wrong: /\bespanolas\b/gi, correct: "españolas" },
+];
+
+const TYPO_SCAN_SKIP_DIRECTORIES = ["src/generated/", "prisma/"];
+
+const SOURCE_CODE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
+const STRING_LITERAL_RE = /(["'`])(?:(?!\1)[^\\]|\\.)*\1/gs;
+
 function shouldSkipFile(filePath) {
   if (SKIP_DIRECTORIES.some((prefix) => filePath.startsWith(prefix))) {
     return true;
@@ -82,6 +111,54 @@ function lineNumberAt(text, index) {
     if (text[i] === "\n") line += 1;
   }
   return line;
+}
+
+function buildSpellingSegments(filePath, text) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (!SOURCE_CODE_EXTENSIONS.has(ext)) {
+    return [{ content: text, index: 0 }];
+  }
+
+  const segments = [];
+  for (const match of text.matchAll(STRING_LITERAL_RE)) {
+    const literal = match[0];
+    const index = match.index ?? 0;
+    if (literal.length < 3) continue;
+    // Quita comillas envolventes para reportar posición aproximada dentro del literal.
+    segments.push({ content: literal.slice(1, -1), index: index + 1 });
+  }
+  return segments;
+}
+
+function collectCommonSpanishTypos(filePath, text, findings) {
+  if (TYPO_SCAN_SKIP_DIRECTORIES.some((prefix) => filePath.startsWith(prefix))) {
+    return;
+  }
+
+  const segments = buildSpellingSegments(filePath, text);
+  for (const segment of segments) {
+    const segmentText = segment.content;
+    const trimmedSegmentText = segmentText.trim();
+    const hasNaturalLanguageShape =
+      /\s/.test(trimmedSegmentText) ||
+      /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/u.test(trimmedSegmentText);
+    const looksTechnicalToken =
+      /[\/_-]/.test(trimmedSegmentText) ||
+      /^[A-Z0-9_]+$/.test(trimmedSegmentText);
+
+    if (!hasNaturalLanguageShape || looksTechnicalToken) {
+      continue;
+    }
+
+    for (const typo of COMMON_SPANISH_ASCII_MISTAKES) {
+      for (const match of segmentText.matchAll(typo.wrong)) {
+        const typoIndex = (match.index ?? 0) + segment.index;
+        findings.push(
+          `[SPANISH] ${filePath}:${lineNumberAt(text, typoIndex)} posible typo habitual "${match[0]}"; sugerido: "${typo.correct}"`,
+        );
+      }
+    }
+  }
 }
 
 const findings = [];
@@ -126,6 +203,8 @@ for (const filePath of listTrackedFiles()) {
       `[SPANISH] ${filePath}:${lineNumberAt(text, transliterationMatch.index)} contiene transliteración manual acento->ASCII`,
     );
   }
+
+  collectCommonSpanishTypos(filePath, text, findings);
 }
 
 if (findings.length > 0) {

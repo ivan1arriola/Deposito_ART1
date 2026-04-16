@@ -191,19 +191,19 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   if (!auth.ok) return auth.response;
   await ensurePrestamoActuanteCompatibility();
   if (auth.user.rol !== "ADMIN") {
-    return NextResponse.json({ error: "Solo el administrador puede editar prestamos." }, { status: 403 });
+    return NextResponse.json({ error: "Solo el administrador puede editar préstamos." }, { status: 403 });
   }
 
   const { prestamoId: prestamoIdParam } = await context.params;
   const prestamoId = parsePrestamoId(prestamoIdParam);
   if (!prestamoId) {
-    return NextResponse.json({ error: "prestamoId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "prestamoId inválido." }, { status: 400 });
   }
 
   const body = (await request.json()) as EditPrestamoPayload;
   const motivo = String(body.motivo ?? "").trim();
   if (!motivo) {
-    return NextResponse.json({ error: "Debes indicar el motivo de la edicion." }, { status: 400 });
+    return NextResponse.json({ error: "Debes indicar el motivo de la edición." }, { status: 400 });
   }
 
   const existing = await prisma.movimiento.findUnique({
@@ -212,7 +212,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   });
 
   if (!existing || existing.tipo !== TipoMovimiento.PRESTAMO) {
-    return NextResponse.json({ error: "Prestamo no encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Préstamo no encontrado." }, { status: 404 });
   }
 
   const fechaPrestamoActualInput = formatDateOnlyFromDate(existing.fecha) ?? getTodayDateInput();
@@ -222,10 +222,10 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       : fechaPrestamoActualInput;
   const fechaPrestamo = dateInputToDate(fechaPrestamoInput);
   if (!fechaPrestamo) {
-    return NextResponse.json({ error: "fechaPrestamo invalida." }, { status: 400 });
+    return NextResponse.json({ error: "fechaPrestamo inválida." }, { status: 400 });
   }
   if (isDateInputAfterToday(fechaPrestamoInput)) {
-    return NextResponse.json({ error: "La fecha del prestamo no puede ser futura." }, { status: 400 });
+    return NextResponse.json({ error: "La fecha del préstamo no puede ser futura." }, { status: 400 });
   }
 
   const fechaDevolucionActualInput = existing.prestamoHistorial
@@ -238,27 +238,27 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     if (body.fechaDevolucion !== undefined) {
       const rawFechaDevolucion = String(body.fechaDevolucion ?? "").trim();
       if (!rawFechaDevolucion) {
-        return NextResponse.json({ error: "fechaDevolucion invalida." }, { status: 400 });
+        return NextResponse.json({ error: "fechaDevolucion inválida." }, { status: 400 });
       }
       const parsedFechaDevolucion = dateInputToDate(rawFechaDevolucion);
       if (!parsedFechaDevolucion) {
-        return NextResponse.json({ error: "fechaDevolucion invalida." }, { status: 400 });
+        return NextResponse.json({ error: "fechaDevolucion inválida." }, { status: 400 });
       }
       if (isDateInputAfterToday(rawFechaDevolucion)) {
-        return NextResponse.json({ error: "La fecha de devolucion no puede ser futura." }, { status: 400 });
+        return NextResponse.json({ error: "La fecha de devolución no puede ser futura." }, { status: 400 });
       }
       fechaDevolucionInput = rawFechaDevolucion;
       fechaDevolucion = parsedFechaDevolucion;
     }
     if (fechaDevolucionInput && isDateInputAfter(fechaPrestamoInput, fechaDevolucionInput)) {
       return NextResponse.json(
-        { error: "La fecha de devolucion no puede ser anterior a la fecha del prestamo." },
+        { error: "La fecha de devolución no puede ser anterior a la fecha del préstamo." },
         { status: 400 },
       );
     }
   } else if (body.fechaDevolucion !== undefined) {
     return NextResponse.json(
-      { error: "Solo se puede editar la fecha de devolucion en prestamos ya devueltos." },
+      { error: "Solo se puede editar la fecha de devolución en préstamos ya devueltos." },
       { status: 400 },
     );
   }
@@ -287,7 +287,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       }));
 
   if (itemUpdates.length === 0) {
-    return NextResponse.json({ error: "Debes incluir al menos un equipo para editar el prestamo." }, { status: 400 });
+    return NextResponse.json({ error: "Debes incluir al menos un equipo para editar el préstamo." }, { status: 400 });
   }
 
   const parsedItemUpdates: Array<{
@@ -303,22 +303,22 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   for (const item of itemUpdates) {
     const itemId = parseBigIntId(item.itemId);
     if (!itemId) {
-      return NextResponse.json({ error: "items: itemId invalido." }, { status: 400 });
+      return NextResponse.json({ error: "items: itemId inválido." }, { status: 400 });
     }
     const itemIdKey = itemId.toString();
     if (seenItemIds.has(itemIdKey)) {
-      return NextResponse.json({ error: "No puedes repetir equipos en la edicion del prestamo." }, { status: 400 });
+      return NextResponse.json({ error: "No puedes repetir equipos en la edición del préstamo." }, { status: 400 });
     }
     seenItemIds.add(itemIdKey);
 
     const existingItem = existingItemsById.get(itemIdKey);
     if (!existingItem) {
-      return NextResponse.json({ error: "Solo puedes editar equipos ya incluidos en el prestamo." }, { status: 400 });
+      return NextResponse.json({ error: "Solo puedes editar equipos ya incluidos en el préstamo." }, { status: 400 });
     }
 
     const cantidad = parseCantidad(item.cantidad ?? existingItem.cantidad);
     if (cantidad === null) {
-      return NextResponse.json({ error: "items: cantidad invalida." }, { status: 400 });
+      return NextResponse.json({ error: "items: cantidad inválida." }, { status: 400 });
     }
 
     const parsedEstadoEntrega =
@@ -326,7 +326,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         ? existingItem.estadoEntrega
         : parseEstadoEquipoPrestamo(item.estadoEntrega);
     if (!parsedEstadoEntrega) {
-      return NextResponse.json({ error: "items: estadoEntrega invalido." }, { status: 400 });
+      return NextResponse.json({ error: "items: estadoEntrega inválido." }, { status: 400 });
     }
 
     const comentarioEntrega =
@@ -351,7 +351,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         ? existingItem.estadoDevolucion ?? existingItem.estadoEntrega
         : parseEstadoEquipoPrestamo(item.estadoDevolucion);
     if (!parsedEstadoDevolucion) {
-      return NextResponse.json({ error: "items: estadoDevolucion invalido." }, { status: 400 });
+      return NextResponse.json({ error: "items: estadoDevolucion inválido." }, { status: 400 });
     }
 
     const comentarioDevolucion =
@@ -371,7 +371,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
 
   if (parsedItemUpdates.length !== existing.items.length) {
     return NextResponse.json(
-      { error: "Debes incluir todos los equipos del prestamo para poder editarlo." },
+      { error: "Debes incluir todos los equipos del préstamo para poder editarlo." },
       { status: 400 },
     );
   }
@@ -460,13 +460,13 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       sendPersonalMovementEmailNotification({
         request,
         ci: updated.personalCi,
-        subject: "Notificacion de prestamo - Deposito ART1",
-        headline: "Se actualizo un prestamo asociado a tu ficha.",
+        subject: "Notificación de préstamo - Depósito ART1",
+        headline: "Se actualizó un préstamo asociado a tu ficha.",
         detailLines: [
           `Recibo: ${afterSnapshot.reciboNumero}`,
           `Estado: ${afterSnapshot.estado}`,
-          `Fecha prestamo: ${afterSnapshot.fechaPrestamo ?? "-"}`,
-          afterSnapshot.fechaDevolucion ? `Fecha devolucion: ${afterSnapshot.fechaDevolucion}` : "",
+          `Fecha préstamo: ${afterSnapshot.fechaPrestamo ?? "-"}`,
+          afterSnapshot.fechaDevolucion ? `Fecha devolución: ${afterSnapshot.fechaDevolucion}` : "",
           `Motivo: ${motivo}`,
         ],
         actorLabel,
@@ -477,7 +477,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([updated.movimientoId]);
     return NextResponse.json(serializePrestamoWithActuante(updated, actuanteByMovimientoId));
   } catch {
-    return NextResponse.json({ error: "No se pudo editar el prestamo." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo editar el préstamo." }, { status: 500 });
   }
 }
 
@@ -485,13 +485,13 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
   const auth = await authorizeRequest(request, "delete_data");
   if (!auth.ok) return auth.response;
   if (auth.user.rol !== "ADMIN") {
-    return NextResponse.json({ error: "Solo el administrador puede eliminar prestamos." }, { status: 403 });
+    return NextResponse.json({ error: "Solo el administrador puede eliminar préstamos." }, { status: 403 });
   }
 
   const { prestamoId: prestamoIdParam } = await context.params;
   const prestamoId = parsePrestamoId(prestamoIdParam);
   if (!prestamoId) {
-    return NextResponse.json({ error: "prestamoId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "prestamoId inválido." }, { status: 400 });
   }
 
   const existing = await prisma.movimiento.findUnique({
@@ -500,7 +500,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
   });
 
   if (!existing || existing.tipo !== TipoMovimiento.PRESTAMO) {
-    return NextResponse.json({ error: "Prestamo no encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Préstamo no encontrado." }, { status: 404 });
   }
 
   try {
@@ -536,12 +536,12 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
       sendPersonalMovementEmailNotification({
         request,
         ci: existing.personalCi,
-        subject: "Notificacion de prestamo - Deposito ART1",
-        headline: "Se elimino un prestamo asociado a tu ficha.",
+        subject: "Notificación de préstamo - Depósito ART1",
+        headline: "Se eliminó un préstamo asociado a tu ficha.",
         detailLines: [
           `Recibo: ${existing.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo?.reciboNumero ?? `PR-${existing.movimientoId.toString().padStart(8, "0")}`}`,
           `Estado previo: ${existing.prestamoHistorial ? "DEVUELTO" : "PENDIENTE"}`,
-          `Fecha prestamo: ${formatDateOnlyFromDate(existing.fecha) ?? "-"}`,
+          `Fecha préstamo: ${formatDateOnlyFromDate(existing.fecha) ?? "-"}`,
         ],
         actorLabel,
         portalPath: "/",
@@ -550,6 +550,6 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
 
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "No se pudo eliminar el prestamo." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo eliminar el préstamo." }, { status: 500 });
   }
 }

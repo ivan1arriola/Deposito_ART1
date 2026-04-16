@@ -482,7 +482,7 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
           unidadesTotalesReasignadas: unidadesRegistrosReasignadas + unidadesStockReasignadas,
         },
       };
-    });
+    }, { maxWait: 5_000, timeout: 20_000 });
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -593,7 +593,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
       return tx.item.findUniqueOrThrow({
         where: { itemId },
       });
-    });
+    }, { maxWait: 5_000, timeout: 20_000 });
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -691,7 +691,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
         removed,
         impacto,
       };
-    });
+    }, { maxWait: 5_000, timeout: 20_000 });
 
     await logAudit({
       usuarioId: auth.user.usuarioId,

@@ -41,7 +41,19 @@ export type MainView =
   | "etiquetado_listado_cajas"
   | "etiquetado_imprimir_todas"
   | "persona_ficha"
-  | "hoja-de-entrega";
+  | "hoja-de-entrega"
+  | "movimientos_fuera_hoja";
+
+export type MovimientoFueraHojaViewRow = {
+  movimientoId: string;
+  fecha: string;
+  tipo: "ENTREGA" | "DEVOLUCION";
+  ci: string;
+  persona: string;
+  item: string;
+  cantidad: number;
+  observaciones: string | null;
+};
 
 export type RegistroTipo = "ENTREGA" | "DEVOLUCION";
 

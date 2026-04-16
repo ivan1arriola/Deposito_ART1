@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import { applyItemOrder, getOrderedItemIds, insertItemAtOrder } from "@/lib/item-ordering";
+import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
 
 type ItemPayload = {
   nombre: string;
@@ -13,10 +13,6 @@ type ItemPayload = {
 type ReorderItemsPayload = {
   orderedItemIds: Array<string | number>;
 };
-
-function isValidOrder(value: unknown) {
-  return value === undefined || (typeof value === "number" && Number.isInteger(value) && value > 0);
-}
 
 function parseItemId(value: string | number) {
   const raw = String(value).trim();
@@ -48,11 +44,23 @@ export async function GET(request: Request) {
   const auth = await authorizeRequest(request, "read_data");
   if (!auth.ok) return auth.response;
 
-  const items = await prisma.item.findMany({
-    orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
-  });
+  try {
+    const items = await withPrismaReadRetry(() =>
+      prisma.item.findMany({
+        orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
+      }),
+    );
 
-  return NextResponse.json(items.map(serializeItem));
+    return NextResponse.json(items.map(serializeItem));
+  } catch (error: unknown) {
+    if (isPrismaDatabaseUnavailable(error)) {
+      return NextResponse.json(
+        { error: "Base de datos no disponible temporalmente. Intenta nuevamente." },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: "No se pudieron cargar los equipos." }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
@@ -62,31 +70,27 @@ export async function POST(req: Request) {
   const body = (await req.json()) as ItemPayload;
   const nombre = typeof body?.nombre === "string" ? body.nombre.trim() : "";
 
-  if (!nombre || !isValidOrder(body?.ordenPdf)) {
+  if (!nombre) {
     return NextResponse.json(
-      { error: "Payload invalido. 'nombre' es obligatorio y 'ordenPdf' debe ser entero positivo." },
+      { error: "Payload invalido. 'nombre' es obligatorio." },
       { status: 400 },
     );
   }
 
   try {
     const isActive = body.activo === undefined ? true : Boolean(body.activo);
-    const created = await prisma.$transaction(async (tx) => {
-      const createdItem = await tx.item.create({
-        data: {
-          nombre,
-          activo: isActive,
-          ordenPdf: 1,
-        },
-      });
+    const highestOrderItem = await prisma.item.findFirst({
+      where: { activo: isActive },
+      orderBy: [{ ordenPdf: "desc" }],
+      select: { ordenPdf: true },
+    });
 
-      const orderedIds = await getOrderedItemIds(tx, isActive, createdItem.itemId);
-      const nextOrder = insertItemAtOrder(orderedIds, createdItem.itemId, body.ordenPdf ?? orderedIds.length + 1);
-      await applyItemOrder(tx, nextOrder);
-
-      return tx.item.findUniqueOrThrow({
-        where: { itemId: createdItem.itemId },
-      });
+    const created = await prisma.item.create({
+      data: {
+        nombre,
+        activo: isActive,
+        ordenPdf: (highestOrderItem?.ordenPdf ?? 0) + 1,
+      },
     });
 
     await logAudit({
@@ -159,7 +163,7 @@ export async function PATCH(req: Request) {
         orderBy: [{ ordenPdf: "asc" }, { itemId: "asc" }],
         select: { itemId: true, nombre: true, activo: true, ordenPdf: true },
       });
-    });
+    }, { maxWait: 5_000, timeout: 20_000 });
 
     await logAudit({
       usuarioId: auth.user.usuarioId,

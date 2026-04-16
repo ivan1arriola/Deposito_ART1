@@ -28,6 +28,17 @@ type MatrixColumn = {
   items: Array<{ nombre: string; cantidad: number }>;
 };
 
+export type MovimientoFueraHojaRow = {
+  movimientoId: string;
+  fecha: string;
+  tipo: TipoMovimiento;
+  ci: string;
+  persona: string;
+  item: string;
+  cantidad: number;
+  observaciones: string | null;
+};
+
 
 const hojaEntregaPersonalSelect = {
   ci: true,
@@ -275,4 +286,73 @@ export async function getAllHojasEntregaData(): Promise<HojaEntregaSheetData[]> 
   return [...personas]
     .sort(comparePersonalByHierarchy)
     .map((persona) => mapPersonaToHojaEntregaData(persona, itemOrder, firmas));
+}
+
+export async function getMovimientosFueraHojaData(): Promise<MovimientoFueraHojaRow[]> {
+  const movimientos = await prisma.movimiento.findMany({
+    where: {
+      tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+      items: {
+        some: {
+          item: {
+            activo: false,
+          },
+        },
+      },
+    },
+    orderBy: [{ fecha: "desc" }, { movimientoId: "desc" }],
+    select: {
+      movimientoId: true,
+      fecha: true,
+      tipo: true,
+      observaciones: true,
+      personal: {
+        select: {
+          ci: true,
+          apellido1: true,
+          apellido2: true,
+          nombre1: true,
+          nombre2: true,
+        },
+      },
+      items: {
+        where: {
+          item: {
+            activo: false,
+          },
+        },
+        select: {
+          cantidad: true,
+          item: {
+            select: {
+              nombre: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return movimientos.flatMap((movimiento) => {
+    const persona = [
+      movimiento.personal.apellido1,
+      movimiento.personal.apellido2,
+      movimiento.personal.nombre1,
+      movimiento.personal.nombre2,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+
+    return movimiento.items.map((detail) => ({
+      movimientoId: movimiento.movimientoId.toString(),
+      fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
+      tipo: movimiento.tipo,
+      ci: movimiento.personal.ci,
+      persona,
+      item: detail.item.nombre,
+      cantidad: detail.cantidad,
+      observaciones: movimiento.observaciones,
+    }));
+  });
 }

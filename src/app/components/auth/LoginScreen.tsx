@@ -158,7 +158,7 @@ export function LoginScreen({
                       <strong>Usuario:</strong> <code className="font-mono">{initCredentials.username}</code>
                     </p>
                     <p>
-                      <strong>Contrasena:</strong> <code className="font-mono">{initCredentials.password}</code>
+                      <strong>Contraseña:</strong> <code className="font-mono">{initCredentials.password}</code>
                     </p>
                   </div>
                   <p className="mt-2 text-xs italic">Guarda estas credenciales en un lugar seguro.</p>
@@ -188,14 +188,14 @@ export function LoginScreen({
                   <input
                     value={loginPassword}
                     onChange={(event) => onLoginPasswordChange(event.target.value)}
-                    placeholder="Contrasena"
+                    placeholder="Contraseña"
                     type={showLoginPassword ? "text" : "password"}
                     className="ej-login-input px-3 py-2 pr-20 text-sm"
                   />
                   <button
                     type="button"
                     onClick={onToggleLoginPasswordVisibility}
-                    aria-label={showLoginPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+                    aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                     className="absolute inset-y-0 right-2 my-1 inline-flex w-8 items-center justify-center rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
                   >
                     {showLoginPassword ? (

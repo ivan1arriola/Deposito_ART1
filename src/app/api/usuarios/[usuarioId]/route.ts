@@ -108,7 +108,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       body.rol !== undefined;
     if (hasUnsupportedFields) {
       return NextResponse.json(
-        { error: "Las cuentas de personal solo admiten cambio de contrasena y estado." },
+        { error: "Las cuentas de personal solo admiten cambio de contraseña y estado." },
         { status: 400 },
       );
     }

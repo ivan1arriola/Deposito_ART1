@@ -5,75 +5,20 @@ import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { DestinatarioSearchSelect } from "@/app/components/shared/DestinatarioSearchSelect";
 import { LoadingInline } from "@/app/components/shared";
 import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers";
-import { apellidosLabel, nombresLabel } from "@/lib/formatters";
 import { formatUruguayanCi } from "@/lib/ci";
-import { normalizeSearchText } from "@/lib/spanish-text";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
-import type { Equipo, OficialSuboficial, Personal } from "@/types/entities";
-import type { PrestamoDraft, PrestamoDraftItem, PrestamoEstadoEquipo, StockOperacionDraft, StockOperacionDraftItem } from "@/types/forms";
 import type { StockDashboardData } from "@/types/views";
-
-type StockViewProps = {
-  section: "total" | "actual" | "alta" | "baja" | "historial" | "prestamos";
-  data: StockDashboardData | null;
-  loading: boolean;
-  error: string | null;
-  canWrite: boolean;
-  equipos: Equipo[];
-  draft: StockOperacionDraft;
-  saving: boolean;
-  maxDate: string;
-  onDraftChange: (field: "tipo" | "fecha" | "comentarios", value: string) => void;
-  onDraftItemChange: (index: number, field: keyof StockOperacionDraftItem, value: string) => void;
-  onAddItem: () => void;
-  onRemoveItem: (index: number) => void;
-  onSubmit: () => void;
-  personal: Personal[];
-  oficialesSuboficiales: OficialSuboficial[];
-  prestamoDraft: PrestamoDraft;
-  prestamoSaving: boolean;
-  returningPrestamoId: string | null;
-  onPrestamoDraftChange: (
-    field:
-      | "destinatarioTipo"
-      | "destinatarioCi"
-      | "actuanteCi"
-      | "fechaPrestamo"
-      | "fechaEstimadaDevolucionTexto"
-      | "comentarios",
-    value: string,
-  ) => void;
-  onPrestamoItemChange: (index: number, field: keyof PrestamoDraftItem, value: string) => void;
-  onAddPrestamoItem: () => void;
-  onRemovePrestamoItem: (index: number) => void;
-  onSubmitPrestamo: () => void;
-  onSubmitPrestamoAndPrint: () => void;
-  onReturnPrestamo: (
-    prestamoId: string,
-    fechaDevolucion: string,
-    items?: Array<{ itemId: string; estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion?: string }>,
-  ) => void;
-  onReload: () => void;
-};
-
-function historyBadgeClass(tipo: "INGRESO" | "EGRESO" | "ENTREGA" | "DEVOLUCION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO") {
-  if (tipo === "INGRESO" || tipo === "DEVOLUCION" || tipo === "DEVOLUCION_PRESTAMO") return "bg-emerald-100 text-emerald-800";
-  if (tipo === "PRESTAMO") return "bg-amber-100 text-amber-800";
-  return "bg-rose-100 text-rose-800";
-}
-
-function reciboHref(prestamoId: string) {
-  return `/api/prestamos/${encodeURIComponent(prestamoId)}/recibo`;
-}
-
-function normalizeRankForActuante(value: string) {
-  return normalizeSearchText(value.replace(/[º°]/g, ""));
-}
-
-function isSargentoRank(abreviacion: string) {
-  const normalized = normalizeRankForActuante(abreviacion);
-  return normalized.includes("sargento") || normalized.startsWith("sgto");
-}
+import type { PrestamoEstadoEquipo } from "@/types/forms";
+import type { StockViewProps } from "./stock/types";
+import {
+  buildActuanteOptions,
+  buildDestinatarioOptions,
+  ESTADO_OPTIONS,
+  getSectionViewConfig,
+  getStockSummaryMetrics,
+  historyBadgeClass,
+  reciboHref,
+} from "./stock/utils";
 
 export function StockView({
   section,
@@ -104,58 +49,16 @@ export function StockView({
   onReturnPrestamo,
   onReload,
 }: StockViewProps) {
-  const ESTADO_OPTIONS: PrestamoEstadoEquipo[] = ["NUEVO", "BUENO", "REGULAR", "MALO"];
   const resumen = data?.resumen ?? [];
   const historial = data?.historial ?? [];
   const prestamos = data?.prestamos ?? [];
   const equiposOrdenados = [...equipos].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
 
   const destinatarioOptions = useMemo(() => {
-    if (prestamoDraft.destinatarioTipo === "PERSONAL") {
-      return [...personal]
-        .sort((a, b) =>
-          `${apellidosLabel(a)} ${nombresLabel(a)}`.localeCompare(`${apellidosLabel(b)} ${nombresLabel(b)}`, "es", {
-            sensitivity: "base",
-          }),
-        )
-        .map((persona) => ({
-          ci: persona.ci,
-          label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`,
-        }));
-    }
-
-    return oficialesSuboficiales
-      .filter((registro) => (prestamoDraft.destinatarioTipo === "OFICIAL" ? registro.tipo === "OFICIAL" : registro.tipo === "SUBOFICIAL"))
-      .slice()
-      .sort((a, b) => `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`, "es", { sensitivity: "base" }))
-      .map((registro) => ({
-        ci: registro.ci,
-        label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`,
-      }));
+    return buildDestinatarioOptions(prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales);
   }, [prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales]);
   const actuanteOptions = useMemo(() => {
-    const oficialesYSuboficiales = oficialesSuboficiales.map((registro) => ({
-      ci: registro.ci,
-      label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`.replace(/\s+/g, " ").trim(),
-    }));
-
-    const sargentos = personal
-      .filter((persona) => isSargentoRank(persona.rango.abreviacion))
-      .map((persona) => ({
-        ci: persona.ci,
-        label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`
-          .replace(/\s+/g, " ")
-          .trim(),
-      }));
-
-    const optionsByCi = new Map<string, { ci: string; label: string }>();
-    for (const option of [...oficialesYSuboficiales, ...sargentos]) {
-      if (!optionsByCi.has(option.ci)) {
-        optionsByCi.set(option.ci, option);
-      }
-    }
-
-    return Array.from(optionsByCi.values()).sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+    return buildActuanteOptions(oficialesSuboficiales, personal);
   }, [oficialesSuboficiales, personal]);
   const [returnDateByPrestamo, setReturnDateByPrestamo] = useState<Record<string, string>>({});
   const [prestamoIdFilter, setPrestamoIdFilter] = useState("");
@@ -215,33 +118,17 @@ export function StockView({
     };
   };
 
-  const totalSubalternos = resumen.reduce((total, item) => total + item.stockSubalternos, 0);
-  const totalPrestamo = resumen.reduce((total, item) => total + item.stockPrestamo, 0);
-  const totalDeposito = resumen.reduce((total, item) => total + item.stockDeposito, 0);
-  const totalUnidad = resumen.reduce((total, item) => total + item.stockUnidad, 0);
-  const itemsConStockDeposito = resumen.filter((item) => item.stockDeposito !== 0).length;
-  const itemsNegativosDeposito = resumen.filter((item) => item.stockDeposito < 0).length;
+  const {
+    totalSubalternos,
+    totalPrestamo,
+    totalDeposito,
+    totalUnidad,
+    itemsConStockDeposito,
+    itemsNegativosDeposito,
+  } = getStockSummaryMetrics(resumen);
 
-  const showSummaryCards = section === "total" || section === "actual";
-  const showManualForm = canWrite && (section === "alta" || section === "baja");
-  const showStockTable = section === "total" || section === "actual";
-  const showHistory = section === "historial";
-  const showPrestamos = section === "prestamos";
-
-  const viewTitle =
-    section === "total"
-      ? "Total de equipos en la unidad"
-      : section === "actual"
-        ? "Stock interno de deposito"
-        : section === "alta"
-          ? "Alta de stock"
-          : section === "baja"
-            ? "Baja de stock"
-            : section === "prestamos"
-              ? "Prestamos de equipo"
-              : "Historial de stock";
-
-  const stockTableTitle = section === "total" ? "Totales por item (subalternos + préstamo + depósito)" : "Stock interno de depósito por equipo";
+  const { showSummaryCards, showManualForm, showStockTable, showHistory, showPrestamos, viewTitle, stockTableTitle } =
+    getSectionViewConfig(section);
 
   return (
     <section className="mt-6 space-y-4">

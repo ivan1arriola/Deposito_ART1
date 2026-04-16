@@ -3,96 +3,22 @@
 import { FormEvent, useMemo, useState } from "react";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { LoadingInline } from "@/app/components/shared";
-import type { EtiquetadoDashboardData } from "@/types/etiquetado";
-
-export type EtiquetadoSection =
-  | "codigos_sie"
-  | "listado_cajas"
-  | "imprimir_todas";
-
-type EtiquetaOrientacion = "horizontal" | "vertical";
-
-type CreateCodigoSIEInput = {
-  codigo: string;
-  talla: string;
-  itemId: string;
-  allowDuplicateCodigo?: boolean;
-};
-
-type UpdateCodigoSIEInput = {
-  originalCodigoSIEId: string;
-  originalCodigo: string;
-  codigo: string;
-  talla: string;
-  itemId: string;
-};
-
-type CreateItemInput = {
-  nombre: string;
-};
-
-type CreateCajaInput = {
-  codigoDepositoGeneral: number;
-  estanteria: string;
-  items: Array<{
-    itemId: string;
-    cantidad: number;
-  }>;
-  codigosSIEIds: string[];
-};
-
-type EtiquetadoViewProps = {
-  section: EtiquetadoSection;
-  data: EtiquetadoDashboardData | null;
-  loading: boolean;
-  error: string | null;
-  canWrite: boolean;
-  onReload: () => void;
-  onCreateItem: (input: CreateItemInput) => void;
-  onCreateEstanteria: (codigo: string, piso: number) => void;
-  onDeleteEstanteria: (codigo: string, piso: number) => void;
-  onCreateCodigoSIE: (input: CreateCodigoSIEInput) => void;
-  onUpdateCodigoSIE: (input: UpdateCodigoSIEInput) => void;
-  onDeleteCodigoSIE: (codigoSIEId: string, codigo: string) => void;
-  onCreateCaja: (input: CreateCajaInput) => void;
-  onDeleteCaja: (codigoDepositoGeneral: number) => void;
-  onPrintCaja: (codigoDepositoGeneral: number, orientacion: EtiquetaOrientacion) => void;
-  onPrintListadoCajas: () => void;
-  onPrintTodas: (cajas: Array<{ codigoDepositoGeneral: number; orientacion: EtiquetaOrientacion }>) => void;
-};
-
-const SECTION_META: Record<EtiquetadoSection, { title: string; description: string }> = {
-  codigos_sie: {
-    title: "Códigos SIE",
-    description: "Registra equipos, códigos SIE y estanterías para su vinculación.",
-  },
-  listado_cajas: {
-    title: "Listado de Cajas",
-    description: "Consulta cajas registradas e imprime etiquetas individuales por caja.",
-  },
-  imprimir_todas: {
-    title: "Imprimir Todas las Etiquetas",
-    description: "Genera e imprime en bloque todas las etiquetas registradas.",
-  },
-};
-
-const SIE_CODE_REGEX = /^(?:\d{8}|[A-Z]{3}\d{2})$/;
-
-function normalizeCode(value: string) {
-  return value.trim().toUpperCase();
-}
-
-function normalizeEstanteriaName(value: string) {
-  return value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
-}
-
-function isValidEstanteriaName(value: string) {
-  return /^[A-Z]$/.test(value.trim().toUpperCase());
-}
-
-function formatEstanteriaLabel(piso: number, nombreEstanteria: string) {
-  return `Estanteria P${piso} - ${nombreEstanteria}`;
-}
+import type { EtiquetadoViewProps } from "./etiquetado/types";
+import {
+  buildEstanteriaLabelByCode,
+  buildEstanteriaOptions,
+  filterCajas,
+  formatEstanteriaLabel,
+  isValidEstanteriaName,
+  normalizeCode,
+  normalizeEstanteriaName,
+  sanitizeNumericInput,
+  SECTION_META,
+  SIE_CODE_REGEX,
+  sortCodigosSIE,
+  sortEtiquetadoItems,
+} from "./etiquetado/utils";
+export type { EtiquetadoSection } from "./etiquetado/types";
 
 function renderTag(label: string, tone: "neutral" | "accent" = "neutral") {
   return (
@@ -134,34 +60,15 @@ export function EtiquetadoView({
   const cajas = data?.cajas;
 
   const itemOptions = useMemo(() => {
-    const source = items ?? [];
-    return [...source].sort((a, b) => {
-      return a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
-    });
+    return sortEtiquetadoItems(items ?? []);
   }, [items]);
 
   const estanteriasList = useMemo(() => estanterias ?? [], [estanterias]);
   const estanteriaOptions = useMemo(() => {
-    return [...estanteriasList]
-      .map((estanteria) => ({
-        value: `${estanteria.piso}:${estanteria.codigo}`,
-        codigo: estanteria.codigo,
-        piso: estanteria.piso,
-        label: estanteria.etiqueta || formatEstanteriaLabel(estanteria.piso, estanteria.codigo),
-      }))
-      .sort((a, b) => {
-        if (a.piso !== b.piso) return a.piso - b.piso;
-        return a.codigo.localeCompare(b.codigo, "es", { sensitivity: "base" });
-      });
+    return buildEstanteriaOptions(estanteriasList);
   }, [estanteriasList]);
   const estanteriaLabelByCode = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const estanteria of estanteriasList) {
-      if (!map.has(estanteria.codigo)) {
-        map.set(estanteria.codigo, estanteria.etiqueta || formatEstanteriaLabel(estanteria.piso, estanteria.codigo));
-      }
-    }
-    return map;
+    return buildEstanteriaLabelByCode(estanteriasList);
   }, [estanteriasList]);
   const codigosSIEList = useMemo(() => codigosSIE ?? [], [codigosSIE]);
   const cajasList = useMemo(() => cajas ?? [], [cajas]);
@@ -194,12 +101,7 @@ export function EtiquetadoView({
     : (estanteriaOptions[0]?.value ?? "");
 
   const codigosSIEDisponibles = useMemo(
-    () =>
-      (codigosSIE ?? []).slice().sort((a, b) => {
-        const byCodigo = a.codigo.localeCompare(b.codigo, "es", { sensitivity: "base" });
-        if (byCodigo !== 0) return byCodigo;
-        return (a.talla ?? "").localeCompare(b.talla ?? "", "es", { sensitivity: "base" });
-      }),
+    () => sortCodigosSIE(codigosSIE ?? []),
     [codigosSIE],
   );
 
@@ -290,22 +192,7 @@ export function EtiquetadoView({
   );
 
   const cajasFiltradas = useMemo(() => {
-    const source = cajas ?? [];
-    const filtro = cajaFiltro.trim().toLowerCase();
-    if (!filtro) return source;
-
-    return source.filter((caja) => {
-      const texto = [
-        String(caja.codigoDepositoGeneral),
-        caja.itemNombres.join(" "),
-        caja.estanteria,
-        caja.codigosSIE.map((codigo) => codigo.codigo).join(" "),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return texto.includes(filtro);
-    });
+    return filterCajas(cajas ?? [], cajaFiltro);
   }, [cajas, cajaFiltro]);
 
   const massPrintCodes = useMemo(
@@ -413,7 +300,7 @@ export function EtiquetadoView({
   }
 
   function updateCantidadForItem(itemId: string, value: string) {
-    const normalized = value.replace(/[^\d]/g, "");
+    const normalized = sanitizeNumericInput(value);
     setNewCajaCantidadByItemId((prev) => ({ ...prev, [itemId]: normalized }));
   }
 

@@ -77,6 +77,7 @@ export type RegistroDraft = {
   ci: string;
   ciList: string[];
   tipo: RegistroTipo;
+  incluirFueraDeHoja: boolean;
   fecha: string;
   comentarios: string;
   items: RegistroDraftEquipo[];

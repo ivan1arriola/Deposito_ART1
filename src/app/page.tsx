@@ -198,7 +198,7 @@ type HojasEntregaPdfServerMetrics = {
 const STATUS_VERIFYING_SESSION = "Verificando sesión...";
 const STATUS_STARTING_SESSION = "Iniciando sesión...";
 const STATUS_ENTER_CREDENTIALS = "Ingresa tus credenciales.";
-const STATUS_SESSION_CLOSED = "Sesion cerrada. Ingresa tus credenciales.";
+const STATUS_SESSION_CLOSED = "Sesión cerrada. Ingresa tus credenciales.";
 const AUDIT_USER_FILTER_ALL = "__ALL__";
 const AUDIT_USER_FILTER_SYSTEM = "__SYSTEM__";
 const BULK_DELIVERY_EMAIL_TOAST_ID = "bulk-delivery-email-job";
@@ -293,7 +293,7 @@ function syncBulkDeliveryEmailToast(
   }
 
   if (job.status === "cancelled") {
-    toast.info("Envio cancelado.", {
+    toast.info("Envío cancelado.", {
       id: BULK_DELIVERY_EMAIL_TOAST_ID,
       description,
       duration: 7000,
@@ -446,6 +446,7 @@ export default function Home() {
   const [editBateriaOrden, setEditBateriaOrden] = useState("");
 
   const [newEquipo, setNewEquipo] = useState<EquipoForm>(EMPTY_EQUIPO_FORM);
+  const [creatingEquipo, setCreatingEquipo] = useState(false);
   const [editEquipoId, setEditEquipoId] = useState<string | null>(null);
   const [editEquipo, setEditEquipo] = useState<EquipoForm>(EMPTY_EQUIPO_FORM);
   const [equipoOrderDraftIds, setEquipoOrderDraftIds] = useState<string[] | null>(null);
@@ -549,9 +550,9 @@ export default function Home() {
       : sessionReferenceEmail;
   const bulkDeliveryEmailBusy = isActiveHojasEntregaEmailJob(bulkDeliveryEmailJob);
   const bulkDeliveryEmailDisabledReason = bulkDeliveryEmailBusy
-    ? "Ya hay un envio de hojas de entrega en curso. Puedes seguirlo desde la notificacion flotante."
+    ? "Ya hay un envío de hojas de entrega en curso. Puedes seguirlo desde la notificación flotante."
     : !currentUserReferenceEmail
-      ? "Configura un correo de referencia en tu usuario para habilitar este envio."
+      ? "Configura un correo de referencia en tu usuario para habilitar este envío."
       : null;
   const canManageOwnAccount = canWrite || isPersonalAccount;
   const canDelete = canWrite;
@@ -1024,7 +1025,7 @@ export default function Home() {
       });
       setRecordatorioConfig(result);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo actualizar la configuracion del recordatorio.";
+      const message = error instanceof Error ? error.message : "No se pudo actualizar la configuración del recordatorio.";
       setRecordatoriosError(message);
       toast.error(message);
     } finally {
@@ -1906,6 +1907,7 @@ export default function Home() {
         return;
       }
 
+      setCreatingEquipo(true);
       try {
         await createItemHandler(newEquipo.nombre, newEquipo.activo, {
           onSuccess: async () => {
@@ -1917,6 +1919,8 @@ export default function Home() {
         });
       } catch {
         // Error manejado en el handler
+      } finally {
+        setCreatingEquipo(false);
       }
     },
     [canWrite, newEquipo, loadData],
@@ -2083,9 +2087,9 @@ export default function Home() {
       });
       const resumen = impacto.resumen;
       const messageLines = [
-        `Accion destructiva e irreversible: se eliminara ${item?.nombre ?? "este equipo"} y no se puede deshacer.`,
+        `Acción destructiva e irreversible: se eliminará ${item?.nombre ?? "este equipo"} y no se puede deshacer.`,
         `Movimientos afectados: ${resumen.totalMovimientos} (registros: ${resumen.totalRegistros}, stock: ${resumen.totalStock}).`,
-        `Movimientos que quedaran vacios y se eliminaran: ${resumen.movimientosQueSeEliminan}.`,
+        `Movimientos que quedarán vacíos y se eliminarán: ${resumen.movimientosQueSeEliminan}.`,
         `Movimientos que conservaran otros equipos: ${resumen.movimientosQueSeActualizan}.`,
         `Códigos SIE a eliminar: ${resumen.totalCodigosSIE} (apariciones en cajas por código: ${resumen.totalCodigosSIEEnCajas}).`,
         `Apariciones directas del equipo en cajas: ${resumen.totalAparicionesEquipoEnCajas}.`,
@@ -3193,6 +3197,7 @@ export default function Home() {
       ci,
       ciList: [ci],
       tipo,
+      incluirFueraDeHoja: false,
       fecha: getTodayDateInput(),
       comentarios: "",
       items: [{ itemId: "", cantidad: "1" }],
@@ -3214,6 +3219,7 @@ export default function Home() {
       ci: "",
       ciList: [],
       tipo,
+      incluirFueraDeHoja: false,
       fecha: getTodayDateInput(),
       comentarios: "",
       items: [{ itemId: "", cantidad: "1" }],
@@ -3315,6 +3321,7 @@ export default function Home() {
       ci: registro.ci,
       ciList: [registro.ci],
       tipo: registro.tipo,
+      incluirFueraDeHoja: false,
       fecha: formatDateOnlyForDisplay(registro.fecha),
       comentarios: registro.comentarios ?? "",
       items:
@@ -3551,19 +3558,19 @@ export default function Home() {
   async function savePrestamo(printAfterSave = false) {
     if (prestamoSaving) return;
     if (prestamoDraft.destinatarioCi.trim() === "") {
-      setStatus("Debes seleccionar un destinatario para el prestamo.");
+      setStatus("Debes seleccionar un destinatario para el préstamo.");
       return;
     }
     if (prestamoDraft.actuanteCi.trim() === "") {
-      setStatus("Debes indicar 'por oden de' (oficial, suboficial o sargento).");
+      setStatus("Debes indicar 'por orden de' (oficial, suboficial o sargento).");
       return;
     }
     if (!parseDateInput(prestamoDraft.fechaPrestamo).valid) {
-      setStatus("La fecha del prestamo debe estar en formato DD/MM/AAAA.");
+      setStatus("La fecha del préstamo debe estar en formato DD/MM/AAAA.");
       return;
     }
     if (isDateInputAfterToday(prestamoDraft.fechaPrestamo)) {
-      setStatus("La fecha del prestamo no puede ser futura.");
+      setStatus("La fecha del préstamo no puede ser futura.");
       return;
     }
 
@@ -3583,12 +3590,12 @@ export default function Home() {
 
     const uniqueItemIds = new Set(payloadItems.map((item) => item.itemId));
     if (uniqueItemIds.size !== payloadItems.length) {
-      setStatus("No puedes repetir equipos en un mismo prestamo.");
+      setStatus("No puedes repetir equipos en un mismo préstamo.");
       return;
     }
 
     setPrestamoSaving(true);
-    setStatus("Registrando prestamo...");
+    setStatus("Registrando préstamo...");
     try {
       const created = await api<{ prestamoId: string }>("/api/prestamos", {
         method: "POST",
@@ -3604,13 +3611,13 @@ export default function Home() {
         }),
       });
       setPrestamoDraft({ ...EMPTY_PRESTAMO_DRAFT, fechaPrestamo: getTodayDateInput() });
-      setStatus("Prestamo registrado.");
+      setStatus("Préstamo registrado.");
       await reloadActiveStockData();
       if (printAfterSave) {
         window.open(`/api/prestamos/${encodeURIComponent(created.prestamoId)}/recibo`, "_blank", "noopener,noreferrer");
       }
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo registrar el prestamo.");
+      setStatus(error instanceof Error ? error.message : "No se pudo registrar el préstamo.");
     } finally {
       setPrestamoSaving(false);
     }
@@ -3633,7 +3640,7 @@ export default function Home() {
           items,
         }),
       });
-      setStatus("Devolucion de prestamo registrada.");
+      setStatus("Devolución de préstamo registrada.");
       await reloadActiveStockData();
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "No se pudo registrar la devolución del préstamo.");
@@ -3644,21 +3651,21 @@ export default function Home() {
 
   async function deletePrestamo(prestamoId: string) {
     if (!isAdmin) {
-      setStatus("Solo el administrador puede eliminar prestamos.");
+      setStatus("Solo el administrador puede eliminar préstamos.");
       return;
     }
 
     openConfirmDialog({
-      title: "Eliminar prestamo",
-      message: `Se eliminara el prestamo con ID ${prestamoId}. Esta accion no se puede deshacer.`,
-      confirmText: "Eliminar prestamo",
+      title: "Eliminar préstamo",
+      message: `Se eliminará el préstamo con ID ${prestamoId}. Esta acción no se puede deshacer.`,
+      confirmText: "Eliminar préstamo",
       tone: "danger",
       onConfirm: async () => {
-        setStatus("Eliminando prestamo...");
+        setStatus("Eliminando préstamo...");
         await api(`/api/prestamos/${encodeURIComponent(prestamoId)}`, {
           method: "DELETE",
         });
-        setStatus(`Prestamo ${prestamoId} eliminado.`);
+        setStatus(`Préstamo ${prestamoId} eliminado.`);
         await reloadActiveStockData();
       },
     });
@@ -3666,23 +3673,23 @@ export default function Home() {
 
   async function editPrestamo(prestamoId: string, payload: PrestamoEditPayload) {
     if (!isAdmin) {
-      setStatus("Solo el administrador puede editar prestamos.");
+      setStatus("Solo el administrador puede editar préstamos.");
       return;
     }
     if (editingPrestamoId) return;
 
     setEditingPrestamoId(prestamoId);
-    setStatus(`Actualizando prestamo ${prestamoId}...`);
+    setStatus(`Actualizando préstamo ${prestamoId}...`);
     try {
       await api(`/api/prestamos/${encodeURIComponent(prestamoId)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      setStatus(`Prestamo ${prestamoId} actualizado.`);
+      setStatus(`Préstamo ${prestamoId} actualizado.`);
       await reloadActiveStockData();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo editar el prestamo.";
+      const message = error instanceof Error ? error.message : "No se pudo editar el préstamo.";
       setStatus(message);
       throw error;
     } finally {
@@ -3820,6 +3827,7 @@ export default function Home() {
             setLoginPassword("");
             setShowLoginPassword(false);
             setPersonalSelfProfile(null);
+            setActiveView("dashboard");
 
             const callbackTarget =
               typeof window !== "undefined"
@@ -3845,7 +3853,7 @@ export default function Home() {
         setLoginLoading(false);
       }
     },
-    [loginMode, loginUsername, loginPassword, loadData, setLoginLoading, setLoginPassword, setShowLoginPassword],
+    [loginMode, loginUsername, loginPassword, loadData, setActiveView, setLoginLoading, setLoginPassword, setShowLoginPassword],
   );
 
   const requestPasswordReset = useCallback(
@@ -3903,7 +3911,7 @@ export default function Home() {
         { currentPassword: changeCurrentPassword, newPassword: changeNewPassword },
         {
           onSuccess: () => {
-            setStatus("Contrasena actualizada.");
+            setStatus("Contraseña actualizada.");
             setChangeCurrentPassword("");
             setChangeNewPassword("");
             setChangeConfirmPassword("");
@@ -4508,7 +4516,7 @@ export default function Home() {
           const message =
             payload && typeof payload.error === "string" && payload.error.trim() !== ""
               ? payload.error
-              : "No se encontro el seguimiento del envio solicitado.";
+              : "No se encontró el seguimiento del envío solicitado.";
 
           setBulkDeliveryEmailJob((prev) => {
             if (!prev || prev.jobId !== jobId) return prev;
@@ -4520,7 +4528,7 @@ export default function Home() {
             description: `${message}\nEl seguimiento local se detuvo.`,
             duration: 7000,
           });
-          setStatus("Seguimiento del envio cancelado localmente.");
+          setStatus("Seguimiento del envío cancelado localmente.");
           return;
         }
 
@@ -4528,7 +4536,7 @@ export default function Home() {
           const message =
             payload && typeof payload.error === "string" && payload.error.trim() !== ""
               ? payload.error
-              : "No se pudo cancelar el envio.";
+              : "No se pudo cancelar el envío.";
           throw new Error(message);
         }
 
@@ -4536,22 +4544,22 @@ export default function Home() {
         if (cancelledJob) {
           setBulkDeliveryEmailJob(cancelledJob);
           syncBulkDeliveryEmailToast(cancelledJob);
-          setStatus(payload?.message || cancelledJob.message || "Envio cancelado por el usuario.");
+          setStatus(payload?.message || cancelledJob.message || "Envío cancelado por el usuario.");
           return;
         }
 
         setBulkDeliveryEmailJob((prev) => {
           if (!prev || prev.jobId !== jobId) return prev;
-          return buildLocalCancelledJob(prev, "Envio cancelado por el usuario.");
+          return buildLocalCancelledJob(prev, "Envío cancelado por el usuario.");
         });
-        toast.info("Envio cancelado.", {
+        toast.info("Envío cancelado.", {
           id: BULK_DELIVERY_EMAIL_TOAST_ID,
-          description: "Se detuvo el seguimiento del envio en segundo plano.",
+          description: "Se detuvo el seguimiento del envío en segundo plano.",
           duration: 7000,
         });
-        setStatus("Envio cancelado por el usuario.");
+        setStatus("Envío cancelado por el usuario.");
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "No se pudo cancelar el envio.";
+        const message = error instanceof Error ? error.message : "No se pudo cancelar el envío.";
         setBulkDeliveryEmailJob((prev) => {
           if (!prev || prev.jobId !== jobId) return prev;
           return buildLocalCancelledJob(prev, "Seguimiento cancelado localmente por el usuario.");
@@ -4559,7 +4567,7 @@ export default function Home() {
 
         toast.info("Seguimiento cancelado.", {
           id: BULK_DELIVERY_EMAIL_TOAST_ID,
-          description: `Se detuvo el seguimiento local del envio.\n${message}`,
+          description: `Se detuvo el seguimiento local del envío.\n${message}`,
           duration: 7000,
         });
         setStatus(`Seguimiento cancelado localmente: ${message}`);
@@ -4577,7 +4585,7 @@ export default function Home() {
 
   const cancelBulkDeliveryEmailJob = useCallback(() => {
     if (!isActiveHojasEntregaEmailJob(bulkDeliveryEmailJob)) {
-      setStatus("No hay un envio de hojas de entrega en curso para cancelar.");
+      setStatus("No hay un envío de hojas de entrega en curso para cancelar.");
       return;
     }
     void cancelBulkDeliveryEmailJobById(bulkDeliveryEmailJob.jobId);
@@ -4605,14 +4613,14 @@ export default function Home() {
           const message =
             payload && typeof payload.error === "string" && payload.error.trim() !== ""
               ? payload.error
-              : "No se pudo consultar el estado del envio.";
+              : "No se pudo consultar el estado del envío.";
           const pollError = new Error(message) as Error & { status?: number };
           pollError.status = response.status;
           throw pollError;
         }
 
         if (!payload?.job) {
-          throw new Error("El servidor no devolvio el estado del envio.");
+          throw new Error("El servidor no devolvió el estado del envío.");
         }
 
         const nextJob = payload.job;
@@ -4633,7 +4641,7 @@ export default function Home() {
 
         if (nextJob.status === "cancelled") {
           clearBulkDeliveryEmailPolling();
-          setStatus(nextJob.message || "Envio cancelado por el usuario.");
+          setStatus(nextJob.message || "Envío cancelado por el usuario.");
           return;
         }
 
@@ -4642,7 +4650,7 @@ export default function Home() {
           void pollBulkDeliveryEmailJob(jobId);
         }, 1200);
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "No se pudo consultar el estado del envio.";
+        const message = error instanceof Error ? error.message : "No se pudo consultar el estado del envío.";
         const statusCode = typeof (error as { status?: unknown })?.status === "number"
           ? (error as { status: number }).status
           : null;
@@ -4663,18 +4671,18 @@ export default function Home() {
             };
           });
 
-          toast.error("Seguimiento del envio no disponible.", {
+          toast.error("Seguimiento del envío no disponible.", {
             id: BULK_DELIVERY_EMAIL_TOAST_ID,
-            description: `${message}\nPuedes iniciar un nuevo envio cuando lo necesites.`,
+            description: `${message}\nPuedes iniciar un nuevo envío cuando lo necesites.`,
             duration: 9000,
           });
-          setStatus(`No se pudo continuar el seguimiento del envio: ${message}`);
+          setStatus(`No se pudo continuar el seguimiento del envío: ${message}`);
           return;
         }
 
         toast.loading("Enviando PDF por correo en segundo plano...", {
           id: BULK_DELIVERY_EMAIL_TOAST_ID,
-          description: `Seguimos consultando el estado del envio...\n${message}`,
+          description: `Seguimos consultando el estado del envío...\n${message}`,
           duration: Infinity,
           cancel: {
             label: "Cancelar",
@@ -4822,12 +4830,12 @@ export default function Home() {
     }
 
     if (isActiveHojasEntregaEmailJob(bulkDeliveryEmailJob)) {
-      setStatus("Ya hay un envio de hojas de entrega ejecutandose en segundo plano.");
+      setStatus("Ya hay un envío de hojas de entrega ejecutándose en segundo plano.");
       syncBulkDeliveryEmailToast(bulkDeliveryEmailJob, onBulkDeliveryEmailToastCancel);
       return;
     }
 
-    setStatus(`Iniciando envio en segundo plano de ${personal.length} hojas de entrega...`);
+    setStatus(`Iniciando envío en segundo plano de ${personal.length} hojas de entrega...`);
 
     try {
       const response = await fetch("/api/hojas-de-entrega/pdf/email", {
@@ -4853,7 +4861,7 @@ export default function Home() {
         bulkDeliveryEmailPollTimeoutRef.current = window.setTimeout(() => {
           void pollBulkDeliveryEmailJob(existingJob.jobId);
         }, 250);
-        setStatus("El envio ya estaba en curso. Se retomó el seguimiento.");
+        setStatus("El envío ya estaba en curso. Se retomó el seguimiento.");
         return;
       }
 
@@ -4861,12 +4869,12 @@ export default function Home() {
         const message =
           payload && typeof payload.error === "string" && payload.error.trim() !== ""
             ? payload.error
-            : "No se pudo iniciar el envio del PDF por correo.";
+            : "No se pudo iniciar el envío del PDF por correo.";
         throw new Error(message);
       }
 
       if (!payload?.job) {
-        throw new Error("El servidor no devolvio el seguimiento del envio.");
+        throw new Error("El servidor no devolvió el seguimiento del envío.");
       }
 
       const startedJob = payload.job;
@@ -4876,11 +4884,11 @@ export default function Home() {
       bulkDeliveryEmailPollTimeoutRef.current = window.setTimeout(() => {
         void pollBulkDeliveryEmailJob(startedJob.jobId);
       }, 250);
-      setStatus(payload.message || "Envio de PDF iniciado en segundo plano.");
+      setStatus(payload.message || "Envío de PDF iniciado en segundo plano.");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo iniciar el envio del PDF por correo.";
-      setStatus(`Error al iniciar envio de PDF por correo: ${message}`);
-      toast.error("No se pudo iniciar el envio por correo.", { description: message });
+      const message = error instanceof Error ? error.message : "No se pudo iniciar el envío del PDF por correo.";
+      setStatus(`Error al iniciar envío de PDF por correo: ${message}`);
+      toast.error("No se pudo iniciar el envío por correo.", { description: message });
     }
   }, [
     bulkDeliveryEmailJob,
@@ -5107,16 +5115,16 @@ export default function Home() {
       normalizedStatus.startsWith("iniciando"));
   const isLoginGlobalBusy = !currentUser && (isPageBootLoading || loginLoading);
   const loginBusyLabel = loginLoading
-    ? "Validando credenciales y preparando tu sesion..."
+    ? "Validando credenciales y preparando tu sesión..."
     : isPageBootLoading
-      ? "Verificando sesion activa..."
+      ? "Verificando sesión activa..."
       : "Cargando pantalla de acceso...";
   const personaProfileLoading = personaProfile?.loading ?? false;
   const primaryLoadSteps = useMemo(
     () => [
-      "Consultando base de datos de personal, rangos y baterias...",
-      "Cargando tallas, catalogo de equipos y configuraciones base...",
-      "Consolidando movimientos, prestamos, devoluciones y stock...",
+      "Consultando base de datos de personal, rangos y baterías...",
+      "Cargando tallas, catálogo de equipos y configuraciones base...",
+      "Consolidando movimientos, préstamos, devoluciones y stock...",
       "Aplicando permisos de usuario y preparando la interfaz...",
     ],
     [],
@@ -5165,11 +5173,11 @@ export default function Home() {
       return;
     }
     if (bulkDeliveryPdfPhase === "rendering-server") {
-      appendBulkDeliveryPdfLog("Servidor procesando generacion de hojas y compaginacion.");
+      appendBulkDeliveryPdfLog("Servidor procesando generación de hojas y compaginación.");
       return;
     }
     if (bulkDeliveryPdfPhase === "downloading-response") {
-      appendBulkDeliveryPdfLog("Servidor finalizo, iniciando descarga de respuesta.");
+      appendBulkDeliveryPdfLog("Servidor finalizó, iniciando descarga de respuesta.");
       return;
     }
     if (bulkDeliveryPdfPhase === "preparing-download") {
@@ -5313,8 +5321,8 @@ export default function Home() {
     if (loading) return primaryLoadingLabel;
     if (bulkDeliveryPdfLoading) return bulkDeliveryPdfLabel;
     if (personaProfileLoading) return "Cargando ficha completa y consolidando información de esta persona...";
-    if (firmaConfigLoading) return "Cargando configuracion de firmas y auditoria...";
-    if (firmaConfigSaving) return "Guardando configuracion de firmas...";
+    if (firmaConfigLoading) return "Cargando configuración de firmas y auditoría...";
+    if (firmaConfigSaving) return "Guardando configuración de firmas...";
     if (hojaMatrixLoading) return "Cargando datos y calculando hoja matriz de subalternos...";
     if (equipoResumenLoading) return "Cargando datos y calculando resumen de equipos por bateria...";
     if (stockLoading) {
@@ -5322,18 +5330,18 @@ export default function Home() {
         return "Cargando historial y calculando impacto de movimientos en stock...";
       }
       if (activeStockLoadProfile?.key === "prestamos") {
-        return "Cargando prestamos y estado de devoluciones...";
+        return "Cargando préstamos y estado de devoluciones...";
       }
       return "Cargando stock y recalculando totales operativos...";
     }
     if (etiquetadoLoading) {
       if (activeEtiquetadoSection === "codigos_sie") {
-        return "Cargando codigos SIE y validando disponibilidad...";
+        return "Cargando códigos SIE y validando disponibilidad...";
       }
       if (activeEtiquetadoSection === "imprimir_todas") {
         return "Cargando etiquetas y preparando impresion masiva...";
       }
-      return "Cargando modulo de etiquetado...";
+      return "Cargando módulo de etiquetado...";
     }
     if (recordatoriosLoading) return "Cargando tareas y recordatorios...";
     if (recordatoriosSaving) return "Guardando cambios de recordatorios...";
@@ -5346,17 +5354,17 @@ export default function Home() {
         ? "Registrando baja de stock y recalculando existencias..."
         : "Registrando alta de stock y recalculando existencias...";
     }
-    if (prestamoSaving) return "Registrando prestamo y actualizando stock en tiempo real...";
-    if (returningPrestamoId !== null) return "Registrando devolucion y recalculando stock...";
-    if (editingPrestamoId !== null) return "Actualizando prestamo y validando consistencia...";
+    if (prestamoSaving) return "Registrando préstamo y actualizando stock en tiempo real...";
+    if (returningPrestamoId !== null) return "Registrando devolución y recalculando stock...";
+    if (editingPrestamoId !== null) return "Actualizando préstamo y validando consistencia...";
     if (registroSaving) return "Guardando movimiento y actualizando historial...";
-    if (personalObservacionSaving) return "Guardando observacion del personal...";
-    if (changeLoading) return "Actualizando tu contrasena...";
+    if (personalObservacionSaving) return "Guardando observación del personal...";
+    if (changeLoading) return "Actualizando tu contraseña...";
     if (userRoleSaving) return "Actualizando rol del usuario...";
-    if (userPasswordSaving) return "Actualizando contrasena del usuario...";
+    if (userPasswordSaving) return "Actualizando contraseña del usuario...";
     if (usernameSaving) return "Actualizando datos del usuario...";
     if (confirmDialogBusy) return "Aplicando cambios solicitados...";
-    return "Actualizando informacion...";
+    return "Actualizando información...";
   }, [
     bulkDeliveryPdfLabel,
     bulkDeliveryPdfLoading,
@@ -5687,6 +5695,7 @@ export default function Home() {
           updateNewOficialSuboficialField={updateNewOficialSuboficialField}
           newEquipo={newEquipo}
           loading={loading}
+          creatingEquipo={creatingEquipo}
           createEquipo={createEquipo}
           setNewEquipo={setNewEquipo}
           newBateria={newBateria}

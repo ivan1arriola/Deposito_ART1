@@ -137,10 +137,11 @@ const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
   { view: "etiquetado_imprimir_todas", label: "Imprimir todas", shortLabel: "Imprimir", icon: icons.imprimir },
 ];
 
-const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen">>> = [
+const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen" | "movimientos_fuera_hoja">>> = [
   { view: "personal", label: "Personal subalterno", icon: icons.personal },
   { view: "hoja_matrix", label: "Hoja matriz", icon: icons.matrix },
   { view: "equipo_resumen", label: "Resumen de equipo en baterías", icon: icons.resumenEquipo },
+  { view: "movimientos_fuera_hoja", label: "Movimientos fuera de hoja", icon: icons.history },
 ];
 
 const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficiales" | "oficiales_resumen" | "suboficiales_resumen">>> = [
@@ -315,7 +316,11 @@ export function MainNavigation({
   const [menuAnchors, setMenuAnchors] = useState<Partial<Record<MenuKey, HTMLElement | null>>>({});
 
   const isDashboardView = activeView === "dashboard";
-  const isPersonalView = activeView === "personal" || activeView === "hoja_matrix" || activeView === "equipo_resumen";
+  const isPersonalView =
+    activeView === "personal" ||
+    activeView === "hoja_matrix" ||
+    activeView === "equipo_resumen" ||
+    activeView === "movimientos_fuera_hoja";
   const isOficialesSuboficialesView =
     activeView === "oficiales" ||
     activeView === "suboficiales" ||
@@ -442,7 +447,7 @@ export function MainNavigation({
                 startIcon={icons.dashboard}
                 sx={navButtonSx(isDashboardView, embedded)}
               >
-                Dashboard principal
+                Pagina Principal
               </Button>
 
               <ExpandedMenuGroup title="Personal subalterno" icon={icons.personal} compact={embedded}>
@@ -559,7 +564,7 @@ export function MainNavigation({
                 startIcon={icons.dashboard}
                 sx={navButtonSx(isDashboardView, embedded)}
               >
-                Dashboard principal
+                Pagina Principal
               </Button>
 
               <Box>

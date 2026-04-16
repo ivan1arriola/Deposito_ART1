@@ -69,7 +69,7 @@ export function UserPasswordModal({
               textClassName="text-xs font-semibold text-white"
             />
           ) : (
-            "Guardar contrasena"
+            "Guardar contraseña"
           )}
         </button>
       </div>

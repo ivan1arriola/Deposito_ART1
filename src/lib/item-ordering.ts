@@ -28,14 +28,15 @@ export function insertItemAtOrder(orderedIds: bigint[], itemId: bigint, order: n
 }
 
 export async function applyItemOrder(tx: ItemOrderTx, orderedIds: bigint[]) {
-  await Promise.all(
-    orderedIds.map((itemId, index) =>
-      tx.item.update({
-        where: { itemId },
-        data: { ordenPdf: index + 1 },
-      }),
-    ),
-  );
+  if (orderedIds.length === 0) return;
+
+  const valueTuples = orderedIds.map((itemId, index) => Prisma.sql`(${itemId}, ${index + 1})`);
+  await tx.$executeRaw`
+    UPDATE "public"."item" AS i
+    SET "orden_pdf" = v.orden_pdf
+    FROM (VALUES ${Prisma.join(valueTuples)}) AS v(item_id, orden_pdf)
+    WHERE i."item_id" = v.item_id
+  `;
 }
 
 export async function getNextItemOrder(tx: ItemOrderTx, activo: boolean) {

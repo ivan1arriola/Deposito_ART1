@@ -63,17 +63,17 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   const { prestamoId: prestamoIdParam } = await context.params;
   const prestamoId = parsePrestamoId(prestamoIdParam);
   if (!prestamoId) {
-    return NextResponse.json({ error: "prestamoId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "prestamoId inválido." }, { status: 400 });
   }
 
   const body = (await request.json()) as DevolucionPrestamoPayload;
   const fechaDevolucionInput = body.fechaDevolucion?.trim() || getTodayDateInput();
   const fechaDevolucion = parseFechaDevolucion(body.fechaDevolucion);
   if (!fechaDevolucion) {
-    return NextResponse.json({ error: "fechaDevolucion invalida." }, { status: 400 });
+    return NextResponse.json({ error: "fechaDevolucion inválida." }, { status: 400 });
   }
   if (isDateInputAfterToday(fechaDevolucionInput)) {
-    return NextResponse.json({ error: "La fecha de devolucion no puede ser futura." }, { status: 400 });
+    return NextResponse.json({ error: "La fecha de devolución no puede ser futura." }, { status: 400 });
   }
 
   const existing = await prisma.movimiento.findUnique({
@@ -82,20 +82,20 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   });
 
   if (!existing || existing.tipo !== TipoMovimiento.PRESTAMO) {
-    return NextResponse.json({ error: "Prestamo no encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Préstamo no encontrado." }, { status: 404 });
   }
 
   if (existing.prestamoHistorial) {
-    return NextResponse.json({ error: "El prestamo ya fue devuelto." }, { status: 409 });
+    return NextResponse.json({ error: "El préstamo ya fue devuelto." }, { status: 409 });
   }
 
   if (!existing.prestamoActivo) {
-    return NextResponse.json({ error: "El prestamo no tiene estado activo." }, { status: 409 });
+    return NextResponse.json({ error: "El préstamo no tiene estado activo." }, { status: 409 });
   }
 
   const fechaPrestamoDisplay = formatDateOnlyFromDate(existing.fecha);
   if (fechaPrestamoDisplay && isDateInputAfter(fechaPrestamoDisplay, fechaDevolucionInput)) {
-    return NextResponse.json({ error: "La fecha de devolucion no puede ser anterior a la fecha del prestamo." }, { status: 400 });
+    return NextResponse.json({ error: "La fecha de devolución no puede ser anterior a la fecha del préstamo." }, { status: 400 });
   }
 
   const devolucionInputByItemId = new Map<string, { estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion: string }>();
@@ -105,7 +105,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       const estadoDevolucion = parseEstadoEquipoPrestamo(item.estadoDevolucion) ?? "NUEVO";
       const comentarioDevolucion = String(item.comentarioDevolucion ?? "").trim();
       if (!itemId) {
-        return NextResponse.json({ error: "items: itemId invalido." }, { status: 400 });
+        return NextResponse.json({ error: "items: itemId inválido." }, { status: 400 });
       }
       const key = itemId.toString();
       devolucionInputByItemId.set(key, { estadoDevolucion, comentarioDevolucion });
@@ -191,11 +191,11 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
           apellido: auth.user.apellido,
           rol: auth.user.rol,
         },
-        `Devolucion de prestamo ${updated.movimientoId.toString()}.`,
+        `Devolución de préstamo ${updated.movimientoId.toString()}.`,
         `/api/prestamos/${encodeURIComponent(updated.movimientoId.toString())}/recibo`,
       );
     } catch {
-      // No bloquear devolucion por fallas de push.
+      // No bloquear devolución por fallas de push.
     }
 
     const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
@@ -209,11 +209,11 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       sendPersonalMovementEmailNotification({
         request,
         ci: updated.personalCi,
-        subject: "Notificacion de devolucion - Deposito ART1",
-        headline: "Se registro la devolucion de un prestamo en tu ficha.",
+        subject: "Notificación de devolución - Depósito ART1",
+        headline: "Se registró la devolución de un préstamo en tu ficha.",
         detailLines: [
           `Recibo: ${updated.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo.reciboNumero}`,
-          `Fecha de devolucion: ${formatDateOnlyForDisplay(fechaDevolucionInput)}`,
+          `Fecha de devolución: ${formatDateOnlyForDisplay(fechaDevolucionInput)}`,
           `Total de unidades: ${totalUnidadesPrestamo(updated)}`,
           `Items: ${resumenItemsLine}`,
         ],
@@ -225,6 +225,6 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([updated.movimientoId]);
     return NextResponse.json(serializePrestamoWithActuante(updated, actuanteByMovimientoId));
   } catch {
-    return NextResponse.json({ error: "No se pudo registrar la devolucion del prestamo." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo registrar la devolución del préstamo." }, { status: 500 });
   }
 }

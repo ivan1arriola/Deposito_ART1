@@ -128,7 +128,7 @@ export function UserCreateView({
               <input
                 value={password}
                 onChange={(event) => onPasswordChange(event.target.value)}
-                placeholder="Contrasena (min. 8) *"
+                placeholder="Contraseña (min. 8) *"
                 className="rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                 type="password"
                 disabled={!isAdmin}

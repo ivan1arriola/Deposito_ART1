@@ -63,7 +63,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
 
   const body = await request.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Debes confirmar la accion con la contrasena del administrador." }, { status: 400 });
+    return NextResponse.json({ error: "Debes confirmar la accion con la contraseña del administrador." }, { status: 400 });
   }
 
   const usuarioAdmin = await prisma.usuario.findUnique({
@@ -76,7 +76,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
 
   const passwordOk = await verifyPassword(body.adminPassword, usuarioAdmin.passwordHash);
   if (!passwordOk) {
-    return NextResponse.json({ error: "Contrasena invalida." }, { status: 400 });
+    return NextResponse.json({ error: "Contraseña invalida." }, { status: 400 });
   }
 
   const fechaAscensoInput = getTodayDateInput();

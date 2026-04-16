@@ -201,7 +201,7 @@ function AscensoSargentoPanel({ ci, busy, onContinue, onPrintDeliverySheet }: As
           type="password"
           value={adminPassword}
           onChange={(event) => setAdminPassword(event.target.value)}
-          placeholder="Contrasena de administrador"
+          placeholder="Contraseña de administrador"
           className="w-full rounded-lg border border-amber-400 px-3 py-2 text-sm"
           disabled={busy}
           required
