@@ -4,6 +4,8 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
 
+import { applyItemOrder } from "@/lib/item-ordering";
+
 type ItemPayload = {
   nombre: string;
   activo?: boolean;
