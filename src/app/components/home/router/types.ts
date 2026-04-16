@@ -176,7 +176,7 @@ export type PersonnelAndSummaryViewsProps = {
   hojaMatrixLoading: boolean;
   hojaMatrixError: string | null;
   loadHojaMatrix: () => Promise<void>;
-  equipoResumenData: unknown;
+  equipoResumenData: import("@/types/views").EquipoResumenData | null;
   equipoResumenLoading: boolean;
   equipoResumenError: string | null;
   loadEquipoResumen: () => Promise<void>;
@@ -184,12 +184,12 @@ export type PersonnelAndSummaryViewsProps = {
 
 export type StockPrestamoViewsProps = {
   activeView: string;
-  stockData: unknown;
+  stockData: import("@/types/views").StockDashboardData | null;
   stockLoading: boolean;
   stockError: string | null;
   canWrite: boolean;
   isAdmin: boolean;
-  equiposOrdenados: Array<unknown>;
+  equiposOrdenados: import("@/types/entities").Equipo[];
   stockDraft: StockOperacionDraft;
   stockSaving: boolean;
   maxFechaIngreso: string;
@@ -198,8 +198,8 @@ export type StockPrestamoViewsProps = {
   addStockDraftItem: () => void;
   removeStockDraftItem: (index: number) => void;
   saveStockOperation: () => Promise<void>;
-  personal: Array<unknown>;
-  oficialesSuboficiales: Array<unknown>;
+  personal: import("@/types/entities").Personal[];
+  oficialesSuboficiales: import("@/types/entities").OficialSuboficial[];
   prestamoDraft: PrestamoDraft;
   prestamoSaving: boolean;
   returningPrestamoId: string | null;
