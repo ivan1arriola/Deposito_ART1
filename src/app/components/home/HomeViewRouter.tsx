@@ -55,6 +55,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
     createOficialSuboficial,
     updateNewOficialSuboficialField,
     newEquipo,
+    creatingEquipo,
     loading,
     createEquipo,
     setNewEquipo,
@@ -241,6 +242,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
         updateNewOficialSuboficialField={updateNewOficialSuboficialField}
         newEquipo={newEquipo}
         loading={loading}
+        creatingEquipo={creatingEquipo}
         createEquipo={createEquipo}
         setNewEquipo={setNewEquipo}
         newBateria={newBateria}

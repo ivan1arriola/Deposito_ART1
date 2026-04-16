@@ -11,6 +11,7 @@ import type {
   PrestamoDraftItem,
   StockOperacionDraft,
 } from "@/types/forms";
+import { EtiquetadoDashboardData } from "@/types/etiquetado";
 
 export type CreationViewsProps = {
   activeView: string;
@@ -120,7 +121,7 @@ export type PersonnelAndSummaryViewsProps = {
   personal: Personal[];
   personalFiltrado: Personal[];
   personalFiltradoPaginado: Personal[];
-  baterias: Array<unknown>;
+  baterias: Array<{ bateriaId: number; nombre: string; orden: number }>;
   rangos: Array<{ rangoId: number; abreviacion: string; nombreCompleto: string; orden: number }>;
   canWrite: boolean;
   isAdmin: boolean;
@@ -221,7 +222,7 @@ export type StockPrestamoViewsProps = {
 export type EtiquetadoSectionProps = {
   inEtiquetadoView: boolean;
   activeEtiquetadoSection: "codigos_sie" | "listado_cajas" | "imprimir_todas" | null;
-  etiquetadoData: unknown;
+  etiquetadoData: EtiquetadoDashboardData | null;
   etiquetadoLoading: boolean;
   etiquetadoError: string | null;
   canWrite: boolean;

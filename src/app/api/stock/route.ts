@@ -399,7 +399,7 @@ export async function GET(req: Request) {
         origen: "PRESTAMO",
         tipo: "DEVOLUCION_PRESTAMO",
         afectaStock: true,
-        comentarios: `Devolucion de prestamo ${prestamo.prestamoHistorial.reciboNumero}`,
+        comentarios: `Devolución de préstamo ${prestamo.prestamoHistorial.reciboNumero}`,
         totalUnidades,
         ci: destinatario.ci || null,
         persona: destinatario.etiqueta,

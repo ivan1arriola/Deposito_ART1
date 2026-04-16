@@ -126,7 +126,29 @@ function buildSpellingSegments(filePath, text) {
     const literal = match[0];
     const index = match.index ?? 0;
     if (literal.length < 3) continue;
-    segments.push({ content: literal.slice(1, -1), index: index + 1, type: "string" });
+    // Si es template string, eliminar ${...}
+    if (literal[0] === "`") {
+      // Eliminar todo lo que esté dentro de ${...}
+      let filtered = "";
+      let depth = 0;
+      for (let i = 1; i < literal.length - 1; i++) {
+        if (literal[i] === "$" && literal[i + 1] === "{") {
+          depth++;
+          i++;
+          continue;
+        }
+        if (literal[i] === "}" && depth > 0) {
+          depth--;
+          continue;
+        }
+        if (depth === 0) filtered += literal[i];
+      }
+      if (filtered.trim().length > 0) {
+        segments.push({ content: filtered, index: index + 1, type: "string-template" });
+      }
+    } else {
+      segments.push({ content: literal.slice(1, -1), index: index + 1, type: "string" });
+    }
   }
   // Comentarios (solo para .ts, .tsx, .js, .jsx, .mjs, .cjs)
   const COMMENT_RE = /\/\/.*|\/\*[\s\S]*?\*\//g;
