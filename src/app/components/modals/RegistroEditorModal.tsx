@@ -86,10 +86,10 @@ export function RegistroEditorModal({
             {draft.modo === "rectificar"
               ? draft.tipo === "ENTREGA"
                 ? "Rectificar Entrega"
-                : "Rectificar Devolucion"
+                : "Rectificar Devolución"
               : draft.tipo === "ENTREGA"
                 ? "Registrar Entrega"
-                : "Registrar Devolucion"}
+                : "Registrar Devolución"}
           </h3>
           {isRectificacion ? <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(draft.ci)}`}</p> : null}
           {!isRectificacion ? (

@@ -166,7 +166,7 @@ describe("Handlers de Usuarios", () => {
   });
 
   describe("saveFirmaConfigHandler", () => {
-    it("deberia guardar configuracion de firmas", async () => {
+    it("deberia guardar configuración de firmas", async () => {
       const onSave = vi.fn();
       vi.mocked(api).mockResolvedValue({
         encargadoRango: "Teniente",

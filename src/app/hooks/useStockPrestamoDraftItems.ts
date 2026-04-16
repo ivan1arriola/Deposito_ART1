@@ -49,7 +49,7 @@ export function useStockPrestamoDraftItems({
     (index: number, field: keyof PrestamoDraftItem, value: string) => {
       setPrestamoDraft((prev) => {
         if (field === "itemId" && value !== "" && prev.items.some((item, itemIndex) => itemIndex !== index && item.itemId === value)) {
-          onStatusChange("Ese equipo ya fue seleccionado en este prestamo.");
+          onStatusChange("Ese equipo ya fue seleccionado en este préstamo.");
           return prev;
         }
         return {

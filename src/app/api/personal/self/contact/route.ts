@@ -17,7 +17,7 @@ export async function GET() {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
   if (user.accountType !== "PERSONAL" || !user.personalCi) {
-    return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+    return NextResponse.json({ error: "No autorizado para esta acción." }, { status: 403 });
   }
 
   const contact = await getPersonalSelfContact(user.personalCi);
@@ -34,7 +34,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
   if (user.accountType !== "PERSONAL" || !user.personalCi) {
-    return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+    return NextResponse.json({ error: "No autorizado para esta acción." }, { status: 403 });
   }
 
   const body = (await request.json().catch(() => null)) as UpdateContactPayload | null;

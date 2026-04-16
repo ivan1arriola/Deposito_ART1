@@ -17,10 +17,10 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
 
   if (user.accountType === "PERSONAL") {
     if (!user.personalCi || user.personalCi !== ciValue) {
-      return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+      return NextResponse.json({ error: "No autorizado para esta acción." }, { status: 403 });
     }
   } else if (!hasPermission(user.rol, "read_data", user.accountType)) {
-    return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+    return NextResponse.json({ error: "No autorizado para esta acción." }, { status: 403 });
   }
 
   const data = await getHojaEntregaData(ciValue);

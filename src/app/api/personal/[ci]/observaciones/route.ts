@@ -90,10 +90,10 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
 
   const fecha = parseDateOnly(body.fecha);
   if (!fecha) {
-    return NextResponse.json({ error: "La fecha de la observacion es invalida." }, { status: 400 });
+    return NextResponse.json({ error: "La fecha de la observación es invalida." }, { status: 400 });
   }
   if (isDateInputAfterToday(body.fecha)) {
-    return NextResponse.json({ error: "La fecha de la observacion no puede ser futura." }, { status: 400 });
+    return NextResponse.json({ error: "La fecha de la observación no puede ser futura." }, { status: 400 });
   }
 
   const texto = body.texto.trim();
@@ -132,6 +132,6 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
       { status: 201 },
     );
   } catch {
-    return NextResponse.json({ error: "No se pudo registrar la observacion." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo registrar la observación." }, { status: 500 });
   }
 }

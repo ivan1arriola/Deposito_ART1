@@ -258,7 +258,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       ["Pantalon", sanitizeForPDF(body.persona.tallas.PANTALON)],
       ["Kepi", sanitizeForPDF(body.persona.tallas.KEPI)],
       ["Calzado", sanitizeForPDF(body.persona.tallas.CALZADO)],
-      ["Fecha de impresion", fechaImpresion],
+      ["Fecha de impresión", fechaImpresion],
     ];
 
     tallasPairs.forEach((pair, idx) => {

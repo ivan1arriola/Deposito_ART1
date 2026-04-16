@@ -20,7 +20,7 @@ function chunkRows(rows: MovimientoFueraHojaRow[], rowsPerPage: number) {
 }
 
 function buildTipoLabel(tipo: MovimientoFueraHojaRow["tipo"]) {
-  return tipo === "ENTREGA" ? "Entrega" : "Devolucion";
+  return tipo === "ENTREGA" ? "Entrega" : "Devolución";
 }
 
 export async function renderMovimientosFueraHojaPdf(

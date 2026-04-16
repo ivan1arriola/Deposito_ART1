@@ -351,12 +351,12 @@ export function PersonalSection({
             eyebrow={emailAllDeliverySheetsBusy ? "En curso" : "Correo"}
             title={
               emailAllDeliverySheetsBusy
-                ? "Cancelar envio de hojas de entrega en segundo plano"
+                ? "Cancelar envío de hojas de entrega en segundo plano"
                 : "Enviar hojas de entrega al correo de referencia"
             }
             description={
               emailAllDeliverySheetsBusy
-                ? "Detiene el seguimiento actual y solicita cancelar el envio en el servidor."
+                ? "Detiene el seguimiento actual y solicita cancelar el envío en el servidor."
                 : "Genera el PDF consolidado de hojas de entrega y lo envia a tu correo configurado."
             }
             icon={<ForwardToInboxOutlinedIcon fontSize="small" />}

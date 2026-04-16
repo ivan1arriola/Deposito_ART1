@@ -112,7 +112,7 @@ export function getSectionViewConfig(section: StockSection) {
             : section === "baja"
               ? "Baja de stock"
               : section === "prestamos"
-                ? "Prestamos de equipo"
+                ? "Préstamos de equipo"
                 : "Historial de stock",
     stockTableTitle:
       section === "total"

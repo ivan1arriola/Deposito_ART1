@@ -702,7 +702,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
         nombre: deletionResult.removed.nombre,
         impacto: deletionResult.impacto.resumen,
         advertencia:
-          "Accion destructiva. Se elimino el equipo junto a sus codigos SIE, apariciones en cajas y movimientos vacios relacionados.",
+          "Acción destructiva. Se elimino el equipo junto a sus codigos SIE, apariciones en cajas y movimientos vacios relacionados.",
       },
     });
 

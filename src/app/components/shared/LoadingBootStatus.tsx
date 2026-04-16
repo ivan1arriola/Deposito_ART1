@@ -19,12 +19,12 @@ const BOOT_STEPS: BootStep[] = [
     detail: "Sincronizando padrones y parametros institucionales.",
   },
   {
-    title: "Calculando stock, prestamos y movimientos",
+    title: "Calculando stock, préstamos y movimientos",
     detail: "Reconstruyendo saldos y estado de equipos.",
   },
   {
     title: "Preparando paneles y accesos de la interfaz",
-    detail: "Ajustando vistas segun tu sesion y permisos.",
+    detail: "Ajustando vistas segun tu sesión y permisos.",
   },
 ];
 

@@ -175,7 +175,7 @@ function buildPersonaProfileTimeline(
       id: `prestamo-devolucion-${prestamo.prestamoId}`,
       fecha: prestamo.fechaDevolucion,
       tipo: "DEVOLUCION_PRESTAMO",
-      descripcion: `Devolución de préstamo ${prestamo.reciboNumero}`,
+      descripcion: `Devolución de préstamo ${préstamo.reciboNumero}`,
       responsable: prestamo.usuarioRecibeDevolucionNombre ?? prestamo.usuarioEntregaNombre ?? null,
       estadoPrestamo: "DEVUELTO",
       items: prestamo.items.map((item) => ({ nombre: item.nombre, cantidad: item.cantidad })),

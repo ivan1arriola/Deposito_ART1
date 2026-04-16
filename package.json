@@ -1,6 +1,6 @@
 {
   "name": "deposito-art1",
-  "version": "5.0.9",
+  "version": "5.0.10",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
@@ -20,6 +20,7 @@
     "check:encoding": "node scripts/check-utf8.mjs",
     "check:encoding:fix": "node scripts/check-utf8.mjs --fix-bom",
     "check:spanish": "node scripts/check-spanish-integrity.mjs",
+    "check:spanish:fix": "node scripts/check-spanish-integrity.mjs --fix",
     "precommit": "node scripts/bump-version-precommit.mjs",
     "prisma:generate": "prisma generate",
     "db:rebuild": "prisma db execute --file prisma/schema-base.sql && prisma generate",

@@ -63,7 +63,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
 
   const body = await request.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Debes confirmar la accion con la contraseña del administrador." }, { status: 400 });
+    return NextResponse.json({ error: "Debes confirmar la acción con la contraseña del administrador." }, { status: 400 });
   }
 
   const usuarioAdmin = await prisma.usuario.findUnique({
@@ -318,8 +318,8 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
           `Rango nuevo: ${result.rangoDestino.abreviacion} - ${result.rangoDestino.nombreCompleto}`,
           `Movimientos de vestuario reemplazados: ${result.movimientosEliminados}`,
           result.prestamoGenerado
-            ? `Prestamo generado: ${result.prestamoGenerado.reciboNumero} (${result.prestamoGenerado.totalUnidades} unidades)`
-            : "No se genero prestamo por saldo neto cero",
+            ? `Préstamo generado: ${result.prestamoGenerado.reciboNumero} (${result.prestamoGenerado.totalUnidades} unidades)`
+            : "No se genero préstamo por saldo neto cero",
         ],
         actorLabel,
         portalPath: "/",

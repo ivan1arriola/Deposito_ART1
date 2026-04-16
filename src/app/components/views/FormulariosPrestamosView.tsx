@@ -180,7 +180,7 @@ export function FormulariosPrestamosView({
         setSelectedPrestamo(null);
       }
     } catch (error) {
-      setEditDialogError(error instanceof Error ? error.message : "No se pudo editar el prestamo.");
+      setEditDialogError(error instanceof Error ? error.message : "No se pudo editar el préstamo.");
     }
   }
 
@@ -379,7 +379,7 @@ export function FormulariosPrestamosView({
                     value={prestamoDraft.fechaPrestamo}
                     disabled={prestamoSaving}
                     onChange={(value) => onPrestamoDraftChange("fechaPrestamo", value)}
-                    ariaLabel={`Fecha del prestamo. Maximo ${maxDate}`}
+                    ariaLabel={`Fecha del préstamo. Maximo ${maxDate}`}
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   />
                 </label>
@@ -401,7 +401,7 @@ export function FormulariosPrestamosView({
                     value={prestamoDraft.comentarios}
                     disabled={prestamoSaving}
                     onChange={(event) => onPrestamoDraftChange("comentarios", event.target.value)}
-                    placeholder="Dato adicional del prestamo (opcional)"
+                    placeholder="Dato adicional del préstamo (opcional)"
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   />
                 </label>
@@ -557,8 +557,8 @@ export function FormulariosPrestamosView({
               items={prestamosVigentesFiltrados}
               emptyMessage={
                 normalizedPrestamoIdFilter === ""
-                  ? "No hay prestamos vigentes."
-                  : `No hay prestamos vigentes para ID ${normalizedPrestamoIdFilter}.`
+                  ? "No hay préstamos vigentes."
+                  : `No hay préstamos vigentes para ID ${normalizedPrestamoIdFilter}.`
               }
               showReturnAction
               isAdmin={isAdmin}
@@ -581,8 +581,8 @@ export function FormulariosPrestamosView({
               items={prestamosFiltrados}
               emptyMessage={
                 normalizedPrestamoIdFilter === ""
-                  ? "No hay prestamos registrados."
-                  : `No hay prestamos para ID ${normalizedPrestamoIdFilter}.`
+                  ? "No hay préstamos registrados."
+                  : `No hay préstamos para ID ${normalizedPrestamoIdFilter}.`
               }
               showReturnAction={false}
               isAdmin={isAdmin}
@@ -765,7 +765,7 @@ export function FormulariosPrestamosView({
                   onChange={(value) =>
                     setReturnDialog((current) => (current ? { ...current, fechaDevolucion: value } : current))
                   }
-                  ariaLabel={`Fecha de devolucion. Maximo ${maxDate}`}
+                  ariaLabel={`Fecha de devolución. Maximo ${maxDate}`}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 />
               </label>
@@ -803,7 +803,7 @@ export function FormulariosPrestamosView({
                 disabled={returningPrestamoId === returnDialog.prestamo.prestamoId}
                 className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {returningPrestamoId === returnDialog.prestamo.prestamoId ? "Guardando..." : "Confirmar devolucion"}
+                {returningPrestamoId === returnDialog.prestamo.prestamoId ? "Guardando..." : "Confirmar devolución"}
               </button>
             </footer>
           </div>
@@ -825,7 +825,7 @@ export function FormulariosPrestamosView({
                   value={editDialog.fechaPrestamo}
                   disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                   onChange={(value) => setEditDialog((current) => (current ? { ...current, fechaPrestamo: value } : current))}
-                  ariaLabel={`Fecha prestamo. Maximo ${maxDate}`}
+                  ariaLabel={`Fecha préstamo. Maximo ${maxDate}`}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 />
               </label>
@@ -836,7 +836,7 @@ export function FormulariosPrestamosView({
                     value={editDialog.fechaDevolucion}
                     disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                     onChange={(value) => setEditDialog((current) => (current ? { ...current, fechaDevolucion: value } : current))}
-                    ariaLabel={`Fecha devolucion. Maximo ${maxDate}`}
+                    ariaLabel={`Fecha devolución. Maximo ${maxDate}`}
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   />
                 </label>
@@ -953,7 +953,7 @@ export function FormulariosPrestamosView({
                             return { ...current, items: nextItems };
                           })
                         }
-                        placeholder="Comentario devolucion (opcional)"
+                        placeholder="Comentario devolución (opcional)"
                         className="rounded border border-stone-300 px-3 py-2 text-sm"
                       />
                     </div>

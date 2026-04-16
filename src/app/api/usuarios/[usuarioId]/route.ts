@@ -94,7 +94,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
   if (personalCi) {
     const isAdmin = actor.accountType === "SISTEMA" && actor.rol === "ADMIN";
     if (!isAdmin) {
-      return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+      return NextResponse.json({ error: "No autorizado para esta acción." }, { status: 403 });
     }
 
     const body = (await request.json()) as UsuarioUpdatePayload;
@@ -165,7 +165,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
   const isAdmin = actor.accountType === "SISTEMA" && actor.rol === "ADMIN";
   const isReadOnly = actor.rol === "READ_ONLY";
   if (!isAdmin && !isSelfUpdate) {
-    return NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 });
+    return NextResponse.json({ error: "No autorizado para esta acción." }, { status: 403 });
   }
   if (isReadOnly) {
     return NextResponse.json({ error: "El rol Solo Lectura no puede modificar usuarios." }, { status: 403 });
@@ -268,7 +268,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
 
   if (body.confirmarMail !== undefined) {
     if (typeof body.confirmarMail !== "boolean") {
-      return NextResponse.json({ error: "Accion de verificacion invalida." }, { status: 400 });
+      return NextResponse.json({ error: "Acción de verificacion invalida." }, { status: 400 });
     }
 
     const effectiveMail = data.mailReferencia !== undefined ? data.mailReferencia : existing.mailReferencia;

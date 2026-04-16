@@ -29,7 +29,7 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
 
     const job = await getHojasEntregaEmailJob(jobId, usuario.usuarioId);
     if (!job) {
-      return NextResponse.json({ error: "No se encontro el seguimiento del envio solicitado." }, { status: 404 });
+      return NextResponse.json({ error: "No se encontro el seguimiento del envío solicitado." }, { status: 404 });
     }
 
     return NextResponse.json({ ok: true, job }, { status: 200 });
@@ -41,7 +41,7 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
       );
     }
 
-    return NextResponse.json({ error: "No se pudo consultar el estado del envio." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo consultar el estado del envío." }, { status: 500 });
   }
 }
 
@@ -67,13 +67,13 @@ export async function DELETE(request: Request, context: { params: Promise<{ jobI
 
     const cancelledJob = await cancelHojasEntregaEmailJob(jobId, usuario.usuarioId);
     if (!cancelledJob) {
-      return NextResponse.json({ error: "No se encontro el seguimiento del envio solicitado." }, { status: 404 });
+      return NextResponse.json({ error: "No se encontro el seguimiento del envío solicitado." }, { status: 404 });
     }
 
     if (cancelledJob.status !== "cancelled") {
       return NextResponse.json(
         {
-          error: "El envio ya finalizo y no puede cancelarse.",
+          error: "El envío ya finalizo y no puede cancelarse.",
           job: cancelledJob,
         },
         { status: 409 },
@@ -84,7 +84,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ jobI
       {
         ok: true,
         cancelled: true,
-        message: "Envio cancelado por el usuario.",
+        message: "Envío cancelado por el usuario.",
         job: cancelledJob,
       },
       { status: 200 },
@@ -97,6 +97,6 @@ export async function DELETE(request: Request, context: { params: Promise<{ jobI
       );
     }
 
-    return NextResponse.json({ error: "No se pudo cancelar el envio." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo cancelar el envío." }, { status: 500 });
   }
 }

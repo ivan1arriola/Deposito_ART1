@@ -665,7 +665,7 @@ export function ConfigViews(props: ConfigViewsProps) {
           </div>
           {props.firmaConfigLoading ? (
             <LoadingInline
-              label="Cargando configuracion de firmas..."
+              label="Cargando configuración de firmas..."
               className="mt-3"
               textClassName="text-sm font-medium text-stone-600"
             />

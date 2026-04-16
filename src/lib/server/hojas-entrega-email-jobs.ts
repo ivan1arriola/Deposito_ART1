@@ -305,7 +305,7 @@ export async function createHojasEntregaEmailJob(input: {
 
   const createdJob = rows[0];
   if (!createdJob) {
-    throw new Error("No se pudo crear el seguimiento del envio.");
+    throw new Error("No se pudo crear el seguimiento del envío.");
   }
 
   return toSnapshot(createdJob);
@@ -454,7 +454,7 @@ export async function setHojasEntregaEmailJobProgress(
 export async function cancelHojasEntregaEmailJob(
   jobId: string,
   userId: string,
-  message = "Envio cancelado por el usuario.",
+  message = "Envío cancelado por el usuario.",
 ): Promise<HojasEntregaEmailJobSnapshot | null> {
   await cleanupExpiredJobs();
 

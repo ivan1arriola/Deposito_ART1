@@ -17,8 +17,8 @@ export async function notifyAdminOnLogin(actor: Actor) {
   if (actor.rol === "ADMIN") return;
   await sendPushToAdmins({
     kind: "LOGIN",
-    title: "Nuevo inicio de sesion",
-    body: `${actorLabel(actor)} inicio sesion.`,
+    title: "Nuevo inicio de sesión",
+    body: `${actorLabel(actor)} inicio sesión.`,
     url: "/",
     createdAt: new Date().toISOString(),
   });

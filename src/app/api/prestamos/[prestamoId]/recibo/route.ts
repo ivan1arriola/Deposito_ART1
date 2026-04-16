@@ -332,7 +332,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
   });
 
   if (!prestamo || prestamo.tipo !== TipoMovimiento.PRESTAMO) {
-    return NextResponse.json({ error: "Prestamo no encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Préstamo no encontrado." }, { status: 404 });
   }
 
   const reciboNumero =
@@ -427,7 +427,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
 
     const topUnit = 'GRUPO "BRIG. GRAL. MANUEL ORIBE" DE ARTILLERIA 105MM NO. 1';
     const title = "DEPOSITO GENERAL";
-    const subtitle = "RECIBO DE PRESTAMO";
+    const subtitle = "RECIBO DE PRÉSTAMO";
 
     const topUnitSize = 8;
     const titleSize = 16;
@@ -513,12 +513,12 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       drawField(page, innerX, y, innerW, row2H, "Nombre", destinatarioNombre);
       y += row2H + 8;
 
-      y = drawSectionTitle(page, innerX, y, innerW, "Datos del prestamo");
+      y = drawSectionTitle(page, innerX, y, innerW, "Datos del préstamo");
 
       const col4 = (innerW - gap * 2) / 3;
       drawField(page, innerX, y, col4, boxH, "Fecha de entrega", fechaPrestamo);
-      drawField(page, innerX + col4 + gap, y, col4, boxH, "Fecha de devolucion", fechaDevolucion);
-      drawField(page, innerX + col4 * 2 + gap * 2, y, col4, boxH, "Fecha estimada devolucion", fechaEstimadaDevolucion);
+      drawField(page, innerX + col4 + gap, y, col4, boxH, "Fecha de devolución", fechaDevolucion);
+      drawField(page, innerX + col4 * 2 + gap * 2, y, col4, boxH, "Fecha estimada devolución", fechaEstimadaDevolucion);
       y += boxH + 6;
 
       y = drawFieldMultiline(page, innerX, y, innerW, "Observaciones", observaciones);
@@ -681,7 +681,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     const constanciaH = 46;
     drawRectTop(ctx.page, innerX, y, innerW, constanciaH);
     const constanciaLines = wrapText(
-      "El militar que recibe deja constancia de haber retirado los efectos detallados, en el estado indicado, comprometiendose a su adecuada conservacion y devolucion cuando le sea requerida.",
+      "El militar que recibe deja constancia de haber retirado los efectos detallados, en el estado indicado, comprometiendose a su adecuada conservacion y devolución cuando le sea requerida.",
       innerW - 12,
       regular,
       8,
@@ -704,7 +704,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     const stampW = (innerW - 12) / 2;
     const stampH = 70;
     drawTextAt(ctx.page, bold, "SELLO DE ENTREGA", innerX + 82, y + 2, 8);
-    drawTextAt(ctx.page, bold, "SELLO DE DEVOLUCION", innerX + stampW + 86, y + 2, 8);
+    drawTextAt(ctx.page, bold, "SELLO DE DEVOLUCIÓN", innerX + stampW + 86, y + 2, 8);
     drawRectTop(ctx.page, innerX, y + 12, stampW, stampH);
     drawRectTop(ctx.page, innerX + stampW + 12, y + 12, stampW, stampH);
     y += stampH + 20;
@@ -712,7 +712,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     drawTextAt(
       ctx.page,
       regular,
-      `Documento interno de control de prestamo de efectos. Impreso: ${fechaImpresion}`,
+      `Documento interno de control de préstamo de efectos. Impreso: ${fechaImpresion}`,
       innerX + 150,
       y,
       7,

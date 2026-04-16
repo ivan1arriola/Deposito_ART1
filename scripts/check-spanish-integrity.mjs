@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
@@ -113,24 +113,43 @@ function lineNumberAt(text, index) {
   return line;
 }
 
+// Solo corregir strings literales y comentarios, nunca identificadores ni claves de objetos
 function buildSpellingSegments(filePath, text) {
   const ext = path.extname(filePath).toLowerCase();
   if (!SOURCE_CODE_EXTENSIONS.has(ext)) {
-    return [{ content: text, index: 0 }];
+    return [{ content: text, index: 0, type: "text" }];
   }
 
   const segments = [];
+  // Strings literales
   for (const match of text.matchAll(STRING_LITERAL_RE)) {
     const literal = match[0];
     const index = match.index ?? 0;
     if (literal.length < 3) continue;
-    // Quita comillas envolventes para reportar posición aproximada dentro del literal.
-    segments.push({ content: literal.slice(1, -1), index: index + 1 });
+    segments.push({ content: literal.slice(1, -1), index: index + 1, type: "string" });
+  }
+  // Comentarios (solo para .ts, .tsx, .js, .jsx, .mjs, .cjs)
+  const COMMENT_RE = /\/\/.*|\/\*[\s\S]*?\*\//g;
+  for (const match of text.matchAll(COMMENT_RE)) {
+    const comment = match[0];
+    const index = match.index ?? 0;
+    if (comment.length < 3) continue;
+    segments.push({ content: comment, index, type: "comment" });
   }
   return segments;
 }
 
-function collectCommonSpanishTypos(filePath, text, findings) {
+function matchCasing(original, replacement) {
+  if (original.toUpperCase() === original) return replacement.toUpperCase();
+  if (original[0].toUpperCase() === original[0] && original.slice(1).toLowerCase() === original.slice(1))
+    return replacement[0].toUpperCase() + replacement.slice(1);
+  return replacement;
+}
+
+const args = process.argv.slice(2);
+const DO_FIX = args.includes("--fix");
+
+function collectCommonSpanishTypos(filePath, text, findings, fixEdits) {
   if (TYPO_SCAN_SKIP_DIRECTORIES.some((prefix) => filePath.startsWith(prefix))) {
     return;
   }
@@ -153,9 +172,17 @@ function collectCommonSpanishTypos(filePath, text, findings) {
     for (const typo of COMMON_SPANISH_ASCII_MISTAKES) {
       for (const match of segmentText.matchAll(typo.wrong)) {
         const typoIndex = (match.index ?? 0) + segment.index;
+        const found = match[0];
         findings.push(
-          `[SPANISH] ${filePath}:${lineNumberAt(text, typoIndex)} posible typo habitual "${match[0]}"; sugerido: "${typo.correct}"`,
+          `[SPANISH] ${filePath}:${lineNumberAt(text, typoIndex)} posible typo habitual "${found}"; sugerido: "${typo.correct}"`,
         );
+        if (DO_FIX) {
+          fixEdits.push({
+            start: typoIndex,
+            end: typoIndex + found.length,
+            replacement: matchCasing(found, typo.correct),
+          });
+        }
       }
     }
   }
@@ -181,6 +208,8 @@ for (const filePath of listTrackedFiles()) {
     continue;
   }
 
+  let fixEdits = [];
+
   if (!ALLOWED_DIACRITIC_STRIP_FILES.has(filePath)) {
     const nfdMatch = text.match(NFD_NORMALIZE_RE);
     if (nfdMatch && nfdMatch.index !== undefined) {
@@ -204,7 +233,18 @@ for (const filePath of listTrackedFiles()) {
     );
   }
 
-  collectCommonSpanishTypos(filePath, text, findings);
+  collectCommonSpanishTypos(filePath, text, findings, fixEdits);
+
+  if (DO_FIX && fixEdits.length > 0) {
+    // Aplicar los reemplazos de atrás hacia adelante para no desplazar índices
+    fixEdits.sort((a, b) => b.start - a.start);
+    let fixed = text;
+    for (const edit of fixEdits) {
+      fixed = fixed.slice(0, edit.start) + edit.replacement + fixed.slice(edit.end);
+    }
+    writeFileSync(filePath, fixed);
+    console.log(`[FIXED] ${filePath}: ${fixEdits.length} correcciones aplicadas.`);
+  }
 }
 
 if (findings.length > 0) {
@@ -213,7 +253,9 @@ if (findings.length > 0) {
     console.error(`- ${finding}`);
   }
   console.error(`Resumen: ${findings.length} problema(s) detectado(s).`);
-  process.exit(1);
+  if (!DO_FIX) process.exit(1);
 }
 
-console.log("OK: no se detectaron riesgos de eliminación de tildes/Ñ fuera de los módulos permitidos.");
+if (!findings.length) {
+  console.log("OK: no se detectaron riesgos de eliminación de tildes/Ñ fuera de los módulos permitidos.");
+}

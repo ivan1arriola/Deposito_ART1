@@ -56,10 +56,10 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string;
 
   const fecha = parseDateOnly(body.fecha);
   if (!fecha) {
-    return NextResponse.json({ error: "La fecha de la observacion es invalida." }, { status: 400 });
+    return NextResponse.json({ error: "La fecha de la observación es invalida." }, { status: 400 });
   }
   if (isDateInputAfterToday(body.fecha)) {
-    return NextResponse.json({ error: "La fecha de la observacion no puede ser futura." }, { status: 400 });
+    return NextResponse.json({ error: "La fecha de la observación no puede ser futura." }, { status: 400 });
   }
 
   const existing = await prisma.observacion.findFirst({
@@ -69,7 +69,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string;
     },
   });
   if (!existing) {
-    return NextResponse.json({ error: "Observacion no encontrada." }, { status: 404 });
+    return NextResponse.json({ error: "Observación no encontrada." }, { status: 404 });
   }
 
   const texto = body.texto.trim();
@@ -106,7 +106,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string;
       createdAt: formatDateTimeForDisplay(updated.createdAt),
     });
   } catch {
-    return NextResponse.json({ error: "No se pudo actualizar la observacion." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo actualizar la observación." }, { status: 500 });
   }
 }
 
@@ -128,7 +128,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
     },
   });
   if (!existing) {
-    return NextResponse.json({ error: "Observacion no encontrada." }, { status: 404 });
+    return NextResponse.json({ error: "Observación no encontrada." }, { status: 404 });
   }
 
   try {
@@ -150,6 +150,6 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
 
     return NextResponse.json({ ok: true, observacionId: observacionId.toString(), ci: ciDecoded });
   } catch {
-    return NextResponse.json({ error: "No se pudo eliminar la observacion." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo eliminar la observación." }, { status: 500 });
   }
 }

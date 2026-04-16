@@ -177,7 +177,7 @@ export async function authorizeRequest(
     }
     return {
       ok: false,
-      response: NextResponse.json({ error: "No se pudo validar la sesion." }, { status: 500 }),
+      response: NextResponse.json({ error: "No se pudo validar la sesión." }, { status: 500 }),
     };
   }
 
@@ -191,7 +191,7 @@ export async function authorizeRequest(
   if (!hasPermission(user.rol, permission, user.accountType)) {
     return {
       ok: false,
-      response: NextResponse.json({ error: "No autorizado para esta accion." }, { status: 403 }),
+      response: NextResponse.json({ error: "No autorizado para esta acción." }, { status: 403 }),
     };
   }
 

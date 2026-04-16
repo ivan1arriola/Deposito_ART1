@@ -35,7 +35,7 @@ function readMailerConfig(): MailerConfig {
   if (!from) missing.push("MAIL_FROM");
 
   if (missing.length > 0) {
-    throw new Error(`Configuracion SMTP incompleta: ${missing.join(", ")}.`);
+    throw new Error(`Configuración SMTP incompleta: ${missing.join(", ")}.`);
   }
 
   return { host, port, user, pass, from };

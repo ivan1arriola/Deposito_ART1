@@ -94,8 +94,8 @@ export function DashboardPrincipalView({
     },
     {
       id: "prestamos",
-      label: "Prestamos",
-      description: "Gestion de prestamos y devoluciones.",
+      label: "Préstamos",
+      description: "Gestion de préstamos y devoluciones.",
       view: "formularios",
       visible: true,
     },

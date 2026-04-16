@@ -318,7 +318,7 @@ export function StockView({
                     value={prestamoDraft.fechaPrestamo}
                     disabled={prestamoSaving}
                     onChange={(value) => onPrestamoDraftChange("fechaPrestamo", value)}
-                    ariaLabel={`Fecha del prestamo. Maximo ${maxDate}`}
+                    ariaLabel={`Fecha del préstamo. Maximo ${maxDate}`}
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   />
                 </label>
@@ -454,8 +454,8 @@ export function StockView({
               {prestamosFiltrados.length === 0 ? (
                 <p className="text-sm text-stone-600">
                   {normalizedPrestamoIdFilter === ""
-                    ? "No hay prestamos registrados."
-                    : `No hay prestamos para ID ${normalizedPrestamoIdFilter}.`}
+                    ? "No hay préstamos registrados."
+                    : `No hay préstamos para ID ${normalizedPrestamoIdFilter}.`}
                 </p>
               ) : null}
               {prestamosFiltrados.map((prestamo) => (
@@ -671,7 +671,7 @@ export function StockView({
                   onChange={(value) =>
                     setReturnDialog((current) => (current ? { ...current, fechaDevolucion: value } : current))
                   }
-                  ariaLabel={`Fecha de devolucion. Maximo ${maxDate}`}
+                  ariaLabel={`Fecha de devolución. Maximo ${maxDate}`}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 />
               </label>
@@ -709,7 +709,7 @@ export function StockView({
                 disabled={returningPrestamoId === returnDialog.prestamo.prestamoId}
                 className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {returningPrestamoId === returnDialog.prestamo.prestamoId ? "Guardando..." : "Confirmar devolucion"}
+                {returningPrestamoId === returnDialog.prestamo.prestamoId ? "Guardando..." : "Confirmar devolución"}
               </button>
             </footer>
           </div>
