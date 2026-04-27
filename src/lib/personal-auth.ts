@@ -11,7 +11,6 @@ let ensurePersonalAuthPromise: Promise<void> | null = null;
 
 const PERSONAL_IDENTITY_SELECT = {
   ci: true,
-  tipo: true,
   apellido1: true,
   apellido2: true,
   nombre1: true,
@@ -134,7 +133,7 @@ function joinName(primary: string, secondary: string | null) {
 function toPersonalAuthIdentity(record: PersonalIdentityRecord): PersonalAuthIdentity {
   return {
     ci: record.ci,
-    tipo: record.tipo,
+    tipo: record.rango.tipo,
     rangoId: record.rangoId,
     rango: {
       rangoId: record.rango.rangoId,

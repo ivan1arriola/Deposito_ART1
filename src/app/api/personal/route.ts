@@ -158,7 +158,6 @@ function buildPersonalAuditDetail(personal: {
 
 type PersonalWithRelations = {
   ci: string;
-  tipo: TipoPersonal;
   apellido1: string;
   apellido2: string | null;
   nombre1: string;
@@ -247,7 +246,7 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const personal = await prisma.personal.findMany({
-    where: { tipo: TipoPersonal.SUBALTERNO },
+    where: { rango: { tipo: TipoPersonal.SUBALTERNO } },
     include: {
       rango: true,
       subalterno: {
@@ -419,7 +418,6 @@ export async function POST(req: Request) {
       const personalCreated = await tx.personal.create({
         data: {
           ci: body.ci.trim(),
-          tipo: TipoPersonal.SUBALTERNO,
           apellido1: body.apellido1.trim(),
           apellido2: normalizeNullableText(body.apellido2),
           nombre1: body.nombre1.trim(),

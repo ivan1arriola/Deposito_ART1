@@ -59,7 +59,7 @@ export async function GET(req: Request, context: { params: Promise<{ ci: string 
   if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
 
   const persona = await prisma.personal.findFirst({
-    where: { ci: ciDecoded, tipo: TipoPersonal.SUBALTERNO },
+    where: { ci: ciDecoded, rango: { tipo: TipoPersonal.SUBALTERNO } },
     select: { ci: true },
   });
   if (!persona) {
@@ -99,7 +99,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
   const texto = body.texto.trim();
 
   const persona = await prisma.personal.findFirst({
-    where: { ci: ciDecoded, tipo: TipoPersonal.SUBALTERNO },
+    where: { ci: ciDecoded, rango: { tipo: TipoPersonal.SUBALTERNO } },
     select: { ci: true },
   });
   if (!persona) {

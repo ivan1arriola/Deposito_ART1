@@ -69,7 +69,7 @@ export default async function ResumenTallesPorBateriaPage({
       orderBy: [{ orden: "asc" }, { nombre: "asc" }],
     }),
     prisma.personal.findMany({
-      where: { tipo: TipoPersonal.SUBALTERNO },
+      where: { rango: { tipo: TipoPersonal.SUBALTERNO } },
       select: {
         ci: true,
         subalterno: {

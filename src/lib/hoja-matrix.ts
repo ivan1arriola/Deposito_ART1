@@ -66,7 +66,7 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
   const itemIndexById = new Map(itemIds.map((itemId, index) => [itemId.toString(), index]));
 
   const personalWhere: Prisma.PersonalWhereInput = {
-    tipo: TipoPersonal.SUBALTERNO,
+    rango: { tipo: TipoPersonal.SUBALTERNO },
     ...(bateria === null
       ? {}
       : bateria === SIN_BATERIA_LABEL

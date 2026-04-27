@@ -9,6 +9,7 @@ export const prestamoInclude = {
     include: {
       rango: {
         select: {
+          tipo: true,
           abreviacion: true,
           nombreCompleto: true,
         },
@@ -125,7 +126,7 @@ export function serializePrestamoWithActuante(
   return {
     prestamoId: prestamo.movimientoId.toString(),
     reciboNumero,
-    destinatarioTipo: mapDestinatarioTipo(prestamo.personal.tipo),
+    destinatarioTipo: mapDestinatarioTipo(prestamo.personal.rango.tipo),
     destinatarioCi: destinatario.ci,
     destinatarioNombre: destinatario.nombre,
     destinatarioEtiqueta: destinatario.etiqueta,

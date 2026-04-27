@@ -67,7 +67,6 @@ function normalizeNullableText(value: string | undefined) {
 
 type PersonalWithRelations = {
   ci: string;
-  tipo: TipoPersonal;
   apellido1: string;
   apellido2: string | null;
   nombre1: string;
@@ -222,9 +221,9 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
     const updated = await prisma.$transaction(async (tx) => {
       const existing = await tx.personal.findUnique({
         where: { ci: ciDecoded },
-        select: { ci: true, tipo: true },
+        select: { ci: true, rango: { select: { tipo: true } } },
       });
-      if (!existing || existing.tipo !== TipoPersonal.SUBALTERNO) {
+      if (!existing || existing.rango.tipo !== TipoPersonal.SUBALTERNO) {
         return null;
       }
 
@@ -357,9 +356,9 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
     const deleted = await prisma.$transaction(async (tx) => {
       const existing = await tx.personal.findUnique({
         where: { ci: ciDecoded },
-        select: { ci: true, tipo: true },
+        select: { ci: true, rango: { select: { tipo: true } } },
       });
-      if (!existing || existing.tipo !== TipoPersonal.SUBALTERNO) return null;
+      if (!existing || existing.rango.tipo !== TipoPersonal.SUBALTERNO) return null;
 
       const deletedTallas = await tx.personalTalla.deleteMany({
         where: { ci: ciDecoded },

@@ -11,7 +11,6 @@ import { getRangoCountByTipo, getTallaTipoIdMap } from "@/lib/reference-data-cac
 
 type OficialSuboficialRecord = {
   ci: string;
-  tipo: TipoPersonal;
   nombre1: string;
   nombre2: string | null;
   apellido1: string;
@@ -20,6 +19,7 @@ type OficialSuboficialRecord = {
   rangoId: number;
   rango: {
     rangoId: number;
+    tipo: TipoPersonal;
     abreviacion: string;
     nombreCompleto: string;
     orden: number;
@@ -86,7 +86,7 @@ function serializeOficialSuboficial(registro: OficialSuboficialRecord) {
     rangoId: registro.rangoId,
     nombre: [registro.nombre1, registro.nombre2].filter(Boolean).join(" ").trim(),
     apellido: [registro.apellido1, registro.apellido2].filter(Boolean).join(" ").trim(),
-    tipo: registro.tipo === TipoPersonal.OFICIAL ? "OFICIAL" : "SUBOFICIAL",
+    tipo: registro.rango.tipo === TipoPersonal.OFICIAL ? "OFICIAL" : "SUBOFICIAL",
     gradoMandoId: registro.rangoId,
     gradoMando: {
       gradoMandoId: registro.rango.rangoId,
@@ -100,7 +100,6 @@ function serializeOficialSuboficial(registro: OficialSuboficialRecord) {
 
 const OFICIAL_SUBOFICIAL_SELECT = {
   ci: true,
-  tipo: true,
   nombre1: true,
   nombre2: true,
   apellido1: true,
@@ -110,6 +109,7 @@ const OFICIAL_SUBOFICIAL_SELECT = {
   rango: {
     select: {
       rangoId: true,
+      tipo: true,
       abreviacion: true,
       nombreCompleto: true,
       orden: true,
@@ -130,13 +130,15 @@ export async function GET(request: Request) {
 
   const oficialesSuboficiales = await prisma.personal.findMany({
     where: {
-      tipo: {
-        in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL],
+      rango: {
+        tipo: {
+          in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL],
+        },
       },
     },
     select: OFICIAL_SUBOFICIAL_SELECT,
     orderBy: [
-      { tipo: "asc" },
+      { rango: { tipo: "asc" } },
       { rango: { orden: "asc" } },
       { apellido1: "asc" },
       { nombre1: "asc" },
@@ -212,7 +214,6 @@ export async function POST(request: Request) {
       const personal = await tx.personal.create({
         data: {
           ci,
-          tipo,
           apellido1,
           apellido2,
           nombre1,
@@ -251,7 +252,7 @@ export async function POST(request: Request) {
       entidadId: created.ci,
       detalle: {
         ci: created.ci,
-        tipo: created.tipo,
+        tipo: created.rango.tipo,
         rangoId: created.rangoId,
         telefonoContacto: created.telefonoContacto,
       },

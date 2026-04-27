@@ -112,7 +112,11 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           onPrestamoDraftChange={(field, value) =>
             setPrestamoDraft((prev: PrestamoDraft) => {
               if (field === "destinatarioTipo") {
-                return { ...prev, destinatarioTipo: value, destinatarioCi: "" };
+                return {
+                  ...prev,
+                  destinatarioTipo: value as import("@/types/forms").PrestamoDestinatarioTipo,
+                  destinatarioCi: "",
+                };
               }
               return { ...prev, [field]: value };
             })

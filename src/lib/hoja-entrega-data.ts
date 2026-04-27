@@ -241,7 +241,7 @@ export async function getHojaEntregaData(ci: string): Promise<HojaEntregaSheetDa
     prisma.personal.findFirst({
       where: {
         ci,
-        tipo: TipoPersonal.SUBALTERNO,
+        rango: { tipo: TipoPersonal.SUBALTERNO },
       },
       select: hojaEntregaPersonalSelect,
     }),
@@ -269,7 +269,7 @@ export async function getAllHojasEntregaData(): Promise<HojaEntregaSheetData[]> 
   const [personas, itemCatalog, firmas] = await Promise.all([
     prisma.personal.findMany({
       where: {
-        tipo: TipoPersonal.SUBALTERNO,
+        rango: { tipo: TipoPersonal.SUBALTERNO },
       },
       select: hojaEntregaPersonalSelect,
     }),

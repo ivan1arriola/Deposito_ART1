@@ -59,7 +59,7 @@ function parseTipoFilter(value: string | undefined): PrintTipoFilter {
 function tipoFilterConfig(filter: PrintTipoFilter) {
   if (filter === "oficial") {
     return {
-      where: { tipo: TipoPersonal.OFICIAL },
+      where: { rango: { tipo: TipoPersonal.OFICIAL } },
       title: "Resumen de Talles de Oficiales",
       subtitle: "Cantidades absolutas de cada talle para oficiales.",
       metaLabel: "Total oficiales",
@@ -67,7 +67,7 @@ function tipoFilterConfig(filter: PrintTipoFilter) {
   }
   if (filter === "suboficial") {
     return {
-      where: { tipo: TipoPersonal.SUBOFICIAL },
+      where: { rango: { tipo: TipoPersonal.SUBOFICIAL } },
       title: "Resumen de Talles de Suboficiales",
       subtitle: "Cantidades absolutas de cada talle para suboficiales.",
       metaLabel: "Total suboficiales",
@@ -75,8 +75,10 @@ function tipoFilterConfig(filter: PrintTipoFilter) {
   }
   return {
     where: {
-      tipo: {
-        in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL],
+      rango: {
+        tipo: {
+          in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL],
+        },
       },
     },
     title: "Resumen de Talles de Oficiales y Suboficiales",

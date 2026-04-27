@@ -203,7 +203,6 @@ CREATE INDEX "caja_item_codigo_sie_sie_id_idx" ON "caja_item_codigo_sie"("item_c
 
 CREATE TABLE "personal" (
   "ci" TEXT PRIMARY KEY,
-  "tipo" "tipo_personal" NOT NULL,
   "apellido1" TEXT NOT NULL,
   "apellido2" TEXT,
   "nombre1" TEXT NOT NULL,
@@ -214,11 +213,10 @@ CREATE TABLE "personal" (
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   CONSTRAINT "personal_ci_uruguaya_valida_chk" CHECK (public.es_ci_uruguaya_valida("ci")),
   CONSTRAINT "personal_telefono_contacto_uy_chk" CHECK ("telefono_contacto" IS NULL OR "telefono_contacto" ~ '^09[0-9]{7}$'),
-  CONSTRAINT "personal_grado_tipo_fk" FOREIGN KEY ("grado_id", "tipo") REFERENCES "grado"("grado_id", "tipo")
+  CONSTRAINT "personal_grado_fk" FOREIGN KEY ("grado_id") REFERENCES "grado"("grado_id")
 );
 
-CREATE INDEX "personal_tipo_idx" ON "personal"("tipo");
-CREATE INDEX "personal_grado_id_tipo_idx" ON "personal"("grado_id", "tipo");
+CREATE INDEX "personal_grado_id_idx" ON "personal"("grado_id");
 
 CREATE TABLE "subalterno" (
   "ci" TEXT PRIMARY KEY REFERENCES "personal"("ci") ON DELETE CASCADE,
@@ -283,9 +281,10 @@ BEGIN
     expected_tipo := 'SUBOFICIAL';
   END IF;
 
-  SELECT "tipo" INTO actual_tipo
-  FROM "personal"
-  WHERE "ci" = NEW."ci";
+  SELECT g."tipo" INTO actual_tipo
+  FROM "personal" p
+  JOIN "grado" g ON g."grado_id" = p."grado_id"
+  WHERE p."ci" = NEW."ci";
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'No existe personal para la CI %.', NEW."ci";
@@ -322,9 +321,10 @@ DECLARE
   in_suboficial BOOLEAN;
   total INTEGER;
 BEGIN
-  SELECT "tipo" INTO personal_tipo
-  FROM "personal"
-  WHERE "ci" = ci_text;
+  SELECT g."tipo" INTO personal_tipo
+  FROM "personal" p
+  JOIN "grado" g ON g."grado_id" = p."grado_id"
+  WHERE p."ci" = ci_text;
 
   IF NOT FOUND THEN
     RETURN;
@@ -364,7 +364,7 @@ END;
 $$;
 
 CREATE CONSTRAINT TRIGGER "personal_partition_personal_chk"
-AFTER INSERT OR UPDATE OF "tipo" ON "personal"
+AFTER INSERT OR UPDATE OF "grado_id" ON "personal"
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION public.validate_personal_partition_trigger();
@@ -533,9 +533,10 @@ AS $$
 DECLARE
   destino_tipo "tipo_personal";
 BEGIN
-  SELECT "tipo" INTO destino_tipo
-  FROM "personal"
-  WHERE "ci" = NEW."personal_ci";
+  SELECT g."tipo" INTO destino_tipo
+  FROM "personal" p
+  JOIN "grado" g ON g."grado_id" = p."grado_id"
+  WHERE p."ci" = NEW."personal_ci";
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'No existe personal para la CI %.', NEW."personal_ci";

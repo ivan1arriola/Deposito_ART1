@@ -106,7 +106,7 @@ export async function fetchPrestamoActuanteByMovimientoIds(movimientoIds: bigint
       p."nombre2" AS "nombre2"
     FROM "prestamo_actuante" pa
     JOIN "personal" p ON p."ci" = pa."personal_ci"
-    JOIN "grado" g ON g."grado_id" = p."grado_id" AND g."tipo" = p."tipo"
+    JOIN "grado" g ON g."grado_id" = p."grado_id"
     WHERE pa."movimiento_id" IN (${Prisma.join(movimientoIds)})
   `);
 

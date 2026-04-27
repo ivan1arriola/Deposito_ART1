@@ -268,7 +268,6 @@ model CajaItemCodigoSIE {
 
 model Personal {
   ci               String          @id @map("ci")
-  tipo             TipoPersonal
   apellido1        String
   apellido2        String?
   nombre1          String
@@ -277,7 +276,7 @@ model Personal {
   rangoId          Int             @map("grado_id") @db.SmallInt
   createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  rango            Rango           @relation(fields: [rangoId, tipo], references: [rangoId, tipo])
+  rango            Rango           @relation(fields: [rangoId], references: [rangoId])
   subalterno       Subalterno?
   oficial          Oficial?
   suboficial       Suboficial?
@@ -285,8 +284,7 @@ model Personal {
   movimientos      Movimiento[]
   observaciones    Observacion[]
 
-  @@index([tipo])
-  @@index([rangoId, tipo])
+  @@index([rangoId])
   @@map("personal")
 }
 

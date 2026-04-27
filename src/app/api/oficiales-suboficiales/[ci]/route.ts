@@ -12,7 +12,6 @@ import { getTallaTipoIdMap } from "@/lib/reference-data-cache";
 
 type OficialSuboficialRecord = {
   ci: string;
-  tipo: TipoPersonal;
   nombre1: string;
   nombre2: string | null;
   apellido1: string;
@@ -21,6 +20,7 @@ type OficialSuboficialRecord = {
   rangoId: number;
   rango: {
     rangoId: number;
+    tipo: TipoPersonal;
     abreviacion: string;
     nombreCompleto: string;
     orden: number;
@@ -101,7 +101,7 @@ function serializeOficialSuboficial(registro: OficialSuboficialRecord) {
     rangoId: registro.rangoId,
     nombre: [registro.nombre1, registro.nombre2].filter(Boolean).join(" ").trim(),
     apellido: [registro.apellido1, registro.apellido2].filter(Boolean).join(" ").trim(),
-    tipo: registro.tipo === TipoPersonal.OFICIAL ? "OFICIAL" : "SUBOFICIAL",
+    tipo: registro.rango.tipo === TipoPersonal.OFICIAL ? "OFICIAL" : "SUBOFICIAL",
     gradoMandoId: registro.rangoId,
     gradoMando: {
       gradoMandoId: registro.rango.rangoId,
@@ -115,7 +115,6 @@ function serializeOficialSuboficial(registro: OficialSuboficialRecord) {
 
 const OFICIAL_SUBOFICIAL_SELECT = {
   ci: true,
-  tipo: true,
   nombre1: true,
   nombre2: true,
   apellido1: true,
@@ -125,6 +124,7 @@ const OFICIAL_SUBOFICIAL_SELECT = {
   rango: {
     select: {
       rangoId: true,
+      tipo: true,
       abreviacion: true,
       nombreCompleto: true,
       orden: true,
@@ -187,15 +187,15 @@ export async function PUT(request: Request, context: { params: Promise<{ ci: str
     const updated = await prisma.$transaction(async (tx) => {
       const existing = await tx.personal.findUnique({
         where: { ci: ciDecoded },
-        select: { ci: true, tipo: true, rangoId: true },
+        select: { ci: true, rangoId: true, rango: { select: { tipo: true } } },
       });
 
-      if (!existing || (existing.tipo !== TipoPersonal.OFICIAL && existing.tipo !== TipoPersonal.SUBOFICIAL)) {
+      if (!existing || (existing.rango.tipo !== TipoPersonal.OFICIAL && existing.rango.tipo !== TipoPersonal.SUBOFICIAL)) {
         return null;
       }
 
       const rangoValido = await tx.rango.findUnique({
-        where: { rangoId_tipo: { rangoId, tipo: existing.tipo } },
+        where: { rangoId_tipo: { rangoId, tipo: existing.rango.tipo } },
         select: { rangoId: true },
       });
       if (!rangoValido) {
@@ -245,7 +245,7 @@ export async function PUT(request: Request, context: { params: Promise<{ ci: str
       entidadId: ciDecoded,
       detalle: {
         ci: ciDecoded,
-        tipo: updated.tipo,
+        tipo: updated.rango.tipo,
         rangoId,
         telefonoContacto,
       },
@@ -259,7 +259,7 @@ export async function PUT(request: Request, context: { params: Promise<{ ci: str
         subject: "Notificacion de datos personales - Deposito ART1",
         headline: "Se actualizaron datos de tu ficha personal.",
         detailLines: [
-          `Tipo: ${updated.tipo}`,
+          `Tipo: ${updated.rango.tipo}`,
           `Rango actualizado: ${updated.rango.abreviacion} - ${updated.rango.nombreCompleto}`,
           telefonoContacto ? `Celular: ${telefonoContacto}` : "Celular: sin registrar",
         ],

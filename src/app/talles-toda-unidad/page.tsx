@@ -39,7 +39,7 @@ export default async function TallesTodaUnidadPage({
 
   const [subalternos, oficialesSuboficiales, firmas] = await Promise.all([
     prisma.personal.findMany({
-      where: { tipo: TipoPersonal.SUBALTERNO },
+      where: { rango: { tipo: TipoPersonal.SUBALTERNO } },
       select: {
         ci: true,
         apellido1: true,
@@ -59,15 +59,14 @@ export default async function TallesTodaUnidadPage({
       },
     }),
     prisma.personal.findMany({
-      where: { tipo: { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] } },
+      where: { rango: { tipo: { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] } } },
       select: {
         ci: true,
-        tipo: true,
         apellido1: true,
         apellido2: true,
         nombre1: true,
         nombre2: true,
-        rango: { select: { abreviacion: true, orden: true } },
+        rango: { select: { abreviacion: true, orden: true, tipo: true } },
         tallas: {
           include: { tallaTipo: true },
           orderBy: { tallaTipoId: "asc" },
@@ -79,7 +78,7 @@ export default async function TallesTodaUnidadPage({
 
   subalternos.sort(comparePersonalByHierarchy);
   oficialesSuboficiales.sort((a, b) => {
-    if (a.tipo !== b.tipo) return a.tipo === TipoPersonal.OFICIAL ? -1 : 1;
+    if (a.rango.tipo !== b.rango.tipo) return a.rango.tipo === TipoPersonal.OFICIAL ? -1 : 1;
     const byRank = compareRanks(a.rango, b.rango);
     if (byRank !== 0) return byRank;
     const byApellido1 = a.apellido1.localeCompare(b.apellido1, "es", { sensitivity: "base" });
@@ -92,8 +91,8 @@ export default async function TallesTodaUnidadPage({
     if (byNombre2 !== 0) return byNombre2;
     return a.ci.localeCompare(b.ci, "es", { sensitivity: "base" });
   });
-  const oficiales = oficialesSuboficiales.filter((registro) => registro.tipo === TipoPersonal.OFICIAL);
-  const suboficiales = oficialesSuboficiales.filter((registro) => registro.tipo === TipoPersonal.SUBOFICIAL);
+  const oficiales = oficialesSuboficiales.filter((registro) => registro.rango.tipo === TipoPersonal.OFICIAL);
+  const suboficiales = oficialesSuboficiales.filter((registro) => registro.rango.tipo === TipoPersonal.SUBOFICIAL);
 
   const printedAt = new Date();
   const generatedAt = formatDateTimeForDisplay(printedAt);
@@ -311,13 +310,13 @@ export default async function TallesTodaUnidadPage({
                 {oficiales.map((registro, index) => {
                   const talles = tallasMap(registro.tallas);
                   return (
-                    <tr key={`of-${registro.tipo}-${registro.ci}`}>
+                    <tr key={`of-${registro.rango.tipo}-${registro.ci}`}>
                       <td className="col-index">{index + 1}</td>
                       <td className="col-grado">{registro.rango.abreviacion}</td>
                       <td className="col-nombre">{buildNombres(registro)}</td>
                       <td className="col-apellido">{buildApellidos(registro)}</td>
                       {TALLA_KEYS.map((key) => (
-                        <td key={`of-${registro.tipo}-${registro.ci}-${key}`} className="talla-value">
+                        <td key={`of-${registro.rango.tipo}-${registro.ci}-${key}`} className="talla-value">
                           {talles[key] !== "-" ? talles[key] : "Sin dato"}
                         </td>
                       ))}
@@ -366,13 +365,13 @@ export default async function TallesTodaUnidadPage({
                 {suboficiales.map((registro, index) => {
                   const talles = tallasMap(registro.tallas);
                   return (
-                    <tr key={`sof-${registro.tipo}-${registro.ci}`}>
+                    <tr key={`sof-${registro.rango.tipo}-${registro.ci}`}>
                       <td className="col-index">{index + 1}</td>
                       <td className="col-grado">{registro.rango.abreviacion}</td>
                       <td className="col-nombre">{buildNombres(registro)}</td>
                       <td className="col-apellido">{buildApellidos(registro)}</td>
                       {TALLA_KEYS.map((key) => (
-                        <td key={`sof-${registro.tipo}-${registro.ci}-${key}`} className="talla-value">
+                        <td key={`sof-${registro.rango.tipo}-${registro.ci}-${key}`} className="talla-value">
                           {talles[key] !== "-" ? talles[key] : "Sin dato"}
                         </td>
                       ))}

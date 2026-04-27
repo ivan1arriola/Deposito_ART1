@@ -31,7 +31,6 @@ type PersonaProfileEquipmentRow = {
 
 const PERSONAL_PROFILE_SELECT = {
   ci: true,
-  tipo: true,
   apellido1: true,
   apellido2: true,
   nombre1: true,
@@ -39,6 +38,7 @@ const PERSONAL_PROFILE_SELECT = {
   telefonoContacto: true,
   rango: {
     select: {
+      tipo: true,
       abreviacion: true,
       nombreCompleto: true,
     },
@@ -245,13 +245,13 @@ export async function GET(request: Request) {
       orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
       take: 300,
     }),
-    persona.tipo === TipoPersonal.SUBALTERNO
+    persona.rango.tipo === TipoPersonal.SUBALTERNO
       ? prisma.observacion.findMany({
           where: { ci },
           orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
         })
       : Promise.resolve([]),
-    persona.tipo === TipoPersonal.SUBALTERNO ? getHojaEntregaData(ci) : Promise.resolve(null),
+    persona.rango.tipo === TipoPersonal.SUBALTERNO ? getHojaEntregaData(ci) : Promise.resolve(null),
   ]);
 
   const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds(
@@ -294,7 +294,7 @@ export async function GET(request: Request) {
   }));
 
   const equipmentSummary =
-    persona.tipo === TipoPersonal.SUBALTERNO
+    persona.rango.tipo === TipoPersonal.SUBALTERNO
       ? buildEquipmentSummaryFromHoja(
           hojaSnapshot
             ? {
@@ -313,7 +313,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     identity: {
       ci: persona.ci,
-      tipo: mapPersonalTipo(persona.tipo),
+      tipo: mapPersonalTipo(persona.rango.tipo),
       apellido: joinName(persona.apellido1, persona.apellido2),
       nombre: joinName(persona.nombre1, persona.nombre2),
       gradoAbreviacion: persona.rango.abreviacion,
@@ -321,13 +321,13 @@ export async function GET(request: Request) {
       bateriaNombre: persona.subalterno?.bateria?.nombre ?? null,
       telefonoContacto: contacto?.telefonoContacto ?? persona.telefonoContacto,
       mailReferencia: contacto?.mailReferencia ?? null,
-      esReingreso: persona.tipo === TipoPersonal.SUBALTERNO ? (persona.subalterno?.esReingreso ?? false) : null,
+      esReingreso: persona.rango.tipo === TipoPersonal.SUBALTERNO ? (persona.subalterno?.esReingreso ?? false) : null,
       fechaIngreso:
-        persona.tipo === TipoPersonal.SUBALTERNO
+        persona.rango.tipo === TipoPersonal.SUBALTERNO
           ? formatDateOnlyFromDate(persona.subalterno?.fechaIngreso ?? null)
           : null,
       fechaIngresoOriginal:
-        persona.tipo === TipoPersonal.SUBALTERNO
+        persona.rango.tipo === TipoPersonal.SUBALTERNO
           ? formatDateOnlyFromDate(persona.subalterno?.fechaIngresoOriginal ?? null)
           : null,
       tallas: persona.tallas.map((talla) => ({

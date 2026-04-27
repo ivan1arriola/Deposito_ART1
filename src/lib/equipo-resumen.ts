@@ -29,7 +29,7 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
 
   const personal = await prisma.personal.findMany({
     where: {
-      tipo: TipoPersonal.SUBALTERNO,
+      rango: { tipo: TipoPersonal.SUBALTERNO },
     },
     include: {
       subalterno: {

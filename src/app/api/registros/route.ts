@@ -277,7 +277,7 @@ export async function POST(req: Request) {
   const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
   const [personalRecords, itemsFound] = await Promise.all([
     prisma.personal.findMany({
-      where: { ci: { in: targetCis }, tipo: TipoPersonal.SUBALTERNO },
+      where: { ci: { in: targetCis }, rango: { tipo: TipoPersonal.SUBALTERNO } },
       select: {
         ci: true,
         apellido1: true,

@@ -35,7 +35,7 @@ function parseTipoFilter(value: string | undefined): PrintTipoFilter {
 function tipoFilterConfig(filter: PrintTipoFilter) {
   if (filter === "oficial") {
     return {
-      where: { tipo: TipoPersonal.OFICIAL },
+      where: { rango: { tipo: TipoPersonal.OFICIAL } },
       title: "Talles de oficiales",
       subtitle: "Listado nominal de talles, uno por uno, para oficiales.",
       metaLabel: "Total oficiales",
@@ -43,14 +43,14 @@ function tipoFilterConfig(filter: PrintTipoFilter) {
   }
   if (filter === "suboficial") {
     return {
-      where: { tipo: TipoPersonal.SUBOFICIAL },
+      where: { rango: { tipo: TipoPersonal.SUBOFICIAL } },
       title: "Talles de suboficiales",
       subtitle: "Listado nominal de talles, uno por uno, para suboficiales.",
       metaLabel: "Total suboficiales",
     };
   }
   return {
-    where: { tipo: { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] } },
+    where: { rango: { tipo: { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] } } },
     title: "Talles de oficiales y suboficiales",
     subtitle: "Listado nominal de talles, uno por uno, para oficiales y suboficiales.",
     metaLabel: "Total registros",
@@ -86,12 +86,11 @@ export default async function TallesOficialesSuboficialesPage({
       where: filterConfig.where,
       select: {
         ci: true,
-        tipo: true,
         apellido1: true,
         apellido2: true,
         nombre1: true,
         nombre2: true,
-        rango: { select: { abreviacion: true, orden: true } },
+        rango: { select: { abreviacion: true, orden: true, tipo: true } },
         tallas: {
           include: { tallaTipo: true },
           orderBy: { tallaTipoId: "asc" },
@@ -102,7 +101,7 @@ export default async function TallesOficialesSuboficialesPage({
   ]);
 
   registros.sort((a, b) => {
-    if (a.tipo !== b.tipo) return a.tipo === TipoPersonal.OFICIAL ? -1 : 1;
+    if (a.rango.tipo !== b.rango.tipo) return a.rango.tipo === TipoPersonal.OFICIAL ? -1 : 1;
     const byRank = compareRanks(a.rango, b.rango);
     if (byRank !== 0) return byRank;
     const byApellido1 = a.apellido1.localeCompare(b.apellido1, "es", { sensitivity: "base" });
@@ -319,9 +318,9 @@ export default async function TallesOficialesSuboficialesPage({
             <tbody>
               {registros.map((registro, index) => {
                 const talles = tallasMap(registro.tallas);
-                const typeLabel = registro.tipo === TipoPersonal.OFICIAL ? "Oficial" : "Suboficial";
+                const typeLabel = registro.rango.tipo === TipoPersonal.OFICIAL ? "Oficial" : "Suboficial";
                 return (
-                  <tr key={`${registro.tipo}-${registro.ci}`}>
+                  <tr key={`${registro.rango.tipo}-${registro.ci}`}>
                     <td className="col-index">{index + 1}</td>
                     <td className="col-grado">{registro.rango.abreviacion}</td>
                     <td className="col-nombre">{buildNombres(registro)}</td>

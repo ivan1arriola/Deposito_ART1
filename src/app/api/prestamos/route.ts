@@ -122,12 +122,14 @@ export async function GET(request: Request) {
   }
   if (destinatarioTipo) {
     where.personal = {
-      tipo:
-        destinatarioTipo === "PERSONAL"
-          ? TipoPersonal.SUBALTERNO
-          : destinatarioTipo === "OFICIAL"
-            ? TipoPersonal.OFICIAL
-            : TipoPersonal.SUBOFICIAL,
+      rango: {
+        tipo:
+          destinatarioTipo === "PERSONAL"
+            ? TipoPersonal.SUBALTERNO
+            : destinatarioTipo === "OFICIAL"
+              ? TipoPersonal.OFICIAL
+              : TipoPersonal.SUBOFICIAL,
+      },
     };
   }
 
@@ -223,21 +225,22 @@ export async function POST(request: Request) {
     prisma.personal.findFirst({
       where: {
         ci: destinatarioCi,
-        tipo:
-          destinatarioTipo === "PERSONAL"
-            ? TipoPersonal.SUBALTERNO
-            : destinatarioTipo === "OFICIAL"
-              ? TipoPersonal.OFICIAL
-              : TipoPersonal.SUBOFICIAL,
+        rango: {
+          tipo:
+            destinatarioTipo === "PERSONAL"
+              ? TipoPersonal.SUBALTERNO
+              : destinatarioTipo === "OFICIAL"
+                ? TipoPersonal.OFICIAL
+                : TipoPersonal.SUBOFICIAL,
+        },
       },
       select: {
         ci: true,
-        tipo: true,
         apellido1: true,
         apellido2: true,
         nombre1: true,
         nombre2: true,
-        rango: { select: { abreviacion: true, nombreCompleto: true } },
+        rango: { select: { tipo: true, abreviacion: true, nombreCompleto: true } },
       },
     }),
     prisma.rango.findUnique({
@@ -270,12 +273,11 @@ export async function POST(request: Request) {
     where: { ci: actuanteCi },
     select: {
       ci: true,
-      tipo: true,
       apellido1: true,
       apellido2: true,
       nombre1: true,
       nombre2: true,
-      rango: { select: { abreviacion: true, nombreCompleto: true, orden: true } },
+      rango: { select: { tipo: true, abreviacion: true, nombreCompleto: true, orden: true } },
     },
   });
 
@@ -286,9 +288,9 @@ export async function POST(request: Request) {
   const actuanteData = actuanteFound;
 
   const isEligibleTipo =
-    actuanteData.tipo === TipoPersonal.OFICIAL ||
-    actuanteData.tipo === TipoPersonal.SUBOFICIAL ||
-    (actuanteData.tipo === TipoPersonal.SUBALTERNO &&
+    actuanteData.rango.tipo === TipoPersonal.OFICIAL ||
+    actuanteData.rango.tipo === TipoPersonal.SUBOFICIAL ||
+    (actuanteData.rango.tipo === TipoPersonal.SUBALTERNO &&
       isSargentoRank(actuanteData.rango.abreviacion, actuanteData.rango.nombreCompleto));
 
   if (!isEligibleTipo) {
