@@ -190,6 +190,7 @@ model Bateria {
 model Estanteria {
   codigo String @db.VarChar(1)
   piso   Int    @db.SmallInt
+  cajas  Caja[]
 
   @@id([codigo, piso])
   @@map("estanteria")
@@ -233,10 +234,12 @@ model ItemCodigoSIE {
 model Caja {
   codigoDepositoGeneral Int               @id @map("codigo_deposito_general")
   estanteria            String            @db.VarChar(1)
-  cantidad              Int
+  piso                  Int               @db.SmallInt
+  estanteriaRef         Estanteria        @relation(fields: [estanteria, piso], references: [codigo, piso])
   items                 CajaItem[]
   codigosSIE            CajaItemCodigoSIE[]
 
+  @@index([estanteria, piso])
   @@map("caja")
 }
 

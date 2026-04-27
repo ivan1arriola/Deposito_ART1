@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { formatUruguayanCi } from "@/lib/ci";
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
+import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { Equipo, Personal } from "@/types/entities";
 import type { RegistroDraft } from "@/types/forms";
 import { ModalFrame } from "./ModalFrame";
@@ -49,29 +50,32 @@ export function RegistroEditorModal({
 }: RegistroEditorModalProps) {
   const [destinatarioSearch, setDestinatarioSearch] = useState("");
 
+  const personalFiltradoOrdenado = useMemo(
+    () =>
+      [...personalFiltrado].sort((a, b) =>
+        `${apellidosLabel(a)} ${nombresLabel(a)}`.localeCompare(`${apellidosLabel(b)} ${nombresLabel(b)}`, "es", {
+          sensitivity: "base",
+        }),
+      ),
+    [personalFiltrado],
+  );
+  const personalSearchIndex = useMemo(
+    () =>
+      buildSearchIndex(personalFiltradoOrdenado, {
+        text: (persona) => `${apellidosLabel(persona)} ${nombresLabel(persona)}`,
+        digits: (persona) => `${persona.ci} ${formatUruguayanCi(persona.ci)}`,
+      }),
+    [personalFiltradoOrdenado],
+  );
+  const personalVisible = useMemo(
+    () => filterSearchIndex(personalSearchIndex, destinatarioSearch),
+    [destinatarioSearch, personalSearchIndex],
+  );
   if (!draft) return null;
   const isRectificacion = draft.modo === "rectificar";
   const selectedCis =
     draft.ciList.length > 0 ? Array.from(new Set(draft.ciList)) : draft.ci.trim() !== "" ? [draft.ci.trim()] : [];
   const selectedCiSet = new Set(selectedCis);
-  const personalFiltradoOrdenado = [...personalFiltrado].sort((a, b) =>
-    `${apellidosLabel(a)} ${nombresLabel(a)}`.localeCompare(`${apellidosLabel(b)} ${nombresLabel(b)}`, "es", {
-      sensitivity: "base",
-    }),
-  );
-  const destinatarioSearchNormalized = destinatarioSearch.trim().toLowerCase();
-  const personalVisible =
-    destinatarioSearchNormalized === ""
-      ? personalFiltradoOrdenado
-      : personalFiltradoOrdenado.filter((persona) => {
-          const label = `${apellidosLabel(persona)} ${nombresLabel(persona)}`.toLowerCase();
-          const formattedCi = formatUruguayanCi(persona.ci).toLowerCase();
-          return (
-            persona.ci.toLowerCase().includes(destinatarioSearchNormalized) ||
-            formattedCi.includes(destinatarioSearchNormalized) ||
-            label.includes(destinatarioSearchNormalized)
-          );
-        });
   const equiposOrdenadosAlfabeticamente = [...equiposOrdenados].sort((a, b) =>
     a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
   );
@@ -286,4 +290,3 @@ export function RegistroEditorModal({
     </ModalFrame>
   );
 }
-

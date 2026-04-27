@@ -81,6 +81,9 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
         : Array.from(new Set(existing.codigosSIE.map((entry) => entry.itemCodigoSIE.item.nombre))).sort((a, b) =>
             a.localeCompare(b, "es", { sensitivity: "base" },
           ));
+    const cantidad = existing.items.length > 0
+      ? existing.items.reduce((sum, entry) => sum + entry.cantidad, 0)
+      : existing.codigosSIE.length;
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -91,8 +94,9 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
         codigoDepositoGeneral: existing.codigoDepositoGeneral,
         itemIds: existing.items.map((entry) => entry.item.itemId.toString()),
         itemNombres,
-        cantidad: existing.cantidad,
+        cantidad,
         estanteria: existing.estanteria,
+        piso: existing.piso,
         codigosSIE: existing.codigosSIE.map((entry) => ({
           codigo: entry.itemCodigoSIE.codigo,
           talla: entry.itemCodigoSIE.talla,

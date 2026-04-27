@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LoadingInline } from "@/app/components/shared";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
+import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MovimientoFueraHojaViewRow } from "@/types/views";
 
 type MovimientosFueraHojaResponse = {
@@ -44,15 +45,16 @@ export function MovimientosFueraHojaView() {
     void loadRows();
   }, []);
 
+  const rowSearchIndex = useMemo(
+    () =>
+      buildSearchIndex(rows, {
+        text: (row) => [row.fecha, row.tipo, row.ci, row.persona, row.item, row.observaciones || ""].join(" "),
+      }),
+    [rows],
+  );
   const filteredRows = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return rows;
-
-    return rows.filter((row) => {
-      const text = [row.fecha, row.tipo, row.ci, row.persona, row.item, row.observaciones || ""].join(" ").toLowerCase();
-      return text.includes(query);
-    });
-  }, [rows, search]);
+    return filterSearchIndex(rowSearchIndex, search);
+  }, [rowSearchIndex, search]);
 
   return (
     <section className="mt-6 space-y-4">

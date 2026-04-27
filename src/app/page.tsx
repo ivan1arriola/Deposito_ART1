@@ -816,39 +816,63 @@ export default function Home() {
     setMergeEquipoDestinoId((current) => (current !== "" && ids.has(current) ? current : ""));
   }, [equipos]);
   const personalOrdenado = useMemo(() => [...personal].sort(comparePersonalByHierarchy), [personal]);
+  const personalSearchIndex = useMemo(() => {
+    type PersonalSearchEntry = {
+      persona: Personal;
+      ciDigits: string;
+      nombresText: string;
+      apellidosText: string;
+    };
+
+    const allEntries: PersonalSearchEntry[] = [];
+    const byBatteryFilter = new Map<string, PersonalSearchEntry[]>();
+    byBatteryFilter.set("ALL", allEntries);
+
+    for (const persona of personalOrdenado) {
+      const entry: PersonalSearchEntry = {
+        persona,
+        ciDigits: normalizeCi(persona.ci),
+        nombresText: normalizeSearchTerm(`${persona.nombre1} ${persona.nombre2 ?? ""}`),
+        apellidosText: normalizeSearchTerm(`${persona.apellido1} ${persona.apellido2 ?? ""}`),
+      };
+      allEntries.push(entry);
+
+      const batteryKey = persona.bateriaId == null ? "NONE" : String(persona.bateriaId);
+      const batteryEntries = byBatteryFilter.get(batteryKey);
+      if (batteryEntries) {
+        batteryEntries.push(entry);
+      } else {
+        byBatteryFilter.set(batteryKey, [entry]);
+      }
+    }
+
+    return { allEntries, byBatteryFilter };
+  }, [personalOrdenado]);
   const searchCedulaDigits = normalizeCi(searchCedula.trim());
   const searchNombresText = normalizeSearchTerm(searchNombres);
   const searchApellidosText = normalizeSearchTerm(searchApellidos);
   const hasPersonalFilters =
     searchCedula.trim() !== "" || searchNombres.trim() !== "" || searchApellidos.trim() !== "" || bateriaFilter !== "ALL";
   const personalFiltrado = useMemo(() => {
-    return personalOrdenado.filter((persona) => {
-      const matchBateria =
-        bateriaFilter === "ALL"
-          ? true
-          : bateriaFilter === "NONE"
-            ? persona.bateriaId == null
-            : persona.bateriaId === Number(bateriaFilter);
+    const baseEntries = personalSearchIndex.byBatteryFilter.get(bateriaFilter) ?? [];
+    return baseEntries
+      .filter((entry) => {
+        if (searchCedulaDigits !== "" && !entry.ciDigits.includes(searchCedulaDigits)) {
+          return false;
+        }
 
-      if (!matchBateria) return false;
+        if (searchNombresText !== "" && !entry.nombresText.includes(searchNombresText)) {
+          return false;
+        }
 
-      if (searchCedulaDigits !== "" && !normalizeCi(persona.ci).includes(searchCedulaDigits)) {
-        return false;
-      }
+        if (searchApellidosText !== "" && !entry.apellidosText.includes(searchApellidosText)) {
+          return false;
+        }
 
-      if (searchNombresText !== "") {
-        const nombresPersona = normalizeSearchTerm(`${persona.nombre1} ${persona.nombre2 ?? ""}`);
-        if (!nombresPersona.includes(searchNombresText)) return false;
-      }
-
-      if (searchApellidosText !== "") {
-        const apellidosPersona = normalizeSearchTerm(`${persona.apellido1} ${persona.apellido2 ?? ""}`);
-        if (!apellidosPersona.includes(searchApellidosText)) return false;
-      }
-
-      return true;
-    });
-  }, [personalOrdenado, bateriaFilter, searchCedulaDigits, searchNombresText, searchApellidosText]);
+        return true;
+      })
+      .map((entry) => entry.persona);
+  }, [personalSearchIndex, bateriaFilter, searchCedulaDigits, searchNombresText, searchApellidosText]);
   const personalTotalPages = Math.max(1, Math.ceil(personalFiltrado.length / personalPageSize));
   const personalPageSafe = Math.min(personalPage, personalTotalPages);
   const personalFiltradoPaginado = useMemo(() => {
@@ -1609,6 +1633,7 @@ export default function Home() {
     async (input: {
       codigoDepositoGeneral: number;
       estanteria: string;
+      piso: number;
       items: Array<{
         itemId: string;
         cantidad: number;

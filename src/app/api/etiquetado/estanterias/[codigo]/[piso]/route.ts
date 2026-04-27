@@ -46,7 +46,7 @@ export async function DELETE(
   }
 
   const cajasUsandoCodigo = await prisma.caja.count({
-    where: { estanteria: codigo },
+    where: { estanteria: codigo, piso },
   });
   if (cajasUsandoCodigo > 0) {
     return NextResponse.json(

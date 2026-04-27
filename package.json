@@ -1,6 +1,6 @@
 {
   "name": "deposito-art1",
-  "version": "5.1.4",
+  "version": "5.1.5",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
@@ -24,6 +24,8 @@
     "precommit": "node scripts/bump-version-precommit.mjs",
     "prisma:generate": "prisma generate",
     "db:rebuild": "prisma db execute --file prisma/schema-base.sql && prisma generate",
+    "db:patch:drop-caja-cantidad": "prisma db execute --file prisma/patches/20260427_drop_caja_cantidad.sql && prisma generate",
+    "db:patch:add-caja-piso-fk": "prisma db execute --file prisma/patches/20260427_add_caja_piso_fk.sql && prisma generate",
     "prisma:studio": "prisma studio",
     "user:create": "tsx scripts/create-user.ts",
     "webpush:generate": "node scripts/generate-webpush-keys.mjs",

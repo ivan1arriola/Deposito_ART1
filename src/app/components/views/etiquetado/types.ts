@@ -29,6 +29,7 @@ export type CreateItemInput = {
 export type CreateCajaInput = {
   codigoDepositoGeneral: number;
   estanteria: string;
+  piso: number;
   items: Array<{
     itemId: string;
     cantidad: number;

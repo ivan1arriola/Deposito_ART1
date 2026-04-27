@@ -203,7 +203,8 @@ export async function GET(request: Request) {
       return {
         codigoDepositoGeneral: caja.codigoDepositoGeneral,
         estanteria: caja.estanteria,
-        cantidad: cantidadTotal > 0 ? cantidadTotal : caja.cantidad,
+        piso: caja.piso,
+        cantidad: cantidadTotal > 0 ? cantidadTotal : codigosConEquipo.length,
         equipos,
         itemNombres,
         codigosSIE: codigos,

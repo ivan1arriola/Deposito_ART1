@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 type CreateCajaPayload = {
   codigoDepositoGeneral?: string | number;
   estanteria?: string;
+  piso?: string | number;
   items?: Array<{
     itemId?: string | number;
     cantidad?: string | number;
@@ -46,6 +47,12 @@ function parseCodigoDepositoGeneral(value: unknown) {
 function parseCantidad(value: unknown) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 99999) return null;
+  return parsed;
+}
+
+function parsePiso(value: unknown) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 2) return null;
   return parsed;
 }
 
@@ -107,6 +114,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as CreateCajaPayload;
   const codigoDepositoGeneral = parseCodigoDepositoGeneral(body.codigoDepositoGeneral);
   const estanteria = normalizeEstanteria(body.estanteria);
+  const piso = parsePiso(body.piso);
   const parsedItems = parseCajaItems(body.items);
   if (!parsedItems || parsedItems.length === 0) {
     return NextResponse.json(
@@ -130,17 +138,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Payload invalido. codigosSIEIds debe ser una lista de IDs numericos." }, { status: 400 });
   }
 
-  if (codigoDepositoGeneral === null || !estanteria || itemIds.length === 0 || cantidadTotal <= 0) {
+  if (codigoDepositoGeneral === null || !estanteria || piso === null || itemIds.length === 0 || cantidadTotal <= 0) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo de caja, nombre de estanteria y equipos con cantidad son obligatorios." },
+      { error: "Payload invalido. codigo de caja, nombre de estanteria, piso y equipos con cantidad son obligatorios." },
       { status: 400 },
     );
   }
 
   const [estanteriaRegistrada, itemsFound] = await Promise.all([
-    prisma.estanteria.findFirst({
-      where: { codigo: estanteria },
-      select: { codigo: true },
+    prisma.estanteria.findUnique({
+      where: {
+        codigo_piso: {
+          codigo: estanteria,
+          piso,
+        },
+      },
+      select: { codigo: true, piso: true },
     }),
     prisma.item.findMany({
       where: { itemId: { in: itemIds } },
@@ -149,7 +162,7 @@ export async function POST(request: Request) {
   ]);
 
   if (!estanteriaRegistrada) {
-    return NextResponse.json({ error: "La estanteria no existe. Registrala primero." }, { status: 400 });
+    return NextResponse.json({ error: "La estanteria en ese piso no existe. Registrala primero." }, { status: 400 });
   }
   if (itemsFound.length !== itemIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos seleccionados no existen." }, { status: 400 });
@@ -226,7 +239,7 @@ export async function POST(request: Request) {
         data: {
           codigoDepositoGeneral,
           estanteria,
-          cantidad: cantidadTotal,
+          piso,
         },
       });
 
@@ -262,6 +275,7 @@ export async function POST(request: Request) {
         itemNombres,
         cantidad: cantidadTotal,
         estanteria,
+        piso,
         codigosSIE: codigosSIEDetalle,
       },
     });

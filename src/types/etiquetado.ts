@@ -35,6 +35,7 @@ export type EtiquetadoCajaEquipo = {
 export type EtiquetadoCaja = {
   codigoDepositoGeneral: number;
   estanteria: string;
+  piso: number;
   cantidad: number;
   equipos: EtiquetadoCajaEquipo[];
   itemNombres: string[];

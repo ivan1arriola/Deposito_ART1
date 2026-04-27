@@ -236,6 +236,7 @@ export type EtiquetadoSectionProps = {
   createEtiquetadoCaja: (input: {
     codigoDepositoGeneral: number;
     estanteria: string;
+    piso: number;
     items: Array<{ itemId: string; cantidad: number }>;
     codigosSIEIds: string[];
   }) => Promise<void>;

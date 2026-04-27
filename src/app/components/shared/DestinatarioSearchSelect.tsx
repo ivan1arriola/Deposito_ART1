@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { formatUruguayanCi } from "@/lib/ci";
-import { normalizeSearchText } from "@/lib/spanish-text";
+import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 
 export type DestinatarioOption = {
   ci: string;
@@ -17,10 +17,6 @@ type DestinatarioSearchSelectProps = {
   inputName?: string;
   onChange: (ci: string) => void;
 };
-
-function normalizeText(value: string) {
-  return normalizeSearchText(value);
-}
 
 export function DestinatarioSearchSelect({
   options,
@@ -40,18 +36,19 @@ export function DestinatarioSearchSelect({
     [options, value],
   );
 
+  const searchIndex = useMemo(
+    () =>
+      buildSearchIndex(options, {
+        text: (option) => option.label,
+        digits: (option) => option.ci,
+      }),
+    [options],
+  );
+
   const filteredOptions = useMemo(() => {
-    const normalizedQuery = normalizeText(query);
-    const queryDigits = query.replace(/\D/g, "");
-    const ranked = options.filter((option) => {
-      if (normalizedQuery === "" && queryDigits === "") return true;
-      const matchesLabel = normalizeText(option.label).includes(normalizedQuery);
-      const optionDigits = option.ci.replace(/\D/g, "");
-      const matchesCi = queryDigits !== "" && optionDigits.includes(queryDigits);
-      return matchesLabel || matchesCi;
-    });
+    const ranked = filterSearchIndex(searchIndex, query);
     return ranked.slice(0, 50);
-  }, [options, query]);
+  }, [query, searchIndex]);
   const showSelectedInline = selectedOption !== null && query.trim() === "";
   const resolvedInputName = inputName ?? `destinatario-search-${generatedId}`;
 

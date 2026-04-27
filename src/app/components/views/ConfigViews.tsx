@@ -3,6 +3,7 @@
 import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { formatAuditEntityId, type AuditCiReferences } from "@/lib/audit-helpers";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
+import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MainView } from "@/types/views";
 import type { AuditoriaRecord, FirmaConfig, Rango, Role, UsuarioAdmin } from "@/types/entities";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
@@ -168,29 +169,33 @@ export function ConfigViews(props: ConfigViewsProps) {
     () => props.usuarios.filter((usuario) => usuario.accountType === "PERSONAL"),
     [props.usuarios]
   );
-  const personalUsersSearchTerm = personalUsersSearch.trim().toLowerCase();
+  const usuariosPersonalSearchIndex = useMemo(
+    () =>
+      buildSearchIndex(usuariosPersonal, {
+        text: (usuario) => {
+          const fullName = `${usuario.nombre} ${usuario.apellido}`;
+          const invertedFullName = `${usuario.apellido}, ${usuario.nombre}`;
+          return [
+            usuario.personalCi ?? "",
+            usuario.username,
+            usuario.nombre,
+            usuario.apellido,
+            fullName,
+            invertedFullName,
+            usuario.grado,
+            usuario.mailReferencia ?? "",
+          ].join(" ");
+        },
+      }),
+    [usuariosPersonal],
+  );
+  const personalUsersSearchTerm = personalUsersSearch.trim();
   const usuariosPersonalFiltrados = useMemo(() => {
-    if (!personalUsersSearchTerm) {
+    if (personalUsersSearchTerm === "") {
       return usuariosPersonal;
     }
-
-    return usuariosPersonal.filter((usuario) => {
-      const fullName = `${usuario.nombre} ${usuario.apellido}`;
-      const invertedFullName = `${usuario.apellido}, ${usuario.nombre}`;
-      const searchableFields = [
-        usuario.personalCi ?? "",
-        usuario.username,
-        usuario.nombre,
-        usuario.apellido,
-        fullName,
-        invertedFullName,
-        usuario.grado,
-        usuario.mailReferencia ?? "",
-      ];
-
-      return searchableFields.some((field) => field.toLowerCase().includes(personalUsersSearchTerm));
-    });
-  }, [usuariosPersonal, personalUsersSearchTerm]);
+    return filterSearchIndex(usuariosPersonalSearchIndex, personalUsersSearch);
+  }, [usuariosPersonal, usuariosPersonalSearchIndex, personalUsersSearch, personalUsersSearchTerm]);
   const usuariosFiltradosPorTipo = activeUserAccountTypeTab === "SISTEMA" ? usuariosSistema : usuariosPersonalFiltrados;
 
   if (props.activeView === "grados") {

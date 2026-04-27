@@ -3,9 +3,10 @@
 import { FormEvent, useMemo, useState } from "react";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { LoadingInline } from "@/app/components/shared";
-import type { EtiquetadoViewProps } from "./etiquetado/types";
+import type { EtiquetadoViewProps, EtiquetaOrientacion } from "./etiquetado/types";
 import {
-  buildEstanteriaLabelByCode,
+  buildEstanteriaKey,
+  buildEstanteriaLabelByKey,
   buildEstanteriaOptions,
   filterCajas,
   formatEstanteriaLabel,
@@ -67,8 +68,8 @@ export function EtiquetadoView({
   const estanteriaOptions = useMemo(() => {
     return buildEstanteriaOptions(estanteriasList);
   }, [estanteriasList]);
-  const estanteriaLabelByCode = useMemo(() => {
-    return buildEstanteriaLabelByCode(estanteriasList);
+  const estanteriaLabelByKey = useMemo(() => {
+    return buildEstanteriaLabelByKey(estanteriasList);
   }, [estanteriasList]);
   const codigosSIEList = useMemo(() => codigosSIE ?? [], [codigosSIE]);
   const cajasList = useMemo(() => cajas ?? [], [cajas]);
@@ -348,6 +349,7 @@ export function EtiquetadoView({
     const codigoDepositoGeneral = Number(newCajaCodigo);
     const estanteriaSeleccionada = estanteriaOptions.find((option) => option.value === cajaEstanteriaValue);
     const estanteria = normalizeEstanteriaName(estanteriaSeleccionada?.codigo ?? "");
+    const piso = estanteriaSeleccionada?.piso ?? null;
     const itemsPayload = selectedCajaItemsConCantidadDraft.map((item) => ({
       itemId: item.itemId,
       cantidad: item.cantidad,
@@ -355,6 +357,7 @@ export function EtiquetadoView({
     if (
       !Number.isInteger(codigoDepositoGeneral) ||
       !estanteriaSeleccionada ||
+      piso === null ||
       !isValidEstanteriaName(estanteria) ||
       itemsPayload.length === 0 ||
       !allSelectedItemsHaveValidCantidad
@@ -362,6 +365,7 @@ export function EtiquetadoView({
     onCreateCaja({
       codigoDepositoGeneral,
       estanteria,
+      piso,
       items: itemsPayload,
       codigosSIEIds: selectedCajaCodigosSIEIds,
     });
@@ -978,7 +982,10 @@ export function EtiquetadoView({
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {renderTag(`Cantidad ${caja.cantidad}`, "accent")}
-                        {renderTag(estanteriaLabelByCode.get(caja.estanteria) ?? `Estantería ${caja.estanteria}`)}
+                        {renderTag(
+                          estanteriaLabelByKey.get(buildEstanteriaKey(caja.estanteria, caja.piso)) ??
+                            formatEstanteriaLabel(caja.piso, caja.estanteria),
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -1077,7 +1084,8 @@ export function EtiquetadoView({
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-stone-900">Caja {caja.codigoDepositoGeneral}</p>
                         <p className="truncate text-xs text-stone-600">
-                          {estanteriaLabelByCode.get(caja.estanteria) ?? `Estanteria ${caja.estanteria}`} | Cantidad {caja.cantidad}
+                          {estanteriaLabelByKey.get(buildEstanteriaKey(caja.estanteria, caja.piso)) ??
+                            formatEstanteriaLabel(caja.piso, caja.estanteria)} | Cantidad {caja.cantidad}
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-1">

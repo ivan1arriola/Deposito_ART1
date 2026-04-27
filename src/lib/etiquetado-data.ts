@@ -44,54 +44,38 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
     ),
   );
 
-  const [cajas, estanterias] = await Promise.all([
-    prisma.caja.findMany({
-      where: codigosFiltrados.length > 0 ? { codigoDepositoGeneral: { in: codigosFiltrados } } : undefined,
-      include: {
-        items: {
-          include: {
-            item: {
-              select: {
-                itemId: true,
-                nombre: true,
-              },
+  const cajas = await prisma.caja.findMany({
+    where: codigosFiltrados.length > 0 ? { codigoDepositoGeneral: { in: codigosFiltrados } } : undefined,
+    include: {
+      items: {
+        include: {
+          item: {
+            select: {
+              itemId: true,
+              nombre: true,
             },
           },
         },
-        codigosSIE: {
-          include: {
-            itemCodigoSIE: {
-              select: {
-                codigo: true,
-                talla: true,
-                item: {
-                  select: {
-                    itemId: true,
-                    nombre: true,
-                  },
+      },
+      codigosSIE: {
+        include: {
+          itemCodigoSIE: {
+            select: {
+              codigo: true,
+              talla: true,
+              item: {
+                select: {
+                  itemId: true,
+                  nombre: true,
                 },
               },
             },
           },
         },
       },
-      orderBy: [{ codigoDepositoGeneral: "asc" }],
-    }),
-    prisma.estanteria.findMany({
-      select: {
-        codigo: true,
-        piso: true,
-      },
-      orderBy: [{ piso: "asc" }, { codigo: "asc" }],
-    }),
-  ]);
-
-  const pisosByEstanteria = new Map<string, number[]>();
-  for (const estanteria of estanterias) {
-    const current = pisosByEstanteria.get(estanteria.codigo) ?? [];
-    current.push(estanteria.piso);
-    pisosByEstanteria.set(estanteria.codigo, current);
-  }
+    },
+    orderBy: [{ codigoDepositoGeneral: "asc" }],
+  });
 
   const etiquetas = cajas.map((caja) => {
     const codigosSIEConEquipo = caja.codigosSIE
@@ -164,8 +148,8 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
     return {
       codigoDepositoGeneral: caja.codigoDepositoGeneral,
       estanteria: caja.estanteria,
-      piso: resolvePisoForEstanteria(pisosByEstanteria.get(caja.estanteria) ?? []),
-      cantidad: cantidadTotal > 0 ? cantidadTotal : caja.cantidad,
+      piso: String(caja.piso),
+      cantidad: cantidadTotal > 0 ? cantidadTotal : codigosSIEConEquipo.length,
       equipos,
       itemNombres,
       codigosSIE,
@@ -190,39 +174,17 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
   });
 }
 
-function resolvePisoForEstanteria(pisos: number[]) {
-  if (pisos.length === 0) return "-";
-  return String(pisos[0]);
-}
-
 export async function getListadoCajasPrintData(): Promise<CajaListadoPrintData[]> {
-  const [cajas, estanterias] = await Promise.all([
-    getEtiquetasCajaData(),
-    prisma.estanteria.findMany({
-      select: {
-        codigo: true,
-        piso: true,
-      },
-      orderBy: [{ piso: "asc" }, { codigo: "asc" }],
-    }),
-  ]);
-
-  const pisosByEstanteria = new Map<string, number[]>();
-  for (const estanteria of estanterias) {
-    const current = pisosByEstanteria.get(estanteria.codigo) ?? [];
-    current.push(estanteria.piso);
-    pisosByEstanteria.set(estanteria.codigo, current);
-  }
+  const cajas = await getEtiquetasCajaData();
 
   return cajas
     .flatMap((caja) => {
-      const pisos = pisosByEstanteria.get(caja.estanteria) ?? [];
-      const pisoPrincipal = pisos.length > 0 ? pisos[0] : Number.POSITIVE_INFINITY;
+      const pisoPrincipal = Number(caja.piso);
       const baseRow = {
-        piso: resolvePisoForEstanteria(pisos),
+        piso: caja.piso,
         estanteria: caja.estanteria,
         codigoDepositoGeneral: caja.codigoDepositoGeneral,
-        pisoPrincipal,
+        pisoPrincipal: Number.isFinite(pisoPrincipal) ? pisoPrincipal : Number.POSITIVE_INFINITY,
       };
 
       if (caja.equipos.length === 0) {
@@ -230,7 +192,7 @@ export async function getListadoCajasPrintData(): Promise<CajaListadoPrintData[]
           {
             ...baseRow,
             contenido: "-",
-            cantidad: caja.cantidad,
+            cantidad: 0,
           },
         ];
       }

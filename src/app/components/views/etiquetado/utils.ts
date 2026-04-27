@@ -39,6 +39,10 @@ export function formatEstanteriaLabel(piso: number, nombreEstanteria: string) {
   return `Estanteria P${piso} - ${nombreEstanteria}`;
 }
 
+export function buildEstanteriaKey(codigo: string, piso: number) {
+  return `${piso}:${codigo.trim().toUpperCase()}`;
+}
+
 export function sortEtiquetadoItems(items: EtiquetadoItem[]) {
   return [...items].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
 }
@@ -46,7 +50,7 @@ export function sortEtiquetadoItems(items: EtiquetadoItem[]) {
 export function buildEstanteriaOptions(estanterias: EtiquetadoEstanteria[]) {
   return [...estanterias]
     .map((estanteria) => ({
-      value: `${estanteria.piso}:${estanteria.codigo}`,
+      value: buildEstanteriaKey(estanteria.codigo, estanteria.piso),
       codigo: estanteria.codigo,
       piso: estanteria.piso,
       label: estanteria.etiqueta || formatEstanteriaLabel(estanteria.piso, estanteria.codigo),
@@ -57,12 +61,13 @@ export function buildEstanteriaOptions(estanterias: EtiquetadoEstanteria[]) {
     });
 }
 
-export function buildEstanteriaLabelByCode(estanterias: EtiquetadoEstanteria[]) {
+export function buildEstanteriaLabelByKey(estanterias: EtiquetadoEstanteria[]) {
   const map = new Map<string, string>();
   for (const estanteria of estanterias) {
-    if (!map.has(estanteria.codigo)) {
-      map.set(estanteria.codigo, estanteria.etiqueta || formatEstanteriaLabel(estanteria.piso, estanteria.codigo));
-    }
+    map.set(
+      buildEstanteriaKey(estanteria.codigo, estanteria.piso),
+      estanteria.etiqueta || formatEstanteriaLabel(estanteria.piso, estanteria.codigo),
+    );
   }
   return map;
 }
@@ -84,6 +89,8 @@ export function filterCajas(cajas: EtiquetadoCaja[], filtro: string) {
       String(caja.codigoDepositoGeneral),
       caja.itemNombres.join(" "),
       caja.estanteria,
+      String(caja.piso),
+      buildEstanteriaKey(caja.estanteria, caja.piso),
       caja.codigosSIE.map((codigo) => codigo.codigo).join(" "),
     ]
       .join(" ")

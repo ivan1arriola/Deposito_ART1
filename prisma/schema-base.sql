@@ -155,11 +155,17 @@ CREATE INDEX "item_codigo_sie_codigo_idx" ON "item_codigo_sie"("codigo");
 CREATE TABLE "caja" (
   "codigo_deposito_general" INTEGER PRIMARY KEY,
   "estanteria" VARCHAR(1) NOT NULL,
-  "cantidad" INTEGER NOT NULL,
+  "piso" SMALLINT NOT NULL,
   CONSTRAINT "caja_codigo_deposito_general_chk" CHECK ("codigo_deposito_general" > 0),
   CONSTRAINT "caja_estanteria_formato_chk" CHECK ("estanteria" ~ '^[A-Z]$'),
-  CONSTRAINT "caja_cantidad_chk" CHECK ("cantidad" > 0)
+  CONSTRAINT "caja_piso_rango_chk" CHECK ("piso" >= 1 AND "piso" <= 2),
+  CONSTRAINT "caja_estanteria_fk"
+    FOREIGN KEY ("estanteria", "piso")
+    REFERENCES "estanteria"("codigo", "piso")
+    ON DELETE RESTRICT
 );
+
+CREATE INDEX "caja_estanteria_piso_idx" ON "caja"("estanteria", "piso");
 
 CREATE TABLE "caja_item" (
   "codigo_deposito_general" INTEGER NOT NULL,

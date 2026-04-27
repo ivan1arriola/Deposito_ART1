@@ -1,0 +1,2 @@
+ALTER TABLE "caja"
+DROP COLUMN IF EXISTS "cantidad";
