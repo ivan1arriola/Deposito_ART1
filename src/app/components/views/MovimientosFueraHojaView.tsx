@@ -12,7 +12,12 @@ type MovimientosFueraHojaResponse = {
   rows: MovimientoFueraHojaViewRow[];
 };
 
-export function MovimientosFueraHojaView() {
+type MovimientosFueraHojaViewProps = {
+  canWrite: boolean;
+  onOpenRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION", options?: { incluirFueraDeHoja?: boolean }) => void;
+};
+
+export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: MovimientosFueraHojaViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
@@ -66,23 +71,56 @@ export function MovimientosFueraHojaView() {
               Listado global de movimientos de equipos no incluidos en la hoja de entrega principal.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void loadRows()}
-            disabled={loading}
-            className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
-          >
-            {loading ? (
-              <LoadingInline
-                label="Actualizando..."
-                size="xs"
-                tone="light"
-                textClassName="text-xs font-semibold text-white"
-              />
-            ) : (
-              "Actualizar"
-            )}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {canWrite ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onOpenRegistro("", "ENTREGA", { incluirFueraDeHoja: true })}
+                  disabled={loading}
+                  className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-800 disabled:opacity-60"
+                >
+                  Registrar Entrega
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenRegistro("", "DEVOLUCION", { incluirFueraDeHoja: true })}
+                  disabled={loading}
+                  className="rounded-lg bg-sky-700 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-sky-800 disabled:opacity-60"
+                >
+                  Registrar Devolución
+                </button>
+              </>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                const url = "/api/hojas-de-entrega/movimientos-fuera-hoja/pdf";
+                window.open(url, "_blank");
+              }}
+              disabled={loading || rows.length === 0}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
+            >
+              Imprimir PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => void loadRows()}
+              disabled={loading}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
+            >
+              {loading ? (
+                <LoadingInline
+                  label="Actualizando..."
+                  size="xs"
+                  tone="dark"
+                  textClassName="text-xs font-semibold text-stone-700"
+                />
+              ) : (
+                "Actualizar"
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">

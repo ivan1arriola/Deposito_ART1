@@ -156,14 +156,33 @@ export function SoldadoRecordatorioWidget({
   const urgentIndicatorLabel = urgentCount > 99 ? "Urg 99+" : `Urg ${urgentCount}`;
   const dragHandleSize = Math.max(20, Math.round(avatarSize * 0.24));
   const dragHandleIconSize = Math.max(14, Math.round(avatarSize * 0.17));
+  const resolveLeftBoundary = useCallback((viewportPadding: number) => {
+    if (typeof window === "undefined") return viewportPadding;
+    const sidebar = document.querySelector<HTMLElement>('[data-home-sidebar="true"]');
+    if (!sidebar) return viewportPadding;
+
+    const sidebarStyles = window.getComputedStyle(sidebar);
+    if (sidebarStyles.display === "none" || sidebarStyles.visibility === "hidden") {
+      return viewportPadding;
+    }
+
+    const sidebarRect = sidebar.getBoundingClientRect();
+    if (sidebarRect.width <= 0 || sidebarRect.right <= 0) {
+      return viewportPadding;
+    }
+
+    const gapToSidebar = isMobile ? viewportPadding : 10;
+    return Math.max(viewportPadding, Math.ceil(sidebarRect.right + gapToSidebar));
+  }, [isMobile]);
   const widgetPositionSx = useMemo(() => {
     const sideOffset = isMobile ? 10 : 24;
     const verticalOffset = isMobile ? 14 : 24;
+    const leftBoundary = resolveLeftBoundary(sideOffset);
     return {
       ...(corner === "TOP_LEFT" || corner === "TOP_RIGHT" ? { top: verticalOffset } : { bottom: verticalOffset }),
-      ...(corner === "TOP_LEFT" || corner === "BOTTOM_LEFT" ? { left: sideOffset } : { right: sideOffset }),
+      ...(corner === "TOP_LEFT" || corner === "BOTTOM_LEFT" ? { left: leftBoundary } : { right: sideOffset }),
     };
-  }, [corner, isMobile]);
+  }, [corner, isMobile, resolveLeftBoundary]);
   const widgetRuntimePositionSx = dragPreview
     ? { top: dragPreview.top, left: dragPreview.left, right: "auto", bottom: "auto" }
     : widgetPositionSx;
@@ -269,9 +288,10 @@ export function SoldadoRecordatorioWidget({
       state.moved = true;
       setIsDragging(true);
       const viewportPadding = isMobile ? 8 : 12;
+      const minLeft = resolveLeftBoundary(viewportPadding);
       const maxLeft = window.innerWidth - state.widgetWidth - viewportPadding;
       const maxTop = window.innerHeight - state.widgetHeight - viewportPadding;
-      const nextLeft = clamp(event.clientX - state.offsetX, viewportPadding, Math.max(viewportPadding, maxLeft));
+      const nextLeft = clamp(event.clientX - state.offsetX, minLeft, Math.max(minLeft, maxLeft));
       const nextTop = clamp(event.clientY - state.offsetY, viewportPadding, Math.max(viewportPadding, maxTop));
       setDragPreview({ left: nextLeft, top: nextTop });
     }
@@ -283,6 +303,7 @@ export function SoldadoRecordatorioWidget({
 
     if (state.moved) {
       const viewportPadding = isMobile ? 8 : 12;
+      const minLeft = resolveLeftBoundary(viewportPadding);
       const droppedPosition = clampWidgetPosition(
         {
           left: event.clientX - state.offsetX,
@@ -297,6 +318,9 @@ export function SoldadoRecordatorioWidget({
           height: window.innerHeight,
         },
         viewportPadding,
+        {
+          minLeft,
+        },
       );
       const nextCorner = resolveCornerFromPoint(
         droppedPosition.left + state.widgetWidth / 2,

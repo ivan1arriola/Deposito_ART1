@@ -93,10 +93,24 @@ export function DashboardPrincipalView({
       visible: true,
     },
     {
-      id: "prestamos",
-      label: "Préstamos",
-      description: "Gestion de préstamos y devoluciones.",
-      view: "formularios",
+      id: "prestamos-registrar",
+      label: "Registrar préstamo",
+      description: "Alta de nuevos préstamos de equipo.",
+      view: "prestamos_registrar",
+      visible: canWrite,
+    },
+    {
+      id: "prestamos-vigentes",
+      label: "Préstamos vigentes",
+      description: "Control de préstamos pendientes y devoluciones.",
+      view: "prestamos_vigentes",
+      visible: true,
+    },
+    {
+      id: "prestamos-historial",
+      label: "Historial de préstamos",
+      description: "Consulta histórica de préstamos registrados.",
+      view: "prestamos_historial",
       visible: true,
     },
     {

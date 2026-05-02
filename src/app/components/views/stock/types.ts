@@ -16,6 +16,7 @@ export type StockViewProps = {
   loading: boolean;
   error: string | null;
   canWrite: boolean;
+  isAdmin: boolean;
   equipos: Equipo[];
   draft: StockOperacionDraft;
   saving: boolean;

@@ -19,6 +19,7 @@ type MovimientoWithItems = {
     cantidad: number;
     item: {
       nombre: string;
+      activo: boolean;
     };
   }>;
 };
@@ -90,6 +91,7 @@ const hojaEntregaPersonalSelect = {
           item: {
             select: {
               nombre: true,
+              activo: true,
             },
           },
         },

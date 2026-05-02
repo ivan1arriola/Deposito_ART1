@@ -19,6 +19,11 @@ import {
   normalizeTallaValue,
 } from "@/lib/tallas";
 import { DashboardHero } from "./components/home/DashboardHero";
+import { MainNavigation } from "./components/home/MainNavigation";
+import { Box, Typography, Divider, Stack, Button, IconButton, Drawer } from "@mui/material";
+import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import { AdminPushNotifications } from "./components/home/AdminPushNotifications";
+import Image from "next/image";
 import { HomeOverlaysLayer } from "./components/home/overlays/HomeOverlaysLayer";
 import { HomeViewRouter } from "./components/home/HomeViewRouter";
 import { PersonalPortalView } from "./components/home/PersonalPortalView";
@@ -334,7 +339,8 @@ function isSoldadoWidgetVariant(value: string | null): value is SoldadoWidgetVar
 
 export default function Home() {
   const { data: session } = useSession();
-  const ciPlaceholder = `Ej: ${generatePlaceholderUruguayanCi()}`;
+  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [status, setStatus] = useState(STATUS_VERIFYING_SESSION);
   const [activeView, setActiveView] = useState<MainView>("dashboard");
   const {
@@ -571,6 +577,7 @@ export default function Home() {
     activeView === "etiquetado_registrar_caja" ||
     activeView === "etiquetado_listado_cajas" ||
     activeView === "etiquetado_imprimir_todas";
+  const ciPlaceholder = useMemo(() => generatePlaceholderUruguayanCi(), []);
   const normalizedNewCi = normalizeCi(newPersonal.ci.trim());
   const duplicatePersonal = useMemo(() => {
     if (normalizedNewCi === "") return null;
@@ -1317,7 +1324,13 @@ export default function Home() {
         options: { includeHistorial: true, includePrestamos: false },
       };
     }
-    if (view === "stock_prestamos" || view === "formularios") {
+    if (
+      view === "stock_prestamos" ||
+      view === "formularios" ||
+      view === "prestamos_registrar" ||
+      view === "prestamos_vigentes" ||
+      view === "prestamos_historial"
+    ) {
       return {
         key: "prestamos",
         options: { includeHistorial: false, includePrestamos: true },
@@ -3211,7 +3224,7 @@ export default function Home() {
     void loadPersonalSelfProfile();
   }, [currentUser, loadPersonalSelfProfile]);
 
-  function openRegistro(ci: string, tipo: RegistroTipo) {
+  function openRegistro(ci: string, tipo: RegistroTipo, options: { incluirFueraDeHoja?: boolean } = {}) {
     if (!canWrite) {
       setStatus("No tienes permisos para registrar movimientos.");
       return;
@@ -3222,7 +3235,7 @@ export default function Home() {
       ci,
       ciList: [ci],
       tipo,
-      incluirFueraDeHoja: false,
+      incluirFueraDeHoja: options.incluirFueraDeHoja ?? false,
       fecha: getTodayDateInput(),
       comentarios: "",
       items: [{ itemId: "", cantidad: "1" }],
@@ -5502,452 +5515,647 @@ export default function Home() {
     );
   }
 
-  return (
-    <main className={activeView === "dashboard" ? "min-h-screen w-full" : "mx-auto min-h-screen w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8"}>
-      <DashboardHero
-        loading={loading}
-        currentUser={currentUser}
+  const sidebarContent = (
+    <>
+      <Stack spacing={2} sx={{ mb: 4, mt: 1, px: 1, alignItems: "center" }}>
+        <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, alignSelf: "flex-start" }}>
+          Versión: {appVersion}
+        </Typography>
+
+        <Box sx={{ width: 100, height: "auto", my: 1 }}>
+          <Image
+            src="/assets/logo-deposito.png"
+            alt="Logo Depósito"
+            width={200}
+            height={240}
+            style={{ width: "100%", height: "auto", filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))" }}
+          />
+        </Box>
+
+        <Box sx={{ textAlign: "center" }}>
+          <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: 800, lineHeight: 1.2, mb: 0.5 }}>
+            Grupo &quot;Brig. Gral. Manuel Oribe&quot; de Artillería 105mm No. 1
+          </Typography>
+          <Typography sx={{ color: "var(--color-ejercito-gold)", fontWeight: 900, fontSize: 20, letterSpacing: "0.02em", textTransform: "uppercase" }}>
+            Depósito General
+          </Typography>
+        </Box>
+
+        <Divider sx={{ width: "100%", borderColor: "rgba(255,255,255,0.1)" }} />
+
+        <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", alignSelf: "flex-start", pl: 1 }}>
+          Menú Principal
+        </Typography>
+      </Stack>
+
+      <MainNavigation
         activeView={activeView}
         canWrite={canWrite}
         isAdmin={isAdmin}
         showConfigViews={showConfigViews}
         isConfigView={isConfigView}
         configMenuRef={configMenuRef}
-        canManageAccount={canManageOwnAccount}
-        personalCount={personal.length}
-        oficialesSuboficialesCount={oficialesSuboficiales.length}
-        equiposRegistradosCount={equipos.length}
-        movimientosTotal={movimientosTotal}
-        roleLabel={roleLabel}
-        onSelectView={handleSelectMainView}
-        onSetConfigViews={setShowConfigViews}
-        onReload={() => reloadCurrentViewData(true)}
-        onEditOwnUser={changeOwnUsername}
-        onChangePassword={() => {
-          setChangeCurrentPassword("");
-          setChangeNewPassword("");
-          setChangeConfirmPassword("");
-          setShowChangePassword(true);
+        onSelectView={(view) => {
+          handleSelectMainView(view);
+          setMobileMenuOpen(false);
         }}
-        onLogout={() => void logout()}
+        onSetConfigViews={setShowConfigViews}
+        embedded
       />
 
-      <div>
-        {activeView !== "dashboard" ? <AppInstallCard /> : null}
+      <Box sx={{ mt: 4, mb: 2 }}>
+        <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", mb: 3 }} />
+        
+        {/* User Info Section */}
+        <Stack spacing={1.5} sx={{ px: 1, mb: 4 }}>
+          <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", mb: 0.5 }}>
+              Usuario Conectado
+            </Typography>
+            <Typography sx={{ color: "common.white", fontSize: 14, fontWeight: 700 }}>
+              {currentUser?.username || "---"}
+            </Typography>
+            <Typography sx={{ color: "var(--color-ejercito-gold)", fontSize: 12, fontWeight: 600 }}>
+              {currentUser ? roleLabel(currentUser.rol) : "---"}
+            </Typography>
+          </Box>
 
-        {inReminderConfigView ? (
-          <RecordatoriosConfigView
-            tasks={recordatorioTasks}
-            config={recordatorioConfig}
-            isAdmin={isAdmin}
-            currentUserId={currentUser?.usuarioId ?? null}
-            userOptions={usuarios.filter((usuario) => usuario.accountType === "SISTEMA")}
-            loading={recordatoriosLoading}
-            saving={recordatoriosSaving}
-            error={recordatoriosError}
-            onCreateTask={createRecordatorioTask}
-            onUpdateTask={updateRecordatorioTask}
-            onDeleteTask={deleteRecordatorioTask}
-            onToggleWidget={updateRecordatorioConfig}
-            soldadoVariant={soldadoWidgetVariant}
-            onToggleSoldadoVariant={toggleSoldadoWidgetVariant}
-            onReload={loadRecordatorios}
-          />
-        ) : null}
+          <Stack direction="row" spacing={1}>
+            <Button
+              fullWidth
+              variant="outlined"
+              size="small"
+              onClick={() => reloadCurrentViewData(true)}
+              sx={{ 
+                borderColor: "rgba(255,255,255,0.2)", 
+                color: "common.white",
+                fontSize: 11,
+                textTransform: "none",
+                "&:hover": { borderColor: "rgba(255,255,255,0.4)", bgcolor: "rgba(255,255,255,0.05)" }
+              }}
+            >
+              Recargar
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              size="small"
+              color="error"
+              onClick={() => void logout()}
+              sx={{ 
+                fontSize: 11,
+                textTransform: "none",
+                boxShadow: "0 4px 12px rgba(211, 47, 47, 0.2)"
+              }}
+            >
+              Cerrar sesión
+            </Button>
+          </Stack>
+        </Stack>
 
-        {inCatalogView || (isAdmin && inAdminConfigView) ? (
-        <ConfigViews
-          activeView={activeView as "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria"}
-          isAdmin={isAdmin}
-          canWrite={canWrite}
-          rangos={rangosConfigView}
-          newRangoAbreviacion={newRangoAbreviacion}
-          newRangoNombreCompleto={newRangoNombreCompleto}
-          newRangoOrden={newRangoOrden}
-          editRangoId={editRangoId}
-          editRangoAbreviacion={editRangoAbreviacion}
-          editRangoNombreCompleto={editRangoNombreCompleto}
-          editRangoOrden={editRangoOrden}
-          baterias={baterias}
-          newBateria={newBateria}
-          newBateriaOrden={newBateriaOrden}
-          editBateriaId={editBateriaId}
-          editBateriaNombre={editBateriaNombre}
-          editBateriaOrden={editBateriaOrden}
-          equipos={equiposOrdenados}
-          newEquipo={newEquipo}
-          editEquipoId={editEquipoId}
-          editEquipo={editEquipo}
-          equiposInactivos={equiposInactivos}
-          equiposActivosEnPantalla={equiposActivosEnPantalla}
-          hasEquipoOrderDraftChanges={hasEquipoOrderDraftChanges}
-          mergeEquipoOrigenId={mergeEquipoOrigenId}
-          mergeEquipoDestinoId={mergeEquipoDestinoId}
-          usuarios={usuarios}
-          newUserRangoId={newUserRangoId}
-          userRangoOptions={rangosConfigView}
-          newNombre={newNombre}
-          newApellido={newApellido}
-          newUsername={newUsername}
-          newPassword={newPassword}
-          newPasswordConfirm={newPasswordConfirm}
-          newMailReferencia={newMailReferencia}
-          newRole={newRole}
-          firmaConfig={firmaConfig}
-          firmaConfigDraft={firmaConfigDraft}
-          firmaConfigLoading={firmaConfigLoading}
-          firmaConfigSaving={firmaConfigSaving}
-          firmaConfigError={firmaConfigError}
-          auditFilter={auditFilter}
-          auditUserFilter={auditUserFilter}
-          auditUserOptions={auditUserOptions}
-          auditPage={auditPage}
-          auditPageSize={auditPageSize}
-          auditoriaFiltradaPaginada={auditoriaFiltradaPaginada}
-          auditoriaFiltrada={auditoriaFiltrada}
-          onNewRangoAbreviacionChange={setNewRangoAbreviacion}
-          onNewRangoNombreCompletoChange={setNewRangoNombreCompleto}
-          onNewRangoOrdenChange={setNewRangoOrden}
-          onEditRangoIdChange={setEditRangoId}
-          onEditRangoAbreviacionChange={setEditRangoAbreviacion}
-          onEditRangoNombreCompletoChange={setEditRangoNombreCompleto}
-          onEditRangoOrdenChange={setEditRangoOrden}
-          onCreateRango={() => void createRango()}
-          onUpdateRango={(rangoId) => void updateRango(rangoId)}
-          onDeleteRango={(rangoId) => void deleteRango(rangoId)}
-          onNewBateriaChange={setNewBateria}
-          onNewBateriaOrdenChange={setNewBateriaOrden}
-          onEditBateriaIdChange={setEditBateriaId}
-          onEditBateriaNombreChange={setEditBateriaNombre}
-          onEditBateriaOrdenChange={setEditBateriaOrden}
-          onCreateBateria={() => void createBateria()}
-          onUpdateBateria={(bateriaId) => void updateBateria(bateriaId)}
-          onDeleteBateria={(bateriaId) => void deleteBateria(bateriaId)}
-          onNewEquipoChange={(value, key) => setNewEquipo((prev) => ({ ...prev, [key]: value }))}
-          onEditEquipoIdChange={setEditEquipoId}
-          onEditEquipoChange={(value, key) => setEditEquipo((prev) => ({ ...prev, [key]: value }))}
-          onCreateEquipo={(event) => void createEquipo(event)}
-          onUpdateEquipo={(itemId) => void updateEquipo(itemId)}
-          onToggleEquipoActivo={(item) => void toggleEquipoActivo(item)}
-          onDeleteEquipo={(itemId) => void deleteEquipo(itemId)}
-          onMergeEquipoOrigenIdChange={handleMergeEquipoOrigenChange}
-          onMergeEquipoDestinoIdChange={handleMergeEquipoDestinoChange}
-          onMergeEquipos={mergeEquipos}
-          onSaveEquipoOrder={() => {
-            if (!equipoOrderDraftIds) return;
-            void saveActiveEquiposOrder(equipoOrderDraftIds);
+        {/* Metrics Section */}
+        <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", mb: 1.5, pl: 1 }}>
+          Resumen del Sistema
+        </Typography>
+        
+        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.25, px: 0.5 }}>
+          {[
+            { label: "Subalternos", value: personal.length },
+            { label: "Oficiales/Sub", value: oficialesSuboficiales.length },
+            { label: "Equipos", value: equipos.length },
+            { label: "Movimientos", value: movimientosTotal },
+          ].map((metric) => (
+            <Box 
+              key={metric.label}
+              sx={{ 
+                p: 1.5, 
+                borderRadius: 1.5, 
+                bgcolor: "rgba(0,0,0,0.2)", 
+                border: "1px solid rgba(255,255,255,0.05)",
+                display: "flex",
+                flexDirection: "column"
+              }}
+            >
+              <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>
+                {metric.label}
+              </Typography>
+              <Typography sx={{ color: "common.white", fontSize: 18, fontWeight: 900, mt: 0.2 }}>
+                {metric.value}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </>
+  );
+
+  return (
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "var(--color-camo-base)" }}>
+      {/* Sidebar - Desktop Only */}
+      <Box
+        component="nav"
+        sx={{
+          width: { xs: 0, md: 280, lg: 300 },
+          display: { xs: "none", md: "block" },
+          flexShrink: 0,
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          overflowY: "auto",
+          p: 2,
+          borderRight: "1px solid rgba(255, 255, 255, 0.1)",
+          background: "linear-gradient(180deg, rgba(22, 28, 22, 0.98) 0%, rgba(15, 20, 15, 0.99) 100%)",
+          backdropFilter: "blur(20px)",
+          boxShadow: "4px 0 24px rgba(0,0,0,0.3)",
+          zIndex: 1200,
+        }}
+      >
+        {sidebarContent}
+      </Box>
+
+      {/* Drawer - Mobile Only */}
+      <Drawer
+        anchor="left"
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        PaperProps={{
+          sx: {
+            width: 280,
+            bgcolor: "rgba(15, 20, 15, 0.98)",
+            backdropFilter: "blur(20px)",
+            p: 2,
+            borderRight: "1px solid rgba(255,255,255,0.1)",
+            backgroundImage: "none",
+          }
+        }}
+      >
+        {sidebarContent}
+      </Drawer>
+
+      {/* Main Content Area */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          minWidth: 0,
+          minHeight: "100vh",
+          overflowY: "auto",
+          position: "relative",
+          p: activeView === "dashboard" ? 0 : { xs: 2, sm: 3, lg: 4 },
+          backgroundColor: activeView === "dashboard" ? "#2f3a2a" : "#5f6c46",
+          backgroundImage: activeView === "dashboard"
+            ? "linear-gradient(110deg, rgba(12,16,11,0.78) 0%, rgba(20,27,18,0.56) 46%, rgba(9,12,10,0.76) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.04) 0 2px, rgba(0,0,0,0) 2px 7px), url('/assets/dashboard-foto.jpg')"
+            : "linear-gradient(90deg, rgba(24,27,21,0.5) 0%, rgba(255,255,255,0.04) 40%, rgba(24,27,21,0.45) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 2px, rgba(0,0,0,0) 2px 7px)",
+          backgroundSize: activeView === "dashboard" ? "cover" : "auto",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }}
+      >
+        {/* Mobile Header */}
+        <Box
+          sx={{
+            display: { xs: "flex", md: "none" },
+            alignItems: "center",
+            px: 2,
+            py: 1.5,
+            bgcolor: "rgba(15, 20, 15, 0.85)",
+            backdropFilter: "blur(10px)",
+            borderBottom: "1px solid rgba(255,255,255,0.1)",
+            position: "sticky",
+            top: 0,
+            zIndex: 1100,
           }}
-          onResetEquipoOrderDraft={() => setEquipoOrderDraftIds(null)}
-          renderEquipoCard={renderEquipoCard}
-          onNewUserRangoIdChange={setNewUserRangoId}
-          onNewNombreChange={setNewNombre}
-          onNewApellidoChange={setNewApellido}
-          onNewUsernameChange={setNewUsername}
-          onNewPasswordChange={setNewPassword}
-          onNewPasswordConfirmChange={setNewPasswordConfirm}
-          onNewMailReferenciaChange={setNewMailReferencia}
-          onNewRoleChange={setNewRole}
-          onCreateUsuario={(event) => void createUsuario(event)}
-          onEditUsuario={(usuario) => void editUsuario(usuario)}
-          onChangeUserRole={(usuario) => void changeUserRole(usuario)}
-          onChangeUserPassword={(usuario) => void changeUserPassword(usuario)}
-          onConfirmUserEmail={(usuario) => void confirmUserEmail(usuario)}
-          onToggleUserActive={(usuario) => void toggleUserActive(usuario)}
-          onDeleteUsuario={(usuario) => void deleteUsuario(usuario)}
-          onFirmaConfigDraftChange={(key, value) => setFirmaConfigDraft((prev) => ({ ...prev, [key]: value }))}
-          onSaveFirmaConfig={(event) => void saveFirmaConfig(event)}
-          onAuditFilterChange={setAuditFilter}
-          onAuditUserFilterChange={setAuditUserFilter}
-          onAuditPageChange={setAuditPage}
-          onAuditPageSizeChange={setAuditPageSize}
-          onNavigateView={(view) => setActiveView(view)}
-          roleLabel={roleLabel}
-          roleDescription={roleDescription}
-          roleScope={roleScope}
-          rangoLabel={rangoLabel}
-          auditActionLabel={auditActionLabel}
-          auditEntityLabel={auditEntityLabel}
-          renderAuditDetalle={renderAuditDetalle}
-        />
-        ) : null}
+        >
+          <IconButton onClick={() => setMobileMenuOpen(true)} sx={{ color: "common.white", mr: 2 }}>
+            <MenuRoundedIcon />
+          </IconButton>
+          <Typography sx={{ color: "common.white", fontWeight: 900, fontSize: 16 }}>
+            DEPÓSITO ART 1
+          </Typography>
+        </Box>
 
-        <HomeViewRouter
-          activeView={activeView}
-          ciPlaceholder={ciPlaceholder}
-          newPersonal={newPersonal}
-          duplicatePersonal={duplicatePersonal}
-          ciHasError={ciHasError}
-          ciLooksValid={ciLooksValid}
-          ciAlreadyExists={ciAlreadyExists}
-          canRegisterPersonal={canRegisterPersonal}
-          requiredPersonalCompleted={requiredPersonalCompleted}
-          requiredPersonalFields={requiredPersonalFields}
-          canSubmitPersonal={canSubmitPersonal}
-          creatingPersonal={creatingPersonal}
-          rangos={rangos}
-          baterias={baterias}
-          equiposActivos={equiposActivos}
-          tallaOptionsByKey={tallaOptionsByKey}
-          maxFechaIngreso={maxFechaIngreso}
-          newPersonalMovimientos={newPersonalMovimientos}
-          newPersonalMovimientoDraft={newPersonalMovimientoDraft}
-          newPersonalMovimientoEditIndex={newPersonalMovimientoEditIndex}
-          setActiveView={setActiveView}
-          createPersonal={createPersonal}
-          updateNewPersonalField={updateNewPersonalField}
-          openNewPersonalMovimientoModal={openNewPersonalMovimientoModal}
-          closeNewPersonalMovimientoModal={closeNewPersonalMovimientoModal}
-          saveNewPersonalMovimientoFromModal={saveNewPersonalMovimientoFromModal}
-          editNewPersonalMovimiento={editNewPersonalMovimiento}
-          removeNewPersonalMovimiento={removeNewPersonalMovimiento}
-          updateNewPersonalMovimientoDraft={updateNewPersonalMovimientoDraft}
-          updateNewPersonalMovimientoDraftItem={updateNewPersonalMovimientoDraftItem}
-          addNewPersonalMovimientoDraftItem={addNewPersonalMovimientoDraftItem}
-          removeNewPersonalMovimientoDraftItem={removeNewPersonalMovimientoDraftItem}
-          editingOficialSuboficialCi={editingOficialSuboficialCi}
-          newOficialSuboficial={newOficialSuboficial}
-          duplicateOficialSuboficialLabel={duplicateOficialSuboficialLabel}
-          oficialSuboficialCiLooksValid={oficialSuboficialCiLooksValid}
-          oficialSuboficialCiAlreadyExists={oficialSuboficialCiAlreadyExists}
-          canRegisterOficialSuboficial={canRegisterOficialSuboficial}
-          oficialSuboficialRequiredCompleted={oficialSuboficialRequiredCompleted}
-          oficialSuboficialRequiredFields={oficialSuboficialRequiredFields}
-          canSubmitOficialSuboficial={canSubmitOficialSuboficial}
-          creatingOficialSuboficial={creatingOficialSuboficial}
-          rangosOficialSuboficialDisponibles={rangosOficialSuboficialDisponibles}
-          cancelOficialSuboficialForm={cancelOficialSuboficialForm}
-          createOficialSuboficial={createOficialSuboficial}
-          updateNewOficialSuboficialField={updateNewOficialSuboficialField}
-          newEquipo={newEquipo}
-          loading={loading}
-          creatingEquipo={creatingEquipo}
-          createEquipo={createEquipo}
-          setNewEquipo={setNewEquipo}
-          newBateria={newBateria}
-          newBateriaOrden={newBateriaOrden}
-          createBateria={createBateria}
-          setNewBateria={setNewBateria}
-          setNewBateriaOrden={setNewBateriaOrden}
-          newRangoAbreviacion={newRangoAbreviacion}
-          newRangoNombreCompleto={newRangoNombreCompleto}
-          newRangoOrden={newRangoOrden}
-          createRango={createRango}
-          setNewRangoAbreviacion={setNewRangoAbreviacion}
-          setNewRangoNombreCompleto={setNewRangoNombreCompleto}
-          setNewRangoOrden={setNewRangoOrden}
-          isAdmin={isAdmin}
-          newUserRangoId={newUserRangoId}
-          rangosConfigView={rangosConfigView}
-          newNombre={newNombre}
-          newApellido={newApellido}
-          newUsername={newUsername}
-          newPassword={newPassword}
-          newPasswordConfirm={newPasswordConfirm}
-          newMailReferencia={newMailReferencia}
-          newRole={newRole}
-          createUsuario={createUsuario}
-          setNewUserRangoId={setNewUserRangoId}
-          setNewNombre={setNewNombre}
-          setNewApellido={setNewApellido}
-          setNewUsername={setNewUsername}
-          setNewPassword={setNewPassword}
-          setNewPasswordConfirm={setNewPasswordConfirm}
-          setNewMailReferencia={setNewMailReferencia}
-          setNewRole={setNewRole}
-          roleLabel={roleLabel}
-          roleDescription={roleDescription}
-          roleScope={roleScope}
-          personal={personal}
-          personalFiltrado={personalFiltrado}
-          personalFiltradoPaginado={personalFiltradoPaginado}
-          canWrite={canWrite}
-          searchCedula={searchCedula}
-          searchApellidos={searchApellidos}
-          searchNombres={searchNombres}
-          bateriaFilter={bateriaFilter}
-          hasPersonalFilters={hasPersonalFilters}
-          personalPage={personalPage}
-          personalPageSize={personalPageSize}
-          expandedTallasByCi={expandedTallasByCi}
-          editPersonalCi={editPersonalCi}
-          editPersonal={editPersonal}
-          setSearchCedula={setSearchCedula}
-          setSearchApellidos={setSearchApellidos}
-          setSearchNombres={setSearchNombres}
-          setBateriaFilter={setBateriaFilter}
-          setPersonalPage={setPersonalPage}
-          setPersonalPageSize={setPersonalPageSize}
-          printAllDeliverySheets={printAllDeliverySheets}
-          emailAllDeliverySheets={emailAllDeliverySheets}
-          cancelBulkDeliveryEmailJob={cancelBulkDeliveryEmailJob}
-          bulkDeliveryEmailBusy={bulkDeliveryEmailBusy}
-          bulkDeliveryEmailDisabledReason={bulkDeliveryEmailDisabledReason}
-          printPersonnelByBattery={printPersonnelByBattery}
-          openMassRegistro={openMassRegistro}
-          toggleTallas={toggleTallas}
-          deletePersonal={deletePersonal}
-          openRegistro={openRegistro}
-          openPersonalObservacion={openPersonalObservacion}
-          openRegistroViewer={openRegistroViewer}
-          openPersonaProfileFromPersonal={openPersonaProfileFromPersonal}
-          setFichaViewingCi={setFichaViewingCi}
-          startEditPersonal={startEditPersonal}
-          setEditPersonalCi={setEditPersonalCi}
-          setEditPersonal={setEditPersonal}
-          updatePersonal={updatePersonal}
-          canPromoteEditPersonalToSuboficial={canPromoteEditPersonalToSuboficial}
-          promotingSubalternoCi={promotingSubalternoCi}
-          promoteSargentoToSuboficial={promoteSargentoToSuboficial}
-          openAscensoDeliverySheet={openAscensoDeliverySheet}
-          oficialesSuboficiales={oficialesSuboficiales}
-          startEditOficialSuboficial={startEditOficialSuboficial}
-          openOficialSuboficialCreate={openOficialSuboficialCreate}
-          openPersonaProfileFromOficialSuboficial={openPersonaProfileFromOficialSuboficial}
-          reloadCurrentViewData={reloadCurrentViewData}
-          hojaMatrixData={hojaMatrixData}
-          hojaMatrixLoading={hojaMatrixLoading}
-          hojaMatrixError={hojaMatrixError}
-          loadHojaMatrix={loadHojaMatrix}
-          equipoResumenData={equipoResumenData}
-          equipoResumenLoading={equipoResumenLoading}
-          equipoResumenError={equipoResumenError}
-          loadEquipoResumen={loadEquipoResumen}
-          stockData={stockData}
-          stockLoading={stockLoading}
-          stockError={stockError}
-          equiposOrdenados={equiposOrdenados}
-          stockDraft={stockDraft}
-          stockSaving={stockSaving}
-          setStockDraft={setStockDraft}
-          updateStockDraftItem={updateStockDraftItem}
-          addStockDraftItem={addStockDraftItem}
-          removeStockDraftItem={removeStockDraftItem}
-          saveStockOperation={saveStockOperation}
-          prestamoDraft={prestamoDraft}
-          prestamoSaving={prestamoSaving}
-          returningPrestamoId={returningPrestamoId}
-          setPrestamoDraft={setPrestamoDraft}
-          updatePrestamoDraftItem={updatePrestamoDraftItem}
-          addPrestamoDraftItem={addPrestamoDraftItem}
-          removePrestamoDraftItem={removePrestamoDraftItem}
-          savePrestamo={savePrestamo}
-          returnPrestamo={returnPrestamo}
-          reloadActiveStockData={reloadActiveStockData}
-          editingPrestamoId={editingPrestamoId}
-          editPrestamo={editPrestamo}
-          deletePrestamo={deletePrestamo}
-          inEtiquetadoView={inEtiquetadoView}
-          activeEtiquetadoSection={activeEtiquetadoSection}
-          etiquetadoData={etiquetadoData}
-          etiquetadoLoading={etiquetadoLoading}
-          etiquetadoError={etiquetadoError}
-          reloadEtiquetadoData={reloadEtiquetadoData}
-          createEtiquetadoItem={createEtiquetadoItem}
-          createEtiquetadoEstanteria={createEtiquetadoEstanteria}
-          deleteEtiquetadoEstanteria={deleteEtiquetadoEstanteria}
-          createEtiquetadoCodigoSIE={createEtiquetadoCodigoSIE}
-          updateEtiquetadoCodigoSIE={updateEtiquetadoCodigoSIE}
-          deleteEtiquetadoCodigoSIE={deleteEtiquetadoCodigoSIE}
-          createEtiquetadoCaja={createEtiquetadoCaja}
-          deleteEtiquetadoCaja={deleteEtiquetadoCaja}
-          printEtiquetaCaja={printEtiquetaCaja}
-          printListadoCajas={printListadoCajas}
-          printTodasEtiquetas={printTodasEtiquetas}
-          EMPTY_PERSONAL_FORM={EMPTY_PERSONAL_FORM}
-        />
+        {currentUser?.rol === "ADMIN" && (
+          <Box sx={{ position: "relative", px: activeView === "dashboard" ? 3 : 0, mt: activeView === "dashboard" ? 3 : 0 }}>
+            <AdminPushNotifications />
+          </Box>
+        )}
 
-        <HomeOverlaysLayer
-          activeView={activeView}
-          mergeEquipoDialog={mergeEquipoDialog}
-          mergeEquipoSource={mergeEquipoSource}
-          mergeEquipoDialogTargetId={mergeEquipoDialogTargetId}
-          mergeEquipoTargetOptions={mergeEquipoTargetOptions}
-          mergeEquipoSaving={mergeEquipoSaving}
-          updateMergeEquipoDialogTarget={updateMergeEquipoDialogTarget}
-          closeMergeEquipoDialog={closeMergeEquipoDialog}
-          submitMergeEquipoDialog={submitMergeEquipoDialog}
-          showChangePassword={showChangePassword}
-          changeCurrentPassword={changeCurrentPassword}
-          changeNewPassword={changeNewPassword}
-          changeConfirmPassword={changeConfirmPassword}
-          changeLoading={changeLoading}
-          setChangeCurrentPassword={setChangeCurrentPassword}
-          setChangeNewPassword={setChangeNewPassword}
-          setChangeConfirmPassword={setChangeConfirmPassword}
-          setShowChangePassword={setShowChangePassword}
-          submitChangePassword={submitChangePassword}
-          userRoleDialog={userRoleDialog}
-          userRoleSaving={userRoleSaving}
-          setUserRoleDialog={setUserRoleDialog}
-          closeUserRoleDialog={closeUserRoleDialog}
-          submitUserRoleChange={submitUserRoleChange}
-          userPasswordDialog={userPasswordDialog}
-          userPasswordSaving={userPasswordSaving}
-          setUserPasswordDialog={setUserPasswordDialog}
-          closeUserPasswordDialog={closeUserPasswordDialog}
-          submitUserPasswordChange={submitUserPasswordChange}
-          usernameDialog={usernameDialog}
-          usernameSaving={usernameSaving}
-          rangosConfigView={rangosConfigView}
-          setUsernameDialog={setUsernameDialog}
-          closeUsernameDialog={closeUsernameDialog}
-          submitUsernameChange={submitUsernameChange}
-          confirmDialog={confirmDialog}
-          confirmDialogBusy={confirmDialogBusy}
-          closeConfirmDialog={closeConfirmDialog}
-          confirmDialogAccept={confirmDialogAccept}
-          registroViewer={registroViewer}
-          registroViewerRowsPaginados={registroViewerRowsPaginados}
-          registroViewerPage={registroViewerPage}
-          registroViewerPageSize={registroViewerPageSize}
-          canWrite={canWrite}
-          canDeleteRegistros={canDeleteRegistros}
-          rectifyRegistro={rectifyRegistro}
-          setRegistroViewerPage={setRegistroViewerPage}
-          setRegistroViewerPageSize={setRegistroViewerPageSize}
-          setRegistroViewer={setRegistroViewer}
-          registroDraft={registroDraft}
-          personaRegistro={personaRegistro}
-          personalFiltrado={personalFiltrado}
-          equiposOrdenados={equiposOrdenados}
-          maxFechaIngreso={maxFechaIngreso}
-          registroSaving={registroSaving}
-          setRegistroDraft={setRegistroDraft}
-          toggleRegistroDestinatario={toggleRegistroDestinatario}
-          selectAllRegistroDestinatarios={selectAllRegistroDestinatarios}
-          clearRegistroDestinatarios={clearRegistroDestinatarios}
-          updateRegistroItem={updateRegistroItem}
-          addRegistroItem={addRegistroItem}
-          removeRegistroItem={removeRegistroItem}
-          deleteRegistro={deleteRegistro}
-          saveRegistro={saveRegistro}
-          personalObservacionDraft={personalObservacionDraft}
-          personalObservacionSaving={personalObservacionSaving}
-          setPersonalObservacionDraft={setPersonalObservacionDraft}
-          resetPersonalObservacionForm={resetPersonalObservacionForm}
-          editPersonalObservacion={editPersonalObservacion}
-          deletePersonalObservacion={deletePersonalObservacion}
-          savePersonalObservacion={savePersonalObservacion}
-          personaProfile={personaProfile}
-          closePersonaProfileView={closePersonaProfileView}
-          reloadPersonaProfile={reloadPersonaProfile}
-          printDeliverySheetFromProfile={printDeliverySheetFromProfile}
-          printPrestamosFromProfile={printPrestamosFromProfile}
-          fichaViewingCi={fichaViewingCi}
-          setActiveView={setActiveView}
-          recordatorioConfig={recordatorioConfig}
-          recordatorioTasks={recordatorioTasks}
-          recordatoriosLoading={recordatoriosLoading}
-          recordatoriosSaving={recordatoriosSaving}
-          currentUser={currentUser}
-          soldadoWidgetVariant={soldadoWidgetVariant}
-          createRecordatorioTask={createRecordatorioTask}
-          updateRecordatorioTask={updateRecordatorioTask}
-          isAppGlobalBusy={isAppGlobalBusy}
-          appBusyLabel={appBusyLabel}
-        />
-      </div>
+        <div>
+          {activeView !== "dashboard" ? <AppInstallCard /> : null}
 
-    </main>
+          {inReminderConfigView ? (
+            <RecordatoriosConfigView
+              tasks={recordatorioTasks}
+              config={recordatorioConfig}
+              isAdmin={isAdmin}
+              currentUserId={currentUser?.usuarioId ?? null}
+              userOptions={usuarios.filter((usuario) => usuario.accountType === "SISTEMA")}
+              loading={recordatoriosLoading}
+              saving={recordatoriosSaving}
+              error={recordatoriosError}
+              onCreateTask={createRecordatorioTask}
+              onUpdateTask={updateRecordatorioTask}
+              onDeleteTask={deleteRecordatorioTask}
+              onToggleWidget={updateRecordatorioConfig}
+              soldadoVariant={soldadoWidgetVariant}
+              onToggleSoldadoVariant={toggleSoldadoWidgetVariant}
+              onReload={loadRecordatorios}
+            />
+          ) : null}
+
+          {inCatalogView || (isAdmin && inAdminConfigView) ? (
+          <ConfigViews
+            activeView={activeView as "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria"}
+            isAdmin={isAdmin}
+            canWrite={canWrite}
+            rangos={rangosConfigView}
+            newRangoAbreviacion={newRangoAbreviacion}
+            newRangoNombreCompleto={newRangoNombreCompleto}
+            newRangoOrden={newRangoOrden}
+            editRangoId={editRangoId}
+            editRangoAbreviacion={editRangoAbreviacion}
+            editRangoNombreCompleto={editRangoNombreCompleto}
+            editRangoOrden={editRangoOrden}
+            baterias={baterias}
+            newBateria={newBateria}
+            newBateriaOrden={newBateriaOrden}
+            editBateriaId={editBateriaId}
+            editBateriaNombre={editBateriaNombre}
+            editBateriaOrden={editBateriaOrden}
+            equipos={equiposOrdenados}
+            newEquipo={newEquipo}
+            editEquipoId={editEquipoId}
+            editEquipo={editEquipo}
+            equiposInactivos={equiposInactivos}
+            equiposActivosEnPantalla={equiposActivosEnPantalla}
+            hasEquipoOrderDraftChanges={hasEquipoOrderDraftChanges}
+            mergeEquipoOrigenId={mergeEquipoOrigenId}
+            mergeEquipoDestinoId={mergeEquipoDestinoId}
+            usuarios={usuarios}
+            newUserRangoId={newUserRangoId}
+            userRangoOptions={rangosConfigView}
+            newNombre={newNombre}
+            newApellido={newApellido}
+            newUsername={newUsername}
+            newPassword={newPassword}
+            newPasswordConfirm={newPasswordConfirm}
+            newMailReferencia={newMailReferencia}
+            newRole={newRole}
+            firmaConfig={firmaConfig}
+            firmaConfigDraft={firmaConfigDraft}
+            firmaConfigLoading={firmaConfigLoading}
+            firmaConfigSaving={firmaConfigSaving}
+            firmaConfigError={firmaConfigError}
+            auditFilter={auditFilter}
+            auditUserFilter={auditUserFilter}
+            auditUserOptions={auditUserOptions}
+            auditPage={auditPage}
+            auditPageSize={auditPageSize}
+            auditoriaFiltradaPaginada={auditoriaFiltradaPaginada}
+            auditoriaFiltrada={auditoriaFiltrada}
+            onNewRangoAbreviacionChange={setNewRangoAbreviacion}
+            onNewRangoNombreCompletoChange={setNewRangoNombreCompleto}
+            onNewRangoOrdenChange={setNewRangoOrden}
+            onEditRangoIdChange={setEditRangoId}
+            onEditRangoAbreviacionChange={setEditRangoAbreviacion}
+            onEditRangoNombreCompletoChange={setEditRangoNombreCompleto}
+            onEditRangoOrdenChange={setEditRangoOrden}
+            onCreateRango={() => void createRango()}
+            onUpdateRango={(rangoId) => void updateRango(rangoId)}
+            onDeleteRango={(rangoId) => void deleteRango(rangoId)}
+            onNewBateriaChange={setNewBateria}
+            onNewBateriaOrdenChange={setNewBateriaOrden}
+            onEditBateriaIdChange={setEditBateriaId}
+            onEditBateriaNombreChange={setEditBateriaNombre}
+            onEditBateriaOrdenChange={setEditBateriaOrden}
+            onCreateBateria={() => void createBateria()}
+            onUpdateBateria={(bateriaId) => void updateBateria(bateriaId)}
+            onDeleteBateria={(bateriaId) => void deleteBateria(bateriaId)}
+            onNewEquipoChange={(value, key) => setNewEquipo((prev) => ({ ...prev, [key]: value }))}
+            onEditEquipoIdChange={setEditEquipoId}
+            onEditEquipoChange={(value, key) => setEditEquipo((prev) => ({ ...prev, [key]: value }))}
+            onCreateEquipo={(event) => void createEquipo(event)}
+            onUpdateEquipo={(itemId) => void updateEquipo(itemId)}
+            onToggleEquipoActivo={(item) => void toggleEquipoActivo(item)}
+            onDeleteEquipo={(itemId) => void deleteEquipo(itemId)}
+            onMergeEquipoOrigenIdChange={handleMergeEquipoOrigenChange}
+            onMergeEquipoDestinoIdChange={handleMergeEquipoDestinoChange}
+            onMergeEquipos={mergeEquipos}
+            onSaveEquipoOrder={() => {
+              if (!equipoOrderDraftIds) return;
+              void saveActiveEquiposOrder(equipoOrderDraftIds);
+            }}
+            onResetEquipoOrderDraft={() => setEquipoOrderDraftIds(null)}
+            renderEquipoCard={renderEquipoCard}
+            onNewUserRangoIdChange={setNewUserRangoId}
+            onNewNombreChange={setNewNombre}
+            onNewApellidoChange={setNewApellido}
+            onNewUsernameChange={setNewUsername}
+            onNewPasswordChange={setNewPassword}
+            onNewPasswordConfirmChange={setNewPasswordConfirm}
+            onNewMailReferenciaChange={setNewMailReferencia}
+            onNewRoleChange={setNewRole}
+            onCreateUsuario={(event) => void createUsuario(event)}
+            onEditUsuario={(usuario) => void editUsuario(usuario)}
+            onChangeUserRole={(usuario) => void changeUserRole(usuario)}
+            onChangeUserPassword={(usuario) => void changeUserPassword(usuario)}
+            onConfirmUserEmail={(usuario) => void confirmUserEmail(usuario)}
+            onToggleUserActive={(usuario) => void toggleUserActive(usuario)}
+            onDeleteUsuario={(usuario) => void deleteUsuario(usuario)}
+            onFirmaConfigDraftChange={(key, value) => setFirmaConfigDraft((prev) => ({ ...prev, [key]: value }))}
+            onSaveFirmaConfig={(event) => void saveFirmaConfig(event)}
+            onAuditFilterChange={setAuditFilter}
+            onAuditUserFilterChange={setAuditUserFilter}
+            onAuditPageChange={setAuditPage}
+            onAuditPageSizeChange={setAuditPageSize}
+            onNavigateView={(view) => setActiveView(view)}
+            roleLabel={roleLabel}
+            roleDescription={roleDescription}
+            roleScope={roleScope}
+            rangoLabel={rangoLabel}
+            auditActionLabel={auditActionLabel}
+            auditEntityLabel={auditEntityLabel}
+            renderAuditDetalle={renderAuditDetalle}
+          />
+          ) : null}
+
+          <HomeViewRouter
+            activeView={activeView}
+            ciPlaceholder={ciPlaceholder}
+            newPersonal={newPersonal}
+            duplicatePersonal={duplicatePersonal}
+            ciHasError={ciHasError}
+            ciLooksValid={ciLooksValid}
+            ciAlreadyExists={ciAlreadyExists}
+            canRegisterPersonal={canRegisterPersonal}
+            requiredPersonalCompleted={requiredPersonalCompleted}
+            requiredPersonalFields={requiredPersonalFields}
+            canSubmitPersonal={canSubmitPersonal}
+            creatingPersonal={creatingPersonal}
+            rangos={rangos}
+            baterias={baterias}
+            equiposActivos={equiposActivos}
+            tallaOptionsByKey={tallaOptionsByKey}
+            maxFechaIngreso={maxFechaIngreso}
+            newPersonalMovimientos={newPersonalMovimientos}
+            newPersonalMovimientoDraft={newPersonalMovimientoDraft}
+            newPersonalMovimientoEditIndex={newPersonalMovimientoEditIndex}
+            setActiveView={setActiveView}
+            createPersonal={createPersonal}
+            updateNewPersonalField={updateNewPersonalField}
+            openNewPersonalMovimientoModal={openNewPersonalMovimientoModal}
+            closeNewPersonalMovimientoModal={closeNewPersonalMovimientoModal}
+            saveNewPersonalMovimientoFromModal={saveNewPersonalMovimientoFromModal}
+            editNewPersonalMovimiento={editNewPersonalMovimiento}
+            removeNewPersonalMovimiento={removeNewPersonalMovimiento}
+            updateNewPersonalMovimientoDraft={updateNewPersonalMovimientoDraft}
+            updateNewPersonalMovimientoDraftItem={updateNewPersonalMovimientoDraftItem}
+            addNewPersonalMovimientoDraftItem={addNewPersonalMovimientoDraftItem}
+            removeNewPersonalMovimientoDraftItem={removeNewPersonalMovimientoDraftItem}
+            editingOficialSuboficialCi={editingOficialSuboficialCi}
+            newOficialSuboficial={newOficialSuboficial}
+            duplicateOficialSuboficialLabel={duplicateOficialSuboficialLabel}
+            oficialSuboficialCiLooksValid={oficialSuboficialCiLooksValid}
+            oficialSuboficialCiAlreadyExists={oficialSuboficialCiAlreadyExists}
+            canRegisterOficialSuboficial={canRegisterOficialSuboficial}
+            oficialSuboficialRequiredCompleted={oficialSuboficialRequiredCompleted}
+            oficialSuboficialRequiredFields={oficialSuboficialRequiredFields}
+            canSubmitOficialSuboficial={canSubmitOficialSuboficial}
+            creatingOficialSuboficial={creatingOficialSuboficial}
+            rangosOficialSuboficialDisponibles={rangosOficialSuboficialDisponibles}
+            cancelOficialSuboficialForm={cancelOficialSuboficialForm}
+            createOficialSuboficial={createOficialSuboficial}
+            updateNewOficialSuboficialField={updateNewOficialSuboficialField}
+            newEquipo={newEquipo}
+            loading={loading}
+            creatingEquipo={creatingEquipo}
+            createEquipo={createEquipo}
+            setNewEquipo={setNewEquipo}
+            newBateria={newBateria}
+            newBateriaOrden={newBateriaOrden}
+            createBateria={createBateria}
+            setNewBateria={setNewBateria}
+            setNewBateriaOrden={setNewBateriaOrden}
+            newRangoAbreviacion={newRangoAbreviacion}
+            newRangoNombreCompleto={newRangoNombreCompleto}
+            newRangoOrden={newRangoOrden}
+            createRango={createRango}
+            setNewRangoAbreviacion={setNewRangoAbreviacion}
+            setNewRangoNombreCompleto={setNewRangoNombreCompleto}
+            setNewRangoOrden={setNewRangoOrden}
+            isAdmin={isAdmin}
+            newUserRangoId={newUserRangoId}
+            rangosConfigView={rangosConfigView}
+            newNombre={newNombre}
+            newApellido={newApellido}
+            newUsername={newUsername}
+            newPassword={newPassword}
+            newPasswordConfirm={newPasswordConfirm}
+            newMailReferencia={newMailReferencia}
+            newRole={newRole}
+            createUsuario={createUsuario}
+            setNewUserRangoId={setNewUserRangoId}
+            setNewNombre={setNewNombre}
+            setNewApellido={setNewApellido}
+            setNewUsername={setNewUsername}
+            setNewPassword={setNewPassword}
+            setNewPasswordConfirm={setNewPasswordConfirm}
+            setNewMailReferencia={setNewMailReferencia}
+            setNewRole={setNewRole}
+            roleLabel={roleLabel}
+            roleDescription={roleDescription}
+            roleScope={roleScope}
+            personal={personal}
+            personalFiltrado={personalFiltrado}
+            personalFiltradoPaginado={personalFiltradoPaginado}
+            canWrite={canWrite}
+            searchCedula={searchCedula}
+            searchApellidos={searchApellidos}
+            searchNombres={searchNombres}
+            bateriaFilter={bateriaFilter}
+            hasPersonalFilters={hasPersonalFilters}
+            personalPage={personalPage}
+            personalPageSize={personalPageSize}
+            expandedTallasByCi={expandedTallasByCi}
+            editPersonalCi={editPersonalCi}
+            editPersonal={editPersonal}
+            setSearchCedula={setSearchCedula}
+            setSearchApellidos={setSearchApellidos}
+            setSearchNombres={setSearchNombres}
+            setBateriaFilter={setBateriaFilter}
+            setPersonalPage={setPersonalPage}
+            setPersonalPageSize={setPersonalPageSize}
+            printAllDeliverySheets={printAllDeliverySheets}
+            emailAllDeliverySheets={emailAllDeliverySheets}
+            cancelBulkDeliveryEmailJob={cancelBulkDeliveryEmailJob}
+            bulkDeliveryEmailBusy={bulkDeliveryEmailBusy}
+            bulkDeliveryEmailDisabledReason={bulkDeliveryEmailDisabledReason}
+            printPersonnelByBattery={printPersonnelByBattery}
+            openMassRegistro={openMassRegistro}
+            toggleTallas={toggleTallas}
+            deletePersonal={deletePersonal}
+            openRegistro={openRegistro}
+            openPersonalObservacion={openPersonalObservacion}
+            openRegistroViewer={openRegistroViewer}
+            openPersonaProfileFromPersonal={openPersonaProfileFromPersonal}
+            setFichaViewingCi={setFichaViewingCi}
+            startEditPersonal={startEditPersonal}
+            setEditPersonalCi={setEditPersonalCi}
+            setEditPersonal={setEditPersonal}
+            updatePersonal={updatePersonal}
+            canPromoteEditPersonalToSuboficial={canPromoteEditPersonalToSuboficial}
+            promotingSubalternoCi={promotingSubalternoCi}
+            promoteSargentoToSuboficial={promoteSargentoToSuboficial}
+            openAscensoDeliverySheet={openAscensoDeliverySheet}
+            oficialesSuboficiales={oficialesSuboficiales}
+            startEditOficialSuboficial={startEditOficialSuboficial}
+            openOficialSuboficialCreate={openOficialSuboficialCreate}
+            openPersonaProfileFromOficialSuboficial={openPersonaProfileFromOficialSuboficial}
+            reloadCurrentViewData={reloadCurrentViewData}
+            hojaMatrixData={hojaMatrixData}
+            hojaMatrixLoading={hojaMatrixLoading}
+            hojaMatrixError={hojaMatrixError}
+            loadHojaMatrix={loadHojaMatrix}
+            equipoResumenData={equipoResumenData}
+            equipoResumenLoading={equipoResumenLoading}
+            equipoResumenError={equipoResumenError}
+            loadEquipoResumen={loadEquipoResumen}
+            stockData={stockData}
+            stockLoading={stockLoading}
+            stockError={stockError}
+            equiposOrdenados={equiposOrdenados}
+            stockDraft={stockDraft}
+            stockSaving={stockSaving}
+            setStockDraft={setStockDraft}
+            updateStockDraftItem={updateStockDraftItem}
+            addStockDraftItem={addStockDraftItem}
+            removeStockDraftItem={removeStockDraftItem}
+            saveStockOperation={saveStockOperation}
+            prestamoDraft={prestamoDraft}
+            prestamoSaving={prestamoSaving}
+            returningPrestamoId={returningPrestamoId}
+            setPrestamoDraft={setPrestamoDraft}
+            updatePrestamoDraftItem={updatePrestamoDraftItem}
+            addPrestamoDraftItem={addPrestamoDraftItem}
+            removePrestamoDraftItem={removePrestamoDraftItem}
+            savePrestamo={savePrestamo}
+            returnPrestamo={returnPrestamo}
+            reloadActiveStockData={reloadActiveStockData}
+            editingPrestamoId={editingPrestamoId}
+            editPrestamo={editPrestamo}
+            deletePrestamo={deletePrestamo}
+            inEtiquetadoView={inEtiquetadoView}
+            activeEtiquetadoSection={activeEtiquetadoSection}
+            etiquetadoData={etiquetadoData}
+            etiquetadoLoading={etiquetadoLoading}
+            etiquetadoError={etiquetadoError}
+            reloadEtiquetadoData={reloadEtiquetadoData}
+            createEtiquetadoItem={createEtiquetadoItem}
+            createEtiquetadoEstanteria={createEtiquetadoEstanteria}
+            deleteEtiquetadoEstanteria={deleteEtiquetadoEstanteria}
+            createEtiquetadoCodigoSIE={createEtiquetadoCodigoSIE}
+            updateEtiquetadoCodigoSIE={updateEtiquetadoCodigoSIE}
+            deleteEtiquetadoCodigoSIE={deleteEtiquetadoCodigoSIE}
+            createEtiquetadoCaja={createEtiquetadoCaja}
+            deleteEtiquetadoCaja={deleteEtiquetadoCaja}
+            printEtiquetaCaja={printEtiquetaCaja}
+            printListadoCajas={printListadoCajas}
+            printTodasEtiquetas={printTodasEtiquetas}
+            EMPTY_PERSONAL_FORM={EMPTY_PERSONAL_FORM}
+          />
+
+          <HomeOverlaysLayer
+            activeView={activeView}
+            mergeEquipoDialog={mergeEquipoDialog}
+            mergeEquipoSource={mergeEquipoSource}
+            mergeEquipoDialogTargetId={mergeEquipoDialogTargetId}
+            mergeEquipoTargetOptions={mergeEquipoTargetOptions}
+            mergeEquipoSaving={mergeEquipoSaving}
+            updateMergeEquipoDialogTarget={updateMergeEquipoDialogTarget}
+            closeMergeEquipoDialog={closeMergeEquipoDialog}
+            submitMergeEquipoDialog={submitMergeEquipoDialog}
+            showChangePassword={showChangePassword}
+            changeCurrentPassword={changeCurrentPassword}
+            changeNewPassword={changeNewPassword}
+            changeConfirmPassword={changeConfirmPassword}
+            changeLoading={changeLoading}
+            setChangeCurrentPassword={setChangeCurrentPassword}
+            setChangeNewPassword={setChangeNewPassword}
+            setChangeConfirmPassword={setChangeConfirmPassword}
+            setShowChangePassword={setShowChangePassword}
+            submitChangePassword={submitChangePassword}
+            userRoleDialog={userRoleDialog}
+            userRoleSaving={userRoleSaving}
+            setUserRoleDialog={setUserRoleDialog}
+            closeUserRoleDialog={closeUserRoleDialog}
+            submitUserRoleChange={submitUserRoleChange}
+            userPasswordDialog={userPasswordDialog}
+            userPasswordSaving={userPasswordSaving}
+            setUserPasswordDialog={setUserPasswordDialog}
+            closeUserPasswordDialog={closeUserPasswordDialog}
+            submitUserPasswordChange={submitUserPasswordChange}
+            usernameDialog={usernameDialog}
+            usernameSaving={usernameSaving}
+            rangosConfigView={rangosConfigView}
+            setUsernameDialog={setUsernameDialog}
+            closeUsernameDialog={closeUsernameDialog}
+            submitUsernameChange={submitUsernameChange}
+            confirmDialog={confirmDialog}
+            confirmDialogBusy={confirmDialogBusy}
+            closeConfirmDialog={closeConfirmDialog}
+            confirmDialogAccept={confirmDialogAccept}
+            registroViewer={registroViewer}
+            registroViewerRowsPaginados={registroViewerRowsPaginados}
+            registroViewerPage={registroViewerPage}
+            registroViewerPageSize={registroViewerPageSize}
+            canWrite={canWrite}
+            canDeleteRegistros={canDeleteRegistros}
+            rectifyRegistro={rectifyRegistro}
+            setRegistroViewerPage={setRegistroViewerPage}
+            setRegistroViewerPageSize={setRegistroViewerPageSize}
+            setRegistroViewer={setRegistroViewer}
+            registroDraft={registroDraft}
+            personaRegistro={personaRegistro}
+            personalFiltrado={personalFiltrado}
+            equiposOrdenados={equiposOrdenados}
+            maxFechaIngreso={maxFechaIngreso}
+            registroSaving={registroSaving}
+            setRegistroDraft={setRegistroDraft}
+            toggleRegistroDestinatario={toggleRegistroDestinatario}
+            selectAllRegistroDestinatarios={selectAllRegistroDestinatarios}
+            clearRegistroDestinatarios={clearRegistroDestinatarios}
+            updateRegistroItem={updateRegistroItem}
+            addRegistroItem={addRegistroItem}
+            removeRegistroItem={removeRegistroItem}
+            deleteRegistro={deleteRegistro}
+            saveRegistro={saveRegistro}
+            personalObservacionDraft={personalObservacionDraft}
+            personalObservacionSaving={personalObservacionSaving}
+            setPersonalObservacionDraft={setPersonalObservacionDraft}
+            resetPersonalObservacionForm={resetPersonalObservacionForm}
+            editPersonalObservacion={editPersonalObservacion}
+            deletePersonalObservacion={deletePersonalObservacion}
+            savePersonalObservacion={savePersonalObservacion}
+            personaProfile={personaProfile}
+            closePersonaProfileView={closePersonaProfileView}
+            reloadPersonaProfile={reloadPersonaProfile}
+            printDeliverySheetFromProfile={printDeliverySheetFromProfile}
+            printPrestamosFromProfile={printPrestamosFromProfile}
+            fichaViewingCi={fichaViewingCi}
+            setActiveView={setActiveView}
+            recordatorioConfig={recordatorioConfig}
+            recordatorioTasks={recordatorioTasks}
+            recordatoriosLoading={recordatoriosLoading}
+            recordatoriosSaving={recordatoriosSaving}
+            currentUser={currentUser}
+            soldadoWidgetVariant={soldadoWidgetVariant}
+            createRecordatorioTask={createRecordatorioTask}
+            updateRecordatorioTask={updateRecordatorioTask}
+            isAppGlobalBusy={isAppGlobalBusy}
+            appBusyLabel={appBusyLabel}
+          />
+        </div>
+      </Box>
+    </Box>
   );
 }

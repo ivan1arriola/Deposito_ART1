@@ -11,6 +11,10 @@ type ItemPayload = {
   ordenPdf?: number;
 };
 
+type ItemExistenciaSiePayload = {
+  existenciaSie?: unknown;
+};
+
 type ItemMergePayload = {
   targetItemId?: string | number;
 };
@@ -27,17 +31,25 @@ function isValidOrder(value: unknown) {
   return value === undefined || (typeof value === "number" && Number.isInteger(value) && value > 0);
 }
 
+function parseExistenciaSie(value: unknown) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) return null;
+  return parsed;
+}
+
 function serializeItem(item: {
   itemId: bigint;
   nombre: string;
   activo: boolean;
   ordenPdf: number;
+  existenciaSie: number;
 }) {
   return {
     itemId: item.itemId.toString(),
     nombre: item.nombre,
     activo: item.activo,
     ordenPdf: item.ordenPdf,
+    existenciaSie: item.existenciaSie,
   };
 }
 
@@ -296,6 +308,7 @@ async function buildDeleteImpactData(
 export const itemByIdRouteTestables = {
   parseItemId,
   isValidOrder,
+  parseExistenciaSie,
 };
 
 export async function GET(req: Request, context: { params: Promise<{ itemId: string }> }) {
@@ -604,6 +617,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
         nombre: updated.nombre,
         activo: updated.activo,
         ordenPdf: updated.ordenPdf,
+        existenciaSie: updated.existenciaSie,
       },
     });
 
@@ -616,6 +630,64 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
     }
 
     return NextResponse.json({ error: "No se pudo actualizar el equipo." }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request, context: { params: Promise<{ itemId: string }> }) {
+  const auth = await authorizeRequest(req, "write_data");
+  if (!auth.ok) return auth.response;
+  if (auth.user.rol !== "ADMIN") {
+    return NextResponse.json({ error: "Solo un administrador puede actualizar la existencia del SIE." }, { status: 403 });
+  }
+
+  const { itemId: itemIdParam } = await context.params;
+  const itemId = parseItemId(itemIdParam);
+  if (itemId === null) {
+    return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+  }
+
+  const body = (await req.json()) as ItemExistenciaSiePayload;
+  const existenciaSie = parseExistenciaSie(body?.existenciaSie);
+  if (existenciaSie === null) {
+    return NextResponse.json(
+      { error: "Payload invalido. 'existenciaSie' debe ser un entero mayor o igual a 0." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const updated = await prisma.item.update({
+      where: { itemId },
+      data: { existenciaSie },
+      select: {
+        itemId: true,
+        nombre: true,
+        existenciaSie: true,
+      },
+    });
+
+    await logAudit({
+      usuarioId: auth.user.usuarioId,
+      accion: "UPDATE",
+      entidad: "ITEM",
+      entidadId: updated.itemId.toString(),
+      detalle: {
+        evento: "ITEM_EXISTENCIA_SIE_UPDATE",
+        nombre: updated.nombre,
+        existenciaSie: updated.existenciaSie,
+      },
+    });
+
+    return NextResponse.json({
+      itemId: updated.itemId.toString(),
+      existenciaSie: updated.existenciaSie,
+    });
+  } catch (error: unknown) {
+    if (typeof error === "object" && error && "code" in error) {
+      const code = (error as { code: string }).code;
+      if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
+    }
+    return NextResponse.json({ error: "No se pudo actualizar la existencia del SIE." }, { status: 500 });
   }
 }
 

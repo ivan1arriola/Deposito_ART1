@@ -874,10 +874,7 @@ export async function renderHojasEntregaPdf(
                           style={[
                             styles.firmaLineRow,
                             {
-                              paddingLeft: getFirmaLineBaseIndentPt(
-                                { indentLevel: blockIndentLevel },
-                                signatureTab,
-                              ) + (tipo === "nombre" ? signatureNameIndentExtra : 0),
+                              paddingLeft: (linea.indentLevel || 0) * signatureTab,
                               marginTop: tipo === "nombre" ? signatureNameGap : 0,
                             },
                           ]}

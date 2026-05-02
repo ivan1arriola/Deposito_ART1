@@ -209,6 +209,7 @@ model Item {
   nombre              String               @unique
   activo              Boolean              @default(true)
   ordenPdf            Int                  @map("orden_pdf")
+  existenciaSie       Int                  @default(0) @map("existencia_sie")
   movimientoItems     MovimientoItem[]
   stockOperacionItems StockOperacionItem[]
   codigosSIE          ItemCodigoSIE[]
@@ -436,4 +437,15 @@ model StockOperacionItem {
   @@id([stockOperacionId, itemId])
   @@index([itemId])
   @@map("stock_operacion_item")
+}
+
+model ConfigFirma {
+  id              Int      @id @default(1)
+  encargadoRango  String   @map("encargado_rango")
+  encargadoNombre String   @map("encargado_nombre")
+  oficialRango    String   @map("oficial_rango")
+  oficialNombre   String   @map("oficial_nombre")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("config_firma")
 }

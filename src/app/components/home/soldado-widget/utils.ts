@@ -64,12 +64,18 @@ export function clampWidgetPosition(
   widgetSize: { width: number; height: number },
   viewportSize: { width: number; height: number },
   viewportPadding: number,
+  bounds?: {
+    minLeft?: number;
+    minTop?: number;
+  },
 ) {
   const maxLeft = viewportSize.width - widgetSize.width - viewportPadding;
   const maxTop = viewportSize.height - widgetSize.height - viewportPadding;
+  const minLeft = Math.max(viewportPadding, bounds?.minLeft ?? viewportPadding);
+  const minTop = Math.max(viewportPadding, bounds?.minTop ?? viewportPadding);
   return {
-    left: clamp(position.left, viewportPadding, Math.max(viewportPadding, maxLeft)),
-    top: clamp(position.top, viewportPadding, Math.max(viewportPadding, maxTop)),
+    left: clamp(position.left, minLeft, Math.max(minLeft, maxLeft)),
+    top: clamp(position.top, minTop, Math.max(minTop, maxTop)),
   };
 }
 

@@ -2,7 +2,7 @@
 
 import { StockView } from "@/app/components/views/StockView";
 import { FormulariosPrestamosView } from "@/app/components/views/FormulariosPrestamosView";
-import type { PrestamoDraft, PrestamoDraftItem, StockOperacionDraft } from "@/types/forms";
+import type { PrestamoDraft, StockOperacionDraft } from "@/types/forms";
 import type { StockPrestamoViewsProps } from "./types";
 
 export function StockPrestamoViews(props: StockPrestamoViewsProps) {
@@ -40,6 +40,15 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
   } = props;
 
   const isStockView = ["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos"].includes(activeView);
+  const isPrestamosModuleView = ["formularios", "prestamos_registrar", "prestamos_vigentes", "prestamos_historial"].includes(activeView);
+  const prestamosViewMode =
+    activeView === "prestamos_registrar"
+      ? "registrar"
+      : activeView === "prestamos_vigentes"
+        ? "vigentes"
+        : activeView === "prestamos_historial"
+          ? "historial"
+          : "integrado";
 
   return (
     <>
@@ -62,6 +71,7 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           loading={stockLoading}
           error={stockError}
           canWrite={canWrite}
+          isAdmin={isAdmin}
           equipos={equiposOrdenados}
           draft={stockDraft}
           saving={stockSaving}
@@ -94,8 +104,9 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
         />
       ) : null}
 
-      {activeView === "formularios" ? (
+      {isPrestamosModuleView ? (
         <FormulariosPrestamosView
+          viewMode={prestamosViewMode}
           data={stockData}
           loading={stockLoading}
           error={stockError}

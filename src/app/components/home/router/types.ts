@@ -153,7 +153,7 @@ export type PersonnelAndSummaryViewsProps = {
   setActiveView: Dispatch<SetStateAction<MainView>>;
   toggleTallas: (ci: string) => void;
   deletePersonal: (ci: string) => void;
-  openRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION") => void;
+  openRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION", options?: { incluirFueraDeHoja?: boolean }) => void;
   openPersonalObservacion: (persona: Personal) => Promise<void>;
   openRegistroViewer: (persona: Personal) => Promise<void>;
   openPersonaProfileFromPersonal: (persona: Personal) => Promise<void>;

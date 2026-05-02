@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { DestinatarioSearchSelect } from "@/app/components/shared/DestinatarioSearchSelect";
 import { LoadingInline } from "@/app/components/shared";
+import { api } from "@/lib/api";
 import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers";
 import { formatUruguayanCi } from "@/lib/ci";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
-import type { StockDashboardData } from "@/types/views";
+import type { StockDashboardData, StockItemTraceData } from "@/types/views";
 import type { PrestamoEstadoEquipo } from "@/types/forms";
 import type { StockViewProps } from "./stock/types";
 import {
@@ -26,6 +27,7 @@ export function StockView({
   loading,
   error,
   canWrite,
+  isAdmin,
   equipos,
   draft,
   saving,
@@ -65,10 +67,21 @@ export function StockView({
   const [returnItemsByPrestamo, setReturnItemsByPrestamo] = useState<
     Record<string, Record<string, { estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion: string }>>
   >({});
+  const [sieDraftByItemId, setSieDraftByItemId] = useState<Record<string, string>>({});
+  const [sieSavingItemId, setSieSavingItemId] = useState<string | null>(null);
+  const [sieError, setSieError] = useState<string | null>(null);
   const [returnDialog, setReturnDialog] = useState<{
     prestamo: StockDashboardData["prestamos"][number];
     fechaDevolucion: string;
   } | null>(null);
+  const [itemTraceDialog, setItemTraceDialog] = useState<{
+    item: StockDashboardData["resumen"][number];
+    column: "SUBALTERNOS" | "PRESTAMO";
+  } | null>(null);
+  const [itemTraceData, setItemTraceData] = useState<StockItemTraceData | null>(null);
+  const [itemTraceLoading, setItemTraceLoading] = useState(false);
+  const [itemTraceError, setItemTraceError] = useState<string | null>(null);
+  const itemTraceRequestIdRef = useRef(0);
   const normalizedPrestamoIdFilter = prestamoIdFilter.trim();
   const prestamosFiltrados =
     normalizedPrestamoIdFilter === ""
@@ -85,6 +98,44 @@ export function StockView({
       prestamo,
       fechaDevolucion: getReturnDate(prestamo.prestamoId) || getTodayDateInput(),
     });
+  }
+
+  function closeItemTraceDialog() {
+    itemTraceRequestIdRef.current += 1;
+    setItemTraceDialog(null);
+    setItemTraceData(null);
+    setItemTraceLoading(false);
+    setItemTraceError(null);
+  }
+
+  async function openItemTraceDialog(item: StockDashboardData["resumen"][number], column: "SUBALTERNOS" | "PRESTAMO") {
+    const requestId = itemTraceRequestIdRef.current + 1;
+    itemTraceRequestIdRef.current = requestId;
+    setItemTraceDialog({ item, column });
+    setItemTraceData(null);
+    setItemTraceError(null);
+    setItemTraceLoading(true);
+    try {
+      const trace = await api<StockItemTraceData>(`/api/stock/item-trace?itemId=${encodeURIComponent(item.itemId)}`);
+      if (itemTraceRequestIdRef.current !== requestId) return;
+      setItemTraceData(trace);
+    } catch (traceError: unknown) {
+      if (itemTraceRequestIdRef.current !== requestId) return;
+      setItemTraceError(traceError instanceof Error ? traceError.message : "No se pudo cargar el detalle del equipo.");
+    } finally {
+      if (itemTraceRequestIdRef.current !== requestId) return;
+      setItemTraceLoading(false);
+    }
+  }
+
+  function openItemTracePrint() {
+    if (!itemTraceDialog) return;
+    const query = new URLSearchParams({
+      itemId: itemTraceDialog.item.itemId,
+      column: itemTraceDialog.column,
+      autoprint: "1",
+    });
+    window.open(`/trazabilidad-equipos?${query.toString()}`, "_blank", "noopener,noreferrer");
   }
 
   function submitReturnDialog() {
@@ -118,6 +169,75 @@ export function StockView({
     };
   };
 
+  const getSieInputValue = (item: StockDashboardData["resumen"][number]) => {
+    const draftValue = sieDraftByItemId[item.itemId];
+    return draftValue !== undefined ? draftValue : String(item.existenciaSie ?? 0);
+  };
+
+  function updateSieDraft(itemId: string, value: string) {
+    if (!/^\d*$/.test(value)) return;
+    setSieError(null);
+    setSieDraftByItemId((prev) => ({
+      ...prev,
+      [itemId]: value,
+    }));
+  }
+
+  async function persistSieValue(item: StockDashboardData["resumen"][number]) {
+    if (!canEditSie || sieSavingItemId !== null) return;
+    const inputValue = getSieInputValue(item).trim();
+    if (inputValue === "") {
+      resetSieDraft(item);
+      return;
+    }
+
+    const parsed = Number(inputValue);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      setSieError("La existencia del SIE debe ser un entero mayor o igual a 0.");
+      return;
+    }
+
+    if (parsed === item.existenciaSie) {
+      setSieDraftByItemId((prev) => {
+        if (!(item.itemId in prev)) return prev;
+        const next = { ...prev };
+        delete next[item.itemId];
+        return next;
+      });
+      return;
+    }
+
+    setSieSavingItemId(item.itemId);
+    setSieError(null);
+    try {
+      await api<{ itemId: string; existenciaSie: number }>(`/api/items/${encodeURIComponent(item.itemId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ existenciaSie: parsed }),
+      });
+      setSieDraftByItemId((prev) => {
+        const next = { ...prev };
+        delete next[item.itemId];
+        return next;
+      });
+      await onReload();
+    } catch (saveError: unknown) {
+      setSieError(saveError instanceof Error ? saveError.message : "No se pudo actualizar la existencia del SIE.");
+    } finally {
+      setSieSavingItemId((current) => (current === item.itemId ? null : current));
+    }
+  }
+
+  function resetSieDraft(item: StockDashboardData["resumen"][number]) {
+    setSieDraftByItemId((prev) => {
+      if (!(item.itemId in prev)) return prev;
+      const next = { ...prev };
+      delete next[item.itemId];
+      return next;
+    });
+    setSieError(null);
+  }
+
   const {
     totalSubalternos,
     totalPrestamo,
@@ -129,6 +249,7 @@ export function StockView({
 
   const { showSummaryCards, showManualForm, showStockTable, showHistory, showPrestamos, viewTitle, stockTableTitle } =
     getSectionViewConfig(section);
+  const canEditSie = canWrite && isAdmin;
 
   return (
     <section className="mt-6 space-y-4">
@@ -138,14 +259,25 @@ export function StockView({
             <h2 className="text-base font-semibold text-stone-900">{viewTitle}</h2>
             <p className="mt-1 text-xs text-stone-600">Vista operativa de stock y movimientos.</p>
           </div>
-          <button
-            type="button"
-            onClick={onReload}
-            disabled={loading}
-            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
-          >
-            {loading ? <LoadingInline label="Recargando..." size="xs" textClassName="text-xs font-semibold text-stone-700" /> : "Recargar"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {section === "total" ? (
+              <button
+                type="button"
+                onClick={() => window.open("/listado-equipos-unidad?autoprint=1", "_blank", "noopener,noreferrer")}
+                className="rounded-lg bg-indigo-700 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-800"
+              >
+                Imprimir listado
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={onReload}
+              disabled={loading}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+            >
+              {loading ? <LoadingInline label="Recargando..." size="xs" textClassName="text-xs font-semibold text-stone-700" /> : "Recargar"}
+            </button>
+          </div>
         </div>
 
         {showSummaryCards ? (
@@ -583,6 +715,7 @@ export function StockView({
                         <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Prestamo</th>
                         <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Deposito</th>
                         <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Unidad</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Existencia SIE</th>
                       </>
                     ) : (
                       <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Stock deposito</th>
@@ -591,14 +724,65 @@ export function StockView({
                 </thead>
                 <tbody>
                   {resumen.map((item, index) => (
-                    <tr key={item.itemId} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
+                    <tr key={item.itemId} className={index % 2 === 0 ? "bg-white" : "bg-stone-100/80"}>
                       <td className="border-b border-stone-100 px-3 py-2 text-stone-900">{item.nombre}</td>
                       {section === "total" ? (
                         <>
-                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockSubalternos}</td>
-                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockPrestamo}</td>
+                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
+                            <button
+                              type="button"
+                              onClick={() => void openItemTraceDialog(item, "SUBALTERNOS")}
+                              className="rounded px-1 text-right font-semibold text-stone-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                              title={`Ver detalle de ${item.nombre} en Subalternos`}
+                            >
+                              {item.stockSubalternos}
+                            </button>
+                          </td>
+                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
+                            <button
+                              type="button"
+                              onClick={() => void openItemTraceDialog(item, "PRESTAMO")}
+                              className="rounded px-1 text-right font-semibold text-stone-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                              title={`Ver detalle de ${item.nombre} en Prestamo`}
+                            >
+                              {item.stockPrestamo}
+                            </button>
+                          </td>
                           <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockDeposito}</td>
                           <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockUnidad}</td>
+                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
+                            {canEditSie ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  value={getSieInputValue(item)}
+                                  disabled={loading || sieSavingItemId !== null}
+                                  onChange={(event) => updateSieDraft(item.itemId, event.target.value)}
+                                  onBlur={() => void persistSieValue(item)}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                      event.preventDefault();
+                                      void persistSieValue(item);
+                                      return;
+                                    }
+                                    if (event.key === "Escape") {
+                                      event.preventDefault();
+                                      resetSieDraft(item);
+                                    }
+                                  }}
+                                  className="w-24 rounded border border-stone-300 px-2 py-1 text-right text-xs font-semibold text-stone-900"
+                                  aria-label={`Existencia del SIE para ${item.nombre}`}
+                                />
+                                {sieSavingItemId === item.itemId ? (
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">Guardando</span>
+                                ) : null}
+                              </div>
+                            ) : (
+                              (item.existenciaSie ?? 0)
+                            )}
+                          </td>
                         </>
                       ) : (
                         <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockDeposito}</td>
@@ -608,6 +792,9 @@ export function StockView({
                 </tbody>
               </table>
             </div>
+          ) : null}
+          {!loading && !error && sieError ? (
+            <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{sieError}</p>
           ) : null}
         </article>
       ) : null}
@@ -648,6 +835,129 @@ export function StockView({
             ))}
           </div>
         </article>
+      ) : null}
+
+      {itemTraceDialog ? (
+        <ModalFrame onClose={closeItemTraceDialog} size="xl">
+          <div className="space-y-4">
+            <header>
+              <h3 className="text-lg font-semibold text-stone-900">
+                Detalle de {itemTraceDialog.column === "SUBALTERNOS" ? "Subalternos" : "Prestamo"}
+              </h3>
+              <p className="text-sm text-stone-600">{itemTraceDialog.item.nombre}</p>
+            </header>
+
+            <div className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700 md:grid-cols-2">
+              <p><span className="font-semibold text-stone-900">Item ID:</span> {itemTraceDialog.item.itemId}</p>
+              <p>
+                <span className="font-semibold text-stone-900">Total en columna:</span>{" "}
+                {itemTraceDialog.column === "SUBALTERNOS"
+                  ? (itemTraceData?.totals.subalternos ?? itemTraceDialog.item.stockSubalternos)
+                  : (itemTraceData?.totals.prestamo ?? itemTraceDialog.item.stockPrestamo)}
+              </p>
+            </div>
+
+            {itemTraceLoading ? (
+              <LoadingInline label="Cargando trazabilidad..." className="mt-1" textClassName="text-sm font-medium text-stone-600" />
+            ) : null}
+            {itemTraceError ? (
+              <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{itemTraceError}</p>
+            ) : null}
+
+            {!itemTraceLoading && !itemTraceError && itemTraceData ? (
+              itemTraceDialog.column === "SUBALTERNOS" ? (
+                <section className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+                    Personal con cantidad neta distinta de cero
+                  </p>
+                  {itemTraceData.subalternos.length === 0 ? (
+                    <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-600">
+                      No hay tenencias activas para este item en la columna Subalternos.
+                    </p>
+                  ) : null}
+                  {itemTraceData.subalternos.map((entry) => (
+                    <div key={`trace-subalterno-${entry.ci}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-stone-900">{entry.persona}</p>
+                          <p className="text-xs text-stone-600">
+                            CI {formatUruguayanCi(entry.ci)}
+                            {entry.bateria ? ` | Batería ${entry.bateria}` : ""}
+                            {` | ${entry.tipoPersonal}`}
+                          </p>
+                        </div>
+                        <p className={`text-sm font-bold ${entry.cantidadNeta < 0 ? "text-rose-700" : "text-stone-900"}`}>
+                          {entry.cantidadNeta > 0 ? `+${entry.cantidadNeta}` : entry.cantidadNeta}
+                        </p>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        {entry.movimientos.map((movimiento) => (
+                          <div key={`trace-subalterno-mov-${entry.ci}-${movimiento.movimientoId}-${movimiento.tipo}`} className="rounded-lg border border-stone-200 bg-white px-2 py-1">
+                            <p className="text-xs text-stone-700">
+                              <span className={`font-semibold ${movimiento.delta < 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                                {movimiento.delta > 0 ? `+${movimiento.delta}` : movimiento.delta}
+                              </span>{" "}
+                              ({movimiento.cantidad}) | {movimiento.tipo} | Mov. #{movimiento.movimientoId} |{" "}
+                              {formatDateOnlyForDisplay(movimiento.fecha)}
+                            </p>
+                            {movimiento.observaciones ? (
+                              <p className="text-xs text-stone-600">Obs: {movimiento.observaciones}</p>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </section>
+              ) : (
+                <section className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Préstamos activos del item</p>
+                  {itemTraceData.prestamos.length === 0 ? (
+                    <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-600">
+                      No hay préstamos activos para este item.
+                    </p>
+                  ) : null}
+                  {itemTraceData.prestamos.map((entry) => (
+                    <div key={`trace-prestamo-${entry.prestamoId}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-stone-900">{entry.destinatarioEtiqueta}</p>
+                          <p className="text-xs text-stone-600">CI {formatUruguayanCi(entry.destinatarioCi)}</p>
+                          <p className="text-xs text-stone-600">
+                            Recibo: {entry.reciboNumero} | Préstamo #{entry.prestamoId} | Mov. #{entry.movimientoId}
+                          </p>
+                          <p className="text-xs text-stone-500">Fecha: {formatDateOnlyForDisplay(entry.fechaPrestamo)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-stone-900">+{entry.cantidad}</p>
+                          <p className="text-xs text-stone-600">{entry.estado}</p>
+                        </div>
+                      </div>
+                      {entry.observaciones ? <p className="mt-2 text-xs text-stone-600">Obs: {entry.observaciones}</p> : null}
+                    </div>
+                  ))}
+                </section>
+              )
+            ) : null}
+
+            <footer className="flex flex-wrap justify-end gap-2 border-t border-stone-200 pt-3">
+              <button
+                type="button"
+                onClick={openItemTracePrint}
+                className="rounded-lg bg-indigo-700 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-800"
+              >
+                Imprimir trazabilidad
+              </button>
+              <button
+                type="button"
+                onClick={closeItemTraceDialog}
+                className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-100"
+              >
+                Cerrar
+              </button>
+            </footer>
+          </div>
+        </ModalFrame>
       ) : null}
 
       {returnDialog ? (

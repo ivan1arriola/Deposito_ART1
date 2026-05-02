@@ -33,12 +33,14 @@ function serializeItem(item: {
   nombre: string;
   activo: boolean;
   ordenPdf: number;
+  existenciaSie: number;
 }) {
   return {
     itemId: item.itemId.toString(),
     nombre: item.nombre,
     activo: item.activo,
     ordenPdf: item.ordenPdf,
+    existenciaSie: item.existenciaSie,
   };
 }
 
@@ -104,6 +106,7 @@ export async function POST(req: Request) {
         nombre: created.nombre,
         activo: created.activo,
         ordenPdf: created.ordenPdf,
+        existenciaSie: created.existenciaSie,
       },
     });
 
@@ -142,7 +145,7 @@ export async function PATCH(req: Request) {
       const activeItems = await tx.item.findMany({
         where: { activo: true },
         orderBy: [{ ordenPdf: "asc" }, { itemId: "asc" }],
-        select: { itemId: true, nombre: true, activo: true, ordenPdf: true },
+        select: { itemId: true, nombre: true, activo: true, ordenPdf: true, existenciaSie: true },
       });
 
       const activeIds = activeItems.map((item) => item.itemId.toString());
@@ -163,7 +166,7 @@ export async function PATCH(req: Request) {
       return tx.item.findMany({
         where: { itemId: { in: parsedIds } },
         orderBy: [{ ordenPdf: "asc" }, { itemId: "asc" }],
-        select: { itemId: true, nombre: true, activo: true, ordenPdf: true },
+        select: { itemId: true, nombre: true, activo: true, ordenPdf: true, existenciaSie: true },
       });
     }, { maxWait: 5_000, timeout: 20_000 });
 

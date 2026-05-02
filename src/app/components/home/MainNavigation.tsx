@@ -4,6 +4,7 @@ import { useState, type JSX, type MouseEvent, type ReactNode, type RefObject } f
 import {
   Box,
   Button,
+  Collapse,
   Divider,
   ListItemIcon,
   ListItemText,
@@ -39,6 +40,7 @@ import type { MainView } from "@/types/views";
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recordatorios" | "firmas" | "usuarios" | "auditoria" | "usuario_nuevo">;
 type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo">;
 type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "equipo_nuevo">;
+type PrestamosView = Extract<MainView, "prestamos_registrar" | "prestamos_vigentes" | "prestamos_historial" | "formularios">;
 type EtiquetadoView = Extract<
   MainView,
   "etiquetado_codigos_sie" | "etiquetado_listado_cajas" | "etiquetado_imprimir_todas"
@@ -131,6 +133,12 @@ const stockViews: Array<NavOption<StockView>> = [
   { view: "stock_historial", label: "Historial", shortLabel: "Historial", icon: icons.history },
 ];
 
+const prestamosViews: Array<NavOption<PrestamosView>> = [
+  { view: "prestamos_registrar", label: "Registrar prestamo", shortLabel: "Registrar", icon: icons.altas, writeOnly: true },
+  { view: "prestamos_vigentes", label: "Prestamos vigentes", shortLabel: "Vigentes", icon: icons.prestamos },
+  { view: "prestamos_historial", label: "Historial", shortLabel: "Historial", icon: icons.history },
+];
+
 const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
   { view: "etiquetado_codigos_sie", label: "Códigos SIE", shortLabel: "Códigos", icon: icons.codigo },
   { view: "etiquetado_listado_cajas", label: "Listado de cajas", shortLabel: "Cajas", icon: icons.cajas },
@@ -154,34 +162,36 @@ const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficia
 function navButtonSx(active: boolean, compact: boolean) {
   return {
     position: "relative",
-    px: compact ? { xs: 1.2, sm: 1.6 } : 2.25,
-    justifyContent: "center",
+    px: 1.5,
+    justifyContent: "flex-start",
     width: "100%",
     minWidth: 0,
-    flexShrink: 1,
+    flexShrink: 0,
     whiteSpace: "nowrap",
-    minHeight: compact ? { xs: 36, sm: 40 } : 44,
-    borderRadius: compact ? 1.5 : 2,
-    borderWidth: "1px",
-    borderColor: active ? "var(--color-ejercito-gold)" : "var(--color-border-subtle)",
-    bgcolor: active ? "var(--color-ejercito-gold)" : "var(--color-surface-base)",
-    color: active ? "var(--color-ejercito-black)" : "var(--color-text-primary)",
-    fontWeight: compact ? 700 : 600,
-    fontSize: compact ? { xs: 12, sm: 13 } : 14,
+    minHeight: 44,
+    borderRadius: "12px",
+    border: "1px solid",
+    borderColor: active ? "rgba(255, 204, 0, 0.4)" : "rgba(255, 255, 255, 0.12)",
+    background: active 
+      ? "linear-gradient(135deg, rgba(255, 204, 0, 0.25) 0%, rgba(255, 204, 0, 0.1) 100%)" 
+      : "rgba(255, 255, 255, 0.04)",
+    backdropFilter: "blur(12px)",
+    color: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.85)",
+    fontWeight: active ? 700 : 500,
+    fontSize: 14,
     textTransform: "none",
+    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
     "& .MuiButton-startIcon": {
-      position: "absolute",
-      left: compact ? 10 : 14,
-      margin: 0,
-    },
-    "& .MuiButton-endIcon": {
-      position: "absolute",
-      right: compact ? 10 : 14,
-      margin: 0,
+      marginRight: 1.5,
+      color: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.6)",
     },
     "&:hover": {
-      borderColor: active ? "var(--color-ejercito-gold)" : "var(--color-ejercito-blue)",
-      bgcolor: active ? "var(--color-ejercito-gold)" : "var(--color-surface-muted)",
+      borderColor: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.3)",
+      background: active 
+        ? "linear-gradient(135deg, rgba(255, 204, 0, 0.35) 0%, rgba(255, 204, 0, 0.15) 100%)" 
+        : "rgba(255, 255, 255, 0.08)",
+      transform: "translateY(-1px)",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
     },
   };
 }
@@ -189,21 +199,28 @@ function navButtonSx(active: boolean, compact: boolean) {
 function inlineSubmenuButtonSx(active: boolean, compact: boolean) {
   return {
     justifyContent: "flex-start",
-    width: "100%",
     minWidth: 0,
-    minHeight: compact ? 34 : 38,
-    borderRadius: 1.25,
-    borderWidth: "1px",
-    borderColor: active ? "var(--color-ejercito-gold)" : compact ? "rgba(255,255,255,0.36)" : "var(--color-border-subtle)",
-    bgcolor: active ? "var(--color-ejercito-gold)" : compact ? "rgba(255,255,255,0.12)" : "var(--color-surface-base)",
-    color: active ? "var(--color-ejercito-black)" : compact ? "common.white" : "var(--color-text-primary)",
-    fontSize: compact ? 12 : 13,
-    fontWeight: 600,
+    minHeight: 36,
+    borderRadius: "8px",
+    border: "1px solid",
+    borderColor: active ? "rgba(255, 204, 0, 0.3)" : "transparent",
+    bgcolor: active ? "rgba(255, 204, 0, 0.12)" : "transparent",
+    color: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.65)",
+    fontSize: 13,
+    fontWeight: active ? 700 : 500,
     textTransform: "none",
-    px: 1.25,
+    px: 1.5,
+    ml: 1,
+    width: "calc(100% - 8px)",
+    transition: "all 0.15s ease",
+    "& .MuiButton-startIcon": {
+      fontSize: "1rem",
+      marginRight: 1.25,
+      opacity: 0.8,
+    },
     "&:hover": {
-      borderColor: active ? "var(--color-ejercito-gold)" : "var(--color-ejercito-blue)",
-      bgcolor: active ? "var(--color-ejercito-gold)" : compact ? "rgba(255,255,255,0.18)" : "var(--color-surface-muted)",
+      color: "rgba(255, 255, 255, 0.95)",
+      bgcolor: "rgba(255, 255, 255, 0.06)",
     },
   };
 }
@@ -211,43 +228,49 @@ function inlineSubmenuButtonSx(active: boolean, compact: boolean) {
 function menuPaperSx(compact: boolean) {
   return {
     mt: 1,
-    p: 0.5,
-    borderRadius: compact ? 1.5 : 2,
-    width: compact ? "min(330px, calc(100vw - 1.25rem))" : "min(360px, calc(100vw - 2rem))",
-    maxWidth: "calc(100vw - 2rem)",
-    border: "1px solid",
-    borderColor: "var(--color-border-subtle)",
-    bgcolor: "var(--color-surface-base)",
-    color: "var(--color-text-primary)",
+    p: 1,
+    borderRadius: "16px",
+    width: "280px",
+    border: "1px solid rgba(255, 255, 255, 0.12)",
+    bgcolor: "rgba(20, 24, 20, 0.95)",
+    backdropFilter: "blur(20px)",
+    color: "rgba(255, 255, 255, 0.9)",
+    boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
   };
 }
 
 const menuHeaderSx = {
   px: 2,
-  py: 0.75,
-  color: "var(--color-ejercito-blue)",
+  py: 1,
+  color: "rgba(255, 255, 255, 0.5)",
   fontWeight: 700,
-  letterSpacing: 0.6,
+  fontSize: "0.65rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.1em",
 };
 
 const menuDividerSx = {
-  mb: 0.5,
-  borderColor: "var(--color-border-subtle)",
+  my: 1,
+  borderColor: "rgba(255, 255, 255, 0.08)",
 };
 
 const menuItemSx = {
-  borderRadius: 1,
+  borderRadius: "8px",
   mx: 0.5,
-  color: "var(--color-text-primary)",
+  py: 1.2,
+  color: "rgba(255, 255, 255, 0.8)",
+  transition: "all 0.2s ease",
   "&:hover": {
-    bgcolor: "var(--color-surface-muted)",
+    bgcolor: "rgba(255, 255, 255, 0.08)",
+    color: "#fff",
   },
   "&.Mui-selected": {
-    bgcolor: "var(--color-ejercito-gold)",
-    color: "var(--color-ejercito-black)",
+    bgcolor: "rgba(255, 204, 0, 0.15)",
+    color: "var(--color-ejercito-gold)",
+    fontWeight: 700,
   },
   "&.Mui-selected:hover": {
-    bgcolor: "var(--color-ejercito-gold)",
+    bgcolor: "rgba(255, 204, 0, 0.2)",
   },
 };
 
@@ -262,42 +285,53 @@ function ExpandedMenuGroup({
   compact: boolean;
   children: ReactNode;
 }) {
+  const [isOpen, setIsOpen] = useState(true);
+
   return (
-    <Box
-      sx={{
-        borderRadius: 1.75,
-        border: "1px solid",
-        borderColor: compact ? "rgba(255,255,255,0.28)" : "var(--color-border-subtle)",
-        bgcolor: compact ? "rgba(255,255,255,0.08)" : "var(--color-surface-muted)",
-        p: 1,
-      }}
-    >
-      <Stack direction="row" alignItems="center" gap={0.9} sx={{ px: 0.5, pb: 0.8 }}>
-        <Box sx={{ color: compact ? "common.white" : "var(--color-ejercito-blue)", display: "inline-flex" }}>{icon}</Box>
-        <Typography sx={{ fontSize: compact ? 12 : 13, fontWeight: 800, color: compact ? "common.white" : "var(--color-ejercito-blue)" }}>
-          {title}
-        </Typography>
-      </Stack>
-      <Stack direction="column" gap={0.75}>
-        {children}
-      </Stack>
+    <Box sx={{ mb: 1.5 }}>
+      <Button
+        fullWidth
+        onClick={() => setIsOpen(!isOpen)}
+        sx={{
+          justifyContent: "flex-start",
+          px: 1.5,
+          py: 1,
+          borderRadius: "12px",
+          color: "rgba(255, 255, 255, 0.45)",
+          textTransform: "none",
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: "0.05em",
+          "&:hover": {
+            bgcolor: "rgba(255, 255, 255, 0.04)",
+            color: "rgba(255, 255, 255, 0.9)",
+          },
+        }}
+        startIcon={icon}
+        endIcon={
+          <ExpandMoreRoundedIcon 
+            sx={{ 
+              fontSize: "1rem", 
+              ml: "auto", 
+              transform: isOpen ? "rotate(180deg)" : "none",
+              transition: "transform 0.2s" 
+            }} 
+          />
+        }
+      >
+        {title.toUpperCase()}
+      </Button>
+      <Collapse in={isOpen}>
+        <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+          {children}
+        </Stack>
+      </Collapse>
     </Box>
   );
 }
 
 function labelForViewport(label: string, shortLabel?: string) {
-  if (!shortLabel || shortLabel === label) return label;
-
-  return (
-    <Box component="span">
-      <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-        {label}
-      </Box>
-      <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
-        {shortLabel}
-      </Box>
-    </Box>
-  );
+  return label;
 }
 
 export function MainNavigation({
@@ -346,61 +380,13 @@ export function MainNavigation({
     activeView === "oficial_nuevo" ||
     activeView === "suboficial_nuevo";
   const filteredStockViews = stockViews.filter((item) => (item.writeOnly ? canWrite : true));
+  const filteredPrestamosViews = prestamosViews.filter((item) => (item.writeOnly ? canWrite : true));
   const filteredCreateViews = createViews.filter((item) => (item.adminOnly ? isAdmin : true));
   const filteredConfigViews = configViews.filter((item) => (item.adminOnly ? isAdmin : true));
-  const navigationGridColumns = expandSubmenus
-    ? "1fr"
-    : {
-        xs: "1fr",
-        sm: "repeat(2, minmax(0, 1fr))",
-        md: embedded ? "repeat(3, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))",
-        lg: embedded ? "repeat(3, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))",
-        xl: embedded ? "repeat(3, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
-      };
-
-  function getValidAnchor(menu: MenuKey) {
-    const anchor = menuAnchors[menu];
-    if (!anchor) return null;
-    if (!anchor.isConnected) return null;
-    const rect = anchor.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) return null;
-    return anchor;
-  }
-
-  function isMenuOpen(menu: MenuKey) {
-    const hasValidAnchor = Boolean(getValidAnchor(menu));
-    if (menu === "config") return hasValidAnchor && showConfigViews;
-    return hasValidAnchor;
-  }
 
   function closeAllMenus() {
     setMenuAnchors({});
     onSetConfigViews(false);
-  }
-
-  function closeMenu(menu: MenuKey) {
-    setMenuAnchors((prev) => ({ ...prev, [menu]: null }));
-    if (menu === "config") {
-      onSetConfigViews(false);
-    }
-  }
-
-  function handleToggleMenu(menu: MenuKey) {
-    return (event: MouseEvent<HTMLButtonElement>) => {
-      const current = menuAnchors[menu];
-      const isCurrentOpen = menu === "config" ? Boolean(current) && showConfigViews : Boolean(current);
-
-      if (isCurrentOpen) {
-        setMenuAnchors({ ...menuAnchors, [menu]: null });
-        if (menu === "config") {
-          onSetConfigViews(false);
-        }
-        return;
-      }
-
-      setMenuAnchors({ [menu]: event.currentTarget });
-      onSetConfigViews(menu === "config");
-    };
   }
 
   function handleSelectView(view: MainView) {
@@ -409,381 +395,132 @@ export function MainNavigation({
   }
 
   return (
-    <Paper
-      variant={hideContainerChrome ? "elevation" : "outlined"}
+    <Box
       sx={{
-        mt: embedded ? 0 : expandSubmenus ? 0 : 2,
-        p: hideContainerChrome ? 0 : embedded ? { xs: 1, sm: 1.25 } : expandSubmenus ? { xs: 1.1, sm: 1.4 } : { xs: 2, sm: 2.5 },
-        borderRadius: embedded ? 2 : 3,
-        position: "relative",
-        zIndex: 220,
-        bgcolor: hideContainerChrome ? "transparent" : embedded ? "rgba(255,255,255,0.08)" : "var(--color-surface-muted)",
-        borderColor: hideContainerChrome ? "transparent" : embedded ? "rgba(255,255,255,0.24)" : "var(--color-border-subtle)",
-        color: embedded ? "common.white" : "var(--color-text-primary)",
-        boxShadow: hideContainerChrome ? "none" : undefined,
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: 1,
         fontFamily: 'var(--fuentePrincipal, "Helvetica Neue", Helvetica, Arial, sans-serif)',
       }}
     >
-      {!embedded ? (
-        <Typography variant="subtitle2" sx={{ color: "var(--color-ejercito-blue)", fontWeight: 700, letterSpacing: 1 }}>
-          NAVEGACIÓN
-        </Typography>
+      <Button
+        variant="text"
+        onClick={() => handleSelectView("dashboard")}
+        startIcon={icons.dashboard}
+        sx={navButtonSx(isDashboardView, false)}
+      >
+        Página Principal
+      </Button>
+
+      <ExpandedMenuGroup title="Personal" icon={icons.personal} compact={false}>
+        {personalViews.map((item) => (
+          <Button
+            key={item.view}
+            variant="text"
+            startIcon={item.icon}
+            onClick={() => handleSelectView(item.view)}
+            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+          >
+            {item.label}
+          </Button>
+        ))}
+      </ExpandedMenuGroup>
+
+      <ExpandedMenuGroup title="Oficiales" icon={icons.oficiales} compact={false}>
+        {oficialesViews.map((item) => (
+          <Button
+            key={item.view}
+            variant="text"
+            startIcon={item.icon}
+            onClick={() => handleSelectView(item.view)}
+            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+          >
+            {item.label}
+          </Button>
+        ))}
+      </ExpandedMenuGroup>
+
+      <ExpandedMenuGroup title="Stock" icon={icons.stock} compact={false}>
+        {filteredStockViews.map((item) => (
+          <Button
+            key={item.view}
+            variant="text"
+            startIcon={item.icon}
+            onClick={() => handleSelectView(item.view)}
+            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+          >
+            {item.label}
+          </Button>
+        ))}
+      </ExpandedMenuGroup>
+
+      <ExpandedMenuGroup title="Etiquetado" icon={icons.etiquetado} compact={false}>
+        {etiquetadoViews.map((item) => (
+          <Button
+            key={item.view}
+            variant="text"
+            startIcon={item.icon}
+            onClick={() => handleSelectView(item.view)}
+            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+          >
+            {item.label}
+          </Button>
+        ))}
+      </ExpandedMenuGroup>
+
+      <Button
+        variant="text"
+        onClick={() => handleSelectView("tallas_resumen")}
+        startIcon={icons.resumen}
+        sx={navButtonSx(isSummaryView, false)}
+      >
+        Resumen de tallas
+      </Button>
+
+      {canWrite ? (
+        <ExpandedMenuGroup title="Altas" icon={icons.altas} compact={false}>
+          {filteredCreateViews.map((item) => (
+            <Button
+              key={item.view}
+              variant="text"
+              startIcon={item.icon}
+              onClick={() => handleSelectView(item.view)}
+              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+            >
+              {item.label}
+            </Button>
+          ))}
+        </ExpandedMenuGroup>
       ) : null}
 
-      <Box sx={{ mt: embedded ? 0 : 1.5, pb: 0.5 }}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: navigationGridColumns,
-            gap: embedded ? 0.8 : 1.05,
-            alignItems: "start",
-          }}
-        >
-          {expandSubmenus ? (
-            <>
-              <Button
-                variant="outlined"
-                onClick={() => handleSelectView("dashboard")}
-                startIcon={icons.dashboard}
-                sx={navButtonSx(isDashboardView, embedded)}
-              >
-                Pagina Principal
-              </Button>
+      <ExpandedMenuGroup title="Préstamos" icon={icons.prestamos} compact={false}>
+        {filteredPrestamosViews.map((item) => (
+          <Button
+            key={item.view}
+            variant="text"
+            startIcon={item.icon}
+            onClick={() => handleSelectView(item.view)}
+            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+          >
+            {item.label}
+          </Button>
+        ))}
+      </ExpandedMenuGroup>
 
-              <ExpandedMenuGroup title="Personal subalterno" icon={icons.personal} compact={embedded}>
-                {personalViews.map((item) => (
-                  <Button
-                    key={item.view}
-                    variant="outlined"
-                    startIcon={item.icon}
-                    onClick={() => handleSelectView(item.view)}
-                    sx={inlineSubmenuButtonSx(activeView === item.view, embedded)}
-                  >
-                    {item.label}
-                  </Button>
-                ))}
-              </ExpandedMenuGroup>
-
-              <ExpandedMenuGroup title="Oficiales y suboficiales" icon={icons.oficiales} compact={embedded}>
-                {oficialesViews.map((item) => (
-                  <Button
-                    key={item.view}
-                    variant="outlined"
-                    startIcon={item.icon}
-                    onClick={() => handleSelectView(item.view)}
-                    sx={inlineSubmenuButtonSx(activeView === item.view, embedded)}
-                  >
-                    {item.label}
-                  </Button>
-                ))}
-              </ExpandedMenuGroup>
-
-              <ExpandedMenuGroup title="Stock y equipos" icon={icons.stock} compact={embedded}>
-                {filteredStockViews.map((item) => (
-                  <Button
-                    key={item.view}
-                    variant="outlined"
-                    startIcon={item.icon}
-                    onClick={() => handleSelectView(item.view)}
-                    sx={inlineSubmenuButtonSx(activeView === item.view, embedded)}
-                  >
-                    {labelForViewport(item.label, item.shortLabel)}
-                  </Button>
-                ))}
-              </ExpandedMenuGroup>
-
-              <ExpandedMenuGroup title="Etiquetado" icon={icons.etiquetado} compact={embedded}>
-                {etiquetadoViews.map((item) => (
-                  <Button
-                    key={item.view}
-                    variant="outlined"
-                    startIcon={item.icon}
-                    onClick={() => handleSelectView(item.view)}
-                    sx={inlineSubmenuButtonSx(activeView === item.view, embedded)}
-                  >
-                    {labelForViewport(item.label, item.shortLabel)}
-                  </Button>
-                ))}
-              </ExpandedMenuGroup>
-
-              {canWrite ? (
-                <ExpandedMenuGroup title="Altas" icon={icons.altas} compact={embedded}>
-                  {filteredCreateViews.map((item) => (
-                    <Button
-                      key={item.view}
-                      variant="outlined"
-                      startIcon={item.icon}
-                      onClick={() => handleSelectView(item.view)}
-                      sx={inlineSubmenuButtonSx(activeView === item.view, embedded)}
-                    >
-                      {labelForViewport(item.label, item.shortLabel)}
-                    </Button>
-                  ))}
-                </ExpandedMenuGroup>
-              ) : null}
-
-              <Box ref={configMenuRef}>
-                <ExpandedMenuGroup title="Configuración" icon={icons.config} compact={embedded}>
-                  {filteredConfigViews.map((item) => (
-                    <Button
-                      key={item.view}
-                      variant="outlined"
-                      startIcon={item.icon}
-                      onClick={() => handleSelectView(item.view)}
-                      sx={inlineSubmenuButtonSx(activeView === item.view, embedded)}
-                    >
-                      {item.label}
-                    </Button>
-                  ))}
-                </ExpandedMenuGroup>
-              </Box>
-
-              <Button
-                variant="outlined"
-                onClick={() => handleSelectView("tallas_resumen")}
-                startIcon={icons.resumen}
-                sx={navButtonSx(isSummaryView, embedded)}
-              >
-                Resumen de tallas
-              </Button>
-
-              <Button
-                variant="outlined"
-                onClick={() => handleSelectView("formularios")}
-                startIcon={icons.prestamos}
-                sx={navButtonSx(activeView === "formularios", embedded)}
-              >
-                Préstamos
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="outlined"
-                onClick={() => handleSelectView("dashboard")}
-                startIcon={icons.dashboard}
-                sx={navButtonSx(isDashboardView, embedded)}
-              >
-                Pagina Principal
-              </Button>
-
-              <Box>
-                <Button
-                  variant="outlined"
-                  onClick={handleToggleMenu("personal")}
-                  startIcon={icons.personal}
-                  endIcon={<ChevronIcon open={isMenuOpen("personal")} />}
-                  aria-haspopup="menu"
-                  aria-expanded={isMenuOpen("personal")}
-                  aria-controls="menu-personal-subalterno"
-                  sx={navButtonSx(isPersonalView || isMenuOpen("personal"), embedded)}
-                >
-                  Personal subalterno
-                </Button>
-                <Menu
-                  id="menu-personal-subalterno"
-                  anchorEl={getValidAnchor("personal")}
-                  open={isMenuOpen("personal")}
-                  onClose={() => closeMenu("personal")}
-                  PaperProps={{ sx: menuPaperSx(embedded) }}
-                  MenuListProps={{ "aria-label": "Vistas de personal subalterno" }}
-                >
-                  <Typography variant="overline" sx={menuHeaderSx}>
-                    Vistas de personal subalterno
-                  </Typography>
-                  <Divider sx={menuDividerSx} />
-                  {personalViews.map((item) => (
-                    <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
-                      <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
-                      <ListItemText>{item.label}</ListItemText>
-                    </MenuItem>
-                  ))}
-                </Menu>
-              </Box>
-
-              <Box>
-                <Button
-                  variant="outlined"
-                  onClick={handleToggleMenu("oficiales")}
-                  startIcon={icons.oficiales}
-                  endIcon={<ChevronIcon open={isMenuOpen("oficiales")} />}
-                  aria-haspopup="menu"
-                  aria-expanded={isMenuOpen("oficiales")}
-                  aria-controls="menu-oficiales-suboficiales"
-                  sx={navButtonSx(isOficialesSuboficialesView || isMenuOpen("oficiales"), embedded)}
-                >
-                  Oficiales y suboficiales
-                </Button>
-                <Menu
-                  id="menu-oficiales-suboficiales"
-                  anchorEl={getValidAnchor("oficiales")}
-                  open={isMenuOpen("oficiales")}
-                  onClose={() => closeMenu("oficiales")}
-                  PaperProps={{ sx: menuPaperSx(embedded) }}
-                  MenuListProps={{ "aria-label": "Vistas de oficiales y suboficiales" }}
-                >
-                  <Typography variant="overline" sx={menuHeaderSx}>
-                    Vistas de oficiales y suboficiales
-                  </Typography>
-                  <Divider sx={menuDividerSx} />
-                  {oficialesViews.map((item) => (
-                    <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
-                      <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
-                      <ListItemText>{item.label}</ListItemText>
-                    </MenuItem>
-                  ))}
-                </Menu>
-              </Box>
-
-              <Box>
-                <Button
-                  variant="outlined"
-                  onClick={handleToggleMenu("stock")}
-                  startIcon={icons.stock}
-                  endIcon={<ChevronIcon open={isMenuOpen("stock")} />}
-                  aria-haspopup="menu"
-                  aria-expanded={isMenuOpen("stock")}
-                  aria-controls="menu-stock"
-                  sx={navButtonSx(isStockView || isMenuOpen("stock"), embedded)}
-                >
-                  Stock y equipos
-                </Button>
-                <Menu
-                  id="menu-stock"
-                  anchorEl={getValidAnchor("stock")}
-                  open={isMenuOpen("stock")}
-                  onClose={() => closeMenu("stock")}
-                  PaperProps={{ sx: menuPaperSx(embedded) }}
-                  MenuListProps={{ "aria-label": "Vistas de stock y equipos" }}
-                >
-                  <Typography variant="overline" sx={menuHeaderSx}>
-                    Vistas de stock y equipos
-                  </Typography>
-                  <Divider sx={menuDividerSx} />
-                  {filteredStockViews.map((item) => (
-                    <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
-                      <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
-                      <ListItemText>{labelForViewport(item.label, item.shortLabel)}</ListItemText>
-                    </MenuItem>
-                  ))}
-                </Menu>
-              </Box>
-
-              <Box>
-                <Button
-                  variant="outlined"
-                  onClick={handleToggleMenu("etiquetado")}
-                  startIcon={icons.etiquetado}
-                  endIcon={<ChevronIcon open={isMenuOpen("etiquetado")} />}
-                  aria-haspopup="menu"
-                  aria-expanded={isMenuOpen("etiquetado")}
-                  aria-controls="menu-etiquetado"
-                  sx={navButtonSx(isEtiquetadoView || isMenuOpen("etiquetado"), embedded)}
-                >
-                  Etiquetado
-                </Button>
-                <Menu
-                  id="menu-etiquetado"
-                  anchorEl={getValidAnchor("etiquetado")}
-                  open={isMenuOpen("etiquetado")}
-                  onClose={() => closeMenu("etiquetado")}
-                  PaperProps={{ sx: menuPaperSx(embedded) }}
-                  MenuListProps={{ "aria-label": "Vistas de etiquetado" }}
-                >
-                  <Typography variant="overline" sx={menuHeaderSx}>
-                    Vistas de etiquetado
-                  </Typography>
-                  <Divider sx={menuDividerSx} />
-                  {etiquetadoViews.map((item) => (
-                    <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
-                      <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
-                      <ListItemText>{labelForViewport(item.label, item.shortLabel)}</ListItemText>
-                    </MenuItem>
-                  ))}
-                </Menu>
-              </Box>
-
-              <Button variant="outlined" onClick={() => handleSelectView("tallas_resumen")} startIcon={icons.resumen} sx={navButtonSx(isSummaryView, embedded)}>
-                Resumen de tallas
-              </Button>
-
-              {canWrite ? (
-                <Box>
-                  <Button
-                    variant="outlined"
-                    onClick={handleToggleMenu("create")}
-                    startIcon={icons.altas}
-                    endIcon={<ChevronIcon open={isMenuOpen("create")} />}
-                    aria-haspopup="menu"
-                    aria-expanded={isMenuOpen("create")}
-                    aria-controls="menu-altas"
-                    sx={navButtonSx(isCreateView || isMenuOpen("create"), embedded)}
-                  >
-                    Altas
-                  </Button>
-                  <Menu
-                    id="menu-altas"
-                    anchorEl={getValidAnchor("create")}
-                    open={isMenuOpen("create")}
-                    onClose={() => closeMenu("create")}
-                    PaperProps={{ sx: menuPaperSx(embedded) }}
-                    MenuListProps={{ "aria-label": "Pantallas de alta" }}
-                  >
-                    <Typography variant="overline" sx={menuHeaderSx}>
-                      Pantallas de alta
-                    </Typography>
-                    <Divider sx={menuDividerSx} />
-                    {filteredCreateViews.map((item) => (
-                      <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
-                        <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
-                        <ListItemText>{labelForViewport(item.label, item.shortLabel)}</ListItemText>
-                      </MenuItem>
-                    ))}
-                  </Menu>
-                </Box>
-              ) : null}
-
-              <Button variant="outlined" onClick={() => handleSelectView("formularios")} startIcon={icons.prestamos} sx={navButtonSx(activeView === "formularios", embedded)}>
-                Préstamos
-              </Button>
-
-              <Box ref={configMenuRef}>
-                <Button
-                  variant="outlined"
-                  onClick={handleToggleMenu("config")}
-                  startIcon={icons.config}
-                  endIcon={<ChevronIcon open={isMenuOpen("config")} />}
-                  aria-haspopup="menu"
-                  aria-expanded={isMenuOpen("config")}
-                  aria-controls="menu-configuracion"
-                  sx={navButtonSx(isConfigView || isMenuOpen("config"), embedded)}
-                >
-                  Configuración
-                </Button>
-                <Menu
-                  id="menu-configuracion"
-                  anchorEl={getValidAnchor("config")}
-                  open={isMenuOpen("config")}
-                  onClose={() => closeMenu("config")}
-                  PaperProps={{ sx: { ...menuPaperSx(embedded), width: "min(420px, calc(100vw - 2rem))" } }}
-                  MenuListProps={{ "aria-label": "Vistas de configuración" }}
-                >
-                  <Typography variant="overline" sx={menuHeaderSx}>
-                    Vistas de configuración
-                  </Typography>
-                  <Divider sx={menuDividerSx} />
-                  {filteredConfigViews.map((item) => (
-                    <MenuItem key={item.view} selected={activeView === item.view} onClick={() => handleSelectView(item.view)} sx={menuItemSx}>
-                      <ListItemIcon sx={{ minWidth: 34, color: "inherit" }}>{item.icon}</ListItemIcon>
-                      <ListItemText>{item.label}</ListItemText>
-                    </MenuItem>
-                  ))}
-                </Menu>
-              </Box>
-            </>
-          )}
-        </Box>
-      </Box>
-    </Paper>
+      <ExpandedMenuGroup title="Configuración" icon={icons.config} compact={false}>
+        {filteredConfigViews.map((item) => (
+          <Button
+            key={item.view}
+            variant="text"
+            startIcon={item.icon}
+            onClick={() => handleSelectView(item.view)}
+            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+          >
+            {item.label}
+          </Button>
+        ))}
+      </ExpandedMenuGroup>
+    </Box>
   );
 }

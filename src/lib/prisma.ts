@@ -34,6 +34,7 @@ function hasCurrentDelegates(client: PrismaClient | undefined) {
     movimientoItem?: unknown;
     prestamoActivo?: unknown;
     prestamoHistorial?: unknown;
+    configFirma?: unknown;
   };
   return (
     typeof candidate.stockOperacion !== "undefined" &&
@@ -44,7 +45,8 @@ function hasCurrentDelegates(client: PrismaClient | undefined) {
     typeof candidate.movimiento !== "undefined" &&
     typeof candidate.movimientoItem !== "undefined" &&
     typeof candidate.prestamoActivo !== "undefined" &&
-    typeof candidate.prestamoHistorial !== "undefined"
+    typeof candidate.prestamoHistorial !== "undefined" &&
+    typeof candidate.configFirma !== "undefined"
   );
 }
 

@@ -7,7 +7,7 @@ export type Rango = {
   orden: number;
 };
 export type Bateria = { bateriaId: number; nombre: string; orden: number };
-export type Equipo = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
+export type Equipo = { itemId: string; nombre: string; activo: boolean; ordenPdf: number; existenciaSie?: number };
 export type Item = Equipo;
 export type Talla = { tallaTipo: { nombre: string }; tallaValor: string };
 
@@ -73,7 +73,7 @@ export type CurrentUser = {
 };
 
 // Tipos de vistas
-export type MainView = "personal" | "oficiales" | "suboficiales" | "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo" | "formularios" | "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "hoja_matrix" | "equipo_resumen" | "tallas_resumen" | "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
+export type MainView = "personal" | "oficiales" | "suboficiales" | "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo" | "formularios" | "prestamos_registrar" | "prestamos_vigentes" | "prestamos_historial" | "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "hoja_matrix" | "equipo_resumen" | "tallas_resumen" | "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
 
 // Tipos de registros
 export type RegistroTipo = "ENTREGA" | "DEVOLUCION";

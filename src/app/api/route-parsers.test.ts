@@ -137,5 +137,13 @@ describe("route parser helpers", () => {
       expect(itemByIdRouteTestables.isValidOrder(1.2)).toBe(false);
       expect(itemByIdRouteTestables.isValidOrder("1")).toBe(false);
     });
+
+    it("parseExistenciaSie valida enteros mayores o iguales a cero", () => {
+      expect(itemByIdRouteTestables.parseExistenciaSie(0)).toBe(0);
+      expect(itemByIdRouteTestables.parseExistenciaSie("12")).toBe(12);
+      expect(itemByIdRouteTestables.parseExistenciaSie(-1)).toBeNull();
+      expect(itemByIdRouteTestables.parseExistenciaSie(1.5)).toBeNull();
+      expect(itemByIdRouteTestables.parseExistenciaSie("x")).toBeNull();
+    });
   });
 });

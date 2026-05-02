@@ -2,10 +2,12 @@ import "server-only";
 
 import React from "react";
 import type { MovimientoFueraHojaRow } from "@/lib/hoja-entrega-data";
+import { buildFirmasInstitucionalesLineas, getFirmaLineBaseIndentPt, type FirmaLinea, type FirmasInstitucionalesInput } from "@/lib/firma-lineas";
 
 type RenderMovimientosFueraHojaPdfOptions = {
   pageNumberLabel?: string;
   rowsPerPage?: number;
+  firmas?: FirmasInstitucionalesInput;
 };
 
 const DEFAULT_ROWS_PER_PAGE = 28;
@@ -111,6 +113,26 @@ export async function renderMovimientosFueraHojaPdf(
       fontSize: 7,
       fontFamily: "Helvetica",
     },
+    firmas: {
+      marginTop: 20,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderColor: "#eeeeee",
+    },
+    firmaBlock: {
+      marginBottom: 12,
+    },
+    firmaLineRow: {
+      width: "100%",
+      flexDirection: "row",
+    },
+    firmaLine: {
+      fontSize: 7,
+      lineHeight: 1.2,
+    },
+    firmaLineStrong: {
+      fontFamily: "Courier-Bold",
+    },
   });
 
   const widths = {
@@ -185,6 +207,27 @@ export async function renderMovimientosFueraHojaPdf(
               ))
             )}
           </View>
+
+          {pageIndex === chunks.length - 1 && options.firmas && (
+            <View style={styles.firmas} wrap={false}>
+              {buildFirmasInstitucionalesLineas(options.firmas).map((linea, lineIndex) => (
+                <View
+                  key={`${linea.key}-${lineIndex}`}
+                  style={[
+                    styles.firmaLineRow,
+                    {
+                      paddingLeft: (linea.indentLevel || 0) * 40,
+                      marginTop: linea.key.endsWith("-nombre") ? 8 : linea.key.endsWith("-texto") ? 15 : 0,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.firmaLine, linea.isBold ? styles.firmaLineStrong : {}]}>
+                    {linea.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           <Text
             fixed

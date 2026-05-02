@@ -46,3 +46,4 @@ licenses-prod.json
 # Misc
 .DS_Store
 *.pem
+scratch/

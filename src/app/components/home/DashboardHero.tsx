@@ -54,7 +54,6 @@ export function DashboardHero({
   onLogout,
 }: DashboardHeroProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [desktopNavOpen, setDesktopNavOpen] = useState(true);
   const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
   const isDashboardLanding = activeView === "dashboard";
   const showDbInfoInHero = !isDashboardLanding;
@@ -174,7 +173,7 @@ export function DashboardHero({
             pl: { xs: 0.25, sm: 0.5 },
             px: isDashboardLanding ? { xs: 1, sm: 2 } : undefined,
             py: isDashboardLanding ? 0.75 : undefined,
-            borderRadius: isDashboardLanding ? 999 : undefined,
+            borderRadius: 999,
             bgcolor: isDashboardLanding ? "rgba(8,12,9,0.42)" : "transparent",
             border: isDashboardLanding ? "1px solid rgba(255,255,255,0.16)" : "none",
             textAlign: { xs: "left", md: "center" },
@@ -406,70 +405,17 @@ export function DashboardHero({
                     mx: "auto",
                     p: { md: 1.1, lg: 1.25 },
                     borderRadius: 2.4,
-                    bgcolor: "rgba(7,11,8,0.58)",
-                    border: "1px solid rgba(255,255,255,0.24)",
+                    bgcolor: "rgba(7,11,8,0.42)",
+                    border: "1px solid rgba(255,255,255,0.18)",
                     backdropFilter: "blur(5px)",
-                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 16px 36px rgba(0,0,0,0.35)",
+                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06), 0 12px 24px rgba(0,0,0,0.28)",
+                    display: { xs: "none", md: "block" },
                   }}
                 >
-                  <Button
-                    type="button"
-                    aria-label="Alternar menu principal"
-                    onClick={() => setDesktopNavOpen((current) => !current)}
-                    startIcon={<MenuRoundedIcon />}
-                    sx={{
-                      width: "100%",
-                      minHeight: 44,
-                      px: 1.5,
-                      borderRadius: 999,
-                      border: "1px solid rgba(255,255,255,0.34)",
-                      bgcolor: "rgba(10,14,10,0.84)",
-                      color: "common.white",
-                      justifyContent: "center",
-                      gap: 1,
-                      textTransform: "none",
-                      fontSize: 13,
-                      fontWeight: 800,
-                      letterSpacing: "0.05em",
-                      "&:hover": {
-                        bgcolor: "rgba(12,18,12,0.96)",
-                        borderColor: "rgba(255,255,255,0.42)",
-                      },
-                    }}
-                  >
-                    Menu principal
-                  </Button>
-
-                  <Collapse in={desktopNavOpen} timeout={180} unmountOnExit sx={{ pt: 1 }}>
-                    <MainNavigation
-                      activeView={activeView}
-                      canWrite={canWrite}
-                      isAdmin={isAdmin}
-                      showConfigViews={showConfigViews}
-                      isConfigView={isConfigView}
-                      configMenuRef={configMenuRef}
-                      onSelectView={onSelectView}
-                      onSetConfigViews={onSetConfigViews}
-                      embedded
-                      expandSubmenus
-                      hideContainerChrome
-                    />
-                  </Collapse>
+                  <Typography sx={{ textAlign: "center", color: "rgba(255,255,255,0.65)", fontSize: 13, fontWeight: 500, letterSpacing: "0.02em" }}>
+                    Utilice el menú lateral para navegar por el sistema
+                  </Typography>
                 </Box>
-              ) : null}
-
-              {!isDashboardLanding ? (
-                <MainNavigation
-                  activeView={activeView}
-                  canWrite={canWrite}
-                  isAdmin={isAdmin}
-                  showConfigViews={showConfigViews}
-                  isConfigView={isConfigView}
-                  configMenuRef={configMenuRef}
-                  onSelectView={onSelectView}
-                  onSetConfigViews={onSetConfigViews}
-                  embedded
-                />
               ) : null}
             </Stack>
 

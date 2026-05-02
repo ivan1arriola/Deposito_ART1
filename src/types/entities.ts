@@ -26,6 +26,7 @@ export type Equipo = {
   nombre: string;
   activo: boolean;
   ordenPdf: number;
+  existenciaSie?: number;
 };
 
 export type StockResumen = {
@@ -33,6 +34,7 @@ export type StockResumen = {
   nombre: string;
   ordenPdf: number;
   apareceEnHoja: boolean;
+  existenciaSie: number;
   stockSubalternos: number;
   stockPrestamo: number;
   stockDeposito: number;

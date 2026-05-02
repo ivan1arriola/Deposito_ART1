@@ -40,29 +40,27 @@ function buildFirmaBloqueLineas(input: {
   bloque: FirmaBloqueInput;
   baseIndentLevel: number;
 }): FirmaLinea[] {
-  const indentLevel = input.baseIndentLevel + (input.bloque.indentOffsetLevel ?? 0);
+  const baseLevel = input.baseIndentLevel + (input.bloque.indentOffsetLevel ?? 0);
   const titleKeySuffix = input.bloque.titleKeySuffix ?? "titulo";
   const gradeKeySuffix = input.bloque.gradeKeySuffix ?? "grado";
   const nameKeySuffix = input.bloque.nameKeySuffix ?? "nombre";
-  const inlineOffsetChars = countMonospaceChars(input.bloque.grado);
 
   return [
     {
       key: `${input.bloque.keyPrefix}-${titleKeySuffix}`,
       text: input.bloque.titulo,
-      indentLevel,
+      indentLevel: baseLevel,
     },
     {
       key: `${input.bloque.keyPrefix}-${gradeKeySuffix}`,
       text: input.bloque.grado,
-      indentLevel,
+      indentLevel: baseLevel + 1,
       isBold: true,
     },
     {
       key: `${input.bloque.keyPrefix}-${nameKeySuffix}`,
       text: input.bloque.nombre,
-      indentLevel,
-      inlineOffsetChars,
+      indentLevel: baseLevel + 2,
     },
   ];
 }

@@ -32,7 +32,19 @@ type RequestKey = "core" | "admin" | "hojaMatrix" | "equipoResumen" | "stock";
 
 const REQUEST_KEYS: RequestKey[] = ["core", "admin", "hojaMatrix", "equipoResumen", "stock"];
 const ADMIN_VIEWS = new Set<MainView>(["firmas", "usuarios", "auditoria", "usuario_nuevo"]);
-const STOCK_VIEWS = new Set<MainView>(["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos", "formularios"]);
+const STOCK_VIEWS = new Set<MainView>([
+  "stock",
+  "stock_total",
+  "stock_actual",
+  "stock_alta",
+  "stock_baja",
+  "stock_historial",
+  "stock_prestamos",
+  "formularios",
+  "prestamos_registrar",
+  "prestamos_vigentes",
+  "prestamos_historial",
+]);
 
 function isAbortError(error: unknown) {
   if (error instanceof DOMException) return error.name === "AbortError";

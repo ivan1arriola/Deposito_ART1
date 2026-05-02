@@ -12,6 +12,8 @@ type HojaEntregaCanonicalSheetProps = {
   fechaImpresion: string;
 };
 
+type HojaObservacionLine = HojaEntregaSheetData["observaciones"][number];
+
 function getSheetDensity(data: HojaEntregaSheetData) {
   const rowCount = data.matrix.length;
   const obsCount = data.observaciones.length;
@@ -21,12 +23,53 @@ function getSheetDensity(data: HojaEntregaSheetData) {
   return "normal";
 }
 
+function isFueraDeHojaObservation(observacion: HojaObservacionLine) {
+  return /\bfuera de hoja\b/i.test(observacion.texto);
+}
+
+function selectVisibleObservaciones(
+  observaciones: HojaObservacionLine[],
+  maxObservaciones: number,
+): HojaObservacionLine[] {
+  if (observaciones.length <= maxObservaciones) {
+    return observaciones;
+  }
+
+  const visibleStart = observaciones.length - maxObservaciones;
+  const visibles = observaciones
+    .slice(visibleStart)
+    .map((obs, offset) => ({ obs, index: visibleStart + offset }));
+
+  const hidden = observaciones.slice(0, visibleStart);
+  const latestHiddenFueraIndex = hidden.map((_, index) => index).reverse().find((index) => {
+    return isFueraDeHojaObservation(hidden[index]);
+  });
+
+  if (latestHiddenFueraIndex === undefined) {
+    return visibles.map((entry) => entry.obs);
+  }
+
+  const replacementIndex = visibles.findIndex((entry) => !isFueraDeHojaObservation(entry.obs));
+  if (replacementIndex < 0) {
+    return visibles.map((entry) => entry.obs);
+  }
+
+  visibles[replacementIndex] = {
+    obs: hidden[latestHiddenFueraIndex],
+    index: latestHiddenFueraIndex,
+  };
+
+  return visibles
+    .sort((left, right) => left.index - right.index)
+    .map((entry) => entry.obs);
+}
+
 export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaCanonicalSheetProps) {
   const density = getSheetDensity(data);
   const densityClassName =
     density === "tight" ? styles.sheetTight : density === "compact" ? styles.sheetCompact : "";
-  const maxObservaciones = density === "tight" ? 2 : 3;
-  const observacionesVisibles = data.observaciones.slice(0, maxObservaciones);
+  const maxObservaciones = density === "tight" ? 5 : 8;
+  const observacionesVisibles = selectVisibleObservaciones(data.observaciones, maxObservaciones);
 
   const nombreCompleto = `${data.persona.apellido1} ${data.persona.apellido2 || ""}`.trim();
   const nombresCompleto = `${data.persona.nombre1} ${data.persona.nombre2 || ""}`.trim();

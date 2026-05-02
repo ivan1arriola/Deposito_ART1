@@ -101,7 +101,8 @@ CREATE TABLE "item" (
   "item_id" BIGSERIAL PRIMARY KEY,
   "nombre" TEXT NOT NULL UNIQUE,
   "activo" BOOLEAN NOT NULL DEFAULT TRUE,
-  "orden_pdf" INTEGER NOT NULL
+  "orden_pdf" INTEGER NOT NULL,
+  "existencia_sie" INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX "item_orden_pdf_nombre_idx" ON "item"("orden_pdf", "nombre");

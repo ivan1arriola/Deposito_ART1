@@ -10,11 +10,20 @@ type MovimientoObservacionInput = {
   fecha: string | Date;
   tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION";
   observaciones: string | null | undefined;
+  items?: MovimientoObservacionItemInput[];
 };
 
 export type HojaObservacion = {
   fecha: string;
   texto: string;
+};
+
+type MovimientoObservacionItemInput = {
+  cantidad: number;
+  item: {
+    nombre: string;
+    activo: boolean;
+  };
 };
 
 function toObservationTimestamp(value: string | Date) {
@@ -55,13 +64,43 @@ export function buildHojaObservaciones(
     .map((movimiento) => {
       const comentarios = movimiento.observaciones?.trim();
       const fecha = toObservationDate(movimiento.fecha);
-      if (!comentarios || !fecha) return null;
-      if (movimiento.tipo !== "ENTREGA" && movimiento.tipo !== "DEVOLUCION") return null;
+      if (!fecha) return null;
+
+      const tipoStr = String(movimiento.tipo || "").trim().toUpperCase();
+      if (tipoStr !== "ENTREGA" && tipoStr !== "DEVOLUCION") return null;
+
+      // Identificar items inactivos (fuera de hoja)
+      const itemsFueraHoja = (movimiento.items || []).filter((it) => {
+        const item = it.item;
+        if (!item) return false;
+        // Consideramos fuera de hoja si activo NO es explícitamente true
+        return item.activo !== true;
+      });
+      const isFueraDeHoja = itemsFueraHoja.length > 0;
+
+      // Si no hay comentarios ni items fuera de hoja, no mostramos nada
+      if (!comentarios && !isFueraDeHoja) return null;
+
+      let texto = "";
+      const labelTipo = tipoStr === "ENTREGA" ? "Entrega" : "Devolución";
+
+      if (isFueraDeHoja) {
+        const descripcionItems = itemsFueraHoja
+          .map((it) => `${it.cantidad} x ${it.item.nombre}`)
+          .join(", ");
+        
+        const manualPart = comentarios ? ` (${comentarios})` : "";
+        texto = `${labelTipo} Fuera de Hoja: ${descripcionItems}${manualPart}`;
+      } else {
+        // Movimiento normal con comentarios
+        texto = `${labelTipo}: ${comentarios}`;
+      }
 
       return {
         fecha,
-        texto: `${movimiento.tipo === "ENTREGA" ? "Entrega" : "Devolución"}: ${comentarios}`,
-        sortOrder: movimiento.tipo === "ENTREGA" ? 1 : 2,
+        texto,
+        // Cuando la fecha coincide, dejamos "fuera de hoja" al final para mantenerlo visible.
+        sortOrder: tipoStr === "ENTREGA" ? (isFueraDeHoja ? 3 : 1) : isFueraDeHoja ? 4 : 2,
         sortTime: toObservationTimestamp(movimiento.fecha),
       };
     })

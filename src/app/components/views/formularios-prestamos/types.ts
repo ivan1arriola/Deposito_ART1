@@ -2,6 +2,8 @@ import type { Equipo, OficialSuboficial, Personal } from "@/types/entities";
 import type { PrestamoDraft, PrestamoDraftItem, PrestamoEstadoEquipo } from "@/types/forms";
 import type { StockDashboardData } from "@/types/views";
 
+export type PrestamosTab = "registrar" | "vigentes" | "historial";
+
 export type PrestamoEditPayload = {
   fechaPrestamo: string;
   fechaEstimadaDevolucionTexto?: string;
@@ -19,6 +21,7 @@ export type PrestamoEditPayload = {
 };
 
 export type FormulariosPrestamosViewProps = {
+  viewMode?: "integrado" | PrestamosTab;
   data: StockDashboardData | null;
   loading: boolean;
   error: string | null;
@@ -56,5 +59,3 @@ export type FormulariosPrestamosViewProps = {
   onDeletePrestamo: (prestamoId: string) => void;
   onReload: () => void;
 };
-
-export type PrestamosTab = "registrar" | "vigentes" | "historial";

@@ -207,7 +207,9 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
         <EquipoResumenView data={equipoResumenData} loading={equipoResumenLoading} error={equipoResumenError} onReload={loadEquipoResumen} />
       ) : null}
 
-      {activeView === "movimientos_fuera_hoja" ? <MovimientosFueraHojaView /> : null}
+      {activeView === "movimientos_fuera_hoja" ? (
+        <MovimientosFueraHojaView canWrite={canWrite} onOpenRegistro={openRegistro} />
+      ) : null}
 
       {activeView === "tallas_resumen" ? (
         <TallasResumenView personal={personal} baterias={baterias} oficialesSuboficiales={oficialesSuboficiales} />

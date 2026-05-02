@@ -19,6 +19,9 @@ export type MainView =
   | "grado_nuevo"
   | "usuario_nuevo"
   | "formularios"
+  | "prestamos_registrar"
+  | "prestamos_vigentes"
+  | "prestamos_historial"
   | "stock"
   | "stock_total"
   | "stock_actual"
@@ -102,6 +105,7 @@ export type StockResumenRow = {
   nombre: string;
   ordenPdf: number;
   apareceEnHoja: boolean;
+  existenciaSie: number;
   stockSubalternos: number;
   stockPrestamo: number;
   stockDeposito: number;
@@ -168,6 +172,41 @@ export type StockDashboardData = {
   resumen: StockResumenRow[];
   historial: StockHistorialEntry[];
   prestamos: PrestamoStockEntry[];
+};
+
+export type StockItemTraceData = {
+  itemId: string;
+  itemNombre: string;
+  totals: {
+    subalternos: number;
+    prestamo: number;
+  };
+  subalternos: Array<{
+    ci: string;
+    persona: string;
+    bateria: string | null;
+    tipoPersonal: "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
+    cantidadNeta: number;
+    movimientos: Array<{
+      movimientoId: string;
+      tipo: "ENTREGA" | "DEVOLUCION";
+      fecha: string;
+      cantidad: number;
+      delta: number;
+      observaciones: string | null;
+    }>;
+  }>;
+  prestamos: Array<{
+    prestamoId: string;
+    reciboNumero: string;
+    estado: "PENDIENTE" | "DEVUELTO";
+    fechaPrestamo: string;
+    destinatarioCi: string;
+    destinatarioEtiqueta: string;
+    observaciones: string | null;
+    cantidad: number;
+    movimientoId: string;
+  }>;
 };
 
 export type HojaMatrixEquipo = {

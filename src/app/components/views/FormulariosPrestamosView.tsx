@@ -23,6 +23,7 @@ import {
 export type { PrestamoEditPayload } from "./formularios-prestamos/types";
 
 export function FormulariosPrestamosView({
+  viewMode = "integrado",
   data,
   loading,
   error,
@@ -47,7 +48,10 @@ export function FormulariosPrestamosView({
   onDeletePrestamo,
   onReload,
 }: FormulariosPrestamosViewProps) {
+  const fixedTab: PrestamosTab | null = viewMode === "integrado" ? null : viewMode;
   const [tab, setTab] = useState<PrestamosTab>(canWrite ? "registrar" : "vigentes");
+  const isIntegratedView = fixedTab === null;
+  const activeTab: PrestamosTab = fixedTab ?? (!canWrite && tab === "registrar" ? "vigentes" : tab);
   const [selectedPrestamo, setSelectedPrestamo] = useState<StockDashboardData["prestamos"][number] | null>(null);
   const [prestamoIdFilter, setPrestamoIdFilter] = useState("");
   const [returnDateByPrestamo, setReturnDateByPrestamo] = useState<Record<string, string>>({});
@@ -225,13 +229,30 @@ export function FormulariosPrestamosView({
     [prestamoDraft.items],
   );
 
+  const headerTitle =
+    fixedTab === "registrar"
+      ? "Registrar prestamo"
+      : fixedTab === "vigentes"
+        ? "Prestamos vigentes"
+        : fixedTab === "historial"
+          ? "Historial de prestamos"
+          : "Prestamos";
+  const headerDescription =
+    fixedTab === "registrar"
+      ? "Registro de nuevos préstamos de equipo."
+      : fixedTab === "vigentes"
+        ? "Consulta y gestión de préstamos pendientes."
+        : fixedTab === "historial"
+          ? "Consulta histórica de préstamos registrados."
+          : "Registro, vigentes e historial en un solo modulo.";
+
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-stone-900">Prestamos</h2>
-            <p className="mt-1 text-xs text-stone-600">Registro, vigentes e historial en un solo modulo.</p>
+            <h2 className="text-base font-semibold text-stone-900">{headerTitle}</h2>
+            <p className="mt-1 text-xs text-stone-600">{headerDescription}</p>
           </div>
           <button
             type="button"
@@ -243,36 +264,38 @@ export function FormulariosPrestamosView({
           </button>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {canWrite ? (
+        {isIntegratedView ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {canWrite ? (
+              <button
+                type="button"
+                onClick={() => setTab("registrar")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${activeTab === "registrar" ? "bg-stone-900 text-white" : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"}`}
+              >
+                Registrar prestamo
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={() => setTab("registrar")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${tab === "registrar" ? "bg-stone-900 text-white" : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"}`}
+              onClick={() => setTab("vigentes")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${activeTab === "vigentes" ? "bg-stone-900 text-white" : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"}`}
             >
-              Registrar prestamo
+              Prestamos vigentes ({prestamosVigentes.length})
             </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => setTab("vigentes")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${tab === "vigentes" ? "bg-stone-900 text-white" : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"}`}
-          >
-            Prestamos vigentes ({prestamosVigentes.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("historial")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${tab === "historial" ? "bg-stone-900 text-white" : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"}`}
-          >
-            Historial ({prestamos.length})
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => setTab("historial")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${activeTab === "historial" ? "bg-stone-900 text-white" : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"}`}
+            >
+              Historial ({prestamos.length})
+            </button>
+          </div>
+        ) : null}
       </article>
 
       {error ? <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
 
-      {tab === "vigentes" || tab === "historial" ? (
+      {activeTab === "vigentes" || activeTab === "historial" ? (
         <article className="ej-card rounded-2xl p-4">
           <h3 className="text-sm font-semibold text-stone-900">Buscar prestamo por ID</h3>
           <label className="mt-3 block text-xs text-stone-700">
@@ -289,7 +312,7 @@ export function FormulariosPrestamosView({
         </article>
       ) : null}
 
-      {tab === "registrar" ? (
+      {activeTab === "registrar" ? (
         canWrite ? (
           <article className="ej-card rounded-2xl p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -549,7 +572,7 @@ export function FormulariosPrestamosView({
         )
       ) : null}
 
-      {tab === "vigentes" ? (
+      {activeTab === "vigentes" ? (
         <article className="ej-card rounded-2xl p-4">
           <h3 className="text-sm font-semibold text-stone-900">Prestamos vigentes</h3>
           <div className="mt-3">
@@ -573,7 +596,7 @@ export function FormulariosPrestamosView({
         </article>
       ) : null}
 
-      {tab === "historial" ? (
+      {activeTab === "historial" ? (
         <article className="ej-card rounded-2xl p-4">
           <h3 className="text-sm font-semibold text-stone-900">Historial (todos los prestamos)</h3>
           <div className="mt-3">
