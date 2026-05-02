@@ -31,7 +31,8 @@ export async function GET(request: Request) {
       },
     });
 
-    const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+    const pdfArrayBuffer = Uint8Array.from(pdfBytes).buffer;
+    const pdfBlob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
 
     return new NextResponse(pdfBlob, {
       headers: {
