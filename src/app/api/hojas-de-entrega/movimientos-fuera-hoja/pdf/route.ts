@@ -31,7 +31,9 @@ export async function GET(request: Request) {
       },
     });
 
-    return new Response(pdfBytes, {
+    const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+
+    return new NextResponse(pdfBlob, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="movimientos-fuera-hoja-${new Date().getTime()}.pdf"`,

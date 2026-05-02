@@ -217,7 +217,7 @@ export async function renderMovimientosFueraHojaPdf(
                     styles.firmaLineRow,
                     {
                       paddingLeft: (linea.indentLevel || 0) * 40,
-                      marginTop: linea.key.endsWith("-nombre") ? 8 : linea.key.endsWith("-texto") ? 15 : 0,
+                      marginTop: linea.key.endsWith("-nombre") ? 8 : linea.key.endsWith("-texto") ? 25 : 0,
                     },
                   ]}
                 >

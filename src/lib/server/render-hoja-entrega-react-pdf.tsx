@@ -396,7 +396,7 @@ export async function renderHojasEntregaPdf(
     const signatureTab = getSignatureTabSize(profile);
     const signatureLineHeight = 1.2;
     const signatureFontSize = scaled(profile, 6.6, 4.7);
-    const signatureBlockSeparatorGap = scaled(profile, 13.5, 9);
+    const signatureBlockSeparatorGap = scaled(profile, 22, 16);
     const signatureNameGap = scaled(profile, 8.2, 6.2);
     const signatureNameIndentExtra = signatureTab * 1.25;
 
