@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { TALLA_KEYS, TALLA_LABELS, type TallaKey } from "@/lib/tallas";
-import type { ResumenBateria, SectionId, TallasResumenViewProps } from "./tallas-resumen/types";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { TALLA_KEYS, TALLA_LABELS } from "@/lib/tallas";
+import type { ResumenBateria, SectionId, TallasResumenSubView, TallasResumenViewProps } from "./tallas-resumen/types";
 import {
   buildResumenOficialesSuboficiales,
   buildResumenTallasPorBateria,
@@ -71,12 +71,24 @@ function AccordionCard({ title, description, open, onToggle, badge, children }: 
   );
 }
 
-export function TallasResumenView({ personal, baterias, oficialesSuboficiales }: TallasResumenViewProps) {
-  const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>({
-    subalternos_unidad: false,
-    subalternos_bateria: false,
-    oficiales_suboficiales: false,
-  });
+function buildOpenSectionsForSubView(subView: TallasResumenSubView): Record<SectionId, boolean> {
+  if (subView === "general") {
+    return {
+      subalternos_unidad: false,
+      subalternos_bateria: false,
+      oficiales_suboficiales: false,
+    };
+  }
+
+  return {
+    subalternos_unidad: subView === "subalternos_unidad",
+    subalternos_bateria: subView === "subalternos_bateria",
+    oficiales_suboficiales: subView === "oficiales_suboficiales",
+  };
+}
+
+export function TallasResumenView({ personal, baterias, oficialesSuboficiales, subView = "general" }: TallasResumenViewProps) {
+  const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>(() => buildOpenSectionsForSubView(subView));
   const [showMissingDataWarning, setShowMissingDataWarning] = useState(false);
 
   const resumenUnidad = useMemo<ResumenBateria>(() => {
@@ -94,6 +106,14 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales }:
 
   const toggleSection = (section: SectionId) => {
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  useEffect(() => {
+    setOpenSections(buildOpenSectionsForSubView(subView));
+  }, [subView]);
+
+  const shouldShowSection = (section: SectionId) => {
+    return subView === "general" || subView === section;
   };
 
   const subalternosConTallesIncompletos = useMemo(() => {
@@ -414,65 +434,71 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales }:
         </div>
       </article>
 
-      <AccordionCard
-        title="Resumen de talles de subalternos (unidad)"
-        description="Cantidades absolutas por prenda para subalternos de toda la unidad."
-        open={openSections.subalternos_unidad}
-        onToggle={() => toggleSection("subalternos_unidad")}
-        badge={String(resumenUnidad.total)}
-      >
-        {renderResumenPorBateria([resumenUnidad])}
-      </AccordionCard>
+      {shouldShowSection("subalternos_unidad") ? (
+        <AccordionCard
+          title="Resumen de talles de subalternos (unidad)"
+          description="Cantidades absolutas por prenda para subalternos de toda la unidad."
+          open={openSections.subalternos_unidad}
+          onToggle={() => toggleSection("subalternos_unidad")}
+          badge={String(resumenUnidad.total)}
+        >
+          {renderResumenPorBateria([resumenUnidad])}
+        </AccordionCard>
+      ) : null}
 
-      <AccordionCard
-        title="Resumen de talles de subalternos por bateria"
-        description="Frecuencia absoluta por talla y bateria para subalternos."
-        open={openSections.subalternos_bateria}
-        onToggle={() => toggleSection("subalternos_bateria")}
-        badge={String(resumenTallasPorBateria.length)}
-      >
-        {renderResumenByPrenda(resumenTallasPorBateria)}
-      </AccordionCard>
+      {shouldShowSection("subalternos_bateria") ? (
+        <AccordionCard
+          title="Resumen de talles de subalternos por bateria"
+          description="Frecuencia absoluta por talla y bateria para subalternos."
+          open={openSections.subalternos_bateria}
+          onToggle={() => toggleSection("subalternos_bateria")}
+          badge={String(resumenTallasPorBateria.length)}
+        >
+          {renderResumenByPrenda(resumenTallasPorBateria)}
+        </AccordionCard>
+      ) : null}
 
-      <AccordionCard
-        title="Resumen de talles de oficiales y suboficiales"
-        description="Cantidades por talla en ambos grupos."
-        open={openSections.oficiales_suboficiales}
-        onToggle={() => toggleSection("oficiales_suboficiales")}
-        badge={String(oficialesSuboficiales.length)}
-      >
-        {resumenOficialesSuboficiales.map((section) => (
-          <article key={`resumen-ssoo-${section.key}`} className="rounded-xl border border-stone-200 bg-white p-3">
-            <h3 className="text-sm font-semibold text-stone-900">{section.label}</h3>
-            {section.rows.length === 0 ? (
-              <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">Sin datos.</p>
-            ) : (
-              <div className="mt-2 overflow-auto rounded-lg border border-stone-200">
-                <table className="w-full border-collapse text-left text-xs">
-                  <thead>
-                    <tr className="bg-stone-100">
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Oficiales</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Suboficiales</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {section.rows.map((row, rowIndex) => (
-                      <tr key={`${section.key}-${row.talla}`} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                        <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.talla}</td>
-                        <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.oficiales}</td>
-                        <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.suboficiales}</td>
-                        <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.total}</td>
+      {shouldShowSection("oficiales_suboficiales") ? (
+        <AccordionCard
+          title="Resumen de talles de oficiales y suboficiales"
+          description="Cantidades por talla en ambos grupos."
+          open={openSections.oficiales_suboficiales}
+          onToggle={() => toggleSection("oficiales_suboficiales")}
+          badge={String(oficialesSuboficiales.length)}
+        >
+          {resumenOficialesSuboficiales.map((section) => (
+            <article key={`resumen-ssoo-${section.key}`} className="rounded-xl border border-stone-200 bg-white p-3">
+              <h3 className="text-sm font-semibold text-stone-900">{section.label}</h3>
+              {section.rows.length === 0 ? (
+                <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">Sin datos.</p>
+              ) : (
+                <div className="mt-2 overflow-auto rounded-lg border border-stone-200">
+                  <table className="w-full border-collapse text-left text-xs">
+                    <thead>
+                      <tr className="bg-stone-100">
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Oficiales</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Suboficiales</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Total</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </article>
-        ))}
-      </AccordionCard>
+                    </thead>
+                    <tbody>
+                      {section.rows.map((row, rowIndex) => (
+                        <tr key={`${section.key}-${row.talla}`} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.talla}</td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.oficiales}</td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.suboficiales}</td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.total}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </article>
+          ))}
+        </AccordionCard>
+      ) : null}
 
       {hasMissingDataWarning ? (
         <>

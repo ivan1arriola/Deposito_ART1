@@ -78,6 +78,21 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
     loadEquipoResumen,
   } = props;
 
+  const isTallasResumenView =
+    activeView === "tallas_resumen" ||
+    activeView === "tallas_resumen_subalternos_unidad" ||
+    activeView === "tallas_resumen_subalternos_bateria" ||
+    activeView === "tallas_resumen_oficiales_suboficiales";
+
+  const tallasResumenSubView =
+    activeView === "tallas_resumen_subalternos_unidad"
+      ? "subalternos_unidad"
+      : activeView === "tallas_resumen_subalternos_bateria"
+        ? "subalternos_bateria"
+        : activeView === "tallas_resumen_oficiales_suboficiales"
+          ? "oficiales_suboficiales"
+          : "general";
+
   return (
     <>
       {activeView === "personal" ? (
@@ -211,8 +226,13 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
         <MovimientosFueraHojaView canWrite={canWrite} onOpenRegistro={openRegistro} />
       ) : null}
 
-      {activeView === "tallas_resumen" ? (
-        <TallasResumenView personal={personal} baterias={baterias} oficialesSuboficiales={oficialesSuboficiales} />
+      {isTallasResumenView ? (
+        <TallasResumenView
+          personal={personal}
+          baterias={baterias}
+          oficialesSuboficiales={oficialesSuboficiales}
+          subView={tallasResumenSubView}
+        />
       ) : null}
     </>
   );

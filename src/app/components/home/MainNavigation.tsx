@@ -41,6 +41,10 @@ type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recorda
 type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo">;
 type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "equipo_nuevo">;
 type PrestamosView = Extract<MainView, "prestamos_registrar" | "prestamos_vigentes" | "prestamos_historial" | "formularios">;
+type TallasResumenView = Extract<
+  MainView,
+  "tallas_resumen" | "tallas_resumen_subalternos_unidad" | "tallas_resumen_subalternos_bateria" | "tallas_resumen_oficiales_suboficiales"
+>;
 type EtiquetadoView = Extract<
   MainView,
   "etiquetado_codigos_sie" | "etiquetado_listado_cajas" | "etiquetado_imprimir_todas"
@@ -157,6 +161,13 @@ const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficia
   { view: "suboficiales", label: "Suboficiales", icon: icons.oficiales },
   { view: "oficiales_resumen", label: "Resumen de talles (oficiales)", icon: icons.resumen },
   { view: "suboficiales_resumen", label: "Resumen de talles (suboficiales)", icon: icons.resumen },
+];
+
+const tallasResumenViews: Array<NavOption<TallasResumenView>> = [
+  { view: "tallas_resumen", label: "Panel general", icon: icons.resumen },
+  { view: "tallas_resumen_subalternos_unidad", label: "Subalternos (unidad)", icon: icons.resumen },
+  { view: "tallas_resumen_subalternos_bateria", label: "Subalternos por batería", icon: icons.resumen },
+  { view: "tallas_resumen_oficiales_suboficiales", label: "Oficiales y suboficiales", icon: icons.resumen },
 ];
 
 function navButtonSx(active: boolean, compact: boolean) {
@@ -374,7 +385,6 @@ export function MainNavigation({
     activeView === "etiquetado_codigos_sie" ||
     activeView === "etiquetado_listado_cajas" ||
     activeView === "etiquetado_imprimir_todas";
-  const isSummaryView = activeView === "tallas_resumen";
   const isCreateView =
     activeView === "personal_nuevo" ||
     activeView === "oficial_nuevo" ||
@@ -469,14 +479,19 @@ export function MainNavigation({
         ))}
       </ExpandedMenuGroup>
 
-      <Button
-        variant="text"
-        onClick={() => handleSelectView("tallas_resumen")}
-        startIcon={icons.resumen}
-        sx={navButtonSx(isSummaryView, false)}
-      >
-        Resumen de tallas
-      </Button>
+      <ExpandedMenuGroup title="Resumen de tallas" icon={icons.resumen} compact={false}>
+        {tallasResumenViews.map((item) => (
+          <Button
+            key={item.view}
+            variant="text"
+            startIcon={item.icon}
+            onClick={() => handleSelectView(item.view)}
+            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+          >
+            {item.label}
+          </Button>
+        ))}
+      </ExpandedMenuGroup>
 
       {canWrite ? (
         <ExpandedMenuGroup title="Altas" icon={icons.altas} compact={false}>

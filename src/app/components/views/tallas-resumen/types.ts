@@ -5,6 +5,7 @@ export type ResumenTalla = { key: TallaKey; label: string; values: Array<{ talla
 export type ResumenBateria = { key: string; nombre: string; total: number; tallas: ResumenTalla[] };
 
 export type SectionId = "subalternos_unidad" | "subalternos_bateria" | "oficiales_suboficiales";
+export type TallasResumenSubView = "general" | SectionId;
 
 export type MissingTallasEntry = {
   id: string;
@@ -16,4 +17,5 @@ export interface TallasResumenViewProps {
   personal: Personal[];
   baterias: Bateria[];
   oficialesSuboficiales: OficialSuboficial[];
+  subView?: TallasResumenSubView;
 }

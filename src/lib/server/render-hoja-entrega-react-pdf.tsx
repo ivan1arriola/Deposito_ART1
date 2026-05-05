@@ -338,7 +338,9 @@ export async function renderHojasEntregaPdf(
   options: RenderHojasEntregaPdfOptions = {},
 ): Promise<Uint8Array> {
   const ReactPdf = await import("@react-pdf/renderer");
-  const { Document, Page, Text, View, StyleSheet, pdf } = ReactPdf;
+  const { Document, Page, Text, View, StyleSheet, pdf, Image } = ReactPdf;
+
+  const logoPath = `file://${process.cwd()}/public/assets/logo-artilleria.jpg`;
 
   const pageNumberLabel = options.pageNumberLabel ?? "Hoja";
   const includePageNumbers = options.includePageNumbers ?? true;
@@ -471,7 +473,18 @@ export async function renderHojasEntregaPdf(
       topTitleCell: {
         backgroundColor: BG_WHITE,
         paddingVertical: scaled(profile, 1.5, 0.7),
-        minHeight: scaled(profile, 18, 12),
+        minHeight: scaled(profile, 22, 16),
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+      },
+
+      logo: {
+        width: 35,
+        height: 35,
+        position: "absolute",
+        left: 10,
+        top: 2,
       },
 
       topTitle: {
@@ -680,6 +693,40 @@ export async function renderHojasEntregaPdf(
         fontSize: scaled(profile, 5.2, 3.8),
         fontFamily: "Helvetica",
       },
+
+      // Manual / Guia Styles
+      manualPage: {
+        padding: 40,
+        fontFamily: "Helvetica",
+        fontSize: 10,
+        color: "#1e293b",
+      },
+      manualTitle: {
+        fontSize: 18,
+        fontFamily: "Helvetica-Bold",
+        color: "#0f172a",
+        marginBottom: 15,
+        textAlign: "center",
+        textDecoration: "underline",
+      },
+      manualSection: {
+        marginBottom: 15,
+        padding: 10,
+        backgroundColor: "#f8fafc",
+        borderLeftWidth: 3,
+        borderLeftColor: "#059669",
+      },
+      manualSubtitle: {
+        fontSize: 12,
+        fontFamily: "Helvetica-Bold",
+        color: "#334155",
+        marginBottom: 5,
+      },
+      manualText: {
+        fontSize: 10,
+        lineHeight: 1.4,
+        textAlign: "justify",
+      },
       });
     if (!cachedStyles) {
       stylesCache.set(profile.id, styles);
@@ -724,6 +771,7 @@ export async function renderHojasEntregaPdf(
               <View style={styles.table}>
                 <View style={styles.row}>
                   <View style={[styles.cell, styles.topTitleCell, styles.noRightBorder, { width: "100%" }]}>
+                    <Image src={logoPath} style={styles.logo} />
                     <Text style={styles.topTitle}>
                       {'Grupo "Brig.Gral.Manuel Oribe" de Artillería 105mm No.1.-'}
                     </Text>
@@ -907,16 +955,54 @@ export async function renderHojasEntregaPdf(
           ) : null}
         </Page>
       );
-    };
+    const GuiaUsoPage = () => (
+      <Page size="A4" style={styles.manualPage}>
+        <View style={{ alignItems: "center", marginBottom: 20 }}>
+          <Image src={logoPath} style={{ width: 60, height: 60 }} />
+        </View>
+        <Text style={styles.manualTitle}>GUÍA DE CUIDADO Y RESPONSABILIDAD</Text>
+        
+        <View style={styles.manualSection}>
+          <Text style={styles.manualSubtitle}>1. Conservación del Equipo</Text>
+          <Text style={styles.manualText}>
+            El equipo entregado es propiedad del Estado y su cuidado es responsabilidad directa del personal que lo recibe. 
+            Mantenga sus prendas limpias, secas y almacenadas en lugares adecuados para evitar el deterioro prematuro.
+          </Text>
+        </View>
+
+        <View style={styles.manualSection}>
+          <Text style={styles.manualSubtitle}>2. Pérdidas y Deterioro</Text>
+          <Text style={styles.manualText}>
+            Cualquier pérdida o daño por negligencia deberá ser reportado inmediatamente a su superior. 
+            La reposición de equipos extraviados se rige por las normativas administrativas vigentes.
+          </Text>
+        </View>
+
+        <View style={styles.manualSection}>
+          <Text style={styles.manualSubtitle}>3. Proceso de Devolución</Text>
+          <Text style={styles.manualText}>
+            Al finalizar su servicio o ser destinado a otra unidad, todo el equipo registrado en esta hoja debe ser 
+            devuelto al Depósito en condiciones óptimas de higiene. Se dejará constancia en la columna de DEVOLUCIONES.
+          </Text>
+        </View>
+
+        <View style={{ marginTop: 40, borderTopWidth: 1, borderTopColor: "#e2e8f0", paddingTop: 10 }}>
+          <Text style={{ fontSize: 8, color: "#64748b", textAlign: "center" }}>
+            "La disciplina en el equipo refleja la disciplina en el servicio."
+          </Text>
+        </View>
+      </Page>
+    );
 
     const HojaEntregaPdfDocument = () => (
       <Document title="Hoja de Entrega" author="Deposito ART1">
-        {hojasToRender.map((hoja, index) => (
+        {hojasToRender.flatMap((hoja, index) => [
           <HojaEntregaSheetPage
             key={`${hoja.data.persona.ci}-${index}`}
             hoja={hoja}
-          />
-        ))}
+          />,
+          <GuiaUsoPage key={`guia-${hoja.data.persona.ci}-${index}`} />
+        ])}
       </Document>
     );
 

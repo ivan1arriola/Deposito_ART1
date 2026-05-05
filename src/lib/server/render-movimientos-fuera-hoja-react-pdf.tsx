@@ -31,7 +31,9 @@ export async function renderMovimientosFueraHojaPdf(
   options: RenderMovimientosFueraHojaPdfOptions = {},
 ): Promise<Uint8Array> {
   const ReactPdf = await import("@react-pdf/renderer");
-  const { Document, Page, Text, View, StyleSheet, pdf } = ReactPdf;
+  const { Document, Page, Text, View, StyleSheet, pdf, Image } = ReactPdf;
+
+  const logoPath = `file://${process.cwd()}/public/assets/logo-artilleria.jpg`;
 
   const pageNumberLabel = options.pageNumberLabel ?? "Movimientos";
   const rowsPerPage =
@@ -51,11 +53,24 @@ export async function renderMovimientosFueraHojaPdf(
       color: "#000000",
       backgroundColor: "#ffffff",
     },
+    headerWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 10,
+      position: "relative",
+    },
+    logo: {
+      width: 30,
+      height: 30,
+      position: "absolute",
+      left: 0,
+    },
     title: {
       fontFamily: "Courier-Bold",
-      fontSize: 11,
+      fontSize: 10,
       textAlign: "center",
-      marginBottom: 4,
+      flexGrow: 1,
     },
     subtitle: {
       fontSize: 8,
@@ -150,7 +165,10 @@ export async function renderMovimientosFueraHojaPdf(
     <Document title="Movimientos fuera de hoja" author="Deposito ART1">
       {chunks.map((chunk, pageIndex) => (
         <Page key={`mov-fuera-${pageIndex}`} size="A4" style={styles.page}>
-          <Text style={styles.title}>Movimientos de equipos no incluidos en hoja de entrega</Text>
+          <View style={styles.headerWrapper}>
+            <Image src={logoPath} style={styles.logo} />
+            <Text style={styles.title}>Movimientos de equipos no incluidos en hoja de entrega</Text>
+          </View>
           <Text style={styles.subtitle}>Fecha de impresion: {fechaImpresion}</Text>
 
           <View style={styles.table}>
