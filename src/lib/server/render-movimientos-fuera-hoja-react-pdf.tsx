@@ -2,7 +2,7 @@ import "server-only";
 
 import React from "react";
 import type { MovimientoFueraHojaRow } from "@/lib/hoja-entrega-data";
-import { buildFirmasInstitucionalesLineas, getFirmaLineBaseIndentPt, type FirmaLinea, type FirmasInstitucionalesInput } from "@/lib/firma-lineas";
+import { buildFirmasInstitucionalesLineas, type FirmasInstitucionalesInput } from "@/lib/firma-lineas";
 
 type RenderMovimientosFueraHojaPdfOptions = {
   pageNumberLabel?: string;
@@ -136,12 +136,13 @@ export async function renderMovimientosFueraHojaPdf(
   });
 
   const widths = {
-    fecha: "11%",
+    fecha: "10%",
     tipo: "8%",
-    ci: "11%",
-    persona: "22%",
-    item: "23%",
-    cantidad: "7%",
+    ci: "10%",
+    grado: "9%",
+    persona: "19%",
+    item: "20%",
+    cantidad: "6%",
     observaciones: "18%",
   } as const;
 
@@ -162,6 +163,9 @@ export async function renderMovimientosFueraHojaPdf(
               </View>
               <View style={[styles.headerCell, { width: widths.ci }]}>
                 <Text>CI</Text>
+              </View>
+              <View style={[styles.headerCell, { width: widths.grado }]}>
+                <Text>Grado</Text>
               </View>
               <View style={[styles.headerCell, { width: widths.persona }]}>
                 <Text>Persona</Text>
@@ -190,6 +194,9 @@ export async function renderMovimientosFueraHojaPdf(
                   </View>
                   <View style={[styles.cell, { width: widths.ci }]}>
                     <Text style={styles.center}>{row.ci}</Text>
+                  </View>
+                  <View style={[styles.cell, { width: widths.grado }]}>
+                    <Text style={styles.center}>{row.gradoAbreviacion}</Text>
                   </View>
                   <View style={[styles.cell, { width: widths.persona }]}>
                     <Text style={styles.left}>{row.persona}</Text>

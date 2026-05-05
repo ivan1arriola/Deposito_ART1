@@ -2,7 +2,17 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { stripDiacritics } from "@/lib/spanish-text";
 
-let ensurePrestamoActuantePromise: Promise<void> | null = null;
+const globalForPrestamoActuante = globalThis as unknown as {
+  ensurePrestamoActuantePromise?: Promise<void> | null;
+};
+
+function getEnsurePrestamoActuantePromise() {
+  return globalForPrestamoActuante.ensurePrestamoActuantePromise ?? null;
+}
+
+function setEnsurePrestamoActuantePromise(value: Promise<void> | null) {
+  globalForPrestamoActuante.ensurePrestamoActuantePromise = value;
+}
 
 type PrestamoActuanteRow = {
   movimientoId: string;
@@ -41,9 +51,10 @@ function formatActuanteLabel(row: PrestamoActuanteRow) {
 }
 
 export async function ensurePrestamoActuanteCompatibility() {
-  if (ensurePrestamoActuantePromise) return ensurePrestamoActuantePromise;
+  const currentPromise = getEnsurePrestamoActuantePromise();
+  if (currentPromise) return currentPromise;
 
-  ensurePrestamoActuantePromise = (async () => {
+  const nextPromise = (async () => {
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "prestamo_actuante" (
         "movimiento_id" BIGINT PRIMARY KEY REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
@@ -56,11 +67,12 @@ export async function ensurePrestamoActuanteCompatibility() {
       ON "prestamo_actuante" ("personal_ci");
     `);
   })().catch((error) => {
-    ensurePrestamoActuantePromise = null;
+    setEnsurePrestamoActuantePromise(null);
     throw error;
   });
 
-  return ensurePrestamoActuantePromise;
+  setEnsurePrestamoActuantePromise(nextPromise);
+  return nextPromise;
 }
 
 export async function upsertPrestamoActuante(

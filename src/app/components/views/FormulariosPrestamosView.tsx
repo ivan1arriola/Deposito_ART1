@@ -10,13 +10,12 @@ import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers"
 import type { PrestamoEstadoEquipo } from "@/types/forms";
 import type { StockDashboardData } from "@/types/views";
 import { PrestamoList } from "./formularios-prestamos/components/PrestamoList";
-import type { FormulariosPrestamosViewProps, PrestamoEditPayload, PrestamosTab } from "./formularios-prestamos/types";
+import type { FormulariosPrestamosViewProps, PrestamosTab } from "./formularios-prestamos/types";
 import {
   buildActuanteOptions,
   buildDestinatarioOptions,
   destinatarioTipoLabel,
   ESTADO_OPTIONS,
-  estadoBadgeClass,
   reciboHref,
 } from "./formularios-prestamos/utils";
 
@@ -208,6 +207,14 @@ export function FormulariosPrestamosView({
     if (normalizedPrestamoIdFilter === "") return prestamosVigentes;
     return prestamosVigentes.filter((prestamo) => prestamo.prestamoId.includes(normalizedPrestamoIdFilter));
   }, [prestamosVigentes, normalizedPrestamoIdFilter]);
+  const resumenPrestamosVigentesPrintHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("autoprint", "1");
+    if (normalizedPrestamoIdFilter !== "") {
+      params.set("prestamoId", normalizedPrestamoIdFilter);
+    }
+    return `/resumen-prestamos-vigentes?${params.toString()}`;
+  }, [normalizedPrestamoIdFilter]);
   const prestamosFiltrados = useMemo(() => {
     if (normalizedPrestamoIdFilter === "") return prestamos;
     return prestamos.filter((prestamo) => prestamo.prestamoId.includes(normalizedPrestamoIdFilter));
@@ -574,7 +581,17 @@ export function FormulariosPrestamosView({
 
       {activeTab === "vigentes" ? (
         <article className="ej-card rounded-2xl p-4">
-          <h3 className="text-sm font-semibold text-stone-900">Prestamos vigentes</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-stone-900">Prestamos vigentes</h3>
+            <a
+              href={resumenPrestamosVigentesPrintHref}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+            >
+              Imprimir resumen
+            </a>
+          </div>
           <div className="mt-3">
             <PrestamoList
               items={prestamosVigentesFiltrados}

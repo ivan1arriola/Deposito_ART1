@@ -7,7 +7,17 @@ import { prisma } from "@/lib/prisma";
 const PERSONAL_USER_ID_PREFIX = "personal:";
 const BCRYPT_SALT_ROUNDS = 12;
 
-let ensurePersonalAuthPromise: Promise<void> | null = null;
+const globalForPersonalAuth = globalThis as unknown as {
+  ensurePersonalAuthPromise?: Promise<void> | null;
+};
+
+function getEnsurePersonalAuthPromise() {
+  return globalForPersonalAuth.ensurePersonalAuthPromise ?? null;
+}
+
+function setEnsurePersonalAuthPromise(value: Promise<void> | null) {
+  globalForPersonalAuth.ensurePersonalAuthPromise = value;
+}
 
 const PERSONAL_IDENTITY_SELECT = {
   ci: true,
@@ -262,9 +272,10 @@ export function parsePersonalUsuarioId(usuarioId: string) {
 }
 
 export async function ensurePersonalAuthCompatibility() {
-  if (ensurePersonalAuthPromise) return ensurePersonalAuthPromise;
+  const currentPromise = getEnsurePersonalAuthPromise();
+  if (currentPromise) return currentPromise;
 
-  ensurePersonalAuthPromise = (async () => {
+  const nextPromise = (async () => {
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "personal_auth" (
         "ci" TEXT PRIMARY KEY REFERENCES "personal"("ci") ON DELETE CASCADE,
@@ -286,11 +297,12 @@ export async function ensurePersonalAuthCompatibility() {
       ON "personal_auth" ("activo");
     `);
   })().catch((error) => {
-    ensurePersonalAuthPromise = null;
+    setEnsurePersonalAuthPromise(null);
     throw error;
   });
 
-  return ensurePersonalAuthPromise;
+  setEnsurePersonalAuthPromise(nextPromise);
+  return nextPromise;
 }
 
 export async function verifyOrProvisionPersonalCredentials(ci: string, password: string) {

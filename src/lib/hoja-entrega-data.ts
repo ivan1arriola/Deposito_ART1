@@ -35,6 +35,8 @@ export type MovimientoFueraHojaRow = {
   tipo: TipoMovimiento;
   ci: string;
   persona: string;
+  gradoAbreviacion: string;
+  gradoOrden: number | null;
   item: string;
   cantidad: number;
   observaciones: string | null;
@@ -315,6 +317,12 @@ export async function getMovimientosFueraHojaData(): Promise<MovimientoFueraHoja
           apellido2: true,
           nombre1: true,
           nombre2: true,
+          rango: {
+            select: {
+              abreviacion: true,
+              orden: true,
+            },
+          },
         },
       },
       items: {
@@ -352,6 +360,8 @@ export async function getMovimientosFueraHojaData(): Promise<MovimientoFueraHoja
       tipo: movimiento.tipo,
       ci: movimiento.personal.ci,
       persona,
+      gradoAbreviacion: movimiento.personal.rango.abreviacion,
+      gradoOrden: movimiento.personal.rango.orden ?? null,
       item: detail.item.nombre,
       cantidad: detail.cantidad,
       observaciones: movimiento.observaciones,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { getMovimientosFueraHojaData } from "@/lib/hoja-entrega-data";
 import { renderMovimientosFueraHojaPdf } from "@/lib/server/render-movimientos-fuera-hoja-react-pdf";
+import { parseMovimientosFueraHojaSort, sortMovimientosFueraHojaRows } from "@/lib/movimientos-fuera-hoja-sort";
 import { getFirmaConfig, TEXTO_ENCARGADO, TEXTO_OFICIAL } from "@/lib/firma-config";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 
@@ -13,14 +14,22 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   try {
+    const url = new URL(request.url);
+    const sort = parseMovimientosFueraHojaSort(
+      url.searchParams.get("sortBy"),
+      url.searchParams.get("sortDirection"),
+    );
+
     const [rows, config] = await Promise.all([
       getMovimientosFueraHojaData(),
       getFirmaConfig(),
     ]);
 
+    const orderedRows = sortMovimientosFueraHojaRows(rows, sort);
+
     const fechaImpresion = formatDateTimeForDisplay(new Date());
 
-    const pdfBytes = await renderMovimientosFueraHojaPdf(rows, fechaImpresion, {
+    const pdfBytes = await renderMovimientosFueraHojaPdf(orderedRows, fechaImpresion, {
       firmas: {
         encargadoTexto: TEXTO_ENCARGADO,
         encargadoRango: config.encargadoRango,

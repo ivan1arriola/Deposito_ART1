@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { TipoMovimiento } from "@/generated/prisma/client";
+import { Prisma, TipoMovimiento } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -113,26 +113,45 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   }
 
   try {
-    const updated = await prisma.$transaction(async (tx) => {
-      for (const item of existing.items) {
+    await prisma.$transaction(async (tx) => {
+      const itemUpdates = existing.items.map((item) => {
         const itemId = item.itemId.toString();
         const itemUpdate = devolucionInputByItemId.get(itemId) ?? {
           estadoDevolucion: item.estadoEntrega,
           comentarioDevolucion: "",
         };
+        return {
+          movimientoId: existing.movimientoId,
+          itemId: item.itemId,
+          estadoDevolucion: itemUpdate.estadoDevolucion,
+          comentarioDevolucion: itemUpdate.comentarioDevolucion || null,
+        };
+      });
 
-        await tx.movimientoItem.update({
-          where: {
-            movimientoId_itemId: {
-              movimientoId: existing.movimientoId,
-              itemId: item.itemId,
-            },
-          },
-          data: {
-            estadoDevolucion: itemUpdate.estadoDevolucion,
-            comentarioDevolucion: itemUpdate.comentarioDevolucion || null,
-          },
-        });
+      if (itemUpdates.length > 0) {
+        const values = Prisma.join(
+          itemUpdates.map(
+            (entry) =>
+              Prisma.sql`(
+                CAST(${entry.movimientoId} AS bigint),
+                CAST(${entry.itemId} AS bigint),
+                CAST(${entry.estadoDevolucion} AS text),
+                CAST(${entry.comentarioDevolucion} AS text)
+              )`,
+          ),
+        );
+
+        await tx.$executeRaw`
+          UPDATE "movimiento_item" AS mi
+          SET
+            "estado_devolucion" = CAST(v."estado_devolucion" AS "public"."estado_equipo_prestamo"),
+            "comentario_devolucion" = v."comentario_devolucion"
+          FROM (
+            VALUES ${values}
+          ) AS v("movimiento_id", "item_id", "estado_devolucion", "comentario_devolucion")
+          WHERE mi."movimiento_id" = v."movimiento_id"
+            AND mi."item_id" = v."item_id"
+        `;
       }
 
       await tx.prestamoHistorial.create({
@@ -148,11 +167,11 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       await tx.prestamoActivo.delete({
         where: { movimientoId: existing.movimientoId },
       });
+    }, { timeout: 15_000 });
 
-      return tx.movimiento.findUniqueOrThrow({
-        where: { movimientoId: existing.movimientoId },
-        include: prestamoInclude,
-      });
+    const updated = await prisma.movimiento.findUniqueOrThrow({
+      where: { movimientoId: existing.movimientoId },
+      include: prestamoInclude,
     });
 
     await logAudit({

@@ -6,16 +6,16 @@ import {
 } from "@/lib/firma-lineas";
 
 type FirmaLineasHtmlProps = {
-  lineas: FirmaLinea[];
-  lineClassName: string;
-  lineStrongClassName: string;
+  lineas?: FirmaLinea[];
+  lineClassName?: string;
+  lineStrongClassName?: string;
   keyPrefix?: string;
 };
 
 export function FirmaLineasHtml({
-  lineas,
-  lineClassName,
-  lineStrongClassName,
+  lineas = [],
+  lineClassName = "",
+  lineStrongClassName = "",
   keyPrefix = "firma",
 }: FirmaLineasHtmlProps) {
   return (

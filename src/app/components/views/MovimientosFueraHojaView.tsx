@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { LoadingInline } from "@/app/components/shared";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
+import {
+  DEFAULT_MOVIMIENTOS_FUERA_HOJA_SORT,
+  sortMovimientosFueraHojaRows,
+  type MovimientosFueraHojaSortDirection,
+  type MovimientosFueraHojaSortField,
+} from "@/lib/movimientos-fuera-hoja-sort";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MovimientoFueraHojaViewRow } from "@/types/views";
 
@@ -23,6 +29,8 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [rows, setRows] = useState<MovimientoFueraHojaViewRow[]>([]);
   const [search, setSearch] = useState("");
+  const [sortField, setSortField] = useState<MovimientosFueraHojaSortField>(DEFAULT_MOVIMIENTOS_FUERA_HOJA_SORT.field);
+  const [sortDirection, setSortDirection] = useState<MovimientosFueraHojaSortDirection>(DEFAULT_MOVIMIENTOS_FUERA_HOJA_SORT.direction);
 
   const loadRows = async () => {
     setLoading(true);
@@ -53,13 +61,16 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
   const rowSearchIndex = useMemo(
     () =>
       buildSearchIndex(rows, {
-        text: (row) => [row.fecha, row.tipo, row.ci, row.persona, row.item, row.observaciones || ""].join(" "),
+        text: (row) => [row.fecha, row.tipo, row.ci, row.gradoAbreviacion, row.persona, row.item, row.observaciones || ""].join(" "),
       }),
     [rows],
   );
   const filteredRows = useMemo(() => {
     return filterSearchIndex(rowSearchIndex, search);
   }, [rowSearchIndex, search]);
+  const sortedRows = useMemo(() => {
+    return sortMovimientosFueraHojaRows(filteredRows, { field: sortField, direction: sortDirection });
+  }, [filteredRows, sortField, sortDirection]);
 
   return (
     <section className="mt-6 space-y-4">
@@ -95,10 +106,13 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
             <button
               type="button"
               onClick={() => {
-                const url = "/api/hojas-de-entrega/movimientos-fuera-hoja/pdf";
+                const params = new URLSearchParams();
+                params.set("sortBy", sortField);
+                params.set("sortDirection", sortDirection);
+                const url = `/api/hojas-de-entrega/movimientos-fuera-hoja/pdf?${params.toString()}`;
                 window.open(url, "_blank");
               }}
-              disabled={loading || rows.length === 0}
+              disabled={loading || sortedRows.length === 0}
               className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
             >
               Imprimir PDF
@@ -130,7 +144,34 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
             placeholder="Buscar por CI, persona, equipo, fecha u observaciones"
             className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
           />
-          <p className="text-xs font-semibold text-stone-600">Mostrando {filteredRows.length} de {rows.length}</p>
+          <p className="text-xs font-semibold text-stone-600">Mostrando {sortedRows.length} de {rows.length}</p>
+        </div>
+
+        <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,220px)_minmax(0,220px)_1fr] md:items-center">
+          <label className="text-xs text-stone-700">
+            Ordenar por
+            <select
+              value={sortField}
+              onChange={(event) => setSortField(event.target.value as MovimientosFueraHojaSortField)}
+              className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="fecha">Fecha</option>
+              <option value="equipo">Equipo (alfabético)</option>
+              <option value="grado">Grado del personal</option>
+            </select>
+          </label>
+
+          <label className="text-xs text-stone-700">
+            Dirección
+            <select
+              value={sortDirection}
+              onChange={(event) => setSortDirection(event.target.value as MovimientosFueraHojaSortDirection)}
+              className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="asc">Ascendente</option>
+              <option value="desc">Descendente</option>
+            </select>
+          </label>
         </div>
 
         {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
@@ -143,20 +184,21 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
           />
         ) : null}
 
-        {!loading && !error && filteredRows.length === 0 ? (
+        {!loading && !error && sortedRows.length === 0 ? (
           <p className="mt-3 text-xs text-stone-600">No hay movimientos para mostrar con el filtro actual.</p>
         ) : null}
       </article>
 
-      {filteredRows.length > 0 ? (
+      {sortedRows.length > 0 ? (
         <article className="ej-card rounded-2xl p-4">
           <div className="overflow-auto rounded-xl border border-stone-200">
-            <table className="w-full min-w-[980px] border-collapse text-left text-xs">
+            <table className="w-full min-w-[1060px] border-collapse text-left text-xs">
               <thead>
                 <tr className="bg-stone-100">
                   <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Fecha</th>
                   <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Tipo</th>
                   <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">CI</th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Grado</th>
                   <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Persona</th>
                   <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Equipo</th>
                   <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Cantidad</th>
@@ -164,11 +206,12 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
                 </tr>
               </thead>
               <tbody>
-                {filteredRows.map((row, index) => (
+                {sortedRows.map((row, index) => (
                   <tr key={`${row.movimientoId}-${row.item}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.fecha}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.tipo}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.ci}</td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.gradoAbreviacion}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.persona}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.item}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.cantidad}</td>
