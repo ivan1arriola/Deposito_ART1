@@ -6,6 +6,20 @@ import { tallasEntries } from "@/lib/formatters";
 import { tallasMap } from "@/lib/form-mappers";
 import type { PersonalObservacion, Talla } from "@/types/entities";
 import type { PrestamoStockEntry, RegistroView } from "@/types/views";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
+import BadgeRoundedIcon from "@mui/icons-material/BadgeRounded";
+import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
+import MailRoundedIcon from "@mui/icons-material/MailRounded";
+import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
+import MilitaryTechRoundedIcon from "@mui/icons-material/MilitaryTechRounded";
+import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
+import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
+import Inventory2RoundedIcon from "@mui/icons-material/Inventory2Rounded";
+import TimelineRoundedIcon from "@mui/icons-material/TimelineRounded";
+import NoteAltRoundedIcon from "@mui/icons-material/NoteAltRounded";
 
 export type PersonaProfileTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
 export type PersonaProfileTimelineType = "ENTREGA" | "DEVOLUCION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO";
@@ -66,10 +80,10 @@ type PersonaProfileViewProps = {
 };
 
 function movementTypeStyles(tipo: PersonaProfileTimelineType) {
-  if (tipo === "ENTREGA") return "bg-emerald-100 text-emerald-800";
-  if (tipo === "DEVOLUCION") return "bg-amber-100 text-amber-800";
-  if (tipo === "PRESTAMO") return "bg-indigo-100 text-indigo-800";
-  return "bg-cyan-100 text-cyan-800";
+  if (tipo === "ENTREGA") return "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20";
+  if (tipo === "DEVOLUCION") return "bg-amber-500/10 text-amber-600 border border-amber-500/20";
+  if (tipo === "PRESTAMO") return "bg-indigo-500/10 text-indigo-600 border border-indigo-500/20";
+  return "bg-cyan-500/10 text-cyan-600 border border-cyan-500/20";
 }
 
 function profileTypeLabel(tipo: PersonaProfileTipo) {
@@ -89,9 +103,9 @@ function sortTimeline(entries: PersonaProfileTimelineEntry[]) {
 function movementCardClass(entry: PersonaProfileTimelineEntry) {
   const isPendingPrestamo = entry.tipo === "PRESTAMO" && entry.estadoPrestamo === "PENDIENTE";
   if (isPendingPrestamo) {
-    return "rounded-lg border border-amber-300 bg-amber-50/70 p-3";
+    return "rounded-2xl border border-amber-200 bg-amber-50/40 p-4 shadow-sm";
   }
-  return "rounded-lg border border-stone-200 bg-white p-3";
+  return "rounded-2xl border border-stone-200/60 bg-white p-4 shadow-sm";
 }
 
 export function PersonaProfileView({
@@ -105,23 +119,23 @@ export function PersonaProfileView({
 }: PersonaProfileViewProps) {
   if (!state) {
     return (
-      <section className="mt-6 space-y-4">
-        <article className="ej-card rounded-2xl p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-stone-900">Ficha completa en sistema</h2>
-              <p className="mt-1 text-xs text-stone-600">No hay una persona seleccionada para mostrar.</p>
-            </div>
-            {showBackButton ? (
-              <button
+      <section className="mt-8 space-y-6">
+        <article className="rounded-3xl bg-white p-8 shadow-xl border border-stone-200/50 text-center">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-stone-100 text-stone-300">
+            <PersonRoundedIcon sx={{ fontSize: 40 }} />
+          </div>
+          <h2 className="mt-4 text-xl font-bold text-stone-900">Perfil no seleccionado</h2>
+          <p className="mt-2 text-sm text-stone-500">Selecciona una persona del buscador para ver su ficha completa.</p>
+          {showBackButton && (
+             <button
                 type="button"
                 onClick={onBack}
-                className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-800"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-stone-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-black active:scale-95"
               >
-                Volver
+                <ArrowBackRoundedIcon fontSize="small" />
+                Volver al inicio
               </button>
-            ) : null}
-          </div>
+          )}
         </article>
       </section>
     );
@@ -141,210 +155,359 @@ export function PersonaProfileView({
   );
 
   return (
-    <section className="mt-6 space-y-4">
-      <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-stone-900">Ficha completa en sistema</h2>
-            <p className="mt-1 text-xs text-stone-600">{`${state.identity.apellido}, ${state.identity.nombre}`}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded-full bg-stone-100 px-2 py-0.5 font-semibold text-stone-700">{typeLabel}</span>
-              <span className="font-mono text-stone-600">{formatUruguayanCi(state.identity.ci)}</span>
+    <section className="mt-8 space-y-6">
+      {/* Header Profile Card */}
+      <article className="relative overflow-hidden rounded-3xl bg-white p-6 shadow-xl border border-stone-200/50">
+        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-5">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-stone-800 to-stone-900 text-white shadow-lg ring-4 ring-stone-100">
+              <MilitaryTechRoundedIcon sx={{ fontSize: 32 }} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-black tracking-tight text-stone-900 leading-tight">
+                  {state.identity.apellido}, {state.identity.nombre}
+                </h2>
+                <span className="hidden sm:inline-block rounded-lg bg-stone-100 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-stone-500 border border-stone-200/50">
+                  {typeLabel}
+                </span>
+              </div>
+              <p className="mt-1 text-sm font-bold text-stone-500 flex items-center gap-1.5">
+                <BadgeRoundedIcon sx={{ fontSize: 16, opacity: 0.5 }} />
+                {formatUruguayanCi(state.identity.ci)}
+              </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {allowPrintActions && state.identity.tipo === "SUBALTERNO" ? (
+
+          <div className="flex flex-wrap items-center gap-3">
+            {allowPrintActions && state.identity.tipo === "SUBALTERNO" && (
               <button
                 type="button"
                 onClick={() => onPrintDeliverySheet(state.identity.ci)}
-                className="rounded bg-[var(--brand-charcoal)] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#2b2922]"
+                className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-black active:scale-95 shadow-lg shadow-stone-900/10"
               >
-                Imprimir hoja de entrega
+                <PrintRoundedIcon fontSize="small" />
+                Hoja de Entrega
               </button>
-            ) : null}
-            {allowPrintActions ? (
+            )}
+            
+            {allowPrintActions && (
               <button
                 type="button"
-                onClick={() => onPrintPrestamos(prestamoIds)}
+                onClick={() => {
+                  if (prestamoIds.length === 1) {
+                    onPrintPrestamos(prestamoIds);
+                  } else {
+                    const timelineEl = document.getElementById("profile-timeline");
+                    timelineEl?.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
                 disabled={prestamoIds.length === 0}
-                className="rounded bg-indigo-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600 disabled:hover:bg-stone-300"
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-600/10 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {prestamoIds.length > 0 ? `Imprimir préstamos (${prestamoIds.length})` : "Sin préstamos para imprimir"}
+                <PrintRoundedIcon fontSize="small" />
+                {prestamoIds.length === 1 ? "Imprimir Préstamo" : `Imprimir Préstamos (${prestamoIds.length})`}
               </button>
-            ) : null}
+            )}
+
             <button
               type="button"
               onClick={onReload}
               disabled={state.loading}
-              className="rounded bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-900 disabled:opacity-60"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-stone-600 transition hover:bg-stone-200 active:scale-90 disabled:opacity-50"
             >
-              Recargar ficha
+              <RefreshRoundedIcon />
             </button>
-            {showBackButton ? (
+
+            {showBackButton && (
               <button
                 type="button"
                 onClick={onBack}
-                className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-800"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-stone-600 transition hover:bg-stone-200 active:scale-90"
               >
-                Volver
+                <ArrowBackRoundedIcon />
               </button>
-            ) : null}
+            )}
           </div>
         </div>
 
-        {state.loading ? (
-          <p className="mt-3 rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-sm font-medium text-stone-700">
-            Cargando información completa de esta persona...
-          </p>
-        ) : null}
+        {state.loading && (
+          <div className="mt-6 flex items-center gap-3 rounded-2xl bg-indigo-50/50 p-4 border border-indigo-100 animate-pulse">
+            <div className="h-2 w-2 rounded-full bg-indigo-600" />
+            <p className="text-sm font-bold text-indigo-700">Sincronizando información del personal...</p>
+          </div>
+        )}
 
-        {state.error ? (
-          <p className="mt-3 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{state.error}</p>
-        ) : null}
+        {state.error && (
+          <div className="mt-6 rounded-2xl bg-rose-50 p-4 border border-rose-200">
+            <p className="text-sm font-bold text-rose-800">{state.error}</p>
+          </div>
+        )}
       </article>
 
-      {!state.loading && !state.error ? (
-        <>
-          <article className="ej-card rounded-2xl p-4">
-            <h3 className="text-sm font-semibold text-stone-900">Información personal</h3>
-            <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
-              <p className="text-sm text-stone-800">
-                <span className="font-semibold">Grado:</span> {state.identity.gradoAbreviacion} - {state.identity.gradoNombre}
-              </p>
-              <p className="text-sm text-stone-800">
-                <span className="font-semibold">Batería:</span> {state.identity.bateriaNombre ?? "No aplica"}
-              </p>
-              <p className="text-sm text-stone-800">
-                <span className="font-semibold">Teléfono:</span> {state.identity.telefonoContacto ?? "No registrado"}
-              </p>
-              <p className="text-sm text-stone-800">
-                <span className="font-semibold">Correo:</span> {state.identity.mailReferencia ?? "No registrado"}
-              </p>
-              {state.identity.esReingreso !== false ? (
-                <p className="text-sm text-stone-800">
-                  <span className="font-semibold">Reingreso:</span> {state.identity.esReingreso ? "Sí" : "No aplica"}
-                </p>
-              ) : null}
-              <p className="text-sm text-stone-800">
-                <span className="font-semibold">Fecha ingreso:</span> {state.identity.fechaIngreso ?? "-"}
-              </p>
-              {state.identity.esReingreso ? (
-                <p className="text-sm text-stone-800">
-                  <span className="font-semibold">Ingreso original:</span> {state.identity.fechaIngresoOriginal ?? "-"}
-                </p>
-              ) : null}
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-5">
-              {tallas.map((entry) => (
-                <div key={`profile-talla-${entry.key}`} className="rounded-lg border border-stone-200 bg-white px-2 py-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">{entry.label}</p>
-                  <p className="mt-1 text-sm font-bold text-stone-900">{entry.value}</p>
+      {!state.loading && !state.error && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content Column */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Informacion Personal & Tallas Card */}
+            <article className="rounded-3xl bg-white p-6 shadow-lg border border-stone-200/50">
+              <div className="flex items-center gap-2 mb-6">
+                 <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
+                    <PersonRoundedIcon fontSize="small" />
+                 </div>
+                 <h3 className="text-lg font-black text-stone-900 tracking-tight">Información de Servicio</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="space-y-1">
+                   <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Grado</p>
+                   <p className="text-sm font-bold text-stone-800 flex items-center gap-2">
+                      <MilitaryTechRoundedIcon sx={{ fontSize: 18, color: "var(--color-ejercito-gold)" }} />
+                      {state.identity.gradoAbreviacion} — {state.identity.gradoNombre}
+                   </p>
                 </div>
-              ))}
-            </div>
-          </article>
 
-          <article className="ej-card rounded-2xl p-4">
-            <h3 className="text-sm font-semibold text-stone-900">Resumen de equipos según sistema</h3>
-            {state.equipmentSummary.length === 0 ? (
-              <p className="mt-2 text-sm text-stone-600">No hay equipos asociados para esta persona.</p>
-            ) : (
-              <div className="mt-2 overflow-auto rounded-lg border border-stone-200 bg-white">
-                <table className="w-full min-w-[38rem] border-collapse text-left text-xs">
-                  <thead>
-                    <tr className="bg-stone-100">
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Equipo</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-stone-600">Entregado / Prestado</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-stone-600">Devuelto</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-stone-600">Saldo actual</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Fuente</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.equipmentSummary.map((row, index) => (
-                      <tr key={`profile-equipment-${row.item}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                        <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.item}</td>
-                        <td className="border-b border-stone-200 px-3 py-2 text-right text-sm tabular-nums text-stone-800">{row.entregado}</td>
-                        <td className="border-b border-stone-200 px-3 py-2 text-right text-sm tabular-nums text-stone-800">{row.devuelto}</td>
-                        <td className="border-b border-stone-200 px-3 py-2 text-right text-sm font-semibold tabular-nums text-stone-900">{row.saldo}</td>
-                        <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-700">
-                          {row.fuente === "REGISTROS" ? "Hoja/Registros" : "Préstamos"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </article>
+                <div className="space-y-1">
+                   <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Batería / Unidad</p>
+                   <p className="text-sm font-bold text-stone-800 flex items-center gap-2">
+                      <GroupsRoundedIcon sx={{ fontSize: 18, color: "stone.400" }} />
+                      {state.identity.bateriaNombre ?? "No aplica / General"}
+                   </p>
+                </div>
 
-          <article className="ej-card rounded-2xl p-4">
-            <h3 className="text-sm font-semibold text-stone-900">Movimientos y tipos registrados</h3>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">{`Entregas: ${movementCounts.ENTREGA}`}</span>
-              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800">{`Devoluciones: ${movementCounts.DEVOLUCION}`}</span>
-              <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-semibold text-indigo-800">{`Préstamos: ${movementCounts.PRESTAMO}`}</span>
-              <span className="rounded-full bg-cyan-100 px-2.5 py-1 text-[11px] font-semibold text-cyan-800">{`Dev. préstamo: ${movementCounts.DEVOLUCION_PRESTAMO}`}</span>
-            </div>
+                <div className="space-y-1">
+                   <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Contacto</p>
+                   <div className="flex flex-col gap-1">
+                      <p className="text-sm font-bold text-stone-800 flex items-center gap-2">
+                        <PhoneRoundedIcon sx={{ fontSize: 16, color: "stone.300" }} />
+                        {state.identity.telefonoContacto ?? "Sin teléfono"}
+                      </p>
+                      <p className="text-sm font-bold text-stone-800 flex items-center gap-2">
+                        <MailRoundedIcon sx={{ fontSize: 16, color: "stone.300" }} />
+                        {state.identity.mailReferencia ?? "Sin correo"}
+                      </p>
+                   </div>
+                </div>
 
-            {timeline.length === 0 ? (
-              <p className="mt-3 text-sm text-stone-600">No hay movimientos registrados para esta persona.</p>
-            ) : (
-              <div className="mt-3 space-y-2">
-                {timeline.map((entry) => (
-                  <div key={entry.id} className={movementCardClass(entry)}>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${movementTypeStyles(entry.tipo)}`}>
-                          {entry.tipo}
-                        </span>
-                        <span className="text-xs text-stone-600">{formatDateOnlyForDisplay(entry.fecha)}</span>
-                        {entry.tipo === "PRESTAMO" && entry.estadoPrestamo === "PENDIENTE" ? (
-                          <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900">
-                            Pendiente
-                          </span>
-                        ) : null}
-                      </div>
-                      <span className="text-xs font-semibold text-stone-700">{entry.descripcion}</span>
+                <div className="space-y-1">
+                   <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Incorporación</p>
+                   <p className="text-sm font-bold text-stone-800 flex items-center gap-2">
+                      <CalendarTodayRoundedIcon sx={{ fontSize: 16, color: "stone.300" }} />
+                      {state.identity.fechaIngreso ?? "No registrada"}
+                   </p>
+                </div>
+
+                {/* DYNAMIC FIELDS: Only show Reingreso if true */}
+                {state.identity.esReingreso === true && (
+                  <>
+                    <div className="space-y-1">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Reingreso</p>
+                       <p className="text-sm font-bold text-indigo-600">Personal de Reingreso</p>
                     </div>
-                    <p className="mt-1 text-xs text-stone-600">
-                      <span className="font-semibold text-stone-700">Responsable en sistema:</span>{" "}
-                      {entry.responsable?.trim() ? entry.responsable : "No registrado"}
-                    </p>
-                    {entry.items.length > 0 ? (
-                      <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
-                        {entry.items.map((item) => (
-                          <p key={`${entry.id}-${item.nombre}`} className="text-xs text-stone-700">
-                            <span className="font-semibold">{item.cantidad}x</span> {item.nombre}
-                          </p>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
+                    <div className="space-y-1">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Alta Original</p>
+                       <p className="text-sm font-bold text-stone-800">{state.identity.fechaIngresoOriginal ?? "-"}</p>
+                    </div>
+                  </>
+                )}
               </div>
-            )}
-          </article>
 
-          {state.identity.tipo === "SUBALTERNO" ? (
-            <article className="ej-card rounded-2xl p-4">
-              <h3 className="text-sm font-semibold text-stone-900">Observaciones relacionadas</h3>
-              {state.observaciones.length === 0 ? (
-                <p className="mt-2 text-sm text-stone-600">Sin observaciones registradas.</p>
+              {/* Tallas Section */}
+              <div className="mt-8 pt-6 border-t border-stone-100">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 mb-4">Dimensiones y Tallas</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                  {tallas.map((entry) => (
+                    <div key={`profile-talla-${entry.key}`} className="rounded-2xl border border-stone-100 bg-stone-50/50 px-4 py-3 text-center transition hover:border-stone-200">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">{entry.label}</p>
+                      <p className="mt-1 text-base font-black text-stone-900">{entry.value || "—"}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </article>
+
+            {/* Equipment Summary Table */}
+            <article className="rounded-3xl bg-white p-6 shadow-lg border border-stone-200/50 overflow-hidden">
+              <div className="flex items-center gap-2 mb-6">
+                 <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
+                    <Inventory2RoundedIcon fontSize="small" />
+                 </div>
+                 <h3 className="text-lg font-black text-stone-900 tracking-tight">Equipamiento Actual</h3>
+              </div>
+
+              {state.equipmentSummary.length === 0 ? (
+                <div className="py-8 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200">
+                   <p className="text-sm font-bold text-stone-400">Sin equipos cargados en sistema.</p>
+                </div>
               ) : (
-                <div className="mt-2 space-y-2">
-                  {state.observaciones.map((observacion) => (
-                    <div key={observacion.observacionId} className="rounded-lg border border-stone-200 bg-white px-3 py-2">
-                      <p className="text-xs font-semibold text-stone-600">{formatDateOnlyForDisplay(observacion.fecha)}</p>
-                      <p className="mt-1 text-sm text-stone-800">{observacion.texto}</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b border-stone-100">
+                        <th className="pb-3 text-left text-[10px] font-black uppercase tracking-widest text-stone-400">Artículo</th>
+                        <th className="pb-3 text-center text-[10px] font-black uppercase tracking-widest text-stone-400">E/P</th>
+                        <th className="pb-3 text-center text-[10px] font-black uppercase tracking-widest text-stone-400">Dev</th>
+                        <th className="pb-3 text-right text-[10px] font-black uppercase tracking-widest text-stone-400">Saldo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-50">
+                      {state.equipmentSummary.map((row) => (
+                        <tr key={`profile-equipment-${row.item}`} className="group hover:bg-stone-50/50 transition-colors">
+                          <td className="py-3 pr-4">
+                             <p className="text-sm font-bold text-stone-800">{row.item}</p>
+                             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-tighter">
+                               {row.fuente === "REGISTROS" ? "Suministro" : "Préstamo"}
+                             </p>
+                          </td>
+                          <td className="py-3 text-center tabular-nums text-sm font-medium text-stone-600">{row.entregado}</td>
+                          <td className="py-3 text-center tabular-nums text-sm font-medium text-stone-600">{row.devuelto}</td>
+                          <td className="py-3 text-right">
+                             <span className={`inline-block min-w-[32px] px-2 py-1 rounded-lg text-xs font-black tabular-nums ${row.saldo > 0 ? "bg-stone-900 text-white shadow-md shadow-stone-900/20" : "bg-stone-100 text-stone-400"}`}>
+                                {row.saldo}
+                             </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </article>
+
+            {/* Timeline Section */}
+            <article id="profile-timeline" className="rounded-3xl bg-white p-6 shadow-lg border border-stone-200/50">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
+                      <TimelineRoundedIcon fontSize="small" />
+                  </div>
+                  <h3 className="text-lg font-black text-stone-900 tracking-tight">Historial de Movimientos</h3>
+                </div>
+                <div className="flex gap-2">
+                   {Object.entries(movementCounts).map(([tipo, count]) => count > 0 && (
+                      <span key={tipo} className={`hidden sm:inline-block rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-widest ${movementTypeStyles(tipo as PersonaProfileTimelineType)}`}>
+                         {tipo}: {count}
+                      </span>
+                   ))}
+                </div>
+              </div>
+
+              {timeline.length === 0 ? (
+                <div className="py-8 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200">
+                   <p className="text-sm font-bold text-stone-400">Sin historial registrado.</p>
+                </div>
+              ) : (
+                <div className="relative space-y-4 before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-[2px] before:bg-stone-100">
+                  {timeline.map((entry) => (
+                    <div key={entry.id} className="relative pl-12">
+                       {/* Timeline dot */}
+                       <div className={`absolute left-0 top-1 z-10 flex h-10 w-10 items-center justify-center rounded-2xl border-4 border-white shadow-md transition-transform group-hover:scale-110 ${
+                         entry.tipo === "ENTREGA" ? "bg-emerald-500 text-white" :
+                         entry.tipo === "DEVOLUCION" ? "bg-amber-500 text-white" :
+                         entry.tipo === "PRESTAMO" ? "bg-indigo-600 text-white" : "bg-cyan-500 text-white"
+                       }`}>
+                          <DescriptionRoundedIcon sx={{ fontSize: 18 }} />
+                       </div>
+
+                       <div className={movementCardClass(entry)}>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 mb-3">
+                             <div className="flex items-center gap-2">
+                                <span className={`rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${movementTypeStyles(entry.tipo)}`}>
+                                  {entry.tipo.replace("_", " ")}
+                                </span>
+                                <span className="text-xs font-black text-stone-400">{formatDateOnlyForDisplay(entry.fecha)}</span>
+                             </div>
+
+                             {entry.tipo === "PRESTAMO" && (
+                               <button
+                                 onClick={() => onPrintPrestamos([entry.id])}
+                                 className="inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-[11px] font-black text-indigo-700 transition hover:bg-indigo-100 active:scale-95"
+                               >
+                                 <PrintRoundedIcon sx={{ fontSize: 16 }} />
+                                 REIMPRIMIR RECIBO
+                               </button>
+                             )}
+                          </div>
+
+                          <div className="space-y-3">
+                             <p className="text-sm font-bold text-stone-800 leading-snug">{entry.descripcion}</p>
+                             
+                             {entry.items.length > 0 && (
+                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-stone-50 p-3 rounded-xl border border-stone-100">
+                                  {entry.items.map((item) => (
+                                    <div key={`${entry.id}-${item.nombre}`} className="flex items-center justify-between gap-4">
+                                       <span className="text-xs font-bold text-stone-600">{item.nombre}</span>
+                                       <span className="text-xs font-black text-stone-900 tabular-nums">x{item.cantidad}</span>
+                                    </div>
+                                  ))}
+                               </div>
+                             )}
+
+                             <div className="flex items-center gap-1.5 pt-1">
+                                <NoteAltRoundedIcon sx={{ fontSize: 14, color: "stone.300" }} />
+                                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-tight">
+                                   Responsable: <span className="text-stone-600">{entry.responsable?.trim() || "SISTEMA"}</span>
+                                </span>
+                             </div>
+                          </div>
+                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </article>
-          ) : null}
-        </>
-      ) : null}
+          </div>
+
+          {/* Sidebar Column */}
+          <div className="space-y-6">
+             {/* Observaciones Sidebar Card */}
+             {state.identity.tipo === "SUBALTERNO" && (
+               <article className="rounded-3xl bg-white p-6 shadow-lg border border-stone-200/50">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
+                        <NoteAltRoundedIcon fontSize="small" />
+                    </div>
+                    <h3 className="text-lg font-black text-stone-900 tracking-tight">Observaciones</h3>
+                  </div>
+
+                  {state.observaciones.length === 0 ? (
+                    <div className="py-6 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200">
+                       <p className="text-xs font-bold text-stone-400">Sin notas adicionales.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {state.observaciones.map((observacion) => (
+                        <div key={observacion.observacionId} className="group relative pl-4 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-indigo-500 before:rounded-full">
+                          <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{formatDateOnlyForDisplay(observacion.fecha)}</p>
+                          <p className="mt-1 text-sm font-medium text-stone-700 leading-relaxed">{observacion.texto}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+               </article>
+             )}
+
+             {/* Stats Card */}
+             <article className="rounded-3xl bg-gradient-to-br from-stone-800 to-stone-900 p-6 shadow-xl text-white">
+                <h4 className="text-xs font-black uppercase tracking-[0.2em] text-stone-400 mb-6 text-center">Resumen Ejecutivo</h4>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
+                      <p className="text-2xl font-black">{state.registros.length}</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-stone-500 mt-1">Registros</p>
+                   </div>
+                   <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/5">
+                      <p className="text-2xl font-black">{state.prestamos.filter(p => p.estado === "PENDIENTE").length}</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-stone-500 mt-1">Vigentes</p>
+                   </div>
+                </div>
+                <div className="mt-6 pt-6 border-t border-white/10 text-center">
+                   <p className="text-[10px] font-bold text-stone-500 italic">"Custodiar con Honor, Servir con Lealtad"</p>
+                </div>
+             </article>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

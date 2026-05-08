@@ -6242,6 +6242,17 @@ export default function Home() {
           />
         </div>
       </Box>
+
+      <GlobalSearchModal
+        open={globalSearchOpen}
+        onClose={() => setGlobalSearchOpen(false)}
+        onSelectPersona={(ci) => {
+          void openPersonaProfileByCi(ci);
+          setGlobalSearchOpen(false);
+        }}
+        personal={personal}
+        oficialesSuboficiales={oficialesSuboficiales}
+      />
     </Box>
   );
 }
