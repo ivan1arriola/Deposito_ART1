@@ -922,11 +922,49 @@ export default function Home() {
     }
   }, [inAdminConfigView, isAdmin]);
 
+  // Handle back button using History API
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.view) {
+        setActiveView(event.state.view as MainView);
+      } else {
+        const hash = window.location.hash.replace("#", "");
+        if (hash) {
+          setActiveView(hash as MainView);
+        } else {
+          setActiveView("dashboard");
+        }
+      }
+    };
+    
+    window.addEventListener("popstate", handlePopState);
+    
+    const initialHash = window.location.hash.replace("#", "");
+    if (initialHash && initialHash !== "dashboard") {
+      // Sync state to the URL hash on direct link visit
+      setActiveView(initialHash as MainView);
+      window.history.replaceState({ view: initialHash }, "", `#${initialHash}`);
+    } else {
+      // Replace initial state so the first pop works correctly
+      window.history.replaceState({ view: "dashboard" }, "", `#dashboard`);
+    }
+    
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Sync activeView changes to history
+  useEffect(() => {
+    const currentHash = window.location.hash.replace("#", "");
+    if (currentHash !== activeView) {
+      window.history.pushState({ view: activeView }, "", `#${activeView}`);
+    }
+  }, [activeView]);
+
   useEffect(() => {
     if (!currentUser || currentUser.rol !== "ADMIN") return;
-    if (!(inAdminConfigView || activeView === "usuario_nuevo")) return;
+    if (!(inAdminConfigView || activeView === "usuario_nuevo" || inReminderConfigView)) return;
     void loadAdminData();
-  }, [activeView, currentUser, inAdminConfigView, loadAdminData]);
+  }, [activeView, currentUser, inAdminConfigView, inReminderConfigView, loadAdminData]);
 
   const loadRecordatorios = useCallback(async () => {
     if (!currentUser) {
@@ -5736,19 +5774,41 @@ export default function Home() {
             alignItems: "center",
             px: 2,
             py: 1.5,
-            bgcolor: "rgba(15, 20, 15, 0.85)",
-            backdropFilter: "blur(10px)",
-            borderBottom: "1px solid rgba(255,255,255,0.1)",
+            bgcolor: "rgba(15, 20, 15, 0.95)",
+            backdropFilter: "blur(12px)",
+            borderBottom: "1px solid rgba(255, 204, 0, 0.2)",
             position: "sticky",
             top: 0,
             zIndex: 1100,
           }}
         >
-          <IconButton onClick={() => setMobileMenuOpen(true)} sx={{ color: "common.white", mr: 2 }}>
+          <IconButton onClick={() => setMobileMenuOpen(true)} sx={{ color: "common.white", mr: 1.5 }}>
             <MenuRoundedIcon />
           </IconButton>
-          <Typography sx={{ color: "common.white", fontWeight: 900, fontSize: 16 }}>
-            DEPÓSITO ART 1
+          
+          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ width: 42, height: 42, flexShrink: 0 }}>
+              <Image
+                src="/assets/logo-deposito.png"
+                alt="Logo"
+                width={80}
+                height={96}
+                style={{ width: "100%", height: "auto", filter: "drop-shadow(0 0 8px rgba(255,255,255,0.2))" }}
+              />
+            </Box>
+            
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: 700, lineHeight: 1.1, mb: 0.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                G. Art. 105mm No. 1
+              </Typography>
+              <Typography sx={{ color: "var(--color-ejercito-gold)", fontWeight: 900, fontSize: 15, lineHeight: 1.2, textTransform: "uppercase", letterSpacing: "0.01em" }}>
+                Depósito General
+              </Typography>
+            </Box>
+          </Stack>
+
+          <Typography sx={{ color: "rgba(255,255,255,0.3)", fontSize: 9, fontWeight: 800, ml: "auto", pl: 1 }}>
+            v{appVersion}
           </Typography>
         </Box>
 
