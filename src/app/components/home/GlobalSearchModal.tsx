@@ -52,6 +52,7 @@ export function GlobalSearchModal({
   const results = useMemo(() => {
     const q = query.toLowerCase().trim();
     if (!q) return [];
+    const qNum = q.replace(/[^0-9]/g, "");
 
     const matches: SearchResult[] = [];
 
@@ -59,7 +60,7 @@ export function GlobalSearchModal({
     for (const p of oficialesSuboficiales) {
       const fullOficialName = `${p.nombre1} ${p.nombre2 || ""} ${p.apellido1} ${p.apellido2 || ""}`.replace(/\s+/g, " ").trim().toLowerCase();
       const numCi = normalizeCi(p.ci);
-      if (fullOficialName.includes(q) || numCi.includes(q)) {
+      if (fullOficialName.includes(q) || (qNum && numCi.includes(qNum))) {
         matches.push({
           ci: p.ci,
           nombreCompleto: `${p.nombre1} ${p.apellido1}`,
@@ -71,9 +72,9 @@ export function GlobalSearchModal({
 
     // Search in Soldados (Personal)
     for (const p of personal) {
-      const fullName = `${p.nombre1} ${p.nombre2 || ""} ${p.apellido1} ${p.apellido2 || ""}`.replace(/\s+/g, " ").trim().toLowerCase();
+      const fullPersonalName = `${p.nombre1} ${p.nombre2 || ""} ${p.apellido1} ${p.apellido2 || ""}`.replace(/\s+/g, " ").trim().toLowerCase();
       const numCi = normalizeCi(p.ci);
-      if (fullName.includes(q) || numCi.includes(q)) {
+      if (fullPersonalName.includes(q) || (qNum && numCi.includes(qNum))) {
         matches.push({
           ci: p.ci,
           nombreCompleto: `${p.nombre1} ${p.apellido1}`,

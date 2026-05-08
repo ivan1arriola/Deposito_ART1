@@ -258,6 +258,9 @@ export function RecordatoriosConfigView({
                     onChange={(event) => setNewUsuarioId(event.target.value)}
                     className="w-full rounded-xl border border-stone-300/80 bg-white px-4 py-2.5 text-sm font-medium shadow-sm focus:border-[var(--color-ejercito-blue)] focus:ring-2 focus:ring-[var(--color-ejercito-blue)]/20"
                   >
+                    {assignableUsers.length === 0 && (
+                      <option value="">Cargando usuarios...</option>
+                    )}
                     {assignableUsers.map((usuario) => (
                       <option key={`target-user-${usuario.usuarioId}`} value={usuario.usuarioId}>
                         {`${usuario.apellido}, ${usuario.nombre} (${usuario.username})`}
