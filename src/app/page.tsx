@@ -5789,9 +5789,9 @@ export default function Home() {
                   DEPÓSITO GENERAL
                 </h1>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-stone-700">Grupo "Brigadier General Manuel Oribe" de Artillería 105mm No. 1</span>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-stone-700">Grupo "Brigadier General Manuel Oribe" de Artillería 105mm No. 1</span>
                   <span className="h-1 w-1 rounded-full bg-stone-400"></span>
-                  <span className="text-[9px] font-bold text-stone-600">v{appVersion}</span>
+                  <span className="text-[10px] font-bold text-stone-600">v{appVersion}</span>
                 </div>
               </div>
             </div>

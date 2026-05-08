@@ -164,15 +164,15 @@ export function PersonaProfileView({
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-stone-900 leading-tight truncate">
+                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-stone-900 leading-tight truncate">
                   {state.identity.apellido}, {state.identity.nombre}
                 </h2>
-                <span className="rounded-lg bg-stone-100 px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-stone-500 border border-stone-200/50">
+                <span className="rounded-lg bg-stone-100 px-2 py-0.5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-stone-500 border border-stone-200/50">
                   {typeLabel}
                 </span>
               </div>
-              <p className="mt-1 text-sm sm:text-base font-black text-stone-500 flex items-center gap-1.5">
-                <BadgeRoundedIcon sx={{ fontSize: { xs: 18, sm: 20 }, opacity: 0.6 }} />
+              <p className="mt-1 text-base sm:text-lg font-black text-stone-500 flex items-center gap-1.5">
+                <BadgeRoundedIcon sx={{ fontSize: { xs: 20, sm: 22 }, opacity: 0.6 }} />
                 {formatUruguayanCi(state.identity.ci)}
               </p>
             </div>
@@ -234,49 +234,49 @@ export function PersonaProfileView({
                  <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
                     <PersonRoundedIcon fontSize="small" />
                  </div>
-                 <h3 className="text-base sm:text-lg font-black text-stone-900 tracking-tight">Información de Servicio</h3>
+                 <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">Información de Servicio</h3>
               </div>
               <div className="flex gap-4 sm:gap-6 px-1">
                  <div className="flex flex-col sm:text-right">
-                    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-stone-400">Registros</p>
-                    <p className="text-base sm:text-lg font-black text-stone-900">{state.registros.length}</p>
+                    <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-stone-400">Registros</p>
+                    <p className="text-lg sm:text-xl font-black text-stone-900">{state.registros.length}</p>
                  </div>
                  <div className="flex flex-col sm:text-right">
-                    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-stone-400">Vigentes</p>
-                    <p className="text-base sm:text-lg font-black text-indigo-600">{state.prestamos.filter(p => p.estado === "PENDIENTE").length}</p>
+                    <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-stone-400">Vigentes</p>
+                    <p className="text-lg sm:text-xl font-black text-indigo-600">{state.prestamos.filter(p => p.estado === "PENDIENTE").length}</p>
                  </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 sm:gap-y-4">
               <div className="space-y-1">
-                 <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Grado</p>
-                 <p className="text-sm font-bold text-stone-800 flex items-center gap-2">
-                    <MilitaryTechRoundedIcon sx={{ fontSize: 18, color: "var(--color-ejercito-gold)" }} />
+                 <p className="text-xs font-black uppercase tracking-widest text-stone-400">Grado</p>
+                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
+                    <MilitaryTechRoundedIcon sx={{ fontSize: 20, color: "var(--color-ejercito-gold)" }} />
                     <span className="truncate">{state.identity.gradoAbreviacion} — {state.identity.gradoNombre}</span>
                  </p>
               </div>
 
               <div className="space-y-1">
-                 <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Batería / Unidad</p>
-                 <p className="text-sm font-bold text-stone-800 flex items-center gap-2">
-                    <GroupsRoundedIcon sx={{ fontSize: 18, color: "stone.400" }} />
+                 <p className="text-xs font-black uppercase tracking-widest text-stone-400">Batería / Unidad</p>
+                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
+                    <GroupsRoundedIcon sx={{ fontSize: 20, color: "stone.400" }} />
                     <span className="truncate">{state.identity.bateriaNombre ?? "No aplica / General"}</span>
                  </p>
               </div>
 
               <div className="space-y-1">
-                 <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Contacto</p>
-                 <p className="text-sm font-bold text-stone-800 flex items-center gap-2">
-                    <PhoneRoundedIcon sx={{ fontSize: 16, color: "stone.300" }} />
+                 <p className="text-xs font-black uppercase tracking-widest text-stone-400">Contacto</p>
+                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
+                    <PhoneRoundedIcon sx={{ fontSize: 18, color: "stone.300" }} />
                     {state.identity.telefonoContacto ?? "Sin teléfono"}
                  </p>
               </div>
 
               <div className="space-y-1">
-                 <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Incorporación</p>
-                 <p className="text-sm font-bold text-stone-800 flex items-center gap-2">
-                    <CalendarTodayRoundedIcon sx={{ fontSize: 16, color: "stone.300" }} />
+                 <p className="text-xs font-black uppercase tracking-widest text-stone-400">Incorporación</p>
+                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
+                    <CalendarTodayRoundedIcon sx={{ fontSize: 18, color: "stone.300" }} />
                     {state.identity.fechaIngreso ?? "No registrada"}
                  </p>
               </div>
@@ -285,12 +285,12 @@ export function PersonaProfileView({
               {state.identity.esReingreso === true && (
                 <>
                   <div className="space-y-1">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Reingreso</p>
-                     <p className="text-sm font-bold text-indigo-600">Personal de Reingreso</p>
+                     <p className="text-xs font-black uppercase tracking-widest text-stone-400">Reingreso</p>
+                     <p className="text-base font-bold text-indigo-600">Personal de Reingreso</p>
                   </div>
                   <div className="space-y-1">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Alta Original</p>
-                     <p className="text-sm font-bold text-stone-800">{state.identity.fechaIngresoOriginal ?? "-"}</p>
+                     <p className="text-xs font-black uppercase tracking-widest text-stone-400">Alta Original</p>
+                     <p className="text-base font-bold text-stone-800">{state.identity.fechaIngresoOriginal ?? "-"}</p>
                   </div>
                 </>
               )}
@@ -298,12 +298,12 @@ export function PersonaProfileView({
 
             {/* Tallas Section */}
             <div className="mt-8 pt-6 border-t border-stone-100">
-              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 mb-4">Dimensiones y Tallas</p>
+              <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 mb-4">Dimensiones y Tallas</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 {tallas.map((entry) => (
                   <div key={`profile-talla-${entry.key}`} className="rounded-xl sm:rounded-2xl border border-stone-100 bg-stone-50/50 px-3 py-2.5 sm:px-4 sm:py-3 text-center transition hover:border-stone-200">
-                    <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-stone-400">{entry.label}</p>
-                    <p className="mt-0.5 sm:mt-1 text-sm sm:text-base font-black text-stone-900">{entry.value || "—"}</p>
+                    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-stone-400">{entry.label}</p>
+                    <p className="mt-0.5 sm:mt-1 text-base sm:text-lg font-black text-stone-900">{entry.value || "—"}</p>
                   </div>
                 ))}
               </div>
@@ -317,7 +317,7 @@ export function PersonaProfileView({
                  <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
                     <Inventory2RoundedIcon fontSize="small" />
                  </div>
-                 <h3 className="text-base sm:text-lg font-black text-stone-900 tracking-tight">Equipamiento Actual</h3>
+                 <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">Equipamiento Actual</h3>
               </div>
 
               {state.equipmentSummary.length === 0 ? (
@@ -326,7 +326,7 @@ export function PersonaProfileView({
                 </div>
               ) : (
                 <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-                  <table className="w-full border-collapse text-[11px] sm:text-xs">
+                  <table className="w-full border-collapse text-xs sm:text-sm">
                     <thead>
                       <tr className="border-b border-stone-100">
                         <th className="pb-3 text-left font-black uppercase tracking-widest text-stone-400">Artículo</th>
@@ -339,15 +339,15 @@ export function PersonaProfileView({
                       {state.equipmentSummary.map((row) => (
                         <tr key={`profile-equipment-${row.item}`} className="group hover:bg-stone-50/50 transition-colors">
                           <td className="py-3 pr-2 sm:pr-4">
-                             <p className="font-bold text-stone-800 line-clamp-1">{row.item}</p>
-                             <p className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">
+                             <p className="font-bold text-stone-800 line-clamp-1 text-sm sm:text-base">{row.item}</p>
+                             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-tighter">
                                {row.fuente === "REGISTROS" ? "Suministro" : "Préstamo"}
                              </p>
                           </td>
                           <td className="py-3 text-center tabular-nums text-stone-600 font-medium">{row.entregado}</td>
                           <td className="py-3 text-center tabular-nums text-stone-600 font-medium">{row.devuelto}</td>
                           <td className="py-3 text-right">
-                             <span className={`inline-block min-w-[24px] sm:min-w-[28px] px-1.5 py-1 rounded-lg font-black tabular-nums text-center ${row.saldo > 0 ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-400"}`}>
+                             <span className={`inline-block min-w-[28px] sm:min-w-[32px] px-2 py-1 rounded-lg font-black tabular-nums text-center ${row.saldo > 0 ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-400"}`}>
                                 {row.saldo}
                              </span>
                           </td>
@@ -377,8 +377,8 @@ export function PersonaProfileView({
                     <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                       {state.observaciones.map((observacion) => (
                         <div key={observacion.observacionId} className="group relative pl-4 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-indigo-500 before:rounded-full">
-                          <p className="text-[9px] sm:text-[10px] font-black text-indigo-500 uppercase tracking-widest">{formatDateOnlyForDisplay(observacion.fecha)}</p>
-                          <p className="mt-1 text-xs sm:text-sm font-medium text-stone-700 leading-relaxed">{observacion.texto}</p>
+                          <p className="text-[10px] sm:text-[11px] font-black text-indigo-500 uppercase tracking-widest">{formatDateOnlyForDisplay(observacion.fecha)}</p>
+                          <p className="mt-1 text-sm sm:text-base font-medium text-stone-700 leading-relaxed">{observacion.texto}</p>
                         </div>
                       ))}
                     </div>
@@ -394,11 +394,11 @@ export function PersonaProfileView({
                 <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
                     <TimelineRoundedIcon fontSize="small" />
                 </div>
-                <h3 className="text-base sm:text-lg font-black text-stone-900 tracking-tight">Historial de Movimientos</h3>
+                <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">Historial de Movimientos</h3>
               </div>
               <div className="flex flex-wrap gap-1.5 sm:justify-end">
                  {Object.entries(movementCounts).map(([tipo, count]) => count > 0 && (
-                    <span key={tipo} className={`rounded-lg px-2 py-1 text-[8px] sm:text-[9px] font-black uppercase tracking-widest whitespace-nowrap ${movementTypeStyles(tipo as PersonaProfileTimelineType)}`}>
+                    <span key={tipo} className={`rounded-lg px-2 py-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${movementTypeStyles(tipo as PersonaProfileTimelineType)}`}>
                        {tipo.replace("_", " ")}: {count}
                     </span>
                  ))}
@@ -424,10 +424,10 @@ export function PersonaProfileView({
                      <div className={movementCardClass(entry)}>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 mb-3">
                            <div className="flex items-center gap-2">
-                              <span className={`rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${movementTypeStyles(entry.tipo)}`}>
+                              <span className={`rounded-lg px-2 py-0.5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest ${movementTypeStyles(entry.tipo)}`}>
                                 {entry.tipo.replace("_", " ")}
                               </span>
-                              <span className="text-[10px] sm:text-xs font-black text-stone-400">{formatDateOnlyForDisplay(entry.fecha)}</span>
+                              <span className="text-xs sm:text-sm font-black text-stone-400">{formatDateOnlyForDisplay(entry.fecha)}</span>
                            </div>
 
                            {entry.tipo === "PRESTAMO" && (
@@ -442,14 +442,14 @@ export function PersonaProfileView({
                         </div>
 
                         <div className="space-y-4">
-                           <p className="text-xs sm:text-sm font-bold text-stone-800 leading-snug">{entry.descripcion}</p>
+                           <p className="text-sm sm:text-base font-bold text-stone-800 leading-snug">{entry.descripcion}</p>
                            
                            {entry.items.length > 0 && (
                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 bg-stone-50 p-3 sm:p-4 rounded-xl border border-stone-100">
                                 {entry.items.map((item) => (
                                   <div key={`${entry.id}-${item.nombre}`} className="flex items-center justify-between gap-4 border-b border-stone-200/50 last:border-0 pb-1 last:pb-0">
-                                     <span className="text-[10px] sm:text-xs font-bold text-stone-600 truncate pr-2">{item.nombre}</span>
-                                     <span className="text-[10px] sm:text-xs font-black text-stone-900 tabular-nums flex-shrink-0">x{item.cantidad}</span>
+                                     <span className="text-xs sm:text-sm font-bold text-stone-600 truncate pr-2">{item.nombre}</span>
+                                     <span className="text-xs sm:text-sm font-black text-stone-900 tabular-nums flex-shrink-0">x{item.cantidad}</span>
                                   </div>
                                 ))}
                              </div>
