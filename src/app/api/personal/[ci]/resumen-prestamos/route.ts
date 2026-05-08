@@ -216,7 +216,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       ],
     },
     include: MOVIMIENTO_RESUMEN_INCLUDE,
-    orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
+    orderBy: [{ fecha: "asc" }, { createdAt: "asc" }],
   });
 
   if (movimientos.length === 0) {
@@ -266,8 +266,8 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       });
     }
 
-    // Header info (only on first page if desired, but we'll do a small header on each)
-    const headerTitle = "RESUMEN DE MOVIMIENTOS - DEPÓSITO GENERAL";
+    // Header info
+    const headerTitle = "HOJA DE MOVIMIENTOS - DEPÓSITO GENERAL";
     const headerUnit = 'GRUPO "BRIG. GRAL. MANUEL ORIBE" DE ARTILLERIA 105MM NO. 1';
     drawTextAt(currentPage!, bold, headerUnit, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 7);
     drawTextRight(currentPage!, regular, `Impreso: ${formatDateUy(new Date())} ${formatTimeUy(new Date())}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, currentY, 7);
@@ -283,10 +283,14 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       const pName = fullName(personal!.apellido1, personal!.apellido2, personal!.nombre1, personal!.nombre2);
       const pGrado = personal!.rango.abreviacion;
       const pCi = formatUruguayanCi(personal!.ci);
-      const pBat = personal!.subalterno?.bateria?.nombre ?? "No aplica";
       
+      let pBat = "No aplica";
+      if (personal!.subalterno?.bateria?.nombre) {
+        pBat = personal!.subalterno.bateria.nombre;
+      }
+
       drawTextAt(currentPage!, bold, "PERSONAL:", PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 9);
-      drawTextAt(currentPage!, regular, `${pGrado} ${pName} (C.I. ${pCi}) - ${pBat}`, PAGE_MARGIN_X + RECEIPT_PADDING + 60, currentY, 9);
+      drawTextAt(currentPage!, regular, `${pGrado} ${pName} (C.I. ${pCi}) - UNIDAD: ${pBat}`, PAGE_MARGIN_X + RECEIPT_PADDING + 60, currentY, 9);
       currentY += 14;
       drawHorizontalLine(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 0.5);
       currentY += 12;
@@ -294,7 +298,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       const summaryTop = currentY;
       const summaryHeight = 36;
       drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, summaryTop, INNER_WIDTH, summaryHeight, rgb(0, 0, 0), true);
-      drawTextAt(currentPage!, bold, "RESUMEN GENERAL", PAGE_MARGIN_X + RECEIPT_PADDING + 6, summaryTop + 6, 9);
+      drawTextAt(currentPage!, bold, "RESUMEN DE ESTADO", PAGE_MARGIN_X + RECEIPT_PADDING + 6, summaryTop + 6, 9);
       drawTextAt(
         currentPage!,
         regular,
@@ -413,7 +417,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename=\"Resumen_Movimientos_${ci}.pdf\"`
+      "Content-Disposition": `inline; filename=\"Hoja_Movimientos_${ci}.pdf\"`
     }
   });
 }
