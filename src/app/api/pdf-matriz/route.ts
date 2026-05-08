@@ -345,7 +345,7 @@ export async function POST(request: NextRequest): Promise<Response> {
             new NextResponse(pdfBuffer, {
               headers: {
                 "Content-Type": "application/pdf",
-                "Content-Disposition": "attachment; filename=HojaMatriz.pdf",
+                "Content-Disposition": "inline; filename=HojaMatriz.pdf",
                 "Content-Length": String(pdfBuffer.length),
               },
             })

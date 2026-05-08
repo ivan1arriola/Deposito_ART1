@@ -59,9 +59,7 @@ export async function GET(request: Request) {
   const totalMs = Math.max(0, Date.now() - requestStartedAtMs);
 
   const fileName = buildUnidadHojasEntregaFileName();
-  const requestUrl = new URL(request.url);
-  const inline = requestUrl.searchParams.get("inline") === "1";
-  const contentDisposition = `${inline ? "inline" : "attachment"}; filename="${fileName}"`;
+  const contentDisposition = `inline; filename="${fileName}"`;
   const pdfArrayBuffer = Uint8Array.from(pdfBytes).buffer;
   const pdfBlob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
   const metricsHeader = JSON.stringify({

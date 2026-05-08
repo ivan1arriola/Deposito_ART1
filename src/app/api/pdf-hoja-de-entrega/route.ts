@@ -335,7 +335,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="HojaEntrega_${body.persona.ci}.pdf"`,
+        "Content-Disposition": `inline; filename="HojaEntrega_${body.persona.ci}.pdf"`,
         "Content-Length": String(buffer.length),
       },
     });

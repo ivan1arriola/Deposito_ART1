@@ -49,9 +49,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     apellido: hoja.persona.apellido1,
     nombre: hoja.persona.nombre1,
   });
-  const requestUrl = new URL(request.url);
-  const inline = requestUrl.searchParams.get("inline") === "1";
-  const contentDisposition = `${inline ? "inline" : "attachment"}; filename="${fileName}"`;
+  const contentDisposition = `inline; filename="${fileName}"`;
   const pdfArrayBuffer = Uint8Array.from(pdfBytes).buffer;
   const pdfBlob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
 

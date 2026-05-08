@@ -57,7 +57,7 @@ export async function GET(request: Request) {
     return new NextResponse(pdfBlob, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="movimientos-equipo-${data.selectedItem.itemId}-${new Date().getTime()}.pdf"`,
+        "Content-Disposition": `inline; filename="movimientos-equipo-${data.selectedItem.itemId}-${new Date().getTime()}.pdf"`,
       },
     });
   } catch (error) {

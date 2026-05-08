@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     return new NextResponse(pdfBlob, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="movimientos-fuera-hoja-${new Date().getTime()}.pdf"`,
+        "Content-Disposition": `inline; filename="movimientos-fuera-hoja-${new Date().getTime()}.pdf"`,
       },
     });
   } catch (error) {
