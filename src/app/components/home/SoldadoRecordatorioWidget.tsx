@@ -980,23 +980,23 @@ export function SoldadoRecordatorioWidget({
 
         {controlsOpen ? (
           <Stack
-            spacing={1}
+            spacing={1.25}
             sx={{
-              minWidth: isMobile ? 186 : 212,
-              p: 0.9,
-              borderRadius: 3.5,
-              bgcolor: "rgba(245, 248, 242, 0.18)",
-              border: "1px solid",
-              borderColor: "rgba(90, 103, 78, 0.28)",
-              boxShadow: "0 12px 24px rgba(28, 33, 24, 0.16)",
-              backdropFilter: "blur(8px) saturate(120%)",
+              minWidth: isMobile ? 186 : 220,
+              p: 1.25,
+              borderRadius: 4,
+              bgcolor: "rgba(250, 252, 248, 0.96)",
+              backgroundImage: "linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(240,244,236,0.6) 100%)",
+              border: "1px solid rgba(130, 142, 115, 0.4)",
+              boxShadow: "0 16px 36px rgba(10, 15, 8, 0.4), 0 0 0 1px rgba(255,255,255,0.6) inset",
+              backdropFilter: "blur(12px) saturate(140%)",
             }}
           >
-            <Box sx={{ px: 0.4 }}>
-              <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.65, textTransform: "uppercase", color: "#475845" }}>
-                Panel rapido
+            <Box sx={{ px: 0.5, pb: 0.25 }}>
+              <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase", color: "#8a9e7f" }}>
+                Panel Rápido
               </Typography>
-              <Typography sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1.2, color: "#5b6a55" }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 800, lineHeight: 1.2, color: "#2c362a" }}>
                 Acciones del widget
               </Typography>
             </Box>
@@ -1012,22 +1012,25 @@ export function SoldadoRecordatorioWidget({
                 justifyContent: "flex-start",
                 alignItems: "stretch",
                 minHeight: 56,
-                px: 1.35,
-                py: 0.85,
-                borderRadius: 2.25,
+                px: 1.5,
+                py: 1,
+                borderRadius: 2.5,
                 border: "1px solid",
                 borderColor: statusSurface.borderColor,
                 backgroundImage: statusSurface.backgroundImage,
                 color: statusSurface.color,
-                boxShadow: "0 8px 18px rgba(20, 28, 19, 0.2)",
+                boxShadow: "0 6px 14px rgba(20, 28, 19, 0.15)",
                 "&:hover": {
                   borderColor: statusSurface.borderColor,
                   backgroundImage: statusSurface.backgroundImage,
-                  filter: "brightness(0.97)",
+                  filter: "brightness(1.05)",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 8px 18px rgba(20, 28, 19, 0.22)",
                 },
+                transition: "all 0.2s ease-out",
                 "& .MuiButton-startIcon": {
                   mt: 0.1,
-                  mr: 1,
+                  mr: 1.25,
                 },
               }}
             >
@@ -1051,22 +1054,26 @@ export function SoldadoRecordatorioWidget({
                 textTransform: "none",
                 justifyContent: "flex-start",
                 minHeight: 48,
-                px: 1.35,
-                py: 0.7,
-                borderRadius: 2.25,
-                color: "#f4f7f5",
-                backgroundImage: "linear-gradient(135deg, #36524f 0%, #4f7469 100%)",
-                boxShadow: "0 9px 18px rgba(18, 41, 36, 0.24)",
+                px: 1.5,
+                py: 1,
+                borderRadius: 2.5,
+                color: "#ffffff",
+                backgroundImage: "linear-gradient(135deg, #40605c 0%, #5b877a 100%)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                boxShadow: "0 6px 14px rgba(36, 61, 54, 0.2)",
+                fontWeight: 700,
                 "&:hover": {
-                  backgroundImage: "linear-gradient(135deg, #2f4744 0%, #44655b 100%)",
-                  boxShadow: "0 11px 20px rgba(18, 41, 36, 0.29)",
+                  backgroundImage: "linear-gradient(135deg, #476c67 0%, #659587 100%)",
+                  boxShadow: "0 8px 18px rgba(36, 61, 54, 0.3)",
+                  transform: "translateY(-1px)",
                 },
+                transition: "all 0.2s ease-out",
                 "& .MuiButton-startIcon": {
-                  mr: 0.95,
+                  mr: 1.25,
                 },
               }}
             >
-              Nueva tarea rapida
+              Nueva tarea rápida
             </Button>
           </Stack>
         ) : null}
