@@ -27,7 +27,7 @@ function buildPersonaLabel(personal: {
 }) {
   const apellidos = `${personal.apellido1} ${personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
   const nombres = `${personal.nombre1} ${personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
-  return `${personal.rango.abreviacion} ${apellidos}, ${nombres}`.replace(/\s+/g, " ").trim();
+  return `${apellidos}, ${nombres}`.replace(/\s+/g, " ").trim();
 }
 
 function buildPrestamoEstadoLabel(

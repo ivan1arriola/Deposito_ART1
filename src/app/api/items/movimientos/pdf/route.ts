@@ -3,6 +3,7 @@ import { authorizeRequest } from "@/lib/auth";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { getFirmaConfig, TEXTO_ENCARGADO, TEXTO_OFICIAL } from "@/lib/firma-config";
 import { getMovimientosEquipoData, parseEquipoMovimientoItemId } from "@/lib/movimientos-equipo-data";
+import { applyMovimientosEquipoTipoFilters, parseMovimientosEquipoTipoFilters } from "@/lib/movimientos-equipo-filters";
 import { parseMovimientosEquipoSort, sortMovimientosEquipoRows } from "@/lib/movimientos-equipo-sort";
 import { renderMovimientosEquipoPdf } from "@/lib/server/render-movimientos-equipo-react-pdf";
 
@@ -24,6 +25,7 @@ export async function GET(request: Request) {
       url.searchParams.get("sortBy"),
       url.searchParams.get("sortDirection"),
     );
+    const tipoFilters = parseMovimientosEquipoTipoFilters(url.searchParams.get("tipos"));
 
     const [data, config] = await Promise.all([
       getMovimientosEquipoData(itemId),
@@ -35,9 +37,10 @@ export async function GET(request: Request) {
     }
 
     const orderedRows = sortMovimientosEquipoRows(data.rows, sort);
+    const filteredRows = applyMovimientosEquipoTipoFilters(orderedRows, tipoFilters);
     const fechaImpresion = formatDateTimeForDisplay(new Date());
 
-    const pdfBytes = await renderMovimientosEquipoPdf(data.selectedItem, orderedRows, fechaImpresion, {
+    const pdfBytes = await renderMovimientosEquipoPdf(data.selectedItem, filteredRows, fechaImpresion, {
       firmas: {
         encargadoTexto: TEXTO_ENCARGADO,
         encargadoRango: config.encargadoRango,

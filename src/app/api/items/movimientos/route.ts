@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { getMovimientosEquipoData, parseEquipoMovimientoItemId } from "@/lib/movimientos-equipo-data";
+import { applyMovimientosEquipoTipoFilters, parseMovimientosEquipoTipoFilters } from "@/lib/movimientos-equipo-filters";
 import { parseMovimientosEquipoSort, sortMovimientosEquipoRows } from "@/lib/movimientos-equipo-sort";
 
 export const runtime = "nodejs";
@@ -22,13 +23,14 @@ export async function GET(request: Request) {
     url.searchParams.get("sortBy"),
     url.searchParams.get("sortDirection"),
   );
+  const tipoFilters = parseMovimientosEquipoTipoFilters(url.searchParams.get("tipos"));
 
   const data = await getMovimientosEquipoData(itemId);
   if (itemId !== null && !data.selectedItem) {
     return NextResponse.json({ error: "El equipo no existe." }, { status: 404 });
   }
 
-  const rows = sortMovimientosEquipoRows(data.rows, sort);
+  const rows = applyMovimientosEquipoTipoFilters(sortMovimientosEquipoRows(data.rows, sort), tipoFilters);
 
   return NextResponse.json({
     generatedAt: new Date().toISOString(),

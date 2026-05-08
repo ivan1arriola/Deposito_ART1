@@ -3130,6 +3130,24 @@ export default function Home() {
     await loadPersonaProfile(buildOficialSuboficialProfileIdentity(registro));
   }
 
+  async function openPersonaProfileByCi(ci: string) {
+    const normalizedCi = normalizeCi(ci);
+
+    const subalterno = personal.find((persona) => normalizeCi(persona.ci) === normalizedCi);
+    if (subalterno) {
+      await openPersonaProfileFromPersonal(subalterno);
+      return true;
+    }
+
+    const oficialSuboficial = oficialesSuboficiales.find((registro) => normalizeCi(registro.ci) === normalizedCi);
+    if (oficialSuboficial) {
+      await openPersonaProfileFromOficialSuboficial(oficialSuboficial);
+      return true;
+    }
+
+    return false;
+  }
+
   async function reloadPersonaProfile() {
     if (!personaProfile) return;
     await loadPersonaProfile(personaProfile.identity);
@@ -6044,6 +6062,7 @@ export default function Home() {
             editingPrestamoId={editingPrestamoId}
             editPrestamo={editPrestamo}
             deletePrestamo={deletePrestamo}
+            openPersonaProfileByCi={openPersonaProfileByCi}
             inEtiquetadoView={inEtiquetadoView}
             activeEtiquetadoSection={activeEtiquetadoSection}
             etiquetadoData={etiquetadoData}

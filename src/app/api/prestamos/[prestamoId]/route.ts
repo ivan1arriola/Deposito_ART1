@@ -186,6 +186,30 @@ export const prestamoByIdRouteTestables = {
   buildItemChanges,
 };
 
+export async function GET(request: Request, context: { params: Promise<{ prestamoId: string }> }) {
+  const auth = await authorizeRequest(request, "read_data");
+  if (!auth.ok) return auth.response;
+  await ensurePrestamoActuanteCompatibility();
+
+  const { prestamoId: prestamoIdParam } = await context.params;
+  const prestamoId = parsePrestamoId(prestamoIdParam);
+  if (!prestamoId) {
+    return NextResponse.json({ error: "prestamoId inválido." }, { status: 400 });
+  }
+
+  const prestamo = await prisma.movimiento.findUnique({
+    where: { movimientoId: prestamoId },
+    include: prestamoInclude,
+  });
+
+  if (!prestamo || prestamo.tipo !== TipoMovimiento.PRESTAMO) {
+    return NextResponse.json({ error: "Préstamo no encontrado." }, { status: 404 });
+  }
+
+  const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([prestamo.movimientoId]);
+  return NextResponse.json(serializePrestamoWithActuante(prestamo, actuanteByMovimientoId));
+}
+
 export async function PUT(request: Request, context: { params: Promise<{ prestamoId: string }> }) {
   const auth = await authorizeRequest(request, "write_data");
   if (!auth.ok) return auth.response;

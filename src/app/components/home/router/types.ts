@@ -217,6 +217,7 @@ export type StockPrestamoViewsProps = {
   editingPrestamoId: string | null;
   editPrestamo: (prestamoId: string, payload: PrestamoEditPayload) => Promise<void>;
   deletePrestamo: (prestamoId: string) => Promise<void>;
+  openPersonaProfileByCi: (ci: string) => Promise<boolean>;
 };
 
 export type EtiquetadoSectionProps = {

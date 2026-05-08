@@ -74,6 +74,16 @@ function readRequestMeta(request: Request) {
   return { ip, userAgent };
 }
 
+function formatUsuarioMovimientoLabel(usuario: {
+  rango: { abreviacion: string } | null;
+  apellido: string;
+  nombre: string;
+  username: string;
+}) {
+  const label = `${usuario.rango?.abreviacion ?? ""} ${usuario.apellido}, ${usuario.nombre}`.replace(/\s+/g, " ").trim();
+  return label || usuario.username;
+}
+
 function buildPersonalAuditDetail(personal: {
   ci: string;
   apellido1: string;
@@ -90,6 +100,96 @@ function buildPersonalAuditDetail(personal: {
     gradoAbreviacion: personal.rango.abreviacion,
     bateria: personal.subalterno?.bateria?.nombre ?? null,
   };
+}
+
+export async function GET(req: Request, context: { params: Promise<{ registroId: string }> }) {
+  const auth = await authorizeRequest(req, "read_data");
+  if (!auth.ok) return auth.response;
+
+  const { registroId: movimientoIdParam } = await context.params;
+  const movimientoId = parseMovimientoId(movimientoIdParam);
+  if (!movimientoId) {
+    return NextResponse.json({ error: "registroId invalido." }, { status: 400 });
+  }
+
+  const movimiento = await prisma.movimiento.findUnique({
+    where: { movimientoId },
+    include: {
+      usuarioEntrega: {
+        select: {
+          usuarioId: true,
+          username: true,
+          nombre: true,
+          apellido: true,
+          rango: {
+            select: {
+              abreviacion: true,
+            },
+          },
+        },
+      },
+      personal: {
+        select: {
+          ci: true,
+          apellido1: true,
+          apellido2: true,
+          nombre1: true,
+          nombre2: true,
+          rango: {
+            select: {
+              abreviacion: true,
+            },
+          },
+          subalterno: {
+            select: {
+              bateria: {
+                select: {
+                  nombre: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      items: {
+        include: {
+          item: {
+            select: {
+              itemId: true,
+              nombre: true,
+              ordenPdf: true,
+            },
+          },
+        },
+        orderBy: { item: { ordenPdf: "asc" } },
+      },
+    },
+  });
+
+  if (!movimiento || (movimiento.tipo !== TipoMovimiento.ENTREGA && movimiento.tipo !== TipoMovimiento.DEVOLUCION)) {
+    return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
+  }
+
+  const persona = `${movimiento.personal.rango.abreviacion} ${movimiento.personal.apellido1} ${movimiento.personal.apellido2 ?? ""}, ${movimiento.personal.nombre1} ${movimiento.personal.nombre2 ?? ""}`
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return NextResponse.json({
+    registroId: movimiento.movimientoId.toString(),
+    fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
+    tipo: movimiento.tipo,
+    comentarios: movimiento.observaciones,
+    ci: movimiento.personalCi,
+    persona,
+    bateria: movimiento.personal.subalterno?.bateria?.nombre ?? null,
+    usuarioEntregaId: movimiento.usuarioEntregaId,
+    usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
+    items: movimiento.items.map((detail) => ({
+      itemId: detail.item.itemId.toString(),
+      nombre: detail.item.nombre,
+      cantidad: detail.cantidad,
+    })),
+  });
 }
 
 export async function PUT(req: Request, context: { params: Promise<{ registroId: string }> }) {

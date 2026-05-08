@@ -955,6 +955,8 @@ export async function renderHojasEntregaPdf(
           ) : null}
         </Page>
       );
+    };
+
     const GuiaUsoPage = () => (
       <Page size="A4" style={styles.manualPage}>
         <View style={{ alignItems: "center", marginBottom: 20 }}>

@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { LoadingInline } from "@/app/components/shared";
+import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
+import {
+  applyMovimientosEquipoTipoFilters,
+  DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS,
+  serializeMovimientosEquipoTipoFilters,
+  type MovimientosEquipoTipoFilter,
+} from "@/lib/movimientos-equipo-filters";
 import {
   DEFAULT_MOVIMIENTOS_EQUIPO_SORT,
   sortMovimientosEquipoRows,
@@ -10,7 +17,7 @@ import {
   type MovimientosEquipoSortField,
 } from "@/lib/movimientos-equipo-sort";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
-import type { EquipoMovimientoCatalogItem, EquipoMovimientoViewRow } from "@/types/views";
+import type { EquipoMovimientoCatalogItem, EquipoMovimientoViewRow, PrestamoStockEntry } from "@/types/views";
 
 type MovimientosEquipoResponse = {
   generatedAt: string;
@@ -20,17 +27,58 @@ type MovimientosEquipoResponse = {
   rows: EquipoMovimientoViewRow[];
 };
 
+type RegistroMovimientoDetail = {
+  registroId: string;
+  fecha: string;
+  tipo: "ENTREGA" | "DEVOLUCION";
+  comentarios: string | null;
+  ci: string;
+  persona: string;
+  bateria: string | null;
+  usuarioEntregaId: string;
+  usuarioEntregaNombre: string;
+  items: Array<{
+    itemId: string;
+    nombre: string;
+    cantidad: number;
+  }>;
+};
+
+type OrigenDialogState =
+  | { kind: "PRESTAMO"; prestamo: PrestamoStockEntry }
+  | { kind: "REGISTRO"; registro: RegistroMovimientoDetail };
+
+type CatalogHojaFilter = "TODOS" | "EN_HOJA" | "FUERA_HOJA";
+
+const MOVIMIENTOS_EQUIPO_TIPO_OPTIONS: Array<{ value: MovimientosEquipoTipoFilter; label: string; hint: string }> = [
+  { value: "ENTREGA", label: "Entregas", hint: "Movimientos de entrega" },
+  { value: "DEVOLUCION", label: "Devoluciones", hint: "Movimientos de devolución" },
+  { value: "PRESTAMO_PENDIENTE", label: "Préstamos pendientes", hint: "Solo préstamos en estado pendiente" },
+];
+
+const CATALOG_HOJA_FILTER_OPTIONS: Array<{ value: CatalogHojaFilter; label: string; hint: string }> = [
+  { value: "TODOS", label: "Ambas", hint: "Equipos visibles y fuera de hoja de entrega" },
+  { value: "EN_HOJA", label: "En hoja", hint: "Solo equipos visibles en hoja de entrega" },
+  { value: "FUERA_HOJA", label: "Fuera de hoja", hint: "Solo equipos que no figuran en hoja de entrega" },
+];
+
 function tipoBadgeClass(tipo: EquipoMovimientoViewRow["tipo"]) {
   if (tipo === "ENTREGA") return "bg-emerald-100 text-emerald-800";
   if (tipo === "DEVOLUCION") return "bg-sky-100 text-sky-800";
   return "bg-amber-100 text-amber-800";
 }
 
-export function MovimientosPorEquipoView() {
+type MovimientosPorEquipoViewProps = {
+  onOpenPersonaProfileByCi?: (ci: string) => Promise<boolean> | boolean;
+};
+
+export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: MovimientosPorEquipoViewProps = {}) {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [items, setItems] = useState<EquipoMovimientoCatalogItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState("");
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogHojaFilter, setCatalogHojaFilter] = useState<CatalogHojaFilter>("TODOS");
 
   const [rowsLoading, setRowsLoading] = useState(false);
   const [rowsError, setRowsError] = useState<string | null>(null);
@@ -40,6 +88,10 @@ export function MovimientosPorEquipoView() {
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<MovimientosEquipoSortField>(DEFAULT_MOVIMIENTOS_EQUIPO_SORT.field);
   const [sortDirection, setSortDirection] = useState<MovimientosEquipoSortDirection>(DEFAULT_MOVIMIENTOS_EQUIPO_SORT.direction);
+  const [tipoFilters, setTipoFilters] = useState<MovimientosEquipoTipoFilter[]>([...DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS]);
+  const [originDialog, setOriginDialog] = useState<OrigenDialogState | null>(null);
+  const [originLoadingKey, setOriginLoadingKey] = useState<string | null>(null);
+  const [originError, setOriginError] = useState<string | null>(null);
 
   const loadCatalog = async () => {
     setCatalogLoading(true);
@@ -72,6 +124,7 @@ export function MovimientosPorEquipoView() {
         itemId,
         sortBy: sortField,
         sortDirection,
+        tipos: serializeMovimientosEquipoTipoFilters(DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS),
         ts: String(Date.now()),
       });
       const response = await fetch(`/api/items/movimientos?${params.toString()}`, {
@@ -98,12 +151,34 @@ export function MovimientosPorEquipoView() {
     void loadCatalog();
   }, []);
 
+  const catalogByHojaItems = useMemo(() => {
+    if (catalogHojaFilter === "EN_HOJA") return items.filter((item) => item.activo);
+    if (catalogHojaFilter === "FUERA_HOJA") return items.filter((item) => !item.activo);
+    return items;
+  }, [items, catalogHojaFilter]);
+
+  const catalogSearchIndex = useMemo(
+    () =>
+      buildSearchIndex(catalogByHojaItems, {
+        text: (item) => [item.itemId, item.nombre, item.activo ? "activo en hoja" : "fuera de hoja"].join(" "),
+      }),
+    [catalogByHojaItems],
+  );
+
+  const filteredCatalogItems = useMemo(() => {
+    return filterSearchIndex(catalogSearchIndex, catalogSearch);
+  }, [catalogSearchIndex, catalogSearch]);
+
+  const rowsAfterTipoFilter = useMemo(() => {
+    return applyMovimientosEquipoTipoFilters(rows, tipoFilters);
+  }, [rows, tipoFilters]);
+
   const rowSearchIndex = useMemo(
     () =>
-      buildSearchIndex(rows, {
+      buildSearchIndex(rowsAfterTipoFilter, {
         text: (row) => [row.fecha, row.tipoLabel, row.movimientoId, row.ci, row.gradoAbreviacion, row.persona, row.observaciones || ""].join(" "),
       }),
-    [rows],
+    [rowsAfterTipoFilter],
   );
 
   const filteredRows = useMemo(() => {
@@ -114,19 +189,68 @@ export function MovimientosPorEquipoView() {
     return sortMovimientosEquipoRows(filteredRows, { field: sortField, direction: sortDirection });
   }, [filteredRows, sortField, sortDirection]);
 
-  const selectedOption = useMemo(
-    () => items.find((item) => item.itemId === selectedItemId) ?? null,
-    [items, selectedItemId],
-  );
+  function toggleTipoFilter(filter: MovimientosEquipoTipoFilter) {
+    setTipoFilters((prev) => (prev.includes(filter) ? prev.filter((value) => value !== filter) : [...prev, filter]));
+  }
+
+  async function openPersonaProfile(ci: string) {
+    const ciValue = ci.trim();
+    if (!ciValue) return;
+
+    if (!onOpenPersonaProfileByCi) {
+      window.open(`/hoja-de-entrega/${encodeURIComponent(ciValue)}`, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const opened = await onOpenPersonaProfileByCi(ciValue);
+    if (!opened) {
+      setOriginError(`No se encontró la ficha completa para la CI ${ciValue}.`);
+      return;
+    }
+
+    setOriginDialog(null);
+  }
+
+  async function openOriginDetail(row: EquipoMovimientoViewRow) {
+    const loadingKey = `${row.movimientoId}-${row.tipo}`;
+    setOriginLoadingKey(loadingKey);
+    setOriginError(null);
+    try {
+      if (row.tipo === "PRESTAMO") {
+        const response = await fetch(`/api/prestamos/${encodeURIComponent(row.movimientoId)}?ts=${Date.now()}`, {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as PrestamoStockEntry | { error?: string };
+        if (!response.ok) {
+          throw new Error(typeof payload === "object" && payload && "error" in payload ? payload.error || "Error" : "Error");
+        }
+        setOriginDialog({ kind: "PRESTAMO", prestamo: payload as PrestamoStockEntry });
+        return;
+      }
+
+      const response = await fetch(`/api/registros/${encodeURIComponent(row.movimientoId)}?ts=${Date.now()}`, {
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as RegistroMovimientoDetail | { error?: string };
+      if (!response.ok) {
+        throw new Error(typeof payload === "object" && payload && "error" in payload ? payload.error || "Error" : "Error");
+      }
+      setOriginDialog({ kind: "REGISTRO", registro: payload as RegistroMovimientoDetail });
+    } catch (error: unknown) {
+      setOriginError(error instanceof Error ? error.message : "No se pudo cargar el detalle de origen.");
+    } finally {
+      setOriginLoadingKey((current) => (current === loadingKey ? null : current));
+    }
+  }
 
   return (
     <section className="mt-6 space-y-4">
       {!activeItem ? (
-        <article className="ej-card rounded-2xl p-4">
+        <article className="ej-card min-h-[calc(100dvh-11.5rem)] rounded-2xl p-4 flex flex-col">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-stone-900">Movimientos por equipo</h2>
-              <p className="mt-1 text-xs text-stone-600">
+              <h2 className="text-xl font-semibold text-stone-900">Movimientos por equipo</h2>
+              <p className="mt-1 text-sm text-stone-600">
                 Paso 1: elegí un solo equipo para ver todos sus movimientos, tanto si figura en hoja de entrega como si no.
               </p>
             </div>
@@ -134,14 +258,14 @@ export function MovimientosPorEquipoView() {
               type="button"
               onClick={() => void loadCatalog()}
               disabled={catalogLoading}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
             >
               {catalogLoading ? (
                 <LoadingInline
                   label="Actualizando..."
                   size="xs"
                   tone="dark"
-                  textClassName="text-xs font-semibold text-stone-700"
+                  textClassName="text-sm font-semibold text-stone-700"
                 />
               ) : (
                 "Actualizar"
@@ -150,45 +274,81 @@ export function MovimientosPorEquipoView() {
           </div>
 
           <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-            <label className="text-xs text-stone-700">
-              Equipo
-              <select
-                value={selectedItemId}
-                onChange={(event) => setSelectedItemId(event.target.value)}
-                disabled={catalogLoading || items.length === 0}
-                className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-              >
-                <option value="">Seleccionar equipo</option>
-                {items.map((item) => (
-                  <option key={item.itemId} value={item.itemId}>
-                    {item.activo ? item.nombre : `${item.nombre} (fuera de hoja)`}
-                  </option>
-                ))}
-              </select>
+            <label className="text-sm text-stone-700">
+              Buscar equipo
+              <input
+                value={catalogSearch}
+                onChange={(event) => setCatalogSearch(event.target.value)}
+                placeholder="Buscar por nombre o ID de equipo"
+                className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base"
+              />
             </label>
-            <button
-              type="button"
-              disabled={!selectedItemId || catalogLoading}
-              onClick={() => {
-                if (!selectedItemId) return;
-                void loadRows(selectedItemId);
-              }}
-              className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-800 disabled:opacity-60"
-            >
-              Ver movimientos
-            </button>
+            <p className="text-sm text-stone-500 md:text-right">{`${filteredCatalogItems.length} de ${catalogByHojaItems.length} equipos`}</p>
           </div>
 
-          {selectedOption ? (
-            <p className="mt-2 text-xs text-stone-500">
-              Estado: {selectedOption.activo ? "Equipo visible en hoja de entrega" : "Equipo fuera de hoja de entrega"}
-            </p>
-          ) : null}
+          <div className="mt-2 rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <p className="text-sm font-semibold uppercase tracking-wide text-stone-600">Filtro por hoja de entrega</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CATALOG_HOJA_FILTER_OPTIONS.map((option) => {
+                const enabled = catalogHojaFilter === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setCatalogHojaFilter(option.value)}
+                    className={`rounded-full border px-3 py-1 text-sm font-semibold transition-colors ${
+                      enabled
+                        ? "border-emerald-700 bg-emerald-700 text-white"
+                        : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+                    }`}
+                    title={option.hint}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-3 min-h-0 flex-1 overflow-auto rounded-xl border border-stone-200 bg-white">
+            {filteredCatalogItems.length === 0 ? (
+              <p className="p-3 text-sm text-stone-600">No hay equipos que coincidan con la búsqueda.</p>
+            ) : (
+              <ul className="divide-y divide-stone-200">
+                {filteredCatalogItems.map((item, index) => (
+                  <li
+                    key={item.itemId}
+                    className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${
+                      index % 2 === 0 ? "bg-white" : "bg-stone-50/70"
+                    }`}
+                  >
+                    <div>
+                      <p className="text-base font-semibold text-stone-900">{item.nombre}</p>
+                      <p className="text-sm text-stone-500">
+                        {`ID ${item.itemId} | ${item.activo ? "Visible en hoja de entrega" : "Fuera de hoja de entrega"}`}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedItemId(item.itemId);
+                        void loadRows(item.itemId);
+                      }}
+                      disabled={catalogLoading || rowsLoading}
+                      className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 disabled:opacity-60"
+                    >
+                      {rowsLoading && selectedItemId === item.itemId ? "Cargando..." : "Ver"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           {catalogError ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{catalogError}</p> : null}
 
           {!catalogLoading && items.length === 0 ? (
-            <p className="mt-3 text-xs text-stone-600">No hay equipos registrados para mostrar.</p>
+            <p className="mt-3 text-sm text-stone-600">No hay equipos registrados para mostrar.</p>
           ) : null}
         </article>
       ) : null}
@@ -198,10 +358,10 @@ export function MovimientosPorEquipoView() {
           <article className="ej-card rounded-2xl p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold text-stone-900">Movimientos del equipo seleccionado</h2>
-                <p className="mt-1 text-xs text-stone-600">Paso 2: listado completo de movimientos por equipo, etiquetados por tipo.</p>
-                <p className="mt-1 text-sm font-semibold text-stone-900">{activeItem.nombre}</p>
-                <p className="text-xs text-stone-500">
+                <h2 className="text-xl font-semibold text-stone-900">Movimientos del equipo seleccionado</h2>
+                <p className="mt-1 text-sm text-stone-600">Paso 2: listado completo de movimientos por equipo, etiquetados por tipo.</p>
+                <p className="mt-1 text-base font-semibold text-stone-900">{activeItem.nombre}</p>
+                <p className="text-sm text-stone-500">
                   {activeItem.activo ? "Visible en hoja de entrega" : "Fuera de hoja de entrega"}
                 </p>
               </div>
@@ -213,11 +373,12 @@ export function MovimientosPorEquipoView() {
                       itemId: activeItem.itemId,
                       sortBy: sortField,
                       sortDirection,
+                      tipos: serializeMovimientosEquipoTipoFilters(tipoFilters),
                     });
                     window.open(`/api/items/movimientos/pdf?${params.toString()}`, "_blank");
                   }}
                   disabled={rowsLoading || sortedRows.length === 0}
-                  className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
+                  className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
                 >
                   Imprimir PDF
                 </button>
@@ -225,14 +386,14 @@ export function MovimientosPorEquipoView() {
                   type="button"
                   onClick={() => void loadRows(activeItem.itemId)}
                   disabled={rowsLoading}
-                  className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
+                  className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
                 >
                   {rowsLoading ? (
                     <LoadingInline
                       label="Actualizando..."
                       size="xs"
                       tone="dark"
-                      textClassName="text-xs font-semibold text-stone-700"
+                      textClassName="text-sm font-semibold text-stone-700"
                     />
                   ) : (
                     "Actualizar"
@@ -246,7 +407,7 @@ export function MovimientosPorEquipoView() {
                     setRowsError(null);
                     setGeneratedAt(null);
                   }}
-                  className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-stone-900"
+                  className="rounded-lg bg-stone-800 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-stone-900"
                 >
                   Cambiar equipo
                 </button>
@@ -254,34 +415,34 @@ export function MovimientosPorEquipoView() {
             </div>
 
             <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,220px)_minmax(0,220px)] md:items-end">
-              <label className="text-xs text-stone-700">
+              <label className="text-sm text-stone-700">
                 Buscar
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Buscar por fecha, tipo, CI, persona u observaciones"
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base"
                 />
               </label>
 
-              <label className="text-xs text-stone-700">
+              <label className="text-sm text-stone-700">
                 Ordenar por
                 <select
                   value={sortField}
                   onChange={(event) => setSortField(event.target.value as MovimientosEquipoSortField)}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base"
                 >
                   <option value="fecha">Fecha</option>
                   <option value="tipo">Tipo</option>
                 </select>
               </label>
 
-              <label className="text-xs text-stone-700">
+              <label className="text-sm text-stone-700">
                 Dirección
                 <select
                   value={sortDirection}
                   onChange={(event) => setSortDirection(event.target.value as MovimientosEquipoSortDirection)}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base"
                 >
                   <option value="asc">Ascendente</option>
                   <option value="desc">Descendente</option>
@@ -289,8 +450,36 @@ export function MovimientosPorEquipoView() {
               </label>
             </div>
 
-            <p className="mt-2 text-xs font-semibold text-stone-600">Mostrando {sortedRows.length} de {rows.length}</p>
+            <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+              <p className="text-sm font-semibold uppercase tracking-wide text-stone-600">Filtros por tipo de movimiento</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {MOVIMIENTOS_EQUIPO_TIPO_OPTIONS.map((option) => {
+                  const enabled = tipoFilters.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => toggleTipoFilter(option.value)}
+                      className={`rounded-full border px-3 py-1 text-sm font-semibold transition-colors ${
+                        enabled
+                          ? "border-emerald-700 bg-emerald-700 text-white"
+                          : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+                      }`}
+                      title={option.hint}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-sm text-stone-500">Los préstamos se muestran únicamente si están pendientes.</p>
+            </div>
 
+            <p className="mt-2 text-sm font-semibold text-stone-600">
+              Mostrando {sortedRows.length} de {rowsAfterTipoFilter.length} movimientos según los filtros de tipo
+            </p>
+
+            {originError ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{originError}</p> : null}
             {rowsError ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{rowsError}</p> : null}
 
             {rowsLoading && rows.length === 0 ? (
@@ -302,24 +491,25 @@ export function MovimientosPorEquipoView() {
             ) : null}
 
             {!rowsLoading && !rowsError && sortedRows.length === 0 ? (
-              <p className="mt-3 text-xs text-stone-600">No hay movimientos para mostrar con el filtro actual.</p>
+              <p className="mt-3 text-sm text-stone-600">No hay movimientos para mostrar con el filtro actual.</p>
             ) : null}
           </article>
 
           {sortedRows.length > 0 ? (
             <article className="ej-card rounded-2xl p-4">
               <div className="overflow-auto rounded-xl border border-stone-200">
-                <table className="w-full min-w-[1120px] border-collapse text-left text-xs">
+                <table className="w-full min-w-[1120px] border-collapse text-left text-sm">
                   <thead>
                     <tr className="bg-stone-100">
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Fecha</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Tipo</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Mov.</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">CI</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Grado</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Persona</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Cantidad</th>
-                      <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Observaciones</th>
+                      <th className="border-b border-stone-200 px-3 py-2 text-sm font-semibold uppercase tracking-wide text-stone-600">Fecha</th>
+                      <th className="border-b border-stone-200 px-3 py-2 text-sm font-semibold uppercase tracking-wide text-stone-600">Tipo</th>
+                      <th className="border-b border-stone-200 px-3 py-2 text-sm font-semibold uppercase tracking-wide text-stone-600">Mov.</th>
+                      <th className="border-b border-stone-200 px-3 py-2 text-sm font-semibold uppercase tracking-wide text-stone-600">CI</th>
+                      <th className="border-b border-stone-200 px-3 py-2 text-sm font-semibold uppercase tracking-wide text-stone-600">Grado</th>
+                      <th className="border-b border-stone-200 px-3 py-2 text-sm font-semibold uppercase tracking-wide text-stone-600">Persona</th>
+                      <th className="border-b border-stone-200 px-3 py-2 text-sm font-semibold uppercase tracking-wide text-stone-600">Cantidad</th>
+                      <th className="border-b border-stone-200 px-3 py-2 text-sm font-semibold uppercase tracking-wide text-stone-600">Observaciones</th>
+                      <th className="border-b border-stone-200 px-3 py-2 text-sm font-semibold uppercase tracking-wide text-stone-600">Origen</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -327,24 +517,178 @@ export function MovimientosPorEquipoView() {
                       <tr key={`${row.movimientoId}-${row.ci}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.fecha}</td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">
-                          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${tipoBadgeClass(row.tipo)}`}>
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-sm font-semibold ${tipoBadgeClass(row.tipo)}`}>
                             {row.tipoLabel}
                           </span>
                         </td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.movimientoId}</td>
-                        <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.ci}</td>
+                        <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">
+                          <button
+                            type="button"
+                            onClick={() => void openPersonaProfile(row.ci)}
+                            className="font-mono text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
+                            title="Ver ficha completa"
+                          >
+                            {row.ci}
+                          </button>
+                        </td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.gradoAbreviacion}</td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.persona}</td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.cantidad}</td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-700">{row.observaciones || "-"}</td>
+                        <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">
+                          <button
+                            type="button"
+                            onClick={() => void openOriginDetail(row)}
+                            disabled={originLoadingKey === `${row.movimientoId}-${row.tipo}`}
+                            className="rounded border border-stone-300 bg-white px-2 py-1 text-sm font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-60"
+                          >
+                            {originLoadingKey === `${row.movimientoId}-${row.tipo}`
+                              ? "Cargando..."
+                              : row.tipo === "PRESTAMO"
+                                ? "Ver préstamo"
+                                : "Ver movimiento"}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              {generatedAt ? <p className="mt-3 text-xs text-stone-500">Generado: {formatDateTimeForDisplay(generatedAt)}</p> : null}
+              {generatedAt ? <p className="mt-3 text-sm text-stone-500">Generado: {formatDateTimeForDisplay(generatedAt)}</p> : null}
             </article>
+          ) : null}
+
+          {originDialog ? (
+            <ModalFrame onClose={() => setOriginDialog(null)} size="lg">
+              <div className="space-y-4">
+                {originDialog.kind === "PRESTAMO" ? (
+                  <>
+                    <header>
+                      <h3 className="text-lg font-semibold text-stone-900">Detalle del préstamo #{originDialog.prestamo.prestamoId}</h3>
+                      <p className="text-sm text-stone-600">{originDialog.prestamo.reciboNumero}</p>
+                    </header>
+                    <div className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700 md:grid-cols-2">
+                      <p><span className="font-semibold text-stone-900">Estado:</span> {originDialog.prestamo.estado}</p>
+                      <p><span className="font-semibold text-stone-900">Fecha préstamo:</span> {originDialog.prestamo.fechaPrestamo}</p>
+                      <p><span className="font-semibold text-stone-900">Destinatario:</span> {originDialog.prestamo.destinatarioEtiqueta}</p>
+                      <p>
+                        <span className="font-semibold text-stone-900">CI:</span>{" "}
+                        <button
+                          type="button"
+                          onClick={() => void openPersonaProfile(originDialog.prestamo.destinatarioCi)}
+                          className="font-mono text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
+                        >
+                          {originDialog.prestamo.destinatarioCi}
+                        </button>
+                      </p>
+                      {originDialog.prestamo.fechaEstimadaDevolucionTexto ? (
+                        <p><span className="font-semibold text-stone-900">Estimado:</span> {originDialog.prestamo.fechaEstimadaDevolucionTexto}</p>
+                      ) : null}
+                      {originDialog.prestamo.fechaDevolucion ? (
+                        <p><span className="font-semibold text-stone-900">Fecha devolución:</span> {originDialog.prestamo.fechaDevolucion}</p>
+                      ) : null}
+                    </div>
+                    {originDialog.prestamo.comentarios ? (
+                      <p className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-base text-stone-700">
+                        <span className="font-semibold text-stone-900">Comentarios:</span> {originDialog.prestamo.comentarios}
+                      </p>
+                    ) : null}
+                    <section className="space-y-2">
+                      <p className="text-sm font-semibold uppercase tracking-wide text-stone-600">Equipos del préstamo</p>
+                      {originDialog.prestamo.items.map((item, index) => (
+                        <div
+                          key={`${originDialog.prestamo.prestamoId}-${item.itemId}`}
+                          className={`rounded-lg border border-stone-200 px-3 py-2 ${
+                            index % 2 === 0 ? "bg-white" : "bg-stone-50/70"
+                          }`}
+                        >
+                          <p className="text-base text-stone-900">
+                            <span className="font-semibold">{item.cantidad}</span> {item.nombre}
+                          </p>
+                          <p className="text-sm text-stone-600">
+                            Entrega: {item.estadoEntrega}
+                            {item.comentarioEntrega ? ` | ${item.comentarioEntrega}` : ""}
+                          </p>
+                          {item.estadoDevolucion ? (
+                            <p className="text-sm text-stone-600">
+                              Devolución: {item.estadoDevolucion}
+                              {item.comentarioDevolucion ? ` | ${item.comentarioDevolucion}` : ""}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </section>
+                    <footer className="flex flex-wrap justify-end gap-2 border-t border-stone-200 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => window.open(`/api/prestamos/${encodeURIComponent(originDialog.prestamo.prestamoId)}/recibo`, "_blank")}
+                        className="rounded-lg bg-indigo-700 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-800"
+                      >
+                        Abrir recibo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOriginDialog(null)}
+                        className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-100"
+                      >
+                        Cerrar
+                      </button>
+                    </footer>
+                  </>
+                ) : (
+                  <>
+                    <header>
+                      <h3 className="text-lg font-semibold text-stone-900">Detalle del movimiento #{originDialog.registro.registroId}</h3>
+                      <p className="text-sm text-stone-600">{originDialog.registro.tipo} | {originDialog.registro.fecha}</p>
+                    </header>
+                    <div className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700 md:grid-cols-2">
+                      <p><span className="font-semibold text-stone-900">Persona:</span> {originDialog.registro.persona}</p>
+                      <p>
+                        <span className="font-semibold text-stone-900">CI:</span>{" "}
+                        <button
+                          type="button"
+                          onClick={() => void openPersonaProfile(originDialog.registro.ci)}
+                          className="font-mono text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
+                        >
+                          {originDialog.registro.ci}
+                        </button>
+                      </p>
+                      <p><span className="font-semibold text-stone-900">Batería:</span> {originDialog.registro.bateria ?? "-"}</p>
+                      <p><span className="font-semibold text-stone-900">Registrado por:</span> {originDialog.registro.usuarioEntregaNombre}</p>
+                    </div>
+                    {originDialog.registro.comentarios ? (
+                      <p className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-base text-stone-700">
+                        <span className="font-semibold text-stone-900">Comentarios:</span> {originDialog.registro.comentarios}
+                      </p>
+                    ) : null}
+                    <section className="space-y-2">
+                      <p className="text-sm font-semibold uppercase tracking-wide text-stone-600">Equipos del movimiento</p>
+                      {originDialog.registro.items.map((item, index) => (
+                        <p
+                          key={`${originDialog.registro.registroId}-${item.itemId}`}
+                          className={`rounded-lg border border-stone-200 px-3 py-2 text-base text-stone-800 ${
+                            index % 2 === 0 ? "bg-white" : "bg-stone-50/70"
+                          }`}
+                        >
+                          <span className="font-semibold">{item.cantidad}</span> {item.nombre}
+                        </p>
+                      ))}
+                    </section>
+                    <footer className="flex justify-end border-t border-stone-200 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => setOriginDialog(null)}
+                        className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-100"
+                      >
+                        Cerrar
+                      </button>
+                    </footer>
+                  </>
+                )}
+              </div>
+            </ModalFrame>
           ) : null}
         </>
       ) : null}

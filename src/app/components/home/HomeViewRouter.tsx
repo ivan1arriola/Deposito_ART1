@@ -172,6 +172,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
     editingPrestamoId,
     editPrestamo,
     deletePrestamo,
+    openPersonaProfileByCi,
     inEtiquetadoView,
     activeEtiquetadoSection,
     etiquetadoData,
@@ -379,6 +380,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
         editingPrestamoId={editingPrestamoId}
         editPrestamo={editPrestamo}
         deletePrestamo={deletePrestamo}
+        openPersonaProfileByCi={openPersonaProfileByCi}
       />
 
       <EtiquetadoSection

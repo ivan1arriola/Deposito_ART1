@@ -2,6 +2,7 @@
 
 import { StockView } from "@/app/components/views/StockView";
 import { FormulariosPrestamosView } from "@/app/components/views/FormulariosPrestamosView";
+import { MovimientosPorEquipoView } from "@/app/components/views/MovimientosPorEquipoView";
 import type { PrestamoDraft, StockOperacionDraft } from "@/types/forms";
 import type { StockPrestamoViewsProps } from "./types";
 
@@ -37,6 +38,7 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
     editingPrestamoId,
     editPrestamo,
     deletePrestamo,
+    openPersonaProfileByCi,
   } = props;
 
   const isStockView = ["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos"].includes(activeView);
@@ -102,6 +104,10 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
           onReload={() => void reloadActiveStockData()}
         />
+      ) : null}
+
+      {activeView === "movimientos_por_equipo" ? (
+        <MovimientosPorEquipoView onOpenPersonaProfileByCi={openPersonaProfileByCi} />
       ) : null}
 
       {isPrestamosModuleView ? (

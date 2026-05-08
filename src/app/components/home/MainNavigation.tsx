@@ -39,7 +39,10 @@ import type { MainView } from "@/types/views";
 
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recordatorios" | "firmas" | "usuarios" | "auditoria" | "usuario_nuevo">;
 type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo">;
-type StockView = Extract<MainView, "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "equipo_nuevo">;
+type StockView = Extract<
+  MainView,
+  "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "equipo_nuevo" | "movimientos_por_equipo"
+>;
 type PrestamosView = Extract<MainView, "prestamos_registrar" | "prestamos_vigentes" | "prestamos_historial" | "formularios">;
 type TallasResumenView = Extract<
   MainView,
@@ -135,6 +138,7 @@ const stockViews: Array<NavOption<StockView>> = [
   { view: "stock_alta", label: "Alta de stock", shortLabel: "Alta", icon: icons.altas },
   { view: "stock_baja", label: "Baja de stock", shortLabel: "Baja", icon: icons.minus },
   { view: "stock_historial", label: "Historial", shortLabel: "Historial", icon: icons.history },
+  { view: "movimientos_por_equipo", label: "Movimientos por equipo", shortLabel: "Movimientos", icon: icons.history },
 ];
 
 const prestamosViews: Array<NavOption<PrestamosView>> = [
@@ -149,12 +153,11 @@ const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
   { view: "etiquetado_imprimir_todas", label: "Imprimir todas", shortLabel: "Imprimir", icon: icons.imprimir },
 ];
 
-const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen" | "movimientos_fuera_hoja" | "movimientos_por_equipo">>> = [
+const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen" | "movimientos_fuera_hoja">>> = [
   { view: "personal", label: "Personal subalterno", icon: icons.personal },
   { view: "hoja_matrix", label: "Hoja matriz", icon: icons.matrix },
   { view: "equipo_resumen", label: "Resumen de equipo en baterías", icon: icons.resumenEquipo },
   { view: "movimientos_fuera_hoja", label: "Movimientos fuera de hoja", icon: icons.history },
-  { view: "movimientos_por_equipo", label: "Movimientos por equipo", icon: icons.history },
 ];
 
 const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficiales" | "oficiales_resumen" | "suboficiales_resumen">>> = [
@@ -366,8 +369,7 @@ export function MainNavigation({
     activeView === "personal" ||
     activeView === "hoja_matrix" ||
     activeView === "equipo_resumen" ||
-    activeView === "movimientos_fuera_hoja" ||
-    activeView === "movimientos_por_equipo";
+    activeView === "movimientos_fuera_hoja";
   const isOficialesSuboficialesView =
     activeView === "oficiales" ||
     activeView === "suboficiales" ||
@@ -382,7 +384,8 @@ export function MainNavigation({
     activeView === "stock_alta" ||
     activeView === "stock_baja" ||
     activeView === "stock_historial" ||
-    activeView === "stock_prestamos";
+    activeView === "stock_prestamos" ||
+    activeView === "movimientos_por_equipo";
   const isEtiquetadoView =
     activeView === "etiquetado_codigos_sie" ||
     activeView === "etiquetado_listado_cajas" ||
