@@ -48,7 +48,8 @@ export type MainView =
   | "etiquetado_imprimir_todas"
   | "persona_ficha"
   | "hoja-de-entrega"
-  | "movimientos_fuera_hoja";
+  | "movimientos_fuera_hoja"
+  | "movimientos_por_equipo";
 
 export type MovimientoFueraHojaViewRow = {
   movimientoId: string;
@@ -59,6 +60,26 @@ export type MovimientoFueraHojaViewRow = {
   gradoAbreviacion: string;
   gradoOrden: number | null;
   item: string;
+  cantidad: number;
+  observaciones: string | null;
+};
+
+export type EquipoMovimientoCatalogItem = {
+  itemId: string;
+  nombre: string;
+  activo: boolean;
+};
+
+export type EquipoMovimientoViewRow = {
+  movimientoId: string;
+  fecha: string;
+  tipo: "ENTREGA" | "DEVOLUCION" | "PRESTAMO";
+  tipoLabel: string;
+  prestamoEstado: "PENDIENTE" | "DEVUELTO" | null;
+  ci: string;
+  persona: string;
+  gradoAbreviacion: string;
+  gradoOrden: number | null;
   cantidad: number;
   observaciones: string | null;
 };
