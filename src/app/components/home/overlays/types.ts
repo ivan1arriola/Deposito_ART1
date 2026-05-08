@@ -91,6 +91,7 @@ export type HomeOverlaysLayerProps = {
   reloadPersonaProfile: () => Promise<void>;
   printDeliverySheetFromProfile: (ci: string) => void;
   printPrestamosFromProfile: (prestamoIds: string[]) => void;
+  onPrintLoansSummary: (ci: string) => void;
   fichaViewingCi: string | null;
   setActiveView: Dispatch<SetStateAction<MainView>>;
   recordatorioConfig: RecordatorioConfig;

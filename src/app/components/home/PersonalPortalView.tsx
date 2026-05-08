@@ -168,6 +168,7 @@ export function PersonalPortalView({
         onReload={() => void onReloadProfile()}
         onPrintDeliverySheet={() => {}}
         onPrintPrestamos={() => {}}
+        onPrintLoansSummary={() => {}}
         allowPrintActions={false}
         showBackButton={false}
       />
