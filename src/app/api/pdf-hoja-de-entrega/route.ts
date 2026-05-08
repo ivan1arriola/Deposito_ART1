@@ -97,30 +97,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       borderWidth: 1,
     });
 
-    // Crest box
-    const crestSize = 28 * MM_TO_PT;
-    const crestX = topbarX + 6 * MM_TO_PT;
-    const crestY = topbarY + 2 * MM_TO_PT;
-
-    page.drawRectangle({
-      x: crestX,
-      y: crestY,
-      width: crestSize,
-      height: crestSize,
-      borderColor: rgb(0, 0, 0),
-      borderWidth: 1,
-    });
-
-    page.drawText("ESCUDO\nEJÉRCITO\nNACIONAL", {
-      x: crestX + 2,
-      y: crestY + 8,
-      size: 8,
-      color: rgb(0, 0, 0),
-    });
-
-    // Texto lado derecho del topbar
-    const headtxtX = crestX + crestSize + 10 * MM_TO_PT;
-    const headtxtWidth = pageWidth - (crestSize + 16 * MM_TO_PT);
+    // Logo area removed
+    const headtxtX = MARGINS.left + 4 * MM_TO_PT;
+    const headtxtWidth = pageWidth - 8 * MM_TO_PT;
 
     page.drawText('Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm N° 1', {
       x: headtxtX,
