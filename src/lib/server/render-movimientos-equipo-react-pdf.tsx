@@ -169,7 +169,6 @@ export async function renderMovimientosEquipoPdf(
       {chunks.map((chunk, pageIndex) => (
         <Page key={`mov-equipo-${pageIndex}`} size="A4" style={styles.page}>
           <View style={styles.headerWrapper}>
-            {logoDataUrl ? <Image src={logoDataUrl} style={styles.logo} /> : null}
             <Text style={styles.title}>Trazabilidad de movimientos por equipo</Text>
           </View>
           <Text style={styles.subtitle}>{`Equipo: ${selectedItem.nombre}`}</Text>

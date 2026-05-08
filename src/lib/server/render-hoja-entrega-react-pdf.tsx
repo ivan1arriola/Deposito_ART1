@@ -775,7 +775,6 @@ export async function renderHojasEntregaPdf(
               <View style={styles.table}>
                 <View style={styles.row}>
                   <View style={[styles.cell, styles.topTitleCell, styles.noRightBorder, { width: "100%" }]}>
-                    {logoDataUrl ? <Image src={logoDataUrl} style={styles.logo} /> : null}
                     <Text style={styles.topTitle}>
                       {'Grupo "Brig.Gral.Manuel Oribe" de Artillería 105mm No.1.-'}
                     </Text>

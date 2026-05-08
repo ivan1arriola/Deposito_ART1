@@ -167,7 +167,6 @@ export async function renderMovimientosFueraHojaPdf(
       {chunks.map((chunk, pageIndex) => (
         <Page key={`mov-fuera-${pageIndex}`} size="A4" style={styles.page}>
           <View style={styles.headerWrapper}>
-            {logoDataUrl ? <Image src={logoDataUrl} style={styles.logo} /> : null}
             <Text style={styles.title}>Movimientos de equipos no incluidos en hoja de entrega</Text>
           </View>
           <Text style={styles.subtitle}>Fecha de impresion: {fechaImpresion}</Text>
