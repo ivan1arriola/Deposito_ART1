@@ -2872,7 +2872,7 @@ export default function Home() {
     setStatus(`Se abrieron ${openedCount} recibo(s) de préstamo para impresión.`);
   }, []);
 
-  const printLoansSummaryFromProfile = useCallback((ci: string) => {
+  const printMovementsSummaryFromProfile = useCallback((ci: string) => {
     window.open(`/api/personal/${encodeURIComponent(ci)}/resumen-prestamos`, "_blank", "noopener,noreferrer");
   }, []);
 
@@ -6231,7 +6231,7 @@ export default function Home() {
             reloadPersonaProfile={reloadPersonaProfile}
             printDeliverySheetFromProfile={printDeliverySheetFromProfile}
             printPrestamosFromProfile={printPrestamosFromProfile}
-            onPrintLoansSummary={printLoansSummaryFromProfile}
+            onPrintMovementsSummary={printMovementsSummaryFromProfile}
             fichaViewingCi={fichaViewingCi}
             setActiveView={setActiveView}
             recordatorioConfig={recordatorioConfig}

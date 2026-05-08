@@ -3,6 +3,7 @@ import "server-only";
 import React from "react";
 import type { MovimientoFueraHojaRow } from "@/lib/hoja-entrega-data";
 import { buildFirmasInstitucionalesLineas, type FirmasInstitucionalesInput } from "@/lib/firma-lineas";
+import { getArtilleriaLogoDataUrl } from "@/lib/server/react-pdf-assets";
 
 type RenderMovimientosFueraHojaPdfOptions = {
   pageNumberLabel?: string;
@@ -33,7 +34,7 @@ export async function renderMovimientosFueraHojaPdf(
   const ReactPdf = await import("@react-pdf/renderer");
   const { Document, Page, Text, View, StyleSheet, pdf, Image } = ReactPdf;
 
-  const logoPath = `file://${process.cwd()}/public/assets/logo-artilleria.jpg`;
+  const logoDataUrl = await getArtilleriaLogoDataUrl();
 
   const pageNumberLabel = options.pageNumberLabel ?? "Movimientos";
   const rowsPerPage =
@@ -166,7 +167,7 @@ export async function renderMovimientosFueraHojaPdf(
       {chunks.map((chunk, pageIndex) => (
         <Page key={`mov-fuera-${pageIndex}`} size="A4" style={styles.page}>
           <View style={styles.headerWrapper}>
-            <Image src={logoPath} style={styles.logo} />
+            {logoDataUrl ? <Image src={logoDataUrl} style={styles.logo} /> : null}
             <Text style={styles.title}>Movimientos de equipos no incluidos en hoja de entrega</Text>
           </View>
           <Text style={styles.subtitle}>Fecha de impresion: {fechaImpresion}</Text>

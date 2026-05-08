@@ -8,6 +8,7 @@ import {
   getHojaEntregaDatePart,
   type HojaEntregaSheetData,
 } from "@/lib/hoja-entrega-data";
+import { getArtilleriaLogoDataUrl } from "@/lib/server/react-pdf-assets";
 
 type RenderHojasEntregaPdfOptions = {
   pageNumberLabel?: string;
@@ -16,6 +17,7 @@ type RenderHojasEntregaPdfOptions = {
   fastBatchInitialProfileId?: DensityProfile["id"];
   fastBatchChunkSize?: number;
   adaptiveInitialProfileId?: DensityProfile["id"];
+  includeUsageGuidePage?: boolean;
 };
 
 type DatePart = "day" | "month" | "year";
@@ -340,10 +342,12 @@ export async function renderHojasEntregaPdf(
   const ReactPdf = await import("@react-pdf/renderer");
   const { Document, Page, Text, View, StyleSheet, pdf, Image } = ReactPdf;
 
-  const logoPath = `file://${process.cwd()}/public/assets/logo-artilleria.jpg`;
+  const logoDataUrl = await getArtilleriaLogoDataUrl();
 
   const pageNumberLabel = options.pageNumberLabel ?? "Hoja";
   const includePageNumbers = options.includePageNumbers ?? true;
+  const includeUsageGuidePage = options.includeUsageGuidePage ?? true;
+  const expectedPagesPerHoja = includeUsageGuidePage ? 2 : 1;
   const performanceMode = options.performanceMode ?? "adaptive";
   const fastBatchInitialProfileId = options.fastBatchInitialProfileId ?? "tight";
   const fastBatchChunkSize = normalizeFastBatchChunkSize(options.fastBatchChunkSize ?? getFastBatchChunkSizeFromEnv());
@@ -771,7 +775,7 @@ export async function renderHojasEntregaPdf(
               <View style={styles.table}>
                 <View style={styles.row}>
                   <View style={[styles.cell, styles.topTitleCell, styles.noRightBorder, { width: "100%" }]}>
-                    <Image src={logoPath} style={styles.logo} />
+                    {logoDataUrl ? <Image src={logoDataUrl} style={styles.logo} /> : null}
                     <Text style={styles.topTitle}>
                       {'Grupo "Brig.Gral.Manuel Oribe" de Artillería 105mm No.1.-'}
                     </Text>
@@ -960,7 +964,7 @@ export async function renderHojasEntregaPdf(
     const GuiaUsoPage = () => (
       <Page size="A4" style={styles.manualPage}>
         <View style={{ alignItems: "center", marginBottom: 20 }}>
-          <Image src={logoPath} style={{ width: 60, height: 60 }} />
+          {logoDataUrl ? <Image src={logoDataUrl} style={{ width: 60, height: 60 }} /> : null}
         </View>
         <Text style={styles.manualTitle}>GUÍA DE CUIDADO Y RESPONSABILIDAD</Text>
         
@@ -998,13 +1002,14 @@ export async function renderHojasEntregaPdf(
 
     const HojaEntregaPdfDocument = () => (
       <Document title="Hoja de Entrega" author="Deposito ART1">
-        {hojasToRender.flatMap((hoja, index) => [
-          <HojaEntregaSheetPage
-            key={`${hoja.data.persona.ci}-${index}`}
-            hoja={hoja}
-          />,
-          <GuiaUsoPage key={`guia-${hoja.data.persona.ci}-${index}`} />
-        ])}
+        {hojasToRender.flatMap((hoja, index) =>
+          includeUsageGuidePage
+            ? [
+                <HojaEntregaSheetPage key={`${hoja.data.persona.ci}-${index}`} hoja={hoja} />,
+                <GuiaUsoPage key={`guia-${hoja.data.persona.ci}-${index}`} />,
+              ]
+            : [<HojaEntregaSheetPage key={`${hoja.data.persona.ci}-${index}`} hoja={hoja} />],
+        )}
       </Document>
     );
 
@@ -1027,7 +1032,7 @@ export async function renderHojasEntregaPdf(
     if (hojasToRender.length <= chunkSize) {
       const bytes = await renderHojasBytesWithProfile(hojasToRender, profile);
       const pageCount = await getPdfPageCount(bytes);
-      return pageCount === hojasToRender.length ? bytes : null;
+      return pageCount === hojasToRender.length * expectedPagesPerHoja ? bytes : null;
     }
 
     const mergedPdf = await PDFDocument.create();
@@ -1037,7 +1042,7 @@ export async function renderHojasEntregaPdf(
       const chunkBytes = await renderHojasBytesWithProfile(chunk, profile);
       const chunkPdf = await PDFDocument.load(chunkBytes, { parseSpeed: ParseSpeeds.Fastest });
 
-      if (chunkPdf.getPageCount() !== chunk.length) {
+      if (chunkPdf.getPageCount() !== chunk.length * expectedPagesPerHoja) {
         return null;
       }
 
@@ -1052,21 +1057,30 @@ export async function renderHojasEntregaPdf(
 
   const renderSingleHojaBestFitBytes = async (hoja: PreparedHojaEntregaData) => {
     let bestProfileId: DensityProfile["id"] | null = null;
+    let bestPageCount = 0;
+    let bestEffortBytes: Uint8Array | null = null;
     const profileOrder = buildTighterProfileOrder(adaptiveInitialProfileId);
 
     for (const profile of profileOrder) {
       const bytes = await renderSingleHojaBytesWithProfile(hoja, profile);
       bestProfileId = profile.id;
+      bestEffortBytes = bytes;
 
       const pageCount = await getPdfPageCount(bytes);
-      if (pageCount === 1) {
+      bestPageCount = pageCount;
+      if (pageCount === expectedPagesPerHoja) {
         return bytes;
       }
     }
 
-    throw new Error(
-      `La hoja de entrega de ${buildAlistadoNombre(hoja.data)} no entra completa en una sola página A4 incluso con el perfil más compacto (${bestProfileId}). No se generó un PDF cortado.`,
-    );
+    if (bestEffortBytes) {
+      console.warn(
+        `[hoja-entrega-pdf] Ajuste de una hoja fuera de objetivo para ${buildAlistadoNombre(hoja.data)}. Perfil final=${bestProfileId}, esperado=${expectedPagesPerHoja}, obtenido=${bestPageCount}. Se devuelve mejor esfuerzo sin cortar contenido.`,
+      );
+      return bestEffortBytes;
+    }
+
+    throw new Error(`No se pudo generar el PDF de hoja de entrega para ${buildAlistadoNombre(hoja.data)}.`);
   };
 
   if (hojas.length === 0) {
@@ -1091,7 +1105,7 @@ export async function renderHojasEntregaPdf(
       if (preparedFastBatchSample.length !== preparedHojas.length) {
         const sampleBytes = await renderHojasBytesWithProfile(preparedFastBatchSample, profile);
         const samplePageCount = await getPdfPageCount(sampleBytes);
-        if (samplePageCount !== preparedFastBatchSample.length) {
+        if (samplePageCount !== preparedFastBatchSample.length * expectedPagesPerHoja) {
           continue;
         }
       }

@@ -87,7 +87,7 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
     reloadPersonaProfile,
     printDeliverySheetFromProfile,
     printPrestamosFromProfile,
-    onPrintLoansSummary,
+    onPrintMovementsSummary,
     fichaViewingCi,
     setActiveView,
     recordatorioConfig,
@@ -203,7 +203,7 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
           onReload={() => void reloadPersonaProfile()}
           onPrintDeliverySheet={printDeliverySheetFromProfile}
           onPrintPrestamos={printPrestamosFromProfile}
-          onPrintLoansSummary={onPrintLoansSummary}
+          onPrintMovementsSummary={onPrintMovementsSummary}
         />
       ) : null}
 

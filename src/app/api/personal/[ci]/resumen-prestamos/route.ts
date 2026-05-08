@@ -34,6 +34,23 @@ const TABLE_COL_EFECTO = INNER_WIDTH - TABLE_COL_QTY - TABLE_COL_ESTADO - TABLE_
 const WATERMARK_FILENAME = "marca-agua-recibo-prestamo-bn.png";
 const WATERMARK_OPACITY = 0.15;
 
+const MOVIMIENTO_RESUMEN_INCLUDE = {
+  usuarioEntrega: {
+    include: {
+      rango: true,
+    },
+  },
+  prestamoActivo: true,
+  items: {
+    include: { item: true },
+    orderBy: { item: { ordenPdf: "asc" } },
+  },
+} as const satisfies Prisma.MovimientoInclude;
+
+type MovimientoResumen = Prisma.MovimientoGetPayload<{
+  include: typeof MOVIMIENTO_RESUMEN_INCLUDE;
+}>;
+
 function formatTimeUy(value: Date) {
   return new Intl.DateTimeFormat("es-UY", {
     timeZone: "America/Montevideo",
@@ -81,6 +98,39 @@ function firstWord(value: string) {
 
 function militaryShortLabel(gradoAbreviacion: string, apellido: string, nombre: string) {
   return `${gradoAbreviacion} ${firstWord(apellido)} ${firstWord(nombre)}`.replace(/\s+/g, " ").trim();
+}
+
+function movementTypeLabel(tipo: TipoMovimiento) {
+  if (tipo === TipoMovimiento.ENTREGA) return "ENTREGA";
+  if (tipo === TipoMovimiento.DEVOLUCION) return "DEVOLUCION";
+  return "PRESTAMO PENDIENTE";
+}
+
+function movementTypeColor(tipo: TipoMovimiento) {
+  if (tipo === TipoMovimiento.PRESTAMO) return rgb(0.7, 0, 0);
+  if (tipo === TipoMovimiento.DEVOLUCION) return rgb(0, 0.45, 0);
+  return rgb(0, 0, 0);
+}
+
+function movementReference(movimiento: MovimientoResumen) {
+  if (movimiento.tipo === TipoMovimiento.PRESTAMO) {
+    return movimiento.prestamoActivo?.reciboNumero ?? `PR-${movimiento.movimientoId.toString().padStart(8, "0")}`;
+  }
+  return `MV-${movimiento.movimientoId.toString().padStart(8, "0")}`;
+}
+
+function resolveItemEstado(movimiento: MovimientoResumen, item: MovimientoResumen["items"][number]) {
+  if (movimiento.tipo === TipoMovimiento.DEVOLUCION) {
+    return item.estadoDevolucion ?? item.estadoEntrega ?? "BUENO";
+  }
+  return item.estadoEntrega ?? item.estadoDevolucion ?? "BUENO";
+}
+
+function resolveItemObservacion(movimiento: MovimientoResumen, item: MovimientoResumen["items"][number]) {
+  if (movimiento.tipo === TipoMovimiento.DEVOLUCION) {
+    return item.comentarioDevolucion ?? item.comentarioEntrega ?? "-";
+  }
+  return item.comentarioEntrega ?? item.comentarioDevolucion ?? "-";
 }
 
 function yForTop(top: number, fontSize: number) {
@@ -158,23 +208,37 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
   if (!personal) return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
 
   const movimientos = await prisma.movimiento.findMany({
-    where: { personalCi: ci, tipo: TipoMovimiento.PRESTAMO },
-    include: {
-      usuarioEntrega: { include: { rango: true } },
-      prestamoActivo: true,
-      prestamoHistorial: { include: { usuarioRecibeDevolucion: { include: { rango: true } } } },
-      items: { include: { item: true }, orderBy: { item: { ordenPdf: "asc" } } }
+    where: {
+      personalCi: ci,
+      OR: [
+        { tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] } },
+        { tipo: TipoMovimiento.PRESTAMO, prestamoActivo: { isNot: null } },
+      ],
     },
-    orderBy: { fecha: "desc" }
+    include: MOVIMIENTO_RESUMEN_INCLUDE,
+    orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
   });
 
-  if (movimientos.length === 0) return NextResponse.json({ error: "No se encontraron préstamos para esta persona." }, { status: 404 });
+  if (movimientos.length === 0) {
+    return NextResponse.json({ error: "No se encontraron movimientos vigentes para esta persona." }, { status: 404 });
+  }
 
   const pdfDoc = await PDFDocument.create();
   const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const watermarkBytes = await loadWatermarkBytes();
   const watermarkImage = watermarkBytes ? await pdfDoc.embedPng(watermarkBytes) : null;
+  const movementsByType = movimientos.reduce(
+    (acc, movimiento) => {
+      acc[movimiento.tipo] += 1;
+      return acc;
+    },
+    { [TipoMovimiento.ENTREGA]: 0, [TipoMovimiento.DEVOLUCION]: 0, [TipoMovimiento.PRESTAMO]: 0 },
+  );
+  const totalUnidades = movimientos.reduce(
+    (acc, movimiento) => acc + movimiento.items.reduce((itemsAcc, item) => itemsAcc + item.cantidad, 0),
+    0,
+  );
 
   let currentPage: PDFPage | null = null;
   let currentY = 0;
@@ -203,7 +267,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     }
 
     // Header info (only on first page if desired, but we'll do a small header on each)
-    const headerTitle = "RESUMEN DE PRÉSTAMOS - DEPÓSITO GENERAL";
+    const headerTitle = "RESUMEN DE MOVIMIENTOS - DEPÓSITO GENERAL";
     const headerUnit = 'GRUPO "BRIG. GRAL. MANUEL ORIBE" DE ARTILLERIA 105MM NO. 1';
     drawTextAt(currentPage!, bold, headerUnit, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 7);
     drawTextRight(currentPage!, regular, `Impreso: ${formatDateUy(new Date())} ${formatTimeUy(new Date())}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, currentY, 7);
@@ -226,23 +290,47 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       currentY += 14;
       drawHorizontalLine(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 0.5);
       currentY += 12;
+
+      const summaryTop = currentY;
+      const summaryHeight = 28;
+      drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, summaryTop, INNER_WIDTH, summaryHeight, rgb(0, 0, 0), true);
+      drawTextAt(currentPage!, bold, "RESUMEN GENERAL", PAGE_MARGIN_X + RECEIPT_PADDING + 6, summaryTop + 5, 8.5);
+      drawTextAt(
+        currentPage!,
+        regular,
+        `Movimientos: ${movimientos.length}  |  Unidades totales: ${totalUnidades}`,
+        PAGE_MARGIN_X + RECEIPT_PADDING + 6,
+        summaryTop + 14,
+        8,
+      );
+      drawTextAt(
+        currentPage!,
+        regular,
+        `Entregas: ${movementsByType[TipoMovimiento.ENTREGA]}  |  Devoluciones: ${movementsByType[TipoMovimiento.DEVOLUCION]}  |  Prestamos pendientes: ${movementsByType[TipoMovimiento.PRESTAMO]}`,
+        PAGE_MARGIN_X + RECEIPT_PADDING + 6,
+        summaryTop + 22,
+        8,
+      );
+      currentY += summaryHeight + 8;
     }
   }
 
   addNewPage();
 
   for (const mov of movimientos) {
-    const reciboNum = mov.prestamoActivo?.reciboNumero || mov.prestamoHistorial?.reciboNumero || `PR-${mov.movimientoId.toString().padStart(8, "0")}`;
-    const fechaM = formatDateOnlyFromDate(mov.fecha);
-    const estadoM = mov.prestamoActivo ? "PENDIENTE" : "DEVUELTO";
-    const resp = militaryShortLabel(mov.usuarioEntrega.rango.abreviacion, mov.usuarioEntrega.apellido, mov.usuarioEntrega.nombre);
-    
+    const referencia = movementReference(mov);
+    const fechaM = formatDateOnlyFromDate(mov.fecha) ?? "-";
+    const tipoM = movementTypeLabel(mov.tipo);
+    const resp = militaryShortLabel(mov.usuarioEntrega.rango?.abreviacion ?? "", mov.usuarioEntrega.apellido, mov.usuarioEntrega.nombre);
+    const totalUnidadesMovimiento = mov.items.reduce((acc, item) => acc + item.cantidad, 0);
+
     // Estimate height
-    const headerH = 45;
+    const headerH = 58;
     const tableHeaderH = TABLE_HEADER_HEIGHT;
-    const rowH = mov.items.length * TABLE_MIN_ROW_HEIGHT;
+    const rowCount = Math.max(mov.items.length, 1);
+    const rowH = rowCount * TABLE_MIN_ROW_HEIGHT;
     const obsH = mov.observaciones ? wrapText(mov.observaciones, INNER_WIDTH - 20, regular, 8).length * 10 + 15 : 0;
-    const footerH = 25;
+    const footerH = 18;
     const totalMovH = headerH + tableHeaderH + rowH + obsH + footerH + 20;
 
     if (currentY + totalMovH > CONTENT_BOTTOM) {
@@ -250,34 +338,64 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     }
 
     // Draw Movement Block
-    drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, totalMovH - 10, rgb(0,0,0), true);
+    drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, totalMovH - 10, rgb(0, 0, 0), true);
     let movY = currentY + 5;
-    
-    drawTextAt(currentPage!, bold, `RECIBO: ${reciboNum}`, PAGE_MARGIN_X + RECEIPT_PADDING + 8, movY + 5, 10);
-    drawTextRight(currentPage!, bold, `ESTADO: ${estadoM}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING - 8, movY + 5, 9, estadoM === "PENDIENTE" ? rgb(0.7, 0, 0) : rgb(0, 0.5, 0));
+
+    drawTextAt(currentPage!, bold, `MOVIMIENTO: ${referencia}`, PAGE_MARGIN_X + RECEIPT_PADDING + 8, movY + 5, 10);
+    drawTextRight(
+      currentPage!,
+      bold,
+      `TIPO: ${tipoM}`,
+      A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING - 8,
+      movY + 5,
+      9,
+      movementTypeColor(mov.tipo),
+    );
     movY += 14;
-    
+
     drawTextAt(currentPage!, regular, `Fecha: ${fechaM}`, PAGE_MARGIN_X + RECEIPT_PADDING + 8, movY + 4, 9);
-    drawTextAt(currentPage!, regular, `Responsable entrega: ${resp}`, PAGE_MARGIN_X + RECEIPT_PADDING + 100, movY + 4, 9);
-    movY += 14;
+    drawTextAt(currentPage!, regular, `Responsable: ${resp}`, PAGE_MARGIN_X + RECEIPT_PADDING + 115, movY + 4, 9);
+    movY += 12;
+    drawTextAt(
+      currentPage!,
+      regular,
+      `Total de unidades en este movimiento: ${totalUnidadesMovimiento}`,
+      PAGE_MARGIN_X + RECEIPT_PADDING + 8,
+      movY + 4,
+      9,
+    );
+    movY += 12;
 
     // Table
     const tableX = PAGE_MARGIN_X + RECEIPT_PADDING + 8;
     const tableW = INNER_WIDTH - 16;
-    drawRectTop(currentPage!, tableX, movY, tableW, tableHeaderH, rgb(0,0,0));
+    drawRectTop(currentPage!, tableX, movY, tableW, tableHeaderH, rgb(0, 0, 0));
     drawTextAt(currentPage!, bold, "EQUIPO", tableX + 5, movY + 4, 8);
     drawTextAt(currentPage!, bold, "CANT", tableX + TABLE_COL_EFECTO, movY + 4, 8);
     drawTextAt(currentPage!, bold, "ESTADO", tableX + TABLE_COL_EFECTO + TABLE_COL_QTY, movY + 4, 8);
     drawTextAt(currentPage!, bold, "OBSERVACIONES", tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + TABLE_COL_ESTADO, movY + 4, 8);
     movY += tableHeaderH;
 
-    for (const item of mov.items) {
-      drawRectTop(currentPage!, tableX, movY, tableW, TABLE_MIN_ROW_HEIGHT, rgb(0,0,0));
-      drawTextAt(currentPage!, regular, toPrintUppercase(item.item.nombre).slice(0, 45), tableX + 5, movY + 3, 8);
-      drawTextAt(currentPage!, regular, String(item.cantidad), tableX + TABLE_COL_EFECTO + 5, movY + 3, 8);
-      drawTextAt(currentPage!, regular, (item.estadoDevolucion || item.estadoEntrega || "BUENO"), tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + 5, movY + 3, 8);
-      drawTextAt(currentPage!, regular, (item.comentarioDevolucion || item.comentarioEntrega || "-").slice(0, 25), tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + TABLE_COL_ESTADO + 5, movY + 3, 8);
+    if (mov.items.length === 0) {
+      drawRectTop(currentPage!, tableX, movY, tableW, TABLE_MIN_ROW_HEIGHT, rgb(0, 0, 0));
+      drawTextAt(currentPage!, regular, "Sin equipos asociados", tableX + 5, movY + 3, 8);
       movY += TABLE_MIN_ROW_HEIGHT;
+    } else {
+      for (const item of mov.items) {
+        drawRectTop(currentPage!, tableX, movY, tableW, TABLE_MIN_ROW_HEIGHT, rgb(0, 0, 0));
+        drawTextAt(currentPage!, regular, toPrintUppercase(item.item.nombre).slice(0, 45), tableX + 5, movY + 3, 8);
+        drawTextAt(currentPage!, regular, String(item.cantidad), tableX + TABLE_COL_EFECTO + 5, movY + 3, 8);
+        drawTextAt(currentPage!, regular, resolveItemEstado(mov, item), tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + 5, movY + 3, 8);
+        drawTextAt(
+          currentPage!,
+          regular,
+          resolveItemObservacion(mov, item).slice(0, 25),
+          tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + TABLE_COL_ESTADO + 5,
+          movY + 3,
+          8,
+        );
+        movY += TABLE_MIN_ROW_HEIGHT;
+      }
     }
 
     if (mov.observaciones) {
@@ -295,7 +413,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename=\"Resumen_Prestamos_${ci}.pdf\"`
+      "Content-Disposition": `inline; filename=\"Resumen_Movimientos_${ci}.pdf\"`
     }
   });
 }
