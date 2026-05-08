@@ -292,15 +292,15 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       currentY += 12;
 
       const summaryTop = currentY;
-      const summaryHeight = 28;
+      const summaryHeight = 36;
       drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, summaryTop, INNER_WIDTH, summaryHeight, rgb(0, 0, 0), true);
-      drawTextAt(currentPage!, bold, "RESUMEN GENERAL", PAGE_MARGIN_X + RECEIPT_PADDING + 6, summaryTop + 5, 8.5);
+      drawTextAt(currentPage!, bold, "RESUMEN GENERAL", PAGE_MARGIN_X + RECEIPT_PADDING + 6, summaryTop + 6, 9);
       drawTextAt(
         currentPage!,
         regular,
         `Movimientos: ${movimientos.length}  |  Unidades totales: ${totalUnidades}`,
         PAGE_MARGIN_X + RECEIPT_PADDING + 6,
-        summaryTop + 14,
+        summaryTop + 17,
         8,
       );
       drawTextAt(
@@ -308,7 +308,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
         regular,
         `Entregas: ${movementsByType[TipoMovimiento.ENTREGA]}  |  Devoluciones: ${movementsByType[TipoMovimiento.DEVOLUCION]}  |  Prestamos pendientes: ${movementsByType[TipoMovimiento.PRESTAMO]}`,
         PAGE_MARGIN_X + RECEIPT_PADDING + 6,
-        summaryTop + 22,
+        summaryTop + 27,
         8,
       );
       currentY += summaryHeight + 8;
@@ -325,13 +325,13 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     const totalUnidadesMovimiento = mov.items.reduce((acc, item) => acc + item.cantidad, 0);
 
     // Estimate height
-    const headerH = 58;
+    const headerH = 65;
     const tableHeaderH = TABLE_HEADER_HEIGHT;
     const rowCount = Math.max(mov.items.length, 1);
     const rowH = rowCount * TABLE_MIN_ROW_HEIGHT;
-    const obsH = mov.observaciones ? wrapText(mov.observaciones, INNER_WIDTH - 20, regular, 8).length * 10 + 15 : 0;
+    const obsH = mov.observaciones ? wrapText(mov.observaciones, INNER_WIDTH - 20, regular, 8).length * 12 + 18 : 0;
     const footerH = 18;
-    const totalMovH = headerH + tableHeaderH + rowH + obsH + footerH + 20;
+    const totalMovH = headerH + tableHeaderH + rowH + obsH + footerH + 15;
 
     if (currentY + totalMovH > CONTENT_BOTTOM) {
       addNewPage();
@@ -351,20 +351,20 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       9,
       movementTypeColor(mov.tipo),
     );
-    movY += 14;
+    movY += 18;
 
-    drawTextAt(currentPage!, regular, `Fecha: ${fechaM}`, PAGE_MARGIN_X + RECEIPT_PADDING + 8, movY + 4, 9);
-    drawTextAt(currentPage!, regular, `Responsable: ${resp}`, PAGE_MARGIN_X + RECEIPT_PADDING + 115, movY + 4, 9);
-    movY += 12;
+    drawTextAt(currentPage!, regular, `Fecha: ${fechaM}`, PAGE_MARGIN_X + RECEIPT_PADDING + 8, movY + 2, 9);
+    drawTextAt(currentPage!, regular, `Responsable: ${resp}`, PAGE_MARGIN_X + RECEIPT_PADDING + 115, movY + 2, 9);
+    movY += 16;
     drawTextAt(
       currentPage!,
       regular,
       `Total de unidades en este movimiento: ${totalUnidadesMovimiento}`,
       PAGE_MARGIN_X + RECEIPT_PADDING + 8,
-      movY + 4,
+      movY + 2,
       9,
     );
-    movY += 12;
+    movY += 16;
 
     // Table
     const tableX = PAGE_MARGIN_X + RECEIPT_PADDING + 8;
@@ -401,8 +401,8 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     if (mov.observaciones) {
       const lines = wrapText(mov.observaciones, tableW - 10, regular, 8);
       drawTextAt(currentPage!, bold, "Observaciones:", tableX, movY + 5, 8);
-      lines.forEach((l, i) => drawTextAt(currentPage!, regular, l, tableX + 70, movY + 5 + i * 10, 8));
-      movY += lines.length * 10 + 8;
+      lines.forEach((l, i) => drawTextAt(currentPage!, regular, l, tableX + 70, movY + 5 + i * 12, 8));
+      movY += lines.length * 12 + 10;
     }
 
     currentY += totalMovH;
