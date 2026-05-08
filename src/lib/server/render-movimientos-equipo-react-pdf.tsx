@@ -10,7 +10,7 @@ type RenderMovimientosEquipoPdfOptions = {
   firmas?: FirmasInstitucionalesInput;
 };
 
-const DEFAULT_ROWS_PER_PAGE = 27;
+const DEFAULT_ROWS_PER_PAGE = 52;
 
 function chunkRows(rows: EquipoMovimientoViewRow[], rowsPerPage: number) {
   if (rows.length === 0) return [[]] as EquipoMovimientoViewRow[][];
@@ -42,9 +42,9 @@ export async function renderMovimientosEquipoPdf(
 
   const styles = StyleSheet.create({
     page: {
-      paddingTop: 18,
-      paddingBottom: 18,
-      paddingHorizontal: 18,
+      paddingTop: 12,
+      paddingBottom: 12,
+      paddingHorizontal: 12,
       fontFamily: "Courier",
       fontSize: 8,
       color: "#000000",
@@ -96,8 +96,8 @@ export async function renderMovimientosEquipoPdf(
       borderRightWidth: 0.8,
       borderBottomWidth: 0.8,
       borderColor: "#000000",
-      paddingHorizontal: 2,
-      paddingVertical: 2,
+      paddingHorizontal: 1.5,
+      paddingVertical: 1.5,
       fontFamily: "Courier-Bold",
       textAlign: "center",
       justifyContent: "center",
@@ -106,8 +106,8 @@ export async function renderMovimientosEquipoPdf(
       borderRightWidth: 0.8,
       borderBottomWidth: 0.8,
       borderColor: "#000000",
-      paddingHorizontal: 2,
-      paddingVertical: 2,
+      paddingHorizontal: 1.5,
+      paddingVertical: 1.5,
       justifyContent: "center",
     },
     noRightBorder: {
