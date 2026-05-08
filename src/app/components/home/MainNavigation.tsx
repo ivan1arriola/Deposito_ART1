@@ -8,12 +8,16 @@ import {
   Divider,
   ListItemIcon,
   ListItemText,
+  IconButton,
   Menu,
   MenuItem,
   Paper,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
+import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
@@ -66,6 +70,8 @@ type MainNavigationProps = {
   expandSubmenus?: boolean;
   hideContainerChrome?: boolean;
   onOpenSearch?: () => void;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 };
 
 type MenuKey = "personal" | "oficiales" | "stock" | "etiquetado" | "create" | "config";
@@ -180,11 +186,11 @@ const tallasResumenViews: Array<NavOption<TallasResumenView>> = [
   { view: "tallas_resumen_oficiales_suboficiales", label: "Oficiales y suboficiales", icon: icons.resumen },
 ];
 
-function navButtonSx(active: boolean, compact: boolean) {
+function navButtonSx(active: boolean, collapsed: boolean) {
   return {
     position: "relative",
-    px: 1.5,
-    justifyContent: "flex-start",
+    px: collapsed ? 0 : 1.5,
+    justifyContent: collapsed ? "center" : "flex-start",
     width: "100%",
     minWidth: 0,
     flexShrink: 0,
@@ -203,8 +209,10 @@ function navButtonSx(active: boolean, compact: boolean) {
     textTransform: "none",
     transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
     "& .MuiButton-startIcon": {
-      marginRight: 1.5,
+      margin: 0,
       color: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.6)",
+      transition: "margin 0.2s",
+      ...(collapsed ? {} : { marginRight: 1.5 }),
     },
     "&:hover": {
       borderColor: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.3)",
@@ -299,14 +307,42 @@ function ExpandedMenuGroup({
   title,
   icon,
   compact,
+  collapsed,
   children,
 }: {
   title: string;
   icon: JSX.Element;
   compact: boolean;
+  collapsed?: boolean;
   children: ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(true);
+
+  if (collapsed) {
+    return (
+      <Box sx={{ mb: 1, display: "flex", justifyContent: "center" }}>
+        <Tooltip title={title} placement="right">
+          <IconButton
+            onClick={() => setIsOpen(!isOpen)}
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: "12px",
+              color: isOpen ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.45)",
+              bgcolor: isOpen ? "rgba(255, 204, 0, 0.1)" : "transparent",
+              "&:hover": {
+                bgcolor: "rgba(255, 255, 255, 0.04)",
+              },
+            }}
+          >
+            {icon}
+          </IconButton>
+        </Tooltip>
+        {/* En modo colapsado, tal vez no queramos mostrar el Collapse o mostrarlo como Popover.
+            Por ahora, lo ocultamos para mantener la limpieza. */}
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ mb: 1.5 }}>
@@ -368,6 +404,8 @@ export function MainNavigation({
   expandSubmenus = false,
   hideContainerChrome = false,
   onOpenSearch,
+  collapsed = false,
+  onToggleCollapsed,
 }: MainNavigationProps) {
   const [menuAnchors, setMenuAnchors] = useState<Partial<Record<MenuKey, HTMLElement | null>>>({});
 
@@ -426,103 +464,129 @@ export function MainNavigation({
         fontFamily: 'var(--fuentePrincipal, "Helvetica Neue", Helvetica, Arial, sans-serif)',
       }}
     >
-      {onOpenSearch && (
-        <Button
-          variant="text"
-          onClick={onOpenSearch}
-          startIcon={icons.search}
-          sx={{
-            ...navButtonSx(false, false),
-            mb: 1,
-            bgcolor: "rgba(255, 255, 255, 0.04)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            color: "rgba(255, 255, 255, 0.8)",
-            "&:hover": {
-              bgcolor: "rgba(255, 255, 255, 0.08)",
-              borderColor: "rgba(255, 255, 255, 0.2)",
-            }
-          }}
-        >
-          Buscar personal
-        </Button>
+      {onToggleCollapsed && (
+        <Box sx={{ display: "flex", justifyContent: collapsed ? "center" : "flex-end", mb: 1 }}>
+          <Tooltip title={collapsed ? "Expandir menú" : "Colapsar menú"} placement="right">
+            <IconButton
+              onClick={onToggleCollapsed}
+              sx={{
+                color: "rgba(255, 255, 255, 0.4)",
+                "&:hover": { color: "var(--color-ejercito-gold)", bgcolor: "rgba(255, 255, 255, 0.05)" },
+                transition: "all 0.2s"
+              }}
+            >
+              {collapsed ? <ChevronRightRoundedIcon /> : <ChevronLeftRoundedIcon />}
+            </IconButton>
+          </Tooltip>
+        </Box>
       )}
 
-      <Button
-        variant="text"
-        onClick={() => handleSelectView("dashboard")}
-        startIcon={icons.dashboard}
-        sx={navButtonSx(isDashboardView, false)}
-      >
-        Página Principal
-      </Button>
+      {onOpenSearch && (
+        <Tooltip title="Buscar personal" placement="right" disableHoverListener={!collapsed}>
+          <Button
+            variant="text"
+            onClick={onOpenSearch}
+            startIcon={icons.search}
+            sx={{
+              ...navButtonSx(false, collapsed),
+              mb: 1,
+              bgcolor: "rgba(255, 255, 255, 0.04)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              color: "rgba(255, 255, 255, 0.8)",
+              "&:hover": {
+                bgcolor: "rgba(255, 255, 255, 0.08)",
+                borderColor: "rgba(255, 255, 255, 0.2)",
+              }
+            }}
+          >
+            {!collapsed && "Buscar personal"}
+          </Button>
+        </Tooltip>
+      )}
 
-      <ExpandedMenuGroup title="Personal" icon={icons.personal} compact={false}>
+      <Tooltip title="Página Principal" placement="right" disableHoverListener={!collapsed}>
+        <Button
+          variant="text"
+          onClick={() => handleSelectView("dashboard")}
+          startIcon={icons.dashboard}
+          sx={navButtonSx(isDashboardView, collapsed)}
+        >
+          {!collapsed && "Página Principal"}
+        </Button>
+      </Tooltip>
+
+      <ExpandedMenuGroup title="Personal" icon={icons.personal} compact={false} collapsed={collapsed}>
         {personalViews.map((item) => (
-          <Button
-            key={item.view}
-            variant="text"
-            startIcon={item.icon}
-            onClick={() => handleSelectView(item.view)}
-            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
-          >
-            {item.label}
-          </Button>
+          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+            <Button
+              variant="text"
+              startIcon={item.icon}
+              onClick={() => handleSelectView(item.view)}
+              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+            >
+              {!collapsed && item.label}
+            </Button>
+          </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Oficiales" icon={icons.oficiales} compact={false}>
+      <ExpandedMenuGroup title="Oficiales" icon={icons.oficiales} compact={false} collapsed={collapsed}>
         {oficialesViews.map((item) => (
-          <Button
-            key={item.view}
-            variant="text"
-            startIcon={item.icon}
-            onClick={() => handleSelectView(item.view)}
-            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
-          >
-            {item.label}
-          </Button>
+          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+            <Button
+              variant="text"
+              startIcon={item.icon}
+              onClick={() => handleSelectView(item.view)}
+              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+            >
+              {!collapsed && item.label}
+            </Button>
+          </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Stock" icon={icons.stock} compact={false}>
+      <ExpandedMenuGroup title="Stock" icon={icons.stock} compact={false} collapsed={collapsed}>
         {filteredStockViews.map((item) => (
-          <Button
-            key={item.view}
-            variant="text"
-            startIcon={item.icon}
-            onClick={() => handleSelectView(item.view)}
-            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
-          >
-            {item.label}
-          </Button>
+          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+            <Button
+              variant="text"
+              startIcon={item.icon}
+              onClick={() => handleSelectView(item.view)}
+              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+            >
+              {!collapsed && item.label}
+            </Button>
+          </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Etiquetado" icon={icons.etiquetado} compact={false}>
+      <ExpandedMenuGroup title="Etiquetado" icon={icons.etiquetado} compact={false} collapsed={collapsed}>
         {etiquetadoViews.map((item) => (
-          <Button
-            key={item.view}
-            variant="text"
-            startIcon={item.icon}
-            onClick={() => handleSelectView(item.view)}
-            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
-          >
-            {item.label}
-          </Button>
+          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+            <Button
+              variant="text"
+              startIcon={item.icon}
+              onClick={() => handleSelectView(item.view)}
+              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+            >
+              {!collapsed && item.label}
+            </Button>
+          </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Resumen de tallas" icon={icons.resumen} compact={false}>
+      <ExpandedMenuGroup title="Resumen de tallas" icon={icons.resumen} compact={false} collapsed={collapsed}>
         {tallasResumenViews.map((item) => (
-          <Button
-            key={item.view}
-            variant="text"
-            startIcon={item.icon}
-            onClick={() => handleSelectView(item.view)}
-            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
-          >
-            {item.label}
-          </Button>
+          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+            <Button
+              variant="text"
+              startIcon={item.icon}
+              onClick={() => handleSelectView(item.view)}
+              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+            >
+              {!collapsed && item.label}
+            </Button>
+          </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
@@ -556,17 +620,18 @@ export function MainNavigation({
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Configuración" icon={icons.config} compact={false}>
+      <ExpandedMenuGroup title="Configuración" icon={icons.config} compact={false} collapsed={collapsed}>
         {filteredConfigViews.map((item) => (
-          <Button
-            key={item.view}
-            variant="text"
-            startIcon={item.icon}
-            onClick={() => handleSelectView(item.view)}
-            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
-          >
-            {item.label}
-          </Button>
+          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+            <Button
+              variant="text"
+              startIcon={item.icon}
+              onClick={() => handleSelectView(item.view)}
+              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+            >
+              {!collapsed && item.label}
+            </Button>
+          </Tooltip>
         ))}
       </ExpandedMenuGroup>
     </Box>

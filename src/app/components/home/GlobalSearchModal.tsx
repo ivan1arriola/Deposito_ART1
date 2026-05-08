@@ -57,12 +57,12 @@ export function GlobalSearchModal({
 
     // Search in Oficiales & Suboficiales
     for (const p of oficialesSuboficiales) {
-      const nom = `${p.nombre} ${p.apellido}`.toLowerCase();
+      const fullOficialName = `${p.nombre1} ${p.nombre2 || ""} ${p.apellido1} ${p.apellido2 || ""}`.replace(/\s+/g, " ").trim().toLowerCase();
       const numCi = normalizeCi(p.ci);
-      if (nom.includes(q) || numCi.includes(q)) {
+      if (fullOficialName.includes(q) || numCi.includes(q)) {
         matches.push({
           ci: p.ci,
-          nombreCompleto: `${p.nombre} ${p.apellido}`,
+          nombreCompleto: `${p.nombre1} ${p.apellido1}`,
           tipo: p.tipo,
           rango: p.gradoMando?.abreviacion || p.tipo,
         });

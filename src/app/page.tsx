@@ -342,6 +342,7 @@ export default function Home() {
   const { data: session } = useSession();
   const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [status, setStatus] = useState(STATUS_VERIFYING_SESSION);
   const [activeView, setActiveView] = useState<MainView>("dashboard");
   const {
@@ -5575,24 +5576,24 @@ export default function Home() {
 
   const sidebarContent = (
     <>
-      <Stack spacing={2} sx={{ mb: 4, mt: 1, px: 1, alignItems: "center" }}>
-        <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, alignSelf: "flex-start" }}>
+      <Stack spacing={2} sx={{ mb: 4, mt: 1, px: 1, alignItems: "center", overflow: "hidden" }}>
+        <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, alignSelf: "flex-start", opacity: sidebarCollapsed ? 0 : 1, transition: "opacity 0.2s" }}>
           Versión: {appVersion}
         </Typography>
 
-        <Box sx={{ width: 100, height: "auto", my: 1 }}>
+        <Box sx={{ width: sidebarCollapsed ? 45 : 100, height: "auto", my: 1, transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)" }}>
           <Image
             src="/assets/logo-deposito.png"
             alt="Logo Depósito"
             width={200}
             height={240}
-            style={{ width: "100%", height: "auto", filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))" }}
+            style={{ width: "100%", height: "auto", filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))", transition: "all 0.3s ease" }}
           />
         </Box>
 
-        <Box sx={{ textAlign: "center" }}>
-          <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: 800, lineHeight: 1.2, mb: 0.5 }}>
-            Grupo &quot;Brig. Gral. Manuel Oribe&quot; de Artillería 105mm No. 1
+        <Box sx={{ textAlign: "center", display: sidebarCollapsed ? "none" : "block" }}>
+          <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontStyle: "italic", fontWeight: 800, lineHeight: 1.2, mb: 0.5 }}>
+            Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1
           </Typography>
           <Typography sx={{ color: "var(--color-ejercito-gold)", fontWeight: 900, fontSize: 20, letterSpacing: "0.02em", textTransform: "uppercase" }}>
             Depósito General
@@ -5601,8 +5602,8 @@ export default function Home() {
 
         <Divider sx={{ width: "100%", borderColor: "rgba(255,255,255,0.1)" }} />
 
-        <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", alignSelf: "flex-start", pl: 1 }}>
-          Menú Principal
+        <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", alignSelf: "flex-start", pl: 1, opacity: sidebarCollapsed ? 0 : 1, transition: "opacity 0.2s" }}>
+          {!sidebarCollapsed && "Menú Principal"}
         </Typography>
       </Stack>
 
@@ -5613,6 +5614,8 @@ export default function Home() {
         showConfigViews={showConfigViews}
         isConfigView={isConfigView}
         configMenuRef={configMenuRef}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed(!sidebarCollapsed)}
         onSelectView={(view) => {
           handleSelectMainView(view);
           setMobileMenuOpen(false);
@@ -5717,7 +5720,7 @@ export default function Home() {
       <Box
         component="nav"
         sx={{
-          width: { xs: 0, md: 280, lg: 300 },
+          width: { xs: 0, md: sidebarCollapsed ? 80 : 280, lg: sidebarCollapsed ? 80 : 300 },
           display: { xs: "none", md: "block" },
           flexShrink: 0,
           position: "sticky",
@@ -5730,6 +5733,8 @@ export default function Home() {
           backdropFilter: "blur(20px)",
           boxShadow: "4px 0 24px rgba(0,0,0,0.3)",
           zIndex: 1200,
+          transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          overflowX: "hidden",
         }}
       >
         {sidebarContent}
@@ -5774,7 +5779,7 @@ export default function Home() {
         }}
       >
         {/* Mobile Header */}
-        <header className="sticky top-0 z-40 flex items-center justify-between border-b border-stone-200/80 bg-white/70 px-4 py-3 shadow-sm backdrop-blur-md md:hidden">
+        <header className="sticky top-0 z-40 flex items-center justify-between border-b border-stone-200/80 bg-white/70 px-4 py-3 shadow-sm backdrop-blur-md min-[900px]:hidden">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-inner">
                 <img src="/assets/logo-deposito.png" alt="Escudo" className="h-8 w-8 object-contain drop-shadow-sm" />
@@ -5784,7 +5789,7 @@ export default function Home() {
                   DEPÓSITO GENERAL
                 </h1>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">G.A. 105mm No 1</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Grupo de Artillería 105mm No. 1</span>
                   <span className="h-1 w-1 rounded-full bg-stone-300"></span>
                   <span className="text-[9px] font-bold text-stone-400">v{appVersion}</span>
                 </div>
