@@ -64,7 +64,7 @@ export function GlobalSearchModal({
           ci: p.ci,
           nombreCompleto: `${p.nombre} ${p.apellido}`,
           tipo: p.tipo,
-          rango: p.gradoMando?.abreviacion || p.rango?.abreviacion || p.tipo,
+          rango: p.gradoMando?.abreviacion || p.tipo,
         });
       }
     }
