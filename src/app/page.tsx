@@ -5779,7 +5779,7 @@ export default function Home() {
         }}
       >
         {/* Mobile Header */}
-        <header className="sticky top-0 z-40 flex items-center justify-between border-b border-stone-200/80 bg-white/70 px-4 py-3 shadow-sm backdrop-blur-md min-[900px]:hidden">
+        <header className="sticky top-0 z-40 flex items-center justify-between border-b border-stone-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-md min-[900px]:hidden">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-inner">
                 <img src="/assets/logo-deposito.png" alt="Escudo" className="h-8 w-8 object-contain drop-shadow-sm" />
@@ -5789,7 +5789,7 @@ export default function Home() {
                   DEPÓSITO GENERAL
                 </h1>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Grupo de Artillería 105mm No. 1</span>
+                  <span className="text-[9px] font-black uppercase tracking-wider text-stone-500">Grupo "Brigadier General Manuel Oribe" de Artillería 105mm No. 1</span>
                   <span className="h-1 w-1 rounded-full bg-stone-300"></span>
                   <span className="text-[9px] font-bold text-stone-400">v{appVersion}</span>
                 </div>
