@@ -65,6 +65,7 @@ type MainNavigationProps = {
   embedded?: boolean;
   expandSubmenus?: boolean;
   hideContainerChrome?: boolean;
+  onOpenSearch?: () => void;
 };
 
 type MenuKey = "personal" | "oficiales" | "stock" | "etiquetado" | "create" | "config";
@@ -361,6 +362,7 @@ export function MainNavigation({
   embedded = false,
   expandSubmenus = false,
   hideContainerChrome = false,
+  onOpenSearch,
 }: MainNavigationProps) {
   const [menuAnchors, setMenuAnchors] = useState<Partial<Record<MenuKey, HTMLElement | null>>>({});
 
@@ -419,6 +421,27 @@ export function MainNavigation({
         fontFamily: 'var(--fuentePrincipal, "Helvetica Neue", Helvetica, Arial, sans-serif)',
       }}
     >
+      {onOpenSearch && (
+        <Button
+          variant="text"
+          onClick={onOpenSearch}
+          startIcon={icons.search}
+          sx={{
+            ...navButtonSx(false, false),
+            mb: 1,
+            bgcolor: "rgba(255, 255, 255, 0.04)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            color: "rgba(255, 255, 255, 0.8)",
+            "&:hover": {
+              bgcolor: "rgba(255, 255, 255, 0.08)",
+              borderColor: "rgba(255, 255, 255, 0.2)",
+            }
+          }}
+        >
+          Buscar personal
+        </Button>
+      )}
+
       <Button
         variant="text"
         onClick={() => handleSelectView("dashboard")}

@@ -19,6 +19,7 @@ import {
   normalizeTallaValue,
 } from "@/lib/tallas";
 import { DashboardHero } from "./components/home/DashboardHero";
+import { GlobalSearchModal } from "./components/home/GlobalSearchModal";
 import { MainNavigation } from "./components/home/MainNavigation";
 import { Box, Typography, Divider, Stack, Button, IconButton, Drawer } from "@mui/material";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
@@ -426,6 +427,7 @@ export default function Home() {
   const [userPasswordSaving, setUserPasswordSaving] = useState(false);
   const [usernameDialog, setUsernameDialog] = useState<UserProfileDialogState | null>(null);
   const [usernameSaving, setUsernameSaving] = useState(false);
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
 
 
   const [newUserRangoId, setNewUserRangoId] = useState("");
@@ -5615,6 +5617,10 @@ export default function Home() {
           handleSelectMainView(view);
           setMobileMenuOpen(false);
         }}
+        onOpenSearch={() => {
+          setGlobalSearchOpen(true);
+          setMobileMenuOpen(false);
+        }}
         onSetConfigViews={setShowConfigViews}
         embedded
       />
@@ -5768,49 +5774,45 @@ export default function Home() {
         }}
       >
         {/* Mobile Header */}
-        <Box
-          sx={{
-            display: { xs: "flex", md: "none" },
-            alignItems: "center",
-            px: 2,
-            py: 1.5,
-            bgcolor: "rgba(15, 20, 15, 0.95)",
-            backdropFilter: "blur(12px)",
-            borderBottom: "1px solid rgba(255, 204, 0, 0.2)",
-            position: "sticky",
-            top: 0,
-            zIndex: 1100,
-          }}
-        >
-          <IconButton onClick={() => setMobileMenuOpen(true)} sx={{ color: "common.white", mr: 1.5 }}>
-            <MenuRoundedIcon />
-          </IconButton>
-          
-          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
-            <Box sx={{ width: 42, height: 42, flexShrink: 0 }}>
-              <Image
-                src="/assets/logo-deposito.png"
-                alt="Logo"
-                width={80}
-                height={96}
-                style={{ width: "100%", height: "auto", filter: "drop-shadow(0 0 8px rgba(255,255,255,0.2))" }}
-              />
-            </Box>
-            
-            <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: 700, lineHeight: 1.1, mb: 0.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                G. Art. 105mm No. 1
-              </Typography>
-              <Typography sx={{ color: "var(--color-ejercito-gold)", fontWeight: 900, fontSize: 15, lineHeight: 1.2, textTransform: "uppercase", letterSpacing: "0.01em" }}>
-                Depósito General
-              </Typography>
-            </Box>
-          </Stack>
-
-          <Typography sx={{ color: "rgba(255,255,255,0.3)", fontSize: 9, fontWeight: 800, ml: "auto", pl: 1 }}>
-            v{appVersion}
-          </Typography>
-        </Box>
+        <header className="sticky top-0 z-40 flex items-center justify-between border-b border-stone-200/80 bg-white/70 px-4 py-3 shadow-sm backdrop-blur-md md:hidden">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-inner">
+                <img src="/assets/logo-deposito.png" alt="Escudo" className="h-8 w-8 object-contain drop-shadow-sm" />
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-sm font-black tracking-tight text-[var(--color-ejercito-gold)] drop-shadow-sm">
+                  DEPÓSITO GENERAL
+                </h1>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">G.A. 105mm No 1</span>
+                  <span className="h-1 w-1 rounded-full bg-stone-300"></span>
+                  <span className="text-[9px] font-bold text-stone-400">v{appVersion}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setGlobalSearchOpen(true)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+              >
+                <span className="sr-only">Buscar personal</span>
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+              >
+                <span className="sr-only">Abrir menú</span>
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+          </header>
 
         {currentUser?.rol === "ADMIN" && (
           <Box sx={{ position: "relative", px: activeView === "dashboard" ? 3 : 0, mt: activeView === "dashboard" ? 3 : 0 }}>
