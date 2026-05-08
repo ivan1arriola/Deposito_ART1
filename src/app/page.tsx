@@ -2872,6 +2872,10 @@ export default function Home() {
     setStatus(`Se abrieron ${openedCount} recibo(s) de préstamo para impresión.`);
   }, []);
 
+  const printLoansSummaryFromProfile = useCallback((ci: string) => {
+    window.open(`/api/personal/${encodeURIComponent(ci)}/resumen-prestamos`, "_blank", "noopener,noreferrer");
+  }, []);
+
   const deletePersonal = useCallback(
     (ci: string) => {
       if (!canDelete) {
@@ -6227,6 +6231,7 @@ export default function Home() {
             reloadPersonaProfile={reloadPersonaProfile}
             printDeliverySheetFromProfile={printDeliverySheetFromProfile}
             printPrestamosFromProfile={printPrestamosFromProfile}
+            onPrintLoansSummary={printLoansSummaryFromProfile}
             fichaViewingCi={fichaViewingCi}
             setActiveView={setActiveView}
             recordatorioConfig={recordatorioConfig}

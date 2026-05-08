@@ -75,6 +75,7 @@ type PersonaProfileViewProps = {
   onReload: () => void;
   onPrintDeliverySheet: (ci: string) => void;
   onPrintPrestamos: (prestamoIds: string[]) => void;
+  onPrintLoansSummary: (ci: string) => void;
   allowPrintActions?: boolean;
   showBackButton?: boolean;
 };
@@ -114,6 +115,7 @@ export function PersonaProfileView({
   onReload,
   onPrintDeliverySheet,
   onPrintPrestamos,
+  onPrintLoansSummary,
   allowPrintActions = true,
   showBackButton = true,
 }: PersonaProfileViewProps) {
@@ -190,6 +192,17 @@ export function PersonaProfileView({
               </button>
             )}
             
+            {allowPrintActions && timeline.some(t => t.tipo === "PRESTAMO") && (
+              <button
+                type="button"
+                onClick={() => onPrintLoansSummary(state.identity.ci)}
+                className="flex-grow sm:flex-grow-0 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-600/10"
+              >
+                <Inventory2RoundedIcon fontSize="small" />
+                Resumen Préstamos
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onReload}
