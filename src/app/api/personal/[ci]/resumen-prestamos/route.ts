@@ -103,7 +103,7 @@ function militaryShortLabel(gradoAbreviacion: string, apellido: string, nombre: 
 function movementTypeLabel(tipo: TipoMovimiento) {
   if (tipo === TipoMovimiento.ENTREGA) return "ENTREGA";
   if (tipo === TipoMovimiento.DEVOLUCION) return "DEVOLUCION";
-  return "PRESTAMO";
+  return "PRESTAMO PENDIENTE";
 }
 
 function movementTypeColor(tipo: TipoMovimiento) {
@@ -266,7 +266,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     }
 
     // Cabecera Institucional
-    const headerTitle = "HOJA DE MOVIMIENTOS V3 - DEPÓSITO GENERAL";
+    const headerTitle = "HOJA DE MOVIMIENTOS - DEPÓSITO GENERAL";
     const headerUnit = 'GRUPO "BRIG. GRAL. MANUEL ORIBE" DE ARTILLERIA 105MM NO. 1';
     
     drawTextAt(currentPage!, bold, headerUnit, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 8);
