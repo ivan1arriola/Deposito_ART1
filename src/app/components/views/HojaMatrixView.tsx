@@ -4,7 +4,14 @@ import { useMemo, useState } from "react";
 import { compareOptionalOrder } from "@/lib/catalog-order";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { HojaMatrixData } from "@/types/views";
-import { LoadingInline } from "@/app/components/shared";
+import { LoadingInline, Card, CardHeader, Badge } from "@/app/components/shared";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+import PictureAsPdfRoundedIcon from "@mui/icons-material/PictureAsPdfRounded";
+import TableChartRoundedIcon from "@mui/icons-material/TableChartRounded";
+import CorporateFareRoundedIcon from "@mui/icons-material/CorporateFareRounded";
+import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
+import { Box, Button, Stack, Typography, useTheme, alpha } from "@mui/material";
 
 export interface HojaMatrixViewProps {
   data: HojaMatrixData | null;
@@ -17,7 +24,10 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
   const [viewMode, setViewMode] = useState<"all" | "battery">("all");
   const [selectedBattery, setSelectedBattery] = useState<string | null>(null);
   const [previewRequested, setPreviewRequested] = useState(false);
-  const title = viewMode === "all" ? "Hoja matriz de subalternos (unidad)" : "Hoja matriz de subalternos por bateria";
+  const theme = useTheme();
+  
+  const title = viewMode === "all" ? "Hoja Matriz de Subalternos" : "Hoja Matriz por Batería";
+  const subtitle = viewMode === "all" ? "Vista unificada de toda la unidad" : "Vista filtrada por subunidad operativa";
 
   const bateriaOptions = useMemo(() => {
     if (!data) return [] as string[];
@@ -74,160 +84,209 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
   const previewDisabled = printDisabled || !data;
 
   return (
-    <section className="mt-6 rounded-2xl border border-stone-300 bg-white p-4 shadow-none">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-stone-900">{title}</h2>
-          <p className="mt-1 text-xs text-stone-600">
-            En unidad se ordena por grado, bateria y apellido. En bateria se ordena por grado y apellido.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={handleLoad}
-            disabled={loading}
-            className="rounded bg-stone-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
-          >
-            {loading ? (
-              <LoadingInline
-                label="Actualizando..."
-                size="xs"
-                tone="light"
-                textClassName="text-xs font-semibold text-white"
-              />
-            ) : data ? (
-              "Actualizar Matriz"
-            ) : (
-              "Cargar Matriz"
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => setPreviewRequested(true)}
-            disabled={previewDisabled}
-            className="rounded bg-amber-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Mostrar Vista Previa
-          </button>
-          <button
-            type="button"
-            onClick={() => window.open(printHref, "_blank", "noopener,noreferrer")}
-            disabled={printDisabled}
-            className="rounded bg-indigo-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Imprimir / Guardar PDF
-          </button>
-          <button
-            type="button"
-            onClick={() => window.open(spreadsheetHref, "_blank", "noopener,noreferrer")}
-            disabled={printDisabled}
-            className="rounded bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Descargar Planilla (LibreOffice Calc)
-          </button>
-        </div>
-      </div>
+    <Box sx={{ mt: 3 }}>
+      <Card padding="none" variant="elevated" sx={{ overflow: "hidden", background: "linear-gradient(180deg, #ffffff 0%, #f9f8f4 100%)" }}>
+        <Box sx={{ p: { xs: 2, sm: 3 }, borderBottom: "1px solid", borderColor: "divider" }}>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems={{ md: "center" }} justifyContent="space-between">
+            <Box>
+              <Stack direction="row" alignItems="center" spacing={1.5}>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--color-ejercito-black)", letterSpacing: "-0.02em" }}>
+                  {title}
+                </Typography>
+                {data && (
+                  <Badge variant="success" size="sm">
+                    {viewMode === "all" ? "Unidad Completa" : selectedBattery || "Pendiente Selección"}
+                  </Badge>
+                )}
+              </Stack>
+              <Typography variant="body2" sx={{ mt: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                {subtitle} • Ordenado por grado, batería y apellidos.
+              </Typography>
+            </Box>
 
-      <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50/60 p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Seleccion de vista</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setViewMode("all");
-              setSelectedBattery(null);
-              setPreviewRequested(false);
-            }}
-            className={`rounded px-3 py-2 text-xs font-semibold transition ${
-              viewMode === "all"
-                ? "bg-stone-900 text-white"
-                : "border border-stone-300 bg-white text-stone-700"
-            }`}
-          >
-            Ver toda la unidad
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setViewMode("battery");
-              setPreviewRequested(false);
-            }}
-            className={`rounded px-3 py-2 text-xs font-semibold transition ${
-              viewMode === "battery"
-                ? "bg-stone-900 text-white"
-                : "border border-stone-300 bg-white text-stone-700"
-            }`}
-          >
-            Ver por bateria
-          </button>
-        </div>
+            <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1 }}>
+              <Button
+                variant="contained"
+                disableElevation
+                onClick={handleLoad}
+                disabled={loading}
+                startIcon={<RefreshRoundedIcon />}
+                sx={{
+                  borderRadius: 2,
+                  fontWeight: 700,
+                  bgcolor: "var(--color-ejercito-black)",
+                  "&:hover": { bgcolor: "#1a1a1a" },
+                }}
+              >
+                {loading ? "Cargando..." : data ? "Actualizar" : "Cargar Matriz"}
+              </Button>
 
-        {viewMode === "battery" ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {bateriaOptions.length === 0 ? (
-              <span className="text-xs text-stone-500">Cargue los datos para ver las baterias disponibles.</span>
-            ) : (
-              bateriaOptions.map((label) => (
-                <button
-                  key={label}
-                  type="button"
+              <Button
+                variant="outlined"
+                onClick={() => setPreviewRequested(true)}
+                disabled={previewDisabled}
+                startIcon={<VisibilityRoundedIcon />}
+                sx={{ borderRadius: 2, fontWeight: 700, borderColor: "divider", color: "text.primary" }}
+              >
+                Vista Previa
+              </Button>
+
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="outlined"
+                  onClick={() => window.open(printHref, "_blank", "noopener,noreferrer")}
+                  disabled={printDisabled}
+                  startIcon={<PictureAsPdfRoundedIcon />}
+                  sx={{ borderRadius: 2, fontWeight: 700, borderColor: alpha(theme.palette.primary.main, 0.3), color: theme.palette.primary.main }}
+                  title="Imprimir / Guardar PDF"
+                >
+                  PDF
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => window.open(spreadsheetHref, "_blank", "noopener,noreferrer")}
+                  disabled={printDisabled}
+                  startIcon={<TableChartRoundedIcon />}
+                  sx={{ borderRadius: 2, fontWeight: 700, borderColor: alpha(theme.palette.success.main, 0.3), color: theme.palette.success.main }}
+                  title="Descargar Planilla"
+                >
+                  Excel
+                </Button>
+              </Stack>
+            </Stack>
+          </Stack>
+        </Box>
+
+        <Box sx={{ p: { xs: 2, sm: 3 }, bgcolor: alpha(theme.palette.action.hover, 0.4) }}>
+          <Stack spacing={2.5}>
+            <Box>
+              <Typography variant="caption" sx={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary", display: "block", mb: 1.5 }}>
+                Selección de Alcance
+              </Typography>
+              <Stack direction="row" spacing={1} sx={{ p: 0.5, bgcolor: "divider", borderRadius: 2.5, width: "fit-content" }}>
+                <Button
                   onClick={() => {
-                    setSelectedBattery(label);
+                    setViewMode("all");
+                    setSelectedBattery(null);
                     setPreviewRequested(false);
                   }}
-                  className={`rounded px-3 py-2 text-xs font-semibold transition ${
-                    selectedBattery === label
-                      ? "bg-emerald-600 text-white"
-                      : "border border-stone-300 bg-white text-stone-700"
-                  }`}
+                  startIcon={<CorporateFareRoundedIcon />}
+                  sx={{
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    ...(viewMode === "all"
+                      ? { bgcolor: "white", color: "var(--color-ejercito-black)", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", "&:hover": { bgcolor: "white" } }
+                      : { color: "text.secondary", "&:hover": { bgcolor: alpha(theme.palette.action.hover, 0.5) } }),
+                  }}
                 >
-                  {label}
-                </button>
-              ))
+                  Toda la Unidad
+                </Button>
+                <Button
+                  onClick={() => {
+                    setViewMode("battery");
+                    setPreviewRequested(false);
+                  }}
+                  startIcon={<GroupsRoundedIcon />}
+                  sx={{
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    ...(viewMode === "battery"
+                      ? { bgcolor: "white", color: "var(--color-ejercito-black)", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", "&:hover": { bgcolor: "white" } }
+                      : { color: "text.secondary", "&:hover": { bgcolor: alpha(theme.palette.action.hover, 0.5) } }),
+                  }}
+                >
+                  Por Batería
+                </Button>
+              </Stack>
+            </Box>
+
+            {viewMode === "battery" && (
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary", display: "block", mb: 1.5 }}>
+                  Baterías Disponibles
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1 }}>
+                  {bateriaOptions.length === 0 ? (
+                    <Typography variant="body2" sx={{ fontStyle: "italic", color: "text.disabled", py: 1 }}>
+                      Cargue los datos para ver las subunidades.
+                    </Typography>
+                  ) : (
+                    bateriaOptions.map((label) => (
+                      <Button
+                        key={label}
+                        onClick={() => {
+                          setSelectedBattery(label);
+                          setPreviewRequested(false);
+                        }}
+                        sx={{
+                          borderRadius: 2,
+                          px: 2,
+                          py: 0.75,
+                          textTransform: "none",
+                          fontWeight: 700,
+                          fontSize: "0.8125rem",
+                          border: "1px solid",
+                          transition: "all 0.2s ease",
+                          ...(selectedBattery === label
+                            ? { bgcolor: alpha(theme.palette.primary.main, 0.1), borderColor: theme.palette.primary.main, color: theme.palette.primary.main }
+                            : { bgcolor: "white", borderColor: "divider", color: "text.primary", "&:hover": { borderColor: "text.secondary", bgcolor: "white" } }),
+                        }}
+                      >
+                        {label}
+                      </Button>
+                    ))
+                  )}
+                </Stack>
+              </Box>
             )}
-          </div>
-        ) : null}
-      </div>
+          </Stack>
+        </Box>
 
-      {error ? (
-        <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
-      ) : null}
+        {error && (
+          <Box sx={{ p: 2, mx: 3, mb: 3, borderRadius: 2, bgcolor: alpha(theme.palette.error.main, 0.08), border: "1px solid", borderColor: alpha(theme.palette.error.main, 0.2) }}>
+            <Typography variant="body2" sx={{ color: theme.palette.error.main, fontWeight: 600 }}>{error}</Typography>
+          </Box>
+        )}
 
-      {loading && !data ? (
-        <LoadingInline
-          label="Cargando hoja matriz de subalternos..."
-          className="mt-3"
-          textClassName="text-sm font-medium text-stone-600"
-        />
-      ) : null}
+        {loading && !data && (
+          <Box sx={{ p: 6, textAlign: "center" }}>
+            <LoadingInline label="Procesando datos de la unidad..." textClassName="font-bold text-stone-600" />
+          </Box>
+        )}
 
-      {viewMode === "battery" && !selectedBattery && data ? (
-        <p className="mt-3 text-xs font-semibold text-stone-600">Seleccione una bateria para mostrar la matriz.</p>
-      ) : null}
+        {data && previewRequested ? (
+          <Box sx={{ p: { xs: 1, sm: 2 }, bgcolor: "stone.200", borderTop: "1px solid", borderColor: "divider" }}>
+            <Box sx={{ overflow: "hidden", borderRadius: 2, border: "1px solid", borderColor: "divider", bgcolor: "white", boxShadow: theme.shadows[2] }}>
+              <iframe
+                key={previewHref}
+                title={viewMode === "all" ? "Vista previa unidad" : "Vista previa batería"}
+                src={previewHref}
+                style={{ width: "100%", height: "80vh", minHeight: "800px", border: "none" }}
+              />
+            </Box>
+          </Box>
+        ) : data && (
+          <Box sx={{ p: 3, textAlign: "center", borderTop: "1px solid", borderColor: "divider" }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary" }}>
+              La vista previa está lista. Presione el botón <Box component="span" sx={{ color: "text.primary" }}>&quot;Vista Previa&quot;</Box> para visualizar la matriz.
+            </Typography>
+          </Box>
+        )}
 
-      {data && !previewRequested ? (
-        <p className="mt-3 text-xs font-semibold text-stone-600">
-          La vista previa no se carga automaticamente. Presione &quot;Mostrar Vista Previa&quot; para abrirla.
-        </p>
-      ) : null}
-
-      {data && previewRequested ? (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-stone-300 bg-stone-100">
-          <iframe
-            key={previewHref}
-            title={viewMode === "all" ? "Vista previa de hoja matriz de subalternos (unidad)" : "Vista previa de hoja matriz de subalternos por bateria"}
-            src={previewHref}
-            className="h-[80vh] min-h-[900px] w-full bg-white"
-          />
-        </div>
-      ) : null}
-
-      {data ? (
-        <div className="mt-2">
-          <p className="text-xs text-stone-500">{`Generado: ${formatDateTimeForDisplay(data.generatedAt)}`}</p>
-        </div>
-      ) : null}
-    </section>
+        {data && (
+          <Box sx={{ p: 2, bgcolor: alpha(theme.palette.action.hover, 0.2), borderTop: "1px solid", borderColor: "divider" }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: "text.disabled" }}>
+              Última actualización: {formatDateTimeForDisplay(data.generatedAt)}
+            </Typography>
+          </Box>
+        )}
+      </Card>
+    </Box>
   );
 }
