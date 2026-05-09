@@ -14,9 +14,14 @@ function detectMimeTypeFromPath(assetPath: string) {
   return "application/octet-stream";
 }
 
+export function getPublicAssetAbsolutePath(assetPath: string) {
+  const normalizedAssetPath = assetPath.replace(/^\/+/, "");
+  return path.join(process.cwd(), "public", normalizedAssetPath);
+}
+
 async function loadPublicAssetDataUrl(assetPath: string) {
   const normalizedAssetPath = assetPath.replace(/^\/+/, "");
-  const absolutePath = path.join(process.cwd(), "public", normalizedAssetPath);
+  const absolutePath = getPublicAssetAbsolutePath(normalizedAssetPath);
 
   try {
     const bytes = await readFile(absolutePath);

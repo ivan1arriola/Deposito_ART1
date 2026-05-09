@@ -8,7 +8,7 @@ import {
   getHojaEntregaDatePart,
   type HojaEntregaSheetData,
 } from "@/lib/hoja-entrega-data";
-import { getArtilleriaLogoDataUrl } from "@/lib/server/react-pdf-assets";
+import { getArtilleriaLogoDataUrl, getPublicAssetAbsolutePath } from "@/lib/server/react-pdf-assets";
 
 type RenderHojasEntregaPdfOptions = {
   pageNumberLabel?: string;
@@ -89,6 +89,39 @@ const BORDER = "#000000";
 const BG_WHITE = "#ffffff";
 const BG_MID = "#d9d9d9";
 const BG_TOTAL = "#efefef";
+
+const HOJA_ENTREGA_MONO_REGULAR_FAMILY = "HojaEntregaMonoRegular";
+const HOJA_ENTREGA_MONO_BOLD_FAMILY = "HojaEntregaMonoBold";
+const HOJA_ENTREGA_MONO_REGULAR_ASSET = "assets/fonts/RobotoMono-Regular.ttf";
+const HOJA_ENTREGA_MONO_BOLD_ASSET = "assets/fonts/RobotoMono-Bold.ttf";
+
+let hojaEntregaFontsRegistrationPromise: Promise<boolean> | null = null;
+
+async function ensureHojaEntregaFontsRegistered(ReactPdf: {
+  Font: {
+    register: (descriptor: {
+      family: string;
+      src: string;
+    }) => void;
+  };
+}) {
+  if (hojaEntregaFontsRegistrationPromise) return hojaEntregaFontsRegistrationPromise;
+
+  hojaEntregaFontsRegistrationPromise = (async () => {
+    try {
+      const regularFontPath = getPublicAssetAbsolutePath(HOJA_ENTREGA_MONO_REGULAR_ASSET);
+      const boldFontPath = getPublicAssetAbsolutePath(HOJA_ENTREGA_MONO_BOLD_ASSET);
+      ReactPdf.Font.register({ family: HOJA_ENTREGA_MONO_REGULAR_FAMILY, src: regularFontPath });
+      ReactPdf.Font.register({ family: HOJA_ENTREGA_MONO_BOLD_FAMILY, src: boldFontPath });
+      return true;
+    } catch (error) {
+      console.warn("[hoja-entrega-pdf] No se pudieron registrar fuentes embebidas, usando fallback estándar.", error);
+      return false;
+    }
+  })();
+
+  return hojaEntregaFontsRegistrationPromise;
+}
 
 const DATE_ROW_CONFIGS: DateRowConfig[] = [
   { key: "day", label: "DÍA", part: "day", showTMarkers: false, mergedVariant: "top" },
@@ -341,6 +374,11 @@ export async function renderHojasEntregaPdf(
 ): Promise<Uint8Array> {
   const ReactPdf = await import("@react-pdf/renderer");
   const { Document, Page, Text, View, StyleSheet, pdf, Image } = ReactPdf;
+  const usingEmbeddedMonoFonts = await ensureHojaEntregaFontsRegistered(ReactPdf);
+  const monoRegularFontFamily = usingEmbeddedMonoFonts ? HOJA_ENTREGA_MONO_REGULAR_FAMILY : "Courier";
+  const monoBoldFontFamily = usingEmbeddedMonoFonts ? HOJA_ENTREGA_MONO_BOLD_FAMILY : "Courier-Bold";
+  const sansRegularFontFamily = "Helvetica";
+  const sansBoldFontFamily = "Helvetica-Bold";
 
   const logoDataUrl = await getArtilleriaLogoDataUrl();
 
@@ -415,7 +453,7 @@ export async function renderHojasEntregaPdf(
         paddingRight: A4_MARGIN_X,
         paddingTop: A4_MARGIN_TOP,
         paddingBottom: A4_MARGIN_BOTTOM,
-        fontFamily: "Courier",
+        fontFamily: monoRegularFontFamily,
         fontSize: scaled(profile, 6.7, 4.6),
         color: "#000000",
         backgroundColor: "#ffffff",
@@ -493,7 +531,7 @@ export async function renderHojasEntregaPdf(
 
       topTitle: {
         textAlign: "center",
-        fontFamily: "Courier-Bold",
+        fontFamily: monoBoldFontFamily,
         fontSize: scaled(profile, 8.1, 5.8),
       },
 
@@ -505,28 +543,35 @@ export async function renderHojasEntregaPdf(
 
       subTitle: {
         textAlign: "center",
-        fontFamily: "Courier-Bold",
+        fontFamily: monoBoldFontFamily,
         fontSize: scaled(profile, 7.9, 5.7),
       },
 
       infoCell: {
         backgroundColor: BG_WHITE,
-        justifyContent: "flex-start",
+        justifyContent: "center",
         paddingTop: scaled(profile, 0.8, 0.25),
         paddingBottom: scaled(profile, 0.8, 0.25),
       },
 
+      infoLine: {
+        fontFamily: monoRegularFontFamily,
+        fontSize: scaled(profile, 6.9, 4.9),
+        lineHeight: 1,
+        maxLines: 1,
+        textOverflow: "ellipsis",
+      },
+
       infoLabel: {
-        fontFamily: "Courier-Bold",
-        fontSize: scaled(profile, 6.6, 4.8),
-        marginBottom: scaled(profile, 0.1, 0.02),
+        fontFamily: monoBoldFontFamily,
+        fontSize: scaled(profile, 6.9, 4.9),
         lineHeight: 1,
       },
 
       infoValue: {
-        fontFamily: "Courier",
+        fontFamily: monoRegularFontFamily,
         fontWeight: "normal",
-        fontSize: scaled(profile, 7.2, 5.2),
+        fontSize: scaled(profile, 6.9, 4.9),
         lineHeight: 1,
       },
 
@@ -539,7 +584,7 @@ export async function renderHojasEntregaPdf(
 
       sectionHeaderText: {
         textAlign: "center",
-        fontFamily: "Courier-Bold",
+        fontFamily: monoBoldFontFamily,
         fontSize: scaled(profile, 7.2, 5),
       },
 
@@ -552,7 +597,7 @@ export async function renderHojasEntregaPdf(
 
       dateLabelText: {
         textAlign: "center",
-        fontFamily: "Courier-Bold",
+        fontFamily: monoBoldFontFamily,
         fontSize: scaled(profile, 6.7, 4.7),
       },
 
@@ -565,7 +610,7 @@ export async function renderHojasEntregaPdf(
 
       dateValueText: {
         textAlign: "center",
-        fontFamily: "Courier",
+        fontFamily: monoRegularFontFamily,
         fontWeight: "normal",
         fontSize: scaled(profile, 6.7, 4.7),
       },
@@ -597,7 +642,7 @@ export async function renderHojasEntregaPdf(
 
       tText: {
         textAlign: "center",
-        fontFamily: "Courier",
+        fontFamily: monoRegularFontFamily,
         fontWeight: "normal",
         fontSize: scaled(profile, 6.8, 4.8),
       },
@@ -636,7 +681,7 @@ export async function renderHojasEntregaPdf(
 
       totalText: {
         textAlign: "center",
-        fontFamily: "Courier",
+        fontFamily: monoRegularFontFamily,
         fontWeight: "normal",
         fontSize: scaled(profile, 6.9, 4.8),
       },
@@ -652,7 +697,7 @@ export async function renderHojasEntregaPdf(
 
       observacionesTitle: {
         textAlign: "center",
-        fontFamily: "Courier-Bold",
+        fontFamily: monoBoldFontFamily,
         fontSize: scaled(profile, 7.2, 5),
         marginBottom: scaled(profile, 0.8, 0.18),
       },
@@ -687,7 +732,7 @@ export async function renderHojasEntregaPdf(
         lineHeight: signatureLineHeight,
       },
       firmaLineStrong: {
-        fontFamily: "Courier-Bold",
+        fontFamily: monoBoldFontFamily,
       },
 
       pageNumber: {
@@ -695,19 +740,19 @@ export async function renderHojasEntregaPdf(
         right: A4_MARGIN_X,
         bottom: 4,
         fontSize: scaled(profile, 5.2, 3.8),
-        fontFamily: "Helvetica",
+        fontFamily: sansRegularFontFamily,
       },
 
       // Manual / Guia Styles
       manualPage: {
         padding: 40,
-        fontFamily: "Helvetica",
+        fontFamily: sansRegularFontFamily,
         fontSize: 10,
         color: "#1e293b",
       },
       manualTitle: {
         fontSize: 18,
-        fontFamily: "Helvetica-Bold",
+        fontFamily: sansBoldFontFamily,
         color: "#0f172a",
         marginBottom: 15,
         textAlign: "center",
@@ -722,7 +767,7 @@ export async function renderHojasEntregaPdf(
       },
       manualSubtitle: {
         fontSize: 12,
-        fontFamily: "Helvetica-Bold",
+        fontFamily: sansBoldFontFamily,
         color: "#334155",
         marginBottom: 5,
       },
@@ -751,9 +796,9 @@ export async function renderHojasEntregaPdf(
                 isLast ? styles.noRightBorder : {},
               ]}
             >
-              {cell.label ? <Text style={styles.infoLabel}>{cell.label}</Text> : null}
-              <Text style={[styles.infoValue, cell.align === "center" ? styles.center : styles.left]}>
-                {cell.value || " "}
+              <Text style={[styles.infoLine, cell.align === "center" ? styles.center : styles.left]}>
+                {cell.label ? <Text style={styles.infoLabel}>{`${cell.label} `}</Text> : null}
+                <Text style={styles.infoValue}>{cell.value || " "}</Text>
               </Text>
             </View>
           );
