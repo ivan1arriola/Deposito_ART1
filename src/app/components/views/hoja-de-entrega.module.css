@@ -22,9 +22,11 @@
   min-height: 100vh;
   margin: 0;
   padding: 0;
+  font-family: var(--font-family-mono);
   background: #fff;
   background-image: none !important;
   color: var(--color-text);
+  font-synthesis: none;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }
@@ -667,12 +669,12 @@
   }
 
   .sheet {
-    margin: 0;
-    height: auto;
+    width: 210mm;
+    height: 297mm;
+    min-height: 297mm;
+    margin: 0 auto;
     padding: 3.5mm 6mm 7mm 6mm;
-    max-width: none;
-    width: 100%;
-    min-height: 0;
+    max-width: 210mm;
     box-shadow: none;
     border: none;
   }
@@ -723,7 +725,7 @@
 }
 
 /* ===== RESPONSIVIDAD PARA PANTALLA ===== */
-@media (max-width: 1024px) {
+@media screen and (max-width: 1024px) {
   .table {
     font-size: 8px;
   }
@@ -743,7 +745,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
   .toolbar {
     flex-direction: column;
     gap: 6px;
