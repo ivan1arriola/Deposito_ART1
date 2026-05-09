@@ -2853,7 +2853,9 @@ export default function Home() {
 
     let openedCount = 0;
     for (const prestamoId of ids) {
-      const popup = window.open(`/api/prestamos/${encodeURIComponent(prestamoId)}/recibo`, "_blank", "noopener,noreferrer");
+      // Normalizamos el ID quitando el prefijo 'prestamo-' si está presente (seguridad adicional)
+      const normalizedId = prestamoId.replace(/^prestamo-/, "");
+      const popup = window.open(`/api/prestamos/${encodeURIComponent(normalizedId)}/recibo`, "_blank", "noopener,noreferrer");
       if (popup) {
         openedCount += 1;
       }
@@ -3046,6 +3048,7 @@ export default function Home() {
   function buildPersonaProfileTimeline(registros: RegistroView[], prestamos: PrestamoStockEntry[]): PersonaProfileTimelineEntry[] {
     const registrosTimeline = registros.map((registro) => ({
       id: `registro-${registro.registroId}`,
+      dbId: registro.registroId,
       fecha: registro.fecha,
       tipo: registro.tipo === "ENTREGA" ? "ENTREGA" : "DEVOLUCION",
       descripcion: `Registro ${registro.tipo.toLowerCase()} · ${registro.items.reduce((acc, item) => acc + item.cantidad, 0)} unidades`,
@@ -3060,6 +3063,7 @@ export default function Home() {
     const prestamosTimeline = prestamos.flatMap((prestamo) => {
       const prestamoEntry: PersonaProfileTimelineEntry = {
         id: `prestamo-${prestamo.prestamoId}`,
+        dbId: prestamo.prestamoId,
         fecha: prestamo.fechaPrestamo,
         tipo: "PRESTAMO",
         descripcion: `Préstamo ${prestamo.reciboNumero} · ${prestamo.estado.toLowerCase()}`,
@@ -3072,6 +3076,7 @@ export default function Home() {
 
       const devolucionEntry: PersonaProfileTimelineEntry = {
         id: `prestamo-devolucion-${prestamo.prestamoId}`,
+        dbId: prestamo.prestamoId,
         fecha: prestamo.fechaDevolucion,
         tipo: "DEVOLUCION_PRESTAMO",
         descripcion: `Devolución de préstamo ${prestamo.reciboNumero}`,

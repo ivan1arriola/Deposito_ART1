@@ -107,8 +107,7 @@ function movementTypeLabel(tipo: TipoMovimiento) {
 }
 
 function movementTypeColor(tipo: TipoMovimiento) {
-  if (tipo === TipoMovimiento.PRESTAMO) return rgb(0.7, 0, 0);
-  if (tipo === TipoMovimiento.DEVOLUCION) return rgb(0, 0.45, 0);
+  // Optimizado para Blanco y Negro (B&W)
   return rgb(0, 0, 0);
 }
 
@@ -249,7 +248,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     pageNumber++;
     currentY = PAGE_MARGIN_Y + RECEIPT_PADDING;
     
-    // Draw page frame
+    // Marco de página (Simple y elegante)
     drawRectTop(currentPage, PAGE_MARGIN_X, PAGE_MARGIN_Y, A4_WIDTH - PAGE_MARGIN_X * 2, A4_HEIGHT - PAGE_MARGIN_Y * 2);
     
     if (watermarkImage) {
@@ -266,56 +265,39 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       });
     }
 
-    // Header info
+    // Cabecera Institucional
     const headerTitle = "HOJA DE MOVIMIENTOS - DEPÓSITO GENERAL";
     const headerUnit = 'GRUPO "BRIG. GRAL. MANUEL ORIBE" DE ARTILLERIA 105MM NO. 1';
-    drawTextAt(currentPage!, bold, headerUnit, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 7);
+    
+    drawTextAt(currentPage!, bold, headerUnit, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 8);
     drawTextRight(currentPage!, regular, `Impreso: ${formatDateUy(new Date())} ${formatTimeUy(new Date())}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, currentY, 7);
-    currentY += 10;
-    drawTextAt(currentPage!, bold, headerTitle, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 12);
-    drawTextRight(currentPage!, bold, `Hoja ${pageNumber}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, currentY, 8);
-    currentY += 18;
-    drawHorizontalLine(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 1);
     currentY += 12;
+    
+    drawTextAt(currentPage!, bold, headerTitle, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 14);
+    drawTextRight(currentPage!, bold, `Página ${pageNumber}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, currentY, 9);
+    currentY += 18;
+    
+    drawHorizontalLine(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 1.5);
+    currentY += 14;
 
     if (pageNumber === 1) {
-      // Personal Info
+      // Información del Personal (Compacta)
       const pName = fullName(personal!.apellido1, personal!.apellido2, personal!.nombre1, personal!.nombre2);
       const pGrado = personal!.rango.abreviacion;
       const pCi = formatUruguayanCi(personal!.ci);
+      const pBat = personal!.subalterno?.bateria?.nombre || "No aplica";
+
+      drawTextAt(currentPage!, bold, "PERSONAL:", PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 10);
+      drawTextAt(currentPage!, regular, `${pGrado} ${pName}`, PAGE_MARGIN_X + RECEIPT_PADDING + 65, currentY, 10);
+      drawTextRight(currentPage!, regular, `C.I. ${pCi}  |  UNIDAD: ${pBat}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, currentY, 10);
+      currentY += 16;
       
-      let pBat = "No aplica";
-      if (personal!.subalterno?.bateria?.nombre) {
-        pBat = personal!.subalterno.bateria.nombre;
-      }
-
-      drawTextAt(currentPage!, bold, "PERSONAL:", PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 9);
-      drawTextAt(currentPage!, regular, `${pGrado} ${pName} (C.I. ${pCi}) - UNIDAD: ${pBat}`, PAGE_MARGIN_X + RECEIPT_PADDING + 60, currentY, 9);
-      currentY += 14;
-      drawHorizontalLine(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 0.5);
-      currentY += 12;
-
-      const summaryTop = currentY;
-      const summaryHeight = 36;
-      drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, summaryTop, INNER_WIDTH, summaryHeight, rgb(0, 0, 0), true);
-      drawTextAt(currentPage!, bold, "RESUMEN DE ESTADO", PAGE_MARGIN_X + RECEIPT_PADDING + 6, summaryTop + 6, 9);
-      drawTextAt(
-        currentPage!,
-        regular,
-        `Movimientos: ${movimientos.length}  |  Unidades totales: ${totalUnidades}`,
-        PAGE_MARGIN_X + RECEIPT_PADDING + 6,
-        summaryTop + 17,
-        8,
-      );
-      drawTextAt(
-        currentPage!,
-        regular,
-        `Entregas: ${movementsByType[TipoMovimiento.ENTREGA]}  |  Devoluciones: ${movementsByType[TipoMovimiento.DEVOLUCION]}  |  Prestamos pendientes: ${movementsByType[TipoMovimiento.PRESTAMO]}`,
-        PAGE_MARGIN_X + RECEIPT_PADDING + 6,
-        summaryTop + 27,
-        8,
-      );
-      currentY += summaryHeight + 8;
+      // Resumen (Una sola fila compacta)
+      drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 18, rgb(0, 0, 0), false);
+      const summaryText = `RESUMEN: ${movimientos.length} Movimientos totales  |  ${totalUnidades} Unidades  |  Entregas: ${movementsByType[TipoMovimiento.ENTREGA]}  |  Devoluciones: ${movementsByType[TipoMovimiento.DEVOLUCION]}  |  Préstamos: ${movementsByType[TipoMovimiento.PRESTAMO]}`;
+      drawTextAt(currentPage!, bold, summaryText, PAGE_MARGIN_X + RECEIPT_PADDING + 8, currentY + 5, 8.5);
+      
+      currentY += 28;
     }
   }
 
@@ -328,51 +310,38 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     const resp = militaryShortLabel(mov.usuarioEntrega.rango?.abreviacion ?? "", mov.usuarioEntrega.apellido, mov.usuarioEntrega.nombre);
     const totalUnidadesMovimiento = mov.items.reduce((acc, item) => acc + item.cantidad, 0);
 
-    // Estimate height
-    const headerH = 65;
+    // Estimación de altura compacta
+    const headerH = 22; // Título del movimiento
+    const subHeaderH = 15; // Fecha, responsable
     const tableHeaderH = TABLE_HEADER_HEIGHT;
     const rowCount = Math.max(mov.items.length, 1);
     const rowH = rowCount * TABLE_MIN_ROW_HEIGHT;
-    const obsH = mov.observaciones ? wrapText(mov.observaciones, INNER_WIDTH - 20, regular, 8).length * 12 + 18 : 0;
-    const footerH = 18;
-    const totalMovH = headerH + tableHeaderH + rowH + obsH + footerH + 15;
+    const obsH = mov.observaciones ? wrapText(mov.observaciones, INNER_WIDTH - 20, regular, 8).length * 12 + 15 : 0;
+    const spacing = 15;
+    const totalMovH = headerH + subHeaderH + tableHeaderH + rowH + obsH + spacing;
 
     if (currentY + totalMovH > CONTENT_BOTTOM) {
       addNewPage();
     }
 
-    // Draw Movement Block
-    drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, totalMovH - 10, rgb(0, 0, 0), true);
-    let movY = currentY + 5;
+    // Separador de Movimiento (Línea simple)
+    drawHorizontalLine(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 0.5);
+    let movY = currentY + 10;
 
-    drawTextAt(currentPage!, bold, `MOVIMIENTO: ${referencia}`, PAGE_MARGIN_X + RECEIPT_PADDING + 8, movY + 5, 10);
-    drawTextRight(
-      currentPage!,
-      bold,
-      `TIPO: ${tipoM}`,
-      A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING - 8,
-      movY + 5,
-      9,
-      movementTypeColor(mov.tipo),
-    );
-    movY += 18;
+    // Fila 1: ID y Tipo
+    drawTextAt(currentPage!, bold, `MOVIMIENTO: ${referencia}`, PAGE_MARGIN_X + RECEIPT_PADDING, movY, 10);
+    drawTextRight(currentPage!, bold, `TIPO: ${tipoM}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, movY, 10);
+    movY += 15;
 
-    drawTextAt(currentPage!, regular, `Fecha: ${fechaM}`, PAGE_MARGIN_X + RECEIPT_PADDING + 8, movY + 2, 9);
-    drawTextAt(currentPage!, regular, `Responsable: ${resp}`, PAGE_MARGIN_X + RECEIPT_PADDING + 115, movY + 2, 9);
-    movY += 16;
-    drawTextAt(
-      currentPage!,
-      regular,
-      `Total de unidades en este movimiento: ${totalUnidadesMovimiento}`,
-      PAGE_MARGIN_X + RECEIPT_PADDING + 8,
-      movY + 2,
-      9,
-    );
-    movY += 16;
+    // Fila 2: Fecha, Responsable y Unidades
+    drawTextAt(currentPage!, regular, `Fecha: ${fechaM}  |  Responsable: ${resp}  |  Total Unidades: ${totalUnidadesMovimiento}`, PAGE_MARGIN_X + RECEIPT_PADDING, movY, 9);
+    movY += 15;
 
-    // Table
-    const tableX = PAGE_MARGIN_X + RECEIPT_PADDING + 8;
-    const tableW = INNER_WIDTH - 16;
+    // Tabla de Equipos
+    const tableX = PAGE_MARGIN_X + RECEIPT_PADDING;
+    const tableW = INNER_WIDTH;
+    
+    // Encabezado de tabla (Sin fondo para ahorrar tinta, solo bordes)
     drawRectTop(currentPage!, tableX, movY, tableW, tableHeaderH, rgb(0, 0, 0));
     drawTextAt(currentPage!, bold, "EQUIPO", tableX + 5, movY + 4, 8);
     drawTextAt(currentPage!, bold, "CANT", tableX + TABLE_COL_EFECTO, movY + 4, 8);
@@ -387,13 +356,13 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     } else {
       for (const item of mov.items) {
         drawRectTop(currentPage!, tableX, movY, tableW, TABLE_MIN_ROW_HEIGHT, rgb(0, 0, 0));
-        drawTextAt(currentPage!, regular, toPrintUppercase(item.item.nombre).slice(0, 45), tableX + 5, movY + 3, 8);
+        drawTextAt(currentPage!, regular, toPrintUppercase(item.item.nombre).slice(0, 60), tableX + 5, movY + 3, 8);
         drawTextAt(currentPage!, regular, String(item.cantidad), tableX + TABLE_COL_EFECTO + 5, movY + 3, 8);
         drawTextAt(currentPage!, regular, resolveItemEstado(mov, item), tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + 5, movY + 3, 8);
         drawTextAt(
           currentPage!,
           regular,
-          resolveItemObservacion(mov, item).slice(0, 25),
+          resolveItemObservacion(mov, item).slice(0, 35),
           tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + TABLE_COL_ESTADO + 5,
           movY + 3,
           8,
@@ -404,12 +373,12 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
 
     if (mov.observaciones) {
       const lines = wrapText(mov.observaciones, tableW - 10, regular, 8);
-      drawTextAt(currentPage!, bold, "Observaciones:", tableX, movY + 5, 8);
-      lines.forEach((l, i) => drawTextAt(currentPage!, regular, l, tableX + 70, movY + 5 + i * 12, 8));
-      movY += lines.length * 12 + 10;
+      drawTextAt(currentPage!, bold, "Nota:", tableX, movY + 5, 8);
+      lines.forEach((l, i) => drawTextAt(currentPage!, regular, l, tableX + 35, movY + 5 + i * 11, 8));
+      movY += lines.length * 11 + 8;
     }
 
-    currentY += totalMovH;
+    currentY = movY + 10;
   }
 
   const pdfBytes = await pdfDoc.save();

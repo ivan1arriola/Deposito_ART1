@@ -50,6 +50,7 @@ export type PersonaProfileEquipmentRow = {
 
 export type PersonaProfileTimelineEntry = {
   id: string;
+  dbId?: string;
   fecha: string;
   tipo: PersonaProfileTimelineType;
   descripcion: string;
@@ -445,7 +446,7 @@ export function PersonaProfileView({
 
                            {entry.tipo === "PRESTAMO" && (
                              <button
-                               onClick={() => onPrintPrestamos([entry.id])}
+                               onClick={() => onPrintPrestamos([entry.dbId || entry.id])}
                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-[10px] sm:text-[11px] font-black text-indigo-700 transition hover:bg-indigo-100 active:scale-95"
                              >
                                <PrintRoundedIcon sx={{ fontSize: 16 }} />
