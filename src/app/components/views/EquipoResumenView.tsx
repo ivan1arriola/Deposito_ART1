@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { EquipoResumenData } from "@/types/views";
 import { LoadingInline } from "@/app/components/shared";
