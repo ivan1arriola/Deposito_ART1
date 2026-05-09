@@ -70,6 +70,7 @@ export function StockView({
   const [sieDraftByItemId, setSieDraftByItemId] = useState<Record<string, string>>({});
   const [sieSavingItemId, setSieSavingItemId] = useState<string | null>(null);
   const [sieError, setSieError] = useState<string | null>(null);
+  const [searchTermEquipos, setSearchTermEquipos] = useState("");
   const [returnDialog, setReturnDialog] = useState<{
     prestamo: StockDashboardData["prestamos"][number];
     fechaDevolucion: string;
@@ -246,6 +247,12 @@ export function StockView({
     itemsConStockDeposito,
     itemsNegativosDeposito,
   } = getStockSummaryMetrics(resumen);
+
+  const normalizedSearchTermEquipos = searchTermEquipos.trim().toLowerCase();
+  const resumenFiltrado =
+    normalizedSearchTermEquipos === ""
+      ? resumen
+      : resumen.filter((item) => item.nombre.toLowerCase().includes(normalizedSearchTermEquipos));
 
   const { showSummaryCards, showManualForm, showStockTable, showHistory, showPrestamos, viewTitle, stockTableTitle } =
     getSectionViewConfig(section);
@@ -700,8 +707,20 @@ export function StockView({
 
       {showStockTable ? (
         <article className="ej-card rounded-2xl p-4">
-          <h3 className="text-sm font-semibold text-stone-900">{stockTableTitle}</h3>
-          {loading ? <LoadingInline label="Cargando stock..." className="mt-3" textClassName="text-sm font-medium text-stone-600" /> : null}
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <h3 className="text-sm font-semibold text-stone-900">{stockTableTitle}</h3>
+            <label className="w-full max-w-xs text-xs text-stone-700">
+              Filtrar equipos
+              <input
+                type="text"
+                value={searchTermEquipos}
+                onChange={(event) => setSearchTermEquipos(event.target.value)}
+                placeholder="Nombre del equipo..."
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
+          {loading ? <LoadingInline label="Cargando stock..." className="mt-4" textClassName="text-sm font-medium text-stone-600" /> : null}
           {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
           {!loading && !error ? (
             <div className="mt-3 overflow-x-auto">
@@ -723,7 +742,14 @@ export function StockView({
                   </tr>
                 </thead>
                 <tbody>
-                  {resumen.map((item, index) => (
+                  {resumenFiltrado.length === 0 && !loading && !error ? (
+                    <tr>
+                      <td colSpan={section === "total" ? 6 : 2} className="px-3 py-8 text-center text-stone-500 italic">
+                        No se encontraron equipos que coincidan con "{searchTermEquipos}".
+                      </td>
+                    </tr>
+                  ) : null}
+                  {resumenFiltrado.map((item, index) => (
                     <tr key={item.itemId} className={index % 2 === 0 ? "bg-white" : "bg-stone-100/80"}>
                       <td className="border-b border-stone-100 px-3 py-2 text-stone-900">{item.nombre}</td>
                       {section === "total" ? (

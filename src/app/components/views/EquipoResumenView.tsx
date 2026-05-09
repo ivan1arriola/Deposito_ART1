@@ -20,20 +20,26 @@ type EquipoResumenDisplayRow = {
 };
 
 export function EquipoResumenView({ data, loading, error, onReload }: EquipoResumenViewProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+
   const rows = useMemo<EquipoResumenDisplayRow[]>(() => {
     if (!data) return [];
 
-    return data.items.map((item, index) => ({
-      itemId: item.itemId,
-      nombre: item.nombre,
-      valoresPorBateria: data.baterias.map((bateria) => ({
-        key: bateria.key,
-        nombre: bateria.nombre,
-        total: bateria.totales[index] ?? 0,
-      })),
-      totalUnidad: data.unidad.totales[index] ?? 0,
-    }));
-  }, [data]);
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return data.items
+      .map((item, index) => ({
+        itemId: item.itemId,
+        nombre: item.nombre,
+        valoresPorBateria: data.baterias.map((bateria) => ({
+          key: bateria.key,
+          nombre: bateria.nombre,
+          total: bateria.totales[index] ?? 0,
+        })),
+        totalUnidad: data.unidad.totales[index] ?? 0,
+      }))
+      .filter((row) => row.nombre.toLowerCase().includes(normalizedSearch));
+  }, [data, searchTerm]);
 
   return (
     <section className="mt-6 space-y-4">
@@ -80,14 +86,31 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
 
       {data ? (
         <article className="ej-card rounded-2xl p-4">
-          <div className="mb-4">
-            <h3 className="text-base font-semibold text-stone-900">Total de equipo en baterías según hojas de entrega</h3>
-            <p className="mt-1 text-xs text-stone-600">
-              La primera columna muestra los nombres de los equipos. Cada fila representa un equipo, cada columna representa una batería y la columna final representa el total de las baterías, que es lo mismo que el total de la unidad.
-            </p>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+            <div className="flex-1 min-w-[280px]">
+              <h3 className="text-base font-semibold text-stone-900">Total de equipo en baterías según hojas de entrega</h3>
+              <p className="mt-1 text-xs text-stone-600">
+                La primera columna muestra los nombres de los equipos. Cada fila representa un equipo, cada columna representa una batería y la columna final representa el total de las baterías.
+              </p>
+            </div>
+            <label className="w-full max-w-xs text-xs text-stone-700">
+              Filtrar equipos
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Nombre del equipo..."
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
           </div>
 
           <div className="space-y-3 md:hidden">
+            {rows.length === 0 ? (
+              <p className="px-3 py-8 text-center text-sm text-stone-500 italic">
+                No se encontraron equipos que coincidan con "{searchTerm}".
+              </p>
+            ) : null}
             {rows.map((row) => (
               <article key={`mobile-${row.itemId}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
                 <div className="flex items-center justify-between gap-2">
@@ -126,6 +149,13 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
                 </tr>
               </thead>
               <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={data.baterias.length + 2} className="px-3 py-8 text-center text-sm text-stone-500 italic">
+                      No se encontraron equipos que coincidan con "{searchTerm}".
+                    </td>
+                  </tr>
+                ) : null}
                 {rows.map((row, rowIndex) => (
                   <tr key={row.itemId} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
                     <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">{row.nombre}</td>
