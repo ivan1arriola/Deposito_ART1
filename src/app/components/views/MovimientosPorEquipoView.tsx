@@ -198,7 +198,11 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
     if (!ciValue) return;
 
     if (!onOpenPersonaProfileByCi) {
-      window.open(`/hoja-de-entrega/${encodeURIComponent(ciValue)}`, "_blank", "noopener,noreferrer");
+      window.open(
+        `/api/hoja-de-entrega/${encodeURIComponent(ciValue)}/pdf?inline=1&ts=${Date.now()}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
       return;
     }
 

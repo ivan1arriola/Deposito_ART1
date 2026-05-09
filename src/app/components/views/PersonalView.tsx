@@ -212,7 +212,13 @@ export function PersonalView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => window.open(`/hoja-de-entrega/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
+                  onClick={() =>
+                    window.open(
+                      `/api/hoja-de-entrega/${encodeURIComponent(persona.ci)}/pdf?inline=1&ts=${Date.now()}`,
+                      "_blank",
+                      "noopener,noreferrer",
+                    )
+                  }
                   className="rounded bg-indigo-700 px-2 py-1 text-xs font-medium text-white"
                 >
                   Hoja de Entrega
@@ -324,7 +330,13 @@ export function PersonalView({
                         </button>
                         <button
                           type="button"
-                          onClick={() => window.open(`/hoja-de-entrega/${encodeURIComponent(persona.ci)}`, "_blank", "noopener,noreferrer")}
+                          onClick={() =>
+                            window.open(
+                              `/api/hoja-de-entrega/${encodeURIComponent(persona.ci)}/pdf?inline=1&ts=${Date.now()}`,
+                              "_blank",
+                              "noopener,noreferrer",
+                            )
+                          }
                           className="w-full rounded bg-indigo-700 px-2 py-1 text-[11px] font-medium leading-tight text-white"
                         >
                           Hoja de Entrega
