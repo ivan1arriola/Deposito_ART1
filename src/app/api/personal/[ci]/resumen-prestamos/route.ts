@@ -103,7 +103,7 @@ function militaryShortLabel(gradoAbreviacion: string, apellido: string, nombre: 
 function movementTypeLabel(tipo: TipoMovimiento) {
   if (tipo === TipoMovimiento.ENTREGA) return "ENTREGA";
   if (tipo === TipoMovimiento.DEVOLUCION) return "DEVOLUCION";
-  return "PRESTAMO PENDIENTE";
+  return "PRESTAMO";
 }
 
 function movementTypeColor(tipo: TipoMovimiento) {
@@ -266,7 +266,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     }
 
     // Cabecera Institucional
-    const headerTitle = "HOJA DE MOVIMIENTOS - DEPÓSITO GENERAL";
+    const headerTitle = "HOJA DE MOVIMIENTOS V3 - DEPÓSITO GENERAL";
     const headerUnit = 'GRUPO "BRIG. GRAL. MANUEL ORIBE" DE ARTILLERIA 105MM NO. 1';
     
     drawTextAt(currentPage!, bold, headerUnit, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 8);
@@ -294,7 +294,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       
       // Resumen (Una sola fila compacta)
       drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 18, rgb(0, 0, 0), false);
-      const summaryText = `RESUMEN: ${movimientos.length} Movimientos totales  |  ${totalUnidades} Unidades  |  Entregas: ${movementsByType[TipoMovimiento.ENTREGA]}  |  Devoluciones: ${movementsByType[TipoMovimiento.DEVOLUCION]}  |  Préstamos: ${movementsByType[TipoMovimiento.PRESTAMO]}`;
+      const summaryText = `RESUMEN GENERAL: ${movimientos.length} Movimientos — ${totalUnidades} Unidades — ENTREGAS: ${movementsByType[TipoMovimiento.ENTREGA]} | DEVOLUCIONES: ${movementsByType[TipoMovimiento.DEVOLUCION]} | PRÉSTAMOS: ${movementsByType[TipoMovimiento.PRESTAMO]}`;
       drawTextAt(currentPage!, bold, summaryText, PAGE_MARGIN_X + RECEIPT_PADDING + 8, currentY + 5, 8.5);
       
       currentY += 28;
@@ -328,9 +328,8 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     drawHorizontalLine(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 0.5);
     let movY = currentY + 10;
 
-    // Fila 1: ID y Tipo
-    drawTextAt(currentPage!, bold, `MOVIMIENTO: ${referencia}`, PAGE_MARGIN_X + RECEIPT_PADDING, movY, 10);
-    drawTextRight(currentPage!, bold, `TIPO: ${tipoM}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, movY, 10);
+    // Fila 1: Tipo e ID combinados (Ej: ENTREGA MV-00000001)
+    drawTextAt(currentPage!, bold, `${tipoM} ${referencia}`, PAGE_MARGIN_X + RECEIPT_PADDING, movY, 11);
     movY += 15;
 
     // Fila 2: Fecha, Responsable y Unidades
