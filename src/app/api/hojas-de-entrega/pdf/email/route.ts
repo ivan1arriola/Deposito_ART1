@@ -87,6 +87,8 @@ async function runHojasEntregaEmailJob(input: {
       renderHojasEntregaPdf(hojas, fechaImpresion, {
         includePageNumbers: true,
         pageNumberLabel: "Hoja",
+        includeSheetPage: true,
+        includeUsageGuidePage: false,
         performanceMode: "fast-batch",
         fastBatchInitialProfileId: "tight",
       }),

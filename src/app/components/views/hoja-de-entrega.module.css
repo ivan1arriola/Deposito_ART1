@@ -46,7 +46,8 @@
 
 /* Estilos para botones */
 .button,
-.buttonSecondary {
+.buttonSecondary,
+.buttonGuide {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 0.5rem;
@@ -64,25 +65,29 @@
 }
 
 .button:disabled,
-.buttonSecondary:disabled {
+.buttonSecondary:disabled,
+.buttonGuide:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .button:hover:not(:disabled),
-.buttonSecondary:hover:not(:disabled) {
+.buttonSecondary:hover:not(:disabled),
+.buttonGuide:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .button:active:not(:disabled),
-.buttonSecondary:active:not(:disabled) {
+.buttonSecondary:active:not(:disabled),
+.buttonGuide:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .button:focus-visible,
-.buttonSecondary:focus-visible {
+.buttonSecondary:focus-visible,
+.buttonGuide:focus-visible {
   outline: 2px solid var(--color-secondary);
   outline-offset: 2px;
 }
@@ -109,6 +114,18 @@
 
 .buttonSecondary:active:not(:disabled) {
   background: #334155;
+}
+
+.buttonGuide {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+}
+
+.buttonGuide:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0284c7 0%, #075985 100%);
+}
+
+.buttonGuide:active:not(:disabled) {
+  background: #075985;
 }
 
 /* ===== ESTADO DE CARGA ===== */
@@ -753,7 +770,8 @@
   }
 
   .button,
-  .buttonSecondary {
+  .buttonSecondary,
+  .buttonGuide {
     width: 100%;
     justify-content: center;
   }

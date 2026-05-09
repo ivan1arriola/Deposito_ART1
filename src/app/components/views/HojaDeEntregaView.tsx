@@ -112,7 +112,7 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
   const [data, setData] = useState<FichaData | null>(null);
   const [status, setStatus] = useState("Cargando hoja de entrega...");
   const [loading, setLoading] = useState(true);
-  const [pdfDownloading, setPdfDownloading] = useState(false);
+  const [pdfActionLoading, setPdfActionLoading] = useState<"hoja" | "guia" | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,13 +140,14 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
     };
   }, [ci]);
 
-  const exportPdf = useCallback(() => {
-    if (!data || pdfDownloading) return;
+  const exportPdf = useCallback((documentType: "hoja" | "guia") => {
+    if (!data || pdfActionLoading) return;
 
-    setPdfDownloading(true);
+    const isGuide = documentType === "guia";
+    setPdfActionLoading(documentType);
     try {
-      setStatus("Descargando PDF A4...");
-      const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?ts=${Date.now()}`;
+      setStatus(isGuide ? "Descargando guía de responsabilidad en PDF..." : "Descargando hoja de entrega en PDF A4...");
+      const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?document=${documentType}&ts=${Date.now()}`;
       const link = document.createElement("a");
       link.href = pdfUrl;
       link.rel = "noopener";
@@ -155,16 +156,16 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
       link.click();
       document.body.removeChild(link);
 
-      setStatus("Descarga iniciada.");
+      setStatus(isGuide ? "Descarga de guía iniciada." : "Descarga de hoja iniciada.");
       window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Error desconocido";
       setStatus(`Error: ${message}`);
       window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
     } finally {
-      setPdfDownloading(false);
+      setPdfActionLoading(null);
     }
-  }, [ci, data, pdfDownloading]);
+  }, [ci, data, pdfActionLoading]);
 
   const fechaImpresion = formatDisplayDate(new Date());
   const canonicalData = useMemo(() => (data ? toCanonicalData(data) : null), [data]);
@@ -178,11 +179,20 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
         <button
           type="button"
           className={styles.button}
-          onClick={exportPdf}
-          disabled={!canonicalData || pdfDownloading}
+          onClick={() => exportPdf("hoja")}
+          disabled={!canonicalData || pdfActionLoading !== null}
           aria-label="Imprimir o guardar hoja de entrega como PDF"
         >
-          {pdfDownloading ? "Generando PDF..." : "Imprimir / Guardar PDF"}
+          {pdfActionLoading === "hoja" ? "Generando Hoja..." : "Imprimir Hoja de Entrega"}
+        </button>
+        <button
+          type="button"
+          className={styles.buttonGuide}
+          onClick={() => exportPdf("guia")}
+          disabled={!canonicalData || pdfActionLoading !== null}
+          aria-label="Imprimir o guardar guía de cuidado y responsabilidad como PDF"
+        >
+          {pdfActionLoading === "guia" ? "Generando Guía..." : "Imprimir Guía de Responsabilidad"}
         </button>
       </div>
 

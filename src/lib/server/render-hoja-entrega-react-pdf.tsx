@@ -13,6 +13,7 @@ import { getArtilleriaLogoDataUrl, getPublicAssetAbsolutePath } from "@/lib/serv
 type RenderHojasEntregaPdfOptions = {
   pageNumberLabel?: string;
   includePageNumbers?: boolean;
+  includeSheetPage?: boolean;
   performanceMode?: "adaptive" | "fast-batch";
   fastBatchInitialProfileId?: DensityProfile["id"];
   fastBatchChunkSize?: number;
@@ -384,8 +385,12 @@ export async function renderHojasEntregaPdf(
 
   const pageNumberLabel = options.pageNumberLabel ?? "Hoja";
   const includePageNumbers = options.includePageNumbers ?? true;
-  const includeUsageGuidePage = options.includeUsageGuidePage ?? true;
-  const expectedPagesPerHoja = includeUsageGuidePage ? 2 : 1;
+  const includeSheetPage = options.includeSheetPage ?? true;
+  const includeUsageGuidePage = options.includeUsageGuidePage ?? false;
+  if (!includeSheetPage && !includeUsageGuidePage) {
+    throw new Error("Debe renderizarse al menos una pagina (hoja o guia de responsabilidad).");
+  }
+  const expectedPagesPerHoja = (includeSheetPage ? 1 : 0) + (includeUsageGuidePage ? 1 : 0);
   const performanceMode = options.performanceMode ?? "adaptive";
   const fastBatchInitialProfileId = options.fastBatchInitialProfileId ?? "tight";
   const fastBatchChunkSize = normalizeFastBatchChunkSize(options.fastBatchChunkSize ?? getFastBatchChunkSizeFromEnv());
@@ -1046,14 +1051,16 @@ export async function renderHojasEntregaPdf(
 
     const HojaEntregaPdfDocument = () => (
       <Document title="Hoja de Entrega" author="Deposito ART1">
-        {hojasToRender.flatMap((hoja, index) =>
-          includeUsageGuidePage
-            ? [
-                <HojaEntregaSheetPage key={`${hoja.data.persona.ci}-${index}`} hoja={hoja} />,
-                <GuiaUsoPage key={`guia-${hoja.data.persona.ci}-${index}`} />,
-              ]
-            : [<HojaEntregaSheetPage key={`${hoja.data.persona.ci}-${index}`} hoja={hoja} />],
-        )}
+        {hojasToRender.flatMap((hoja, index) => {
+          const pages: React.ReactElement[] = [];
+          if (includeSheetPage) {
+            pages.push(<HojaEntregaSheetPage key={`${hoja.data.persona.ci}-${index}`} hoja={hoja} />);
+          }
+          if (includeUsageGuidePage) {
+            pages.push(<GuiaUsoPage key={`guia-${hoja.data.persona.ci}-${index}`} />);
+          }
+          return pages;
+        })}
       </Document>
     );
 

@@ -12,6 +12,9 @@ export const maxDuration = 300;
 
 export async function GET(request: Request, context: { params: Promise<{ ci: string }> }) {
   const { ci } = await context.params;
+  const { searchParams } = new URL(request.url);
+  const documentParam = (searchParams.get("document") || "").trim().toLowerCase();
+  const isGuideOnly = documentParam === "guia" || documentParam === "guia-responsabilidad";
   const ciValue = decodeURIComponent(ci).trim();
   if (!ciValue) {
     return NextResponse.json({ error: "CI invalida." }, { status: 400 });
@@ -40,15 +43,22 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
 
   const pdfBytes = await renderHojasEntregaPdf([hoja], formatHojaEntregaDisplayDate(new Date()), {
     includePageNumbers: true,
-    pageNumberLabel: "Hoja",
+    pageNumberLabel: isGuideOnly ? "Guía" : "Hoja",
+    includeSheetPage: !isGuideOnly,
+    includeUsageGuidePage: isGuideOnly,
   });
 
-  const fileName = buildSingleHojaEntregaFileName({
+  const baseFileName = buildSingleHojaEntregaFileName({
     ci: hoja.persona.ci,
     grado: hoja.persona.rangoAbreviacion,
     apellido: hoja.persona.apellido1,
     nombre: hoja.persona.nombre1,
   });
+  const fileName = isGuideOnly
+    ? baseFileName.includes("-hoja-entrega.pdf")
+      ? baseFileName.replace("-hoja-entrega.pdf", "-guia-responsabilidad.pdf")
+      : `${baseFileName.replace(/\.pdf$/i, "")}-guia-responsabilidad.pdf`
+    : baseFileName;
   const contentDisposition = `inline; filename="${fileName}"`;
   const pdfArrayBuffer = Uint8Array.from(pdfBytes).buffer;
   const pdfBlob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
