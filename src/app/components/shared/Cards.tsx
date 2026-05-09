@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
+import { Box, Chip, Paper, Stack, Typography, type SxProps, type Theme } from "@mui/material";
 
 /**
  * Card mejorado con variantes y sombra
@@ -12,6 +12,7 @@ export function Card(props: {
   variant?: "default" | "elevated" | "outlined";
   padding?: "none" | "sm" | "md" | "lg";
   hover?: boolean;
+  sx?: SxProps<Theme>;
 }) {
   const { variant = "default", padding = "md", hover = false } = props;
 
@@ -59,6 +60,7 @@ export function Card(props: {
               },
             }
           : null),
+        ...((props.sx as any) || {}),
       }}
     >
       {props.children}
@@ -74,9 +76,10 @@ export function CardHeader(props: {
   description?: string;
   badge?: ReactNode;
   action?: ReactNode;
+  sx?: SxProps<Theme>;
 }) {
   return (
-    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
+    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2} sx={{ mb: 2, ...((props.sx as any) || {}) }}>
       <Box sx={{ flex: 1 }}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -108,6 +111,7 @@ export function StatCard(props: {
     direction: "up" | "down" | "neutral";
   };
   className?: string;
+  sx?: SxProps<Theme>;
 }) {
   return (
     <Paper
@@ -120,6 +124,7 @@ export function StatCard(props: {
         boxShadow: "var(--shadow-xs)",
         transition: "box-shadow 160ms ease, border-color 160ms ease",
         "&:hover": { boxShadow: "var(--shadow-sm)", borderColor: "var(--color-border-strong)" },
+        ...((props.sx as any) || {}),
       }}
     >
       <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1.5}>
@@ -208,6 +213,7 @@ export function Badge(props: {
   variant?: "default" | "success" | "error" | "warning" | "info";
   size?: "sm" | "md" | "lg";
   className?: string;
+  sx?: SxProps<Theme>;
 }) {
   const { variant = "default", size = "md" } = props;
 
@@ -263,6 +269,7 @@ export function Badge(props: {
         border: "1px solid",
         ...paddingSx[size],
         ...toneSx[variant],
+        ...((props.sx as any) || {}),
       }}
     />
   );
