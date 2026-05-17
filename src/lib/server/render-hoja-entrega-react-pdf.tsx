@@ -563,8 +563,6 @@ export async function renderHojasEntregaPdf(
         fontFamily: monoRegularFontFamily,
         fontSize: scaled(profile, 6.9, 4.9),
         lineHeight: 1,
-        maxLines: 1,
-        textOverflow: "ellipsis",
       },
 
       infoLabel: {

@@ -5,7 +5,8 @@ import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import ForwardToInboxOutlinedIcon from "@mui/icons-material/ForwardToInboxOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
-import { useState, type ReactNode } from "react";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
+import { useState, useMemo, type ReactNode } from "react";
 import { LoadingInline, PaginationControls } from "@/app/components/shared";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import type { TallaKey } from "@/lib/tallas";
@@ -307,6 +308,12 @@ export function PersonalSection({
     ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
     : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4";
 
+  const personalConErrorReingreso = useMemo(() => {
+    return personal.filter(
+      (persona) => persona.esReingreso && (!persona.fechaIngreso || persona.fechaIngreso.trim() === "")
+    );
+  }, [personal]);
+
   return (
     <section className="mt-6 space-y-4">
       <section className="ej-card overflow-hidden rounded-[28px] p-3 sm:p-4">
@@ -385,6 +392,48 @@ export function PersonalSection({
           />
         </div>
       </section>
+
+      {personalConErrorReingreso.length > 0 ? (
+        <section className="rounded-2xl border border-rose-300/80 bg-gradient-to-r from-rose-50/90 to-amber-50/80 p-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-xs">
+              <WarningAmberRoundedIcon />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-rose-950">
+                Atención: Fichas de reingreso incompletas (Fecha Re-ingreso obligatoria)
+              </h3>
+              <p className="mt-0.5 text-xs text-rose-800 font-medium">
+                Se detectó personal marcado como reingreso sin la fecha correspondiente registrada. Selecciona &quot;Corregir&quot; para ingresar el dato faltante.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {personalConErrorReingreso.map((persona) => (
+                  <div key={persona.ci} className="flex items-center justify-between rounded-xl bg-white p-3 border border-rose-200 shadow-xs hover:border-rose-300 transition">
+                    <div className="min-w-0 pr-2">
+                      <p className="text-xs font-bold text-stone-900 truncate">
+                        {persona.rango.nombreCompleto}
+                      </p>
+                      <p className="text-xs text-stone-700 truncate">
+                        {persona.apellido1} {persona.nombre1}
+                      </p>
+                      <p className="text-[10px] text-stone-500 font-mono">
+                        CI {persona.ci}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleEdit(persona)}
+                      className="shrink-0 rounded-lg bg-rose-700 hover:bg-rose-800 transition px-3 py-1.5 text-xs font-semibold text-white shadow-xs"
+                    >
+                      Corregir
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <PersonalFilters
         searchCedula={searchCedula}
