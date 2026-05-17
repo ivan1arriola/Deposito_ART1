@@ -14,6 +14,7 @@ type ItemPayload = {
 
 type ReorderItemsPayload = {
   orderedItemIds: Array<string | number>;
+  activo?: boolean;
 };
 
 function parseItemId(value: string | number) {
@@ -89,11 +90,15 @@ export async function POST(req: Request) {
       select: { ordenPdf: true },
     });
 
+    const baseOffset = isActive ? 0 : 10000;
+    const currentMax = highestOrderItem?.ordenPdf ?? baseOffset;
+    const nextOrder = Math.max(currentMax, baseOffset) + 1;
+
     const created = await prisma.item.create({
       data: {
         nombre,
         activo: isActive,
-        ordenPdf: (highestOrderItem?.ordenPdf ?? 0) + 1,
+        ordenPdf: nextOrder,
       },
     });
 
@@ -140,28 +145,30 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "No se puede repetir un item en el nuevo orden." }, { status: 400 });
   }
 
+  const isActive = body.activo === undefined ? true : Boolean(body.activo);
+
   try {
     const reordered = await prisma.$transaction(async (tx) => {
-      const activeItems = await tx.item.findMany({
-        where: { activo: true },
+      const targetItems = await tx.item.findMany({
+        where: { activo: isActive },
         orderBy: [{ ordenPdf: "asc" }, { itemId: "asc" }],
         select: { itemId: true, nombre: true, activo: true, ordenPdf: true, existenciaSie: true },
       });
 
-      const activeIds = activeItems.map((item) => item.itemId.toString());
-      if (parsedIds.length !== activeIds.length) {
-        throw new Error("El reordenamiento debe incluir todos los equipos visibles en hoja.");
+      const targetIds = targetItems.map((item) => item.itemId.toString());
+      if (parsedIds.length !== targetIds.length) {
+        throw new Error(`El reordenamiento debe incluir todos los equipos ${isActive ? "visibles" : "ocultos"} en hoja.`);
       }
 
       const hasSameIds =
-        activeIds.every((itemId) => uniqueIds.has(itemId)) &&
-        Array.from(uniqueIds).every((itemId) => activeIds.includes(itemId));
+        targetIds.every((itemId) => uniqueIds.has(itemId)) &&
+        Array.from(uniqueIds).every((itemId) => targetIds.includes(itemId));
 
       if (!hasSameIds) {
-        throw new Error("El reordenamiento no coincide con los equipos visibles en hoja.");
+        throw new Error(`El reordenamiento no coincide con los equipos ${isActive ? "visibles" : "ocultos"} en hoja.`);
       }
 
-      await applyItemOrder(tx, parsedIds);
+      await applyItemOrder(tx, parsedIds, isActive ? 0 : 10000);
 
       return tx.item.findMany({
         where: { itemId: { in: parsedIds } },

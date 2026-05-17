@@ -21,6 +21,7 @@ export interface HojaMatrixViewProps {
 }
 
 export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixViewProps) {
+  const theme = useTheme();
   const [viewMode, setViewMode] = useState<"all" | "battery">("all");
   const [selectedBattery, setSelectedBattery] = useState<string | null>(null);
   const [previewRequested, setPreviewRequested] = useState(false);
@@ -94,7 +95,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
             <Box>
               <Stack direction="row" alignItems="center" spacing={1.5}>
                 <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--color-ejercito-black)", letterSpacing: "-0.02em" }}>
-                  {title}
+                  Hoja Matriz General de Entrega
                 </Typography>
                 {data && (
                   <Badge variant="success" size="sm">

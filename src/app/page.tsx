@@ -459,6 +459,7 @@ export default function Home() {
   const [editEquipoId, setEditEquipoId] = useState<string | null>(null);
   const [editEquipo, setEditEquipo] = useState<EquipoForm>(EMPTY_EQUIPO_FORM);
   const [equipoOrderDraftIds, setEquipoOrderDraftIds] = useState<string[] | null>(null);
+  const [equipoInactivoOrderDraftIds, setEquipoInactivoOrderDraftIds] = useState<string[] | null>(null);
   const [mergeEquipoOrigenId, setMergeEquipoOrigenId] = useState("");
   const [mergeEquipoDestinoId, setMergeEquipoDestinoId] = useState("");
   const [mergeEquipoDialog, setMergeEquipoDialog] = useState<{ sourceItemId: string; targetItemId: string } | null>(null);
@@ -804,6 +805,19 @@ export default function Home() {
     if (equipoOrderDraftIds.length !== currentActiveIds.length) return true;
     return equipoOrderDraftIds.some((itemId, index) => itemId !== currentActiveIds[index]);
   }, [equiposActivos, equipoOrderDraftIds]);
+  const equiposInactivosEnPantalla = useMemo(() => {
+    if (!equipoInactivoOrderDraftIds) return equiposInactivos;
+    const inactivoById = new Map(equiposInactivos.map((item) => [item.itemId, item]));
+    return equipoInactivoOrderDraftIds
+      .map((itemId) => inactivoById.get(itemId))
+      .filter((item): item is Equipo => item !== undefined);
+  }, [equiposInactivos, equipoInactivoOrderDraftIds]);
+  const hasEquipoInactivoOrderDraftChanges = useMemo(() => {
+    if (!equipoInactivoOrderDraftIds) return false;
+    const currentInactivoIds = equiposInactivos.map((item) => item.itemId);
+    if (equipoInactivoOrderDraftIds.length !== currentInactivoIds.length) return true;
+    return equipoInactivoOrderDraftIds.some((itemId, index) => itemId !== currentInactivoIds[index]);
+  }, [equiposInactivos, equipoInactivoOrderDraftIds]);
   const mergeEquipoSource = useMemo(() => {
     if (!mergeEquipoDialog) return null;
     return equiposOrdenados.find((equipo) => equipo.itemId === mergeEquipoDialog.sourceItemId) ?? null;
@@ -2119,6 +2133,82 @@ export default function Home() {
       });
     },
     [updateEquipoOrderDraft],
+  );
+
+  const saveInactivoEquiposOrder = useCallback(
+    async (orderedItemIds: string[]) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para editar.");
+        return;
+      }
+      const currentInactivoIds = equiposInactivos.map((item) => item.itemId);
+      if (
+        orderedItemIds.length === currentInactivoIds.length &&
+        orderedItemIds.every((itemId, index) => itemId === currentInactivoIds[index])
+      ) {
+        return;
+      }
+
+      try {
+        await updateMultipleItemOrdersHandler(
+          orderedItemIds,
+          {
+            onSuccess: async () => {
+              setEquipoInactivoOrderDraftIds(null);
+              setStatus("Orden de PDF de inactivos actualizado.");
+              await loadData();
+            },
+            onError: (message) => setStatus(message),
+          },
+          false,
+        );
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [canWrite, equiposInactivos, loadData],
+  );
+
+  const updateEquipoInactivoOrderDraft = useCallback(
+    (updater: (currentOrder: string[]) => string[]) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para editar.");
+        return;
+      }
+
+      setEquipoInactivoOrderDraftIds((currentDraft) => {
+        const baseOrder = currentDraft ?? equiposInactivos.map((item) => item.itemId);
+        return updater(baseOrder);
+      });
+    },
+    [canWrite, equiposInactivos],
+  );
+
+  const moveEquipoInactivoInDraft = useCallback(
+    (itemId: string, direction: "up" | "down") => {
+      updateEquipoInactivoOrderDraft((currentOrder) => {
+        const currentIndex = currentOrder.indexOf(itemId);
+        if (currentIndex < 0) return currentOrder;
+        const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+        if (targetIndex < 0 || targetIndex >= currentOrder.length) return currentOrder;
+        return moveIdInOrder(currentOrder, currentIndex, targetIndex);
+      });
+    },
+    [updateEquipoInactivoOrderDraft],
+  );
+
+  const setEquipoInactivoDraftPosition = useCallback(
+    (itemId: string, nextPosition: number) => {
+      updateEquipoInactivoOrderDraft((currentOrder) => {
+        const currentIndex = currentOrder.indexOf(itemId);
+        const targetIndex = nextPosition - 1;
+        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentOrder.length || currentIndex === targetIndex) {
+          return currentOrder;
+        }
+        return moveIdInOrder(currentOrder, currentIndex, targetIndex);
+      });
+    },
+    [updateEquipoInactivoOrderDraft],
   );
 
   const deleteEquipo = useCallback(
@@ -5038,12 +5128,14 @@ export default function Home() {
 
   function renderEquipoCard(
     equipo: Equipo,
-    options?: { reorderableInActiveList?: boolean; orderIndex?: number; orderCount?: number },
+    options?: { reorderableInActiveList?: boolean; reorderableInInactiveList?: boolean; orderIndex?: number; orderCount?: number },
   ) {
     const reorderableInActiveList = options?.reorderableInActiveList === true;
+    const reorderableInInactiveList = options?.reorderableInInactiveList === true;
+    const isReorderable = reorderableInActiveList || reorderableInInactiveList;
     const orderIndex = options?.orderIndex ?? -1;
     const orderCount = options?.orderCount ?? 0;
-    const currentOrderLabel = reorderableInActiveList && orderIndex >= 0 ? orderIndex + 1 : equipo.ordenPdf;
+    const currentOrderLabel = isReorderable && orderIndex >= 0 ? orderIndex + 1 : (equipo.ordenPdf > 10000 ? equipo.ordenPdf - 10000 : equipo.ordenPdf);
 
     return (
       <div
@@ -5066,7 +5158,7 @@ export default function Home() {
                 type="number"
                 min={1}
                 step={1}
-                value={editEquipo.ordenPdf}
+                value={editEquipo.ordenPdf > 10000 ? editEquipo.ordenPdf - 10000 : editEquipo.ordenPdf}
                 onChange={(event) => setEditEquipo((prev) => ({ ...prev, ordenPdf: Math.max(1, Number(event.target.value) || 1) }))}
                 className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
@@ -5106,11 +5198,8 @@ export default function Home() {
                 </span>
               </div>
               <p className="text-xs text-stone-500 mt-1">
-                {reorderableInActiveList ? `Posicion actual en hoja: ${currentOrderLabel}` : `Orden PDF: ${equipo.ordenPdf}`}
+                {isReorderable ? `Posicion actual en lista: ${currentOrderLabel}` : `Orden PDF: ${equipo.ordenPdf > 10000 ? equipo.ordenPdf - 10000 : equipo.ordenPdf}`}
               </p>
-              {/*
-                      {codigo.aclaracion ? `${codigo.codigo} · ${codigo.aclaracion}` : codigo.codigo}
-              */}
             </div>
 
             <div className="flex flex-wrap gap-2 items-center">
@@ -5121,7 +5210,7 @@ export default function Home() {
                   onClick={() => void toggleEquipoActivo(equipo)}
                 />
               ) : null}
-              {reorderableInActiveList ? (
+              {isReorderable ? (
                 <div className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-stone-50 px-2 py-2">
                   <span className="inline-flex min-w-8 items-center justify-center rounded-xl bg-stone-900 px-2 py-1 text-xs font-semibold text-white">
                     {currentOrderLabel}
@@ -5129,7 +5218,7 @@ export default function Home() {
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => moveEquipoInDraft(equipo.itemId, "up")}
+                      onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.itemId, "up") : moveEquipoInactivoInDraft(equipo.itemId, "up")}
                       disabled={!canWrite || orderIndex <= 0}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-300 bg-white text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
                       title="Subir una posicion"
@@ -5140,7 +5229,7 @@ export default function Home() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => moveEquipoInDraft(equipo.itemId, "down")}
+                      onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.itemId, "down") : moveEquipoInactivoInDraft(equipo.itemId, "down")}
                       disabled={!canWrite || orderIndex < 0 || orderIndex >= orderCount - 1}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-300 bg-white text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
                       title="Bajar una posicion"
@@ -5154,7 +5243,7 @@ export default function Home() {
                     <span>Ir a</span>
                     <select
                       value={currentOrderLabel}
-                      onChange={(event) => setEquipoDraftPosition(equipo.itemId, Number(event.target.value))}
+                      onChange={(event) => reorderableInActiveList ? setEquipoDraftPosition(equipo.itemId, Number(event.target.value)) : setEquipoInactivoDraftPosition(equipo.itemId, Number(event.target.value))}
                       disabled={!canWrite}
                       className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 outline-none"
                     >
@@ -5881,8 +5970,10 @@ export default function Home() {
             editEquipoId={editEquipoId}
             editEquipo={editEquipo}
             equiposInactivos={equiposInactivos}
+            equiposInactivosEnPantalla={equiposInactivosEnPantalla}
             equiposActivosEnPantalla={equiposActivosEnPantalla}
             hasEquipoOrderDraftChanges={hasEquipoOrderDraftChanges}
+            hasEquipoInactivoOrderDraftChanges={hasEquipoInactivoOrderDraftChanges}
             mergeEquipoOrigenId={mergeEquipoOrigenId}
             mergeEquipoDestinoId={mergeEquipoDestinoId}
             usuarios={usuarios}
@@ -5940,6 +6031,11 @@ export default function Home() {
               void saveActiveEquiposOrder(equipoOrderDraftIds);
             }}
             onResetEquipoOrderDraft={() => setEquipoOrderDraftIds(null)}
+            onSaveEquipoInactivoOrder={() => {
+              if (!equipoInactivoOrderDraftIds) return;
+              void saveInactivoEquiposOrder(equipoInactivoOrderDraftIds);
+            }}
+            onResetEquipoInactivoOrderDraft={() => setEquipoInactivoOrderDraftIds(null)}
             renderEquipoCard={renderEquipoCard}
             onNewUserRangoIdChange={setNewUserRangoId}
             onNewNombreChange={setNewNombre}

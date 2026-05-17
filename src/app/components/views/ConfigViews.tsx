@@ -45,8 +45,10 @@ interface ConfigViewsProps {
   editEquipoId: string | null;
   editEquipo: { nombre: string; activo: boolean; ordenPdf: number };
   equiposInactivos: EquipoConfig[];
+  equiposInactivosEnPantalla: EquipoConfig[];
   equiposActivosEnPantalla: EquipoConfig[];
   hasEquipoOrderDraftChanges: boolean;
+  hasEquipoInactivoOrderDraftChanges: boolean;
   mergeEquipoOrigenId: string;
   mergeEquipoDestinoId: string;
   // Usuarios state
@@ -110,7 +112,9 @@ interface ConfigViewsProps {
   onMergeEquipos: (origenItemId: string, destinoItemId: string) => void;
   onSaveEquipoOrder: () => void;
   onResetEquipoOrderDraft: () => void;
-  renderEquipoCard: (equipo: EquipoConfig, options?: { reorderableInActiveList?: boolean; orderIndex?: number; orderCount?: number }) => ReactNode;
+  onSaveEquipoInactivoOrder: () => void;
+  onResetEquipoInactivoOrderDraft: () => void;
+  renderEquipoCard: (equipo: EquipoConfig, options?: { reorderableInActiveList?: boolean; reorderableInInactiveList?: boolean; orderIndex?: number; orderCount?: number }) => ReactNode;
   // Usuarios callbacks
   onNewUserRangoIdChange: (value: string) => void;
   onNewNombreChange: (value: string) => void;
@@ -390,6 +394,9 @@ export function ConfigViews(props: ConfigViewsProps) {
     const activeOrderById = new Map(
       props.equiposActivosEnPantalla.map((equipo, index) => [equipo.itemId, index]),
     );
+    const inactivoOrderById = new Map(
+      props.equiposInactivosEnPantalla.map((equipo, index) => [equipo.itemId, index]),
+    );
     const equiposOrdenadosAlfabeticamente = [...props.equipos].sort((a, b) =>
       a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
     );
@@ -565,14 +572,43 @@ export function ConfigViews(props: ConfigViewsProps) {
                 </span>
               </div>
               <p className="mb-3 text-xs text-stone-600">
-                Estos equipos siguen registrados, pero están ocultos de las hojas hasta que vuelvas a habilitarlos.
+                Estos equipos siguen registrados, pero están ocultos de las hojas. Puedes definir su orden para cuando imprimas el listado total de stock.
               </p>
             </div>
-            {props.equiposInactivos.length > 0 ? (
+            {props.equiposInactivosEnPantalla.length > 0 ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3 mb-3">
+                <div>
+                  <p className="text-sm font-semibold text-stone-900">Editor de orden de inactivos</p>
+                  <p className="text-xs text-stone-600">Define el orden en el que aparecerán al imprimir el listado total de stock.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={props.onResetEquipoInactivoOrderDraft}
+                    disabled={!props.canWrite || !props.hasEquipoInactivoOrderDraftChanges}
+                    className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Restablecer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={props.onSaveEquipoInactivoOrder}
+                    disabled={!props.canWrite || !props.hasEquipoInactivoOrderDraftChanges}
+                    className="ej-button rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Guardar orden
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            {props.equiposInactivosEnPantalla.length > 0 ? (
               <div className="space-y-2">
-                {props.equiposInactivos.map((equipo) =>
+                {props.equiposInactivosEnPantalla.map((equipo) =>
                   props.renderEquipoCard(equipo, {
                     reorderableInActiveList: false,
+                    reorderableInInactiveList: true,
+                    orderIndex: inactivoOrderById.get(equipo.itemId) ?? -1,
+                    orderCount: props.equiposInactivosEnPantalla.length,
                   }),
                 )}
               </div>

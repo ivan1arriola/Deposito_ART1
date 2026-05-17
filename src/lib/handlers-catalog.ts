@@ -265,13 +265,14 @@ export async function loadItemDeleteImpactHandler(itemId: string, callbacks: Cal
 
 export async function updateMultipleItemOrdersHandler(
   orderedItemIds: string[],
-  callbacks: CallbackProps
+  callbacks: CallbackProps,
+  activo = true,
 ) {
   try {
     await api("/api/items", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderedItemIds }),
+      body: JSON.stringify({ orderedItemIds, activo }),
     });
     callbacks.onSuccess();
   } catch (error) {

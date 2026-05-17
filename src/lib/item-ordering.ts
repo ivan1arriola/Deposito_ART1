@@ -27,24 +27,26 @@ export function insertItemAtOrder(orderedIds: bigint[], itemId: bigint, order: n
   return nextOrder;
 }
 
-export async function applyItemOrder(tx: ItemOrderTx, orderedIds: bigint[]) {
+export async function applyItemOrder(tx: ItemOrderTx, orderedIds: bigint[], startOffset = 0) {
   if (orderedIds.length === 0) return;
 
-  const valueTuples = orderedIds.map((itemId, index) => Prisma.sql`(${itemId}, ${index + 1})`);
+  const valueTuples = orderedIds.map((itemId, index) => Prisma.sql`(${itemId}, ${startOffset + index + 1})`);
   await tx.$executeRaw`
     UPDATE "public"."item" AS i
-    SET "orden_pdf" = v.orden_pdf
+    SET "orden_pdf" = v.orden_pdf::int
     FROM (VALUES ${Prisma.join(valueTuples)}) AS v(item_id, orden_pdf)
-    WHERE i."item_id" = v.item_id
+    WHERE i."item_id" = v.item_id::bigint
   `;
 }
 
 export async function getNextItemOrder(tx: ItemOrderTx, activo: boolean) {
   const itemIds = await getOrderedItemIds(tx, activo);
-  return itemIds.length + 1;
+  const offset = activo ? 0 : 10000;
+  return offset + itemIds.length + 1;
 }
 
 export async function normalizeItemOrders(tx: ItemOrderTx, activo: boolean) {
   const itemIds = await getOrderedItemIds(tx, activo);
-  await applyItemOrder(tx, itemIds);
+  const offset = activo ? 0 : 10000;
+  await applyItemOrder(tx, itemIds, offset);
 }

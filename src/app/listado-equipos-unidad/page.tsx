@@ -204,14 +204,15 @@ function buildStyles() {
 export default async function ListadoEquiposUnidadPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ autoprint?: string }>;
+  searchParams?: Promise<{ autoprint?: string; sort?: string }>;
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const shouldAutoPrint = resolvedSearchParams?.autoprint === "1";
+  const isAlphaSort = resolvedSearchParams?.sort === "alpha";
 
   const [items, stockSummaryMaps, firmas] = await Promise.all([
     prisma.item.findMany({
-      orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
+      orderBy: isAlphaSort ? [{ nombre: "asc" }] : [{ ordenPdf: "asc" }, { nombre: "asc" }],
       select: { itemId: true, nombre: true, existenciaSie: true },
     }),
     buildStockSummaryMaps(prisma),
@@ -260,7 +261,7 @@ export default async function ListadoEquiposUnidadPage({
       <main className="sheet">
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <h1 className="title">Listado de Equipos de la Unidad</h1>
-        <p className="subtitle">Totales por item (subalternos + prestamo + deposito)</p>
+        <p className="subtitle">{`Totales por item (subalternos + prestamo + deposito) ${isAlphaSort ? "· Orden Alfabético" : "· Orden Asignado"}`}</p>
         <p className="meta">{`Generado: ${generatedAt} | Equipos listados: ${resumen.length}`}</p>
 
         <section className="totals">

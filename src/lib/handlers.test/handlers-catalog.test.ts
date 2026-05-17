@@ -169,7 +169,7 @@ describe("Handlers de Catalogos - Equipos", () => {
       "/api/items",
       expect.objectContaining({
         method: "PATCH",
-        body: JSON.stringify({ orderedItemIds: ["12", "18", "25"] }),
+        body: JSON.stringify({ orderedItemIds: ["12", "18", "25"], activo: true }),
       }),
     );
   });

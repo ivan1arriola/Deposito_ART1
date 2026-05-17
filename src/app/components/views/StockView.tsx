@@ -8,6 +8,9 @@ import { api } from "@/lib/api";
 import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers";
 import { formatUruguayanCi } from "@/lib/ci";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
+import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
+import SortByAlphaRoundedIcon from "@mui/icons-material/SortByAlphaRounded";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import type { StockDashboardData, StockItemTraceData } from "@/types/views";
 import type { PrestamoEstadoEquipo } from "@/types/forms";
 import type { StockViewProps } from "./stock/types";
@@ -71,6 +74,7 @@ export function StockView({
   const [sieSavingItemId, setSieSavingItemId] = useState<string | null>(null);
   const [sieError, setSieError] = useState<string | null>(null);
   const [searchTermEquipos, setSearchTermEquipos] = useState("");
+  const [ordenAlfabetico, setOrdenAlfabetico] = useState(false);
   const [returnDialog, setReturnDialog] = useState<{
     prestamo: StockDashboardData["prestamos"][number];
     fechaDevolucion: string;
@@ -249,10 +253,16 @@ export function StockView({
   } = getStockSummaryMetrics(resumen);
 
   const normalizedSearchTermEquipos = searchTermEquipos.trim().toLowerCase();
-  const resumenFiltrado =
-    normalizedSearchTermEquipos === ""
-      ? resumen
-      : resumen.filter((item) => item.nombre.toLowerCase().includes(normalizedSearchTermEquipos));
+  const resumenFiltrado = useMemo(() => {
+    const list =
+      normalizedSearchTermEquipos === ""
+        ? resumen
+        : resumen.filter((item) => item.nombre.toLowerCase().includes(normalizedSearchTermEquipos));
+    if (ordenAlfabetico) {
+      return [...list].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
+    }
+    return list;
+  }, [resumen, normalizedSearchTermEquipos, ordenAlfabetico]);
 
   const { showSummaryCards, showManualForm, showStockTable, showHistory, showPrestamos, viewTitle, stockTableTitle } =
     getSectionViewConfig(section);
@@ -266,23 +276,38 @@ export function StockView({
             <h2 className="text-base font-semibold text-stone-900">{viewTitle}</h2>
             <p className="mt-1 text-xs text-stone-600">Vista operativa de stock y movimientos.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             {section === "total" ? (
-              <button
-                type="button"
-                onClick={() => window.open("/listado-equipos-unidad?autoprint=1", "_blank", "noopener,noreferrer")}
-                className="rounded-lg bg-indigo-700 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-800"
-              >
-                Imprimir listado
-              </button>
+              <div className="flex items-center bg-stone-900 text-white rounded-xl shadow-md p-1 border border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => window.open("/listado-equipos-unidad?autoprint=1", "_blank", "noopener,noreferrer")}
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-[#e5bb37]"
+                  title="Imprimir con el orden configurado en PDF / Catálogo"
+                >
+                  <PrintRoundedIcon sx={{ fontSize: 18 }} />
+                  <span>Imprimir (Orden Asignado)</span>
+                </button>
+                <div className="w-[1px] h-5 bg-stone-700 mx-0.5" />
+                <button
+                  type="button"
+                  onClick={() => window.open("/listado-equipos-unidad?autoprint=1&sort=alpha", "_blank", "noopener,noreferrer")}
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-stone-200 hover:text-white"
+                  title="Imprimir en estricto orden alfabético general"
+                >
+                  <SortByAlphaRoundedIcon sx={{ fontSize: 18 }} />
+                  <span>Imprimir (Alfabético)</span>
+                </button>
+              </div>
             ) : null}
             <button
               type="button"
               onClick={onReload}
               disabled={loading}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+              className="flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition hover:bg-stone-50 hover:border-stone-400 active:scale-95 disabled:opacity-50"
             >
-              {loading ? <LoadingInline label="Recargando..." size="xs" textClassName="text-xs font-semibold text-stone-700" /> : "Recargar"}
+              <RefreshRoundedIcon sx={{ fontSize: 18 }} className={loading ? "animate-spin" : ""} />
+              <span>{loading ? "Recargando..." : "Recargar"}</span>
             </button>
           </div>
         </div>
@@ -707,18 +732,29 @@ export function StockView({
 
       {showStockTable ? (
         <article className="ej-card rounded-2xl p-4">
-          <div className="flex flex-wrap items-end justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-semibold text-stone-900">{stockTableTitle}</h3>
-            <label className="w-full max-w-xs text-xs text-stone-700">
-              Filtrar equipos
-              <input
-                type="text"
-                value={searchTermEquipos}
-                onChange={(event) => setSearchTermEquipos(event.target.value)}
-                placeholder="Nombre del equipo..."
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-stone-700 select-none">
+                <input
+                  type="checkbox"
+                  checked={ordenAlfabetico}
+                  onChange={(event) => setOrdenAlfabetico(event.target.checked)}
+                  className="h-4 w-4 rounded border-stone-300 text-indigo-700 focus:ring-indigo-500"
+                />
+                <span>Ordenar alfabéticamente</span>
+              </label>
+              <label className="w-full sm:w-auto max-w-xs text-xs text-stone-700">
+                <span className="block mb-1">Filtrar equipos</span>
+                <input
+                  type="text"
+                  value={searchTermEquipos}
+                  onChange={(event) => setSearchTermEquipos(event.target.value)}
+                  placeholder="Nombre del equipo..."
+                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
           </div>
           {loading ? <LoadingInline label="Cargando stock..." className="mt-4" textClassName="text-sm font-medium text-stone-600" /> : null}
           {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}

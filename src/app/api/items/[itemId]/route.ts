@@ -681,11 +681,11 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
           },
         });
 
-        await applyItemOrder(tx, oldGroupIds);
+        await applyItemOrder(tx, oldGroupIds, existing.activo ? 0 : 10000);
 
         const newGroupIds = await getOrderedItemIds(tx, nextActive, itemId);
         const nextOrderedIds = insertItemAtOrder(newGroupIds, itemId, body.ordenPdf ?? newGroupIds.length + 1);
-        await applyItemOrder(tx, nextOrderedIds);
+        await applyItemOrder(tx, nextOrderedIds, nextActive ? 0 : 10000);
       } else {
         const currentGroupIds = await getOrderedItemIds(tx, nextActive, itemId);
         const nextOrderedIds = insertItemAtOrder(currentGroupIds, itemId, body.ordenPdf ?? existing.ordenPdf);
@@ -699,7 +699,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
           },
         });
 
-        await applyItemOrder(tx, nextOrderedIds);
+        await applyItemOrder(tx, nextOrderedIds, nextActive ? 0 : 10000);
       }
 
       return tx.item.findUniqueOrThrow({
