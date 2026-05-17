@@ -7,11 +7,13 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "server-only": path.resolve(__dirname, "./src/lib/server-only-mock.ts"),
     },
   },
   test: {
     globals: true,
     environment: "node",
+    setupFiles: ["dotenv/config"],
     reporters: ["verbose"],
     coverage: {
       provider: "v8",

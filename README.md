@@ -44,12 +44,6 @@ WEB_PUSH_PUBLIC_KEY="..."
 WEB_PUSH_PRIVATE_KEY="..."
 WEB_PUSH_SUBJECT="mailto:admin@example.com"
 
-# Opcional: habilita autenticacion de Soldado Widget
-SOLDADO_WIDGET_AUTH_SECRET="secreto_largo_y_unico"
-# Opcional: expiracion del token de sesion en horas (default: 720 = 30 dias)
-# Usa 0 para sesion sin vencimiento practico (expira en 2100)
-SOLDADO_WIDGET_TOKEN_TTL_HOURS="720"
-
 # Opcional: tamano de lote para generar PDF consolidado de hojas de entrega
 # Default: 50 | Rango valido: 1..300
 HOJAS_ENTREGA_PDF_FAST_BATCH_CHUNK_SIZE="50"
@@ -95,29 +89,6 @@ npm run dev
 - `npm run user:create -- --username <u> --password <p> --role ADMIN|EDITOR`: crea o actualiza usuario
 - `npm run webpush:generate`: genera claves VAPID para notificaciones push
 
-## Extension Soldado Widget
-
-Si defines `SOLDADO_WIDGET_AUTH_SECRET` (o ya tienes `NEXTAUTH_SECRET`), se habilitan los endpoints:
-
-- `POST /api/extensions/soldado-widget/login`
-- `GET /api/extensions/soldado-widget/recordatorios?limit=3`
-
-Flujo:
-
-- La app Android envia `username` + `password` al endpoint de login.
-- El servidor devuelve `accessToken` de sesion y datos del usuario.
-- El widget usa `Authorization: Bearer <accessToken>` para sincronizar recordatorios del usuario autenticado.
-
-Respuesta:
-
-- resumen con pendientes/urgentes
-- lista acotada de tareas para mostrar en el widget Android
-
-Ejemplo:
-
-```bash
-npm run user:create -- --username admin --password "Admin1234" --role ADMIN
-```
 
 ## Modelo de Datos (resumen)
 

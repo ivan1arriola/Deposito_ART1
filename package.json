@@ -1,6 +1,6 @@
 {
   "name": "deposito-art1",
-  "version": "5.5.2",
+  "version": "5.5.3",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
@@ -78,6 +78,7 @@
     "eslint-config-next": "16.2.2",
     "license-checker-rseidelsohn": "^4.4.2",
     "prisma": "^7.7.0",
+    "server-only": "^0.0.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",

@@ -367,24 +367,42 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
       const [sourceItem, targetItem] = await Promise.all([
         tx.item.findUniqueOrThrow({
           where: { itemId: sourceItemId },
-          select: { itemId: true, nombre: true, activo: true },
+          select: { itemId: true, nombre: true, activo: true, existenciaSie: true },
         }),
         tx.item.findUniqueOrThrow({
           where: { itemId: targetItemId },
-          select: { itemId: true, nombre: true, activo: true },
+          select: { itemId: true, nombre: true, activo: true, existenciaSie: true },
         }),
       ]);
 
       const remainingIdsInSourceGroup = await getOrderedItemIds(tx, sourceItem.activo, sourceItemId);
 
-      const [sourceMovimientoItems, sourceStockItems] = await Promise.all([
+      const [sourceMovimientoItems, sourceStockItems, sourceCajaItems, sourceCodigosSIE, targetCodigosSIE] = await Promise.all([
         tx.movimientoItem.findMany({
           where: { itemId: sourceItemId },
-          select: { movimientoId: true, cantidad: true },
+          select: {
+            movimientoId: true,
+            cantidad: true,
+            estadoEntrega: true,
+            comentarioEntrega: true,
+            estadoDevolucion: true,
+            comentarioDevolucion: true,
+          },
         }),
         tx.stockOperacionItem.findMany({
           where: { itemId: sourceItemId },
           select: { stockOperacionId: true, cantidad: true },
+        }),
+        tx.cajaItem.findMany({
+          where: { itemId: sourceItemId },
+        }),
+        tx.itemCodigoSIE.findMany({
+          where: { itemId: sourceItemId },
+          select: { itemCodigoSIEId: true, codigo: true, talla: true },
+        }),
+        tx.itemCodigoSIE.findMany({
+          where: { itemId: targetItemId },
+          select: { itemCodigoSIEId: true, codigo: true, talla: true },
         }),
       ]);
 
@@ -427,6 +445,10 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
             movimientoId: sourceMovimientoItem.movimientoId,
             itemId: targetItemId,
             cantidad: sourceMovimientoItem.cantidad,
+            estadoEntrega: sourceMovimientoItem.estadoEntrega,
+            comentarioEntrega: sourceMovimientoItem.comentarioEntrega,
+            estadoDevolucion: sourceMovimientoItem.estadoDevolucion,
+            comentarioDevolucion: sourceMovimientoItem.comentarioDevolucion,
           },
         });
 
@@ -467,6 +489,83 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
           },
         });
       }
+
+      for (const sourceCajaItem of sourceCajaItems) {
+        await tx.cajaItem.upsert({
+          where: {
+            codigoDepositoGeneral_itemId: {
+              codigoDepositoGeneral: sourceCajaItem.codigoDepositoGeneral,
+              itemId: targetItemId,
+            },
+          },
+          update: {
+            cantidad: { increment: sourceCajaItem.cantidad },
+          },
+          create: {
+            codigoDepositoGeneral: sourceCajaItem.codigoDepositoGeneral,
+            itemId: targetItemId,
+            cantidad: sourceCajaItem.cantidad,
+          },
+        });
+
+        await tx.cajaItem.delete({
+          where: {
+            codigoDepositoGeneral_itemId: {
+              codigoDepositoGeneral: sourceCajaItem.codigoDepositoGeneral,
+              itemId: sourceItemId,
+            },
+          },
+        });
+      }
+
+      const targetMap = new Map(targetCodigosSIE.map(c => [`${c.codigo}:::${c.talla}`, c.itemCodigoSIEId]));
+
+      for (const sourceCodigo of sourceCodigosSIE) {
+        const key = `${sourceCodigo.codigo}:::${sourceCodigo.talla}`;
+        const existingTargetId = targetMap.get(key);
+
+        if (existingTargetId !== undefined) {
+          const cajasAsociadas = await tx.cajaItemCodigoSIE.findMany({
+            where: { itemCodigoSIEId: sourceCodigo.itemCodigoSIEId },
+          });
+
+          for (const c of cajasAsociadas) {
+            const exists = await tx.cajaItemCodigoSIE.findUnique({
+              where: {
+                codigoDepositoGeneral_itemCodigoSIEId: {
+                  codigoDepositoGeneral: c.codigoDepositoGeneral,
+                  itemCodigoSIEId: existingTargetId,
+                },
+              },
+            });
+            if (!exists) {
+              await tx.cajaItemCodigoSIE.create({
+                data: {
+                  codigoDepositoGeneral: c.codigoDepositoGeneral,
+                  itemCodigoSIEId: existingTargetId,
+                },
+              });
+            }
+          }
+
+          await tx.cajaItemCodigoSIE.deleteMany({
+            where: { itemCodigoSIEId: sourceCodigo.itemCodigoSIEId },
+          });
+          await tx.itemCodigoSIE.delete({
+            where: { itemCodigoSIEId: sourceCodigo.itemCodigoSIEId },
+          });
+        } else {
+          await tx.itemCodigoSIE.update({
+            where: { itemCodigoSIEId: sourceCodigo.itemCodigoSIEId },
+            data: { itemId: targetItemId },
+          });
+        }
+      }
+
+      await tx.item.update({
+        where: { itemId: targetItemId },
+        data: { existenciaSie: { increment: sourceItem.existenciaSie } },
+      });
 
       await tx.item.delete({
         where: { itemId: sourceItemId },

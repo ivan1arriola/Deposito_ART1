@@ -54,13 +54,14 @@ function buildFirmaBloqueLineas(input: {
     {
       key: `${input.bloque.keyPrefix}-${gradeKeySuffix}`,
       text: input.bloque.grado,
-      indentLevel: baseLevel + 1,
+      indentLevel: baseLevel,
       isBold: true,
     },
     {
       key: `${input.bloque.keyPrefix}-${nameKeySuffix}`,
       text: input.bloque.nombre,
-      indentLevel: baseLevel + 2,
+      indentLevel: baseLevel,
+      inlineOffsetChars: countMonospaceChars(input.bloque.grado),
     },
   ];
 }
