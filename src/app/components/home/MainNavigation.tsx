@@ -634,6 +634,29 @@ export function MainNavigation({
           </Tooltip>
         ))}
       </ExpandedMenuGroup>
+
+      <ExpandedMenuGroup title="Manuales" icon={icons.prestamos} compact={false} collapsed={collapsed}>
+        <Tooltip title="Manual de Usuario Final" placement="right" disableHoverListener={!collapsed}>
+          <Button
+            variant="text"
+            startIcon={icons.prestamos}
+            onClick={() => window.open("/docs/manual-usuario-final.pdf", "_blank", "noopener,noreferrer")}
+            sx={inlineSubmenuButtonSx(false, false)}
+          >
+            {!collapsed && "Manual de Usuario Final"}
+          </Button>
+        </Tooltip>
+        <Tooltip title="Presentación del Producto" placement="right" disableHoverListener={!collapsed}>
+          <Button
+            variant="text"
+            startIcon={icons.prestamos}
+            onClick={() => window.open("/docs/presentacion-producto-deposito-art1.pdf", "_blank", "noopener,noreferrer")}
+            sx={inlineSubmenuButtonSx(false, false)}
+          >
+            {!collapsed && "Presentación del Producto"}
+          </Button>
+        </Tooltip>
+      </ExpandedMenuGroup>
     </Box>
   );
 }
