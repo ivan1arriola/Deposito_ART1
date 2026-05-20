@@ -58,6 +58,7 @@ import type {
   FirmaConfig,
   UsuarioAdmin,
   Talla,
+  TipoArticulo,
 } from "@/types/entities";
 import type {
   PersonalForm,
@@ -121,6 +122,9 @@ import {
   createBateriaHandler,
   updateBateriaHandler,
   deleteBateriaHandler,
+  createArticuloHandler,
+  updateArticuloHandler,
+  deleteArticuloHandler,
   createItemHandler,
   updateItemHandler,
   deleteItemHandler,
@@ -357,6 +361,7 @@ export default function Home() {
     rangosOficiales,
     rangosSuboficiales,
     baterias,
+    articulos,
     equipos,
     personal,
     oficialesSuboficiales,
@@ -453,6 +458,13 @@ export default function Home() {
   const [editBateriaId, setEditBateriaId] = useState<number | null>(null);
   const [editBateriaNombre, setEditBateriaNombre] = useState("");
   const [editBateriaOrden, setEditBateriaOrden] = useState("");
+
+  const [newArticuloNombre, setNewArticuloNombre] = useState("");
+  const [newArticuloTipo, setNewArticuloTipo] = useState<TipoArticulo>("OFICINA");
+  const [creatingArticulo, setCreatingArticulo] = useState(false);
+  const [editArticuloId, setEditArticuloId] = useState<number | null>(null);
+  const [editArticuloNombre, setEditArticuloNombre] = useState("");
+  const [editArticuloTipo, setEditArticuloTipo] = useState<TipoArticulo>("OFICINA");
 
   const [newEquipo, setNewEquipo] = useState<EquipoForm>(EMPTY_EQUIPO_FORM);
   const [creatingEquipo, setCreatingEquipo] = useState(false);
@@ -573,7 +585,7 @@ export default function Home() {
     [newOficialSuboficial.tipo, rangosOficiales, rangosSuboficiales],
   );
   const canRegisterOficialSuboficial = canWrite && rangosOficialSuboficialDisponibles.length > 0;
-  const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "equipos";
+  const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "articulos" || activeView === "equipos";
   const inReminderConfigView = activeView === "recordatorios";
   const inAdminConfigView = activeView === "firmas" || activeView === "usuarios" || activeView === "auditoria";
   const inEtiquetadoView =
@@ -903,7 +915,8 @@ export default function Home() {
     const start = (personalPageSafe - 1) * personalPageSize;
     return personalFiltrado.slice(start, start + personalPageSize);
   }, [personalFiltrado, personalPageSafe, personalPageSize]);
-  const isConfigView = inCatalogView || inReminderConfigView || inAdminConfigView || activeView === "usuario_nuevo";
+  const isConfigView =
+    inCatalogView || inReminderConfigView || inAdminConfigView || activeView === "usuario_nuevo" || activeView === "articulo_nuevo";
   const personaRegistro = useMemo(() => {
     if (!registroDraft) return null;
     return personal.find((persona) => persona.ci === registroDraft.ci) ?? null;
@@ -1195,7 +1208,7 @@ export default function Home() {
   }, [activeView, isAdmin]);
 
   useEffect(() => {
-    if (activeView === "usuario_nuevo" && !isAdmin) {
+    if ((activeView === "usuario_nuevo" || activeView === "articulo_nuevo") && !isAdmin) {
       setActiveView("personal");
     }
   }, [activeView, isAdmin]);
@@ -1699,7 +1712,6 @@ export default function Home() {
 
   const createEtiquetadoCaja = useCallback(
     async (input: {
-      codigoDepositoGeneral: number;
       estanteria: string;
       piso: number;
       items: Array<{
@@ -1715,12 +1727,12 @@ export default function Home() {
 
       setStatus("Registrando caja...");
       try {
-        await api("/api/etiquetado/cajas", {
+        const response = await api<{ ok: true; codigoDepositoGeneral: number }>("/api/etiquetado/cajas", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(input),
         });
-        setStatus("Caja registrada.");
+        setStatus(`Caja ${response.codigoDepositoGeneral} registrada.`);
         await loadEtiquetadoData();
       } catch (error: unknown) {
         setStatus(error instanceof Error ? error.message : "No se pudo registrar la caja.");
@@ -1990,6 +2002,84 @@ export default function Home() {
       });
     },
     [canDelete, baterias, loadData],
+  );
+
+  const createArticulo = useCallback(async () => {
+    if (!isAdmin) {
+      setStatus("Solo el administrador puede registrar artículos.");
+      return;
+    }
+    setCreatingArticulo(true);
+    try {
+      await createArticuloHandler(newArticuloNombre, newArticuloTipo, {
+        onSuccess: async () => {
+          setNewArticuloNombre("");
+          setNewArticuloTipo("OFICINA");
+          setStatus("Artículo creado.");
+          await loadData();
+          setActiveView("articulos");
+        },
+        onError: (message) => setStatus(message),
+      });
+    } catch {
+      // Error manejado en el handler
+    } finally {
+      setCreatingArticulo(false);
+    }
+  }, [isAdmin, newArticuloNombre, newArticuloTipo, loadData]);
+
+  const updateArticulo = useCallback(
+    async (articuloId: number) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede editar artículos.");
+        return;
+      }
+      try {
+        await updateArticuloHandler(articuloId, editArticuloNombre, editArticuloTipo, {
+          onSuccess: async () => {
+            setEditArticuloId(null);
+            setEditArticuloNombre("");
+            setEditArticuloTipo("OFICINA");
+            setStatus("Artículo actualizado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [isAdmin, editArticuloNombre, editArticuloTipo, loadData],
+  );
+
+  const deleteArticulo = useCallback(
+    (articuloId: number) => {
+      if (!isAdmin) {
+        setStatus("Solo el administrador puede eliminar artículos.");
+        return;
+      }
+      const articulo = articulos.find((entry) => entry.articuloId === articuloId);
+      openConfirmDialog({
+        title: "Eliminar artículo",
+        message: `Se eliminará ${articulo?.nombre ?? "este artículo"}.`,
+        confirmText: "Eliminar artículo",
+        tone: "danger",
+        onConfirm: async () => {
+          try {
+            await deleteArticuloHandler(articuloId, {
+              onSuccess: async () => {
+                setStatus("Artículo eliminado.");
+                await loadData();
+              },
+              onError: (message) => setStatus(message),
+            });
+          } catch {
+            // Error manejado en el handler
+          }
+        },
+      });
+    },
+    [isAdmin, articulos, loadData],
   );
 
   const createEquipo = useCallback(
@@ -5948,7 +6038,7 @@ export default function Home() {
 
           {inCatalogView || (isAdmin && inAdminConfigView) ? (
           <ConfigViews
-            activeView={activeView as "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria"}
+            activeView={activeView as "grados" | "baterias" | "articulos" | "equipos" | "firmas" | "usuarios" | "auditoria"}
             isAdmin={isAdmin}
             canWrite={canWrite}
             rangos={rangosConfigView}
@@ -5965,6 +6055,10 @@ export default function Home() {
             editBateriaId={editBateriaId}
             editBateriaNombre={editBateriaNombre}
             editBateriaOrden={editBateriaOrden}
+            articulos={articulos}
+            editArticuloId={editArticuloId}
+            editArticuloNombre={editArticuloNombre}
+            editArticuloTipo={editArticuloTipo}
             equipos={equiposOrdenados}
             newEquipo={newEquipo}
             editEquipoId={editEquipoId}
@@ -6016,6 +6110,11 @@ export default function Home() {
             onCreateBateria={() => void createBateria()}
             onUpdateBateria={(bateriaId) => void updateBateria(bateriaId)}
             onDeleteBateria={(bateriaId) => void deleteBateria(bateriaId)}
+            onEditArticuloIdChange={setEditArticuloId}
+            onEditArticuloNombreChange={setEditArticuloNombre}
+            onEditArticuloTipoChange={setEditArticuloTipo}
+            onUpdateArticulo={(articuloId) => void updateArticulo(articuloId)}
+            onDeleteArticulo={(articuloId) => void deleteArticulo(articuloId)}
             onNewEquipoChange={(value, key) => setNewEquipo((prev) => ({ ...prev, [key]: value }))}
             onEditEquipoIdChange={setEditEquipoId}
             onEditEquipoChange={(value, key) => setEditEquipo((prev) => ({ ...prev, [key]: value }))}
@@ -6119,8 +6218,14 @@ export default function Home() {
             newEquipo={newEquipo}
             loading={loading}
             creatingEquipo={creatingEquipo}
+            creatingArticulo={creatingArticulo}
             createEquipo={createEquipo}
             setNewEquipo={setNewEquipo}
+            newArticuloNombre={newArticuloNombre}
+            newArticuloTipo={newArticuloTipo}
+            createArticulo={createArticulo}
+            setNewArticuloNombre={setNewArticuloNombre}
+            setNewArticuloTipo={setNewArticuloTipo}
             newBateria={newBateria}
             newBateriaOrden={newBateriaOrden}
             createBateria={createBateria}

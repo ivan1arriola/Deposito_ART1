@@ -100,6 +100,18 @@ function parseCodigoSIEIds(value: unknown): bigint[] | null {
   return Array.from(new Set((parsed as bigint[]).map((entry) => entry.toString()))).map((entry) => BigInt(entry));
 }
 
+async function buildNextCodigoDepositoGeneral(tx: Pick<typeof prisma, "caja">) {
+  const ultimaCaja = await tx.caja.findFirst({
+    select: { codigoDepositoGeneral: true },
+    orderBy: [{ codigoDepositoGeneral: "desc" }],
+  });
+  const siguienteCodigo = (ultimaCaja?.codigoDepositoGeneral ?? 0) + 1;
+  if (!Number.isInteger(siguienteCodigo) || siguienteCodigo <= 0 || siguienteCodigo > 99999999) {
+    throw new Error("No se pudo asignar un numero de caja valido.");
+  }
+  return siguienteCodigo;
+}
+
 export async function POST(request: Request) {
   const auth = await authorizeRequest(request, "write_data");
   if (!auth.ok) return auth.response;
@@ -112,7 +124,11 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as CreateCajaPayload;
-  const codigoDepositoGeneral = parseCodigoDepositoGeneral(body.codigoDepositoGeneral);
+  const codigoDepositoGeneralSolicitado =
+    typeof body.codigoDepositoGeneral === "undefined" ? null : parseCodigoDepositoGeneral(body.codigoDepositoGeneral);
+  if (typeof body.codigoDepositoGeneral !== "undefined" && codigoDepositoGeneralSolicitado === null) {
+    return NextResponse.json({ error: "Payload invalido. codigo de caja invalido." }, { status: 400 });
+  }
   const estanteria = normalizeEstanteria(body.estanteria);
   const piso = parsePiso(body.piso);
   const parsedItems = parseCajaItems(body.items);
@@ -138,9 +154,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Payload invalido. codigosSIEIds debe ser una lista de IDs numericos." }, { status: 400 });
   }
 
-  if (codigoDepositoGeneral === null || !estanteria || piso === null || itemIds.length === 0 || cantidadTotal <= 0) {
+  if (!estanteria || piso === null || itemIds.length === 0 || cantidadTotal <= 0) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo de caja, nombre de estanteria, piso y equipos con cantidad son obligatorios." },
+      { error: "Payload invalido. nombre de estanteria, piso y equipos con cantidad son obligatorios." },
       { status: 400 },
     );
   }
@@ -233,67 +249,99 @@ export async function POST(request: Request) {
     }
   }
 
-  try {
-    await prisma.$transaction(async (tx) => {
-      await tx.caja.create({
-        data: {
-          codigoDepositoGeneral,
-          estanteria,
-          piso,
-        },
-      });
+  const maxAttempts = codigoDepositoGeneralSolicitado === null ? 3 : 1;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const codigoDepositoGeneral = await prisma.$transaction(async (tx) => {
+        const codigoAsignado = codigoDepositoGeneralSolicitado ?? (await buildNextCodigoDepositoGeneral(tx));
 
-      await tx.cajaItem.createMany({
-        data: items.map((entry) => ({
-          codigoDepositoGeneral,
-          itemId: entry.itemId,
-          cantidad: entry.cantidad,
-        })),
-      });
+        await tx.caja.create({
+          data: {
+            codigoDepositoGeneral: codigoAsignado,
+            estanteria,
+            piso,
+          },
+        });
 
-      if (codigosSIEIds.length > 0) {
-        await tx.cajaItemCodigoSIE.createMany({
-          data: codigosSIEIds.map((itemCodigoSIEId) => ({
-            codigoDepositoGeneral,
-            itemCodigoSIEId,
+        await tx.cajaItem.createMany({
+          data: items.map((entry) => ({
+            codigoDepositoGeneral: codigoAsignado,
+            itemId: entry.itemId,
+            cantidad: entry.cantidad,
           })),
         });
-      }
-    });
 
-    await logAudit({
-      usuarioId: auth.user.usuarioId,
-      accion: "CREATE",
-      entidad: "CAJA",
-      entidadId: String(codigoDepositoGeneral),
-      detalle: {
-        codigoDepositoGeneral,
-        items: items.map((entry) => ({
-          itemId: entry.itemId.toString(),
-          cantidad: entry.cantidad,
-        })),
-        itemNombres,
-        cantidad: cantidadTotal,
-        estanteria,
-        piso,
-        codigosSIE: codigosSIEDetalle,
-      },
-    });
+        if (codigosSIEIds.length > 0) {
+          await tx.cajaItemCodigoSIE.createMany({
+            data: codigosSIEIds.map((itemCodigoSIEId) => ({
+              codigoDepositoGeneral: codigoAsignado,
+              itemCodigoSIEId,
+            })),
+          });
+        }
 
-    return NextResponse.json({ ok: true }, { status: 201 });
-  } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-      return NextResponse.json({ error: "Ya existe una caja con ese codigo de deposito general." }, { status: 409 });
-    }
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2022") {
-      return NextResponse.json(
-        {
-          error:
-            "La base de datos de etiquetado esta desactualizada. Aplica la actualizacion de esquema correspondiente.",
+        return codigoAsignado;
+      });
+
+      await logAudit({
+        usuarioId: auth.user.usuarioId,
+        accion: "CREATE",
+        entidad: "CAJA",
+        entidadId: String(codigoDepositoGeneral),
+        detalle: {
+          codigoDepositoGeneral,
+          items: items.map((entry) => ({
+            itemId: entry.itemId.toString(),
+            cantidad: entry.cantidad,
+          })),
+          itemNombres,
+          cantidad: cantidadTotal,
+          estanteria,
+          piso,
+          codigosSIE: codigosSIEDetalle,
         },
-        { status: 500 },
-      );
+      });
+
+      return NextResponse.json({ ok: true, codigoDepositoGeneral }, { status: 201 });
+    } catch (error: unknown) {
+      if (
+        typeof error === "object" &&
+        error &&
+        "code" in error &&
+        (error as { code: string }).code === "P2002" &&
+        codigoDepositoGeneralSolicitado === null &&
+        attempt < maxAttempts - 1
+      ) {
+        continue;
+      }
+
+      if (
+        typeof error === "object" &&
+        error &&
+        "code" in error &&
+        (error as { code: string }).code === "P2002" &&
+        codigoDepositoGeneralSolicitado === null
+      ) {
+        return NextResponse.json({ error: "No se pudo asignar un numero de caja unico. Intenta nuevamente." }, { status: 409 });
+      }
+      if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
+        return NextResponse.json({ error: "Ya existe una caja con ese codigo de deposito general." }, { status: 409 });
+      }
+      if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2022") {
+        return NextResponse.json(
+          {
+            error:
+              "La base de datos de etiquetado esta desactualizada. Aplica la actualizacion de esquema correspondiente.",
+          },
+          { status: 500 },
+        );
+      }
+      if (error instanceof Error && error.message === "No se pudo asignar un numero de caja valido.") {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "No se pudo crear la caja." }, { status: 500 });
     }
-    return NextResponse.json({ error: "No se pudo crear la caja." }, { status: 500 });
   }
+
+  return NextResponse.json({ error: "No se pudo crear la caja." }, { status: 500 });
 }

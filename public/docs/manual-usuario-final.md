@@ -959,12 +959,13 @@ Buenas prácticas con estanterías:
 
 1. Entra en **Etiquetado > Listado de cajas**.
 2. Presiona **Registrar caja**.
-3. Ingresa **Código Dep. Gral.**.
-4. Selecciona estantería.
-5. Selecciona equipos de la caja.
-6. Indica cantidad por equipo.
-7. Selecciona códigos SIE por equipo o deja **Sin código**.
-8. Presiona **Crear caja**.
+3. Selecciona estantería.
+4. Selecciona equipos de la caja.
+5. Indica cantidad por equipo.
+6. Selecciona códigos SIE por equipo o deja **Sin código**.
+7. Presiona **Crear caja**.
+
+El sistema asigna automáticamente el número de caja al momento de registrarla.
 
 La cantidad de la caja se calcula automáticamente según los equipos seleccionados.
 
@@ -976,7 +977,6 @@ Uso de **Sin código**:
 
 Ejemplo de carga:
 
-- Código Dep. Gral.: `DG-001`.
 - Estantería: `B`, piso `1`.
 - Equipo: `Camisa`, cantidad `3`.
 - Códigos SIE: dos códigos existentes y una unidad marcada como **Sin código**, si una camisa no tiene código individual.

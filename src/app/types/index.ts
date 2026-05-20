@@ -73,7 +73,7 @@ export type CurrentUser = {
 };
 
 // Tipos de vistas
-export type MainView = "personal" | "oficiales" | "suboficiales" | "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo" | "equipo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo" | "formularios" | "prestamos_registrar" | "prestamos_vigentes" | "prestamos_historial" | "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "hoja_matrix" | "equipo_resumen" | "tallas_resumen" | "tallas_resumen_subalternos_unidad" | "tallas_resumen_subalternos_bateria" | "tallas_resumen_oficiales_suboficiales" | "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
+export type MainView = "personal" | "oficiales" | "suboficiales" | "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo" | "equipo_nuevo" | "articulo_nuevo" | "bateria_nueva" | "grado_nuevo" | "usuario_nuevo" | "formularios" | "prestamos_registrar" | "prestamos_vigentes" | "prestamos_historial" | "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "hoja_matrix" | "equipo_resumen" | "tallas_resumen" | "tallas_resumen_subalternos_unidad" | "tallas_resumen_subalternos_bateria" | "tallas_resumen_oficiales_suboficiales" | "grados" | "baterias" | "articulos" | "equipos" | "firmas" | "usuarios" | "auditoria";
 
 // Tipos de registros
 export type RegistroTipo = "ENTREGA" | "DEVOLUCION";

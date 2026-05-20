@@ -1,5 +1,5 @@
 /**
- * Handler functions para operaciones de catálogos (Rangos, Baterías, Equipos)
+ * Handler functions para operaciones de catálogos (Rangos, Baterías, Artículos, Equipos)
  * Estas funciones contienen la lógica de negocio envuelta con API y side effects
  */
 
@@ -107,6 +107,54 @@ export async function deleteBateriaHandler(bateriaId: number, callbacks: Callbac
     callbacks.onSuccess();
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo eliminar la batería.";
+    callbacks.onError(message);
+    throw error;
+  }
+}
+
+// ==================== ARTICULOS ====================
+
+export async function createArticuloHandler(nombre: string, tipo: "OFICINA" | "LIMPIEZA", callbacks: CallbackProps) {
+  try {
+    await api("/api/articulos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, tipo }),
+    });
+    callbacks.onSuccess();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo crear el artículo.";
+    callbacks.onError(message);
+    throw error;
+  }
+}
+
+export async function updateArticuloHandler(
+  articuloId: number,
+  nombre: string,
+  tipo: "OFICINA" | "LIMPIEZA",
+  callbacks: CallbackProps
+) {
+  try {
+    await api(`/api/articulos/${articuloId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, tipo }),
+    });
+    callbacks.onSuccess();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo actualizar el artículo.";
+    callbacks.onError(message);
+    throw error;
+  }
+}
+
+export async function deleteArticuloHandler(articuloId: number, callbacks: CallbackProps) {
+  try {
+    await api(`/api/articulos/${articuloId}`, { method: "DELETE" });
+    callbacks.onSuccess();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo eliminar el artículo.";
     callbacks.onError(message);
     throw error;
   }

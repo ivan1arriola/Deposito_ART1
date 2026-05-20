@@ -1,6 +1,6 @@
 {
   "name": "deposito-art1",
-  "version": "5.5.7",
+  "version": "5.5.8",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
@@ -28,6 +28,7 @@
     "db:patch:add-caja-piso-fk": "prisma db execute --file prisma/patches/20260427_add_caja_piso_fk.sql && prisma generate",
     "db:patch:drop-personal-tipo": "prisma db execute --file prisma/patches/20260427_drop_personal_tipo_use_rango.sql && prisma generate",
     "db:patch:add-item-existencia-sie": "prisma db execute --file prisma/patches/20260502_add_item_existencia_sie.sql && prisma generate",
+    "db:patch:add-articulos": "prisma db execute --file prisma/patches/20260520_add_articulos.sql && prisma generate",
     "prisma:studio": "prisma studio",
     "user:create": "tsx scripts/create-user.ts",
     "docs:producto": "node scripts/generate-product-presentation-pdf.mjs",

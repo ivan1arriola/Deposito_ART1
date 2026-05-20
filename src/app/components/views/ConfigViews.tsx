@@ -5,12 +5,13 @@ import { formatAuditEntityId, type AuditCiReferences } from "@/lib/audit-helpers
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MainView } from "@/types/views";
-import type { AuditoriaRecord, FirmaConfig, Rango, Role, UsuarioAdmin } from "@/types/entities";
+import type { Articulo, AuditoriaRecord, FirmaConfig, Rango, Role, TipoArticulo, UsuarioAdmin } from "@/types/entities";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 
 type RangoTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
 type RangoConfig = Rango & { tipo?: RangoTipo };
 type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
+type ArticuloConfig = Articulo;
 type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
 type EquiposDisplayMode = "por_estado" | "alfabetico";
 type AuditUserOption = {
@@ -20,7 +21,7 @@ type AuditUserOption = {
 type UserAccountType = UsuarioAdmin["accountType"];
 
 interface ConfigViewsProps {
-  activeView: "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
+  activeView: "grados" | "baterias" | "articulos" | "equipos" | "firmas" | "usuarios" | "auditoria";
   isAdmin: boolean;
   canWrite: boolean;
   // Grados state
@@ -39,6 +40,11 @@ interface ConfigViewsProps {
   editBateriaId: number | null;
   editBateriaNombre: string;
   editBateriaOrden: string;
+  // Articulos state
+  articulos: ArticuloConfig[];
+  editArticuloId: number | null;
+  editArticuloNombre: string;
+  editArticuloTipo: TipoArticulo;
   // Equipos state
   equipos: EquipoConfig[];
   newEquipo: { nombre: string; activo: boolean; ordenPdf: number };
@@ -96,6 +102,12 @@ interface ConfigViewsProps {
   onCreateBateria: () => void;
   onUpdateBateria: (bateriaId: number) => void;
   onDeleteBateria: (bateriaId: number) => void;
+  // Articulos callbacks
+  onEditArticuloIdChange: (id: number | null) => void;
+  onEditArticuloNombreChange: (value: string) => void;
+  onEditArticuloTipoChange: (value: TipoArticulo) => void;
+  onUpdateArticulo: (articuloId: number) => void;
+  onDeleteArticulo: (articuloId: number) => void;
   // Equipos callbacks
   onNewEquipoChange: (value: string | boolean, key: keyof Pick<EquipoConfig, "nombre" | "activo">) => void;
   onEditEquipoIdChange: (id: string | null) => void;
@@ -159,6 +171,11 @@ const RANGO_TIPO_LABEL: Record<RangoTipo, string> = {
   SUBALTERNO: "Personal Subalterno",
   OFICIAL: "Senores Oficiales",
   SUBOFICIAL: "Suboficiales",
+};
+const ARTICULO_TIPO_OPTIONS: TipoArticulo[] = ["OFICINA", "LIMPIEZA"];
+const ARTICULO_TIPO_LABEL: Record<TipoArticulo, string> = {
+  OFICINA: "Oficina",
+  LIMPIEZA: "Limpieza",
 };
 
 export function ConfigViews(props: ConfigViewsProps) {
@@ -383,6 +400,110 @@ export function ConfigViews(props: ConfigViewsProps) {
                 </div>
               )}
             </div>
+            ))}
+          </div>
+        </article>
+      </section>
+    );
+  }
+
+  if (props.activeView === "articulos") {
+    const articulosOrdenados = [...props.articulos].sort(
+      (a, b) =>
+        ARTICULO_TIPO_OPTIONS.indexOf(a.tipo) - ARTICULO_TIPO_OPTIONS.indexOf(b.tipo) ||
+        a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
+    );
+
+    return (
+      <section className="mt-6 grid grid-cols-1 gap-4">
+        <article className="ej-card rounded-2xl p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-stone-900">Artículos</h2>
+              <p className="mt-1 text-xs text-stone-600">Catálogo auxiliar para clasificar artículos de oficina y limpieza.</p>
+              <p className="mt-1 text-xs text-stone-600">Las altas nuevas se realizan desde la vista separada de alta de artículo.</p>
+            </div>
+            {props.isAdmin ? (
+              <button
+                type="button"
+                onClick={() => props.onNavigateView("articulo_nuevo")}
+                className="ej-button rounded-xl px-4 py-2 text-sm font-semibold"
+              >
+                Nuevo artículo
+              </button>
+            ) : null}
+          </div>
+          {!props.isAdmin ? (
+            <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
+              Modo solo lectura: solo el administrador puede crear, editar o eliminar artículos.
+            </p>
+          ) : null}
+
+          <div className="mt-4 space-y-2">
+            {articulosOrdenados.length === 0 ? (
+              <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
+                <p className="text-sm text-stone-600">Todavía no hay artículos registrados.</p>
+              </div>
+            ) : null}
+
+            {articulosOrdenados.map((articulo) => (
+              <div key={articulo.articuloId} className="rounded-lg bg-stone-100/80 p-2">
+                {props.editArticuloId === articulo.articuloId && props.isAdmin ? (
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
+                    <input
+                      value={props.editArticuloNombre}
+                      onChange={(event) => props.onEditArticuloNombreChange(event.target.value)}
+                      className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+                    />
+                    <select
+                      value={props.editArticuloTipo}
+                      onChange={(event) => props.onEditArticuloTipoChange(event.target.value as TipoArticulo)}
+                      className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+                    >
+                      {ARTICULO_TIPO_OPTIONS.map((tipo) => (
+                        <option key={tipo} value={tipo}>
+                          {ARTICULO_TIPO_LABEL[tipo]}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2">
+                      <SmallActionButton text="Ok" tone="ok" onClick={() => props.onUpdateArticulo(articulo.articuloId)} />
+                      <SmallActionButton
+                        text="Cancelar"
+                        tone="neutral"
+                        onClick={() => {
+                          props.onEditArticuloIdChange(null);
+                          props.onEditArticuloNombreChange("");
+                          props.onEditArticuloTipoChange("OFICINA");
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-stone-800">{articulo.nombre}</span>
+                      <span className="inline-flex items-center rounded-full border border-stone-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                        {ARTICULO_TIPO_LABEL[articulo.tipo]}
+                      </span>
+                    </div>
+                    {props.isAdmin ? (
+                      <div className="flex gap-2">
+                        <SmallActionButton
+                          text="Editar"
+                          tone="edit"
+                          onClick={() => {
+                            props.onEditArticuloIdChange(articulo.articuloId);
+                            props.onEditArticuloNombreChange(articulo.nombre);
+                            props.onEditArticuloTipoChange(articulo.tipo);
+                          }}
+                        />
+                        <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteArticulo(articulo.articuloId)} />
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </article>

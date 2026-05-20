@@ -56,9 +56,15 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
     updateNewOficialSuboficialField,
     newEquipo,
     creatingEquipo,
+    creatingArticulo,
     loading,
     createEquipo,
     setNewEquipo,
+    newArticuloNombre,
+    newArticuloTipo,
+    createArticulo,
+    setNewArticuloNombre,
+    setNewArticuloTipo,
     newBateria,
     newBateriaOrden,
     createBateria,
@@ -244,8 +250,14 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
         newEquipo={newEquipo}
         loading={loading}
         creatingEquipo={creatingEquipo}
+        creatingArticulo={creatingArticulo}
         createEquipo={createEquipo}
         setNewEquipo={setNewEquipo}
+        newArticuloNombre={newArticuloNombre}
+        newArticuloTipo={newArticuloTipo}
+        createArticulo={createArticulo}
+        setNewArticuloNombre={setNewArticuloNombre}
+        setNewArticuloTipo={setNewArticuloTipo}
         newBateria={newBateria}
         newBateriaOrden={newBateriaOrden}
         createBateria={createBateria}

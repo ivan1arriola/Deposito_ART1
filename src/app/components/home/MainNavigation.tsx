@@ -42,6 +42,7 @@ import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
 import type { MainView } from "@/types/views";
 
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recordatorios" | "firmas" | "usuarios" | "auditoria" | "usuario_nuevo">;
+type ArticuloView = Extract<MainView, "articulos" | "articulo_nuevo">;
 type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo">;
 type StockView = Extract<
   MainView,
@@ -134,6 +135,11 @@ const configViews: Array<NavOption<ConfigView>> = [
   { view: "usuarios", label: "Usuarios registrados", icon: icons.users, adminOnly: true },
   { view: "usuario_nuevo", label: "Alta de usuario", icon: icons.altas, adminOnly: true },
   { view: "auditoria", label: "Auditoría detallada", icon: icons.audit, adminOnly: true },
+];
+
+const articuloViews: Array<NavOption<ArticuloView>> = [
+  { view: "articulos", label: "Artículos registrados", icon: icons.stock },
+  { view: "articulo_nuevo", label: "Alta de artículo", icon: icons.altas, adminOnly: true },
 ];
 
 const createViews: Array<NavOption<CreateView>> = [
@@ -442,6 +448,7 @@ export function MainNavigation({
   const filteredStockViews = stockViews.filter((item) => (item.writeOnly ? canWrite : true));
   const filteredPrestamosViews = prestamosViews.filter((item) => (item.writeOnly ? canWrite : true));
   const filteredCreateViews = createViews.filter((item) => (item.adminOnly ? isAdmin : true));
+  const filteredArticuloViews = articuloViews.filter((item) => (item.adminOnly ? isAdmin : true));
   const filteredConfigViews = configViews.filter((item) => (item.adminOnly ? isAdmin : true));
 
   function closeAllMenus() {
@@ -617,6 +624,21 @@ export function MainNavigation({
           >
             {item.label}
           </Button>
+        ))}
+      </ExpandedMenuGroup>
+
+      <ExpandedMenuGroup title="Artículos" icon={icons.stock} compact={false} collapsed={collapsed}>
+        {filteredArticuloViews.map((item) => (
+          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+            <Button
+              variant="text"
+              startIcon={item.icon}
+              onClick={() => handleSelectView(item.view)}
+              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+            >
+              {!collapsed && item.label}
+            </Button>
+          </Tooltip>
         ))}
       </ExpandedMenuGroup>
 

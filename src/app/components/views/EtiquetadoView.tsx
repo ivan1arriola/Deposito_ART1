@@ -84,7 +84,6 @@ export function EtiquetadoView({
   const [editCodigoSIE, setEditCodigoSIE] = useState("");
   const [editCodigoTalla, setEditCodigoTalla] = useState("");
   const [editCodigoItemId, setEditCodigoItemId] = useState("");
-  const [newCajaCodigo, setNewCajaCodigo] = useState("");
   const [newCajaCantidadByItemId, setNewCajaCantidadByItemId] = useState<Record<string, string>>({});
   const [newCajaEstanteria, setNewCajaEstanteria] = useState("");
   const [newCajaItemIds, setNewCajaItemIds] = useState<string[]>([]);
@@ -346,7 +345,6 @@ export function EtiquetadoView({
 
   function handleCreateCaja(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const codigoDepositoGeneral = Number(newCajaCodigo);
     const estanteriaSeleccionada = estanteriaOptions.find((option) => option.value === cajaEstanteriaValue);
     const estanteria = normalizeEstanteriaName(estanteriaSeleccionada?.codigo ?? "");
     const piso = estanteriaSeleccionada?.piso ?? null;
@@ -355,7 +353,6 @@ export function EtiquetadoView({
       cantidad: item.cantidad,
     }));
     if (
-      !Number.isInteger(codigoDepositoGeneral) ||
       !estanteriaSeleccionada ||
       piso === null ||
       !isValidEstanteriaName(estanteria) ||
@@ -363,13 +360,11 @@ export function EtiquetadoView({
       !allSelectedItemsHaveValidCantidad
     ) return;
     onCreateCaja({
-      codigoDepositoGeneral,
       estanteria,
       piso,
       items: itemsPayload,
       codigosSIEIds: selectedCajaCodigosSIEIds,
     });
-    setNewCajaCodigo("");
     setNewCajaCantidadByItemId({});
     setNewCajaItemIds([]);
     setNewCajaCodigosSIEIds([]);
@@ -764,18 +759,7 @@ export function EtiquetadoView({
 
           {canWrite && showCreateCajaForm ? (
             <form onSubmit={handleCreateCaja} className="mt-3 space-y-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
-                <label className="text-xs text-stone-700">
-                  Codigo Dep. Gral.
-                  <input
-                    type="number"
-                    min={1}
-                    value={newCajaCodigo}
-                    onChange={(event) => setNewCajaCodigo(event.target.value)}
-                    disabled={!canWrite}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  />
-                </label>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 <label className="text-xs text-stone-700">
                   Cantidad (calculada)
                   <input
@@ -806,6 +790,10 @@ export function EtiquetadoView({
                   </select>
                 </label>
               </div>
+
+              <p className="rounded-lg border border-dashed border-stone-300 bg-white px-3 py-2 text-xs text-stone-600">
+                El numero de caja se asigna automaticamente al registrar.
+              </p>
 
               <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
                 <div className="rounded-xl border border-stone-200 bg-white p-3">
@@ -955,7 +943,6 @@ export function EtiquetadoView({
                   type="submit"
                   disabled={
                     !canWrite ||
-                    newCajaCodigo.trim() === "" ||
                     selectedCajaItemIds.length === 0 ||
                     cajaEstanteriaValue.trim() === "" ||
                     !allSelectedItemsHaveValidCantidad

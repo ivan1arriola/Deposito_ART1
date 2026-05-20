@@ -3,6 +3,7 @@
 import { PersonalCreateView } from "@/app/components/views/PersonalCreateView";
 import { OficialSuboficialCreateView } from "@/app/components/views/OficialSuboficialCreateView";
 import { EquipoCreateView } from "@/app/components/views/EquipoCreateView";
+import { ArticuloCreateView } from "@/app/components/views/ArticuloCreateView";
 import { BateriaCreateView } from "@/app/components/views/BateriaCreateView";
 import { RangoCreateView } from "@/app/components/views/RangoCreateView";
 import { UserCreateView } from "@/app/components/views/UserCreateView";
@@ -60,8 +61,14 @@ export function CreationViews(props: CreationViewsProps) {
     newEquipo,
     loading,
     creatingEquipo,
+    creatingArticulo,
     createEquipo,
     setNewEquipo,
+    newArticuloNombre,
+    newArticuloTipo,
+    createArticulo,
+    setNewArticuloNombre,
+    setNewArticuloTipo,
     newBateria,
     newBateriaOrden,
     createBateria,
@@ -172,6 +179,18 @@ export function CreationViews(props: CreationViewsProps) {
               [key]: value,
             }));
           }}
+        />
+      ) : null}
+
+      {activeView === "articulo_nuevo" ? (
+        <ArticuloCreateView
+          nombre={newArticuloNombre}
+          tipo={newArticuloTipo}
+          saving={creatingArticulo}
+          onBack={() => setActiveView("articulos")}
+          onCreate={() => void createArticulo()}
+          onNombreChange={setNewArticuloNombre}
+          onTipoChange={setNewArticuloTipo}
         />
       ) : null}
 

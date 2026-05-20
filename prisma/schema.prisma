@@ -32,6 +32,13 @@ enum TipoPersonal {
   @@map("tipo_personal")
 }
 
+enum TipoArticulo {
+  OFICINA
+  LIMPIEZA
+
+  @@map("tipo_articulo")
+}
+
 enum TipoMovimiento {
   ENTREGA
   DEVOLUCION
@@ -185,6 +192,15 @@ model Bateria {
 
   @@index([orden])
   @@map("bateria")
+}
+
+model Articulo {
+  articuloId Int          @id @default(autoincrement()) @map("articulo_id") @db.SmallInt
+  nombre     String       @unique
+  tipo       TipoArticulo
+
+  @@index([tipo])
+  @@map("articulo")
 }
 
 model Estanteria {

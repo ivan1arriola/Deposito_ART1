@@ -1,7 +1,7 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import type { PrestamoEditPayload } from "@/app/components/views/FormulariosPrestamosView";
 import type { MainView } from "@/types/views";
-import type { OficialSuboficial, Personal } from "@/types/entities";
+import type { OficialSuboficial, Personal, TipoArticulo } from "@/types/entities";
 import type {
   EquipoForm,
   OficialSuboficialForm,
@@ -77,8 +77,14 @@ export type CreationViewsProps = {
   newEquipo: EquipoForm;
   loading: boolean;
   creatingEquipo: boolean;
+  creatingArticulo: boolean;
   createEquipo: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   setNewEquipo: (updater: (prev: EquipoForm) => EquipoForm) => void;
+  newArticuloNombre: string;
+  newArticuloTipo: TipoArticulo;
+  createArticulo: () => Promise<void>;
+  setNewArticuloNombre: (value: string) => void;
+  setNewArticuloTipo: (value: TipoArticulo) => void;
   newBateria: string;
   newBateriaOrden: string;
   createBateria: () => Promise<void>;
@@ -235,7 +241,6 @@ export type EtiquetadoSectionProps = {
   updateEtiquetadoCodigoSIE: (input: { originalCodigoSIEId: string; originalCodigo: string; codigo: string; talla: string; itemId: string }) => Promise<void>;
   deleteEtiquetadoCodigoSIE: (codigoSIEId: string, codigo: string) => Promise<void>;
   createEtiquetadoCaja: (input: {
-    codigoDepositoGeneral: number;
     estanteria: string;
     piso: number;
     items: Array<{ itemId: string; cantidad: number }>;

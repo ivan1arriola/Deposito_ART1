@@ -6,6 +6,7 @@ GRANT USAGE ON SCHEMA public TO PUBLIC;
 CREATE TYPE "tipo_stock_operacion" AS ENUM ('INGRESO', 'EGRESO');
 CREATE TYPE "user_role" AS ENUM ('ADMIN', 'EDITOR', 'READ_ONLY');
 CREATE TYPE "tipo_personal" AS ENUM ('SUBALTERNO', 'OFICIAL', 'SUBOFICIAL');
+CREATE TYPE "tipo_articulo" AS ENUM ('OFICINA', 'LIMPIEZA');
 CREATE TYPE "tipo_movimiento" AS ENUM ('ENTREGA', 'DEVOLUCION', 'PRESTAMO');
 CREATE TYPE "estado_prestamo_movimiento" AS ENUM ('PENDIENTE', 'DEVUELTO');
 CREATE TYPE "estado_equipo_prestamo" AS ENUM ('NUEVO', 'BUENO', 'REGULAR', 'MALO');
@@ -88,6 +89,14 @@ INSERT INTO "bateria" ("nombre", "orden") VALUES
 ('Cdo. y Serv.', 1),
 ('Ba. Obus. "A"', 2),
 ('Ba. Obus. "B"', 3);
+
+CREATE TABLE "articulo" (
+  "articulo_id" SMALLSERIAL PRIMARY KEY,
+  "nombre" TEXT NOT NULL UNIQUE,
+  "tipo" "tipo_articulo" NOT NULL
+);
+
+CREATE INDEX "articulo_tipo_idx" ON "articulo"("tipo");
 
 CREATE TABLE "talla_tipo" (
   "talla_tipo_id" SMALLSERIAL PRIMARY KEY,

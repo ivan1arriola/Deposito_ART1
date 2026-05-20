@@ -181,6 +181,7 @@ export function auditEntityLabel(entidad: string): string {
     USUARIO: "usuario",
     RANGO: "grado",
     BATERIA: "batería",
+    ARTICULO: "artículo",
     ITEM: "item",
     FIRMAS_CONFIG: "firmas institucionales",
     OBSERVACION: "observación",

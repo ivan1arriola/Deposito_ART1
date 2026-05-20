@@ -21,6 +21,14 @@ export type Bateria = {
   orden: number;
 };
 
+export type TipoArticulo = "OFICINA" | "LIMPIEZA";
+
+export type Articulo = {
+  articuloId: number;
+  nombre: string;
+  tipo: TipoArticulo;
+};
+
 export type Equipo = {
   itemId: string;
   nombre: string;
