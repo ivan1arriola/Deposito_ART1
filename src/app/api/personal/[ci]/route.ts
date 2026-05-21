@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { TipoPersonal } from "@/generated/prisma/client";
+import { TipoMovimiento, TipoPersonal } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -349,59 +349,162 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
 
   const { ci } = await context.params;
   const ciDecoded = decodeURIComponent(ci).trim();
-  if (!ciDecoded) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
-  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  if (!ciDecoded) return NextResponse.json({ error: "CI inválida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI inválida." }, { status: 400 });
 
   try {
-    const deleted = await prisma.$transaction(async (tx) => {
-      const existing = await tx.personal.findUnique({
-        where: { ci: ciDecoded },
-        select: { ci: true, rango: { select: { tipo: true } } },
-      });
-      if (!existing || existing.rango.tipo !== TipoPersonal.SUBALTERNO) return null;
-
-      const deletedTallas = await tx.personalTalla.deleteMany({
-        where: { ci: ciDecoded },
-      });
-      const deletedObservaciones = await tx.observacion.deleteMany({
-        where: { ci: ciDecoded },
-      });
-      const deletedMovimientoItems = await tx.movimientoItem.deleteMany({
-        where: { movimiento: { destinatarioPersonal: { is: { ci: ciDecoded } } } },
-      });
-      const deletedMovimientos = await tx.movimiento.deleteMany({
-        where: { destinatarioPersonal: { is: { ci: ciDecoded } } },
-      });
-      await tx.subalterno.deleteMany({
-        where: { ci: ciDecoded },
-      });
-      await tx.personal.delete({
-        where: { ci: ciDecoded },
-      });
-
-      return {
-        ci: ciDecoded,
-        tallas: deletedTallas.count,
-        observaciones: deletedObservaciones.count,
-        movimientoItems: deletedMovimientoItems.count,
-        movimientos: deletedMovimientos.count,
-      };
+    const personalRecord = await prisma.personal.findUnique({
+      where: { ci: ciDecoded },
+      include: {
+        rango: true,
+        subalterno: { include: { bateria: true } },
+        oficial: true,
+        suboficial: true,
+        tallas: { include: { tallaTipo: true } },
+        observaciones: true,
+      },
     });
 
-    if (!deleted) {
+    if (!personalRecord) {
       return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
     }
+
+    // 1. Calculate outstanding active loans
+    const activeLoans = await prisma.movimiento.findMany({
+      where: {
+        destinatarioPersonal: { is: { ci: ciDecoded } },
+        tipo: TipoMovimiento.PRESTAMO,
+        prestamoActivo: { isNot: null },
+      },
+      include: {
+        items: { include: { item: true } },
+        prestamoActivo: true,
+      },
+    });
+
+    // 2. Calculate outstanding vestuario balance
+    const vestuarioMovements = await prisma.movimientoItem.findMany({
+      where: {
+        movimiento: {
+          destinatarioPersonal: { is: { ci: ciDecoded } },
+          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+        },
+      },
+      include: {
+        item: true,
+        movimiento: true,
+      },
+    });
+
+    const vestuarioBalances: Record<string, { nombre: string; cantidad: number }> = {};
+    for (const vm of vestuarioMovements) {
+      const nombre = vm.item.nombre;
+      if (!vestuarioBalances[nombre]) {
+        vestuarioBalances[nombre] = { nombre, cantidad: 0 };
+      }
+      if (vm.movimiento.tipo === TipoMovimiento.ENTREGA) {
+        vestuarioBalances[nombre].cantidad += vm.cantidad;
+      } else {
+        vestuarioBalances[nombre].cantidad -= vm.cantidad;
+      }
+    }
+    const outstandingVestuario = Object.values(vestuarioBalances).filter((b) => b.cantidad > 0);
+
+    const totalOutstandingCount = activeLoans.length + outstandingVestuario.length;
+
+    if (totalOutstandingCount > 0) {
+      // Flag as baja: true so they enter "pendiente de devolución" state
+      await prisma.personal.update({
+        where: { ci: ciDecoded },
+        data: { baja: true },
+      });
+
+      await logAudit({
+        usuarioId: auth.user.usuarioId,
+        accion: "UPDATE",
+        entidad: "PERSONAL",
+        entidadId: ciDecoded,
+        detalle: {
+          evento: "PERSONAL_DADO_DE_BAJA_PENDIENTE",
+          ci: ciDecoded,
+          nombre: `${personalRecord.apellido1}, ${personalRecord.nombre1}`,
+          motivo: "Dado de baja con equipos pendientes de devolucion",
+          loansCount: activeLoans.length,
+          vestuarioCount: outstandingVestuario.length,
+        },
+      });
+
+      return NextResponse.json({
+        status: "PENDIENTE_DEVOLUCION",
+        ci: ciDecoded,
+        outstandingLoans: activeLoans.map((l) => ({
+          movimientoId: l.movimientoId.toString(),
+          reciboNumero: l.prestamoActivo?.reciboNumero,
+          fecha: l.fecha,
+          items: l.items.map((i) => ({ nombre: i.item.nombre, cantidad: i.cantidad })),
+        })),
+        outstandingVestuario,
+      });
+    }
+
+    // No outstanding items, move directly to history!
+    await prisma.$transaction(async (tx) => {
+      const tipo = personalRecord.rango.tipo === TipoPersonal.SUBALTERNO
+        ? "SUBALTERNO"
+        : personalRecord.rango.tipo === TipoPersonal.OFICIAL
+          ? "OFICIAL"
+          : "SUBOFICIAL";
+
+      await tx.personalHistorial.create({
+        data: {
+          ci: ciDecoded,
+          apellido1: personalRecord.apellido1,
+          apellido2: personalRecord.apellido2,
+          nombre1: personalRecord.nombre1,
+          nombre2: personalRecord.nombre2,
+          telefonoContacto: personalRecord.telefonoContacto,
+          rangoId: personalRecord.rangoId,
+          createdAt: personalRecord.createdAt,
+          tipo,
+          esReingreso: personalRecord.subalterno?.esReingreso ?? null,
+          fechaIngreso: personalRecord.subalterno?.fechaIngreso ?? null,
+          fechaIngresoOriginal: personalRecord.subalterno?.fechaIngresoOriginal ?? null,
+          bateriaId: personalRecord.subalterno?.bateriaId ?? null,
+          tallas: personalRecord.tallas.map((t) => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
+          observaciones: personalRecord.observaciones.map((o) => ({ texto: o.texto, fecha: o.fecha })),
+        },
+      });
+
+      await tx.personalTalla.deleteMany({ where: { ci: ciDecoded } });
+      await tx.observacion.deleteMany({ where: { ci: ciDecoded } });
+      await tx.movimientoItem.deleteMany({
+        where: { movimiento: { destinatarioPersonal: { is: { ci: ciDecoded } } } },
+      });
+      await tx.movimiento.deleteMany({
+        where: { destinatarioPersonal: { is: { ci: ciDecoded } } },
+      });
+      await tx.subalterno.deleteMany({ where: { ci: ciDecoded } });
+      await tx.oficial.deleteMany({ where: { ci: ciDecoded } });
+      await tx.suboficial.deleteMany({ where: { ci: ciDecoded } });
+      await tx.personal.delete({ where: { ci: ciDecoded } });
+    });
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
       accion: "DELETE",
       entidad: "PERSONAL",
       entidadId: ciDecoded,
-      detalle: deleted,
+      detalle: {
+        evento: "PERSONAL_DADO_DE_BAJA_HISTORIAL",
+        ci: ciDecoded,
+        nombre: `${personalRecord.apellido1}, ${personalRecord.nombre1}`,
+        motivo: "Dado de baja sin equipos pendientes, transferido a historial",
+      },
     });
 
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "No se pudo eliminar el registro." }, { status: 500 });
+    return NextResponse.json({ status: "HISTORIAL", ci: ciDecoded });
+  } catch (error) {
+    console.error("Error al procesar baja de personal:", error);
+    return NextResponse.json({ error: "No se pudo procesar la baja del personal." }, { status: 500 });
   }
 }

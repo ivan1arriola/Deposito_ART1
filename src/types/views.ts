@@ -55,7 +55,8 @@ export type MainView =
   | "persona_ficha"
   | "hoja-de-entrega"
   | "movimientos_fuera_hoja"
-  | "movimientos_por_equipo";
+  | "movimientos_por_equipo"
+  | "personal_bajas";
 
 export type MovimientoFueraHojaViewRow = {
   movimientoId: string;

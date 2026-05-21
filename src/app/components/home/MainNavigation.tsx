@@ -177,11 +177,12 @@ const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
   { view: "etiquetado_imprimir_todas", label: "Imprimir todas", shortLabel: "Imprimir", icon: icons.imprimir },
 ];
 
-const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen" | "movimientos_fuera_hoja">>> = [
+const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen" | "movimientos_fuera_hoja" | "personal_bajas">>> = [
   { view: "personal", label: "Personal subalterno", icon: icons.personal },
   { view: "hoja_matrix", label: "Hoja matriz", icon: icons.matrix },
   { view: "equipo_resumen", label: "Resumen de equipo en baterías", icon: icons.resumenEquipo },
   { view: "movimientos_fuera_hoja", label: "Movimientos fuera de hoja", icon: icons.history },
+  { view: "personal_bajas", label: "Bajas y devoluciones", icon: icons.trash },
 ];
 
 const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficiales" | "oficiales_resumen" | "suboficiales_resumen">>> = [
@@ -426,7 +427,8 @@ export function MainNavigation({
     activeView === "personal" ||
     activeView === "hoja_matrix" ||
     activeView === "equipo_resumen" ||
-    activeView === "movimientos_fuera_hoja";
+    activeView === "movimientos_fuera_hoja" ||
+    activeView === "personal_bajas";
   const isOficialesSuboficialesView =
     activeView === "oficiales" ||
     activeView === "suboficiales" ||

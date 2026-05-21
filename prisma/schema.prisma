@@ -337,6 +337,7 @@ model Personal {
   nombre2          String?
   telefonoContacto String?         @map("telefono_contacto")
   rangoId          Int             @map("grado_id") @db.SmallInt
+  baja             Boolean         @default(false) @map("baja")
   createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   rango            Rango           @relation(fields: [rangoId], references: [rangoId])
@@ -351,6 +352,27 @@ model Personal {
 
   @@index([rangoId])
   @@map("personal")
+}
+
+model PersonalHistorial {
+  ci                   String    @id @map("ci")
+  apellido1            String
+  apellido2            String?
+  nombre1              String
+  nombre2              String?
+  telefonoContacto     String?   @map("telefono_contacto")
+  rangoId              Int       @map("grado_id") @db.SmallInt
+  createdAt            DateTime  @map("created_at") @db.Timestamptz(6)
+  bajaAt               DateTime  @default(now()) @map("baja_at") @db.Timestamptz(6)
+  tallas               Json?     @map("tallas") @db.JsonB
+  observaciones        Json?     @map("observaciones") @db.JsonB
+  tipo                 String    @map("tipo") // "SUBALTERNO", "OFICIAL", "SUBOFICIAL"
+  esReingreso          Boolean?  @map("es_reingreso")
+  fechaIngreso         DateTime? @map("fecha_ingreso") @db.Date
+  fechaIngresoOriginal DateTime? @map("fecha_ingreso_original") @db.Date
+  bateriaId            Int?      @map("bateria_id") @db.SmallInt
+
+  @@map("personal_historial")
 }
 
 model PersonaExterna {

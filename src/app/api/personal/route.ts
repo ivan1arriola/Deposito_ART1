@@ -246,7 +246,10 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const personal = await prisma.personal.findMany({
-    where: { rango: { tipo: TipoPersonal.SUBALTERNO } },
+    where: {
+      rango: { tipo: TipoPersonal.SUBALTERNO },
+      baja: false,
+    },
     include: {
       rango: true,
       subalterno: {

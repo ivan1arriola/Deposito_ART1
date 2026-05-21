@@ -135,6 +135,7 @@ export async function GET(request: Request) {
           in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL],
         },
       },
+      baja: false,
     },
     select: OFICIAL_SUBOFICIAL_SELECT,
     orderBy: [

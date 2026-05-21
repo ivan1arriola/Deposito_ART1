@@ -7,6 +7,7 @@ import { HojaMatrixView } from "@/app/components/views/HojaMatrixView";
 import { EquipoResumenView } from "@/app/components/views/EquipoResumenView";
 import { MovimientosFueraHojaView } from "@/app/components/views/MovimientosFueraHojaView";
 import { TallasResumenView } from "@/app/components/views/TallasResumenView";
+import { PersonalBajasView } from "@/app/components/views/PersonalBajasView";
 import type { PersonalForm } from "@/types/forms";
 import type { PersonnelAndSummaryViewsProps } from "./types";
 
@@ -233,6 +234,10 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
           oficialesSuboficiales={oficialesSuboficiales}
           subView={tallasResumenSubView}
         />
+      ) : null}
+
+      {activeView === "personal_bajas" ? (
+        <PersonalBajasView />
       ) : null}
     </>
   );
