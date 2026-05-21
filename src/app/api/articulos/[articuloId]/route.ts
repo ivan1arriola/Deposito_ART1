@@ -18,6 +18,67 @@ function parseTipoArticulo(value: unknown) {
   return undefined;
 }
 
+export async function GET(req: Request, context: { params: Promise<{ articuloId: string }> }) {
+  const auth = await authorizeRequest(req, "read_data");
+  if (!auth.ok) return auth.response;
+
+  const { articuloId: articuloIdParam } = await context.params;
+  const articuloId = parseArticuloId(articuloIdParam);
+  if (articuloId === null) return NextResponse.json({ error: "articuloId inválido." }, { status: 400 });
+
+  try {
+    const articulo = await prisma.articulo.findUnique({
+      where: { articuloId },
+    });
+
+    if (!articulo) {
+      return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+    }
+
+    const stockMovimientos = await prisma.articuloStockMovimiento.findMany({
+      where: { articuloId },
+      include: {
+        articuloEntregaPersonal: {
+          include: {
+            personal: {
+              include: {
+                rango: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const movimientos = stockMovimientos.map((m) => {
+      const entrega = m.articuloEntregaPersonal;
+      let destinatario = null;
+      if (entrega && entrega.personal) {
+        const p = entrega.personal;
+        destinatario = `${p.rango.abreviacion} ${p.apellido1} ${p.nombre1}`;
+      }
+
+      return {
+        articuloStockMovimientoId: String(m.articuloStockMovimientoId),
+        tipo: m.tipo,
+        cantidad: m.cantidad,
+        comentario: m.comentario,
+        createdAt: m.createdAt.toISOString(),
+        destinatario,
+        fechaEntrega: entrega ? entrega.fecha.toISOString().split("T")[0] : null,
+      };
+    });
+
+    return NextResponse.json({
+      articulo,
+      movimientos,
+    });
+  } catch (error) {
+    return NextResponse.json({ error: "No se pudieron obtener los detalles del artículo." }, { status: 500 });
+  }
+}
+
 export async function PUT(req: Request, context: { params: Promise<{ articuloId: string }> }) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;

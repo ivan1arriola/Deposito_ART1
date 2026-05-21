@@ -2,6 +2,7 @@
  * Tipos relacionados con vistas y estado de la UI
  */
 
+import type { ReactNode } from "react";
 import type { Role } from "./entities";
 
 export type MainView =
@@ -301,7 +302,7 @@ export type EquipoResumenData = {
 
 export type ConfirmDialogState = {
   title: string;
-  message: string;
+  message: ReactNode;
   confirmText: string;
   cancelText: string;
   tone: "danger" | "neutral";

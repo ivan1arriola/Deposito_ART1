@@ -18,7 +18,7 @@ export function ConfirmDialogModal({ dialog, busy, onClose, onConfirm }: Confirm
   return (
     <ModalFrame onClose={onClose} zIndexClassName="z-[900]">
       <h3 className="text-base font-semibold text-stone-900">{dialog.title}</h3>
-      <p className="mt-2 max-h-[48vh] overflow-y-auto whitespace-pre-line text-sm text-stone-700">{dialog.message}</p>
+      <div className="mt-2 max-h-[48vh] overflow-y-auto text-sm text-stone-700">{dialog.message}</div>
       {isDestructive ? (
         <p className="mt-2 rounded border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-800">
           Advertencia: esta acción es irreversible y no se puede deshacer.

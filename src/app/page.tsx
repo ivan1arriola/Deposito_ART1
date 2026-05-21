@@ -2188,31 +2188,98 @@ export default function Home() {
   );
 
   const deleteArticulo = useCallback(
-    (articuloId: number) => {
+    async (articuloId: number) => {
       if (!isAdmin) {
         setStatus("Solo el administrador puede eliminar artículos.");
         return;
       }
       const articulo = articulos.find((entry) => entry.articuloId === articuloId);
-      openConfirmDialog({
-        title: "Eliminar artículo",
-        message: `Se eliminará ${articulo?.nombre ?? "este artículo"}.`,
-        confirmText: "Eliminar artículo",
-        tone: "danger",
-        onConfirm: async () => {
-          try {
-            await deleteArticuloHandler(articuloId, {
-              onSuccess: async () => {
-                setStatus("Artículo eliminado.");
-                await loadData();
-              },
-              onError: (message) => setStatus(message),
-            });
-          } catch {
-            // Error manejado en el handler
-          }
-        },
-      });
+
+      try {
+        const res = await fetch(`/api/articulos/${articuloId}`);
+        if (!res.ok) throw new Error("No se pudieron cargar los movimientos del artículo.");
+        const data = await res.json();
+
+        const movimientosList = data.movimientos || [];
+
+        const dialogMessage = (
+          <div className="space-y-4">
+            <p className="text-stone-750 leading-normal">
+              ¿Estás seguro de que deseas eliminar el artículo <strong className="text-stone-900 font-extrabold">{articulo?.nombre}</strong>?
+            </p>
+
+            {movimientosList.length > 0 ? (
+              <div className="mt-3 space-y-2">
+                <div className="rounded-xl border border-amber-200 bg-amber-55/70 p-3 text-xs text-amber-900">
+                  ⚠️ <strong className="font-extrabold">Atención:</strong> Este artículo está vinculado a <strong className="font-black">{movimientosList.length}</strong> movimiento(s) de stock. Al confirmarse la eliminación, todos estos movimientos y sus comprobantes de entrega se transferirán automáticamente a la papelera.
+                </div>
+
+                <div className="rounded-xl border border-stone-200 bg-stone-50 p-2.5">
+                  <span className="text-[10px] font-black uppercase tracking-wide text-stone-500 block mb-1.5">
+                    Movimientos Vinculados
+                  </span>
+
+                  <div className="max-h-[160px] overflow-y-auto space-y-1.5 pr-1">
+                    {movimientosList.map((m: any) => (
+                      <div key={m.articuloStockMovimientoId} className="flex justify-between items-center rounded-lg border border-stone-150 bg-white p-2 text-xs">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
+                              m.tipo === "INGRESO" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"
+                            }`}>
+                              {m.tipo}
+                            </span>
+                            <span className="font-mono text-stone-600 text-[10px]">{m.fechaEntrega || m.createdAt.split("T")[0]}</span>
+                          </div>
+                          {m.destinatario && (
+                            <p className="mt-1 text-stone-900 font-semibold">{m.destinatario}</p>
+                          )}
+                          {m.comentario && (
+                            <p className="mt-0.5 text-[10px] text-stone-500 italic">“{m.comentario}”</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className={`font-mono font-black text-xs ${
+                            m.tipo === "INGRESO" ? "text-emerald-700" : "text-rose-700"
+                          }`}>
+                            {m.tipo === "INGRESO" ? "+" : "-"}{m.cantidad}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-stone-500 italic mt-2">
+                Este artículo no posee movimientos de stock ni comprobantes de entrega vinculados.
+              </p>
+            )}
+          </div>
+        );
+
+        openConfirmDialog({
+          title: "Eliminar artículo",
+          message: dialogMessage,
+          confirmText: "Eliminar artículo",
+          tone: "danger",
+          onConfirm: async () => {
+            try {
+              await deleteArticuloHandler(articuloId, {
+                onSuccess: async () => {
+                  setStatus("Artículo eliminado.");
+                  await loadData();
+                },
+                onError: (message) => setStatus(message),
+              });
+            } catch {
+              // Error manejado en el handler
+            }
+          },
+        });
+      } catch (err: any) {
+        setStatus(err.message || "Error al cargar los movimientos del artículo.");
+      }
     },
     [isAdmin, articulos, loadData],
   );
