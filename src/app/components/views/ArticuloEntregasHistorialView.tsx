@@ -16,27 +16,11 @@ import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import { LoadingInline } from "@/app/components/shared";
 import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
 import { formatUruguayanCi } from "@/lib/ci";
+import {
+  filterArticuloEntregasHistorial,
+  type ArticuloEntregaHistorialEntry as ArticuloEntregaPersonalEntry,
+} from "@/lib/articulo-entregas-history";
 import { api } from "@/lib/api";
-
-export interface ArticuloEntregaItem {
-  articuloId: number;
-  nombre: string;
-  tipo: string;
-  cantidad: number;
-}
-
-export interface ArticuloEntregaPersonalEntry {
-  articuloEntregaPersonalId: string;
-  personalCi: string;
-  personalLabel: string;
-  ordenanteCi: string;
-  ordenanteLabel: string;
-  usuarioEntregaId: string;
-  usuarioEntregaLabel: string;
-  fecha: string;
-  comentario: string | null;
-  items: ArticuloEntregaItem[];
-}
 
 interface ArticuloEntregasHistorialViewProps {
   isAdmin?: boolean;
@@ -78,31 +62,10 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
   }, []);
 
   const filteredEntregas = useMemo(() => {
-    return entregas.filter((ent) => {
-      // Búsqueda por texto (Destinatario, Ordenante, CI, Artículo)
-      if (searchTerm.trim() !== "") {
-        const query = searchTerm.toLowerCase();
-        const matchesDest = ent.personalLabel.toLowerCase().includes(query) || ent.personalCi.includes(query);
-        const matchesOrd = ent.ordenanteLabel.toLowerCase().includes(query) || ent.ordenanteCi.includes(query);
-        const matchesArt = ent.items.some((item) => item.nombre.toLowerCase().includes(query));
-        const matchesComment = ent.comentario?.toLowerCase().includes(query) ?? false;
-
-        if (!matchesDest && !matchesOrd && !matchesArt && !matchesComment) {
-          return false;
-        }
-      }
-
-      // Filtro de fecha de inicio
-      if (startDate !== "") {
-        if (ent.fecha < startDate) return false;
-      }
-
-      // Filtro de fecha de fin
-      if (endDate !== "") {
-        if (ent.fecha > endDate) return false;
-      }
-
-      return true;
+    return filterArticuloEntregasHistorial(entregas, {
+      searchTerm,
+      startDate,
+      endDate,
     });
   }, [entregas, searchTerm, startDate, endDate]);
 
@@ -138,6 +101,22 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
     );
   };
 
+  const handlePrintList = () => {
+    const params = new URLSearchParams({ autoprint: "1" });
+    const normalizedSearchTerm = searchTerm.trim();
+    if (normalizedSearchTerm) {
+      params.set("search", normalizedSearchTerm);
+    }
+    if (startDate) {
+      params.set("startDate", startDate);
+    }
+    if (endDate) {
+      params.set("endDate", endDate);
+    }
+
+    window.open(`/listado-entregas-articulos?${params.toString()}`, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div className="space-y-6">
       {/* Encabezado */}
@@ -161,14 +140,24 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
           </div>
         </div>
 
-        <button
-          onClick={() => void fetchHistory()}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:text-white active:scale-95 disabled:opacity-50 shadow-sm"
-        >
-          <RefreshRoundedIcon fontSize="small" className={loading ? "animate-spin" : ""} />
-          Actualizar
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handlePrintList}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:text-white active:scale-95 disabled:opacity-50 shadow-sm"
+          >
+            <PrintRoundedIcon fontSize="small" />
+            Imprimir listado
+          </button>
+          <button
+            onClick={() => void fetchHistory()}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:text-white active:scale-95 disabled:opacity-50 shadow-sm"
+          >
+            <RefreshRoundedIcon fontSize="small" className={loading ? "animate-spin" : ""} />
+            Actualizar
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de Métricas de Historial */}

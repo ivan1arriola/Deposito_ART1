@@ -3,6 +3,7 @@ import { TipoArticuloStockMovimiento } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { listArticuloEntregasHistorial } from "@/lib/server/articulo-entregas-history-data";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { calcularStockArticulo } from "@/lib/stock-calc";
 import {
@@ -96,97 +97,8 @@ export async function GET(req: Request) {
   if (!auth.ok) return auth.response;
 
   try {
-    const entregas = await prisma.articuloEntregaPersonal.findMany({
-      include: {
-        personal: {
-          select: {
-            ci: true,
-            nombre1: true,
-            nombre2: true,
-            apellido1: true,
-            apellido2: true,
-            rango: {
-              select: {
-                abreviacion: true,
-                nombreCompleto: true,
-              },
-            },
-          },
-        },
-        ordenante: {
-          select: {
-            ci: true,
-            nombre1: true,
-            nombre2: true,
-            apellido1: true,
-            apellido2: true,
-            rango: {
-              select: {
-                abreviacion: true,
-                nombreCompleto: true,
-              },
-            },
-          },
-        },
-        usuarioEntrega: {
-          select: {
-            usuarioId: true,
-            nombre: true,
-            apellido: true,
-            rango: {
-              select: {
-                abreviacion: true,
-              },
-            },
-          },
-        },
-        movimientosStock: {
-          include: {
-            articulo: {
-              select: {
-                nombre: true,
-                tipo: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        fecha: "desc",
-      },
-    });
-
-    const responseData = entregas.map((entrega) => {
-      const pApellidos = `${entrega.personal.apellido1} ${entrega.personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
-      const pNombres = `${entrega.personal.nombre1} ${entrega.personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
-      const oApellidos = `${entrega.ordenante.apellido1} ${entrega.ordenante.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
-      const oNombres = `${entrega.ordenante.nombre1} ${entrega.ordenante.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
-
-      const personalLabel = `${entrega.personal.rango.abreviacion} ${pApellidos}, ${pNombres}`;
-      const ordenanteLabel = `${entrega.ordenante.rango.abreviacion} ${oApellidos}, ${oNombres}`;
-      const usuarioLabel = `${entrega.usuarioEntrega.rango.abreviacion} ${entrega.usuarioEntrega.apellido}, ${entrega.usuarioEntrega.nombre}`.replace(/\s+/g, " ").trim();
-
-      return {
-        articuloEntregaPersonalId: String(entrega.articuloEntregaPersonalId),
-        personalCi: entrega.personalCi,
-        personalLabel,
-        ordenanteCi: entrega.ordenanteCi,
-        ordenanteLabel,
-        usuarioEntregaId: entrega.usuarioEntregaId,
-        usuarioEntregaLabel: usuarioLabel,
-        fecha: formatDateOnlyFromDate(entrega.fecha) ?? "",
-        comentario: entrega.comentario,
-        items: entrega.movimientosStock.map((mov) => ({
-          articuloId: mov.articuloId,
-          nombre: mov.articulo.nombre,
-          tipo: mov.articulo.tipo,
-          cantidad: mov.cantidad,
-        })),
-      };
-    });
-
-    return NextResponse.json(responseData);
-  } catch (error) {
+    return NextResponse.json(await listArticuloEntregasHistorial());
+  } catch {
     return NextResponse.json(
       { error: "No se pudo obtener el historial de entregas de artículos." },
       { status: 500 },
