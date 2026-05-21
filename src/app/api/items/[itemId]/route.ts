@@ -4,6 +4,7 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { applyItemOrder, getOrderedItemIds, insertItemAtOrder } from "@/lib/item-ordering";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
+import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 
 type ItemPayload = {
   nombre: string;
@@ -131,13 +132,46 @@ async function buildDeleteImpactData(
             movimientoId: true,
             fecha: true,
             tipo: true,
-            personalCi: true,
-            personal: {
+            destinatarioPersonal: {
               select: {
-                apellido1: true,
-                apellido2: true,
-                nombre1: true,
-                nombre2: true,
+                personal: {
+                  select: {
+                    ci: true,
+                    apellido1: true,
+                    apellido2: true,
+                    nombre1: true,
+                    nombre2: true,
+                    rango: {
+                      select: {
+                        abreviacion: true,
+                        nombreCompleto: true,
+                        tipo: true,
+                      },
+                    },
+                    subalterno: {
+                      select: {
+                        bateria: {
+                          select: {
+                            nombre: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            destinatarioExterno: {
+              select: {
+                personaExterna: {
+                  select: {
+                    ci: true,
+                    grado: true,
+                    nombre: true,
+                    apellido: true,
+                    unidadDestino: true,
+                  },
+                },
               },
             },
             _count: {
@@ -215,21 +249,13 @@ async function buildDeleteImpactData(
 
   const normalizedRegistros = movimientos
     .map((movimiento) => {
-      const persona = [
-        movimiento.personal.apellido1,
-        movimiento.personal.apellido2,
-        movimiento.personal.nombre1,
-        movimiento.personal.nombre2,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
+      const destinatario = resolveDestinatarioMovimiento(movimiento);
       return {
         movimientoId: movimiento.movimientoId.toString(),
         fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
         tipo: movimiento.tipo,
-        ci: movimiento.personalCi,
-        persona,
+        ci: destinatario?.ci ?? "",
+        persona: destinatario?.etiqueta ?? "Destinatario pendiente",
         cantidadItems: movimiento._count.items,
         seEliminaMovimiento: movimiento._count.items <= 1,
       };

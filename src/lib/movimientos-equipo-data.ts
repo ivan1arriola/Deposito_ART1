@@ -2,6 +2,7 @@ import "server-only";
 
 import { TipoMovimiento } from "@/generated/prisma/client";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
+import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { prisma } from "@/lib/prisma";
 import type { EquipoMovimientoCatalogItem, EquipoMovimientoViewRow } from "@/types/views";
 
@@ -18,18 +19,6 @@ export function parseEquipoMovimientoItemId(value: unknown) {
   return BigInt(raw);
 }
 
-function buildPersonaLabel(personal: {
-  rango: { abreviacion: string };
-  apellido1: string;
-  apellido2: string | null;
-  nombre1: string;
-  nombre2: string | null;
-}) {
-  const apellidos = `${personal.apellido1} ${personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
-  const nombres = `${personal.nombre1} ${personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
-  return `${apellidos}, ${nombres}`.replace(/\s+/g, " ").trim();
-}
-
 function buildPrestamoEstadoLabel(
   prestamoActivoEstado: "PENDIENTE" | "DEVUELTO" | null,
   prestamoHistorialEstado: "PENDIENTE" | "DEVUELTO" | null,
@@ -44,11 +33,16 @@ function buildPrestamoEstadoLabel(
 export function buildMovimientoTipoLabel(
   tipo: EquipoMovimientoViewRow["tipo"],
   prestamoEstado: EquipoMovimientoViewRow["prestamoEstado"],
+  clasePrestamo: EquipoMovimientoViewRow["clasePrestamo"],
 ) {
   if (tipo === "ENTREGA") return "Entrega";
   if (tipo === "DEVOLUCION") return "Devolución";
-  if (prestamoEstado === "PENDIENTE") return "Préstamo (pendiente)";
-  if (prestamoEstado === "DEVUELTO") return "Préstamo (devuelto)";
+  if (clasePrestamo === "EXTERNO" && prestamoEstado === "PENDIENTE") return "Préstamo externo (pendiente)";
+  if (clasePrestamo === "EXTERNO" && prestamoEstado === "DEVUELTO") return "Préstamo externo (devuelto)";
+  if (clasePrestamo === "INTERNO" && prestamoEstado === "PENDIENTE") return "Préstamo interno (pendiente)";
+  if (clasePrestamo === "INTERNO" && prestamoEstado === "DEVUELTO") return "Préstamo interno (devuelto)";
+  if (prestamoEstado === "PENDIENTE") return "Préstamo pendiente";
+  if (prestamoEstado === "DEVUELTO") return "Préstamo devuelto";
   return "Préstamo";
 }
 
@@ -100,17 +94,36 @@ export async function getMovimientosEquipoData(itemId: bigint | null = null): Pr
           fecha: true,
           tipo: true,
           observaciones: true,
-          personal: {
+          destinatarioPersonal: {
             select: {
-              ci: true,
-              apellido1: true,
-              apellido2: true,
-              nombre1: true,
-              nombre2: true,
-              rango: {
+              personal: {
                 select: {
-                  abreviacion: true,
-                  orden: true,
+                  ci: true,
+                  apellido1: true,
+                  apellido2: true,
+                  nombre1: true,
+                  nombre2: true,
+                  rango: {
+                    select: {
+                      tipo: true,
+                      abreviacion: true,
+                      nombreCompleto: true,
+                      orden: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          destinatarioExterno: {
+            select: {
+              personaExterna: {
+                select: {
+                  ci: true,
+                  grado: true,
+                  nombre: true,
+                  apellido: true,
+                  unidadDestino: true,
                 },
               },
             },
@@ -139,17 +152,21 @@ export async function getMovimientosEquipoData(itemId: bigint | null = null): Pr
             movimientoItem.movimiento.prestamoHistorial?.estado ?? null,
           )
         : null;
+    const destinatario = resolveDestinatarioMovimiento(movimientoItem.movimiento);
+    const clasePrestamo = movimientoItem.movimiento.tipo === TipoMovimiento.PRESTAMO ? destinatario?.clase ?? "PENDIENTE" : null;
 
     return {
       movimientoId: movimientoItem.movimiento.movimientoId.toString(),
       fecha: formatDateOnlyFromDate(movimientoItem.movimiento.fecha) ?? "",
       tipo: movimientoItem.movimiento.tipo,
-      tipoLabel: buildMovimientoTipoLabel(movimientoItem.movimiento.tipo, prestamoEstado),
+      tipoLabel: buildMovimientoTipoLabel(movimientoItem.movimiento.tipo, prestamoEstado, clasePrestamo),
       prestamoEstado,
-      ci: movimientoItem.movimiento.personal.ci,
-      persona: buildPersonaLabel(movimientoItem.movimiento.personal),
-      gradoAbreviacion: movimientoItem.movimiento.personal.rango.abreviacion,
-      gradoOrden: movimientoItem.movimiento.personal.rango.orden ?? null,
+      clasePrestamo,
+      ci: destinatario?.ci ?? null,
+      perfilCi: destinatario?.perfilCi ?? null,
+      persona: destinatario?.nombre ?? "Destinatario pendiente",
+      gradoAbreviacion: destinatario?.gradoAbreviacion ?? destinatario?.grado ?? "Pendiente",
+      gradoOrden: destinatario?.gradoOrden ?? null,
       cantidad: movimientoItem.cantidad,
       observaciones: movimientoItem.movimiento.observaciones,
     };

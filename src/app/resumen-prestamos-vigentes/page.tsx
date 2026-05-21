@@ -398,7 +398,9 @@ export default async function ResumenPrestamosVigentesPage({
                       <td>
                         <div className="stack">
                           <p>{prestamo.destinatarioEtiqueta}</p>
-                          <p className="subline">{`CI ${formatUruguayanCi(prestamo.destinatarioCi)}`}</p>
+                          <p className="subline">
+                            {prestamo.destinatarioCi ? `CI ${formatUruguayanCi(prestamo.destinatarioCi)}` : "CI pendiente"}
+                          </p>
                         </div>
                       </td>
                       <td>

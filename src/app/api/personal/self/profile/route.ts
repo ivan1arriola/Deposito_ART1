@@ -211,7 +211,7 @@ export async function GET(request: Request) {
   const [registrosRaw, prestamosRaw, observacionesRaw, hojaSnapshot] = await Promise.all([
     prisma.movimiento.findMany({
       where: {
-        personalCi: ci,
+        destinatarioPersonal: { is: { ci } },
         tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
       },
       include: {
@@ -228,6 +228,15 @@ export async function GET(request: Request) {
             },
           },
         },
+        destinatarioPersonal: {
+          select: {
+            personal: {
+              select: {
+                ci: true,
+              },
+            },
+          },
+        },
         items: {
           include: { item: true },
           orderBy: { item: { ordenPdf: "asc" } },
@@ -238,7 +247,7 @@ export async function GET(request: Request) {
     }),
     prisma.movimiento.findMany({
       where: {
-        personalCi: ci,
+        destinatarioPersonal: { is: { ci } },
         tipo: TipoMovimiento.PRESTAMO,
       },
       include: prestamoInclude,
@@ -269,7 +278,7 @@ export async function GET(request: Request) {
     return {
       registroId: movimiento.movimientoId.toString(),
       auditoria: null,
-      ci: movimiento.personalCi,
+      ci: movimiento.destinatarioPersonal?.personal.ci ?? ci,
       usuarioEntregaId: movimiento.usuarioEntregaId,
       usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
       fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",

@@ -78,22 +78,28 @@ const hojaEntregaPersonalSelect = {
       },
     },
   },
-  movimientos: {
+  movimientosDestinatario: {
     where: {
-      tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+      movimiento: {
+        tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+      },
     },
-    orderBy: { fecha: "asc" },
+    orderBy: { movimiento: { fecha: "asc" } },
     select: {
-      fecha: true,
-      tipo: true,
-      observaciones: true,
-      items: {
+      movimiento: {
         select: {
-          cantidad: true,
-          item: {
+          fecha: true,
+          tipo: true,
+          observaciones: true,
+          items: {
             select: {
-              nombre: true,
-              activo: true,
+              cantidad: true,
+              item: {
+                select: {
+                  nombre: true,
+                  activo: true,
+                },
+              },
             },
           },
         },
@@ -191,10 +197,9 @@ function mapPersonaToHojaEntregaData(
   itemOrder: string[],
   firmas: Awaited<ReturnType<typeof getFirmaConfig>>,
 ): HojaEntregaSheetData {
-  const entregas = toSixColumns(persona.movimientos.filter((movimiento) => movimiento.tipo === TipoMovimiento.ENTREGA));
-  const devoluciones = toSixColumns(
-    persona.movimientos.filter((movimiento) => movimiento.tipo === TipoMovimiento.DEVOLUCION),
-  );
+  const movimientos = persona.movimientosDestinatario.map((entry) => entry.movimiento);
+  const entregas = toSixColumns(movimientos.filter((movimiento) => movimiento.tipo === TipoMovimiento.ENTREGA));
+  const devoluciones = toSixColumns(movimientos.filter((movimiento) => movimiento.tipo === TipoMovimiento.DEVOLUCION));
   const tallas = persona.tallas.reduce<Record<string, string>>((acc, talla) => {
     acc[talla.tallaTipo.nombre] = talla.tallaValor;
     return acc;
@@ -232,7 +237,7 @@ function mapPersonaToHojaEntregaData(
       oficialRango: firmas.oficialRango || "Oficial",
       oficialNombre: firmas.oficialNombre || "NOMBRE",
     },
-    observaciones: buildHojaObservaciones(persona.observaciones, persona.movimientos),
+    observaciones: buildHojaObservaciones(persona.observaciones, movimientos),
   };
 }
 
@@ -310,17 +315,21 @@ export async function getMovimientosFueraHojaData(): Promise<MovimientoFueraHoja
       fecha: true,
       tipo: true,
       observaciones: true,
-      personal: {
+      destinatarioPersonal: {
         select: {
-          ci: true,
-          apellido1: true,
-          apellido2: true,
-          nombre1: true,
-          nombre2: true,
-          rango: {
+          personal: {
             select: {
-              abreviacion: true,
-              orden: true,
+              ci: true,
+              apellido1: true,
+              apellido2: true,
+              nombre1: true,
+              nombre2: true,
+              rango: {
+                select: {
+                  abreviacion: true,
+                  orden: true,
+                },
+              },
             },
           },
         },
@@ -344,11 +353,14 @@ export async function getMovimientosFueraHojaData(): Promise<MovimientoFueraHoja
   });
 
   return movimientos.flatMap((movimiento) => {
+    const destinatario = movimiento.destinatarioPersonal?.personal;
+    if (!destinatario) return [];
+
     const persona = [
-      movimiento.personal.apellido1,
-      movimiento.personal.apellido2,
-      movimiento.personal.nombre1,
-      movimiento.personal.nombre2,
+      destinatario.apellido1,
+      destinatario.apellido2,
+      destinatario.nombre1,
+      destinatario.nombre2,
     ]
       .filter(Boolean)
       .join(" ")
@@ -358,10 +370,10 @@ export async function getMovimientosFueraHojaData(): Promise<MovimientoFueraHoja
       movimientoId: movimiento.movimientoId.toString(),
       fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
       tipo: movimiento.tipo,
-      ci: movimiento.personal.ci,
+      ci: destinatario.ci,
       persona,
-      gradoAbreviacion: movimiento.personal.rango.abreviacion,
-      gradoOrden: movimiento.personal.rango.orden ?? null,
+      gradoAbreviacion: destinatario.rango.abreviacion,
+      gradoOrden: destinatario.rango.orden ?? null,
       item: detail.item.nombre,
       cantidad: detail.cantidad,
       observaciones: movimiento.observaciones,

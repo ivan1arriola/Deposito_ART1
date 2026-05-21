@@ -128,23 +128,27 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
           },
         },
       },
-      personal: {
+      destinatarioPersonal: {
         select: {
-          ci: true,
-          apellido1: true,
-          apellido2: true,
-          nombre1: true,
-          nombre2: true,
-          rango: {
+          personal: {
             select: {
-              abreviacion: true,
-            },
-          },
-          subalterno: {
-            select: {
-              bateria: {
+              ci: true,
+              apellido1: true,
+              apellido2: true,
+              nombre1: true,
+              nombre2: true,
+              rango: {
                 select: {
-                  nombre: true,
+                  abreviacion: true,
+                },
+              },
+              subalterno: {
+                select: {
+                  bateria: {
+                    select: {
+                      nombre: true,
+                    },
+                  },
                 },
               },
             },
@@ -170,7 +174,12 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
   }
 
-  const persona = `${movimiento.personal.rango.abreviacion} ${movimiento.personal.apellido1} ${movimiento.personal.apellido2 ?? ""}, ${movimiento.personal.nombre1} ${movimiento.personal.nombre2 ?? ""}`
+  const destinatarioPersonal = movimiento.destinatarioPersonal?.personal;
+  if (!destinatarioPersonal) {
+    return NextResponse.json({ error: "El registro no tiene destinatario interno." }, { status: 409 });
+  }
+
+  const persona = `${destinatarioPersonal.rango.abreviacion} ${destinatarioPersonal.apellido1} ${destinatarioPersonal.apellido2 ?? ""}, ${destinatarioPersonal.nombre1} ${destinatarioPersonal.nombre2 ?? ""}`
     .replace(/\s+/g, " ")
     .trim();
 
@@ -179,9 +188,9 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
     fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
     tipo: movimiento.tipo,
     comentarios: movimiento.observaciones,
-    ci: movimiento.personalCi,
+    ci: destinatarioPersonal.ci,
     persona,
-    bateria: movimiento.personal.subalterno?.bateria?.nombre ?? null,
+    bateria: destinatarioPersonal.subalterno?.bateria?.nombre ?? null,
     usuarioEntregaId: movimiento.usuarioEntregaId,
     usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
     items: movimiento.items.map((detail) => ({
@@ -237,20 +246,24 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   const existing = await prisma.movimiento.findUnique({
     where: { movimientoId },
     include: {
-      personal: {
+      destinatarioPersonal: {
         select: {
-          ci: true,
-          apellido1: true,
-          apellido2: true,
-          nombre1: true,
-          nombre2: true,
-          rango: {
-            select: { nombreCompleto: true, abreviacion: true },
-          },
-          subalterno: {
+          personal: {
             select: {
-              bateria: {
-                select: { nombre: true },
+              ci: true,
+              apellido1: true,
+              apellido2: true,
+              nombre1: true,
+              nombre2: true,
+              rango: {
+                select: { nombreCompleto: true, abreviacion: true },
+              },
+              subalterno: {
+                select: {
+                  bateria: {
+                    select: { nombre: true },
+                  },
+                },
               },
             },
           },
@@ -265,6 +278,11 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
   if (!existing || (existing.tipo !== TipoMovimiento.ENTREGA && existing.tipo !== TipoMovimiento.DEVOLUCION)) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
+  }
+
+  const existingPersonal = existing.destinatarioPersonal?.personal;
+  if (!existingPersonal) {
+    return NextResponse.json({ error: "El registro no tiene destinatario interno." }, { status: 409 });
   }
 
   const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
@@ -325,8 +343,8 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       entidadId: existing.movimientoId.toString(),
       detalle: {
         evento: "MOVIMIENTO_VESTUARIO_RECTIFICADO",
-        ci: existing.personalCi,
-        personal: buildPersonalAuditDetail(existing.personal),
+        ci: existingPersonal.ci,
+        personal: buildPersonalAuditDetail(existingPersonal),
         tipoAnterior: existing.tipo,
         tipoNuevo: tipo,
         afectaStockAnterior: existing.afectaStock,
@@ -350,7 +368,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     await Promise.allSettled([
       sendPersonalMovementEmailNotification({
         request: req,
-        ci: existing.personalCi,
+        ci: existingPersonal.ci,
         subject: "Notificacion de movimiento - Deposito ART1",
         headline: "Se actualizo un movimiento en tu ficha de vestuario.",
         detailLines: [
@@ -368,7 +386,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({
       ok: true,
       registroId: existing.movimientoId.toString(),
-      ci: existing.personalCi,
+      ci: existingPersonal.ci,
       fecha: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
     });
   } catch {
@@ -392,20 +410,24 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
   const existing = await prisma.movimiento.findUnique({
     where: { movimientoId },
     include: {
-      personal: {
+      destinatarioPersonal: {
         select: {
-          ci: true,
-          apellido1: true,
-          apellido2: true,
-          nombre1: true,
-          nombre2: true,
-          rango: {
-            select: { nombreCompleto: true, abreviacion: true },
-          },
-          subalterno: {
+          personal: {
             select: {
-              bateria: {
-                select: { nombre: true },
+              ci: true,
+              apellido1: true,
+              apellido2: true,
+              nombre1: true,
+              nombre2: true,
+              rango: {
+                select: { nombreCompleto: true, abreviacion: true },
+              },
+              subalterno: {
+                select: {
+                  bateria: {
+                    select: { nombre: true },
+                  },
+                },
               },
             },
           },
@@ -420,6 +442,11 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
 
   if (!existing || (existing.tipo !== TipoMovimiento.ENTREGA && existing.tipo !== TipoMovimiento.DEVOLUCION)) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
+  }
+
+  const existingPersonal = existing.destinatarioPersonal?.personal;
+  if (!existingPersonal) {
+    return NextResponse.json({ error: "El registro no tiene destinatario interno." }, { status: 409 });
   }
 
   const itemsEliminados = existing.items.map((detail) => ({
@@ -442,8 +469,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
       entidadId: existing.movimientoId.toString(),
       detalle: {
         evento: "MOVIMIENTO_VESTUARIO_ELIMINADO",
-        ci: existing.personalCi,
-        personal: buildPersonalAuditDetail(existing.personal),
+        ci: existingPersonal.ci,
+        personal: buildPersonalAuditDetail(existingPersonal),
         tipo: existing.tipo,
         afectaStock: existing.afectaStock,
         fecha: formatDateOnlyFromDate(existing.fecha),
@@ -460,7 +487,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
     await Promise.allSettled([
       sendPersonalMovementEmailNotification({
         request: req,
-        ci: existing.personalCi,
+        ci: existingPersonal.ci,
         subject: "Notificacion de movimiento - Deposito ART1",
         headline: "Se elimino un movimiento de tu ficha de vestuario.",
         detailLines: [
@@ -477,7 +504,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
     return NextResponse.json({
       ok: true,
       registroId: existing.movimientoId.toString(),
-      ci: existing.personalCi,
+      ci: existingPersonal.ci,
     });
   } catch {
     return NextResponse.json({ error: "No se pudo eliminar el movimiento." }, { status: 500 });

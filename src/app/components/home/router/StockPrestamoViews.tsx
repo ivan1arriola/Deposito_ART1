@@ -6,6 +6,62 @@ import { MovimientosPorEquipoView } from "@/app/components/views/MovimientosPorE
 import type { PrestamoDraft, StockOperacionDraft } from "@/types/forms";
 import type { StockPrestamoViewsProps } from "./types";
 
+function applyPrestamoDraftFieldChange(
+  prev: PrestamoDraft,
+  field:
+    | "clasePrestamo"
+    | "destinatarioTipo"
+    | "destinatarioCi"
+    | "destinatarioExternoGrado"
+    | "destinatarioExternoNombre"
+    | "destinatarioExternoApellido"
+    | "destinatarioExternoCi"
+    | "destinatarioExternoUnidadDestino"
+    | "actuanteCi"
+    | "fechaPrestamo"
+    | "fechaEstimadaDevolucionTexto"
+    | "comentarios",
+  value: string,
+): PrestamoDraft {
+  if (field === "clasePrestamo") {
+    if (value === "INTERNO") {
+      return {
+        ...prev,
+        clasePrestamo: "INTERNO",
+        destinatarioCi: "",
+        destinatarioExternoGrado: "",
+        destinatarioExternoNombre: "",
+        destinatarioExternoApellido: "",
+        destinatarioExternoCi: "",
+        destinatarioExternoUnidadDestino: "",
+      };
+    }
+    if (value === "EXTERNO") {
+      return {
+        ...prev,
+        clasePrestamo: "EXTERNO",
+        destinatarioCi: "",
+      };
+    }
+    return {
+      ...prev,
+      clasePrestamo: "PENDIENTE",
+      destinatarioCi: "",
+      destinatarioExternoGrado: "",
+      destinatarioExternoNombre: "",
+      destinatarioExternoApellido: "",
+      destinatarioExternoCi: "",
+      destinatarioExternoUnidadDestino: "",
+    };
+  }
+
+  if (field === "destinatarioTipo") {
+    return { ...prev, destinatarioTipo: value as PrestamoDraft["destinatarioTipo"], destinatarioCi: "" };
+  }
+
+  return { ...prev, [field]: value };
+}
+
 export function StockPrestamoViews(props: StockPrestamoViewsProps) {
   const {
     activeView,
@@ -89,12 +145,7 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           prestamoSaving={prestamoSaving}
           returningPrestamoId={returningPrestamoId}
           onPrestamoDraftChange={(field, value) =>
-            setPrestamoDraft((prev: PrestamoDraft) => {
-              if (field === "destinatarioTipo") {
-                return { ...prev, destinatarioTipo: value as import("@/types/forms").PrestamoDestinatarioTipo, destinatarioCi: "" };
-              }
-              return { ...prev, [field]: value };
-            })
+            setPrestamoDraft((prev: PrestamoDraft) => applyPrestamoDraftFieldChange(prev, field, value))
           }
           onPrestamoItemChange={updatePrestamoDraftItem}
           onAddPrestamoItem={addPrestamoDraftItem}
@@ -127,16 +178,7 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           editingPrestamoId={editingPrestamoId}
           maxDate={maxFechaIngreso}
           onPrestamoDraftChange={(field, value) =>
-            setPrestamoDraft((prev: PrestamoDraft) => {
-              if (field === "destinatarioTipo") {
-                return {
-                  ...prev,
-                  destinatarioTipo: value as import("@/types/forms").PrestamoDestinatarioTipo,
-                  destinatarioCi: "",
-                };
-              }
-              return { ...prev, [field]: value };
-            })
+            setPrestamoDraft((prev: PrestamoDraft) => applyPrestamoDraftFieldChange(prev, field, value))
           }
           onPrestamoItemChange={updatePrestamoDraftItem}
           onAddPrestamoItem={addPrestamoDraftItem}

@@ -5,9 +5,9 @@ import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { DestinatarioSearchSelect } from "@/app/components/shared/DestinatarioSearchSelect";
 import { LoadingInline } from "@/app/components/shared";
-import { formatUruguayanCi } from "@/lib/ci";
+import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers";
-import type { PrestamoEstadoEquipo } from "@/types/forms";
+import type { PrestamoClase, PrestamoEstadoEquipo } from "@/types/forms";
 import type { StockDashboardData } from "@/types/views";
 import { PrestamoList } from "./formularios-prestamos/components/PrestamoList";
 import type { FormulariosPrestamosViewProps, PrestamosTab } from "./formularios-prestamos/types";
@@ -16,10 +16,19 @@ import {
   buildDestinatarioOptions,
   destinatarioTipoLabel,
   ESTADO_OPTIONS,
+  prestamoClaseLabel,
   reciboHref,
 } from "./formularios-prestamos/utils";
 
 export type { PrestamoEditPayload } from "./formularios-prestamos/types";
+
+function splitExternalDraftName(value: string) {
+  const [apellido = "", nombre = ""] = value.split(",");
+  return {
+    apellido: apellido.trim(),
+    nombre: nombre.trim(),
+  };
+}
 
 export function FormulariosPrestamosView({
   viewMode = "integrado",
@@ -64,6 +73,14 @@ export function FormulariosPrestamosView({
   const [editDialogError, setEditDialogError] = useState<string | null>(null);
   const [editDialog, setEditDialog] = useState<{
     prestamo: StockDashboardData["prestamos"][number];
+    clasePrestamo: PrestamoClase;
+    destinatarioTipo: "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
+    destinatarioCi: string;
+    destinatarioExternoGrado: string;
+    destinatarioExternoNombre: string;
+    destinatarioExternoApellido: string;
+    destinatarioExternoCi: string;
+    destinatarioExternoUnidadDestino: string;
     fechaPrestamo: string;
     fechaEstimadaDevolucionTexto: string;
     fechaDevolucion: string;
@@ -126,9 +143,21 @@ export function FormulariosPrestamosView({
   };
 
   function openEditDialog(prestamo: StockDashboardData["prestamos"][number]) {
+    const externalName = splitExternalDraftName(prestamo.destinatarioNombre);
     setEditDialogError(null);
     setEditDialog({
       prestamo,
+      clasePrestamo: prestamo.clasePrestamo,
+      destinatarioTipo:
+        prestamo.destinatarioTipo && prestamo.destinatarioTipo !== "EXTERNO"
+          ? prestamo.destinatarioTipo
+          : "PERSONAL",
+      destinatarioCi: prestamo.clasePrestamo === "INTERNO" ? prestamo.destinatarioCi ?? "" : "",
+      destinatarioExternoGrado: prestamo.clasePrestamo === "EXTERNO" ? prestamo.destinatarioGrado ?? "" : "",
+      destinatarioExternoNombre: prestamo.clasePrestamo === "EXTERNO" ? externalName.nombre : "",
+      destinatarioExternoApellido: prestamo.clasePrestamo === "EXTERNO" ? externalName.apellido : "",
+      destinatarioExternoCi: prestamo.clasePrestamo === "EXTERNO" ? prestamo.destinatarioCi ?? "" : "",
+      destinatarioExternoUnidadDestino: prestamo.clasePrestamo === "EXTERNO" ? prestamo.destinatarioUnidadDestino ?? "" : "",
       fechaPrestamo: prestamo.fechaPrestamo || getTodayDateInput(),
       fechaEstimadaDevolucionTexto: prestamo.fechaEstimadaDevolucionTexto ?? "",
       fechaDevolucion: prestamo.fechaDevolucion || getTodayDateInput(),
@@ -168,9 +197,43 @@ export function FormulariosPrestamosView({
       return;
     }
 
+    if (editDialog.clasePrestamo === "INTERNO" && editDialog.destinatarioCi.trim() === "") {
+      setEditDialogError("Debes seleccionar un destinatario interno.");
+      return;
+    }
+
+    if (editDialog.clasePrestamo === "EXTERNO") {
+      if (
+        !editDialog.destinatarioExternoGrado.trim() ||
+        !editDialog.destinatarioExternoNombre.trim() ||
+        !editDialog.destinatarioExternoApellido.trim() ||
+        !editDialog.destinatarioExternoUnidadDestino.trim()
+      ) {
+        setEditDialogError("Completa grado, nombre, apellido y unidad de destino del destinatario externo.");
+        return;
+      }
+      if (!isValidUruguayanCi(editDialog.destinatarioExternoCi.trim())) {
+        setEditDialogError("La CI del destinatario externo no es válida.");
+        return;
+      }
+    }
+
     setEditDialogError(null);
     try {
       await onEditPrestamo(editDialog.prestamo.prestamoId, {
+        clasePrestamo: editDialog.clasePrestamo,
+        destinatarioTipo: editDialog.clasePrestamo === "INTERNO" ? editDialog.destinatarioTipo : undefined,
+        destinatarioCi: editDialog.clasePrestamo === "INTERNO" ? editDialog.destinatarioCi.trim() : undefined,
+        destinatarioExterno:
+          editDialog.clasePrestamo === "EXTERNO"
+            ? {
+                grado: editDialog.destinatarioExternoGrado.trim(),
+                nombre: editDialog.destinatarioExternoNombre.trim(),
+                apellido: editDialog.destinatarioExternoApellido.trim(),
+                ci: editDialog.destinatarioExternoCi.trim(),
+                unidadDestino: editDialog.destinatarioExternoUnidadDestino.trim(),
+              }
+            : undefined,
         fechaPrestamo: editDialog.fechaPrestamo.trim(),
         fechaEstimadaDevolucionTexto: editDialog.fechaEstimadaDevolucionTexto.trim() || undefined,
         fechaDevolucion: editDialog.prestamo.estado === "DEVUELTO" ? editDialog.fechaDevolucion.trim() : undefined,
@@ -220,13 +283,41 @@ export function FormulariosPrestamosView({
     return prestamos.filter((prestamo) => prestamo.prestamoId.includes(normalizedPrestamoIdFilter));
   }, [prestamos, normalizedPrestamoIdFilter]);
   const selectedDestinatario = useMemo(
-    () => destinatarioOptions.find((option) => option.ci === prestamoDraft.destinatarioCi) ?? null,
-    [destinatarioOptions, prestamoDraft.destinatarioCi],
+    () =>
+      prestamoDraft.clasePrestamo === "INTERNO"
+        ? destinatarioOptions.find((option) => option.ci === prestamoDraft.destinatarioCi) ?? null
+        : null,
+    [destinatarioOptions, prestamoDraft.clasePrestamo, prestamoDraft.destinatarioCi],
   );
   const selectedActuante = useMemo(
     () => actuanteOptions.find((option) => option.ci === prestamoDraft.actuanteCi) ?? null,
     [actuanteOptions, prestamoDraft.actuanteCi],
   );
+  const draftDestinatarioResumen = useMemo(() => {
+    if (prestamoDraft.clasePrestamo === "PENDIENTE") {
+      return {
+        label: "Destinatario pendiente",
+        ci: "",
+      };
+    }
+    if (prestamoDraft.clasePrestamo === "EXTERNO") {
+      const nombre = [prestamoDraft.destinatarioExternoApellido.trim(), prestamoDraft.destinatarioExternoNombre.trim()]
+        .filter(Boolean)
+        .join(", ");
+      return {
+        label: [prestamoDraft.destinatarioExternoGrado.trim(), nombre].filter(Boolean).join(" ") || "Sin completar",
+        ci: prestamoDraft.destinatarioExternoCi.trim(),
+      };
+    }
+    return {
+      label: selectedDestinatario ? selectedDestinatario.label : "Sin seleccionar",
+      ci: prestamoDraft.destinatarioCi.trim(),
+    };
+  }, [prestamoDraft, selectedDestinatario]);
+  const editDestinatarioOptions = useMemo(() => {
+    if (!editDialog || editDialog.clasePrestamo !== "INTERNO") return [];
+    return buildDestinatarioOptions(editDialog.destinatarioTipo, personal, oficialesSuboficiales);
+  }, [editDialog, personal, oficialesSuboficiales]);
   const equiposConSeleccion = useMemo(
     () => prestamoDraft.items.filter((item) => item.itemId.trim() !== "").length,
     [prestamoDraft.items],
@@ -328,7 +419,7 @@ export function FormulariosPrestamosView({
                 <p className="mt-1 text-xs text-stone-600">Completa los pasos en orden para evitar errores al guardar.</p>
               </div>
               <span className="rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-stone-700">
-                Tipo: {destinatarioTipoLabel(prestamoDraft.destinatarioTipo)}
+                {prestamoClaseLabel(prestamoDraft.clasePrestamo)}
               </span>
             </div>
 
@@ -337,10 +428,17 @@ export function FormulariosPrestamosView({
               <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-amber-900 md:grid-cols-2">
                 <p>
                   <span className="font-semibold">Destinatario:</span>{" "}
-                  {selectedDestinatario ? selectedDestinatario.label : "Sin seleccionar"}
+                  {draftDestinatarioResumen.label}
                 </p>
                 <p>
                   <span className="font-semibold">Por orden de:</span> {selectedActuante ? selectedActuante.label : "Sin seleccionar"}
+                </p>
+                <p>
+                  <span className="font-semibold">Clase:</span> {prestamoClaseLabel(prestamoDraft.clasePrestamo)}
+                </p>
+                <p>
+                  <span className="font-semibold">CI:</span>{" "}
+                  {draftDestinatarioResumen.ci ? formatUruguayanCi(draftDestinatarioResumen.ci) : "Pendiente"}
                 </p>
                 <p>
                   <span className="font-semibold">Fecha prestamo:</span> {prestamoDraft.fechaPrestamo.trim() || "Sin definir"}
@@ -356,34 +454,111 @@ export function FormulariosPrestamosView({
             <section className="mt-3 rounded-xl border border-stone-200 bg-stone-50/80 p-3 md:p-4">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-700">1) Destinatario y autorizacion</h4>
               <p className="mt-1 text-xs text-stone-600">
-                Define a quien se presta y quien autoriza. El destinatario cambia segun el tipo seleccionado.
+                Define si el préstamo es interno, externo o si el destinatario queda pendiente para completarlo después.
               </p>
               <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                <label className="text-xs text-stone-700">
-                  Tipo destinatario
+                <label className="text-xs text-stone-700 md:col-span-2">
+                  Clase de préstamo
                   <select
-                    value={prestamoDraft.destinatarioTipo}
+                    value={prestamoDraft.clasePrestamo}
                     disabled={prestamoSaving}
-                    onChange={(event) => onPrestamoDraftChange("destinatarioTipo", event.target.value)}
+                    onChange={(event) => onPrestamoDraftChange("clasePrestamo", event.target.value)}
                     className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
                   >
-                    <option value="PERSONAL">Subalternos</option>
-                    <option value="OFICIAL">Oficiales</option>
-                    <option value="SUBOFICIAL">Suboficiales</option>
+                    <option value="INTERNO">Interno</option>
+                    <option value="EXTERNO">Externo</option>
+                    <option value="PENDIENTE">Completar después</option>
                   </select>
                 </label>
 
-                <div className="text-xs text-stone-700">
-                  Destinatario
-                  <DestinatarioSearchSelect
-                    key={prestamoDraft.destinatarioTipo}
-                    options={destinatarioOptions}
-                    value={prestamoDraft.destinatarioCi}
-                    disabled={prestamoSaving}
-                    placeholder={`Buscar ${destinatarioTipoLabel(prestamoDraft.destinatarioTipo).toLowerCase()} por grado, apellido, nombre o CI`}
-                    onChange={(ci) => onPrestamoDraftChange("destinatarioCi", ci)}
-                  />
-                </div>
+                {prestamoDraft.clasePrestamo === "INTERNO" ? (
+                  <>
+                    <label className="text-xs text-stone-700">
+                      Tipo destinatario
+                      <select
+                        value={prestamoDraft.destinatarioTipo}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioTipo", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="PERSONAL">Subalternos</option>
+                        <option value="OFICIAL">Oficiales</option>
+                        <option value="SUBOFICIAL">Suboficiales</option>
+                      </select>
+                    </label>
+
+                    <div className="text-xs text-stone-700">
+                      Destinatario interno
+                      <DestinatarioSearchSelect
+                        key={prestamoDraft.destinatarioTipo}
+                        options={destinatarioOptions}
+                        value={prestamoDraft.destinatarioCi}
+                        disabled={prestamoSaving}
+                        placeholder={`Buscar ${destinatarioTipoLabel(prestamoDraft.destinatarioTipo).toLowerCase()} por grado, apellido, nombre o CI`}
+                        onChange={(ci) => onPrestamoDraftChange("destinatarioCi", ci)}
+                      />
+                    </div>
+                  </>
+                ) : null}
+
+                {prestamoDraft.clasePrestamo === "EXTERNO" ? (
+                  <>
+                    <label className="text-xs text-stone-700">
+                      Grado
+                      <input
+                        value={prestamoDraft.destinatarioExternoGrado}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoGrado", event.target.value)}
+                        placeholder="Ej: Sgto., Tte., Cabo"
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="text-xs text-stone-700">
+                      Cédula de identidad
+                      <input
+                        value={prestamoDraft.destinatarioExternoCi}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoCi", event.target.value)}
+                        placeholder="Solo números"
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="text-xs text-stone-700">
+                      Nombre
+                      <input
+                        value={prestamoDraft.destinatarioExternoNombre}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoNombre", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="text-xs text-stone-700">
+                      Apellido
+                      <input
+                        value={prestamoDraft.destinatarioExternoApellido}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoApellido", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="text-xs text-stone-700 md:col-span-2">
+                      Unidad de destino
+                      <input
+                        value={prestamoDraft.destinatarioExternoUnidadDestino}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoUnidadDestino", event.target.value)}
+                        placeholder="Unidad u organismo externo"
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                  </>
+                ) : null}
+
+                {prestamoDraft.clasePrestamo === "PENDIENTE" ? (
+                  <p className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 md:col-span-2">
+                    El préstamo se guardará sin destinatario y luego podrá completarse desde la edición.
+                  </p>
+                ) : null}
 
                 <div className="text-xs text-stone-700 md:col-span-2">
                   Por orden de
@@ -648,8 +823,12 @@ export function FormulariosPrestamosView({
             <div className="grid grid-cols-1 gap-2 text-sm text-stone-700 md:grid-cols-2">
               <p><span className="font-semibold text-stone-900">Identificador:</span> {selectedPrestamo.prestamoId}</p>
               <p><span className="font-semibold text-stone-900">Estado:</span> {selectedPrestamo.estado}</p>
+              <p><span className="font-semibold text-stone-900">Clase:</span> {prestamoClaseLabel(selectedPrestamo.clasePrestamo)}</p>
               <p><span className="font-semibold text-stone-900">Destinatario:</span> {selectedPrestamo.destinatarioEtiqueta}</p>
-              <p><span className="font-semibold text-stone-900">CI:</span> {formatUruguayanCi(selectedPrestamo.destinatarioCi)}</p>
+              <p><span className="font-semibold text-stone-900">CI:</span> {selectedPrestamo.destinatarioCi ? formatUruguayanCi(selectedPrestamo.destinatarioCi) : "Pendiente"}</p>
+              {selectedPrestamo.destinatarioUnidadDestino ? (
+                <p><span className="font-semibold text-stone-900">Unidad destino:</span> {selectedPrestamo.destinatarioUnidadDestino}</p>
+              ) : null}
               <p><span className="font-semibold text-stone-900">Entregado por:</span> {selectedPrestamo.usuarioEntregaNombre}</p>
               <p><span className="font-semibold text-stone-900">Por orden de:</span> {selectedPrestamo.actuanteNombre ?? "No registrado"}</p>
               <p>
@@ -857,6 +1036,173 @@ export function FormulariosPrestamosView({
               <h3 className="text-lg font-semibold text-stone-900">Editar prestamo (admin)</h3>
               <p className="text-sm text-stone-600">{editDialog.prestamo.reciboNumero}</p>
             </header>
+
+            <section className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              <label className="text-xs text-stone-700 md:col-span-2">
+                Clase de préstamo
+                <select
+                  value={editDialog.clasePrestamo}
+                  disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
+                  onChange={(event) =>
+                    setEditDialog((current) => {
+                      if (!current) return current;
+                      const nextClass = event.target.value as PrestamoClase;
+                      if (nextClass === "INTERNO") {
+                        return {
+                          ...current,
+                          clasePrestamo: nextClass,
+                          destinatarioCi: "",
+                          destinatarioExternoGrado: "",
+                          destinatarioExternoNombre: "",
+                          destinatarioExternoApellido: "",
+                          destinatarioExternoCi: "",
+                          destinatarioExternoUnidadDestino: "",
+                        };
+                      }
+                      if (nextClass === "EXTERNO") {
+                        return {
+                          ...current,
+                          clasePrestamo: nextClass,
+                          destinatarioCi: "",
+                        };
+                      }
+                      return {
+                        ...current,
+                        clasePrestamo: nextClass,
+                        destinatarioCi: "",
+                        destinatarioExternoGrado: "",
+                        destinatarioExternoNombre: "",
+                        destinatarioExternoApellido: "",
+                        destinatarioExternoCi: "",
+                        destinatarioExternoUnidadDestino: "",
+                      };
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                >
+                  <option value="INTERNO">Interno</option>
+                  <option value="EXTERNO">Externo</option>
+                  <option value="PENDIENTE">Completar después</option>
+                </select>
+              </label>
+
+              {editDialog.clasePrestamo === "INTERNO" ? (
+                <>
+                  <label className="text-xs text-stone-700">
+                    Tipo destinatario
+                    <select
+                      value={editDialog.destinatarioTipo}
+                      disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
+                      onChange={(event) =>
+                        setEditDialog((current) =>
+                          current
+                            ? {
+                                ...current,
+                                destinatarioTipo: event.target.value as "PERSONAL" | "OFICIAL" | "SUBOFICIAL",
+                                destinatarioCi: "",
+                              }
+                            : current,
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    >
+                      <option value="PERSONAL">Subalternos</option>
+                      <option value="OFICIAL">Oficiales</option>
+                      <option value="SUBOFICIAL">Suboficiales</option>
+                    </select>
+                  </label>
+                  <div className="text-xs text-stone-700">
+                    Destinatario interno
+                    <DestinatarioSearchSelect
+                      key={`edit-prestamo-destinatario-${editDialog.destinatarioTipo}`}
+                      options={editDestinatarioOptions}
+                      value={editDialog.destinatarioCi}
+                      disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
+                      placeholder={`Buscar ${destinatarioTipoLabel(editDialog.destinatarioTipo).toLowerCase()} por grado, apellido, nombre o CI`}
+                      onChange={(ci) =>
+                        setEditDialog((current) => (current ? { ...current, destinatarioCi: ci } : current))
+                      }
+                    />
+                  </div>
+                </>
+              ) : null}
+
+              {editDialog.clasePrestamo === "EXTERNO" ? (
+                <>
+                  <label className="text-xs text-stone-700">
+                    Grado
+                    <input
+                      value={editDialog.destinatarioExternoGrado}
+                      disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
+                      onChange={(event) =>
+                        setEditDialog((current) =>
+                          current ? { ...current, destinatarioExternoGrado: event.target.value } : current,
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs text-stone-700">
+                    Cédula de identidad
+                    <input
+                      value={editDialog.destinatarioExternoCi}
+                      disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
+                      onChange={(event) =>
+                        setEditDialog((current) =>
+                          current ? { ...current, destinatarioExternoCi: event.target.value } : current,
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs text-stone-700">
+                    Nombre
+                    <input
+                      value={editDialog.destinatarioExternoNombre}
+                      disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
+                      onChange={(event) =>
+                        setEditDialog((current) =>
+                          current ? { ...current, destinatarioExternoNombre: event.target.value } : current,
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs text-stone-700">
+                    Apellido
+                    <input
+                      value={editDialog.destinatarioExternoApellido}
+                      disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
+                      onChange={(event) =>
+                        setEditDialog((current) =>
+                          current ? { ...current, destinatarioExternoApellido: event.target.value } : current,
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs text-stone-700 md:col-span-2">
+                    Unidad de destino
+                    <input
+                      value={editDialog.destinatarioExternoUnidadDestino}
+                      disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
+                      onChange={(event) =>
+                        setEditDialog((current) =>
+                          current ? { ...current, destinatarioExternoUnidadDestino: event.target.value } : current,
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                </>
+              ) : null}
+
+              {editDialog.clasePrestamo === "PENDIENTE" ? (
+                <p className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 md:col-span-2">
+                  El préstamo quedará sin destinatario hasta completarlo más adelante.
+                </p>
+              ) : null}
+            </section>
 
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               <label className="text-xs text-stone-700">

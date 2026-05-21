@@ -4021,13 +4021,28 @@ export default function Home() {
 
   async function savePrestamo(printAfterSave = false) {
     if (prestamoSaving) return;
-    if (prestamoDraft.destinatarioCi.trim() === "") {
-      setStatus("Debes seleccionar un destinatario para el préstamo.");
-      return;
-    }
     if (prestamoDraft.actuanteCi.trim() === "") {
       setStatus("Debes indicar 'por orden de' (oficial, suboficial o sargento).");
       return;
+    }
+    if (prestamoDraft.clasePrestamo === "INTERNO" && prestamoDraft.destinatarioCi.trim() === "") {
+      setStatus("Debes seleccionar un destinatario interno para el préstamo.");
+      return;
+    }
+    if (prestamoDraft.clasePrestamo === "EXTERNO") {
+      if (
+        !prestamoDraft.destinatarioExternoGrado.trim() ||
+        !prestamoDraft.destinatarioExternoNombre.trim() ||
+        !prestamoDraft.destinatarioExternoApellido.trim() ||
+        !prestamoDraft.destinatarioExternoUnidadDestino.trim()
+      ) {
+        setStatus("Debes completar grado, nombre, apellido y unidad de destino del destinatario externo.");
+        return;
+      }
+      if (!isValidUruguayanCi(prestamoDraft.destinatarioExternoCi.trim())) {
+        setStatus("La CI del destinatario externo no es válida.");
+        return;
+      }
     }
     if (!parseDateInput(prestamoDraft.fechaPrestamo).valid) {
       setStatus("La fecha del préstamo debe estar en formato DD/MM/AAAA.");
@@ -4065,8 +4080,19 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          destinatarioTipo: prestamoDraft.destinatarioTipo,
-          destinatarioCi: prestamoDraft.destinatarioCi.trim(),
+          clasePrestamo: prestamoDraft.clasePrestamo,
+          destinatarioTipo: prestamoDraft.clasePrestamo === "INTERNO" ? prestamoDraft.destinatarioTipo : undefined,
+          destinatarioCi: prestamoDraft.clasePrestamo === "INTERNO" ? prestamoDraft.destinatarioCi.trim() : undefined,
+          destinatarioExterno:
+            prestamoDraft.clasePrestamo === "EXTERNO"
+              ? {
+                  grado: prestamoDraft.destinatarioExternoGrado.trim(),
+                  nombre: prestamoDraft.destinatarioExternoNombre.trim(),
+                  apellido: prestamoDraft.destinatarioExternoApellido.trim(),
+                  ci: prestamoDraft.destinatarioExternoCi.trim(),
+                  unidadDestino: prestamoDraft.destinatarioExternoUnidadDestino.trim(),
+                }
+              : undefined,
           actuanteCi: prestamoDraft.actuanteCi.trim(),
           fechaPrestamo: prestamoDraft.fechaPrestamo,
           fechaEstimadaDevolucionTexto: prestamoDraft.fechaEstimadaDevolucionTexto.trim() || undefined,

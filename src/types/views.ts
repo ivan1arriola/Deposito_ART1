@@ -81,7 +81,9 @@ export type EquipoMovimientoViewRow = {
   tipo: "ENTREGA" | "DEVOLUCION" | "PRESTAMO";
   tipoLabel: string;
   prestamoEstado: "PENDIENTE" | "DEVUELTO" | null;
-  ci: string;
+  clasePrestamo: "INTERNO" | "EXTERNO" | "PENDIENTE" | null;
+  ci: string | null;
+  perfilCi: string | null;
   persona: string;
   gradoAbreviacion: string;
   gradoOrden: number | null;
@@ -172,10 +174,14 @@ export type StockHistorialEntry = {
 export type PrestamoStockEntry = {
   prestamoId: string;
   reciboNumero: string;
-  destinatarioTipo: "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
-  destinatarioCi: string;
+  clasePrestamo: "INTERNO" | "EXTERNO" | "PENDIENTE";
+  destinatarioTipo: "PERSONAL" | "OFICIAL" | "SUBOFICIAL" | "EXTERNO" | null;
+  destinatarioCi: string | null;
+  perfilCi: string | null;
   destinatarioNombre: string;
   destinatarioEtiqueta: string;
+  destinatarioGrado: string | null;
+  destinatarioUnidadDestino: string | null;
   usuarioEntregaId: string;
   usuarioEntregaNombre: string;
   actuanteCi: string | null;
@@ -230,10 +236,13 @@ export type StockItemTraceData = {
   prestamos: Array<{
     prestamoId: string;
     reciboNumero: string;
+    clasePrestamo: "INTERNO" | "EXTERNO" | "PENDIENTE";
     estado: "PENDIENTE" | "DEVUELTO";
     fechaPrestamo: string;
-    destinatarioCi: string;
+    destinatarioCi: string | null;
+    perfilCi: string | null;
     destinatarioEtiqueta: string;
+    destinatarioUnidadDestino: string | null;
     observaciones: string | null;
     cantidad: number;
     movimientoId: string;

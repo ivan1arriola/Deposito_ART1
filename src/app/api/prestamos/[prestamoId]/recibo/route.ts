@@ -4,6 +4,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
+import { buildPersonaExternaNombre, buildPersonalDestinatarioNombre } from "@/lib/movimiento-destinatario";
 import { prisma } from "@/lib/prisma";
 import {
   A4_HEIGHT,
@@ -25,7 +26,6 @@ import {
   formatDateUy,
   formatLongDateUy,
   formatTimeUy,
-  fullName,
   militaryShortLabel,
   normalizeReceiptValue,
   toPrintUppercase,
@@ -108,22 +108,31 @@ function layoutTableRow(row: TableRow, font: PDFFont): TableRowLayout {
   };
 }
 const prestamoReciboInclude = {
-  personal: {
+  destinatarioPersonal: {
     include: {
-      rango: {
-        select: {
-          abreviacion: true,
-        },
-      },
-      subalterno: {
+      personal: {
         include: {
-          bateria: {
+          rango: {
             select: {
-              nombre: true,
+              abreviacion: true,
+            },
+          },
+          subalterno: {
+            include: {
+              bateria: {
+                select: {
+                  nombre: true,
+                },
+              },
             },
           },
         },
       },
+    },
+  },
+  destinatarioExterno: {
+    include: {
+      personaExterna: true,
     },
   },
   usuarioEntrega: {
@@ -215,15 +224,20 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
   const now = new Date();
   const fechaImpresion = `${formatDateUy(now)} ${formatTimeUy(now)}`;
 
-  const destinatarioNombre = fullName(
-    prestamo.personal.apellido1,
-    prestamo.personal.apellido2,
-    prestamo.personal.nombre1,
-    prestamo.personal.nombre2,
-  );
-  const destinatarioGrado = prestamo.personal.rango.abreviacion;
-  const destinatarioCi = formatUruguayanCi(prestamo.personal.ci);
-  const bateria = prestamo.personal.subalterno?.bateria?.nombre ?? "No aplica";
+  const destinatarioPersonal = prestamo.destinatarioPersonal?.personal ?? null;
+  const destinatarioExterno = prestamo.destinatarioExterno?.personaExterna ?? null;
+  const destinatarioNombre = destinatarioPersonal
+    ? buildPersonalDestinatarioNombre(destinatarioPersonal)
+    : destinatarioExterno
+      ? buildPersonaExternaNombre(destinatarioExterno)
+      : "Pendiente de completar";
+  const destinatarioGrado = destinatarioPersonal?.rango.abreviacion ?? destinatarioExterno?.grado ?? "-";
+  const destinatarioCi =
+    destinatarioPersonal?.ci || destinatarioExterno?.ci
+      ? formatUruguayanCi(destinatarioPersonal?.ci ?? destinatarioExterno?.ci ?? "")
+      : "-";
+  const tercerCampoLabel = destinatarioExterno ? "Unidad destino" : "Batería";
+  const tercerCampoValor = destinatarioExterno?.unidadDestino ?? destinatarioPersonal?.subalterno?.bateria?.nombre ?? "No aplica";
   const observaciones = prestamo.observaciones?.trim() || "-";
 
   const entregaLabel = militaryShortLabel(
@@ -231,11 +245,15 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     prestamo.usuarioEntrega.apellido,
     prestamo.usuarioEntrega.nombre,
   );
-  const destinatarioFirmaLabel = militaryShortLabel(
-    prestamo.personal.rango.abreviacion,
-    prestamo.personal.apellido1,
-    prestamo.personal.nombre1,
-  );
+  const destinatarioFirmaLabel = destinatarioPersonal
+    ? militaryShortLabel(
+        destinatarioPersonal.rango.abreviacion,
+        destinatarioPersonal.apellido1,
+        destinatarioPersonal.nombre1,
+      )
+    : destinatarioExterno
+      ? `${destinatarioExterno.grado} ${destinatarioExterno.apellido}`.replace(/\s+/g, " ").trim()
+      : "Destinatario pendiente";
   const recibeLabel = prestamo.prestamoHistorial?.usuarioRecibeDevolucion
     ? militaryShortLabel(
         prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango.abreviacion,
@@ -289,7 +307,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
 
       drawField(page, assets, innerX, y, col3, boxH, "Grado", destinatarioGrado);
       drawField(page, assets, innerX + col3 + gap, y, col3, boxH, "C.I.", destinatarioCi);
-      drawField(page, assets, innerX + col3 * 2 + gap * 2, y, col6, boxH, "Bateria", bateria);
+      drawField(page, assets, innerX + col3 * 2 + gap * 2, y, col6, boxH, tercerCampoLabel, tercerCampoValor);
       y += boxH + 6;
 
       drawField(page, assets, innerX, y, innerW, row2H, "Nombre", destinatarioNombre);

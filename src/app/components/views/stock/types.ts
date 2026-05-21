@@ -33,8 +33,14 @@ export type StockViewProps = {
   returningPrestamoId: string | null;
   onPrestamoDraftChange: (
     field:
+      | "clasePrestamo"
       | "destinatarioTipo"
       | "destinatarioCi"
+      | "destinatarioExternoGrado"
+      | "destinatarioExternoNombre"
+      | "destinatarioExternoApellido"
+      | "destinatarioExternoCi"
+      | "destinatarioExternoUnidadDestino"
       | "actuanteCi"
       | "fechaPrestamo"
       | "fechaEstimadaDevolucionTexto"

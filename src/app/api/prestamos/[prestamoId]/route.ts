@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { TipoMovimiento } from "@/generated/prisma/client";
-import { prisma } from "@/lib/prisma";
+import { TipoMovimiento, TipoPersonal } from "@/generated/prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
+import { isValidUruguayanCi } from "@/lib/ci";
 import {
   dateInputToDate,
   formatDateOnlyFromDate,
@@ -11,10 +10,26 @@ import {
   isDateInputAfter,
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
-import { prestamoInclude, serializePrestamoWithActuante, totalUnidadesPrestamo, type PrestamoWithRelations } from "@/lib/prestamos";
+import { formatPrestamoDestinatario, prestamoInclude, serializePrestamoWithActuante, totalUnidadesPrestamo, type PrestamoWithRelations } from "@/lib/prestamos";
 import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
+import { prisma } from "@/lib/prisma";
+import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
+
+type PrestamoClase = "INTERNO" | "EXTERNO" | "PENDIENTE";
+type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
+type EstadoEquipoPrestamo = "NUEVO" | "BUENO" | "REGULAR" | "MALO";
 
 type EditPrestamoPayload = {
+  clasePrestamo?: PrestamoClase | string;
+  destinatarioTipo?: PrestamoDestinatarioTipo | string;
+  destinatarioCi?: string;
+  destinatarioExterno?: {
+    grado?: string;
+    nombre?: string;
+    apellido?: string;
+    ci?: string;
+    unidadDestino?: string;
+  };
   fechaPrestamo?: string;
   fechaEstimadaDevolucionTexto?: string;
   fechaDevolucion?: string;
@@ -30,15 +45,10 @@ type EditPrestamoPayload = {
   }>;
 };
 
-type EstadoEquipoPrestamo = "NUEVO" | "BUENO" | "REGULAR" | "MALO";
-
 type PrestamoAuditSnapshot = {
   reciboNumero: string;
   estado: "PENDIENTE" | "DEVUELTO";
-  destinatario: {
-    ci: string;
-    nombre: string;
-  };
+  destinatario: ReturnType<typeof formatPrestamoDestinatario>;
   fechaPrestamo: string | null;
   fechaDevolucion: string | null;
   fechaEstimadaDevolucionTexto: string | null;
@@ -86,6 +96,65 @@ function parseEstadoEquipoPrestamo(value: unknown) {
   return null;
 }
 
+function parsePrestamoClase(value: unknown): PrestamoClase | null {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (raw === "INTERNO") return "INTERNO";
+  if (raw === "EXTERNO") return "EXTERNO";
+  if (raw === "PENDIENTE") return "PENDIENTE";
+  return null;
+}
+
+function parseDestinatarioTipo(value: unknown): PrestamoDestinatarioTipo | null {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (raw === "PERSONAL") return "PERSONAL";
+  if (raw === "OFICIAL") return "OFICIAL";
+  if (raw === "SUBOFICIAL") return "SUBOFICIAL";
+  return null;
+}
+
+function sanitizeExternalPayload(value: EditPrestamoPayload["destinatarioExterno"] | undefined) {
+  return {
+    grado: String(value?.grado ?? "").trim(),
+    nombre: String(value?.nombre ?? "").trim(),
+    apellido: String(value?.apellido ?? "").trim(),
+    ci: String(value?.ci ?? "").trim(),
+    unidadDestino: String(value?.unidadDestino ?? "").trim(),
+  };
+}
+
+function hasDestinatarioPatch(body: EditPrestamoPayload) {
+  return (
+    body.clasePrestamo !== undefined ||
+    body.destinatarioTipo !== undefined ||
+    body.destinatarioCi !== undefined ||
+    body.destinatarioExterno !== undefined
+  );
+}
+
+function inferPrestamoClaseForEdit(body: EditPrestamoPayload): PrestamoClase {
+  const explicit = parsePrestamoClase(body.clasePrestamo);
+  if (explicit) return explicit;
+
+  const external = sanitizeExternalPayload(body.destinatarioExterno);
+  if (external.ci || external.grado || external.nombre || external.apellido || external.unidadDestino) {
+    return "EXTERNO";
+  }
+
+  const destinatarioTipo = parseDestinatarioTipo(body.destinatarioTipo);
+  const destinatarioCi = String(body.destinatarioCi ?? "").trim();
+  if (destinatarioTipo && destinatarioCi) {
+    return "INTERNO";
+  }
+
+  return "PENDIENTE";
+}
+
+function tipoPersonalFromDestinatario(tipo: PrestamoDestinatarioTipo): TipoPersonal {
+  if (tipo === "PERSONAL") return TipoPersonal.SUBALTERNO;
+  if (tipo === "OFICIAL") return TipoPersonal.OFICIAL;
+  return TipoPersonal.SUBOFICIAL;
+}
+
 function buildPrestamoAuditSnapshot(prestamo: PrestamoWithRelations): PrestamoAuditSnapshot {
   return {
     reciboNumero:
@@ -93,12 +162,7 @@ function buildPrestamoAuditSnapshot(prestamo: PrestamoWithRelations): PrestamoAu
       prestamo.prestamoActivo?.reciboNumero ??
       `PR-${prestamo.movimientoId.toString().padStart(8, "0")}`,
     estado: prestamo.prestamoHistorial ? "DEVUELTO" : "PENDIENTE",
-    destinatario: {
-      ci: prestamo.personalCi,
-      nombre: `${prestamo.personal.apellido1} ${prestamo.personal.apellido2 ?? ""}, ${prestamo.personal.nombre1} ${prestamo.personal.nombre2 ?? ""}`
-        .replace(/\s+/g, " ")
-        .trim(),
-    },
+    destinatario: formatPrestamoDestinatario(prestamo),
     fechaPrestamo: formatDateOnlyFromDate(prestamo.fecha),
     fechaDevolucion: prestamo.prestamoHistorial ? formatDateOnlyFromDate(prestamo.prestamoHistorial.fechaDevolucion) : null,
     fechaEstimadaDevolucionTexto:
@@ -121,7 +185,11 @@ function buildPrestamoAuditSnapshot(prestamo: PrestamoWithRelations): PrestamoAu
 }
 
 function buildGeneralChanges(before: PrestamoAuditSnapshot, after: PrestamoAuditSnapshot) {
-  const cambios: Record<string, { antes: string | null; despues: string | null }> = {};
+  const cambios: Record<string, { antes: unknown; despues: unknown }> = {};
+
+  if (JSON.stringify(before.destinatario) !== JSON.stringify(after.destinatario)) {
+    cambios.destinatario = { antes: before.destinatario, despues: after.destinatario };
+  }
   if (before.fechaPrestamo !== after.fechaPrestamo) {
     cambios.fechaPrestamo = { antes: before.fechaPrestamo, despues: after.fechaPrestamo };
   }
@@ -137,17 +205,19 @@ function buildGeneralChanges(before: PrestamoAuditSnapshot, after: PrestamoAudit
   if (before.comentarios !== after.comentarios) {
     cambios.comentarios = { antes: before.comentarios, despues: after.comentarios };
   }
+
   return cambios;
 }
 
 function buildItemChanges(before: PrestamoAuditSnapshot, after: PrestamoAuditSnapshot) {
   const beforeByItemId = new Map(before.items.map((item) => [item.itemId, item]));
+
   return after.items
     .map((item) => {
       const previous = beforeByItemId.get(item.itemId);
       if (!previous) return null;
 
-      const changes: Record<string, { antes: number | string | null; despues: number | string | null }> = {};
+      const changes: Record<string, { antes: unknown; despues: unknown }> = {};
       if (previous.cantidad !== item.cantidad) {
         changes.cantidad = { antes: previous.cantidad, despues: item.cantidad };
       }
@@ -174,7 +244,15 @@ function buildItemChanges(before: PrestamoAuditSnapshot, after: PrestamoAuditSna
         changes,
       };
     })
-    .filter((entry): entry is { itemId: string; nombre: string; changes: Record<string, { antes: number | string | null; despues: number | string | null }> } => entry !== null);
+    .filter(
+      (
+        entry,
+      ): entry is {
+        itemId: string;
+        nombre: string;
+        changes: Record<string, { antes: unknown; despues: unknown }>;
+      } => entry !== null,
+    );
 }
 
 export const prestamoByIdRouteTestables = {
@@ -182,6 +260,8 @@ export const prestamoByIdRouteTestables = {
   parseBigIntId,
   parseCantidad,
   parseEstadoEquipoPrestamo,
+  parsePrestamoClase,
+  parseDestinatarioTipo,
   buildGeneralChanges,
   buildItemChanges,
 };
@@ -214,6 +294,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   const auth = await authorizeRequest(request, "write_data");
   if (!auth.ok) return auth.response;
   await ensurePrestamoActuanteCompatibility();
+
   if (auth.user.rol !== "ADMIN") {
     return NextResponse.json({ error: "Solo el administrador puede editar préstamos." }, { status: 403 });
   }
@@ -298,6 +379,56 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   const comentarios =
     body.comentarios === undefined ? existing.observaciones ?? null : String(body.comentarios ?? "").trim() || null;
 
+  let clasePrestamo = formatPrestamoDestinatario(existing).clase;
+  let destinatarioTipo = existing.destinatarioPersonal?.personal.rango.tipo
+    ? existing.destinatarioPersonal.personal.rango.tipo === TipoPersonal.SUBALTERNO
+      ? ("PERSONAL" as const)
+      : existing.destinatarioPersonal.personal.rango.tipo === TipoPersonal.OFICIAL
+        ? ("OFICIAL" as const)
+        : ("SUBOFICIAL" as const)
+    : null;
+  let destinatarioCi = existing.destinatarioPersonal?.personal.ci ?? "";
+  let destinatarioExterno = existing.destinatarioExterno?.personaExterna
+    ? {
+        grado: existing.destinatarioExterno.personaExterna.grado,
+        nombre: existing.destinatarioExterno.personaExterna.nombre,
+        apellido: existing.destinatarioExterno.personaExterna.apellido,
+        ci: existing.destinatarioExterno.personaExterna.ci,
+        unidadDestino: existing.destinatarioExterno.personaExterna.unidadDestino,
+      }
+    : sanitizeExternalPayload(undefined);
+
+  if (hasDestinatarioPatch(body)) {
+    clasePrestamo = inferPrestamoClaseForEdit(body);
+    destinatarioTipo = parseDestinatarioTipo(body.destinatarioTipo);
+    destinatarioCi = String(body.destinatarioCi ?? "").trim();
+    destinatarioExterno = sanitizeExternalPayload(body.destinatarioExterno);
+
+    if (clasePrestamo === "INTERNO") {
+      if (!destinatarioTipo || !isValidUruguayanCi(destinatarioCi)) {
+        return NextResponse.json(
+          { error: "Debes indicar un destinatario interno válido para completar el préstamo." },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (clasePrestamo === "EXTERNO") {
+      if (
+        !isValidUruguayanCi(destinatarioExterno.ci) ||
+        !destinatarioExterno.grado ||
+        !destinatarioExterno.nombre ||
+        !destinatarioExterno.apellido ||
+        !destinatarioExterno.unidadDestino
+      ) {
+        return NextResponse.json(
+          { error: "Debes completar grado, nombre, apellido, CI y unidad de destino del destinatario externo." },
+          { status: 400 },
+        );
+      }
+    }
+  }
+
   const existingItemsById = new Map(existing.items.map((item) => [item.item.itemId.toString(), item]));
   const itemUpdates = Array.isArray(body.items)
     ? body.items
@@ -329,6 +460,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     if (!itemId) {
       return NextResponse.json({ error: "items: itemId inválido." }, { status: 400 });
     }
+
     const itemIdKey = itemId.toString();
     if (seenItemIds.has(itemIdKey)) {
       return NextResponse.json({ error: "No puedes repetir equipos en la edición del préstamo." }, { status: 400 });
@@ -400,6 +532,33 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     );
   }
 
+  const destinatarioPersonal =
+    clasePrestamo === "INTERNO" && destinatarioTipo
+      ? await prisma.personal.findFirst({
+          where: {
+            ci: destinatarioCi,
+            rango: {
+              tipo: tipoPersonalFromDestinatario(destinatarioTipo),
+            },
+          },
+          select: {
+            ci: true,
+          },
+        })
+      : null;
+
+  if (clasePrestamo === "INTERNO" && !destinatarioPersonal) {
+    return NextResponse.json(
+      {
+        error:
+          destinatarioTipo === "PERSONAL"
+            ? "No existe personal subalterno para la CI indicada."
+            : "No existe oficial/suboficial para la CI indicada.",
+      },
+      { status: 404 },
+    );
+  }
+
   try {
     const updated = await prisma.$transaction(async (tx) => {
       await tx.movimiento.update({
@@ -409,6 +568,50 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
           observaciones: comentarios,
         },
       });
+
+      if (hasDestinatarioPatch(body)) {
+        await tx.movimientoDestinatarioPersonal.deleteMany({
+          where: { movimientoId: prestamoId },
+        });
+        await tx.movimientoDestinatarioExterno.deleteMany({
+          where: { movimientoId: prestamoId },
+        });
+
+        if (clasePrestamo === "INTERNO" && destinatarioPersonal) {
+          await tx.movimientoDestinatarioPersonal.create({
+            data: {
+              movimientoId: prestamoId,
+              ci: destinatarioPersonal.ci,
+            },
+          });
+        }
+
+        if (clasePrestamo === "EXTERNO") {
+          await tx.personaExterna.upsert({
+            where: { ci: destinatarioExterno.ci },
+            create: {
+              ci: destinatarioExterno.ci,
+              grado: destinatarioExterno.grado,
+              nombre: destinatarioExterno.nombre,
+              apellido: destinatarioExterno.apellido,
+              unidadDestino: destinatarioExterno.unidadDestino,
+            },
+            update: {
+              grado: destinatarioExterno.grado,
+              nombre: destinatarioExterno.nombre,
+              apellido: destinatarioExterno.apellido,
+              unidadDestino: destinatarioExterno.unidadDestino,
+            },
+          });
+
+          await tx.movimientoDestinatarioExterno.create({
+            data: {
+              movimientoId: prestamoId,
+              personaExternaCi: destinatarioExterno.ci,
+            },
+          });
+        }
+      }
 
       if (existing.prestamoActivo) {
         await tx.prestamoActivo.update({
@@ -480,23 +683,26 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     });
 
     const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
-    await Promise.allSettled([
-      sendPersonalMovementEmailNotification({
-        request,
-        ci: updated.personalCi,
-        subject: "Notificación de préstamo - Depósito ART1",
-        headline: "Se actualizó un préstamo asociado a tu ficha.",
-        detailLines: [
-          `Recibo: ${afterSnapshot.reciboNumero}`,
-          `Estado: ${afterSnapshot.estado}`,
-          `Fecha préstamo: ${afterSnapshot.fechaPrestamo ?? "-"}`,
-          afterSnapshot.fechaDevolucion ? `Fecha devolución: ${afterSnapshot.fechaDevolucion}` : "",
-          `Motivo: ${motivo}`,
-        ],
-        actorLabel,
-        portalPath: "/",
-      }),
-    ]);
+    const destinatarioPersonalCi = updated.destinatarioPersonal?.personal.ci ?? null;
+    if (destinatarioPersonalCi) {
+      await Promise.allSettled([
+        sendPersonalMovementEmailNotification({
+          request,
+          ci: destinatarioPersonalCi,
+          subject: "Notificación de préstamo - Depósito ART1",
+          headline: "Se actualizó un préstamo asociado a tu ficha.",
+          detailLines: [
+            `Recibo: ${afterSnapshot.reciboNumero}`,
+            `Estado: ${afterSnapshot.estado}`,
+            `Fecha préstamo: ${afterSnapshot.fechaPrestamo ?? "-"}`,
+            afterSnapshot.fechaDevolucion ? `Fecha devolución: ${afterSnapshot.fechaDevolucion}` : "",
+            `Motivo: ${motivo}`,
+          ],
+          actorLabel,
+          portalPath: "/",
+        }),
+      ]);
+    }
 
     const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([updated.movimientoId]);
     return NextResponse.json(serializePrestamoWithActuante(updated, actuanteByMovimientoId));
@@ -508,6 +714,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
 export async function DELETE(request: Request, context: { params: Promise<{ prestamoId: string }> }) {
   const auth = await authorizeRequest(request, "delete_data");
   if (!auth.ok) return auth.response;
+
   if (auth.user.rol !== "ADMIN") {
     return NextResponse.json({ error: "Solo el administrador puede eliminar préstamos." }, { status: 403 });
   }
@@ -527,6 +734,8 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
     return NextResponse.json({ error: "Préstamo no encontrado." }, { status: 404 });
   }
 
+  const destinatario = formatPrestamoDestinatario(existing);
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.movimiento.delete({ where: { movimientoId: prestamoId } });
@@ -544,10 +753,15 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
           existing.prestamoActivo?.reciboNumero ??
           `PR-${existing.movimientoId.toString().padStart(8, "0")}`,
         estado: existing.prestamoHistorial ? "DEVUELTO" : "PENDIENTE",
-        destinatarioCi: existing.personalCi,
-        destinatarioNombre: `${existing.personal.apellido1} ${existing.personal.apellido2 ?? ""}, ${existing.personal.nombre1} ${existing.personal.nombre2 ?? ""}`
-          .replace(/\s+/g, " ")
-          .trim(),
+        destinatario: {
+          clase: destinatario.clase,
+          tipo: destinatario.tipo,
+          ci: destinatario.ci,
+          nombre: destinatario.nombre,
+          etiqueta: destinatario.etiqueta,
+          grado: destinatario.grado,
+          unidadDestino: destinatario.unidadDestino,
+        },
         fechaPrestamo: formatDateOnlyFromDate(existing.fecha),
         fechaDevolucion: existing.prestamoHistorial ? formatDateOnlyFromDate(existing.prestamoHistorial.fechaDevolucion) : null,
         totalEquipos: existing.items.length,
@@ -556,21 +770,24 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
     });
 
     const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
-    await Promise.allSettled([
-      sendPersonalMovementEmailNotification({
-        request,
-        ci: existing.personalCi,
-        subject: "Notificación de préstamo - Depósito ART1",
-        headline: "Se eliminó un préstamo asociado a tu ficha.",
-        detailLines: [
-          `Recibo: ${existing.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo?.reciboNumero ?? `PR-${existing.movimientoId.toString().padStart(8, "0")}`}`,
-          `Estado previo: ${existing.prestamoHistorial ? "DEVUELTO" : "PENDIENTE"}`,
-          `Fecha préstamo: ${formatDateOnlyFromDate(existing.fecha) ?? "-"}`,
-        ],
-        actorLabel,
-        portalPath: "/",
-      }),
-    ]);
+    const destinatarioPersonalCi = existing.destinatarioPersonal?.personal.ci ?? null;
+    if (destinatarioPersonalCi) {
+      await Promise.allSettled([
+        sendPersonalMovementEmailNotification({
+          request,
+          ci: destinatarioPersonalCi,
+          subject: "Notificación de préstamo - Depósito ART1",
+          headline: "Se eliminó un préstamo asociado a tu ficha.",
+          detailLines: [
+            `Recibo: ${existing.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo?.reciboNumero ?? `PR-${existing.movimientoId.toString().padStart(8, "0")}`}`,
+            `Estado previo: ${existing.prestamoHistorial ? "DEVUELTO" : "PENDIENTE"}`,
+            `Fecha préstamo: ${formatDateOnlyFromDate(existing.fecha) ?? "-"}`,
+          ],
+          actorLabel,
+          portalPath: "/",
+        }),
+      ]);
+    }
 
     return NextResponse.json({ ok: true });
   } catch {

@@ -224,22 +224,25 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       .join(", ");
     const resumenItemsLine = updated.items.length > 4 ? `${resumenItems}, ...` : resumenItems;
 
-    await Promise.allSettled([
-      sendPersonalMovementEmailNotification({
-        request,
-        ci: updated.personalCi,
-        subject: "Notificación de devolución - Depósito ART1",
-        headline: "Se registró la devolución de un préstamo en tu ficha.",
-        detailLines: [
-          `Recibo: ${updated.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo.reciboNumero}`,
-          `Fecha de devolución: ${formatDateOnlyForDisplay(fechaDevolucionInput)}`,
-          `Total de unidades: ${totalUnidadesPrestamo(updated)}`,
-          `Items: ${resumenItemsLine}`,
-        ],
-        actorLabel,
-        portalPath: "/",
-      }),
-    ]);
+    const destinatarioPersonalCi = updated.destinatarioPersonal?.personal.ci ?? null;
+    if (destinatarioPersonalCi) {
+      await Promise.allSettled([
+        sendPersonalMovementEmailNotification({
+          request,
+          ci: destinatarioPersonalCi,
+          subject: "Notificación de devolución - Depósito ART1",
+          headline: "Se registró la devolución de un préstamo en tu ficha.",
+          detailLines: [
+            `Recibo: ${updated.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo.reciboNumero}`,
+            `Fecha de devolución: ${formatDateOnlyForDisplay(fechaDevolucionInput)}`,
+            `Total de unidades: ${totalUnidadesPrestamo(updated)}`,
+            `Items: ${resumenItemsLine}`,
+          ],
+          actorLabel,
+          portalPath: "/",
+        }),
+      ]);
+    }
 
     const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([updated.movimientoId]);
     return NextResponse.json(serializePrestamoWithActuante(updated, actuanteByMovimientoId));

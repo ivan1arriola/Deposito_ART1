@@ -141,7 +141,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
 
       const movimientosVestuario = await tx.movimiento.findMany({
         where: {
-          personalCi: ciDecoded,
+          destinatarioPersonal: { is: { ci: ciDecoded } },
           tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
         },
         select: {
@@ -188,7 +188,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
       const totalUnidadesPrestamo = itemsPrestamo.reduce((acc, entry) => acc + entry.cantidadNeta, 0);
       const movimientosEliminados = await tx.movimiento.deleteMany({
         where: {
-          personalCi: ciDecoded,
+          destinatarioPersonal: { is: { ci: ciDecoded } },
           tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
         },
       });
@@ -199,12 +199,18 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
           data: {
             tipo: TipoMovimiento.PRESTAMO,
             fecha: fechaAscenso,
-            personalCi: ciDecoded,
             usuarioEntregaId: auth.user.usuarioId,
             afectaStock: true,
             observaciones: ASCENSO_COMENTARIO_PRESTAMO,
           },
           select: { movimientoId: true },
+        });
+
+        await tx.movimientoDestinatarioPersonal.create({
+          data: {
+            movimientoId: movimientoPrestamo.movimientoId,
+            ci: ciDecoded,
+          },
         });
 
         const provisionalRecibo = `TMP-${randomUUID()}`;

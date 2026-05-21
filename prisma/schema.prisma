@@ -344,7 +344,7 @@ model Personal {
   oficial          Oficial?
   suboficial       Suboficial?
   tallas           PersonalTalla[]
-  movimientos      Movimiento[]
+  movimientosDestinatario MovimientoDestinatarioPersonal[]
   articuloEntregasRecibidas ArticuloEntregaPersonal[] @relation("articulo_entrega_destinatario")
   articuloEntregasOrdenadas ArticuloEntregaPersonal[] @relation("articulo_entrega_ordenante")
   observaciones    Observacion[]
@@ -353,26 +353,59 @@ model Personal {
   @@map("personal")
 }
 
+model PersonaExterna {
+  ci             String   @id @map("ci")
+  grado          String
+  nombre         String
+  apellido       String
+  unidadDestino  String   @map("unidad_destino")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  movimientosDestinatario MovimientoDestinatarioExterno[]
+
+  @@index([apellido, nombre])
+  @@map("persona_externa")
+}
+
 model Movimiento {
   movimientoId      BigInt             @id @default(autoincrement()) @map("movimiento_id")
   tipo              TipoMovimiento
   fecha             DateTime           @db.Date
-  personalCi        String             @map("personal_ci")
   usuarioEntregaId  String             @map("usuario_entrega_id")
   afectaStock       Boolean            @default(true) @map("afecta_stock")
   observaciones     String?
   createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  personal          Personal           @relation(fields: [personalCi], references: [ci], onDelete: Cascade)
   usuarioEntrega    Usuario            @relation("movimiento_usuario_entrega", fields: [usuarioEntregaId], references: [usuarioId])
+  destinatarioPersonal MovimientoDestinatarioPersonal?
+  destinatarioExterno MovimientoDestinatarioExterno?
   items             MovimientoItem[]
   prestamoActivo    PrestamoActivo?
   prestamoHistorial PrestamoHistorial?
 
-  @@index([personalCi, fecha(sort: Desc)])
   @@index([tipo, fecha(sort: Desc)])
   @@index([usuarioEntregaId, fecha(sort: Desc)])
   @@map("movimiento")
+}
+
+model MovimientoDestinatarioPersonal {
+  movimientoId BigInt    @id @map("movimiento_id")
+  ci           String    @map("ci")
+  movimiento   Movimiento @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
+  personal     Personal   @relation(fields: [ci], references: [ci])
+
+  @@index([ci])
+  @@map("movimiento_destinatario_personal")
+}
+
+model MovimientoDestinatarioExterno {
+  movimientoId     BigInt        @id @map("movimiento_id")
+  personaExternaCi String        @map("persona_externa_ci")
+  movimiento       Movimiento    @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
+  personaExterna   PersonaExterna @relation(fields: [personaExternaCi], references: [ci])
+
+  @@index([personaExternaCi])
+  @@map("movimiento_destinatario_externo")
 }
 
 model MovimientoItem {

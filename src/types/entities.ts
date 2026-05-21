@@ -113,10 +113,14 @@ export type PrestamoItem = {
 export type PrestamoRecord = {
   prestamoId: string;
   reciboNumero: string;
-  destinatarioTipo: PrestamoDestinatarioTipo;
-  destinatarioCi: string;
+  clasePrestamo: "INTERNO" | "EXTERNO" | "PENDIENTE";
+  destinatarioTipo: PrestamoDestinatarioTipo | "EXTERNO" | null;
+  destinatarioCi: string | null;
+  perfilCi: string | null;
   destinatarioNombre: string;
   destinatarioEtiqueta: string;
+  destinatarioGrado: string | null;
+  destinatarioUnidadDestino: string | null;
   usuarioEntregaId: string;
   usuarioEntregaNombre: string;
   actuanteCi: string | null;

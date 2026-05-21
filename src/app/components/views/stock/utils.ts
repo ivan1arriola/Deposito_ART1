@@ -1,7 +1,7 @@
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
 import { normalizeSearchText } from "@/lib/spanish-text";
 import type { OficialSuboficial, Personal } from "@/types/entities";
-import type { PrestamoDraft, PrestamoEstadoEquipo } from "@/types/forms";
+import type { PrestamoClase, PrestamoDraft, PrestamoEstadoEquipo } from "@/types/forms";
 import type { StockDashboardData } from "@/types/views";
 import type { StockSection } from "./types";
 
@@ -52,6 +52,12 @@ export function buildDestinatarioOptions(
       ci: registro.ci,
       label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`,
     }));
+}
+
+export function prestamoClaseLabel(value: PrestamoClase) {
+  if (value === "EXTERNO") return "Préstamo externo";
+  if (value === "PENDIENTE") return "Destinatario pendiente";
+  return "Préstamo interno";
 }
 
 export function buildActuanteOptions(oficialesSuboficiales: OficialSuboficial[], personal: Personal[]) {

@@ -87,16 +87,22 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
           },
         },
       },
-      movimientos: {
+      movimientosDestinatario: {
         where: {
-          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+          movimiento: {
+            tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+          },
         },
         include: {
-          items: {
-            where: itemIds.length > 0 ? { itemId: { in: itemIds } } : undefined,
-            select: {
-              itemId: true,
-              cantidad: true,
+          movimiento: {
+            include: {
+              items: {
+                where: itemIds.length > 0 ? { itemId: { in: itemIds } } : undefined,
+                select: {
+                  itemId: true,
+                  cantidad: true,
+                },
+              },
             },
           },
         },
@@ -107,7 +113,8 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
   const rows: HojaMatrixRow[] = personal.map((persona) => {
     const totales = Array.from({ length: items.length }, () => 0);
 
-    for (const movimiento of persona.movimientos) {
+    for (const destinatarioMovimiento of persona.movimientosDestinatario) {
+      const movimiento = destinatarioMovimiento.movimiento;
       const factor = movimientoFactor(movimiento.tipo);
       for (const detail of movimiento.items) {
         const index = itemIndexById.get(detail.itemId.toString());

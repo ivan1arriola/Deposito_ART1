@@ -527,14 +527,18 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                         </td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.movimientoId}</td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">
-                          <button
-                            type="button"
-                            onClick={() => void openPersonaProfile(row.ci)}
-                            className="font-mono text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
-                            title="Ver ficha completa"
-                          >
-                            {row.ci}
-                          </button>
+                          {row.perfilCi ? (
+                            <button
+                              type="button"
+                              onClick={() => void openPersonaProfile(row.perfilCi!)}
+                              className="font-mono text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
+                              title="Ver ficha completa"
+                            >
+                              {row.ci ?? "-"}
+                            </button>
+                          ) : (
+                            <span className="font-mono">{row.ci ?? "-"}</span>
+                          )}
                         </td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.gradoAbreviacion}</td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.persona}</td>
@@ -576,17 +580,25 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                     <div className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700 md:grid-cols-2">
                       <p><span className="font-semibold text-stone-900">Estado:</span> {originDialog.prestamo.estado}</p>
                       <p><span className="font-semibold text-stone-900">Fecha préstamo:</span> {originDialog.prestamo.fechaPrestamo}</p>
+                      <p><span className="font-semibold text-stone-900">Clase:</span> {originDialog.prestamo.clasePrestamo}</p>
                       <p><span className="font-semibold text-stone-900">Destinatario:</span> {originDialog.prestamo.destinatarioEtiqueta}</p>
                       <p>
                         <span className="font-semibold text-stone-900">CI:</span>{" "}
-                        <button
-                          type="button"
-                          onClick={() => void openPersonaProfile(originDialog.prestamo.destinatarioCi)}
-                          className="font-mono text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
-                        >
-                          {originDialog.prestamo.destinatarioCi}
-                        </button>
+                        {originDialog.prestamo.perfilCi ? (
+                          <button
+                            type="button"
+                            onClick={() => void openPersonaProfile(originDialog.prestamo.perfilCi!)}
+                            className="font-mono text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
+                          >
+                            {originDialog.prestamo.destinatarioCi ?? "-"}
+                          </button>
+                        ) : (
+                          <span className="font-mono">{originDialog.prestamo.destinatarioCi ?? "Pendiente"}</span>
+                        )}
                       </p>
+                      {originDialog.prestamo.destinatarioUnidadDestino ? (
+                        <p><span className="font-semibold text-stone-900">Unidad destino:</span> {originDialog.prestamo.destinatarioUnidadDestino}</p>
+                      ) : null}
                       {originDialog.prestamo.fechaEstimadaDevolucionTexto ? (
                         <p><span className="font-semibold text-stone-900">Estimado:</span> {originDialog.prestamo.fechaEstimadaDevolucionTexto}</p>
                       ) : null}

@@ -5,6 +5,16 @@ import type { StockDashboardData } from "@/types/views";
 export type PrestamosTab = "registrar" | "vigentes" | "historial";
 
 export type PrestamoEditPayload = {
+  clasePrestamo?: "INTERNO" | "EXTERNO" | "PENDIENTE";
+  destinatarioTipo?: "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
+  destinatarioCi?: string;
+  destinatarioExterno?: {
+    grado?: string;
+    nombre?: string;
+    apellido?: string;
+    ci?: string;
+    unidadDestino?: string;
+  };
   fechaPrestamo: string;
   fechaEstimadaDevolucionTexto?: string;
   fechaDevolucion?: string;
@@ -37,8 +47,14 @@ export type FormulariosPrestamosViewProps = {
   maxDate: string;
   onPrestamoDraftChange: (
     field:
+      | "clasePrestamo"
       | "destinatarioTipo"
       | "destinatarioCi"
+      | "destinatarioExternoGrado"
+      | "destinatarioExternoNombre"
+      | "destinatarioExternoApellido"
+      | "destinatarioExternoCi"
+      | "destinatarioExternoUnidadDestino"
       | "actuanteCi"
       | "fechaPrestamo"
       | "fechaEstimadaDevolucionTexto"

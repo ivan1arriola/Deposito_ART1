@@ -1,7 +1,7 @@
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
 import { normalizeSearchText } from "@/lib/spanish-text";
 import type { OficialSuboficial, Personal } from "@/types/entities";
-import type { PrestamoDraft, PrestamoEstadoEquipo } from "@/types/forms";
+import type { PrestamoClase, PrestamoDraft, PrestamoEstadoEquipo } from "@/types/forms";
 
 export const ESTADO_OPTIONS: PrestamoEstadoEquipo[] = ["NUEVO", "BUENO", "REGULAR", "MALO"];
 
@@ -26,6 +26,12 @@ export function destinatarioTipoLabel(value: PrestamoDraft["destinatarioTipo"]) 
   if (value === "OFICIAL") return "Oficiales";
   if (value === "SUBOFICIAL") return "Suboficiales";
   return "Subalternos";
+}
+
+export function prestamoClaseLabel(value: PrestamoClase) {
+  if (value === "EXTERNO") return "Préstamo externo";
+  if (value === "PENDIENTE") return "Destinatario pendiente";
+  return "Préstamo interno";
 }
 
 export function buildDestinatarioOptions(

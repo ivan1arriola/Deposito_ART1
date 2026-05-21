@@ -331,7 +331,9 @@ export default async function TrazabilidadEquiposPage({
                 <div className="trace-card-header">
                   <div>
                     <p className="trace-persona">{entry.destinatarioEtiqueta}</p>
-                    <p className="trace-line">{`CI ${formatUruguayanCi(entry.destinatarioCi)}`}</p>
+                    <p className="trace-line">
+                      {entry.destinatarioCi ? `CI ${formatUruguayanCi(entry.destinatarioCi)}` : "CI pendiente"}
+                    </p>
                     <p className="trace-line">{`Recibo: ${entry.reciboNumero} | Préstamo #${entry.prestamoId} | Mov. #${entry.movimientoId}`}</p>
                     <p className="trace-line">{`Fecha: ${formatDateOnlyForDisplay(entry.fechaPrestamo)}`}</p>
                     {entry.observaciones ? <p className="trace-line">{`Obs: ${entry.observaciones}`}</p> : null}

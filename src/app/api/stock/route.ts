@@ -18,6 +18,7 @@ import {
   movimientoStockDeltaFactor,
   stockOperacionDeltaFactor,
 } from "@/lib/stock";
+import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { formatPrestamoDestinatario, prestamoInclude, serializePrestamoWithActuante } from "@/lib/prestamos";
 import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
 import type { StockDashboardData } from "@/types/views";
@@ -51,26 +52,32 @@ type StockOperacionHistorial = Prisma.StockOperacionGetPayload<{
   };
 }>;
 
+const movimientoHistorialInclude = {
+  destinatarioPersonal: {
+    include: {
+      personal: {
+        include: {
+          rango: true,
+          subalterno: {
+            include: {
+              bateria: true,
+            },
+          },
+        },
+      },
+    },
+  },
+  items: {
+    include: {
+      item: {
+        select: { itemId: true, nombre: true },
+      },
+    },
+  },
+} satisfies Prisma.MovimientoInclude;
+
 type MovimientoHistorial = Prisma.MovimientoGetPayload<{
-  include: {
-    personal: {
-      include: {
-        rango: true;
-        subalterno: {
-          include: {
-            bateria: true;
-          };
-        };
-      };
-    };
-    items: {
-      include: {
-        item: {
-          select: { itemId: true; nombre: true };
-        };
-      };
-    };
-  };
+  include: typeof movimientoHistorialInclude;
 }>;
 
 type PrestamoMovimiento = Prisma.MovimientoGetPayload<{
@@ -194,26 +201,7 @@ export async function GET(req: Request) {
         where: {
           tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
         },
-        include: {
-          personal: {
-            include: {
-              rango: true,
-              subalterno: {
-                include: {
-                  bateria: true,
-                },
-              },
-            },
-          },
-          items: {
-            include: {
-              item: {
-                select: { itemId: true, nombre: true },
-              },
-            },
-            orderBy: { item: { ordenPdf: "asc" } },
-          },
-        },
+        include: movimientoHistorialInclude,
         orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
         take: limit,
       }),
@@ -331,8 +319,8 @@ export async function GET(req: Request) {
     const historialPersonal: StockHistorialInternalEntry[] = movimientos
       .map((movimiento) => {
         if (movimiento.tipo !== "ENTREGA" && movimiento.tipo !== "DEVOLUCION") return null;
-        const apellidos = `${movimiento.personal.apellido1} ${movimiento.personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
-        const nombres = `${movimiento.personal.nombre1} ${movimiento.personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
+        const destinatario = resolveDestinatarioMovimiento(movimiento);
+        if (!destinatario) return null;
         return {
           id: `personal-${movimiento.movimientoId.toString()}`,
           fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
@@ -342,8 +330,8 @@ export async function GET(req: Request) {
           afectaStock: true,
           comentarios: movimiento.observaciones,
           totalUnidades: movimiento.items.reduce((total, item) => total + item.cantidad, 0),
-          ci: movimiento.personalCi,
-          persona: `${movimiento.personal.rango.abreviacion} ${apellidos}, ${nombres}`,
+          ci: destinatario.ci,
+          persona: destinatario.etiqueta,
           registradoPor: auditUserByEntity.get(`REGISTRO:${movimiento.movimientoId.toString()}`) ?? null,
           items: movimiento.items.map((item) => ({
             itemId: item.item.itemId.toString(),

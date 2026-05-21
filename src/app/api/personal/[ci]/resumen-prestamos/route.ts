@@ -208,7 +208,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
 
   const movimientos = await prisma.movimiento.findMany({
     where: {
-      personalCi: ci,
+      destinatarioPersonal: { is: { ci } },
       OR: [
         { tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] } },
         { tipo: TipoMovimiento.PRESTAMO, prestamoActivo: { isNot: null } },

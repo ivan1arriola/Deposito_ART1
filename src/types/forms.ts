@@ -8,6 +8,7 @@ import type { TipoOficialSuboficial } from "./entities";
 export type StockOperacionTipo = "INGRESO" | "EGRESO";
 export type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
 export type PrestamoEstadoEquipo = "NUEVO" | "BUENO" | "REGULAR" | "MALO";
+export type PrestamoClase = "INTERNO" | "EXTERNO" | "PENDIENTE";
 
 export type PersonalForm = {
   ci: string;
@@ -103,8 +104,14 @@ export type PrestamoDraftItem = {
 };
 
 export type PrestamoDraft = {
+  clasePrestamo: PrestamoClase;
   destinatarioTipo: PrestamoDestinatarioTipo;
   destinatarioCi: string;
+  destinatarioExternoGrado: string;
+  destinatarioExternoNombre: string;
+  destinatarioExternoApellido: string;
+  destinatarioExternoCi: string;
+  destinatarioExternoUnidadDestino: string;
   actuanteCi: string;
   fechaPrestamo: string;
   fechaEstimadaDevolucionTexto: string;
@@ -166,8 +173,14 @@ export const EMPTY_STOCK_OPERACION_DRAFT: StockOperacionDraft = {
 };
 
 export const EMPTY_PRESTAMO_DRAFT: PrestamoDraft = {
+  clasePrestamo: "INTERNO",
   destinatarioTipo: "PERSONAL",
   destinatarioCi: "",
+  destinatarioExternoGrado: "",
+  destinatarioExternoNombre: "",
+  destinatarioExternoApellido: "",
+  destinatarioExternoCi: "",
+  destinatarioExternoUnidadDestino: "",
   actuanteCi: "",
   fechaPrestamo: "",
   fechaEstimadaDevolucionTexto: "",

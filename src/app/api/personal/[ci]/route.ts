@@ -367,10 +367,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
         where: { ci: ciDecoded },
       });
       const deletedMovimientoItems = await tx.movimientoItem.deleteMany({
-        where: { movimiento: { personalCi: ciDecoded } },
+        where: { movimiento: { destinatarioPersonal: { is: { ci: ciDecoded } } } },
       });
       const deletedMovimientos = await tx.movimiento.deleteMany({
-        where: { personalCi: ciDecoded },
+        where: { destinatarioPersonal: { is: { ci: ciDecoded } } },
       });
       await tx.subalterno.deleteMany({
         where: { ci: ciDecoded },

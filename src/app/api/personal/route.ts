@@ -451,7 +451,6 @@ export async function POST(req: Request) {
       for (const movimiento of movimientosParsed) {
         const movimientoCreado = await tx.movimiento.create({
           data: {
-            personalCi: personalCreated.ci,
             usuarioEntregaId: auth.user.usuarioId,
             fecha: movimiento.fecha,
             tipo: movimiento.tipo,
@@ -459,6 +458,13 @@ export async function POST(req: Request) {
             observaciones: movimiento.comentarios,
           },
           select: { movimientoId: true },
+        });
+
+        await tx.movimientoDestinatarioPersonal.create({
+          data: {
+            movimientoId: movimientoCreado.movimientoId,
+            ci: personalCreated.ci,
+          },
         });
 
         await tx.movimientoItem.createMany({

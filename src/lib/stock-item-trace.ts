@@ -1,5 +1,6 @@
 import { TipoMovimiento, type Prisma } from "@/generated/prisma/client";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
+import { buildPersonalDestinatarioEtiqueta, resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { prisma } from "@/lib/prisma";
 import type { StockItemTraceData } from "@/types/views";
 
@@ -32,18 +33,6 @@ export function hasStockItemTraceDelegates(client: unknown = prisma) {
   );
 }
 
-function buildPersonalLabel(personal: {
-  rango: { abreviacion: string; tipo: "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL" };
-  apellido1: string;
-  apellido2: string | null;
-  nombre1: string;
-  nombre2: string | null;
-}) {
-  const apellidos = `${personal.apellido1} ${personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
-  const nombres = `${personal.nombre1} ${personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
-  return `${personal.rango.abreviacion} ${apellidos}, ${nombres}`.replace(/\s+/g, " ").trim();
-}
-
 export async function buildStockItemTraceData(itemId: bigint, client: PrismaItemTraceLike = prisma) {
   const item = await client.item.findUnique({
     where: { itemId },
@@ -72,24 +61,29 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
             fecha: true,
             observaciones: true,
             createdAt: true,
-            personal: {
+            destinatarioPersonal: {
               select: {
-                ci: true,
-                apellido1: true,
-                apellido2: true,
-                nombre1: true,
-                nombre2: true,
-                rango: {
+                personal: {
                   select: {
-                    abreviacion: true,
-                    tipo: true,
-                  },
-                },
-                subalterno: {
-                  select: {
-                    bateria: {
+                    ci: true,
+                    apellido1: true,
+                    apellido2: true,
+                    nombre1: true,
+                    nombre2: true,
+                    rango: {
                       select: {
-                        nombre: true,
+                        abreviacion: true,
+                        tipo: true,
+                        nombreCompleto: true,
+                      },
+                    },
+                    subalterno: {
+                      select: {
+                        bateria: {
+                          select: {
+                            nombre: true,
+                          },
+                        },
                       },
                     },
                   },
@@ -123,17 +117,35 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
             movimientoId: true,
             fecha: true,
             observaciones: true,
-            personal: {
+            destinatarioPersonal: {
               select: {
-                ci: true,
-                apellido1: true,
-                apellido2: true,
-                nombre1: true,
-                nombre2: true,
-                rango: {
+                personal: {
                   select: {
-                    abreviacion: true,
-                    tipo: true,
+                    ci: true,
+                    apellido1: true,
+                    apellido2: true,
+                    nombre1: true,
+                    nombre2: true,
+                    rango: {
+                      select: {
+                        tipo: true,
+                        abreviacion: true,
+                        nombreCompleto: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            destinatarioExterno: {
+              select: {
+                personaExterna: {
+                  select: {
+                    ci: true,
+                    grado: true,
+                    nombre: true,
+                    apellido: true,
+                    unidadDestino: true,
                   },
                 },
               },
@@ -170,7 +182,9 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
   for (const movimientoItem of movimientoItems) {
     const tipoMovimiento = movimientoItem.movimiento.tipo;
     if (tipoMovimiento !== TipoMovimiento.ENTREGA && tipoMovimiento !== TipoMovimiento.DEVOLUCION) continue;
-    const ci = movimientoItem.movimiento.personal.ci;
+    const personal = movimientoItem.movimiento.destinatarioPersonal?.personal;
+    if (!personal) continue;
+    const ci = personal.ci;
     const delta = tipoMovimiento === TipoMovimiento.ENTREGA ? movimientoItem.cantidad : -movimientoItem.cantidad;
     const existing = subalternosByCi.get(ci);
     if (existing) {
@@ -187,9 +201,9 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
     }
     subalternosByCi.set(ci, {
       ci,
-      persona: buildPersonalLabel(movimientoItem.movimiento.personal),
-      bateria: movimientoItem.movimiento.personal.subalterno?.bateria?.nombre ?? null,
-      tipoPersonal: movimientoItem.movimiento.personal.rango.tipo,
+      persona: buildPersonalDestinatarioEtiqueta(personal),
+      bateria: personal.subalterno?.bateria?.nombre ?? null,
+      tipoPersonal: personal.rango.tipo,
       cantidadNeta: delta,
       movimientos: [
         {
@@ -228,18 +242,24 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
         }),
     }));
 
-  const prestamos = prestamosActivos
-    .map((prestamo) => ({
-      prestamoId: prestamo.movimientoId.toString(),
-      reciboNumero: prestamo.reciboNumero,
-      estado: prestamo.estado,
-      fechaPrestamo: formatDateOnlyFromDate(prestamo.movimiento.fecha) ?? "",
-      destinatarioCi: prestamo.movimiento.personal.ci,
-      destinatarioEtiqueta: buildPersonalLabel(prestamo.movimiento.personal),
-      observaciones: prestamo.movimiento.observaciones ?? null,
-      cantidad: prestamo.movimiento.items.reduce((total, itemMovimiento) => total + itemMovimiento.cantidad, 0),
-      movimientoId: prestamo.movimiento.movimientoId.toString(),
-    }))
+  const prestamos: StockItemTraceData["prestamos"] = prestamosActivos
+    .map((prestamo) => {
+      const destinatario = resolveDestinatarioMovimiento(prestamo.movimiento);
+      return {
+        prestamoId: prestamo.movimientoId.toString(),
+        reciboNumero: prestamo.reciboNumero,
+        clasePrestamo: (destinatario?.clase ?? "PENDIENTE") as "INTERNO" | "EXTERNO" | "PENDIENTE",
+        estado: (prestamo.estado === "DEVUELTO" ? "DEVUELTO" : "PENDIENTE") as "PENDIENTE" | "DEVUELTO",
+        fechaPrestamo: formatDateOnlyFromDate(prestamo.movimiento.fecha) ?? "",
+        destinatarioCi: destinatario?.ci ?? null,
+        perfilCi: destinatario?.perfilCi ?? null,
+        destinatarioEtiqueta: destinatario?.etiqueta ?? "Destinatario pendiente",
+        destinatarioUnidadDestino: destinatario?.unidadDestino ?? null,
+        observaciones: prestamo.movimiento.observaciones ?? null,
+        cantidad: prestamo.movimiento.items.reduce((total, itemMovimiento) => total + itemMovimiento.cantidad, 0),
+        movimientoId: prestamo.movimiento.movimientoId.toString(),
+      };
+    })
     .filter((prestamo) => prestamo.cantidad !== 0)
     .sort((a, b) => {
       const fechaDiff = b.fechaPrestamo.localeCompare(a.fechaPrestamo);

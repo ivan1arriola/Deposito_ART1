@@ -19,6 +19,7 @@ import {
   buildDestinatarioOptions,
   ESTADO_OPTIONS,
   getSectionViewConfig,
+  prestamoClaseLabel,
   getStockSummaryMetrics,
   historyBadgeClass,
   reciboHref,
@@ -443,29 +444,100 @@ export function StockView({
             <article className="ej-card rounded-2xl p-4">
               <h3 className="text-sm font-semibold text-stone-900">Registrar prestamo</h3>
               <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-                <label className="text-xs text-stone-700">
-                  Tipo destinatario
+                <label className="text-xs text-stone-700 md:col-span-2">
+                  Clase de préstamo
                   <select
-                    value={prestamoDraft.destinatarioTipo}
+                    value={prestamoDraft.clasePrestamo}
                     disabled={prestamoSaving}
-                    onChange={(event) => onPrestamoDraftChange("destinatarioTipo", event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                >
-                  <option value="PERSONAL">Subalternos</option>
-                  <option value="OFICIAL">Oficiales</option>
-                  <option value="SUBOFICIAL">Suboficiales</option>
-                </select>
-              </label>
-                <div className="text-xs text-stone-700">
-                  Destinatario
-                  <DestinatarioSearchSelect
-                    key={prestamoDraft.destinatarioTipo}
-                    options={destinatarioOptions}
-                    value={prestamoDraft.destinatarioCi}
-                    disabled={prestamoSaving}
-                    onChange={(ci) => onPrestamoDraftChange("destinatarioCi", ci)}
-                  />
-                </div>
+                    onChange={(event) => onPrestamoDraftChange("clasePrestamo", event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  >
+                    <option value="INTERNO">Interno</option>
+                    <option value="EXTERNO">Externo</option>
+                    <option value="PENDIENTE">Completar después</option>
+                  </select>
+                </label>
+                {prestamoDraft.clasePrestamo === "INTERNO" ? (
+                  <>
+                    <label className="text-xs text-stone-700">
+                      Tipo destinatario
+                      <select
+                        value={prestamoDraft.destinatarioTipo}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioTipo", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      >
+                        <option value="PERSONAL">Subalternos</option>
+                        <option value="OFICIAL">Oficiales</option>
+                        <option value="SUBOFICIAL">Suboficiales</option>
+                      </select>
+                    </label>
+                    <div className="text-xs text-stone-700">
+                      Destinatario interno
+                      <DestinatarioSearchSelect
+                        key={prestamoDraft.destinatarioTipo}
+                        options={destinatarioOptions}
+                        value={prestamoDraft.destinatarioCi}
+                        disabled={prestamoSaving}
+                        onChange={(ci) => onPrestamoDraftChange("destinatarioCi", ci)}
+                      />
+                    </div>
+                  </>
+                ) : null}
+                {prestamoDraft.clasePrestamo === "EXTERNO" ? (
+                  <>
+                    <label className="text-xs text-stone-700">
+                      Grado
+                      <input
+                        value={prestamoDraft.destinatarioExternoGrado}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoGrado", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="text-xs text-stone-700">
+                      Cédula de identidad
+                      <input
+                        value={prestamoDraft.destinatarioExternoCi}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoCi", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="text-xs text-stone-700">
+                      Nombre
+                      <input
+                        value={prestamoDraft.destinatarioExternoNombre}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoNombre", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="text-xs text-stone-700">
+                      Apellido
+                      <input
+                        value={prestamoDraft.destinatarioExternoApellido}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoApellido", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="text-xs text-stone-700 md:col-span-2">
+                      Unidad de destino
+                      <input
+                        value={prestamoDraft.destinatarioExternoUnidadDestino}
+                        disabled={prestamoSaving}
+                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoUnidadDestino", event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+                  </>
+                ) : null}
+                {prestamoDraft.clasePrestamo === "PENDIENTE" ? (
+                  <p className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 md:col-span-2">
+                    Este préstamo se guardará sin destinatario hasta completarlo después.
+                  </p>
+                ) : null}
                 <div className="text-xs text-stone-700">
                   Por oden de
                   <DestinatarioSearchSelect
@@ -629,8 +701,12 @@ export function StockView({
                       <p className="text-sm font-semibold text-stone-900">{prestamo.reciboNumero}</p>
                       <p className="text-xs text-stone-600">
                         {prestamo.destinatarioEtiqueta}
-                        {prestamo.destinatarioCi ? ` - CI ${formatUruguayanCi(prestamo.destinatarioCi)}` : ""}
+                        {prestamo.destinatarioCi ? ` - CI ${formatUruguayanCi(prestamo.destinatarioCi)}` : " - pendiente"}
                       </p>
+                      <p className="text-xs text-stone-500">{prestamoClaseLabel(prestamo.clasePrestamo)}</p>
+                      {prestamo.destinatarioUnidadDestino ? (
+                        <p className="text-xs text-stone-500">Unidad destino: {prestamo.destinatarioUnidadDestino}</p>
+                      ) : null}
                       <p className="text-xs text-stone-500">Prestado: {formatDateOnlyForDisplay(prestamo.fechaPrestamo)}</p>
                       {prestamo.fechaEstimadaDevolucionTexto ? (
                         <p className="text-xs text-stone-500">Estimado: {prestamo.fechaEstimadaDevolucionTexto}</p>
@@ -984,7 +1060,10 @@ export function StockView({
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
                           <p className="text-sm font-semibold text-stone-900">{entry.destinatarioEtiqueta}</p>
-                          <p className="text-xs text-stone-600">CI {formatUruguayanCi(entry.destinatarioCi)}</p>
+                          <p className="text-xs text-stone-600">
+                            {entry.destinatarioCi ? `CI ${formatUruguayanCi(entry.destinatarioCi)}` : "CI pendiente"}
+                          </p>
+                          <p className="text-xs text-stone-500">{prestamoClaseLabel(entry.clasePrestamo)}</p>
                           <p className="text-xs text-stone-600">
                             Recibo: {entry.reciboNumero} | Préstamo #{entry.prestamoId} | Mov. #{entry.movimientoId}
                           </p>

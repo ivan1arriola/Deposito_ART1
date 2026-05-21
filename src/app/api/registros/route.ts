@@ -134,7 +134,7 @@ export async function GET(req: Request) {
   }
 
   const where: Prisma.MovimientoWhereInput = {
-    ...(ci ? { personalCi: ci } : {}),
+    ...(ci ? { destinatarioPersonal: { is: { ci } } } : {}),
     tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
   };
 
@@ -155,6 +155,15 @@ export async function GET(req: Request) {
           rango: {
             select: {
               abreviacion: true,
+            },
+          },
+        },
+      },
+      destinatarioPersonal: {
+        select: {
+          personal: {
+            select: {
+              ci: true,
             },
           },
         },
@@ -215,7 +224,7 @@ export async function GET(req: Request) {
           accion: audit.accion,
         };
       })(),
-      ci: movimiento.personalCi,
+      ci: movimiento.destinatarioPersonal?.personal.ci ?? "",
       usuarioEntregaId: movimiento.usuarioEntregaId,
       usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
       fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
@@ -325,18 +334,24 @@ export async function POST(req: Request) {
 
   try {
     const createdMovimientos = await prisma.$transaction(async (tx) => {
-      const created: Array<{ movimientoId: bigint; personalCi: string }> = [];
+      const created: Array<{ movimientoId: bigint; ci: string }> = [];
       for (const targetCi of targetCis) {
         const movimiento = await tx.movimiento.create({
           data: {
-            personalCi: targetCi,
             usuarioEntregaId: auth.user.usuarioId,
             fecha,
             tipo,
             afectaStock,
             observaciones: comentarios,
           },
-          select: { movimientoId: true, personalCi: true },
+          select: { movimientoId: true },
+        });
+
+        await tx.movimientoDestinatarioPersonal.create({
+          data: {
+            movimientoId: movimiento.movimientoId,
+            ci: targetCi,
+          },
         });
 
         await tx.movimientoItem.createMany({
@@ -347,14 +362,14 @@ export async function POST(req: Request) {
           })),
         });
 
-        created.push(movimiento);
+        created.push({ movimientoId: movimiento.movimientoId, ci: targetCi });
       }
       return created;
     });
 
     await Promise.all(
       createdMovimientos.map(async (movimiento) => {
-        const personalRecord = personalByCi.get(movimiento.personalCi);
+        const personalRecord = personalByCi.get(movimiento.ci);
         if (!personalRecord) return;
 
         await logAudit({
@@ -364,7 +379,7 @@ export async function POST(req: Request) {
           entidadId: movimiento.movimientoId.toString(),
           detalle: {
             evento: "MOVIMIENTO_VESTUARIO",
-            ci: movimiento.personalCi,
+            ci: movimiento.ci,
             personal: buildPersonalAuditDetail(personalRecord),
             tipo,
             afectaStock,
@@ -426,7 +441,7 @@ export async function POST(req: Request) {
     );
 
     if (createdMovimientos.length === 1) {
-      return NextResponse.json({ ok: true, registroId: createdMovimientos[0].movimientoId.toString(), createdCount: 1 }, { status: 201 });
+        return NextResponse.json({ ok: true, registroId: createdMovimientos[0].movimientoId.toString(), createdCount: 1 }, { status: 201 });
     }
 
     return NextResponse.json(

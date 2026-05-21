@@ -1,19 +1,40 @@
-import type { Prisma, TipoPersonal } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
+import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import type { PrestamoStockEntry } from "@/types/views";
 
 export type PrestamoActuanteByMovimientoId = Map<string, { ci: string; label: string }>;
 
 export const prestamoInclude = {
-  personal: {
+  destinatarioPersonal: {
     include: {
-      rango: {
-        select: {
-          tipo: true,
-          abreviacion: true,
-          nombreCompleto: true,
+      personal: {
+        include: {
+          rango: {
+            select: {
+              tipo: true,
+              abreviacion: true,
+              nombreCompleto: true,
+              orden: true,
+            },
+          },
+          subalterno: {
+            select: {
+              bateria: {
+                select: {
+                  nombre: true,
+                  orden: true,
+                },
+              },
+            },
+          },
         },
       },
+    },
+  },
+  destinatarioExterno: {
+    include: {
+      personaExterna: true,
     },
   },
   usuarioEntrega: {
@@ -90,20 +111,23 @@ function formatUserLabel(user: {
   return `${user.rango.abreviacion} ${user.apellido}, ${user.nombre}`.replace(/\s+/g, " ").trim() || user.username;
 }
 
-function mapDestinatarioTipo(tipo: TipoPersonal) {
-  if (tipo === "SUBALTERNO") return "PERSONAL";
-  if (tipo === "OFICIAL") return "OFICIAL";
-  return "SUBOFICIAL";
-}
-
-export function formatPrestamoDestinatario(data: Pick<PrestamoWithRelations, "personal">) {
-  const apellidos = `${data.personal.apellido1} ${data.personal.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
-  const nombres = `${data.personal.nombre1} ${data.personal.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
-  const etiqueta = `${data.personal.rango.abreviacion} ${apellidos}, ${nombres}`.replace(/\s+/g, " ").trim();
+export function formatPrestamoDestinatario(
+  data: Pick<PrestamoWithRelations, "destinatarioPersonal" | "destinatarioExterno">,
+) {
+  const destinatario = resolveDestinatarioMovimiento(data);
+  if (destinatario) return destinatario;
   return {
-    ci: data.personal.ci,
-    nombre: `${apellidos}, ${nombres}`.replace(/\s+/g, " ").trim(),
-    etiqueta,
+    clase: "PENDIENTE" as const,
+    tipo: null,
+    ci: null,
+    perfilCi: null,
+    nombre: "Pendiente de completar",
+    etiqueta: "Destinatario pendiente",
+    grado: null,
+    gradoAbreviacion: null,
+    gradoOrden: null,
+    unidadDestino: null,
+    bateria: null,
   };
 }
 
@@ -126,10 +150,14 @@ export function serializePrestamoWithActuante(
   return {
     prestamoId: prestamo.movimientoId.toString(),
     reciboNumero,
-    destinatarioTipo: mapDestinatarioTipo(prestamo.personal.rango.tipo),
+    clasePrestamo: destinatario.clase,
+    destinatarioTipo: destinatario.tipo,
     destinatarioCi: destinatario.ci,
+    perfilCi: destinatario.perfilCi,
     destinatarioNombre: destinatario.nombre,
     destinatarioEtiqueta: destinatario.etiqueta,
+    destinatarioGrado: destinatario.grado,
+    destinatarioUnidadDestino: destinatario.unidadDestino,
     usuarioEntregaId: prestamo.usuarioEntregaId,
     usuarioEntregaNombre: formatUserLabel(prestamo.usuarioEntrega),
     actuanteCi: actuante?.ci ?? null,

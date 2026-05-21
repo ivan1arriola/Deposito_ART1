@@ -56,6 +56,60 @@ export async function ensurePrestamoActuanteCompatibility() {
 
   const nextPromise = (async () => {
     await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "persona_externa" (
+        "ci" TEXT PRIMARY KEY,
+        "grado" TEXT NOT NULL,
+        "nombre" TEXT NOT NULL,
+        "apellido" TEXT NOT NULL,
+        "unidad_destino" TEXT NOT NULL,
+        "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+        "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+        CONSTRAINT "persona_externa_ci_uruguaya_valida_chk" CHECK (public.es_ci_uruguaya_valida("ci"))
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "persona_externa_apellido_nombre_idx"
+      ON "persona_externa"("apellido", "nombre");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "movimiento_destinatario_personal" (
+        "movimiento_id" BIGINT PRIMARY KEY REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
+        "ci" TEXT NOT NULL REFERENCES "personal"("ci")
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "movimiento_destinatario_personal_ci_idx"
+      ON "movimiento_destinatario_personal"("ci");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "movimiento_destinatario_externo" (
+        "movimiento_id" BIGINT PRIMARY KEY REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
+        "persona_externa_ci" TEXT NOT NULL REFERENCES "persona_externa"("ci")
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "movimiento_destinatario_externo_persona_externa_ci_idx"
+      ON "movimiento_destinatario_externo"("persona_externa_ci");
+    `);
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'movimiento'
+            AND column_name = 'personal_ci'
+        ) THEN
+          INSERT INTO "movimiento_destinatario_personal" ("movimiento_id", "ci")
+          SELECT "movimiento_id", "personal_ci"
+          FROM "movimiento"
+          ON CONFLICT ("movimiento_id") DO NOTHING;
+        END IF;
+      END;
+      $$;
+    `);
+    await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "prestamo_actuante" (
         "movimiento_id" BIGINT PRIMARY KEY REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
         "personal_ci" TEXT NOT NULL REFERENCES "personal"("ci") ON DELETE RESTRICT,
