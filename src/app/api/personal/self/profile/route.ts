@@ -4,7 +4,7 @@ import { authorizeRequest } from "@/lib/auth";
 import { formatDateOnlyFromDate, formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { getHojaEntregaData } from "@/lib/hoja-entrega-data";
 import { getPersonalSelfContact } from "@/lib/personal-auth";
-import { fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
+import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
 import { prestamoInclude, serializePrestamoWithActuante } from "@/lib/prestamos";
 import { prisma } from "@/lib/prisma";
 
@@ -194,6 +194,8 @@ export async function GET(request: Request) {
   if (auth.user.accountType !== "PERSONAL" || !auth.user.personalCi) {
     return NextResponse.json({ error: "No autorizado para esta consulta." }, { status: 403 });
   }
+
+  await ensurePrestamoActuanteCompatibility();
 
   const ci = auth.user.personalCi;
 

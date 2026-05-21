@@ -136,23 +136,16 @@ export async function upsertPrestamoActuante(
   actuanteCi: string | null,
 ) {
   if (!actuanteCi) {
-    await tx.$executeRawUnsafe(
-      `DELETE FROM "prestamo_actuante" WHERE "movimiento_id" = $1`,
-      movimientoId,
-    );
+    await tx.$executeRaw`DELETE FROM "prestamo_actuante" WHERE "movimiento_id" = ${movimientoId}`;
     return;
   }
 
-  await tx.$executeRawUnsafe(
-    `
-      INSERT INTO "prestamo_actuante" ("movimiento_id", "personal_ci")
-      VALUES ($1, $2)
-      ON CONFLICT ("movimiento_id")
-      DO UPDATE SET "personal_ci" = EXCLUDED."personal_ci"
-    `,
-    movimientoId,
-    actuanteCi,
-  );
+  await tx.$executeRaw`
+    INSERT INTO "prestamo_actuante" ("movimiento_id", "personal_ci")
+    VALUES (${movimientoId}, ${actuanteCi})
+    ON CONFLICT ("movimiento_id")
+    DO UPDATE SET "personal_ci" = EXCLUDED."personal_ci"
+  `;
 }
 
 export async function fetchPrestamoActuanteByMovimientoIds(movimientoIds: bigint[]) {

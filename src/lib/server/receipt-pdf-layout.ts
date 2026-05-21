@@ -173,7 +173,7 @@ export function drawHorizontalLine(page: PDFPage, x: number, yTop: number, width
 }
 
 export function fitOneLine(text: string, maxWidth: number, font: PDFFont, size: number) {
-  const clean = sanitizeForPdf(text || "-");
+  const clean = sanitizeForPdf(text ?? "-");
   if (font.widthOfTextAtSize(clean, size) <= maxWidth) return clean;
 
   const ellipsis = "...";

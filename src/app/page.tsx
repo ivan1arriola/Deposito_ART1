@@ -334,10 +334,17 @@ function rangoLooksLikeSargento(rango: { abreviacion: string; nombreCompleto: st
   return hasSargento && !hasPrimero;
 }
 
-function isAbortError(error: unknown) {
-  if (error instanceof DOMException) return error.name === "AbortError";
-  if (error instanceof Error) return error.name === "AbortError";
-  return false;
+function isAbortError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  if (error instanceof Error && error.name === "AbortError") return true;
+  const err = error as Record<string, unknown>;
+  return (
+    err.name === "AbortError" ||
+    err.code === 20 ||
+    (typeof err.message === "string" && err.message.toLowerCase().includes("aborted")) ||
+    (typeof err.message === "string" && err.message === "signal is aborted without reason")
+  );
 }
 
 function isSoldadoWidgetVariant(value: string | null): value is SoldadoWidgetVariant {

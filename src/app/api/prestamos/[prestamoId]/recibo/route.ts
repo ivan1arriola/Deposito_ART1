@@ -226,18 +226,28 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
 
   const destinatarioPersonal = prestamo.destinatarioPersonal?.personal ?? null;
   const destinatarioExterno = prestamo.destinatarioExterno?.personaExterna ?? null;
-  const destinatarioNombre = destinatarioPersonal
-    ? buildPersonalDestinatarioNombre(destinatarioPersonal)
-    : destinatarioExterno
-      ? buildPersonaExternaNombre(destinatarioExterno)
-      : "Pendiente de completar";
-  const destinatarioGrado = destinatarioPersonal?.rango.abreviacion ?? destinatarioExterno?.grado ?? "-";
-  const destinatarioCi =
-    destinatarioPersonal?.ci || destinatarioExterno?.ci
+  const clasePrestamo = destinatarioPersonal ? "INTERNO" : destinatarioExterno ? "EXTERNO" : "PENDIENTE";
+  const isPendiente = clasePrestamo === "PENDIENTE";
+
+  const destinatarioNombre = isPendiente
+    ? ""
+    : destinatarioPersonal
+      ? buildPersonalDestinatarioNombre(destinatarioPersonal)
+      : destinatarioExterno
+        ? buildPersonaExternaNombre(destinatarioExterno)
+        : "Pendiente de completar";
+  const destinatarioGrado = isPendiente
+    ? ""
+    : (destinatarioPersonal?.rango.abreviacion ?? destinatarioExterno?.grado ?? "-");
+  const destinatarioCi = isPendiente
+    ? ""
+    : (destinatarioPersonal?.ci || destinatarioExterno?.ci
       ? formatUruguayanCi(destinatarioPersonal?.ci ?? destinatarioExterno?.ci ?? "")
-      : "-";
-  const tercerCampoLabel = destinatarioExterno ? "Unidad destino" : "Batería";
-  const tercerCampoValor = destinatarioExterno?.unidadDestino ?? destinatarioPersonal?.subalterno?.bateria?.nombre ?? "No aplica";
+      : "-");
+  const tercerCampoLabel = clasePrestamo === "INTERNO" ? "Batería" : "Unidad";
+  const tercerCampoValor = isPendiente
+    ? ""
+    : (destinatarioExterno?.unidadDestino ?? destinatarioPersonal?.subalterno?.bateria?.nombre ?? "No aplica");
   const observaciones = prestamo.observaciones?.trim() || "-";
 
   const entregaLabel = militaryShortLabel(
@@ -253,7 +263,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       )
     : destinatarioExterno
       ? `${destinatarioExterno.grado} ${destinatarioExterno.apellido}`.replace(/\s+/g, " ").trim()
-      : "Destinatario pendiente";
+      : "";
   const recibeLabel = prestamo.prestamoHistorial?.usuarioRecibeDevolucion
     ? militaryShortLabel(
         prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango.abreviacion,

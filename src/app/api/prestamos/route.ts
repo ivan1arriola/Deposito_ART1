@@ -232,6 +232,8 @@ export async function POST(request: Request) {
     );
   }
 
+  console.log("DEBUG payload recibido:", body);
+
   const clasePrestamo = inferPrestamoClase(body as Record<string, unknown>);
   const destinatarioTipo = parseDestinatarioTipo(body.destinatarioTipo);
   const destinatarioCi = String(body.destinatarioCi ?? "").trim().replace(/\D/g, "");
@@ -459,7 +461,9 @@ export async function POST(request: Request) {
         })),
       });
 
-      await upsertPrestamoActuante(tx, movimiento.movimientoId, actuanteData.ci);
+      console.log("DEBUG actuanteData antes de upsert:", actuanteData);
+
+      await upsertPrestamoActuante(tx, movimiento.movimientoId, actuanteData.ci); 
 
       return tx.movimiento.findUniqueOrThrow({
         where: { movimientoId: movimiento.movimientoId },
@@ -562,7 +566,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(serializePrestamoWithActuante(created, actuanteByMovimientoId), { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("ERROR REGISTRANDO PRESTAMO:", error);
     return NextResponse.json({ error: "No se pudo registrar el préstamo." }, { status: 500 });
   }
 }
