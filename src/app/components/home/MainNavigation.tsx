@@ -42,7 +42,7 @@ import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
 import type { MainView } from "@/types/views";
 
 type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recordatorios" | "firmas" | "usuarios" | "auditoria" | "usuario_nuevo">;
-type ArticuloView = Extract<MainView, "articulos" | "articulo_nuevo">;
+type ArticuloView = Extract<MainView, "articulos" | "articulo_nuevo" | "articulo_stock_ingreso" | "articulo_entrega_personal" | "articulo_entregas_historial">;
 type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo">;
 type StockView = Extract<
   MainView,
@@ -139,6 +139,9 @@ const configViews: Array<NavOption<ConfigView>> = [
 
 const articuloViews: Array<NavOption<ArticuloView>> = [
   { view: "articulos", label: "Artículos registrados", icon: icons.stock },
+  { view: "articulo_entrega_personal", label: "Entrega a personal", icon: icons.prestamos, writeOnly: true },
+  { view: "articulo_entregas_historial", label: "Historial de entregas", icon: icons.history },
+  { view: "articulo_stock_ingreso", label: "Ingreso de stock", icon: icons.altas, writeOnly: true },
   { view: "articulo_nuevo", label: "Alta de artículo", icon: icons.altas, adminOnly: true },
 ];
 
@@ -448,7 +451,7 @@ export function MainNavigation({
   const filteredStockViews = stockViews.filter((item) => (item.writeOnly ? canWrite : true));
   const filteredPrestamosViews = prestamosViews.filter((item) => (item.writeOnly ? canWrite : true));
   const filteredCreateViews = createViews.filter((item) => (item.adminOnly ? isAdmin : true));
-  const filteredArticuloViews = articuloViews.filter((item) => (item.adminOnly ? isAdmin : true));
+  const filteredArticuloViews = articuloViews.filter((item) => (item.adminOnly ? isAdmin : true) && (item.writeOnly ? canWrite : true));
   const filteredConfigViews = configViews.filter((item) => (item.adminOnly ? isAdmin : true));
 
   function closeAllMenus() {

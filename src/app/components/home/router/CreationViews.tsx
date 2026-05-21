@@ -4,9 +4,12 @@ import { PersonalCreateView } from "@/app/components/views/PersonalCreateView";
 import { OficialSuboficialCreateView } from "@/app/components/views/OficialSuboficialCreateView";
 import { EquipoCreateView } from "@/app/components/views/EquipoCreateView";
 import { ArticuloCreateView } from "@/app/components/views/ArticuloCreateView";
+import { ArticuloStockIngresoView } from "@/app/components/views/ArticuloStockIngresoView";
 import { BateriaCreateView } from "@/app/components/views/BateriaCreateView";
 import { RangoCreateView } from "@/app/components/views/RangoCreateView";
 import { UserCreateView } from "@/app/components/views/UserCreateView";
+import { ArticuloEntregaPersonalView } from "@/app/components/views/ArticuloEntregaPersonalView";
+import { ArticuloEntregasHistorialView } from "@/app/components/views/ArticuloEntregasHistorialView";
 import type { EquipoForm } from "@/types/forms";
 import type { CreationViewsProps } from "./types";
 
@@ -69,6 +72,31 @@ export function CreationViews(props: CreationViewsProps) {
     createArticulo,
     setNewArticuloNombre,
     setNewArticuloTipo,
+    articulos,
+    articuloStockIngresoId,
+    articuloStockIngresoCantidad,
+    articuloStockIngresoComentarios,
+    articuloStockIngresoSaving,
+    submitArticuloStockIngreso,
+    setArticuloStockIngresoId,
+    setArticuloStockIngresoCantidad,
+    setArticuloStockIngresoComentarios,
+    personal,
+    oficialesSuboficiales,
+    articuloEntregaPersonalCi,
+    articuloEntregaPersonalOrdenanteCi,
+    articuloEntregaPersonalFecha,
+    articuloEntregaPersonalComentarios,
+    articuloEntregaPersonalItems,
+    articuloEntregaPersonalSaving,
+    submitArticuloEntregaPersonal,
+    setArticuloEntregaPersonalCi,
+    setArticuloEntregaPersonalOrdenanteCi,
+    setArticuloEntregaPersonalFecha,
+    setArticuloEntregaPersonalComentarios,
+    updateArticuloEntregaPersonalItem,
+    addArticuloEntregaPersonalItem,
+    removeArticuloEntregaPersonalItem,
     newBateria,
     newBateriaOrden,
     createBateria,
@@ -191,6 +219,51 @@ export function CreationViews(props: CreationViewsProps) {
           onCreate={() => void createArticulo()}
           onNombreChange={setNewArticuloNombre}
           onTipoChange={setNewArticuloTipo}
+        />
+      ) : null}
+
+      {activeView === "articulo_stock_ingreso" ? (
+        <ArticuloStockIngresoView
+          articulos={articulos}
+          articuloId={articuloStockIngresoId}
+          cantidad={articuloStockIngresoCantidad}
+          comentarios={articuloStockIngresoComentarios}
+          saving={articuloStockIngresoSaving}
+          onBack={() => setActiveView("articulos")}
+          onSubmit={() => void submitArticuloStockIngreso()}
+          onArticuloIdChange={setArticuloStockIngresoId}
+          onCantidadChange={setArticuloStockIngresoCantidad}
+          onComentariosChange={setArticuloStockIngresoComentarios}
+        />
+      ) : null}
+
+      {activeView === "articulo_entrega_personal" ? (
+        <ArticuloEntregaPersonalView
+          articulos={articulos}
+          personal={personal}
+          oficialesSuboficiales={oficialesSuboficiales}
+          personalCi={articuloEntregaPersonalCi}
+          ordenanteCi={articuloEntregaPersonalOrdenanteCi}
+          fecha={articuloEntregaPersonalFecha}
+          comentarios={articuloEntregaPersonalComentarios}
+          items={articuloEntregaPersonalItems}
+          saving={articuloEntregaPersonalSaving}
+          onBack={() => setActiveView("articulos")}
+          onSubmit={() => void submitArticuloEntregaPersonal()}
+          onPersonalCiChange={setArticuloEntregaPersonalCi}
+          onOrdenanteCiChange={setArticuloEntregaPersonalOrdenanteCi}
+          onFechaChange={setArticuloEntregaPersonalFecha}
+          onComentariosChange={setArticuloEntregaPersonalComentarios}
+          onItemChange={updateArticuloEntregaPersonalItem}
+          onAddItem={addArticuloEntregaPersonalItem}
+          onRemoveItem={removeArticuloEntregaPersonalItem}
+        />
+      ) : null}
+
+      {activeView === "articulo_entregas_historial" ? (
+        <ArticuloEntregasHistorialView
+          isAdmin={isAdmin}
+          onBack={() => setActiveView("articulos")}
         />
       ) : null}
 

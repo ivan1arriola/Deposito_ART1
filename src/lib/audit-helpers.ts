@@ -45,21 +45,30 @@ export function formatAuditCi(ci: string, ciReferences?: AuditCiReferences) {
   return owner ? `${formattedCi} - ${owner}` : formattedCi;
 }
 
-function extractEquipos(value: unknown) {
+function extractNamedQuantities(value: unknown) {
   if (!Array.isArray(value)) return [] as string[];
 
   return value
     .filter((item) => isObject(item))
     .map((item) => {
-      const nombre = asText(item.nombre) || "Equipo sin nombre";
+      const nombre = asText(item.nombre) || "Elemento sin nombre";
       const cantidad = asText(item.cantidad) || "0";
       return `${nombre} (${cantidad}x)`;
     });
 }
 
+function extractEquipos(value: unknown) {
+  return extractNamedQuantities(value);
+}
+
+function extractArticulos(value: unknown) {
+  return extractNamedQuantities(value);
+}
+
 function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCiReferences): ReactNode {
   const lines: ReactNode[] = [];
   const personal = isObject(info.personal) ? info.personal : null;
+  const ordenante = isObject(info.ordenante) ? info.ordenante : null;
 
   if (personal) {
     const nombre = asText(personal.nombre);
@@ -74,6 +83,21 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
     }
   } else if (asText(info.ci)) {
     lines.push(buildLine("ci", "CI", formatAuditCi(asText(info.ci), ciReferences)));
+  }
+
+  if (ordenante) {
+    const nombre = asText(ordenante.nombre);
+    const grado = asText(ordenante.grado);
+    const ci = asText(ordenante.ci);
+    const ordenanteParts = [grado, nombre, ci ? `CI ${formatAuditCi(ci, ciReferences)}` : ""].filter(Boolean);
+    if (ordenanteParts.length > 0) {
+      lines.push(buildLine("ordenante", "Ordenó", ordenanteParts.join(" - ")));
+    }
+  }
+
+  const usuarioEntrega = asText(info.usuarioEntrega);
+  if (usuarioEntrega) {
+    lines.push(buildLine("usuario-entrega", "Entregó", usuarioEntrega));
   }
 
   const tipoAnterior = asText(info.tipoAnterior);
@@ -110,8 +134,12 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
   }
 
   const items = extractEquipos(info.items);
+  const articulos = extractArticulos(info.articulos);
   const itemsAnteriores = extractEquipos(info.itemsAnteriores);
   const itemsNuevos = extractEquipos(info.itemsNuevos);
+  if (articulos.length > 0) {
+    lines.push(buildLine("articulos", "Artículos", articulos.join(", ")));
+  }
   if (items.length > 0) {
     lines.push(buildLine("items", "Equipos", items.join(", ")));
   }
@@ -182,6 +210,8 @@ export function auditEntityLabel(entidad: string): string {
     RANGO: "grado",
     BATERIA: "batería",
     ARTICULO: "artículo",
+    ARTICULO_STOCK: "stock de artículo",
+    ARTICULO_ENTREGA_PERSONAL: "entrega de artículos",
     ITEM: "item",
     FIRMAS_CONFIG: "firmas institucionales",
     OBSERVACION: "observación",

@@ -39,6 +39,13 @@ enum TipoArticulo {
   @@map("tipo_articulo")
 }
 
+enum TipoArticuloStockMovimiento {
+  INGRESO
+  EGRESO
+
+  @@map("tipo_articulo_stock_movimiento")
+}
+
 enum TipoMovimiento {
   ENTREGA
   DEVOLUCION
@@ -88,6 +95,7 @@ model Usuario {
   resetCodes                      PasswordResetCode[]
   rango                           Rango               @relation(fields: [rangoId], references: [rangoId])
   movimientosEntregados           Movimiento[]        @relation("movimiento_usuario_entrega")
+  articuloEntregasRealizadas      ArticuloEntregaPersonal[] @relation("articulo_entrega_usuario")
   devolucionesPrestamoRegistradas PrestamoHistorial[] @relation("prestamo_historial_usuario_recepcion")
   recordatorioConfig              UsuarioRecordatorioConfig?
   recordatorioTareas              UsuarioRecordatorioTarea[]
@@ -195,12 +203,50 @@ model Bateria {
 }
 
 model Articulo {
-  articuloId Int          @id @default(autoincrement()) @map("articulo_id") @db.SmallInt
-  nombre     String       @unique
-  tipo       TipoArticulo
+  articuloId       Int                      @id @default(autoincrement()) @map("articulo_id") @db.SmallInt
+  nombre           String                   @unique
+  tipo             TipoArticulo
+  movimientosStock ArticuloStockMovimiento[]
 
   @@index([tipo])
   @@map("articulo")
+}
+
+model ArticuloEntregaPersonal {
+  articuloEntregaPersonalId BigInt                    @id @default(autoincrement()) @map("articulo_entrega_personal_id")
+  personalCi                String                    @map("personal_ci")
+  usuarioEntregaId          String                    @map("usuario_entrega_id")
+  ordenanteCi               String                    @map("ordenante_ci")
+  fecha                     DateTime                  @db.Date
+  comentario                String?
+  createdAt                 DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime                  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  personal                  Personal                  @relation("articulo_entrega_destinatario", fields: [personalCi], references: [ci], onDelete: Restrict)
+  usuarioEntrega            Usuario                   @relation("articulo_entrega_usuario", fields: [usuarioEntregaId], references: [usuarioId], onDelete: Restrict)
+  ordenante                 Personal                  @relation("articulo_entrega_ordenante", fields: [ordenanteCi], references: [ci], onDelete: Restrict)
+  movimientosStock          ArticuloStockMovimiento[]
+
+  @@index([personalCi, fecha(sort: Desc)])
+  @@index([usuarioEntregaId, fecha(sort: Desc)])
+  @@index([ordenanteCi, fecha(sort: Desc)])
+  @@map("articulo_entrega_personal")
+}
+
+model ArticuloStockMovimiento {
+  articuloStockMovimientoId BigInt                   @id @default(autoincrement()) @map("articulo_stock_movimiento_id")
+  articuloId                Int                      @map("articulo_id") @db.SmallInt
+  tipo                      TipoArticuloStockMovimiento
+  cantidad                  Int
+  comentario                String?
+  articuloEntregaPersonalId BigInt?                  @map("articulo_entrega_personal_id")
+  createdAt                 DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  articulo                  Articulo                 @relation(fields: [articuloId], references: [articuloId], onDelete: Restrict)
+  articuloEntregaPersonal   ArticuloEntregaPersonal? @relation(fields: [articuloEntregaPersonalId], references: [articuloEntregaPersonalId], onDelete: Restrict)
+
+  @@index([articuloId, createdAt(sort: Desc)])
+  @@index([tipo, createdAt(sort: Desc)])
+  @@index([articuloEntregaPersonalId, createdAt(sort: Desc)])
+  @@map("articulo_stock_movimiento")
 }
 
 model Estanteria {
@@ -299,6 +345,8 @@ model Personal {
   suboficial       Suboficial?
   tallas           PersonalTalla[]
   movimientos      Movimiento[]
+  articuloEntregasRecibidas ArticuloEntregaPersonal[] @relation("articulo_entrega_destinatario")
+  articuloEntregasOrdenadas ArticuloEntregaPersonal[] @relation("articulo_entrega_ordenante")
   observaciones    Observacion[]
 
   @@index([rangoId])

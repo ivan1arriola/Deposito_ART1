@@ -160,6 +160,26 @@ export async function deleteArticuloHandler(articuloId: number, callbacks: Callb
   }
 }
 
+export async function ingresarStockArticuloHandler(
+  articuloId: number,
+  cantidad: number,
+  comentarios: string | undefined,
+  callbacks: CallbackProps
+) {
+  try {
+    await api("/api/articulos/ingresos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ articuloId, cantidad, comentarios }),
+    });
+    callbacks.onSuccess();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo registrar el ingreso de stock del artículo.";
+    callbacks.onError(message);
+    throw error;
+  }
+}
+
 // ==================== ITEMS ====================
 
 export async function createItemHandler(
@@ -329,3 +349,27 @@ export async function updateMultipleItemOrdersHandler(
     throw error;
   }
 }
+
+export async function entregarArticulosPersonalHandler(
+  personalCi: string,
+  ordenanteCi: string,
+  fecha: string,
+  comentario: string | undefined,
+  items: Array<{ articuloId: number; cantidad: number }>,
+  callbacks: CallbackProps,
+) {
+  try {
+    const result = await api("/api/articulos/entregas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ personalCi, ordenanteCi, fecha, comentario, items }),
+    });
+    callbacks.onSuccess(result);
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo registrar la entrega de artículos a personal.";
+    callbacks.onError(message);
+    throw error;
+  }
+}
+

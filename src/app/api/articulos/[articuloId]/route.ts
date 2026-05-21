@@ -93,8 +93,17 @@ export async function DELETE(req: Request, context: { params: Promise<{ articulo
 
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2025") {
-      return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+    if (typeof error === "object" && error && "code" in error) {
+      const code = (error as { code: string }).code;
+      if (code === "P2025") {
+        return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+      }
+      if (code === "P2003") {
+        return NextResponse.json(
+          { error: "No se puede eliminar el artículo porque tiene movimientos de stock registrados." },
+          { status: 409 },
+        );
+      }
     }
 
     return NextResponse.json({ error: "No se pudo eliminar el artículo." }, { status: 500 });

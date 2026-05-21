@@ -7,6 +7,12 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+type PrismaClientRuntimeShape = PrismaClient & {
+  _runtimeDataModel?: {
+    models?: Record<string, { fields?: Array<{ name?: string }> }>;
+  };
+};
+
 function createPrismaClient() {
   const rawConnectionString = process.env.DATABASE_URL;
   if (!rawConnectionString) {
@@ -22,9 +28,18 @@ function createPrismaClient() {
   });
 }
 
+function hasModelField(client: PrismaClient | undefined, modelName: string, fieldName: string) {
+  if (!client) return false;
+  const runtimeClient = client as PrismaClientRuntimeShape;
+  const fields = runtimeClient._runtimeDataModel?.models?.[modelName]?.fields;
+  return Array.isArray(fields) && fields.some((field) => field?.name === fieldName);
+}
+
 function hasCurrentDelegates(client: PrismaClient | undefined) {
   if (!client) return false;
   const candidate = client as PrismaClient & {
+    articuloStockMovimiento?: unknown;
+    articuloEntregaPersonal?: unknown;
     stockOperacion?: unknown;
     stockOperacionItem?: unknown;
     subalterno?: unknown;
@@ -37,6 +52,8 @@ function hasCurrentDelegates(client: PrismaClient | undefined) {
     configFirma?: unknown;
   };
   return (
+    typeof candidate.articuloStockMovimiento !== "undefined" &&
+    typeof candidate.articuloEntregaPersonal !== "undefined" &&
     typeof candidate.stockOperacion !== "undefined" &&
     typeof candidate.stockOperacionItem !== "undefined" &&
     typeof candidate.subalterno !== "undefined" &&
@@ -46,12 +63,19 @@ function hasCurrentDelegates(client: PrismaClient | undefined) {
     typeof candidate.movimientoItem !== "undefined" &&
     typeof candidate.prestamoActivo !== "undefined" &&
     typeof candidate.prestamoHistorial !== "undefined" &&
-    typeof candidate.configFirma !== "undefined"
+    typeof candidate.configFirma !== "undefined" &&
+    hasModelField(client, "ArticuloStockMovimiento", "cantidad") &&
+    hasModelField(client, "ArticuloStockMovimiento", "tipo") &&
+    hasModelField(client, "ArticuloEntregaPersonal", "ordenanteCi")
   );
 }
 
-export const prisma =
-  hasCurrentDelegates(globalForPrisma.prisma) ? globalForPrisma.prisma! : createPrismaClient();
+if (globalForPrisma.prisma && !hasCurrentDelegates(globalForPrisma.prisma)) {
+  void globalForPrisma.prisma.$disconnect().catch(() => undefined);
+  globalForPrisma.prisma = undefined;
+}
+
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

@@ -5,6 +5,7 @@ import {
   updateRangoHandler,
   deleteRangoHandler,
   createItemHandler,
+  ingresarStockArticuloHandler,
   updateItemHandler,
   mergeItemHandler,
   updateMultipleItemOrdersHandler,
@@ -188,5 +189,47 @@ describe("Handlers de Catalogos - Equipos", () => {
         body: JSON.stringify({ targetItemId: "18" }),
       }),
     );
+  });
+});
+
+describe("Handlers de Catalogos - Articulos", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("deberia registrar un ingreso de stock de articulo con payload completo", async () => {
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    vi.mocked(api).mockResolvedValue({});
+
+    await ingresarStockArticuloHandler(7, 12, "Compra mensual", { onSuccess, onError });
+
+    expect(vi.mocked(api)).toHaveBeenCalledWith(
+      "/api/articulos/ingresos",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          articuloId: 7,
+          cantidad: 12,
+          comentarios: "Compra mensual",
+        }),
+      }),
+    );
+    expect(onSuccess).toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("deberia propagar el mensaje de error del ingreso de stock", async () => {
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    vi.mocked(api).mockRejectedValue(new Error("Artículo no encontrado"));
+
+    await expect(
+      ingresarStockArticuloHandler(404, 2, undefined, { onSuccess, onError }),
+    ).rejects.toThrow("Artículo no encontrado");
+
+    expect(onError).toHaveBeenCalledWith("Artículo no encontrado");
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 });

@@ -125,6 +125,8 @@ import {
   createArticuloHandler,
   updateArticuloHandler,
   deleteArticuloHandler,
+  ingresarStockArticuloHandler,
+  entregarArticulosPersonalHandler,
   createItemHandler,
   updateItemHandler,
   deleteItemHandler,
@@ -462,7 +464,39 @@ export default function Home() {
   const [newArticuloNombre, setNewArticuloNombre] = useState("");
   const [newArticuloTipo, setNewArticuloTipo] = useState<TipoArticulo>("OFICINA");
   const [creatingArticulo, setCreatingArticulo] = useState(false);
+  const [articuloStockIngresoId, setArticuloStockIngresoId] = useState("");
+  const [articuloStockIngresoCantidad, setArticuloStockIngresoCantidad] = useState("1");
+  const [articuloStockIngresoComentarios, setArticuloStockIngresoComentarios] = useState("");
+  const [articuloStockIngresoSaving, setArticuloStockIngresoSaving] = useState(false);
   const [editArticuloId, setEditArticuloId] = useState<number | null>(null);
+
+  const [articuloEntregaPersonalCi, setArticuloEntregaPersonalCi] = useState("");
+  const [articuloEntregaPersonalOrdenanteCi, setArticuloEntregaPersonalOrdenanteCi] = useState("");
+  const [articuloEntregaPersonalFecha, setArticuloEntregaPersonalFecha] = useState(getTodayDateInput());
+  const [articuloEntregaPersonalComentarios, setArticuloEntregaPersonalComentarios] = useState("");
+  const [articuloEntregaPersonalItems, setArticuloEntregaPersonalItems] = useState<import("@/app/components/views/ArticuloEntregaPersonalView").ArticuloEntregaPersonalDraftItem[]>([
+    { articuloId: "", cantidad: "1" },
+  ]);
+  const [articuloEntregaPersonalSaving, setArticuloEntregaPersonalSaving] = useState(false);
+
+  const updateArticuloEntregaPersonalItem = useCallback((index: number, field: "articuloId" | "cantidad", value: string) => {
+    setArticuloEntregaPersonalItems((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  }, []);
+
+  const addArticuloEntregaPersonalItem = useCallback(() => {
+    setArticuloEntregaPersonalItems((prev) => [...prev, { articuloId: "", cantidad: "1" }]);
+  }, []);
+
+  const removeArticuloEntregaPersonalItem = useCallback((index: number) => {
+    setArticuloEntregaPersonalItems((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, idx) => idx !== index);
+    });
+  }, []);
   const [editArticuloNombre, setEditArticuloNombre] = useState("");
   const [editArticuloTipo, setEditArticuloTipo] = useState<TipoArticulo>("OFICINA");
 
@@ -916,7 +950,12 @@ export default function Home() {
     return personalFiltrado.slice(start, start + personalPageSize);
   }, [personalFiltrado, personalPageSafe, personalPageSize]);
   const isConfigView =
-    inCatalogView || inReminderConfigView || inAdminConfigView || activeView === "usuario_nuevo" || activeView === "articulo_nuevo";
+    inCatalogView ||
+    inReminderConfigView ||
+    inAdminConfigView ||
+    activeView === "usuario_nuevo" ||
+    activeView === "articulo_nuevo" ||
+    activeView === "articulo_stock_ingreso";
   const personaRegistro = useMemo(() => {
     if (!registroDraft) return null;
     return personal.find((persona) => persona.ci === registroDraft.ci) ?? null;
@@ -1208,10 +1247,36 @@ export default function Home() {
   }, [activeView, isAdmin]);
 
   useEffect(() => {
-    if ((activeView === "usuario_nuevo" || activeView === "articulo_nuevo") && !isAdmin) {
+    if (activeView === "articulo_nuevo" && !isAdmin) {
+      setActiveView("articulos");
+    }
+  }, [activeView, isAdmin]);
+
+  useEffect(() => {
+    if (activeView === "articulo_stock_ingreso" && !canWrite) {
+      setActiveView("articulos");
+    }
+  }, [activeView, canWrite]);
+
+  useEffect(() => {
+    if (activeView === "usuario_nuevo" && !isAdmin) {
       setActiveView("personal");
     }
   }, [activeView, isAdmin]);
+
+  useEffect(() => {
+    if (articulos.length === 0) {
+      if (articuloStockIngresoId !== "") {
+        setArticuloStockIngresoId("");
+      }
+      return;
+    }
+
+    const selectedExists = articulos.some((articulo) => String(articulo.articuloId) === articuloStockIngresoId);
+    if (!selectedExists) {
+      setArticuloStockIngresoId(String(articulos[0].articuloId));
+    }
+  }, [articuloStockIngresoId, articulos]);
 
   useEffect(() => {
     if (activeView === "persona_ficha") return;
@@ -2081,6 +2146,119 @@ export default function Home() {
     },
     [isAdmin, articulos, loadData],
   );
+
+  const submitArticuloStockIngreso = useCallback(async () => {
+    if (!canWrite) {
+      setStatus("No tienes permisos para registrar ingresos de stock de artículos.");
+      return;
+    }
+
+    const articuloId = Number(articuloStockIngresoId);
+    const cantidad = Number(articuloStockIngresoCantidad);
+    if (!Number.isInteger(articuloId) || articuloId <= 0) {
+      setStatus("Debes seleccionar un artículo.");
+      return;
+    }
+    if (!Number.isInteger(cantidad) || cantidad <= 0) {
+      setStatus("La cantidad a ingresar debe ser un entero positivo.");
+      return;
+    }
+
+    setArticuloStockIngresoSaving(true);
+    try {
+      await ingresarStockArticuloHandler(
+        articuloId,
+        cantidad,
+        articuloStockIngresoComentarios.trim() || undefined,
+        {
+          onSuccess: async () => {
+            setArticuloStockIngresoCantidad("1");
+            setArticuloStockIngresoComentarios("");
+            setStatus("Ingreso de stock del artículo registrado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        },
+      );
+    } catch {
+      // Error manejado en el handler
+    } finally {
+      setArticuloStockIngresoSaving(false);
+    }
+  }, [canWrite, articuloStockIngresoId, articuloStockIngresoCantidad, articuloStockIngresoComentarios, loadData]);
+
+  const submitArticuloEntregaPersonal = useCallback(async () => {
+    if (!canWrite) {
+      setStatus("No tienes permisos para registrar entregas de artículos.");
+      return;
+    }
+
+    if (!articuloEntregaPersonalCi.trim()) {
+      setStatus("Debes seleccionar el destinatario de la entrega.");
+      return;
+    }
+    if (!articuloEntregaPersonalOrdenanteCi.trim()) {
+      setStatus("Debes seleccionar quién ordena la entrega.");
+      return;
+    }
+    if (articuloEntregaPersonalCi === articuloEntregaPersonalOrdenanteCi) {
+      setStatus("El destinatario no puede ser el mismo que ordena la entrega.");
+      return;
+    }
+
+    const itemsPayload = articuloEntregaPersonalItems.map((item) => ({
+      articuloId: Number(item.articuloId),
+      cantidad: Number(item.cantidad),
+    }));
+
+    for (let i = 0; i < itemsPayload.length; i++) {
+      const item = itemsPayload[i];
+      if (!Number.isInteger(item.articuloId) || item.articuloId <= 0) {
+        setStatus(`Debes seleccionar un artículo en la fila ${i + 1}.`);
+        return;
+      }
+      if (!Number.isInteger(item.cantidad) || item.cantidad <= 0) {
+        setStatus(`La cantidad en la fila ${i + 1} debe ser un entero positivo.`);
+        return;
+      }
+    }
+
+    setArticuloEntregaPersonalSaving(true);
+    try {
+      await entregarArticulosPersonalHandler(
+        articuloEntregaPersonalCi,
+        articuloEntregaPersonalOrdenanteCi,
+        articuloEntregaPersonalFecha,
+        articuloEntregaPersonalComentarios.trim() || undefined,
+        itemsPayload,
+        {
+          onSuccess: async () => {
+            setArticuloEntregaPersonalCi("");
+            setArticuloEntregaPersonalOrdenanteCi("");
+            setArticuloEntregaPersonalFecha(getTodayDateInput());
+            setArticuloEntregaPersonalComentarios("");
+            setArticuloEntregaPersonalItems([{ articuloId: "", cantidad: "1" }]);
+            setStatus("Entrega de artículos registrada exitosamente.");
+            setActiveView("articulos");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        },
+      );
+    } catch {
+      // Error manejado en el handler
+    } finally {
+      setArticuloEntregaPersonalSaving(false);
+    }
+  }, [
+    canWrite,
+    articuloEntregaPersonalCi,
+    articuloEntregaPersonalOrdenanteCi,
+    articuloEntregaPersonalFecha,
+    articuloEntregaPersonalComentarios,
+    articuloEntregaPersonalItems,
+    loadData,
+  ]);
 
   const createEquipo = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -6226,6 +6404,29 @@ export default function Home() {
             createArticulo={createArticulo}
             setNewArticuloNombre={setNewArticuloNombre}
             setNewArticuloTipo={setNewArticuloTipo}
+            articulos={articulos}
+            articuloStockIngresoId={articuloStockIngresoId}
+            articuloStockIngresoCantidad={articuloStockIngresoCantidad}
+            articuloStockIngresoComentarios={articuloStockIngresoComentarios}
+            articuloStockIngresoSaving={articuloStockIngresoSaving}
+            submitArticuloStockIngreso={submitArticuloStockIngreso}
+            setArticuloStockIngresoId={setArticuloStockIngresoId}
+            setArticuloStockIngresoCantidad={setArticuloStockIngresoCantidad}
+            setArticuloStockIngresoComentarios={setArticuloStockIngresoComentarios}
+            articuloEntregaPersonalCi={articuloEntregaPersonalCi}
+            articuloEntregaPersonalOrdenanteCi={articuloEntregaPersonalOrdenanteCi}
+            articuloEntregaPersonalFecha={articuloEntregaPersonalFecha}
+            articuloEntregaPersonalComentarios={articuloEntregaPersonalComentarios}
+            articuloEntregaPersonalItems={articuloEntregaPersonalItems}
+            articuloEntregaPersonalSaving={articuloEntregaPersonalSaving}
+            submitArticuloEntregaPersonal={submitArticuloEntregaPersonal}
+            setArticuloEntregaPersonalCi={setArticuloEntregaPersonalCi}
+            setArticuloEntregaPersonalOrdenanteCi={setArticuloEntregaPersonalOrdenanteCi}
+            setArticuloEntregaPersonalFecha={setArticuloEntregaPersonalFecha}
+            setArticuloEntregaPersonalComentarios={setArticuloEntregaPersonalComentarios}
+            updateArticuloEntregaPersonalItem={updateArticuloEntregaPersonalItem}
+            addArticuloEntregaPersonalItem={addArticuloEntregaPersonalItem}
+            removeArticuloEntregaPersonalItem={removeArticuloEntregaPersonalItem}
             newBateria={newBateria}
             newBateriaOrden={newBateriaOrden}
             createBateria={createBateria}

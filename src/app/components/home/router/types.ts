@@ -1,7 +1,7 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import type { PrestamoEditPayload } from "@/app/components/views/FormulariosPrestamosView";
 import type { MainView } from "@/types/views";
-import type { OficialSuboficial, Personal, TipoArticulo } from "@/types/entities";
+import type { Articulo, OficialSuboficial, Personal, TipoArticulo } from "@/types/entities";
 import type {
   EquipoForm,
   OficialSuboficialForm,
@@ -85,6 +85,31 @@ export type CreationViewsProps = {
   createArticulo: () => Promise<void>;
   setNewArticuloNombre: (value: string) => void;
   setNewArticuloTipo: (value: TipoArticulo) => void;
+  articulos: Articulo[];
+  personal: Personal[];
+  oficialesSuboficiales: OficialSuboficial[];
+  articuloStockIngresoId: string;
+  articuloStockIngresoCantidad: string;
+  articuloStockIngresoComentarios: string;
+  articuloStockIngresoSaving: boolean;
+  submitArticuloStockIngreso: () => Promise<void>;
+  setArticuloStockIngresoId: (value: string) => void;
+  setArticuloStockIngresoCantidad: (value: string) => void;
+  setArticuloStockIngresoComentarios: (value: string) => void;
+  articuloEntregaPersonalCi: string;
+  articuloEntregaPersonalOrdenanteCi: string;
+  articuloEntregaPersonalFecha: string;
+  articuloEntregaPersonalComentarios: string;
+  articuloEntregaPersonalItems: import("@/app/components/views/ArticuloEntregaPersonalView").ArticuloEntregaPersonalDraftItem[];
+  articuloEntregaPersonalSaving: boolean;
+  submitArticuloEntregaPersonal: () => Promise<void>;
+  setArticuloEntregaPersonalCi: (value: string) => void;
+  setArticuloEntregaPersonalOrdenanteCi: (value: string) => void;
+  setArticuloEntregaPersonalFecha: (value: string) => void;
+  setArticuloEntregaPersonalComentarios: (value: string) => void;
+  updateArticuloEntregaPersonalItem: (index: number, field: "articuloId" | "cantidad", value: string) => void;
+  addArticuloEntregaPersonalItem: () => void;
+  removeArticuloEntregaPersonalItem: (index: number) => void;
   newBateria: string;
   newBateriaOrden: string;
   createBateria: () => Promise<void>;

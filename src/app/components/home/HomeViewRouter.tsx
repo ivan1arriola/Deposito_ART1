@@ -65,6 +65,29 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
     createArticulo,
     setNewArticuloNombre,
     setNewArticuloTipo,
+    articulos,
+    articuloStockIngresoId,
+    articuloStockIngresoCantidad,
+    articuloStockIngresoComentarios,
+    articuloStockIngresoSaving,
+    submitArticuloStockIngreso,
+    setArticuloStockIngresoId,
+    setArticuloStockIngresoCantidad,
+    setArticuloStockIngresoComentarios,
+    articuloEntregaPersonalCi,
+    articuloEntregaPersonalOrdenanteCi,
+    articuloEntregaPersonalFecha,
+    articuloEntregaPersonalComentarios,
+    articuloEntregaPersonalItems,
+    articuloEntregaPersonalSaving,
+    submitArticuloEntregaPersonal,
+    setArticuloEntregaPersonalCi,
+    setArticuloEntregaPersonalOrdenanteCi,
+    setArticuloEntregaPersonalFecha,
+    setArticuloEntregaPersonalComentarios,
+    updateArticuloEntregaPersonalItem,
+    addArticuloEntregaPersonalItem,
+    removeArticuloEntregaPersonalItem,
     newBateria,
     newBateriaOrden,
     createBateria,
@@ -258,6 +281,31 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
         createArticulo={createArticulo}
         setNewArticuloNombre={setNewArticuloNombre}
         setNewArticuloTipo={setNewArticuloTipo}
+        articulos={articulos}
+        personal={personal}
+        oficialesSuboficiales={oficialesSuboficiales}
+        articuloStockIngresoId={articuloStockIngresoId}
+        articuloStockIngresoCantidad={articuloStockIngresoCantidad}
+        articuloStockIngresoComentarios={articuloStockIngresoComentarios}
+        articuloStockIngresoSaving={articuloStockIngresoSaving}
+        submitArticuloStockIngreso={submitArticuloStockIngreso}
+        setArticuloStockIngresoId={setArticuloStockIngresoId}
+        setArticuloStockIngresoCantidad={setArticuloStockIngresoCantidad}
+        setArticuloStockIngresoComentarios={setArticuloStockIngresoComentarios}
+        articuloEntregaPersonalCi={articuloEntregaPersonalCi}
+        articuloEntregaPersonalOrdenanteCi={articuloEntregaPersonalOrdenanteCi}
+        articuloEntregaPersonalFecha={articuloEntregaPersonalFecha}
+        articuloEntregaPersonalComentarios={articuloEntregaPersonalComentarios}
+        articuloEntregaPersonalItems={articuloEntregaPersonalItems}
+        articuloEntregaPersonalSaving={articuloEntregaPersonalSaving}
+        submitArticuloEntregaPersonal={submitArticuloEntregaPersonal}
+        setArticuloEntregaPersonalCi={setArticuloEntregaPersonalCi}
+        setArticuloEntregaPersonalOrdenanteCi={setArticuloEntregaPersonalOrdenanteCi}
+        setArticuloEntregaPersonalFecha={setArticuloEntregaPersonalFecha}
+        setArticuloEntregaPersonalComentarios={setArticuloEntregaPersonalComentarios}
+        updateArticuloEntregaPersonalItem={updateArticuloEntregaPersonalItem}
+        addArticuloEntregaPersonalItem={addArticuloEntregaPersonalItem}
+        removeArticuloEntregaPersonalItem={removeArticuloEntregaPersonalItem}
         newBateria={newBateria}
         newBateriaOrden={newBateriaOrden}
         createBateria={createBateria}

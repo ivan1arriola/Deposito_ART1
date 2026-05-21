@@ -7,6 +7,7 @@ CREATE TYPE "tipo_stock_operacion" AS ENUM ('INGRESO', 'EGRESO');
 CREATE TYPE "user_role" AS ENUM ('ADMIN', 'EDITOR', 'READ_ONLY');
 CREATE TYPE "tipo_personal" AS ENUM ('SUBALTERNO', 'OFICIAL', 'SUBOFICIAL');
 CREATE TYPE "tipo_articulo" AS ENUM ('OFICINA', 'LIMPIEZA');
+CREATE TYPE "tipo_articulo_stock_movimiento" AS ENUM ('INGRESO', 'EGRESO');
 CREATE TYPE "tipo_movimiento" AS ENUM ('ENTREGA', 'DEVOLUCION', 'PRESTAMO');
 CREATE TYPE "estado_prestamo_movimiento" AS ENUM ('PENDIENTE', 'DEVUELTO');
 CREATE TYPE "estado_equipo_prestamo" AS ENUM ('NUEVO', 'BUENO', 'REGULAR', 'MALO');
@@ -93,7 +94,8 @@ INSERT INTO "bateria" ("nombre", "orden") VALUES
 CREATE TABLE "articulo" (
   "articulo_id" SMALLSERIAL PRIMARY KEY,
   "nombre" TEXT NOT NULL UNIQUE,
-  "tipo" "tipo_articulo" NOT NULL
+  "tipo" "tipo_articulo" NOT NULL,
+  "stock_actual" INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX "articulo_tipo_idx" ON "articulo"("tipo");
@@ -475,6 +477,47 @@ CREATE TABLE "usuario_recordatorio_tarea" (
 
 CREATE INDEX "usuario_recordatorio_tarea_usuario_completada_fecha_idx"
   ON "usuario_recordatorio_tarea"("usuario_id", "completada", "prioridad", "fecha_limite");
+
+CREATE TABLE "articulo_entrega_personal" (
+  "articulo_entrega_personal_id" BIGSERIAL PRIMARY KEY,
+  "personal_ci" TEXT NOT NULL REFERENCES "personal"("ci") ON DELETE RESTRICT,
+  "usuario_entrega_id" TEXT NOT NULL REFERENCES "usuario"("usuario_id") ON DELETE RESTRICT,
+  "ordenante_ci" TEXT NOT NULL REFERENCES "personal"("ci") ON DELETE RESTRICT,
+  "fecha" DATE NOT NULL,
+  "comentario" TEXT,
+  "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+  "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+  CONSTRAINT "articulo_entrega_personal_fecha_hoy_chk" CHECK ("fecha" <= CURRENT_DATE)
+);
+
+CREATE INDEX "articulo_entrega_personal_personal_ci_fecha_idx"
+  ON "articulo_entrega_personal"("personal_ci", "fecha" DESC);
+CREATE INDEX "articulo_entrega_personal_usuario_entrega_id_fecha_idx"
+  ON "articulo_entrega_personal"("usuario_entrega_id", "fecha" DESC);
+CREATE INDEX "articulo_entrega_personal_ordenante_ci_fecha_idx"
+  ON "articulo_entrega_personal"("ordenante_ci", "fecha" DESC);
+
+CREATE TABLE "articulo_stock_movimiento" (
+  "articulo_stock_movimiento_id" BIGSERIAL PRIMARY KEY,
+  "articulo_id" SMALLINT NOT NULL REFERENCES "articulo"("articulo_id") ON DELETE RESTRICT,
+  "tipo" "tipo_articulo_stock_movimiento" NOT NULL,
+  "cantidad" INTEGER NOT NULL,
+  "comentario" TEXT,
+  "articulo_entrega_personal_id" BIGINT REFERENCES "articulo_entrega_personal"("articulo_entrega_personal_id") ON DELETE RESTRICT,
+  "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+  CONSTRAINT "articulo_stock_movimiento_cantidad_chk" CHECK ("cantidad" > 0),
+  CONSTRAINT "articulo_stock_movimiento_tipo_entrega_chk" CHECK (
+    ("tipo" = 'INGRESO' AND "articulo_entrega_personal_id" IS NULL)
+    OR ("tipo" = 'EGRESO' AND "articulo_entrega_personal_id" IS NOT NULL)
+  )
+);
+
+CREATE INDEX "articulo_stock_movimiento_articulo_fecha_idx"
+  ON "articulo_stock_movimiento"("articulo_id", "created_at" DESC);
+CREATE INDEX "articulo_stock_movimiento_tipo_fecha_idx"
+  ON "articulo_stock_movimiento"("tipo", "created_at" DESC);
+CREATE INDEX "articulo_stock_movimiento_entrega_fecha_idx"
+  ON "articulo_stock_movimiento"("articulo_entrega_personal_id", "created_at" DESC);
 
 CREATE TABLE "movimiento" (
   "movimiento_id" BIGSERIAL PRIMARY KEY,

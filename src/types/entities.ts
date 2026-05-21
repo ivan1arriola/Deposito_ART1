@@ -27,6 +27,7 @@ export type Articulo = {
   articuloId: number;
   nombre: string;
   tipo: TipoArticulo;
+  stockActual: number;
 };
 
 export type Equipo = {

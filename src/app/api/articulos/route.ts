@@ -3,6 +3,7 @@ import { TipoArticulo } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { calcularStockTodos } from "@/lib/stock-calc";
 
 function parseTipoArticulo(value: unknown) {
   if (typeof value !== "string") return undefined;
@@ -17,10 +18,19 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   try {
-    const articulos = await prisma.articulo.findMany({
-      orderBy: [{ tipo: "asc" }, { nombre: "asc" }],
-    });
-    return NextResponse.json(articulos);
+    const [articulos, stockMap] = await Promise.all([
+      prisma.articulo.findMany({
+        orderBy: [{ tipo: "asc" }, { nombre: "asc" }],
+      }),
+      calcularStockTodos(prisma),
+    ]);
+
+    const result = articulos.map((a) => ({
+      ...a,
+      stockActual: stockMap.get(a.articuloId) ?? 0,
+    }));
+
+    return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "No se pudieron cargar los artículos." }, { status: 500 });
   }
