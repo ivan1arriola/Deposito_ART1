@@ -353,7 +353,7 @@ function isSoldadoWidgetVariant(value: string | null): value is SoldadoWidgetVar
 
 export default function Home() {
   const { data: session } = useSession();
-  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
+  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "6.1.0";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [status, setStatus] = useState(STATUS_VERIFYING_SESSION);
@@ -691,7 +691,7 @@ export default function Home() {
   const canRegisterOficialSuboficial = canWrite && rangosOficialSuboficialDisponibles.length > 0;
   const inCatalogView = activeView === "grados" || activeView === "baterias" || activeView === "articulos" || activeView === "equipos";
   const inReminderConfigView = activeView === "recordatorios";
-  const inAdminConfigView = activeView === "firmas" || activeView === "usuarios" || activeView === "auditoria";
+  const inAdminConfigView = activeView === "firmas" || activeView === "usuarios" || activeView === "auditoria" || activeView === "papelera";
   const inEtiquetadoView =
     activeView === "etiquetado_codigos_sie" ||
     activeView === "etiquetado_registrar_caja" ||
@@ -6121,11 +6121,11 @@ export default function Home() {
         </Box>
 
         <Box sx={{ textAlign: "center", display: sidebarCollapsed ? "none" : "block" }}>
-          <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontStyle: "italic", fontWeight: 800, lineHeight: 1.2, mb: 0.5 }}>
-            Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1
+          <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontStyle: "italic", fontWeight: 850, lineHeight: 1.2, mb: 0.5 }}>
+            Sistema de
           </Typography>
-          <Typography sx={{ color: "var(--color-ejercito-gold)", fontWeight: 900, fontSize: 20, letterSpacing: "0.02em", textTransform: "uppercase" }}>
-            Depósito General
+          <Typography sx={{ color: "var(--color-ejercito-gold)", fontWeight: 900, fontSize: 16, letterSpacing: "0.02em", textTransform: "uppercase" }}>
+            Depósito General - Artillería 1
           </Typography>
         </Box>
 
@@ -6315,10 +6315,10 @@ export default function Home() {
               </div>
               <div className="flex flex-col">
                 <h1 className="text-sm font-black tracking-tight text-[var(--color-ejercito-gold)] drop-shadow-sm">
-                  DEPÓSITO GENERAL
+                  SISTEMA DE DEPÓSITO GENERAL
                 </h1>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-stone-700">Grupo "Brigadier General Manuel Oribe" de Artillería 105mm No. 1</span>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-stone-700">Artillería 1</span>
                   <span className="h-1 w-1 rounded-full bg-stone-400"></span>
                   <span className="text-[10px] font-bold text-stone-600">v{appVersion}</span>
                 </div>

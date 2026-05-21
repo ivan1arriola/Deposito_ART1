@@ -32,7 +32,7 @@ type LoadStockDataOptions = {
 type RequestKey = "core" | "admin" | "hojaMatrix" | "equipoResumen" | "stock";
 
 const REQUEST_KEYS: RequestKey[] = ["core", "admin", "hojaMatrix", "equipoResumen", "stock"];
-const ADMIN_VIEWS = new Set<MainView>(["firmas", "usuarios", "auditoria", "usuario_nuevo", "recordatorios"]);
+const ADMIN_VIEWS = new Set<MainView>(["firmas", "usuarios", "auditoria", "usuario_nuevo", "recordatorios", "papelera"]);
 const STOCK_VIEWS = new Set<MainView>([
   "stock",
   "stock_total",

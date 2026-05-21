@@ -19,14 +19,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Deposito ART1",
+  title: "Sistema de Depósito General - Artilleria 1",
   description: "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
   manifest: "/manifest.webmanifest",
-  applicationName: "Deposito ART1",
+  applicationName: "Sistema de Depósito General - Artilleria 1",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Deposito ART1",
+    title: "Sistema de Depósito General - Artilleria 1",
   },
   formatDetection: {
     telephone: false,
@@ -41,15 +41,15 @@ export const metadata: Metadata = {
     shortcut: [{ url: "/pwa-icons/android/icon-192.png", sizes: "192x192", type: "image/png" }],
   },
   openGraph: {
-    title: "Deposito ART1",
+    title: "Sistema de Depósito General - Artilleria 1",
     description: "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
     type: "website",
     locale: "es_UY",
-    siteName: "Deposito ART1",
+    siteName: "Sistema de Depósito General - Artilleria 1",
   },
   twitter: {
     card: "summary",
-    title: "Deposito ART1",
+    title: "Sistema de Depósito General - Artilleria 1",
     description: "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
   },
 };

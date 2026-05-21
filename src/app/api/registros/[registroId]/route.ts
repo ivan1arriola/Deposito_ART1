@@ -369,7 +369,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       sendPersonalMovementEmailNotification({
         request: req,
         ci: existingPersonal.ci,
-        subject: "Notificacion de movimiento - Deposito ART1",
+        subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
         headline: "Se actualizo un movimiento en tu ficha de vestuario.",
         detailLines: [
           `Tipo anterior: ${existing.tipo}`,
@@ -488,7 +488,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
       sendPersonalMovementEmailNotification({
         request: req,
         ci: existingPersonal.ci,
-        subject: "Notificacion de movimiento - Deposito ART1",
+        subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
         headline: "Se elimino un movimiento de tu ficha de vestuario.",
         detailLines: [
           `Tipo eliminado: ${existing.tipo}`,

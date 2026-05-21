@@ -316,7 +316,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
       sendPersonalMovementEmailNotification({
         request,
         ci: ciDecoded,
-        subject: "Notificacion de movimiento - Deposito ART1",
+        subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
         headline: "Se registro un ascenso y ajuste de vestuario en tu ficha.",
         detailLines: [
           `Rango anterior: ${result.persona.rango.abreviacion} - ${result.persona.rango.nombreCompleto}`,

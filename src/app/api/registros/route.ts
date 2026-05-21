@@ -425,7 +425,7 @@ export async function POST(req: Request) {
         sendPersonalMovementEmailNotification({
           request: req,
           ci: targetCi,
-          subject: "Notificacion de movimiento - Deposito ART1",
+          subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
           headline: `Se registro una ${tipoLabel} de vestuario en tu ficha.`,
           detailLines: [
             `Tipo: ${tipo}`,

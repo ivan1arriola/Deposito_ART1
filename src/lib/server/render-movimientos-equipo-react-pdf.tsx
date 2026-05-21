@@ -165,7 +165,7 @@ export async function renderMovimientosEquipoPdf(
   const equipoEstado = selectedItem.activo ? "Visible en hoja de entrega" : "Fuera de hoja de entrega";
 
   const DocumentNode = () => (
-    <Document title="Movimientos por equipo" author="Deposito ART1">
+    <Document title="Movimientos por equipo" author="Sistema de Depósito General - Artilleria 1">
       {chunks.map((chunk, pageIndex) => (
         <Page key={`mov-equipo-${pageIndex}`} size="A4" style={styles.page}>
           <View style={styles.headerWrapper}>

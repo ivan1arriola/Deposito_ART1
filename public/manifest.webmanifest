@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Deposito ART1",
-  "short_name": "Deposito ART1",
+  "name": "Sistema de Depósito General - Artilleria 1",
+  "short_name": "Sistema de Depósito General - Artilleria 1",
   "description": "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 Brig. Gral. Manuel Oribe",
   "lang": "es-UY",
   "start_url": "/",

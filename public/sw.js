@@ -3,7 +3,7 @@ const OFFLINE_FALLBACK_HTML = `<!doctype html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Deposito ART1 - Offline</title>
+    <title>Sistema de Depósito General - Artilleria 1 - Offline</title>
   </head>
   <body>
     <main style="font-family: sans-serif; margin: 2rem;">
@@ -53,7 +53,7 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("push", (event) => {
   let payload = {
-    title: "Deposito ART1",
+    title: "Sistema de Depósito General - Artilleria 1",
     body: "Nueva actividad registrada.",
     url: "/",
   };

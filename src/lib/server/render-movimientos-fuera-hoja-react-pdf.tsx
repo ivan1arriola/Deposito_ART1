@@ -163,7 +163,7 @@ export async function renderMovimientosFueraHojaPdf(
   } as const;
 
   const DocumentNode = () => (
-    <Document title="Movimientos fuera de hoja" author="Deposito ART1">
+    <Document title="Movimientos fuera de hoja" author="Sistema de Depósito General - Artilleria 1">
       {chunks.map((chunk, pageIndex) => (
         <Page key={`mov-fuera-${pageIndex}`} size="A4" style={styles.page}>
           <View style={styles.headerWrapper}>

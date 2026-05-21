@@ -115,7 +115,7 @@ export async function PUT(request: Request) {
     sendPersonalMovementEmailNotification({
       request,
       ci: user.personalCi,
-      subject: "Notificacion de datos personales - Deposito ART1",
+      subject: "Notificacion de datos personales - Sistema de Depósito General - Artilleria 1",
       headline: "Se actualizaron datos de contacto de tu ficha personal.",
       detailLines: [
         hasTelefonoContacto ? `Celular: ${updated.telefonoContacto ?? "sin registrar"}` : "",

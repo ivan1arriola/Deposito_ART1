@@ -312,7 +312,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
       sendPersonalMovementEmailNotification({
         request: req,
         ci: ciDecoded,
-        subject: "Notificacion de datos personales - Deposito ART1",
+        subject: "Notificacion de datos personales - Sistema de Depósito General - Artilleria 1",
         headline: "Se actualizaron datos de tu ficha personal.",
         detailLines: [
           `Rango actualizado: ${updated.rango.abreviacion} - ${updated.rango.nombreCompleto}`,

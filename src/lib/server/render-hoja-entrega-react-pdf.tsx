@@ -1048,7 +1048,7 @@ export async function renderHojasEntregaPdf(
     );
 
     const HojaEntregaPdfDocument = () => (
-      <Document title="Hoja de Entrega" author="Deposito ART1">
+      <Document title="Hoja de Entrega" author="Sistema de Depósito General - Artilleria 1">
         {hojasToRender.flatMap((hoja, index) => {
           const pages: React.ReactElement[] = [];
           if (includeSheetPage) {

@@ -28,7 +28,7 @@ export async function sendPasswordResetMagicLinkEmail(request: Request, user: Au
 
   await sendMail({
     to: user.mailReferencia,
-    subject: "Recuperación de contraseña - Depósito ART1",
+    subject: "Recuperación de contraseña - Sistema de Depósito General - Artilleria 1",
     text:
       `Hola ${name},\n\n` +
       `Recibimos una solicitud para cambiar tu contraseña.\n` +
@@ -55,7 +55,7 @@ export async function sendEmailVerificationMagicLinkEmail(request: Request, user
 
   await sendMail({
     to: user.mailReferencia,
-    subject: "Validacion de correo - Deposito ART1",
+    subject: "Validación de correo - Sistema de Depósito General - Artilleria 1",
     text:
       `Hola ${name},\n\n` +
       "Confirma este correo para habilitar la recuperación de contraseña por enlace mágico.\n" +
