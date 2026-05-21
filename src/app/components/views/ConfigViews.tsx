@@ -9,6 +9,16 @@ import type { Articulo, AuditoriaRecord, FirmaConfig, Rango, Role, TipoArticulo,
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 import { ModalFrame } from "../modals/ModalFrame";
 
+// Premium Material-UI Icons
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import RestoreFromTrashOutlinedIcon from "@mui/icons-material/RestoreFromTrashOutlined";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
+import FolderZipOutlinedIcon from "@mui/icons-material/FolderZipOutlined";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+
 type RangoTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
 type RangoConfig = Rango & { tipo?: RangoTipo };
 type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
@@ -193,6 +203,20 @@ export function ConfigViews(props: ConfigViewsProps) {
   const [trashDetails, setTrashDetails] = useState<any | null>(null);
   const [trashDetailsLoading, setTrashDetailsLoading] = useState(false);
   const [trashModalAction, setTrashModalAction] = useState<"restore" | "delete" | null>(null);
+
+  // Local state for Papelera interactive search & filter
+  const [trashSearchQuery, setTrashSearchQuery] = useState("");
+  const [trashTypeFilter, setTrashTypeFilter] = useState<"ALL" | "ITEM" | "ARTICULO">("ALL");
+
+  const filteredTrashRecords = useMemo(() => {
+    if (!props.papeleraRecords) return [];
+    return props.papeleraRecords.filter((record) => {
+      const matchesSearch = record.nombre.toLowerCase().includes(trashSearchQuery.toLowerCase()) || 
+                            record.originalId.toLowerCase().includes(trashSearchQuery.toLowerCase());
+      const matchesType = trashTypeFilter === "ALL" || record.tipo === trashTypeFilter;
+      return matchesSearch && matchesType;
+    });
+  }, [props.papeleraRecords, trashSearchQuery, trashTypeFilter]);
 
   const handleOpenTrashModal = async (record: any, action: "restore" | "delete") => {
     setSelectedTrashRecord(record);
@@ -1266,64 +1290,168 @@ export function ConfigViews(props: ConfigViewsProps) {
   if (props.activeView === "papelera" && props.isAdmin) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
-        <article className="ej-card rounded-2xl p-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <article className="ej-card rounded-2xl p-4 shadow-sm border border-stone-200 bg-white">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-stone-100 pb-4">
             <div>
-              <h2 className="text-base font-semibold text-stone-900">Papelera de Reciclaje</h2>
-              <p className="mt-1 text-xs text-stone-600">
-                Visualiza y restaura artículos y equipos eliminados lógicamente, incluyendo sus recibos, préstamos y movimientos históricos asociados.
+              <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
+                <DeleteOutlineOutlinedIcon className="h-5 w-5 text-stone-600" />
+                Papelera de Reciclaje
+              </h2>
+              <p className="mt-1 text-xs text-stone-600 leading-relaxed">
+                Restaura o elimina permanentemente artículos y equipos dados de baja. Se listan sus recibos, préstamos y movimientos históricos resguardados.
               </p>
             </div>
+
+            {/* Interactive Controls */}
+            {!props.papeleraLoading && props.papeleraRecords && props.papeleraRecords.length > 0 && (
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                {/* Search Bar */}
+                <div className="relative min-w-[220px]">
+                  <SearchOutlinedIcon className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre o ID..."
+                    value={trashSearchQuery}
+                    onChange={(e) => setTrashSearchQuery(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50 py-1.5 pl-9 pr-4 text-xs text-stone-850 placeholder-stone-450 focus:border-stone-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-stone-200 transition-all"
+                  />
+                </div>
+
+                {/* Segmented Filter */}
+                <div className="flex rounded-xl bg-stone-100 p-0.5 border border-stone-200">
+                  <button
+                    type="button"
+                    onClick={() => setTrashTypeFilter("ALL")}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
+                      trashTypeFilter === "ALL"
+                        ? "bg-white text-stone-900 shadow-sm"
+                        : "text-stone-500 hover:text-stone-950"
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrashTypeFilter("ITEM")}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
+                      trashTypeFilter === "ITEM"
+                        ? "bg-white text-blue-800 shadow-sm"
+                        : "text-stone-500 hover:text-stone-950"
+                    }`}
+                  >
+                    Equipos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrashTypeFilter("ARTICULO")}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
+                      trashTypeFilter === "ARTICULO"
+                        ? "bg-white text-purple-800 shadow-sm"
+                        : "text-stone-500 hover:text-stone-950"
+                    }`}
+                  >
+                    Artículos
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {props.papeleraLoading ? (
-            <div className="mt-6 flex justify-center py-8">
+            <div className="mt-8 flex justify-center py-12">
               <LoadingInline label="Cargando papelera..." />
             </div>
           ) : (
             <div className="mt-4 space-y-2">
-              {!props.papeleraRecords || props.papeleraRecords.length === 0 ? (
-                <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-center">
-                  <p className="text-sm text-stone-600">La papelera está vacía.</p>
+              {filteredTrashRecords.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-stone-250 bg-stone-50 px-6 py-12 text-center flex flex-col items-center justify-center">
+                  <DeleteOutlineOutlinedIcon className="h-10 w-10 text-stone-300 mb-2.5" />
+                  <p className="text-sm font-semibold text-stone-700">La papelera está vacía</p>
+                  <p className="text-xs text-stone-500 mt-1 max-w-[340px] leading-relaxed">
+                    {trashSearchQuery || trashTypeFilter !== "ALL"
+                      ? "No se encontraron elementos eliminados que coincidan con los filtros seleccionados."
+                      : "No hay registros en la papelera en este momento. Los elementos eliminados aparecerán aquí."}
+                  </p>
+                  {(trashSearchQuery || trashTypeFilter !== "ALL") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTrashSearchQuery("");
+                        setTrashTypeFilter("ALL");
+                      }}
+                      className="mt-3.5 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 hover:bg-stone-50 transition-all active:scale-95"
+                    >
+                      Limpiar filtros
+                    </button>
+                  )}
                 </div>
               ) : (
-                props.papeleraRecords.map((record) => (
-                  <div key={record.papeleraId} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-stone-800">{record.nombre}</span>
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                          record.tipo === "ITEM" 
-                            ? "bg-blue-100 text-blue-800 border border-blue-200" 
-                            : "bg-purple-100 text-purple-800 border border-purple-200"
+                <div className="grid grid-cols-1 gap-2.5">
+                  {filteredTrashRecords.map((record) => (
+                    <div
+                      key={record.papeleraId}
+                      className="group flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50/50 hover:bg-white p-3.5 sm:flex-row sm:items-center sm:justify-between transition-all hover:shadow-sm"
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Dynamic Icon Container */}
+                        <div className={`hidden xs:flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+                          record.tipo === "ITEM"
+                            ? "bg-blue-50 text-blue-600 border border-blue-150 group-hover:bg-blue-100/70"
+                            : "bg-purple-50 text-purple-600 border border-purple-150 group-hover:bg-purple-100/70"
                         }`}>
-                          {record.tipo === "ITEM" ? "Equipo" : "Artículo"}
-                        </span>
-                        <span className="text-[10px] text-stone-500">ID original: {record.originalId}</span>
+                          {record.tipo === "ITEM" ? (
+                            <FolderZipOutlinedIcon className="h-4.5 w-4.5" />
+                          ) : (
+                            <StorageOutlinedIcon className="h-4.5 w-4.5" />
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-bold text-stone-850">{record.nombre}</span>
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border ${
+                              record.tipo === "ITEM"
+                                ? "bg-blue-50/70 text-blue-700 border-blue-200"
+                                : "bg-purple-50/70 text-purple-700 border-purple-200"
+                            }`}>
+                              {record.tipo === "ITEM" ? "Equipo" : "Artículo"}
+                            </span>
+                            <span className="text-[10px] text-stone-400 font-mono">ID: {record.originalId}</span>
+                          </div>
+                          <p className="mt-1.5 text-[11px] text-stone-500 flex items-center gap-1">
+                            <InfoOutlinedIcon className="h-3 w-3 inline text-stone-400" />
+                            Eliminado el: <strong className="text-stone-700 font-semibold">{formatDateTimeForDisplay(record.createdAt)}</strong>
+                          </p>
+                        </div>
                       </div>
-                      <p className="mt-1 text-xs text-stone-500">
-                        Eliminado el: {formatDateTimeForDisplay(record.createdAt)}
-                      </p>
+
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenTrashModal(record, "restore")}
+                          className="rounded-lg border border-emerald-250 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition-all active:scale-95 flex items-center gap-1"
+                        >
+                          <RestoreFromTrashOutlinedIcon className="h-3.5 w-3.5" />
+                          Restaurar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenTrashModal(record, "delete")}
+                          className="rounded-lg border border-red-250 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-800 hover:bg-red-100 transition-all active:scale-95 flex items-center gap-1"
+                        >
+                          <DeleteOutlineOutlinedIcon className="h-3.5 w-3.5" />
+                          Eliminar
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <SmallActionButton
-                        text="Restaurar"
-                        tone="ok"
-                        onClick={() => handleOpenTrashModal(record, "restore")}
-                      />
-                      <SmallActionButton
-                        text="Eliminar Permanente"
-                        tone="delete"
-                        onClick={() => handleOpenTrashModal(record, "delete")}
-                      />
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           )}
         </article>
 
+        {/* Dynamic Analysis overlay modal */}
         {selectedTrashRecord && (
           <ModalFrame
             onClose={() => {
@@ -1334,123 +1462,164 @@ export function ConfigViews(props: ConfigViewsProps) {
             size="lg"
           >
             <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
-              <h3 className="text-base font-semibold text-stone-900">
-                {trashModalAction === "restore" 
-                  ? "Confirmar Restauración de Registro" 
+              <h3 className="text-sm font-bold text-stone-900 flex items-center gap-1.5">
+                {trashModalAction === "restore" ? (
+                  <RestoreFromTrashOutlinedIcon className="h-4.5 w-4.5 text-emerald-600" />
+                ) : (
+                  <DeleteOutlineOutlinedIcon className="h-4.5 w-4.5 text-red-650" />
+                )}
+                {trashModalAction === "restore"
+                  ? "Confirmar Restauración de Registro"
                   : "Confirmar Eliminación Permanente"
                 }
               </h3>
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                selectedTrashRecord.tipo === "ITEM" 
-                  ? "bg-blue-100 text-blue-800 border border-blue-200" 
-                  : "bg-purple-100 text-purple-800 border border-purple-200"
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border ${
+                selectedTrashRecord.tipo === "ITEM"
+                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                  : "bg-purple-50 text-purple-700 border-purple-200"
               }`}>
                 {selectedTrashRecord.tipo === "ITEM" ? "Equipo" : "Artículo"}
               </span>
             </div>
 
-            <div className="mt-4">
-              <p className="text-sm font-semibold text-stone-800">
-                Elemento: <span className="text-stone-900 font-bold">{selectedTrashRecord.nombre}</span>
+            <div className="mt-3.5 rounded-xl border border-stone-150 bg-stone-50/70 p-3">
+              <p className="text-xs font-bold text-stone-750">
+                Elemento a procesar: <span className="text-stone-900 font-extrabold">{selectedTrashRecord.nombre}</span>
               </p>
-              <p className="text-xs text-stone-500 mt-1">ID original: {selectedTrashRecord.originalId}</p>
+              <p className="text-[10px] text-stone-400 font-mono mt-1">Identificador de origen: {selectedTrashRecord.originalId}</p>
             </div>
 
             {trashDetailsLoading ? (
-              <div className="my-8 flex justify-center">
+              <div className="my-8 flex justify-center py-6">
                 <LoadingInline label="Analizando y cargando dependencias de la base de datos..." />
               </div>
             ) : trashDetails ? (
               <div className="mt-4 space-y-4">
-                <p className="text-xs text-stone-600">
+                <p className="text-xs text-stone-600 font-medium">
                   {trashModalAction === "restore"
-                    ? "Se restaurará el elemento junto con los siguientes datos y relaciones vinculadas:"
-                    : "Se eliminarán de forma física e irreversible todos los siguientes datos resguardados en la base de datos:"
+                    ? "Se reestablecerá de forma atómica el elemento con las siguientes relaciones vinculadas:"
+                    : "Se eliminarán físicamente del servidor de datos las siguientes entidades resguardadas:"
                   }
                 </p>
 
-                <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs space-y-2.5 max-h-[40vh] overflow-y-auto">
+                <div className="rounded-xl border border-stone-200 bg-white p-3 text-xs space-y-2 max-h-[35vh] overflow-y-auto shadow-inner">
                   {selectedTrashRecord.tipo === "ITEM" ? (
                     <>
-                      <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
-                        <span className="font-medium text-stone-700">Registro base de Equipo:</span>
-                        <span className="font-semibold text-stone-900">1 (Activo: {trashDetails.item?.activo ? "Sí" : "No"})</span>
+                      <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                        <span className="font-medium text-stone-700 flex items-center gap-1.5">
+                          <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
+                          Ficha base del Equipo:
+                        </span>
+                        <span className="font-extrabold text-stone-950">1 registro (Activo: {trashDetails.item?.activo ? "Sí" : "No"})</span>
                       </div>
 
                       {trashDetails.cajaItems?.length > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
-                          <span className="text-stone-600">Ubicaciones en Cajas del Depósito:</span>
-                          <span className="font-semibold text-stone-900">{trashDetails.cajaItems.length} registros</span>
+                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex items-center gap-1.5">
+                            <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            Ubicaciones en Cajas del Depósito:
+                          </span>
+                          <span className="font-bold text-stone-900">{trashDetails.cajaItems.length} registros</span>
                         </div>
                       )}
 
                       {trashDetails.itemCodigosSIE?.length > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
-                          <span className="text-stone-600">Códigos de Barra de Inventario (SIE):</span>
-                          <span className="font-semibold text-stone-900">{trashDetails.itemCodigosSIE.length} registros</span>
+                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex items-center gap-1.5">
+                            <SearchOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            Códigos de Barra de Inventario (SIE):
+                          </span>
+                          <span className="font-bold text-stone-900">{trashDetails.itemCodigosSIE.length} códigos</span>
                         </div>
                       )}
 
                       {trashDetails.cajaItemCodigosSIE?.length > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
-                          <span className="text-stone-600">Asociaciones de Códigos SIE a Cajas:</span>
-                          <span className="font-semibold text-stone-900">{trashDetails.cajaItemCodigosSIE.length} registros</span>
+                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex items-center gap-1.5">
+                            <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            Asociaciones de Códigos a Cajas:
+                          </span>
+                          <span className="font-bold text-stone-900">{trashDetails.cajaItemCodigosSIE.length} registros</span>
                         </div>
                       )}
 
                       {trashDetails.movimientoItems?.length > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
-                          <span className="text-stone-600">Historial de Movimientos de Equipos:</span>
-                          <span className="font-semibold text-stone-900">{trashDetails.movimientoItems.length} movimientos</span>
+                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex items-center gap-1.5">
+                            <InfoOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            Historial de Movimientos de Equipos:
+                          </span>
+                          <span className="font-bold text-stone-900">{trashDetails.movimientoItems.length} movimientos</span>
                         </div>
                       )}
 
                       {trashDetails.deletedMovimientos?.length > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
-                          <span className="text-stone-600">Recibos de Entrega / Préstamos completos:</span>
-                          <span className="font-semibold text-stone-900">{trashDetails.deletedMovimientos.length} recibos</span>
+                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex items-center gap-1.5">
+                            <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            Recibos de Entrega / Préstamos completos:
+                          </span>
+                          <span className="font-bold text-stone-900">{trashDetails.deletedMovimientos.length} planillas</span>
                         </div>
                       )}
 
                       {trashDetails.deletedPrestamosActivos?.length > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
-                          <span className="text-stone-600">Préstamos Vigentes (Pendientes de Devolución):</span>
-                          <span className="font-semibold text-stone-900 text-amber-700">{trashDetails.deletedPrestamosActivos.length} activos</span>
+                        <div className="flex items-center justify-between border-b border-stone-100 pb-2 bg-amber-50/50 p-1.5 rounded-lg border border-amber-100">
+                          <span className="text-amber-900 font-bold flex items-center gap-1.5">
+                            <WarningAmberOutlinedIcon className="h-4 w-4 text-amber-600" />
+                            Préstamos Vigentes (Pendientes de Devolución):
+                          </span>
+                          <span className="font-black text-amber-800">{trashDetails.deletedPrestamosActivos.length} activos</span>
                         </div>
                       )}
 
                       {trashDetails.deletedPrestamosHistoriales?.length > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
-                          <span className="text-stone-600">Historial de Préstamos Finalizados:</span>
-                          <span className="font-semibold text-stone-900">{trashDetails.deletedPrestamosHistoriales.length} devueltos</span>
+                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex items-center gap-1.5">
+                            <CheckCircleOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            Historial de Préstamos Finalizados:
+                          </span>
+                          <span className="font-bold text-stone-900">{trashDetails.deletedPrestamosHistoriales.length} devueltos</span>
                         </div>
                       )}
 
                       {trashDetails.stockOperacionItems?.length > 0 && (
                         <div className="flex items-center justify-between">
-                          <span className="text-stone-600">Operaciones de Ajuste de Stock Relacionadas:</span>
-                          <span className="font-semibold text-stone-900">{trashDetails.stockOperacionItems.length} registros</span>
+                          <span className="text-stone-600 flex items-center gap-1.5">
+                            <CheckCircleOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            Operaciones de Ajuste de Stock Relacionadas:
+                          </span>
+                          <span className="font-bold text-stone-900">{trashDetails.stockOperacionItems.length} registros</span>
                         </div>
                       )}
                     </>
                   ) : (
                     <>
-                      <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
-                        <span className="font-medium text-stone-700">Registro base de Artículo:</span>
-                        <span className="font-semibold text-stone-900">1 (Tipo: {trashDetails.articulo?.tipo})</span>
+                      <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                        <span className="font-medium text-stone-700 flex items-center gap-1.5">
+                          <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
+                          Ficha base del Artículo:
+                        </span>
+                        <span className="font-extrabold text-stone-950">1 registro (Tipo: {trashDetails.articulo?.tipo})</span>
                       </div>
 
                       {trashDetails.stockMovimientos?.length > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
-                          <span className="text-stone-600">Movimientos de Stock (Altas, Bajas, Entregas):</span>
-                          <span className="font-semibold text-stone-900">{trashDetails.stockMovimientos.length} transacciones</span>
+                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex items-center gap-1.5">
+                            <InfoOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            Movimientos de Stock (Ingresos / Entregas):
+                          </span>
+                          <span className="font-bold text-stone-900">{trashDetails.stockMovimientos.length} transacciones</span>
                         </div>
                       )}
 
                       {trashDetails.emptyEntregas?.length > 0 && (
                         <div className="flex items-center justify-between">
-                          <span className="text-stone-600">Planillas de Entregas a Personal Completas:</span>
-                          <span className="font-semibold text-stone-900">{trashDetails.emptyEntregas.length} registros</span>
+                          <span className="text-stone-600 flex items-center gap-1.5">
+                            <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            Planillas de Entregas a Personal Completas:
+                          </span>
+                          <span className="font-bold text-stone-900">{trashDetails.emptyEntregas.length} planillas</span>
                         </div>
                       )}
                     </>
@@ -1458,12 +1627,20 @@ export function ConfigViews(props: ConfigViewsProps) {
                 </div>
 
                 {trashModalAction === "delete" ? (
-                  <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">
-                    <span className="font-bold">⚠️ ADVERTENCIA CRÍTICA:</span> Esta acción es permanente, destructiva y no se puede revertir. Se eliminarán físicamente todos los resguardos históricos mostrados arriba y se borrará definitivamente de la papelera.
+                  <div className="rounded-xl border border-red-250 bg-red-50 p-3 text-xs text-red-950 flex gap-2 items-start shadow-sm">
+                    <WarningAmberOutlinedIcon className="h-5 w-5 text-red-750 shrink-0" />
+                    <div>
+                      <strong className="font-extrabold text-red-900 block mb-0.5">⚠️ ADVERTENCIA CRÍTICA:</strong>
+                      Esta acción eliminará físicamente toda la información analizada y es irreversible. Se borrarán permanentemente del sistema de datos del depósito y no habrá forma de recuperarlos.
+                    </div>
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-800">
-                    <span className="font-bold">💡 NOTA DE RESTAURACIÓN:</span> Al confirmar, se reinsertarán de forma atómica todas las dependencias e historial listados arriba, volviendo a estar disponibles en las vistas operativas principales y reportes del sistema.
+                  <div className="rounded-xl border border-emerald-250 bg-emerald-50 p-3 text-xs text-emerald-950 flex gap-2 items-start shadow-sm">
+                    <CheckCircleOutlinedIcon className="h-5 w-5 text-emerald-750 shrink-0" />
+                    <div>
+                      <strong className="font-extrabold text-emerald-900 block mb-0.5">💡 NOTA DE RESTAURACIÓN:</strong>
+                      Al confirmar, se reinsertarán automáticamente todas las dependencias e historiales listados arriba, volviendo a estar disponibles en tiempo real en las vistas operativas principales y reportes del sistema.
+                    </div>
                   </div>
                 )}
               </div>
@@ -1481,7 +1658,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                   setTrashModalAction(null);
                   setTrashDetails(null);
                 }}
-                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+                className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-xs font-bold text-stone-700 hover:bg-stone-50 active:scale-95 transition-all"
               >
                 Cancelar
               </button>
@@ -1489,10 +1666,10 @@ export function ConfigViews(props: ConfigViewsProps) {
                 type="button"
                 onClick={handleConfirmTrashAction}
                 disabled={trashDetailsLoading}
-                className={`rounded-lg px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${
-                  trashModalAction === "delete" 
-                    ? "bg-red-600 hover:bg-red-700 active:bg-red-800" 
-                    : "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800"
+                className={`rounded-xl px-4 py-2 text-xs font-bold text-white active:scale-95 transition-all disabled:cursor-not-allowed disabled:opacity-60 shadow-sm ${
+                  trashModalAction === "delete"
+                    ? "bg-red-655 hover:bg-red-700 border border-red-750"
+                    : "bg-emerald-655 hover:bg-emerald-700 border border-emerald-750"
                 }`}
               >
                 {trashModalAction === "delete" ? "Sí, eliminar permanentemente" : "Sí, restaurar registro completo"}
