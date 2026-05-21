@@ -41,7 +41,6 @@
   "exclude": [
     "node_modules",
     "_deposito_art1_backup",
-    "vitest.config.ts",
-    "src/lib/handlers.test"
+    "vitest.config.ts"
   ]
 }

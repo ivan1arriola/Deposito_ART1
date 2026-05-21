@@ -16,13 +16,21 @@ export async function POST() {
       return Response.json({ initialized: false, message: "Ya existe usuario en el sistema." }, { status: 200 });
     }
 
-    const defaultRango = await withPrismaReadRetry(() =>
+    let defaultRango = await withPrismaReadRetry(() =>
       prisma.rango.findFirst({
-        where: { tipo: "SUBALTERNO" },
-        orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
+        where: { abreviacion: "Desarrollo" },
         select: { rangoId: true, abreviacion: true },
       }),
     );
+    if (!defaultRango) {
+      defaultRango = await withPrismaReadRetry(() =>
+        prisma.rango.findFirst({
+          where: { tipo: "SUBALTERNO" },
+          orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
+          select: { rangoId: true, abreviacion: true },
+        }),
+      );
+    }
     if (!defaultRango) {
       return Response.json({ initialized: false, error: "No hay grados disponibles para crear el usuario inicial." }, { status: 500 });
     }

@@ -76,7 +76,8 @@ INSERT INTO "grado" ("tipo", "abreviacion", "nombre_completo", "orden") VALUES
 ('SUBALTERNO', U&'Cabo 2\00B0', 'Cabo de Segunda', 3),
 ('SUBALTERNO', U&'Sdo. 1\00B0', 'Soldado de Primera', 4),
 ('SUBALTERNO', U&'Sdo. 1\00B0 C/ CIRR', 'Soldado de Primera Cursando CIRR', 5),
-('SUBALTERNO', U&'Sdo. 1\00B0 S/ CIRR', 'Soldado de Primera Sin CIRR', 6);
+('SUBALTERNO', U&'Sdo. 1\00B0 S/ CIRR', 'Soldado de Primera Sin CIRR', 6),
+('SUBALTERNO', 'Desarrollo', 'Desarrollo', 7);
 
 CREATE TABLE "bateria" (
   "bateria_id" SMALLSERIAL PRIMARY KEY,

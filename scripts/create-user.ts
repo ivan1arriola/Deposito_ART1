@@ -26,7 +26,7 @@ const role = ["ADMIN", "EDITOR", "READ_ONLY"].includes(roleInput) ? roleInput : 
 const rangoIdArgRaw = getArg("rango-id", "").trim();
 const gradoArg = getArg("grado", "").trim();
 const nombre = getArg("nombre", username).trim() || username;
-const apellido = getArg("apellido", "S/D").trim() || "S/D";
+const apellido = getArg("apellido", "Sistema").trim() || "Sistema";
 const mailReferenciaArg = getArg("mail", "").trim();
 const mailReferencia = mailReferenciaArg || null;
 
@@ -39,11 +39,18 @@ if (!username || !password || password.length < 8) {
 
 async function main() {
   try {
-    const defaultRango = await prisma.rango.findFirst({
-      where: { tipo: "SUBALTERNO" },
-      orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
+    let defaultRango = await prisma.rango.findFirst({
+      where: { abreviacion: "Desarrollo" },
       select: { rangoId: true },
     });
+
+    if (!defaultRango) {
+      defaultRango = await prisma.rango.findFirst({
+        where: { tipo: "SUBALTERNO" },
+        orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
+        select: { rangoId: true },
+      });
+    }
 
     let rangoId = Number.isInteger(Number(rangoIdArgRaw)) && Number(rangoIdArgRaw) > 0 ? Number(rangoIdArgRaw) : null;
 
