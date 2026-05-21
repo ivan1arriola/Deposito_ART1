@@ -3,6 +3,27 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 
+export async function GET(req: Request, context: { params: Promise<{ papeleraId: string }> }) {
+  const auth = await authorizeRequest(req, "delete_data");
+  if (!auth.ok) return auth.response;
+
+  const { papeleraId } = await context.params;
+
+  try {
+    const registro = await prisma.papeleraRegistro.findUnique({
+      where: { papeleraId },
+    });
+
+    if (!registro) {
+      return NextResponse.json({ error: "Registro no encontrado en la papelera." }, { status: 404 });
+    }
+
+    return NextResponse.json(registro);
+  } catch (error) {
+    return NextResponse.json({ error: "No se pudo obtener el registro de la papelera." }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: Request, context: { params: Promise<{ papeleraId: string }> }) {
   const auth = await authorizeRequest(req, "delete_data");
   if (!auth.ok) return auth.response;

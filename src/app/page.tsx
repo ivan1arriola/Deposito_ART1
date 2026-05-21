@@ -451,31 +451,22 @@ export default function Home() {
   }, [loadPapelera, loadData]);
 
   const deletePapeleraPermanent = useCallback(async (papeleraId: string) => {
-    const record = papeleraRecords.find((r) => r.papeleraId === papeleraId);
-    openConfirmDialog({
-      title: "Eliminar permanentemente",
-      message: `¿Estás seguro de que deseas eliminar permanentemente a ${record?.nombre ?? "este registro"} de la papelera? Esta acción NO se puede deshacer y borrará toda su historia relacionada definitivamente.`,
-      confirmText: "Eliminar permanentemente",
-      tone: "danger",
-      onConfirm: async () => {
-        try {
-          const response = await fetch(`/api/papelera/${papeleraId}`, {
-            method: "DELETE",
-          });
-          if (response.ok) {
-            setStatus("Eliminado permanentemente.");
-            void loadPapelera();
-          } else {
-            const data = await response.json();
-            setStatus(data.error || "No se pudo eliminar permanentemente.");
-          }
-        } catch (err) {
-          console.error(err);
-          setStatus("Error de red al eliminar permanentemente.");
-        }
-      },
-    });
-  }, [papeleraRecords, loadPapelera]);
+    try {
+      const response = await fetch(`/api/papelera/${papeleraId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setStatus("Eliminado permanentemente.");
+        void loadPapelera();
+      } else {
+        const data = await response.json();
+        setStatus(data.error || "No se pudo eliminar permanentemente.");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Error de red al eliminar permanentemente.");
+    }
+  }, [loadPapelera]);
   const {
     loginMode,
     loginUsername,

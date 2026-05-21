@@ -7,6 +7,7 @@ import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MainView } from "@/types/views";
 import type { Articulo, AuditoriaRecord, FirmaConfig, Rango, Role, TipoArticulo, UsuarioAdmin } from "@/types/entities";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
+import { ModalFrame } from "../modals/ModalFrame";
 
 type RangoTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
 type RangoConfig = Rango & { tipo?: RangoTipo };
@@ -186,6 +187,45 @@ const ARTICULO_TIPO_LABEL: Record<TipoArticulo, string> = {
 export function ConfigViews(props: ConfigViewsProps) {
   const [activeUserAccountTypeTab, setActiveUserAccountTypeTab] = useState<UserAccountType>("SISTEMA");
   const [personalUsersSearch, setPersonalUsersSearch] = useState("");
+
+  // Local state for Papelera interactive preview
+  const [selectedTrashRecord, setSelectedTrashRecord] = useState<any | null>(null);
+  const [trashDetails, setTrashDetails] = useState<any | null>(null);
+  const [trashDetailsLoading, setTrashDetailsLoading] = useState(false);
+  const [trashModalAction, setTrashModalAction] = useState<"restore" | "delete" | null>(null);
+
+  const handleOpenTrashModal = async (record: any, action: "restore" | "delete") => {
+    setSelectedTrashRecord(record);
+    setTrashModalAction(action);
+    setTrashDetailsLoading(true);
+    setTrashDetails(null);
+    try {
+      const res = await fetch(`/api/papelera/${record.papeleraId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTrashDetails(data.payload);
+      } else {
+        console.error("Error fetching trash details");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTrashDetailsLoading(false);
+    }
+  };
+
+  const handleConfirmTrashAction = () => {
+    if (!selectedTrashRecord || !trashModalAction) return;
+    if (trashModalAction === "restore") {
+      props.onRestorePapelera && props.onRestorePapelera(selectedTrashRecord.papeleraId);
+    } else {
+      props.onDeletePapeleraPermanent && props.onDeletePapeleraPermanent(selectedTrashRecord.papeleraId);
+    }
+    // Close modal
+    setSelectedTrashRecord(null);
+    setTrashModalAction(null);
+    setTrashDetails(null);
+  };
   const [equiposDisplayMode, setEquiposDisplayMode] = useState<EquiposDisplayMode>("por_estado");
   const usuariosSistema = useMemo(
     () => props.usuarios.filter((usuario) => usuario.accountType === "SISTEMA"),
@@ -1269,12 +1309,12 @@ export function ConfigViews(props: ConfigViewsProps) {
                       <SmallActionButton
                         text="Restaurar"
                         tone="ok"
-                        onClick={() => props.onRestorePapelera && props.onRestorePapelera(record.papeleraId)}
+                        onClick={() => handleOpenTrashModal(record, "restore")}
                       />
                       <SmallActionButton
                         text="Eliminar Permanente"
                         tone="delete"
-                        onClick={() => props.onDeletePapeleraPermanent && props.onDeletePapeleraPermanent(record.papeleraId)}
+                        onClick={() => handleOpenTrashModal(record, "delete")}
                       />
                     </div>
                   </div>
@@ -1283,6 +1323,183 @@ export function ConfigViews(props: ConfigViewsProps) {
             </div>
           )}
         </article>
+
+        {selectedTrashRecord && (
+          <ModalFrame
+            onClose={() => {
+              setSelectedTrashRecord(null);
+              setTrashModalAction(null);
+              setTrashDetails(null);
+            }}
+            size="lg"
+          >
+            <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
+              <h3 className="text-base font-semibold text-stone-900">
+                {trashModalAction === "restore" 
+                  ? "Confirmar Restauración de Registro" 
+                  : "Confirmar Eliminación Permanente"
+                }
+              </h3>
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                selectedTrashRecord.tipo === "ITEM" 
+                  ? "bg-blue-100 text-blue-800 border border-blue-200" 
+                  : "bg-purple-100 text-purple-800 border border-purple-200"
+              }`}>
+                {selectedTrashRecord.tipo === "ITEM" ? "Equipo" : "Artículo"}
+              </span>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-sm font-semibold text-stone-800">
+                Elemento: <span className="text-stone-900 font-bold">{selectedTrashRecord.nombre}</span>
+              </p>
+              <p className="text-xs text-stone-500 mt-1">ID original: {selectedTrashRecord.originalId}</p>
+            </div>
+
+            {trashDetailsLoading ? (
+              <div className="my-8 flex justify-center">
+                <LoadingInline label="Analizando y cargando dependencias de la base de datos..." />
+              </div>
+            ) : trashDetails ? (
+              <div className="mt-4 space-y-4">
+                <p className="text-xs text-stone-600">
+                  {trashModalAction === "restore"
+                    ? "Se restaurará el elemento junto con los siguientes datos y relaciones vinculadas:"
+                    : "Se eliminarán de forma física e irreversible todos los siguientes datos resguardados en la base de datos:"
+                  }
+                </p>
+
+                <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs space-y-2.5 max-h-[40vh] overflow-y-auto">
+                  {selectedTrashRecord.tipo === "ITEM" ? (
+                    <>
+                      <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                        <span className="font-medium text-stone-700">Registro base de Equipo:</span>
+                        <span className="font-semibold text-stone-900">1 (Activo: {trashDetails.item?.activo ? "Sí" : "No"})</span>
+                      </div>
+
+                      {trashDetails.cajaItems?.length > 0 && (
+                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                          <span className="text-stone-600">Ubicaciones en Cajas del Depósito:</span>
+                          <span className="font-semibold text-stone-900">{trashDetails.cajaItems.length} registros</span>
+                        </div>
+                      )}
+
+                      {trashDetails.itemCodigosSIE?.length > 0 && (
+                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                          <span className="text-stone-600">Códigos de Barra de Inventario (SIE):</span>
+                          <span className="font-semibold text-stone-900">{trashDetails.itemCodigosSIE.length} registros</span>
+                        </div>
+                      )}
+
+                      {trashDetails.cajaItemCodigosSIE?.length > 0 && (
+                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                          <span className="text-stone-600">Asociaciones de Códigos SIE a Cajas:</span>
+                          <span className="font-semibold text-stone-900">{trashDetails.cajaItemCodigosSIE.length} registros</span>
+                        </div>
+                      )}
+
+                      {trashDetails.movimientoItems?.length > 0 && (
+                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                          <span className="text-stone-600">Historial de Movimientos de Equipos:</span>
+                          <span className="font-semibold text-stone-900">{trashDetails.movimientoItems.length} movimientos</span>
+                        </div>
+                      )}
+
+                      {trashDetails.deletedMovimientos?.length > 0 && (
+                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                          <span className="text-stone-600">Recibos de Entrega / Préstamos completos:</span>
+                          <span className="font-semibold text-stone-900">{trashDetails.deletedMovimientos.length} recibos</span>
+                        </div>
+                      )}
+
+                      {trashDetails.deletedPrestamosActivos?.length > 0 && (
+                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                          <span className="text-stone-600">Préstamos Vigentes (Pendientes de Devolución):</span>
+                          <span className="font-semibold text-stone-900 text-amber-700">{trashDetails.deletedPrestamosActivos.length} activos</span>
+                        </div>
+                      )}
+
+                      {trashDetails.deletedPrestamosHistoriales?.length > 0 && (
+                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                          <span className="text-stone-600">Historial de Préstamos Finalizados:</span>
+                          <span className="font-semibold text-stone-900">{trashDetails.deletedPrestamosHistoriales.length} devueltos</span>
+                        </div>
+                      )}
+
+                      {trashDetails.stockOperacionItems?.length > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-stone-600">Operaciones de Ajuste de Stock Relacionadas:</span>
+                          <span className="font-semibold text-stone-900">{trashDetails.stockOperacionItems.length} registros</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                        <span className="font-medium text-stone-700">Registro base de Artículo:</span>
+                        <span className="font-semibold text-stone-900">1 (Tipo: {trashDetails.articulo?.tipo})</span>
+                      </div>
+
+                      {trashDetails.stockMovimientos?.length > 0 && (
+                        <div className="flex items-center justify-between border-b border-stone-200/60 pb-1.5">
+                          <span className="text-stone-600">Movimientos de Stock (Altas, Bajas, Entregas):</span>
+                          <span className="font-semibold text-stone-900">{trashDetails.stockMovimientos.length} transacciones</span>
+                        </div>
+                      )}
+
+                      {trashDetails.emptyEntregas?.length > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-stone-600">Planillas de Entregas a Personal Completas:</span>
+                          <span className="font-semibold text-stone-900">{trashDetails.emptyEntregas.length} registros</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {trashModalAction === "delete" ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">
+                    <span className="font-bold">⚠️ ADVERTENCIA CRÍTICA:</span> Esta acción es permanente, destructiva y no se puede revertir. Se eliminarán físicamente todos los resguardos históricos mostrados arriba y se borrará definitivamente de la papelera.
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-800">
+                    <span className="font-bold">💡 NOTA DE RESTAURACIÓN:</span> Al confirmar, se reinsertarán de forma atómica todas las dependencias e historial listados arriba, volviendo a estar disponibles en las vistas operativas principales y reportes del sistema.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="my-6 text-center text-xs text-red-600">
+                No se pudieron cargar los detalles para el análisis de impacto.
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-stone-200 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedTrashRecord(null);
+                  setTrashModalAction(null);
+                  setTrashDetails(null);
+                }}
+                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmTrashAction}
+                disabled={trashDetailsLoading}
+                className={`rounded-lg px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${
+                  trashModalAction === "delete" 
+                    ? "bg-red-600 hover:bg-red-700 active:bg-red-800" 
+                    : "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800"
+                }`}
+              >
+                {trashModalAction === "delete" ? "Sí, eliminar permanentemente" : "Sí, restaurar registro completo"}
+              </button>
+            </div>
+          </ModalFrame>
+        )}
       </section>
     );
   }
