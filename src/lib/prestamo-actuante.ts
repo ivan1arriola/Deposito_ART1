@@ -104,6 +104,7 @@ export async function ensurePrestamoActuanteCompatibility() {
           INSERT INTO "movimiento_destinatario_personal" ("movimiento_id", "ci")
           SELECT "movimiento_id", "personal_ci"
           FROM "movimiento"
+          WHERE "personal_ci" IS NOT NULL
           ON CONFLICT ("movimiento_id") DO NOTHING;
         END IF;
       END;
