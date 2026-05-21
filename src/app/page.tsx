@@ -404,6 +404,78 @@ export default function Home() {
     loadStockData,
     clearLoadedData: clearLoadedDataState,
   } = useHomeData({ onStatusChange: setStatus, activeView });
+
+  const [papeleraRecords, setPapeleraRecords] = useState<any[]>([]);
+  const [papeleraLoading, setPapeleraLoading] = useState(false);
+
+  const loadPapelera = useCallback(async () => {
+    setPapeleraLoading(true);
+    try {
+      const response = await fetch("/api/papelera");
+      if (response.ok) {
+        const data = await response.json();
+        setPapeleraRecords(data);
+      } else {
+        console.error("No se pudo cargar la papelera");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPapeleraLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeView === "papelera") {
+      void loadPapelera();
+    }
+  }, [activeView, loadPapelera]);
+
+  const restorePapelera = useCallback(async (papeleraId: string) => {
+    try {
+      const response = await fetch(`/api/papelera/${papeleraId}/restore`, {
+        method: "POST",
+      });
+      if (response.ok) {
+        setStatus("Restaurado con éxito.");
+        void loadPapelera();
+        void loadData();
+      } else {
+        const data = await response.json();
+        setStatus(data.error || "No se pudo restaurar.");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Error de red al restaurar.");
+    }
+  }, [loadPapelera, loadData]);
+
+  const deletePapeleraPermanent = useCallback(async (papeleraId: string) => {
+    const record = papeleraRecords.find((r) => r.papeleraId === papeleraId);
+    openConfirmDialog({
+      title: "Eliminar permanentemente",
+      message: `¿Estás seguro de que deseas eliminar permanentemente a ${record?.nombre ?? "este registro"} de la papelera? Esta acción NO se puede deshacer y borrará toda su historia relacionada definitivamente.`,
+      confirmText: "Eliminar permanentemente",
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/papelera/${papeleraId}`, {
+            method: "DELETE",
+          });
+          if (response.ok) {
+            setStatus("Eliminado permanentemente.");
+            void loadPapelera();
+          } else {
+            const data = await response.json();
+            setStatus(data.error || "No se pudo eliminar permanentemente.");
+          }
+        } catch (err) {
+          console.error(err);
+          setStatus("Error de red al eliminar permanentemente.");
+        }
+      },
+    });
+  }, [papeleraRecords, loadPapelera]);
   const {
     loginMode,
     loginUsername,
@@ -6249,7 +6321,7 @@ export default function Home() {
 
           {inCatalogView || (isAdmin && inAdminConfigView) ? (
           <ConfigViews
-            activeView={activeView as "grados" | "baterias" | "articulos" | "equipos" | "firmas" | "usuarios" | "auditoria"}
+            activeView={activeView as "grados" | "baterias" | "articulos" | "equipos" | "firmas" | "usuarios" | "auditoria" | "papelera"}
             isAdmin={isAdmin}
             canWrite={canWrite}
             rangos={rangosConfigView}
@@ -6376,6 +6448,10 @@ export default function Home() {
             auditActionLabel={auditActionLabel}
             auditEntityLabel={auditEntityLabel}
             renderAuditDetalle={renderAuditDetalle}
+            papeleraRecords={papeleraRecords}
+            papeleraLoading={papeleraLoading}
+            onRestorePapelera={restorePapelera}
+            onDeletePapeleraPermanent={deletePapeleraPermanent}
           />
           ) : null}
 

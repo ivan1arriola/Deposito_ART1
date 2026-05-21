@@ -834,6 +834,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
           itemId: true,
           nombre: true,
           activo: true,
+          ordenPdf: true,
+          existenciaSie: true,
         },
       });
 
@@ -844,6 +846,122 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
       );
       const remainingIds = await getOrderedItemIds(tx, existing.activo, itemId);
 
+      // 1. Fetch related data for backup
+      const cajaItems = await tx.cajaItem.findMany({
+        where: { itemId },
+      });
+
+      const itemCodigosSIE = await tx.itemCodigoSIE.findMany({
+        where: { itemId },
+      });
+
+      const itemCodigoSIEIds = itemCodigosSIE.map((c) => c.itemCodigoSIEId);
+      const cajaItemCodigosSIE = itemCodigoSIEIds.length > 0
+        ? await tx.cajaItemCodigoSIE.findMany({
+            where: { itemCodigoSIEId: { in: itemCodigoSIEIds } },
+          })
+        : [];
+
+      const movimientoItems = await tx.movimientoItem.findMany({
+        where: { itemId },
+      });
+
+      const stockOperacionItems = await tx.stockOperacionItem.findMany({
+        where: { itemId },
+      });
+
+      // Determine which Movimiento records will become empty and therefore be deleted
+      const emptyMovimientoIds = [];
+      for (const movId of affectedMovimientoIds) {
+        const count = await tx.movimientoItem.count({
+          where: { movimientoId: movId },
+        });
+        const countThisItem = movimientoItems.filter((mi) => mi.movimientoId === movId).length;
+        if (count === countThisItem) {
+          emptyMovimientoIds.push(movId);
+        }
+      }
+
+      const deletedMovimientos = emptyMovimientoIds.length > 0
+        ? await tx.movimiento.findMany({
+            where: { movimientoId: { in: emptyMovimientoIds } },
+          })
+        : [];
+
+      const deletedMovimientoDestinatariosPersonal = emptyMovimientoIds.length > 0
+        ? await tx.movimientoDestinatarioPersonal.findMany({
+            where: { movimientoId: { in: emptyMovimientoIds } },
+          })
+        : [];
+
+      const deletedMovimientoDestinatariosExterno = emptyMovimientoIds.length > 0
+        ? await tx.movimientoDestinatarioExterno.findMany({
+            where: { movimientoId: { in: emptyMovimientoIds } },
+          })
+        : [];
+
+      const deletedPrestamosActivos = emptyMovimientoIds.length > 0
+        ? await tx.prestamoActivo.findMany({
+            where: { movimientoId: { in: emptyMovimientoIds } },
+          })
+        : [];
+
+      const deletedPrestamosHistoriales = emptyMovimientoIds.length > 0
+        ? await tx.prestamoHistorial.findMany({
+            where: { movimientoId: { in: emptyMovimientoIds } },
+          })
+        : [];
+
+      // Determine which StockOperacion records will become empty
+      const emptyStockOperacionIds = [];
+      for (const stockOpId of affectedStockOperacionIds) {
+        const count = await tx.stockOperacionItem.count({
+          where: { stockOperacionId: stockOpId },
+        });
+        const countThisItem = stockOperacionItems.filter((soi) => soi.stockOperacionId === stockOpId).length;
+        if (count === countThisItem) {
+          emptyStockOperacionIds.push(stockOpId);
+        }
+      }
+
+      const deletedStockOperaciones = emptyStockOperacionIds.length > 0
+        ? await tx.stockOperacion.findMany({
+            where: { stockOperacionId: { in: emptyStockOperacionIds } },
+          })
+        : [];
+
+      // Construct JSON payload converting bigints to strings
+      const payload = JSON.parse(
+        JSON.stringify(
+          {
+            item: existing,
+            cajaItems,
+            itemCodigosSIE,
+            cajaItemCodigosSIE,
+            movimientoItems,
+            stockOperacionItems,
+            deletedMovimientos,
+            deletedMovimientoDestinatariosPersonal,
+            deletedMovimientoDestinatariosExterno,
+            deletedPrestamosActivos,
+            deletedPrestamosHistoriales,
+            deletedStockOperaciones,
+          },
+          (key, value) => (typeof value === "bigint" ? value.toString() : value)
+        )
+      );
+
+      // Create PapeleraRegistro
+      await tx.papeleraRegistro.create({
+        data: {
+          tipo: "ITEM",
+          nombre: existing.nombre,
+          originalId: String(existing.itemId),
+          payload,
+        },
+      });
+
+      // 2. Perform active database deletions
       await tx.movimientoItem.deleteMany({
         where: { itemId },
       });
@@ -899,7 +1017,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
         nombre: deletionResult.removed.nombre,
         impacto: deletionResult.impacto.resumen,
         advertencia:
-          "Acción destructiva. Se elimino el equipo junto a sus codigos SIE, apariciones en cajas y movimientos vacios relacionados.",
+          "Equipo enviado a la papelera junto a sus codigos SIE, apariciones en cajas y movimientos vacios relacionados.",
       },
     });
 

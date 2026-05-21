@@ -79,30 +79,102 @@ export async function DELETE(req: Request, context: { params: Promise<{ articulo
   if (articuloId === null) return NextResponse.json({ error: "articuloId inválido." }, { status: 400 });
 
   try {
-    const deleted = await prisma.articulo.delete({
-      where: { articuloId },
+    const deletionResult = await prisma.$transaction(async (tx) => {
+      const existing = await tx.articulo.findUnique({
+        where: { articuloId },
+      });
+
+      if (!existing) {
+        throw new Error("P2025"); // Simulate not found
+      }
+
+      // 1. Get all related ArticuloStockMovimiento
+      const stockMovimientos = await tx.articuloStockMovimiento.findMany({
+        where: { articuloId },
+      });
+
+      // 2. Identify and fetch ArticuloEntregaPersonal that are affected
+      const affectedEntregaIds = Array.from(
+        new Set(
+          stockMovimientos
+            .map((m) => m.articuloEntregaPersonalId)
+            .filter((id): id is bigint => id !== null)
+        )
+      );
+
+      const affectedEntregas = affectedEntregaIds.length > 0
+        ? await tx.articuloEntregaPersonal.findMany({
+            where: { articuloEntregaPersonalId: { in: affectedEntregaIds } },
+            include: { movimientosStock: true },
+          })
+        : [];
+
+      // Determine which ones will become empty (i.e. only contain movements of this article)
+      const emptyEntregas = affectedEntregas.filter((entrega) =>
+        entrega.movimientosStock.every((m) => m.articuloId === articuloId)
+      );
+      const emptyEntregaIds = emptyEntregas.map((e) => e.articuloEntregaPersonalId);
+
+      // Serialize everything
+      const payload = JSON.parse(
+        JSON.stringify(
+          {
+            articulo: existing,
+            stockMovimientos,
+            emptyEntregas,
+          },
+          (key, value) => (typeof value === "bigint" ? value.toString() : value)
+        )
+      );
+
+      // Create PapeleraRegistro
+      await tx.papeleraRegistro.create({
+        data: {
+          tipo: "ARTICULO",
+          nombre: existing.nombre,
+          originalId: String(existing.articuloId),
+          payload,
+        },
+      });
+
+      // Delete from active tables
+      // Since onDelete on stockMovimiento -> Article is Restrict, we must delete stockMovimientos first
+      await tx.articuloStockMovimiento.deleteMany({
+        where: { articuloId },
+      });
+
+      // Delete empty deliveries
+      if (emptyEntregaIds.length > 0) {
+        await tx.articuloEntregaPersonal.deleteMany({
+          where: { articuloEntregaPersonalId: { in: emptyEntregaIds } },
+        });
+      }
+
+      // Finally delete the Articulo
+      const removed = await tx.articulo.delete({
+        where: { articuloId },
+      });
+
+      return { removed };
     });
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
       accion: "DELETE",
       entidad: "ARTICULO",
-      entidadId: String(deleted.articuloId),
-      detalle: { nombre: deleted.nombre, tipo: deleted.tipo },
+      entidadId: String(deletionResult.removed.articuloId),
+      detalle: { nombre: deletionResult.removed.nombre, tipo: deletionResult.removed.tipo },
     });
 
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
+    if (error instanceof Error && error.message === "P2025") {
+      return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+    }
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
       if (code === "P2025") {
         return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
-      }
-      if (code === "P2003") {
-        return NextResponse.json(
-          { error: "No se puede eliminar el artículo porque tiene movimientos de stock registrados." },
-          { status: 409 },
-        );
       }
     }
 

@@ -21,7 +21,7 @@ type AuditUserOption = {
 type UserAccountType = UsuarioAdmin["accountType"];
 
 interface ConfigViewsProps {
-  activeView: "grados" | "baterias" | "articulos" | "equipos" | "firmas" | "usuarios" | "auditoria";
+  activeView: "grados" | "baterias" | "articulos" | "equipos" | "firmas" | "usuarios" | "auditoria" | "papelera";
   isAdmin: boolean;
   canWrite: boolean;
   // Grados state
@@ -160,6 +160,11 @@ interface ConfigViewsProps {
   auditActionLabel: (accion: string) => string;
   auditEntityLabel: (entidad: string) => string;
   renderAuditDetalle: (detalle: unknown, ciReferences?: AuditCiReferences) => ReactNode;
+  // Papelera state and callbacks
+  papeleraRecords?: Array<{ papeleraId: string; tipo: string; nombre: string; originalId: string; createdAt: string }>;
+  papeleraLoading?: boolean;
+  onRestorePapelera?: (papeleraId: string) => void;
+  onDeletePapeleraPermanent?: (papeleraId: string) => void;
 }
 
 const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "READ_ONLY"];
@@ -1213,6 +1218,70 @@ export function ConfigViews(props: ConfigViewsProps) {
               className="mt-3"
             />
           ) : null}
+        </article>
+      </section>
+    );
+  }
+
+  if (props.activeView === "papelera" && props.isAdmin) {
+    return (
+      <section className="mt-6 grid grid-cols-1 gap-4">
+        <article className="ej-card rounded-2xl p-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-stone-900">Papelera de Reciclaje</h2>
+              <p className="mt-1 text-xs text-stone-600">
+                Visualiza y restaura artículos y equipos eliminados lógicamente, incluyendo sus recibos, préstamos y movimientos históricos asociados.
+              </p>
+            </div>
+          </div>
+
+          {props.papeleraLoading ? (
+            <div className="mt-6 flex justify-center py-8">
+              <LoadingInline label="Cargando papelera..." />
+            </div>
+          ) : (
+            <div className="mt-4 space-y-2">
+              {!props.papeleraRecords || props.papeleraRecords.length === 0 ? (
+                <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-center">
+                  <p className="text-sm text-stone-600">La papelera está vacía.</p>
+                </div>
+              ) : (
+                props.papeleraRecords.map((record) => (
+                  <div key={record.papeleraId} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-stone-800">{record.nombre}</span>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                          record.tipo === "ITEM" 
+                            ? "bg-blue-100 text-blue-800 border border-blue-200" 
+                            : "bg-purple-100 text-purple-800 border border-purple-200"
+                        }`}>
+                          {record.tipo === "ITEM" ? "Equipo" : "Artículo"}
+                        </span>
+                        <span className="text-[10px] text-stone-500">ID original: {record.originalId}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-stone-500">
+                        Eliminado el: {formatDateTimeForDisplay(record.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <SmallActionButton
+                        text="Restaurar"
+                        tone="ok"
+                        onClick={() => props.onRestorePapelera && props.onRestorePapelera(record.papeleraId)}
+                      />
+                      <SmallActionButton
+                        text="Eliminar Permanente"
+                        tone="delete"
+                        onClick={() => props.onDeletePapeleraPermanent && props.onDeletePapeleraPermanent(record.papeleraId)}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </article>
       </section>
     );

@@ -47,6 +47,7 @@ export type MainView =
   | "firmas"
   | "usuarios"
   | "auditoria"
+  | "papelera"
   | "etiquetado_codigos_sie"
   | "etiquetado_registrar_caja"
   | "etiquetado_listado_cajas"

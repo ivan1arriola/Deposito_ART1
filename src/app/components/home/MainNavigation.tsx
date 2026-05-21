@@ -39,9 +39,10 @@ import RemoveOutlinedIcon from "@mui/icons-material/RemoveOutlined";
 import SellOutlinedIcon from "@mui/icons-material/SellOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import type { MainView } from "@/types/views";
 
-type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recordatorios" | "firmas" | "usuarios" | "auditoria" | "usuario_nuevo">;
+type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recordatorios" | "firmas" | "usuarios" | "auditoria" | "usuario_nuevo" | "papelera">;
 type ArticuloView = Extract<MainView, "articulos" | "articulo_nuevo" | "articulo_stock_ingreso" | "articulo_entrega_personal" | "articulo_entregas_historial">;
 type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo">;
 type StockView = Extract<
@@ -120,6 +121,7 @@ const icons = {
   audit: <FactCheckOutlinedIcon {...materialIconProps} />,
   minus: <RemoveOutlinedIcon {...materialIconProps} />,
   history: <HistoryOutlinedIcon {...materialIconProps} />,
+  trash: <DeleteOutlineOutlinedIcon {...materialIconProps} />,
   search: (
     <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -135,6 +137,7 @@ const configViews: Array<NavOption<ConfigView>> = [
   { view: "usuarios", label: "Usuarios registrados", icon: icons.users, adminOnly: true },
   { view: "usuario_nuevo", label: "Alta de usuario", icon: icons.altas, adminOnly: true },
   { view: "auditoria", label: "Auditoría detallada", icon: icons.audit, adminOnly: true },
+  { view: "papelera", label: "Papelera de reciclaje", icon: icons.trash, adminOnly: true },
 ];
 
 const articuloViews: Array<NavOption<ArticuloView>> = [

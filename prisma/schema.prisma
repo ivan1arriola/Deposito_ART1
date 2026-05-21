@@ -546,3 +546,14 @@ model ConfigFirma {
 
   @@map("config_firma")
 }
+
+model PapeleraRegistro {
+  papeleraId   String   @id @default(cuid()) @map("papelera_id")
+  tipo         String   @map("tipo") // "ITEM" o "ARTICULO"
+  nombre       String   @map("nombre")
+  originalId   String   @map("original_id")
+  payload      Json     @map("payload") @db.JsonB
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("papelera_registro")
+}
