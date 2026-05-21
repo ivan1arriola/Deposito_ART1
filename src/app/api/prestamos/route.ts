@@ -234,9 +234,9 @@ export async function POST(request: Request) {
 
   const clasePrestamo = inferPrestamoClase(body as Record<string, unknown>);
   const destinatarioTipo = parseDestinatarioTipo(body.destinatarioTipo);
-  const destinatarioCi = String(body.destinatarioCi ?? "").trim();
+  const destinatarioCi = String(body.destinatarioCi ?? "").trim().replace(/\D/g, "");
   const destinatarioExterno = sanitizeExternalPayload(body.destinatarioExterno);
-  const actuanteCi = String(body.actuanteCi ?? "").trim();
+  const actuanteCi = String(body.actuanteCi ?? "").trim().replace(/\D/g, "");
   const fechaPrestamoInput = body.fechaPrestamo?.trim() || getTodayDateInput();
   const fechaPrestamo = parseFechaPrestamo(body.fechaPrestamo);
   if (!fechaPrestamo) {

@@ -5,6 +5,8 @@ import { ensurePrestamoActuanteCompatibility, upsertPrestamoActuante } from "@/l
 import { logAudit } from "@/lib/audit";
 import { notifyAdminOnMovement } from "@/lib/notify-admins";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
+import { prisma } from "@/lib/prisma";
+import { formatUruguayanCi, generateRandomUruguayanCi } from "@/lib/ci";
 
 const mockCreatedPrestamo = {
   movimientoId: BigInt(123),
@@ -112,15 +114,7 @@ describe("POST /api/prestamos", () => {
     vi.clearAllMocks();
   });
 
-  function createMockRequest(body: unknown) {
-    return new Request("http://localhost:3000/api/prestamos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  }
-
-  it("acepta un prestamo pendiente con actuante seleccionado", async () => {
+  function mockAuthorizedUser() {
     vi.mocked(authorizeRequest).mockResolvedValue({
       ok: true,
       user: {
@@ -133,12 +127,27 @@ describe("POST /api/prestamos", () => {
         grado: "Alf.",
       },
     } as never);
+  }
 
-    vi.mocked((await import("@/lib/prisma")).prisma.item.findMany).mockResolvedValue([
+  function mockBaseLookups() {
+    vi.mocked(prisma.item.findMany).mockResolvedValue([
       { itemId: BigInt(1), nombre: "Bolsa Negra P/ Residuos Grande" },
     ] as never);
-    vi.mocked((await import("@/lib/prisma")).prisma.rango.findUnique).mockResolvedValue({ orden: 40 } as never);
-    vi.mocked((await import("@/lib/prisma")).prisma.personal.findFirst).mockResolvedValue({
+    vi.mocked(prisma.rango.findUnique).mockResolvedValue({ orden: 40 } as never);
+  }
+
+  function createMockRequest(body: unknown) {
+    return new Request("http://localhost:3000/api/prestamos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("acepta un prestamo pendiente con actuante seleccionado", async () => {
+    mockAuthorizedUser();
+    mockBaseLookups();
+    vi.mocked(prisma.personal.findFirst).mockResolvedValue({
       ci: "51067524",
       apellido1: "Rodriguez",
       apellido2: "Straneo",
@@ -173,10 +182,137 @@ describe("POST /api/prestamos", () => {
       reciboNumero: "PR-00000123",
     });
 
+    expect(prisma.personal.findFirst).toHaveBeenCalledWith({
+      where: { ci: "51067524" },
+      select: {
+        ci: true,
+        apellido1: true,
+        apellido2: true,
+        nombre1: true,
+        nombre2: true,
+        rango: { select: { tipo: true, abreviacion: true, nombreCompleto: true, orden: true } },
+      },
+    });
+
     expect(mockTx.movimientoDestinatarioPersonal.create).not.toHaveBeenCalled();
     expect(mockTx.movimientoDestinatarioExterno.create).not.toHaveBeenCalled();
     expect(mockTx.personaExterna.upsert).not.toHaveBeenCalled();
     expect(upsertPrestamoActuante).toHaveBeenCalledWith(mockTx, BigInt(123), "51067524");
     expect(ensurePrestamoActuanteCompatibility).toHaveBeenCalled();
+    expect(logAudit).toHaveBeenCalled();
+    expect(notifyAdminOnMovement).toHaveBeenCalled();
+    expect(sendPersonalMovementEmailNotification).not.toHaveBeenCalled();
+  });
+
+  it("acepta un prestamo interno y guarda destinatario personal", async () => {
+    mockAuthorizedUser();
+    mockBaseLookups();
+    const destinatarioCi = generateRandomUruguayanCi();
+    vi.mocked(prisma.personal.findFirst)
+      .mockResolvedValueOnce({
+        ci: destinatarioCi,
+        apellido1: "Gonzalez",
+        apellido2: null,
+        nombre1: "Maria",
+        nombre2: null,
+        rango: {
+          tipo: "SUBALTERNO",
+          abreviacion: "Cbo.",
+          nombreCompleto: "Cabo",
+          orden: 20,
+        },
+      } as never)
+      .mockResolvedValueOnce({
+        ci: "51067524",
+        apellido1: "Rodriguez",
+        apellido2: "Straneo",
+        nombre1: "Leandro",
+        nombre2: null,
+        rango: {
+          tipo: "OFICIAL",
+          abreviacion: "Alf.",
+          nombreCompleto: "Alferez",
+          orden: 5,
+        },
+      } as never);
+
+    const res = await POST(
+      createMockRequest({
+        clasePrestamo: "INTERNO",
+        destinatarioTipo: "PERSONAL",
+        destinatarioCi: formatUruguayanCi(destinatarioCi),
+        actuanteCi: "5.106.752-4",
+        fechaPrestamo: "21/05/2026",
+        fechaEstimadaDevolucionTexto: "30 dias",
+        comentarios: "Grupo Artilleria 2",
+        items: [{ itemId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(prisma.personal.findFirst).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.objectContaining({ ci: destinatarioCi }),
+      }),
+    );
+    expect(mockTx.movimientoDestinatarioPersonal.create).toHaveBeenCalledWith({
+      data: {
+        movimientoId: BigInt(123),
+        ci: destinatarioCi,
+      },
+    });
+    expect(mockTx.movimientoDestinatarioExterno.create).not.toHaveBeenCalled();
+    expect(mockTx.personaExterna.upsert).not.toHaveBeenCalled();
+  });
+
+  it("acepta un prestamo externo y crea persona externa", async () => {
+    mockAuthorizedUser();
+    mockBaseLookups();
+    vi.mocked(prisma.personal.findFirst).mockResolvedValue({
+      ci: "51067524",
+      apellido1: "Rodriguez",
+      apellido2: "Straneo",
+      nombre1: "Leandro",
+      nombre2: null,
+      rango: {
+        tipo: "OFICIAL",
+        abreviacion: "Alf.",
+        nombreCompleto: "Alferez",
+        orden: 5,
+      },
+    } as never);
+
+    const res = await POST(
+      createMockRequest({
+        clasePrestamo: "EXTERNO",
+        destinatarioExterno: {
+          grado: "Sgto.",
+          nombre: "Juan",
+          apellido: "Perez",
+          ci: formatUruguayanCi(generateRandomUruguayanCi()),
+          unidadDestino: "Unidad X",
+        },
+        actuanteCi: "5.106.752-4",
+        fechaPrestamo: "21/05/2026",
+        fechaEstimadaDevolucionTexto: "30 dias",
+        comentarios: "Grupo Artilleria 2",
+        items: [{ itemId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(mockTx.movimientoDestinatarioPersonal.create).not.toHaveBeenCalled();
+    expect(mockTx.movimientoDestinatarioExterno.create).toHaveBeenCalledWith({
+      data: {
+        movimientoId: BigInt(123),
+        personaExternaCi: expect.any(String),
+      },
+    });
+    expect(mockTx.personaExterna.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ grado: "Sgto.", nombre: "Juan", apellido: "Perez", unidadDestino: "Unidad X" }),
+      }),
+    );
   });
 });
