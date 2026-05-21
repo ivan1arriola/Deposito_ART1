@@ -131,120 +131,11 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
 
   // Imprimir recibo de entrega
   const handlePrintReceipt = (entrega: ArticuloEntregaPersonalEntry) => {
-    const printWindow = window.open("", "_blank", "width=800,height=900");
-    if (!printWindow) return;
-
-    const formattedDate = formatDateOnlyForDisplay(entrega.fecha);
-    const itemsRows = entrega.items
-      .map(
-        (item, index) => `
-      <tr style="border-bottom: 1px solid #e5e7eb;">
-        <td style="padding: 12px 8px; text-align: center; font-weight: 600;">${index + 1}</td>
-        <td style="padding: 12px 8px; font-weight: 500;">${item.nombre}</td>
-        <td style="padding: 12px 8px; text-align: center; text-transform: uppercase; font-size: 0.8rem; color: #4b5563;">${item.tipo}</td>
-        <td style="padding: 12px 8px; text-align: center; font-weight: 700; font-size: 1.1rem; color: #111827;">${item.cantidad}</td>
-      </tr>
-    `,
-      )
-      .join("");
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Constancia de Entrega #${entrega.articuloEntregaPersonalId}</title>
-          <meta charset="utf-8" />
-          <style>
-            body { font-family: system-ui, -apple-system, sans-serif; color: #1f2937; padding: 40px; line-height: 1.5; }
-            .header { text-align: center; border-bottom: 2px solid #111827; padding-bottom: 20px; margin-bottom: 30px; }
-            .header h1 { font-size: 1.8rem; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; }
-            .header p { margin: 5px 0 0 0; color: #4b5563; font-size: 0.95rem; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-            .info-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
-            .info-box h3 { margin: 0 0 10px 0; font-size: 0.9rem; text-transform: uppercase; color: #6b7280; letter-spacing: 0.05em; }
-            .info-box p { margin: 4px 0; font-weight: 600; font-size: 1rem; }
-            .info-box span { font-weight: 400; color: #4b5563; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-            th { background: #f3f4f6; padding: 12px 8px; text-align: left; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e5e7eb; }
-            .comentarios { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 16px; margin-bottom: 40px; }
-            .comentarios h4 { margin: 0 0 5px 0; color: #b45309; font-size: 0.9rem; }
-            .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; margin-top: 100px; text-align: center; }
-            .sig-line { border-top: 1px solid #4b5563; padding-top: 8px; margin-top: 50px; font-size: 0.9rem; font-weight: 500; }
-            @media print {
-              body { padding: 20px; }
-              button { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Constancia de Entrega de Artículos</h1>
-            <p>Sección Depósito de Artículos - Deposito_ART1</p>
-          </div>
-          
-          <div class="grid">
-            <div class="info-box">
-              <h3>Destinatario (Quien Recibe)</h3>
-              <p>${entrega.personalLabel}</p>
-              <p><span>C.I.</span> ${formatUruguayanCi(entrega.personalCi)}</p>
-            </div>
-            <div class="info-box">
-              <h3>Detalle del Movimiento</h3>
-              <p><span>Fecha de Entrega:</span> ${formattedDate}</p>
-              <p><span>Registrado por:</span> ${entrega.usuarioEntregaLabel}</p>
-              <p><span>Ordenado por:</span> ${entrega.ordenanteLabel}</p>
-            </div>
-          </div>
-          
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 80px; text-align: center;">Item</th>
-                <th>Artículo</th>
-                <th style="width: 150px; text-align: center;">Categoría</th>
-                <th style="width: 100px; text-align: center;">Cantidad</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsRows}
-            </tbody>
-          </table>
-
-          ${
-            entrega.comentario
-              ? `
-          <div class="comentarios">
-            <h4>Observaciones / Comentarios</h4>
-            <p style="margin: 0; font-size: 0.95rem; font-style: italic;">${entrega.comentario}</p>
-          </div>
-          `
-              : ""
-          }
-
-          <div class="signatures">
-            <div>
-              <div class="sig-line">
-                Firma del Destinatario<br>
-                <span style="font-size: 0.8rem; font-weight: normal; color: #4b5563;">Aclaración / C.I.</span>
-              </div>
-            </div>
-            <div>
-              <div class="sig-line">
-                Firma Autorizante / Registrante<br>
-                <span style="font-size: 0.8rem; font-weight: normal; color: #4b5563;">Aclaración / Grado</span>
-              </div>
-            </div>
-          </div>
-
-          <script>
-            window.onload = function() {
-              window.print();
-            }
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    window.open(
+      `/api/articulos/entregas/${encodeURIComponent(entrega.articuloEntregaPersonalId)}/constancia`,
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
   return (
@@ -454,7 +345,7 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
                 {entrega.comentario && (
                   <div className="flex items-center gap-1.5 italic text-amber-800 bg-amber-50 rounded-lg px-2.5 py-1 border border-amber-200/50 self-start sm:self-auto">
                     <ChatBubbleOutlineRoundedIcon fontSize="inherit" />
-                    <span>"{entrega.comentario}"</span>
+                    <span>&quot;{entrega.comentario}&quot;</span>
                   </div>
                 )}
               </div>
@@ -530,7 +421,7 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
               {selectedEntrega.comentario && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
                   <h4 className="text-xs font-bold text-amber-900">Observaciones</h4>
-                  <p className="mt-1 text-xs text-amber-800 italic">"{selectedEntrega.comentario}"</p>
+                  <p className="mt-1 text-xs text-amber-800 italic">&quot;{selectedEntrega.comentario}&quot;</p>
                 </div>
               )}
             </div>

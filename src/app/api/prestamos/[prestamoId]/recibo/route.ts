@@ -1,23 +1,37 @@
 import { NextResponse } from "next/server";
 import { TipoMovimiento, type Prisma } from "@/generated/prisma/client";
-import { readFile } from "fs/promises";
-import path from "path";
-import { PDFDocument, StandardFonts, rgb, type PDFImage, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
-import { normalizeOutputText } from "@/lib/spanish-text";
+import {
+  A4_HEIGHT,
+  A4_WIDTH,
+  CONTENT_BOTTOM,
+  INNER_WIDTH,
+  PAGE_MARGIN_X,
+  PAGE_MARGIN_Y,
+  RECEIPT_PADDING,
+  createReceiptPdfAssets,
+  drawAcknowledgementFooter,
+  drawField,
+  drawFieldMultiline,
+  drawReceiptHeaderAndFrame,
+  drawReceiptPageNumber,
+  drawRectTop,
+  drawSectionTitle,
+  drawTextAt,
+  formatDateUy,
+  formatLongDateUy,
+  formatTimeUy,
+  fullName,
+  militaryShortLabel,
+  normalizeReceiptValue,
+  toPrintUppercase,
+  wrapText,
+} from "@/lib/server/receipt-pdf-layout";
 
-const MM_TO_PT = 2.834645669;
-const A4_WIDTH = 210 * MM_TO_PT;
-const A4_HEIGHT = 297 * MM_TO_PT;
-
-const PAGE_MARGIN_X = 12 * MM_TO_PT;
-const PAGE_MARGIN_Y = 20 * MM_TO_PT;
-const RECEIPT_PADDING = 8 * MM_TO_PT;
-const INNER_WIDTH = A4_WIDTH - PAGE_MARGIN_X * 2 - RECEIPT_PADDING * 2;
-const CONTENT_BOTTOM = A4_HEIGHT - PAGE_MARGIN_Y - RECEIPT_PADDING;
 const CLOSING_BLOCK_RESERVE = 248;
 const TABLE_HEADER_HEIGHT = 20;
 const TABLE_MIN_ROW_HEIGHT = 18;
@@ -29,10 +43,6 @@ const TABLE_COL_QTY = 58;
 const TABLE_COL_ESTADO = 90;
 const TABLE_COL_OBS = 120;
 const TABLE_COL_EFECTO = INNER_WIDTH - TABLE_COL_QTY - TABLE_COL_ESTADO - TABLE_COL_OBS;
-const WATERMARK_FILENAME = "marca-agua-recibo-prestamo-bn.png";
-const WATERMARK_OPACITY = 0.24;
-const WATERMARK_MAX_WIDTH_RATIO = 0.98;
-const WATERMARK_MAX_HEIGHT_RATIO = 0.98;
 
 type TableRow = {
   cantidad: string;
@@ -68,140 +78,8 @@ function parsePrestamoId(raw: string) {
   }
 }
 
-function formatTimeUy(value: Date) {
-  return new Intl.DateTimeFormat("es-UY", {
-    timeZone: "America/Montevideo",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(value);
-}
-
-function formatDateUy(value: Date) {
-  return new Intl.DateTimeFormat("es-UY", {
-    timeZone: "America/Montevideo",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(value);
-}
-
-function formatLongDateUy(value: Date) {
-  return new Intl.DateTimeFormat("es-UY", {
-    timeZone: "America/Montevideo",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(value);
-}
-
-function sanitizeForPdf(value: string | null | undefined) {
-  return normalizeOutputText(value);
-}
-
-function toPrintUppercase(value: string | null | undefined) {
-  return sanitizeForPdf(value).toLocaleUpperCase("es-UY");
-}
-
-function fullName(apellido1: string, apellido2: string | null, nombre1: string, nombre2: string | null) {
-  const apellidos = `${apellido1} ${apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
-  const nombres = `${nombre1} ${nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
-  return `${apellidos}, ${nombres}`.replace(/\s+/g, " ").trim();
-}
-
-function firstWord(value: string) {
-  return value.trim().split(/\s+/)[0] ?? "";
-}
-
-function militaryShortLabel(gradoAbreviacion: string, apellido: string, nombre: string) {
-  return `${gradoAbreviacion} ${firstWord(apellido)} ${firstWord(nombre)}`.replace(/\s+/g, " ").trim();
-}
-
-function yForTop(top: number, fontSize: number) {
-  return A4_HEIGHT - top - fontSize;
-}
-
-function drawTextAt(
-  page: PDFPage,
-  font: PDFFont,
-  text: string,
-  x: number,
-  top: number,
-  size: number,
-  color = rgb(0, 0, 0),
-) {
-  page.drawText(sanitizeForPdf(text), { x, y: yForTop(top, size), size, font, color });
-}
-
-function drawTextRight(
-  page: PDFPage,
-  font: PDFFont,
-  text: string,
-  rightX: number,
-  top: number,
-  size: number,
-  color = rgb(0, 0, 0),
-) {
-  const safe = sanitizeForPdf(text);
-  const width = font.widthOfTextAtSize(safe, size);
-  page.drawText(safe, { x: rightX - width, y: yForTop(top, size), size, font, color });
-}
-
-function drawRectTop(page: PDFPage, x: number, top: number, width: number, height: number, border = rgb(0, 0, 0)) {
-  page.drawRectangle({
-    x,
-    y: A4_HEIGHT - top - height,
-    width,
-    height,
-    borderColor: border,
-    borderWidth: 1,
-  });
-}
-
-function drawHorizontalLine(page: PDFPage, x: number, yTop: number, width: number, thickness = 1) {
-  page.drawLine({
-    start: { x, y: A4_HEIGHT - yTop },
-    end: { x: x + width, y: A4_HEIGHT - yTop },
-    thickness,
-    color: rgb(0, 0, 0),
-  });
-}
-
-function fitOneLine(text: string, maxWidth: number, font: PDFFont, size: number) {
-  const clean = sanitizeForPdf(text || "-");
-  if (font.widthOfTextAtSize(clean, size) <= maxWidth) return clean;
-
-  const ellipsis = "...";
-  let end = clean.length;
-  while (end > 1 && font.widthOfTextAtSize(`${clean.slice(0, end)}${ellipsis}`, size) > maxWidth) {
-    end -= 1;
-  }
-  return `${clean.slice(0, end).trimEnd()}${ellipsis}`;
-}
-
-function wrapText(text: string, maxWidth: number, font: PDFFont, size: number) {
-  const clean = sanitizeForPdf(text);
-  const words = clean.split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [""];
-
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
-      current = candidate;
-      continue;
-    }
-    if (current) lines.push(current);
-    current = word;
-  }
-  if (current) lines.push(current);
-  return lines;
-}
-
 function normalizeCellValue(value: string | null | undefined) {
-  const trimmed = String(value ?? "").trim();
-  return trimmed === "" ? "-" : trimmed;
+  return normalizeReceiptValue(value);
 }
 
 function layoutTableRow(row: TableRow, font: PDFFont): TableRowLayout {
@@ -229,22 +107,6 @@ function layoutTableRow(row: TableRow, font: PDFFont): TableRowLayout {
     height,
   };
 }
-
-function centerTextX(text: string, width: number, font: PDFFont, size: number) {
-  const safe = sanitizeForPdf(text);
-  const textWidth = font.widthOfTextAtSize(safe, size);
-  return (width - textWidth) / 2;
-}
-
-async function loadWatermarkBytes() {
-  const watermarkPath = path.join(process.cwd(), WATERMARK_FILENAME);
-  try {
-    return await readFile(watermarkPath);
-  } catch {
-    return null;
-  }
-}
-
 const prestamoReciboInclude = {
   personal: {
     include: {
@@ -390,104 +252,10 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
   }));
 
   const pdfDoc = await PDFDocument.create();
-  const regular = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-  const bold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
-  const watermarkBytes = await loadWatermarkBytes();
-  const watermarkImage: PDFImage | null = watermarkBytes ? await pdfDoc.embedPng(watermarkBytes) : null;
+  const assets = await createReceiptPdfAssets(pdfDoc);
+  const { regular, bold } = assets;
 
   const pages: PageContext[] = [];
-
-  function drawWatermark(page: PDFPage, innerX: number, innerW: number) {
-    if (!watermarkImage) return;
-    const frameY = PAGE_MARGIN_Y + RECEIPT_PADDING;
-    const frameH = A4_HEIGHT - 2 * (PAGE_MARGIN_Y + RECEIPT_PADDING);
-
-    const native = watermarkImage.scale(1);
-    const scale = Math.min(
-      (innerW * WATERMARK_MAX_WIDTH_RATIO) / native.width,
-      (frameH * WATERMARK_MAX_HEIGHT_RATIO) / native.height,
-    );
-    const width = native.width * scale;
-    const height = native.height * scale;
-    const x = innerX + (innerW - width) / 2;
-    const top = frameY + (frameH - height) / 2;
-
-    page.drawImage(watermarkImage, {
-      x,
-      y: A4_HEIGHT - top - height,
-      width,
-      height,
-      opacity: WATERMARK_OPACITY,
-    });
-  }
-
-  function drawHeaderAndFrame(page: PDFPage, yStart: number, innerX: number, innerW: number) {
-    drawRectTop(page, PAGE_MARGIN_X, PAGE_MARGIN_Y, A4_WIDTH - PAGE_MARGIN_X * 2, A4_HEIGHT - PAGE_MARGIN_Y * 2);
-    drawWatermark(page, innerX, innerW);
-
-    const topUnit = 'GRUPO "BRIG. GRAL. MANUEL ORIBE" DE ARTILLERIA 105MM NO. 1';
-    const title = "DEPOSITO GENERAL";
-    const subtitle = "RECIBO DE PRÉSTAMO";
-
-    const topUnitSize = 8;
-    const titleSize = 16;
-    const subtitleSize = 10;
-    const metaBlockWidth = 182;
-    const metaGap = 10;
-    const titleAreaX = innerX;
-    const titleAreaW = innerW - metaBlockWidth - metaGap;
-    const metaRightX = innerX + innerW - 4;
-    const topUnitTop = yStart + 2;
-    const titleTop = yStart + 13;
-    const subtitleTop = yStart + 31;
-
-    drawTextAt(page, bold, topUnit, titleAreaX, topUnitTop, topUnitSize);
-    drawTextRight(page, bold, fechaImpresionCabecera, metaRightX, topUnitTop, topUnitSize);
-
-    drawTextAt(page, bold, title, titleAreaX + centerTextX(title, titleAreaW, bold, titleSize), titleTop, titleSize);
-    drawTextAt(page, regular, subtitle, titleAreaX + centerTextX(subtitle, titleAreaW, regular, subtitleSize), subtitleTop, subtitleSize);
-
-    drawTextRight(page, bold, `Recibo N.o: ${reciboNumero}`, metaRightX, titleTop + 3, 9);
-    drawTextRight(page, bold, `Fecha: ${fechaRecibo}`, metaRightX, titleTop + 14, 9);
-    drawTextRight(page, bold, `Hora: ${horaRecibo}`, metaRightX, titleTop + 25, 9);
-
-    const dividerY = yStart + 47;
-    drawHorizontalLine(page, innerX, dividerY, innerW, 1);
-    return { nextY: dividerY + 8 };
-  }
-
-  function drawField(page: PDFPage, x: number, top: number, width: number, height: number, label: string, value: string) {
-    drawRectTop(page, x, top, width, height);
-    drawTextAt(page, bold, label.toUpperCase(), x + 6, top + 4, 7);
-    drawTextAt(page, regular, fitOneLine(value, width - 12, regular, 10), x + 6, top + 16, 10);
-  }
-
-  function drawSectionTitle(page: PDFPage, x: number, top: number, width: number, text: string) {
-    drawRectTop(page, x, top, width, 16);
-    drawTextAt(page, bold, text.toUpperCase(), x + 6, top + 4, 8);
-    return top + 20;
-  }
-
-  function drawFieldMultiline(
-    page: PDFPage,
-    x: number,
-    top: number,
-    width: number,
-    label: string,
-    value: string,
-  ) {
-    const lines = wrapText(normalizeCellValue(value), width - 12, regular, 10);
-    const lineHeight = 10;
-    const height = Math.max(28, 20 + lines.length * lineHeight + 4);
-
-    drawRectTop(page, x, top, width, height);
-    drawTextAt(page, bold, label.toUpperCase(), x + 6, top + 4, 7);
-    lines.forEach((line, index) => {
-      drawTextAt(page, regular, line, x + 6, top + 16 + index * lineHeight, 10);
-    });
-
-    return top + height + 6;
-  }
 
   function startPage(continuation: boolean) {
     const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
@@ -495,7 +263,21 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     const innerW = INNER_WIDTH;
     const top0 = PAGE_MARGIN_Y + RECEIPT_PADDING;
 
-    const header = drawHeaderAndFrame(page, top0, innerX, innerW);
+    const header = drawReceiptHeaderAndFrame(
+      page,
+      assets,
+      {
+        subtitle: "RECIBO DE PRÉSTAMO",
+        documentLabel: "Recibo N.o",
+        documentNumber: reciboNumero,
+        createdDate: fechaRecibo,
+        createdTime: horaRecibo,
+        headerDateLabel: fechaImpresionCabecera,
+      },
+      top0,
+      innerX,
+      innerW,
+    );
     let y = header.nextY;
 
     if (!continuation) {
@@ -505,27 +287,37 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       const col3 = (innerW - gap * 2) * 0.25;
       const col6 = innerW - col3 * 2 - gap * 2;
 
-      drawField(page, innerX, y, col3, boxH, "Grado", destinatarioGrado);
-      drawField(page, innerX + col3 + gap, y, col3, boxH, "C.I.", destinatarioCi);
-      drawField(page, innerX + col3 * 2 + gap * 2, y, col6, boxH, "Bateria", bateria);
+      drawField(page, assets, innerX, y, col3, boxH, "Grado", destinatarioGrado);
+      drawField(page, assets, innerX + col3 + gap, y, col3, boxH, "C.I.", destinatarioCi);
+      drawField(page, assets, innerX + col3 * 2 + gap * 2, y, col6, boxH, "Bateria", bateria);
       y += boxH + 6;
 
-      drawField(page, innerX, y, innerW, row2H, "Nombre", destinatarioNombre);
+      drawField(page, assets, innerX, y, innerW, row2H, "Nombre", destinatarioNombre);
       y += row2H + 8;
 
-      y = drawSectionTitle(page, innerX, y, innerW, "Datos del préstamo");
+      y = drawSectionTitle(page, assets, innerX, y, innerW, "Datos del préstamo");
 
       const col4 = (innerW - gap * 2) / 3;
-      drawField(page, innerX, y, col4, boxH, "Fecha de entrega", fechaPrestamo);
-      drawField(page, innerX + col4 + gap, y, col4, boxH, "Fecha de devolución", fechaDevolucion);
-      drawField(page, innerX + col4 * 2 + gap * 2, y, col4, boxH, "Fecha estimada devolución", fechaEstimadaDevolucion);
+      drawField(page, assets, innerX, y, col4, boxH, "Fecha de entrega", fechaPrestamo);
+      drawField(page, assets, innerX + col4 + gap, y, col4, boxH, "Fecha de devolución", fechaDevolucion);
+      drawField(
+        page,
+        assets,
+        innerX + col4 * 2 + gap * 2,
+        y,
+        col4,
+        boxH,
+        "Fecha estimada devolución",
+        fechaEstimadaDevolucion,
+      );
       y += boxH + 6;
 
-      y = drawFieldMultiline(page, innerX, y, innerW, "Observaciones", observaciones);
+      y = drawFieldMultiline(page, assets, innerX, y, innerW, "Observaciones", observaciones);
     }
 
     y = drawSectionTitle(
       page,
+      assets,
       innerX,
       y,
       innerW,
@@ -587,7 +379,21 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     const innerW = INNER_WIDTH;
     const top0 = PAGE_MARGIN_Y + RECEIPT_PADDING;
 
-    const header = drawHeaderAndFrame(page, top0, innerX, innerW);
+    const header = drawReceiptHeaderAndFrame(
+      page,
+      assets,
+      {
+        subtitle: "RECIBO DE PRÉSTAMO",
+        documentLabel: "Recibo N.o",
+        documentNumber: reciboNumero,
+        createdDate: fechaRecibo,
+        createdTime: horaRecibo,
+        headerDateLabel: fechaImpresionCabecera,
+      },
+      top0,
+      innerX,
+      innerW,
+    );
     const context: PageContext = {
       page,
       y: header.nextY,
@@ -672,51 +478,21 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
   }
 
   function drawClosingBlock(ctx: PageContext) {
-    const innerX = PAGE_MARGIN_X + RECEIPT_PADDING;
-    const innerW = A4_WIDTH - PAGE_MARGIN_X * 2 - RECEIPT_PADDING * 2;
-    let y = ctx.y + 8;
-
-    y = drawSectionTitle(ctx.page, innerX, y, innerW, "Constancia");
-
-    const constanciaH = 46;
-    drawRectTop(ctx.page, innerX, y, innerW, constanciaH);
-    const constanciaLines = wrapText(
-      "El militar que recibe deja constancia de haber retirado los efectos detallados, en el estado indicado, comprometiendose a su adecuada conservacion y devolución cuando le sea requerida.",
-      innerW - 12,
-      regular,
-      8,
-    ).slice(0, 4);
-    constanciaLines.forEach((line, idx) => {
-      drawTextAt(ctx.page, regular, line, innerX + 6, y + 8 + idx * 10, 8);
-    });
-    y += constanciaH + 12;
-
-    const signW = (innerW - 12) / 2;
-    const lineY = y + 26;
-    drawHorizontalLine(ctx.page, innerX, lineY, signW, 1);
-    drawHorizontalLine(ctx.page, innerX + signW + 12, lineY, signW, 1);
-    drawTextAt(ctx.page, bold, "Firma de quien entrega", innerX + 70, lineY + 4, 9);
-    drawTextAt(ctx.page, regular, entregaLabel, innerX + 70, lineY + 16, 8);
-    drawTextAt(ctx.page, bold, "Firma de quien recibe", innerX + signW + 78, lineY + 4, 9);
-    drawTextAt(ctx.page, regular, recibeLabel, innerX + signW + 78, lineY + 16, 8);
-    y = lineY + 34;
-
-    const stampW = (innerW - 12) / 2;
-    const stampH = 70;
-    drawTextAt(ctx.page, bold, "SELLO DE ENTREGA", innerX + 82, y + 2, 8);
-    drawTextAt(ctx.page, bold, "SELLO DE DEVOLUCIÓN", innerX + stampW + 86, y + 2, 8);
-    drawRectTop(ctx.page, innerX, y + 12, stampW, stampH);
-    drawRectTop(ctx.page, innerX + stampW + 12, y + 12, stampW, stampH);
-    y += stampH + 20;
-
-    drawTextAt(
+    drawAcknowledgementFooter(
       ctx.page,
-      regular,
-      `Documento interno de control de préstamo de efectos. Impreso: ${fechaImpresion}`,
-      innerX + 150,
-      y,
-      7,
-      rgb(0.35, 0.35, 0.35),
+      assets,
+      ctx.y,
+      {
+        body:
+          "El militar que recibe deja constancia de haber retirado los efectos detallados, en el estado indicado, comprometiendose a su adecuada conservacion y devolución cuando le sea requerida.",
+        leftSignatureTitle: "Firma de quien entrega",
+        leftSignatureName: entregaLabel,
+        rightSignatureTitle: "Firma de quien recibe",
+        rightSignatureName: recibeLabel,
+        leftStampTitle: "SELLO DE ENTREGA",
+        rightStampTitle: "SELLO DE DEVOLUCIÓN",
+        footerNote: `Documento interno de control de préstamo de efectos. Impreso: ${fechaImpresion}`,
+      },
     );
   }
 
@@ -782,12 +558,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
 
   const totalPages = pages.length;
   pages.forEach((pageCtx, index) => {
-    const label = `Hoja ${index + 1}/${totalPages}`;
-    const size = 8;
-    const textWidth = bold.widthOfTextAtSize(sanitizeForPdf(label), size);
-    const x = A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING - textWidth;
-    const top = A4_HEIGHT - PAGE_MARGIN_Y - 10;
-    drawTextAt(pageCtx.page, bold, label, x, top, size);
+    drawReceiptPageNumber(pageCtx.page, assets, index + 1, totalPages);
   });
 
   const pdfBytes = await pdfDoc.save();
