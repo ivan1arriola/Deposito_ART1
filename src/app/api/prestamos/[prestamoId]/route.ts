@@ -689,7 +689,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         sendPersonalMovementEmailNotification({
           request,
           ci: destinatarioPersonalCi,
-          subject: "Notificación de préstamo - Depósito ART1",
+          subject: "Notificación de préstamo - Sistema de Depósito General - Artillería 1",
           headline: "Se actualizó un préstamo asociado a tu ficha.",
           detailLines: [
             `Recibo: ${afterSnapshot.reciboNumero}`,
@@ -776,7 +776,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
         sendPersonalMovementEmailNotification({
           request,
           ci: destinatarioPersonalCi,
-          subject: "Notificación de préstamo - Depósito ART1",
+          subject: "Notificación de préstamo - Sistema de Depósito General - Artillería 1",
           headline: "Se eliminó un préstamo asociado a tu ficha.",
           detailLines: [
             `Recibo: ${existing.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo?.reciboNumero ?? `PR-${existing.movimientoId.toString().padStart(8, "0")}`}`,

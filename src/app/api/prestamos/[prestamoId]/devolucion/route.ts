@@ -230,7 +230,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         sendPersonalMovementEmailNotification({
           request,
           ci: destinatarioPersonalCi,
-          subject: "Notificación de devolución - Depósito ART1",
+          subject: "Notificación de devolución - Sistema de Depósito General - Artillería 1",
           headline: "Se registró la devolución de un préstamo en tu ficha.",
           detailLines: [
             `Recibo: ${updated.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo.reciboNumero}`,

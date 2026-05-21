@@ -1,6 +1,6 @@
 # Manual de uso para usuario final
 
-**Sistema:** Depósito ART1  
+**Sistema:** Sistema de Depósito General - Artillería 1  
 **Versión de referencia:** 5.5.4  
 **Fecha:** 17/05/2026  
 **Dirigido a:** personal que consulta, registra y administra información operativa del Depósito General.
@@ -34,7 +34,7 @@
 
 ## 1. Objetivo del sistema
 
-Depósito ART1 permite administrar la información del Depósito General del Grupo de Artillería 105mm No. 1. Desde la aplicación se puede consultar personal, registrar entregas y devoluciones de equipo, controlar stock, emitir hojas de entrega, gestionar préstamos, imprimir reportes de talles, administrar cajas y etiquetas, y revisar auditoría.
+El Sistema de Depósito General - Artillería 1 permite administrar la información del Depósito General del Grupo de Artillería 105mm No. 1. Desde la aplicación se puede consultar personal, registrar entregas y devoluciones de equipo, controlar stock, emitir hojas de entrega, gestionar préstamos, imprimir reportes de talles, administrar cajas y etiquetas, y revisar auditoría.
 
 El sistema está pensado para dos tipos de acceso:
 
@@ -96,7 +96,7 @@ Si el correo de referencia no está configurado o confirmado, la recuperación p
 La aplicación puede instalarse en Chrome como una app.
 
 1. Ingresa a la aplicación.
-2. Busca el bloque **Instala Depósito ART1 en Chrome**.
+2. Busca el bloque **Instala el Sistema de Depósito General - Artillería 1 en Chrome**.
 3. Presiona **Descargar app** o **Instalar app** si aparece disponible.
 4. Si el botón no aparece, usa el menú de Chrome:
    - En celular: menú de tres puntos > **Instalar aplicación**.

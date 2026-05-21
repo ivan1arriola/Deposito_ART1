@@ -541,7 +541,7 @@ export async function POST(request: Request) {
         sendPersonalMovementEmailNotification({
           request,
           ci: destinatarioPersonalCi,
-          subject: "Notificación de préstamo - Depósito ART1",
+          subject: "Notificación de préstamo - Sistema de Depósito General - Artillería 1",
           headline: "Se registró un préstamo de vestuario en tu ficha.",
           detailLines: [
             `Recibo: ${created.prestamoActivo?.reciboNumero ?? `PR-${created.movimientoId.toString().padStart(8, "0")}`}`,
