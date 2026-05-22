@@ -57,6 +57,7 @@ export type MainView =
   | "hoja-de-entrega"
   | "movimientos_fuera_hoja"
   | "movimientos_por_equipo"
+  | "equipos_unificar"
   | "personal_bajas";
 
 export type MovimientoFueraHojaViewRow = {

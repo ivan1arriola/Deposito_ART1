@@ -870,7 +870,9 @@ export function StockView({
                             <button
                               type="button"
                               onClick={() => void openItemTraceDialog(item, "SUBALTERNOS")}
-                              className="rounded px-1 text-right font-semibold text-stone-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                              className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                item.stockSubalternos < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
+                              }`}
                               title={`Ver detalle de ${item.nombre} en Subalternos`}
                             >
                               {item.stockSubalternos}
@@ -880,14 +882,24 @@ export function StockView({
                             <button
                               type="button"
                               onClick={() => void openItemTraceDialog(item, "PRESTAMO")}
-                              className="rounded px-1 text-right font-semibold text-stone-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                              className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                item.stockPrestamo < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
+                              }`}
                               title={`Ver detalle de ${item.nombre} en Prestamo`}
                             >
                               {item.stockPrestamo}
                             </button>
                           </td>
-                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockDeposito}</td>
-                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockUnidad}</td>
+                          <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
+                            item.stockDeposito < 0 ? "text-rose-600 font-bold" : "text-stone-900"
+                          }`}>
+                            {item.stockDeposito}
+                          </td>
+                          <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
+                            item.stockUnidad < 0 ? "text-rose-600 font-bold" : "text-stone-900"
+                          }`}>
+                            {item.stockUnidad}
+                          </td>
                           <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
                             {canEditSie ? (
                               <div className="flex items-center justify-end gap-2">
@@ -923,7 +935,11 @@ export function StockView({
                           </td>
                         </>
                       ) : (
-                        <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">{item.stockDeposito}</td>
+                        <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
+                          item.stockDeposito < 0 ? "text-rose-600 font-bold" : "text-stone-900"
+                        }`}>
+                          {item.stockDeposito}
+                        </td>
                       )}
                     </tr>
                   ))}

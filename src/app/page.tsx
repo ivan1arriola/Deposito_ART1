@@ -40,6 +40,7 @@ import {
 import { ConfigViews } from "./components/views/ConfigViews";
 import type { PrestamoEditPayload } from "./components/views/FormulariosPrestamosView";
 import { RecordatoriosConfigView } from "./components/views/RecordatoriosConfigView";
+import { EquiposUnificarView } from "./components/views/EquiposUnificarView";
 import { SmallActionButton, ActionMenu, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
 import { useLoginState } from "./hooks/useLoginState";
@@ -6421,6 +6422,18 @@ export default function Home() {
               soldadoVariant={soldadoWidgetVariant}
               onToggleSoldadoVariant={toggleSoldadoWidgetVariant}
               onReload={loadRecordatorios}
+            />
+          ) : null}
+
+          {activeView === "equipos_unificar" ? (
+            <EquiposUnificarView
+              canWrite={canWrite}
+              equipos={equipos}
+              mergeEquipoOrigenId={mergeEquipoOrigenId}
+              mergeEquipoDestinoId={mergeEquipoDestinoId}
+              onMergeEquipoOrigenIdChange={handleMergeEquipoOrigenChange}
+              onMergeEquipoDestinoIdChange={handleMergeEquipoDestinoChange}
+              onMergeEquipos={mergeEquipos}
             />
           ) : null}
 
