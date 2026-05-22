@@ -521,7 +521,7 @@ export function DashboardHero({
           {[
             { label: "Subalternos", value: personalCount },
             { label: "Oficiales/Suboficiales", value: oficialesSuboficialesCount },
-            { label: "Equipos registrados", value: equiposRegistradosCount },
+            { label: "Catálogo de Equipos", value: equiposRegistradosCount },
             { label: "Movimientos", value: movimientosTotal },
           ].map((metric) => (
             <Grid key={metric.label} size={isDashboardLanding ? { xs: 12, sm: 6, lg: 3 } : { xs: 6, sm: 3 }}>

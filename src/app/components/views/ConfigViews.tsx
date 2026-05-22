@@ -765,7 +765,7 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-stone-900">Equipos registrados</h2>
+          <h2 className="text-base font-semibold text-stone-900">Catálogo de Equipos</h2>
           <p className="mt-1 text-xs text-stone-600">
             Desde esta vista puedes editar o eliminar equipos existentes y decidir si aparecen en Hoja de Entrega / Hoja Matriz. Las altas nuevas se hacen desde el menú `Stock y Equipos`.
           </p>

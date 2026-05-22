@@ -53,7 +53,7 @@ export function DashboardPrincipalView({
     },
     {
       key: "equipos",
-      label: "Equipos registrados",
+      label: "Catálogo de Equipos",
       value: equiposRegistradosCount,
       tone: "from-[#f6f8f2] to-[#e9efde] border-[#c5d4b2] text-[#2a3a1f]",
     },

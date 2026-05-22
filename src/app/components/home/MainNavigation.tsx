@@ -141,7 +141,7 @@ const configViews: Array<NavOption<ConfigView>> = [
 ];
 
 const articuloViews: Array<NavOption<ArticuloView>> = [
-  { view: "articulos", label: "Artículos registrados", icon: icons.stock },
+  { view: "articulos", label: "Catálogo de Artículos", icon: icons.stock },
   { view: "articulo_entrega_personal", label: "Entrega a personal", icon: icons.prestamos, writeOnly: true },
   { view: "articulo_entregas_historial", label: "Historial de entregas", icon: icons.history },
   { view: "articulo_stock_ingreso", label: "Ingreso de stock", icon: icons.altas, writeOnly: true },
@@ -156,19 +156,19 @@ const createViews: Array<NavOption<CreateView>> = [
 
 const stockViews: Array<NavOption<StockView>> = [
   { view: "equipo_nuevo", label: "Alta de equipo", shortLabel: "Alta Eq.", icon: icons.altas, writeOnly: true },
-  { view: "equipos", label: "Equipos registrados", shortLabel: "Equipos", icon: icons.stock },
-  { view: "stock_total", label: "Total de items", shortLabel: "Total", icon: icons.resumen },
-  { view: "stock_actual", label: "Depósito interno", shortLabel: "Depósito", icon: icons.stock },
+  { view: "equipos", label: "Catálogo de Equipos", shortLabel: "Equipos", icon: icons.stock },
+  { view: "stock_total", label: "Stock de Equipos", shortLabel: "Total", icon: icons.resumen },
+  { view: "stock_actual", label: "Stock de Equipos en Depósito", shortLabel: "Depósito", icon: icons.stock },
   { view: "stock_alta", label: "Alta de stock", shortLabel: "Alta", icon: icons.altas },
   { view: "stock_baja", label: "Baja de stock", shortLabel: "Baja", icon: icons.minus },
-  { view: "stock_historial", label: "Historial", shortLabel: "Historial", icon: icons.history },
+  { view: "stock_historial", label: "Historial de Stock", shortLabel: "Historial", icon: icons.history },
   { view: "movimientos_por_equipo", label: "Movimientos por equipo", shortLabel: "Movimientos", icon: icons.history },
 ];
 
 const prestamosViews: Array<NavOption<PrestamosView>> = [
   { view: "prestamos_registrar", label: "Registrar prestamo", shortLabel: "Registrar", icon: icons.altas, writeOnly: true },
   { view: "prestamos_vigentes", label: "Prestamos vigentes", shortLabel: "Vigentes", icon: icons.prestamos },
-  { view: "prestamos_historial", label: "Historial", shortLabel: "Historial", icon: icons.history },
+  { view: "prestamos_historial", label: "Historial de Préstamos", shortLabel: "Historial", icon: icons.history },
 ];
 
 const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
@@ -606,7 +606,7 @@ export function MainNavigation({
       </ExpandedMenuGroup>
 
       {canWrite ? (
-        <ExpandedMenuGroup title="Altas" icon={icons.altas} compact={false}>
+        <ExpandedMenuGroup title="Altas de Personal" icon={icons.altas} compact={false}>
           {filteredCreateViews.map((item) => (
             <Button
               key={item.view}
