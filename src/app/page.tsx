@@ -6503,6 +6503,14 @@ export default function Home() {
             onEditArticuloTipoChange={setEditArticuloTipo}
             onUpdateArticulo={(articuloId) => void updateArticulo(articuloId)}
             onDeleteArticulo={(articuloId) => void deleteArticulo(articuloId)}
+            onSumarStock={(articuloId) => {
+              setArticuloStockIngresoId(String(articuloId));
+              setActiveView("articulo_stock_ingreso");
+            }}
+            onEntregarArticulo={(articuloId) => {
+              setArticuloEntregaPersonalItems([{ articuloId: String(articuloId), cantidad: "1" }]);
+              setActiveView("articulo_entrega_personal");
+            }}
             onNewEquipoChange={(value, key) => setNewEquipo((prev) => ({ ...prev, [key]: value }))}
             onEditEquipoIdChange={setEditEquipoId}
             onEditEquipoChange={(value, key) => setEditEquipo((prev) => ({ ...prev, [key]: value }))}
