@@ -689,8 +689,10 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
         where: { itemId },
         select: {
           itemId: true,
+          nombre: true,
           activo: true,
           ordenPdf: true,
+          existenciaSie: true,
         },
       });
 
@@ -728,9 +730,19 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
         await applyItemOrder(tx, nextOrderedIds, nextActive ? 0 : 10000);
       }
 
-      return tx.item.findUniqueOrThrow({
+      const updatedRecord = await tx.item.findUniqueOrThrow({
         where: { itemId },
       });
+
+      return {
+        ...updatedRecord,
+        previo: {
+          nombre: existing.nombre,
+          activo: existing.activo,
+          ordenPdf: existing.ordenPdf,
+          existenciaSie: existing.existenciaSie,
+        },
+      };
     }, { maxWait: 5_000, timeout: 20_000 });
 
     await logAudit({
@@ -739,10 +751,13 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
       entidad: "ITEM",
       entidadId: updated.itemId.toString(),
       detalle: {
-        nombre: updated.nombre,
-        activo: updated.activo,
-        ordenPdf: updated.ordenPdf,
-        existenciaSie: updated.existenciaSie,
+        previo: updated.previo,
+        nuevo: {
+          nombre: updated.nombre,
+          activo: updated.activo,
+          ordenPdf: updated.ordenPdf,
+          existenciaSie: updated.existenciaSie,
+        },
       },
     });
 
@@ -781,6 +796,15 @@ export async function PATCH(req: Request, context: { params: Promise<{ itemId: s
   }
 
   try {
+    const current = await prisma.item.findUnique({
+      where: { itemId },
+      select: { existenciaSie: true },
+    });
+
+    if (!current) {
+      return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
+    }
+
     const updated = await prisma.item.update({
       where: { itemId },
       data: { existenciaSie },
@@ -798,8 +822,8 @@ export async function PATCH(req: Request, context: { params: Promise<{ itemId: s
       entidadId: updated.itemId.toString(),
       detalle: {
         evento: "ITEM_EXISTENCIA_SIE_UPDATE",
-        nombre: updated.nombre,
-        existenciaSie: updated.existenciaSie,
+        previo: { existenciaSie: current.existenciaSie },
+        nuevo: { existenciaSie: updated.existenciaSie },
       },
     });
 

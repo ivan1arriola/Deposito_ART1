@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, ReactNode, useMemo, useState } from "react";
-import { formatAuditEntityId, type AuditCiReferences } from "@/lib/audit-helpers";
-import { formatDateTimeForDisplay } from "@/lib/date-helpers";
+import { formatAuditEntityId, resolveAuditEntityName, type AuditCiReferences } from "@/lib/audit-helpers";
+import { formatUruguayanCi, normalizeCi } from "@/lib/ci";
+import { formatDateTimeForDisplay, formatDateTimeExact } from "@/lib/date-helpers";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MainView } from "@/types/views";
 import type { Articulo, AuditoriaRecord, FirmaConfig, Rango, Role, TipoArticulo, UsuarioAdmin } from "@/types/entities";
@@ -170,12 +171,13 @@ interface ConfigViewsProps {
   rangoLabel: (rango: RangoConfig) => string;
   auditActionLabel: (accion: string) => string;
   auditEntityLabel: (entidad: string) => string;
-  renderAuditDetalle: (detalle: unknown, ciReferences?: AuditCiReferences) => ReactNode;
+  renderAuditDetalle: (detalle: unknown, ciReferences?: AuditCiReferences, accion?: string) => ReactNode;
   // Papelera state and callbacks
   papeleraRecords?: Array<{ papeleraId: string; tipo: string; nombre: string; originalId: string; createdAt: string }>;
   papeleraLoading?: boolean;
   onRestorePapelera?: (papeleraId: string) => void;
   onDeletePapeleraPermanent?: (papeleraId: string) => void;
+  reloadCurrentViewData?: (showSpinner?: boolean) => Promise<void>;
 }
 
 const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "READ_ONLY"];
@@ -197,6 +199,53 @@ const ARTICULO_TIPO_LABEL: Record<TipoArticulo, string> = {
 export function ConfigViews(props: ConfigViewsProps) {
   const [activeUserAccountTypeTab, setActiveUserAccountTypeTab] = useState<UserAccountType>("SISTEMA");
   const [personalUsersSearch, setPersonalUsersSearch] = useState("");
+
+  // Local state for Auditoria Undo capability
+  const [undoingId, setUndoingId] = useState<string | null>(null);
+  const [undoError, setUndoError] = useState<string | null>(null);
+  const [undoSuccess, setUndoSuccess] = useState<string | null>(null);
+
+  const handleUndo = async (auditoriaId: string) => {
+    if (!confirm(`¿Estás seguro de que deseas deshacer esta acción (#${auditoriaId})? Esto revertirá el estado de la base de datos.`)) {
+      return;
+    }
+    setUndoingId(auditoriaId);
+    setUndoError(null);
+    setUndoSuccess(null);
+    try {
+      const response = await fetch(`/api/auditoria/${auditoriaId}/undo`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo deshacer la acción de auditoría.");
+      }
+      setUndoSuccess(`¡Acción de auditoría #${auditoriaId} revertida con éxito!`);
+      if (props.reloadCurrentViewData) {
+        await props.reloadCurrentViewData(true);
+      }
+    } catch (err: any) {
+      setUndoError(err.message || "Error al intentar deshacer la acción.");
+    } finally {
+      setUndoingId(null);
+    }
+  };
+
+  const isUndoable = (log: AuditoriaRecord) => {
+    const undoableEntities = ["GRADO_PERSONAL", "BATERIA", "ARTICULO", "ITEM", "PERSONAL", "OBSERVACION"];
+    return (log.accion === "CREATE" || log.accion === "UPDATE" || log.accion === "DELETE") && undoableEntities.includes(log.entidad);
+  };
+
+  const isWithin5Days = (createdAt: string | Date) => {
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    return diffDays <= 5;
+  };
 
   // Local state for Papelera interactive preview
   const [selectedTrashRecord, setSelectedTrashRecord] = useState<any | null>(null);
@@ -1202,9 +1251,9 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-stone-900">Auditoría detallada (interfaz y base de datos)</h2>
+          <h2 className="text-base font-semibold text-stone-900">Historial de Auditoría y Control de Cambios</h2>
           <p className="mt-1 text-xs text-stone-600">
-            Cada registro muestra quién hizo la acción, sobre qué entidad y el detalle guardado en la tabla de auditoría.
+            Visualice las transiciones exactas de estado (Antes → Ahora) de cada acción administrativa del sistema y deshaga cambios recientes (dentro de los 5 días de validez) de forma segura.
           </p>
           <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-center">
             <div className="flex flex-wrap gap-2">
@@ -1215,7 +1264,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                   props.auditFilter === "TODOS" ? "bg-stone-800 text-white" : "border border-stone-300 bg-white text-stone-700"
                 }`}
               >
-                Todo
+                Todos los eventos
               </button>
               <button
                 type="button"
@@ -1226,7 +1275,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     : "border border-stone-300 bg-white text-stone-700"
                 }`}
               >
-                Solo movimientos
+                Movimientos de Inventario
               </button>
               <button
                 type="button"
@@ -1237,7 +1286,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     : "border border-stone-300 bg-white text-stone-700"
                 }`}
               >
-                Solo autenticación
+                Accesos y Seguridad
               </button>
             </div>
             <label className="grid grid-cols-[84px_minmax(0,1fr)] items-center gap-2 rounded border border-stone-300 bg-stone-100 px-2 py-1.5">
@@ -1255,18 +1304,139 @@ export function ConfigViews(props: ConfigViewsProps) {
               </select>
             </label>
           </div>
-          <div className="mt-3 max-h-96 space-y-2 overflow-auto pr-1">
-            {props.auditoriaFiltradaPaginada.map((log) => (
-              <div key={log.auditoriaId} className="rounded-lg border border-stone-200 bg-stone-50 p-2">
-                <p className="text-xs text-stone-600">{formatDateTimeForDisplay(log.createdAt)}</p>
-                <p className="text-sm font-medium text-stone-900">
-                  {`${log.usuario?.username ?? "Sistema"} (${props.roleLabel(log.usuario?.rol ?? null)}) - ${props.auditActionLabel(log.accion)} ${props.auditEntityLabel(log.entidad)}`}
-                </p>
-                <p className="text-xs text-stone-600">{`Auditoría BD #${log.auditoriaId}`}</p>
-                <p className="text-xs text-stone-600">{formatAuditEntityId(log.entidadId, log.ciReferencias)}</p>
-                {props.renderAuditDetalle(log.detalle, log.ciReferencias)}
-              </div>
-            ))}
+          {undoSuccess && (
+            <div className="mt-3 p-3 bg-green-50 text-green-800 rounded-lg border border-green-200 text-xs font-semibold flex items-center gap-2">
+              <CheckCircleOutlinedIcon className="h-4 w-4 text-green-600" />
+              {undoSuccess}
+            </div>
+          )}
+          {undoError && (
+            <div className="mt-3 p-3 bg-red-50 text-red-800 rounded-lg border border-red-200 text-xs font-semibold flex items-center gap-2">
+              <WarningAmberOutlinedIcon className="h-4 w-4 text-red-600" />
+              {undoError}
+            </div>
+          )}
+          <div className="mt-3 space-y-3 w-full">
+            {props.auditoriaFiltradaPaginada.map((log) => {
+              const exactTime = formatDateTimeExact(log.createdAt);
+              const undoAvailable = isUndoable(log) && isWithin5Days(log.createdAt);
+              const resolvedName = resolveAuditEntityName(log.entidad, log.detalle, log.ciReferencias);
+
+              return (
+                <div key={log.auditoriaId} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:shadow transition-shadow duration-150 flex flex-col gap-2 w-full">
+                  {/* Día y hora exactas + Auditoría BD # */}
+                  <div className="flex flex-wrap items-center justify-between border-b border-stone-100 pb-2">
+                    <span className="text-[11px] font-bold text-stone-500 bg-stone-50 border border-stone-200/55 px-2 py-0.5 rounded flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
+                      {exactTime}
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-full">
+                      {`Auditoría BD #${log.auditoriaId}`}
+                    </span>
+                  </div>
+
+                  {/* Quien realizó la acción (Usuario) + Qué hizo exactamente + Qué entidades afectó */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs border-b border-stone-50 pb-2">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-stone-400">Quién realizó la acción</span>
+                      <span className="text-stone-800 text-sm">
+                        {log.usuario ? (
+                          <>
+                            <span className="font-bold text-stone-900">
+                              {[log.usuario.rango?.abreviacion, log.usuario.nombre, log.usuario.apellido].filter(Boolean).join(" ").trim() || log.usuario.username}
+                            </span>
+                            <span className="text-stone-500 font-medium text-xs ml-1">
+                              {`(${log.usuario.username} | ${props.roleLabel(log.usuario.rol)})`}
+                            </span>
+                          </>
+                        ) : (() => {
+                          if (log.detalle && typeof log.detalle === "object" && !Array.isArray(log.detalle)) {
+                            const det = log.detalle as Record<string, unknown>;
+                            if (det.accountType === "PERSONAL" || det.ci) {
+                              const ci = String(det.ci || det.username || log.entidadId || "");
+                              const formattedCi = formatUruguayanCi(ci);
+                              const nameFromRef = log.ciReferencias?.[ci] || log.ciReferencias?.[normalizeCi(ci)];
+                              const name = nameFromRef || [det.grado || det.gradoAbreviacion, det.nombre, det.apellido].filter(Boolean).join(" ").trim();
+                              return (
+                                <>
+                                  <span className="font-bold text-stone-900">
+                                    {name || `Personal`}
+                                  </span>
+                                  <span className="text-stone-500 font-medium text-xs ml-1">
+                                    {`(${formattedCi} | Personal)`}
+                                  </span>
+                                </>
+                              );
+                            }
+                          }
+                          return <span className="font-bold text-stone-900">Sistema</span>;
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-stone-400">Qué hizo exactamente</span>
+                      <span className="font-medium text-stone-800 text-sm">
+                        {`${props.auditActionLabel(log.accion)} ${props.auditEntityLabel(log.entidad)}`}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-stone-400">Entidades afectadas</span>
+                      <div className="flex flex-col gap-1 mt-0.5">
+                        {resolvedName && (
+                          <span className="font-bold text-stone-900 text-xs bg-stone-50 border border-stone-200/50 rounded px-1.5 py-0.5 w-max">
+                            {resolvedName}
+                          </span>
+                        )}
+                        <span className="font-mono bg-amber-50 text-amber-800 border border-amber-100 px-1.5 py-0.5 rounded w-max text-[10px] font-semibold">
+                          {formatAuditEntityId(log.entidadId, log.ciReferencias)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Detalles / Diffs */}
+                  <div className="py-1">
+                    {props.renderAuditDetalle(log.detalle, log.ciReferencias, log.accion)}
+                  </div>
+
+                  {/* Botón de deshacer (funcional hasta por 5 días) */}
+                  {isUndoable(log) && (
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-stone-100">
+                      <div>
+                        {undoAvailable ? (
+                          <span className="text-[10px] text-green-600 bg-green-50 border border-green-200/50 px-2 py-0.5 rounded-full font-semibold">
+                            Deshacer disponible (dentro de los 5 días)
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-stone-400 bg-stone-50 border border-stone-200 px-2 py-0.5 rounded-full font-semibold">
+                            Deshacer expirado (más de 5 días)
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleUndo(log.auditoriaId)}
+                        disabled={undoingId !== null || !undoAvailable}
+                        className={`rounded px-3 py-1 text-xs font-bold shadow-sm transition-all duration-150 flex items-center gap-1 ${
+                          undoAvailable
+                            ? "bg-red-600 hover:bg-red-700 text-white active:scale-95"
+                            : "bg-stone-100 text-stone-400 cursor-not-allowed border border-stone-200"
+                        }`}
+                      >
+                        {undoingId === log.auditoriaId ? (
+                          <>
+                            <span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1"></span>
+                            Deshaciendo...
+                          </>
+                        ) : (
+                          "Deshacer Cambio"
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {props.auditoriaFiltrada.length === 0 ? (
               <p className="text-sm text-stone-600">No hay eventos para este filtro.</p>
             ) : null}

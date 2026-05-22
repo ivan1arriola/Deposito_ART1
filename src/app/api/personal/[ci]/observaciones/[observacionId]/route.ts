@@ -89,11 +89,16 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string;
       entidad: "OBSERVACION",
       entidadId: updated.observacionId.toString(),
       detalle: {
-        ci: ciDecoded,
-        fechaAnterior: formatDateOnlyFromDate(existing.fecha),
-        fechaNueva: formatDateOnlyForDisplay(body.fecha),
-        textoAnterior: existing.texto,
-        textoNuevo: texto,
+        previo: {
+          ci: ciDecoded,
+          fecha: formatDateOnlyFromDate(existing.fecha),
+          texto: existing.texto,
+        },
+        nuevo: {
+          ci: ciDecoded,
+          fecha: formatDateOnlyFromDate(updated.fecha),
+          texto: updated.texto,
+        },
       },
     });
 

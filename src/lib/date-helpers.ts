@@ -234,3 +234,16 @@ export function formatDateForDisplay(dateString: string): string {
 export function getTodayDateInput(now = new Date()): string {
   return formatParts(localDateParts(now));
 }
+
+export function formatDateTimeExact(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  const day = pad2(parsed.getDate());
+  const month = pad2(parsed.getMonth() + 1);
+  const year = parsed.getFullYear();
+  const hours = pad2(parsed.getHours());
+  const minutes = pad2(parsed.getMinutes());
+  const seconds = pad2(parsed.getSeconds());
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+}

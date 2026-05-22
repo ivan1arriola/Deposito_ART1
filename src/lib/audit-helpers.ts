@@ -196,7 +196,10 @@ export function auditActionLabel(accion: string): string {
     UPDATE: "Actualizó",
     DELETE: "Eliminó",
     LOGIN: "Inició sesión",
+    LOGIN_PERSONAL: "Inició sesión",
     LOGOUT: "Cerró sesión",
+    PASSWORD_CHANGE: "Cambió contraseña",
+    PASSWORD_CHANGE_PERSONAL: "Cambió contraseña",
   };
   return labels[accion] || accion;
 }
@@ -204,6 +207,7 @@ export function auditActionLabel(accion: string): string {
 export function auditEntityLabel(entidad: string): string {
   const labels: Record<string, string> = {
     AUTH: "autenticación",
+    PERSONAL_AUTH: "autenticación",
     REGISTRO: "movimiento",
     PERSONAL: "personal",
     USUARIO: "usuario",
@@ -225,31 +229,189 @@ export function formatAuditEntityId(entidadId: string | null, ciReferences?: Aud
   return `Entidad ID: ${formatAuditCi(entidadId, ciReferences)}`;
 }
 
-export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiReferences): ReactNode {
+function formatValue(val: unknown): string {
+  if (val === null || val === undefined) return "—";
+  if (typeof val === "boolean") return val ? "Sí" : "No";
+  if (Array.isArray(val)) {
+    if (val.every(item => item && typeof item === "object" && "tipo" in item && "valor" in item)) {
+      return val.map(t => `${t.tipo}: ${t.valor}`).join(", ");
+    }
+    return val.map(item => item && typeof item === "object" ? JSON.stringify(item) : String(item)).join(", ");
+  }
+  if (typeof val === "object") return JSON.stringify(val);
+  return String(val);
+}
+
+function buildDiffLine(key: string, label: string, prevStr: string, nextStr: string) {
+  return createElement(
+    "div",
+    { key, className: "text-[11px] text-stone-700 flex items-center gap-1.5 py-0.5 select-none w-full" },
+    createElement("span", { className: "font-semibold text-stone-900 w-24 shrink-0 truncate", title: label }, `${label}:`),
+    createElement("span", { className: "line-through text-red-700 bg-red-50 border border-red-200/50 px-1.5 py-0.25 rounded text-[10px] font-mono leading-none" }, prevStr),
+    createElement("span", { className: "text-stone-400 font-bold text-[9px]" }, "→"),
+    createElement("span", { className: "text-green-700 bg-green-50 border border-green-200/50 px-1.5 py-0.25 rounded text-[10px] font-bold font-mono leading-none" }, nextStr),
+  );
+}
+
+export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiReferences, accion?: string): ReactNode {
   if (!isObject(detalle)) return "";
 
+  // Simply render authentication/session events as clean status messages
+  const isAuthEvent = 
+    accion === "LOGIN" || 
+    accion === "LOGOUT" || 
+    accion?.includes("PASSWORD") ||
+    accion?.includes("CONTRASEÑA") ||
+    accion?.includes("SESION") || 
+    accion?.includes("SESSION") || 
+    accion?.includes("AUTENTICACION") ||
+    accion?.includes("AUTENTICACIÓN");
+
+  if (isAuthEvent) {
+    let msg = "🔑 Evento de seguridad registrado.";
+    let icon = "🔑";
+    let bg = "bg-stone-50 border-stone-200/55 text-stone-600";
+    if (accion?.includes("LOGIN")) {
+      msg = "Sesión iniciada correctamente.";
+      icon = "🔑";
+      bg = "bg-emerald-50 border-emerald-200/30 text-emerald-800 font-semibold";
+    } else if (accion?.includes("LOGOUT")) {
+      msg = "Sesión cerrada correctamente.";
+      icon = "🚪";
+      bg = "bg-stone-50 border-stone-200/55 text-stone-600 font-semibold";
+    } else if (accion?.includes("PASSWORD") || accion?.includes("CONTRASEÑA")) {
+      msg = "Contraseña cambiada correctamente.";
+      icon = "🔒";
+      bg = "bg-sky-50 border-sky-200/30 text-sky-800 font-semibold";
+    }
+    if (accion?.includes("FAIL") || accion?.includes("FALL")) {
+      msg = "Intento de inicio de sesión fallido.";
+      icon = "⚠️";
+      bg = "bg-red-50 border-red-200/30 text-red-700 font-semibold";
+    }
+    return createElement(
+      "div",
+      { className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex items-center gap-2 select-none w-max ${bg}` },
+      createElement("span", { className: "text-sm" }, icon),
+      msg
+    );
+  }
+
+  const IGNORED_DIFF_KEYS = new Set([
+    "ip",
+    "userAgent",
+    "browser",
+    "os",
+    "device",
+    "fecha",
+    "username",
+    "accountType",
+    "evento",
+    "password",
+    "contraseña",
+    "hash",
+    "salt"
+  ]);
+
+  const lines: ReactNode[] = [];
+
+  // Case 1: Granular comparative diff for before/after state snapshots (our state-aware audit logs)
+  if (isObject(detalle.previo) && isObject(detalle.nuevo)) {
+    const prev = detalle.previo;
+    const next = detalle.nuevo;
+    const allKeys = Array.from(new Set([...Object.keys(prev), ...Object.keys(next)]));
+
+    for (const key of allKeys) {
+      if (IGNORED_DIFF_KEYS.has(key)) continue;
+      const prevVal = prev[key];
+      const nextVal = next[key];
+
+      if (JSON.stringify(prevVal) !== JSON.stringify(nextVal)) {
+        const prevStr = formatValue(prevVal);
+        const nextStr = formatValue(nextVal);
+        const keyLabel = key === "ci" ? "CI" : key;
+        lines.push(buildDiffLine(key, keyLabel, prevStr, nextStr));
+      }
+    }
+  } else {
+    // Case 2: Older flat structures or custom movement/creation payloads
+    const flatKeys = Object.keys(detalle).filter((k) => {
+      if (IGNORED_DIFF_KEYS.has(k)) return false;
+      const val = detalle[k];
+      return typeof val === "string" || typeof val === "number" || typeof val === "boolean";
+    });
+
+    const processedKeys = new Set<string>();
+
+    // First pair up fields like XAnterior and XNuevo
+    for (const k of flatKeys) {
+      if (k.endsWith("Anterior")) {
+        const base = k.slice(0, -8);
+        const nuevoKey = flatKeys.find((x) => x === `${base}Nuevo` || x === `${base}Nueva` || x === base);
+        if (nuevoKey) {
+          const prevStr = formatValue(detalle[k]);
+          const nextStr = formatValue(detalle[nuevoKey]);
+          const label = base === "ci" ? "CI" : base;
+          lines.push(buildDiffLine(base, label, prevStr, nextStr));
+          processedKeys.add(k);
+          processedKeys.add(nuevoKey);
+        }
+      }
+    }
+
+    // For any remaining flat keys, represent them based on the action type (CREATE / DELETE / UPDATE)
+    for (const k of flatKeys) {
+      if (processedKeys.has(k) || k === "evento") continue;
+
+      const valStr = formatValue(detalle[k]);
+      const label = k === "ci" ? "CI" : k;
+
+      if (accion === "CREATE") {
+        // From non-existent to new value
+        lines.push(buildDiffLine(k, label, "—", valStr));
+      } else if (accion === "DELETE") {
+        // From existing value to deleted
+        lines.push(buildDiffLine(k, label, valStr, "—"));
+      } else {
+        // For general updates, show transition
+        lines.push(buildDiffLine(k, label, "—", valStr));
+      }
+    }
+  }
+
+  // Fallback if no comparison lines were created (e.g. movements)
   const evento = asText(detalle.evento);
-  if (evento.startsWith("MOVIMIENTO_") || evento.startsWith("STOCK_")) {
+  if (lines.length === 0 && (evento.startsWith("MOVIMIENTO_") || evento.startsWith("STOCK_"))) {
     return renderMovimientoDetalle(detalle, ciReferences);
   }
 
-  const keys = Object.keys(detalle).filter((key) => {
-    const value = detalle[key];
-    return typeof value === "string" || typeof value === "number";
-  });
-
-  if (keys.length === 0) return "";
+  if (lines.length === 0) {
+    // If there's still no comparative lines, fall back to flat list of simple properties, but show them as "— → Value"
+    const keys = Object.keys(detalle).filter((key) => {
+      const value = detalle[key];
+      return typeof value === "string" || typeof value === "number" || typeof value === "boolean";
+    });
+    for (const key of keys) {
+      if (key === "evento") continue;
+      const label = key === "ci" ? "CI" : key;
+      lines.push(buildDiffLine(key, label, "—", formatValue(detalle[key])));
+    }
+  }
 
   return createElement(
     "div",
-    { className: "mt-2 space-y-1" },
-    ...keys.map((key) =>
-      buildLine(
-        key,
-        key.toLowerCase() === "ci" ? "CI" : key,
-        key.toLowerCase() === "ci" ? formatAuditCi(asText(detalle[key]), ciReferences) : asText(detalle[key]),
-      ),
+    { className: "mt-2 bg-stone-50/70 p-3 rounded-lg border border-stone-200 w-full" },
+    createElement(
+      "p",
+      { className: "text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center gap-1.5 select-none" },
+      createElement("span", { className: "inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" }),
+      "Transición de Estado (Antes → Ahora):"
     ),
+    createElement(
+      "div",
+      { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-1 w-full" },
+      ...lines
+    )
   );
 }
 
@@ -258,4 +420,64 @@ export function renderAuditDetalleEquipos(detalle: unknown): string[] | null {
 
   const items = extractEquipos(detalle.items);
   return items.length > 0 ? items : null;
+}
+
+export function resolveAuditEntityName(entidad: string, detalle: unknown, ciReferences?: AuditCiReferences): string | null {
+  if (!detalle || typeof detalle !== "object" || Array.isArray(detalle)) return null;
+  const det = detalle as Record<string, unknown>;
+
+  // Extract from state snapshots if present
+  const source = (isObject(det.nuevo) ? det.nuevo : isObject(det.previo) ? det.previo : det) as Record<string, unknown>;
+
+  if (entidad === "PERSONAL") {
+    const p = source;
+    const nameParts = [asText(p.apellido1), asText(p.apellido2), asText(p.nombre1), asText(p.nombre2)].filter(Boolean);
+    if (nameParts.length > 0) return nameParts.join(" ");
+    if (p.ci && ciReferences) {
+      const owner = ciReferences[normalizeCi(asText(p.ci))];
+      if (owner) return owner;
+    }
+  }
+
+  if (entidad === "GRADO_PERSONAL" || entidad === "RANGO") {
+    if (source.nombreCompleto) return asText(source.nombreCompleto);
+    if (source.abreviacion) return asText(source.abreviacion);
+  }
+
+  if (entidad === "BATERIA") {
+    if (source.nombre) return `Batería: ${asText(source.nombre)}`;
+  }
+
+  if (entidad === "ARTICULO" || entidad === "ITEM") {
+    if (source.nombre) return asText(source.nombre);
+  }
+
+  if (entidad === "OBSERVACION") {
+    if (source.texto) {
+      const truncated = asText(source.texto).substring(0, 40);
+      return `Obs: "${truncated}${asText(source.texto).length > 40 ? "..." : ""}"`;
+    }
+  }
+
+  if (entidad === "STOCK") {
+    if (source.evento === "STOCK_OPERACION_CREATE" || source.tipo) {
+      const tipo = asText(source.tipo) || "OPERACION";
+      const total = asText(source.totalUnidades) || asText(source.cantidad);
+      return `${tipo} (${total ? `${total} uds` : ""})`;
+    }
+  }
+
+  if (entidad === "REGISTRO" || entidad === "MOVIMIENTO") {
+    const tipo = asText(source.tipo) || "MOVIMIENTO";
+    const total = asText(source.totalUnidades);
+    return `${tipo} (${total ? `${total} uds` : ""})`;
+  }
+
+  // Fallback to name/nombre/abreviacion if present
+  if (source.nombre) return asText(source.nombre);
+  if (source.nombreCompleto) return asText(source.nombreCompleto);
+  if (source.abreviacion) return asText(source.abreviacion);
+  if (source.texto) return asText(source.texto).substring(0, 45);
+
+  return null;
 }

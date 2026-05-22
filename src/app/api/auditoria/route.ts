@@ -95,7 +95,16 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "desc" },
     include: {
       usuario: {
-        select: { usuarioId: true, username: true, rol: true },
+        select: {
+          usuarioId: true,
+          username: true,
+          rol: true,
+          nombre: true,
+          apellido: true,
+          rango: {
+            select: { abreviacion: true }
+          }
+        },
       },
     },
   });
@@ -157,6 +166,9 @@ export async function GET(request: Request) {
               usuarioId: record.usuario.usuarioId,
               username: record.usuario.username,
               rol: record.usuario.rol,
+              nombre: record.usuario.nombre,
+              apellido: record.usuario.apellido,
+              rango: record.usuario.rango,
             }
           : null,
         accion: record.accion,
@@ -164,7 +176,7 @@ export async function GET(request: Request) {
         entidadId: record.entidadId,
         detalle: record.detalle,
         ciReferencias,
-        createdAt: formatDateTimeForDisplay(record.createdAt),
+        createdAt: record.createdAt.toISOString(),
       };
     }),
   );

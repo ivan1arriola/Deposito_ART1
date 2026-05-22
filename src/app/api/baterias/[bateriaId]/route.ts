@@ -74,7 +74,12 @@ export async function PUT(req: Request, context: { params: Promise<{ bateriaId: 
         });
       }
 
-      return { ...updatedBateria, orden: orderedIds.indexOf(bateriaId) + 1 };
+      return {
+        ...updatedBateria,
+        orden: orderedIds.indexOf(bateriaId) + 1,
+        previoNombre: current?.nombre,
+        previoOrden: current?.orden,
+      };
     });
 
     await logAudit({
@@ -82,7 +87,10 @@ export async function PUT(req: Request, context: { params: Promise<{ bateriaId: 
       accion: "UPDATE",
       entidad: "BATERIA",
       entidadId: String(updated.bateriaId),
-      detalle: { nombre: updated.nombre, orden: updated.orden },
+      detalle: {
+        previo: { nombre: updated.previoNombre, orden: updated.previoOrden },
+        nuevo: { nombre: updated.nombre, orden: updated.orden },
+      },
     });
 
     return NextResponse.json(updated);

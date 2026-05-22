@@ -221,11 +221,33 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
     const updated = await prisma.$transaction(async (tx) => {
       const existing = await tx.personal.findUnique({
         where: { ci: ciDecoded },
-        select: { ci: true, rango: { select: { tipo: true } } },
+        include: {
+          rango: true,
+          subalterno: true,
+          tallas: {
+            include: { tallaTipo: true },
+            orderBy: { tallaTipoId: "asc" },
+          },
+        },
       });
       if (!existing || existing.rango.tipo !== TipoPersonal.SUBALTERNO) {
         return null;
       }
+
+      const oldState = {
+        ci: existing.ci,
+        apellido1: existing.apellido1,
+        apellido2: existing.apellido2,
+        nombre1: existing.nombre1,
+        nombre2: existing.nombre2,
+        telefonoContacto: existing.telefonoContacto,
+        rangoId: existing.rangoId,
+        esReingreso: existing.subalterno?.esReingreso ?? false,
+        fechaIngreso: existing.subalterno?.fechaIngreso ? existing.subalterno.fechaIngreso.toISOString().split("T")[0] : null,
+        fechaIngresoOriginal: existing.subalterno?.fechaIngresoOriginal ? existing.subalterno.fechaIngresoOriginal.toISOString().split("T")[0] : null,
+        bateriaId: existing.subalterno?.bateriaId ?? null,
+        tallas: existing.tallas.map(t => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
+      };
 
       await tx.personal.update({
         where: { ci: ciDecoded },
@@ -270,7 +292,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         });
       }
 
-      return tx.personal.findUnique({
+      const updatedRecord = await tx.personal.findUnique({
         where: { ci: ciDecoded },
         include: {
           rango: true,
@@ -285,11 +307,18 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
           },
         },
       });
+
+      return {
+        updated: updatedRecord,
+        previo: oldState,
+      };
     });
 
-    if (!updated) {
+    if (!updated || !updated.updated) {
       return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
     }
+
+    const { updated: updatedRecord, previo: oldState } = updated;
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -297,13 +326,21 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
       entidad: "PERSONAL",
       entidadId: ciDecoded,
       detalle: {
-        ci: ciDecoded,
-        rangoId: Number(body.rangoId),
-        bateriaId,
-        telefonoContacto,
-        esReingreso,
-        fechaIngreso: fechaIngresoRaw ? formatDateOnlyForDisplay(fechaIngresoRaw) : null,
-        fechaIngresoOriginal: esReingreso && fechaIngresoOriginalRaw ? formatDateOnlyForDisplay(fechaIngresoOriginalRaw) : null,
+        previo: oldState,
+        nuevo: {
+          ci: ciDecoded,
+          apellido1: updatedRecord.apellido1,
+          apellido2: updatedRecord.apellido2,
+          nombre1: updatedRecord.nombre1,
+          nombre2: updatedRecord.nombre2,
+          telefonoContacto: updatedRecord.telefonoContacto,
+          rangoId: updatedRecord.rangoId,
+          esReingreso: updatedRecord.subalterno?.esReingreso ?? false,
+          fechaIngreso: updatedRecord.subalterno?.fechaIngreso ? updatedRecord.subalterno.fechaIngreso.toISOString().split("T")[0] : null,
+          fechaIngresoOriginal: updatedRecord.subalterno?.fechaIngresoOriginal ? updatedRecord.subalterno.fechaIngresoOriginal.toISOString().split("T")[0] : null,
+          bateriaId: updatedRecord.subalterno?.bateriaId ?? null,
+          tallas: updatedRecord.tallas.map(t => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
+        },
       },
     });
 
@@ -315,8 +352,8 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         subject: "Notificacion de datos personales - Sistema de Depósito General - Artilleria 1",
         headline: "Se actualizaron datos de tu ficha personal.",
         detailLines: [
-          `Rango actualizado: ${updated.rango.abreviacion} - ${updated.rango.nombreCompleto}`,
-          bateriaId ? `Bateria: ${updated.subalterno?.bateria?.nombre ?? `ID ${bateriaId}`}` : "Bateria: sin asignar",
+          `Rango actualizado: ${updatedRecord.rango.abreviacion} - ${updatedRecord.rango.nombreCompleto}`,
+          bateriaId ? `Bateria: ${updatedRecord.subalterno?.bateria?.nombre ?? `ID ${bateriaId}`}` : "Bateria: sin asignar",
           telefonoContacto ? `Celular: ${telefonoContacto}` : "Celular: sin registrar",
           `Reingreso: ${esReingreso ? "Si" : "No"}`,
           fechaIngresoRaw ? `Fecha ingreso: ${formatDateOnlyForDisplay(fechaIngresoRaw)}` : "",
@@ -327,7 +364,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
       }),
     ]);
 
-    return NextResponse.json(serializePersonal(updated as PersonalWithRelations));
+    return NextResponse.json(serializePersonal(updatedRecord as PersonalWithRelations));
   } catch (error: unknown) {
     if (hasConstraintName(error, "personal_talla_valor_permitido_chk")) {
       return NextResponse.json(

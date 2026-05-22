@@ -103,6 +103,14 @@ export async function PUT(req: Request, context: { params: Promise<{ articuloId:
   }
 
   try {
+    const current = await prisma.articulo.findUnique({
+      where: { articuloId },
+    });
+
+    if (!current) {
+      return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+    }
+
     const updated = await prisma.articulo.update({
       where: { articuloId },
       data: { nombre, tipo },
@@ -113,7 +121,10 @@ export async function PUT(req: Request, context: { params: Promise<{ articuloId:
       accion: "UPDATE",
       entidad: "ARTICULO",
       entidadId: String(updated.articuloId),
-      detalle: { nombre: updated.nombre, tipo: updated.tipo },
+      detalle: {
+        previo: { nombre: current.nombre, tipo: current.tipo },
+        nuevo: { nombre: updated.nombre, tipo: updated.tipo },
+      },
     });
 
     return NextResponse.json(updated);

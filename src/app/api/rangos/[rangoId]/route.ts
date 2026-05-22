@@ -43,7 +43,7 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
     const updated = await prisma.$transaction(async (tx) => {
       const current = await tx.rango.findUnique({
         where: { rangoId },
-        select: { rangoId: true, tipo: true, orden: true },
+        select: { rangoId: true, tipo: true, orden: true, abreviacion: true, nombreCompleto: true },
       });
       if (!current) {
         return null;
@@ -74,7 +74,13 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
         });
       }
 
-      return { ...updatedRango, orden: orderedIds.indexOf(rangoId) + 1 };
+      return {
+        ...updatedRango,
+        orden: orderedIds.indexOf(rangoId) + 1,
+        previoAbreviacion: current.abreviacion,
+        previoNombreCompleto: current.nombreCompleto,
+        previoOrden: current.orden,
+      };
     });
 
     if (!updated) {
@@ -86,7 +92,18 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
       accion: "UPDATE",
       entidad: "GRADO_PERSONAL",
       entidadId: String(updated.rangoId),
-      detalle: { abreviacion: updated.abreviacion, nombreCompleto: updated.nombreCompleto, orden: updated.orden },
+      detalle: {
+        previo: {
+          abreviacion: updated.previoAbreviacion,
+          nombreCompleto: updated.previoNombreCompleto,
+          orden: updated.previoOrden,
+        },
+        nuevo: {
+          abreviacion: updated.abreviacion,
+          nombreCompleto: updated.nombreCompleto,
+          orden: updated.orden,
+        },
+      },
     });
     invalidateRangoTipoCountCache();
 
@@ -150,7 +167,12 @@ export async function DELETE(req: Request, context: { params: Promise<{ rangoId:
       accion: "DELETE",
       entidad: "GRADO_PERSONAL",
       entidadId: String(deleted.rangoId),
-      detalle: { abreviacion: deleted.abreviacion, nombreCompleto: deleted.nombreCompleto, orden: deleted.orden },
+      detalle: {
+        tipo: deleted.tipo,
+        abreviacion: deleted.abreviacion,
+        nombreCompleto: deleted.nombreCompleto,
+        orden: deleted.orden,
+      },
     });
     invalidateRangoTipoCountCache();
 

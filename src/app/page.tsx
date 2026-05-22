@@ -844,36 +844,57 @@ export default function Home() {
       personalCi?: string | null;
       username: string;
       rol: Role;
+      rango?: { abreviacion: string } | null;
     }) => {
-      if (usuario.accountType === "PERSONAL") {
-        const fullName = `${(usuario.apellido ?? "").trim()}, ${(usuario.nombre ?? "").trim()}`.replace(/^,\s*|,\s*$/g, "");
+      const grado = usuario.rango?.abreviacion || "";
+      const gradoLabel = grado ? `${grado} ` : "";
+      if (usuario.accountType === "PERSONAL" || usuario.personalCi) {
+        const fullName = `${(usuario.apellido ?? "").trim()} ${(usuario.nombre ?? "").trim()}`.trim();
         const ciRaw = (usuario.personalCi ?? usuario.username).trim();
         const ciLabel = ciRaw ? formatUruguayanCi(ciRaw) : "CI sin dato";
         const nameLabel = fullName || "Personal";
-        return `${nameLabel} - ${ciLabel} (${roleLabel(usuario.rol)})`;
+        return `${gradoLabel}${nameLabel} - ${ciLabel} (Personal)`;
+      }
+
+      const fullName = `${(usuario.apellido ?? "").trim()} ${(usuario.nombre ?? "").trim()}`.trim();
+      if (fullName) {
+        return `${gradoLabel}${fullName} (${usuario.username} | ${roleLabel(usuario.rol)})`;
       }
 
       return `${usuario.username} (${roleLabel(usuario.rol)})`;
     };
 
-    for (const usuario of usuarios) {
-      if (uniqueUsers.has(usuario.usuarioId)) continue;
-      uniqueUsers.set(usuario.usuarioId, {
-        value: usuario.usuarioId,
-        label: buildAuditUserLabel(usuario),
-      });
-    }
-
+    // First process all log entries to build the list of users who actually have logs!
     for (const log of auditoria) {
-      if (!log.usuario?.usuarioId) {
+      if (log.usuario?.usuarioId) {
+        if (uniqueUsers.has(log.usuario.usuarioId)) continue;
+        uniqueUsers.set(log.usuario.usuarioId, {
+          value: log.usuario.usuarioId,
+          label: buildAuditUserLabel(log.usuario),
+        });
+      } else {
+        // If log represents a personal user action (e.g. login/password change)
+        if (log.detalle && typeof log.detalle === "object" && !Array.isArray(log.detalle)) {
+          const det = log.detalle as Record<string, unknown>;
+          if (det.accountType === "PERSONAL" || det.ci) {
+            const ci = String(det.ci || det.username || log.entidadId || "");
+            const normalized = normalizeCi(ci);
+            const key = `personal:${normalized}`;
+            if (uniqueUsers.has(key)) continue;
+
+            const nameFromRef = log.ciReferencias?.[normalized] || log.ciReferencias?.[ci];
+            const name = nameFromRef || [det.grado || det.gradoAbreviacion, det.nombre, det.apellido].filter(Boolean).join(" ").trim();
+            const label = name ? `${name} - ${formatUruguayanCi(ci)} (Personal)` : `Personal - ${formatUruguayanCi(ci)} (Personal)`;
+
+            uniqueUsers.set(key, {
+              value: key,
+              label,
+            });
+            continue;
+          }
+        }
         hasSystemRecords = true;
-        continue;
       }
-      if (uniqueUsers.has(log.usuario.usuarioId)) continue;
-      uniqueUsers.set(log.usuario.usuarioId, {
-        value: log.usuario.usuarioId,
-        label: `${log.usuario.username} (${roleLabel(log.usuario.rol)})`,
-      });
     }
 
     const dynamicOptions = Array.from(uniqueUsers.values()).sort((a, b) => a.label.localeCompare(b.label, "es"));
@@ -884,20 +905,46 @@ export default function Home() {
     }
 
     return options;
-  }, [auditoria, usuarios]);
+  }, [auditoria]);
+
   const auditoriaFiltrada = useMemo(() => {
     let filtered = auditoria;
 
     if (auditFilter === "MOVIMIENTOS") {
-      filtered = filtered.filter((log) => log.entidad === "REGISTRO");
+      filtered = filtered.filter(
+        (log) =>
+          log.entidad === "REGISTRO" ||
+          log.entidad === "ARTICULO_STOCK" ||
+          log.entidad === "ARTICULO_ENTREGA_PERSONAL"
+      );
     } else if (auditFilter === "AUTENTICACION") {
       filtered = filtered.filter((log) => log.entidad === "AUTH");
     }
 
     if (auditUserFilter === AUDIT_USER_FILTER_SYSTEM) {
-      filtered = filtered.filter((log) => !log.usuario?.usuarioId);
+      filtered = filtered.filter((log) => {
+        if (log.usuario?.usuarioId) return false;
+        if (log.detalle && typeof log.detalle === "object" && !Array.isArray(log.detalle)) {
+          const det = log.detalle as Record<string, unknown>;
+          if (det.accountType === "PERSONAL" || det.ci) return false;
+        }
+        return true;
+      });
     } else if (auditUserFilter !== AUDIT_USER_FILTER_ALL) {
-      filtered = filtered.filter((log) => log.usuario?.usuarioId === auditUserFilter || log.usuarioId === auditUserFilter);
+      if (auditUserFilter.startsWith("personal:")) {
+        const targetCi = auditUserFilter.slice(9);
+        filtered = filtered.filter((log) => {
+          if (log.usuario?.usuarioId) return false;
+          if (log.detalle && typeof log.detalle === "object" && !Array.isArray(log.detalle)) {
+            const det = log.detalle as Record<string, unknown>;
+            const ci = String(det.ci || det.username || log.entidadId || "");
+            return normalizeCi(ci) === normalizeCi(targetCi);
+          }
+          return false;
+        });
+      } else {
+        filtered = filtered.filter((log) => log.usuario?.usuarioId === auditUserFilter || log.usuarioId === auditUserFilter);
+      }
     }
 
     return filtered;
@@ -6510,6 +6557,7 @@ export default function Home() {
             papeleraLoading={papeleraLoading}
             onRestorePapelera={restorePapelera}
             onDeletePapeleraPermanent={deletePapeleraPermanent}
+            reloadCurrentViewData={reloadCurrentViewData}
           />
           ) : null}
 

@@ -35,7 +35,14 @@ export type FirmaConfig = {
 export type AuditoriaRecord = {
   auditoriaId: string;
   usuarioId: string | null;
-  usuario: { usuarioId: string; username: string; rol: Role } | null;
+  usuario: {
+    usuarioId: string;
+    username: string;
+    rol: Role;
+    nombre?: string;
+    apellido?: string;
+    rango?: { abreviacion: string } | null;
+  } | null;
   accion: string;
   entidad: string;
   entidadId: string | null;
@@ -189,7 +196,7 @@ export interface UtilityFunctions {
   rangoLabel: (rango: RangoConfig) => string;
   auditActionLabel: (accion: string) => string;
   auditEntityLabel: (entidad: string) => string;
-  renderAuditDetalle: (detalle: unknown) => ReactNode;
+  renderAuditDetalle: (detalle: unknown, ciReferences?: Record<string, string>, accion?: string) => ReactNode;
 }
 
 /**
