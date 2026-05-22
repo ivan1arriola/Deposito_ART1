@@ -544,6 +544,149 @@ export function ConfigViews(props: ConfigViewsProps) {
       );
     }
 
+    const handlePrintCatalog = () => {
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) return;
+
+      const tipoLabels: Record<TipoArticulo, string> = {
+        OFICINA: "Oficina y Papelería",
+        LIMPIEZA: "Limpieza e Higiene",
+      };
+
+      const html = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <title>Catálogo de Artículos - Depósito General</title>
+          <style>
+            body {
+              font-family: system-ui, -apple-system, sans-serif;
+              color: #1c1917;
+              margin: 40px;
+              line-height: 1.5;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 20px;
+              border-bottom: 2px solid #e7e5e4;
+              padding-bottom: 15px;
+            }
+            .header h1 {
+              font-size: 20px;
+              margin: 0;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .header p {
+              font-size: 12px;
+              color: #78716c;
+              margin: 4px 0 0 0;
+            }
+            .meta {
+              display: flex;
+              justify-content: space-between;
+              font-size: 11px;
+              color: #78716c;
+              margin-bottom: 20px;
+            }
+            .category-section {
+              margin-bottom: 25px;
+              page-break-inside: avoid;
+            }
+            .category-title {
+              font-size: 12px;
+              font-weight: 700;
+              text-transform: uppercase;
+              color: #44403c;
+              background-color: #f5f5f4;
+              padding: 6px 10px;
+              border-radius: 4px;
+              margin-bottom: 8px;
+              border-left: 3px solid #78716c;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th, td {
+              padding: 6px 10px;
+              text-align: left;
+              font-size: 12px;
+              border-bottom: 1px solid #e7e5e4;
+            }
+            th {
+              font-weight: 700;
+              color: #44403c;
+              background-color: #fafaf9;
+            }
+            .text-right {
+              text-align: right;
+            }
+            .stock-positive {
+              color: #15803d;
+              font-weight: 600;
+            }
+            .stock-zero {
+              color: #b91c1c;
+              font-weight: bold;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Catálogo de Artículos</h1>
+            <p>Sistema de Depósito General — Artillería 1</p>
+          </div>
+          <div class="meta">
+            <span>Fecha de Impresión: ${new Date().toLocaleDateString("es-UY")} ${new Date().toLocaleTimeString("es-UY", { hour: '2-digit', minute: '2-digit' })}</span>
+            <span>Total de Artículos: ${props.articulos.length}</span>
+          </div>
+
+          ${ARTICULO_TIPO_OPTIONS.map((tipo) => {
+            const list = grouped[tipo] || [];
+            if (list.length === 0) return "";
+            return `
+              <div class="category-section">
+                <div class="category-title">${tipoLabels[tipo] || tipo}</div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width: 75%;">Nombre del Artículo</th>
+                      <th style="width: 25%;" class="text-right">Cantidad en Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${list.map(art => `
+                      <tr>
+                        <td>${art.nombre}</td>
+                        <td class="text-right ${art.stockActual > 0 ? 'stock-positive' : 'stock-zero'}">
+                          ${art.stockActual}
+                        </td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              </div>
+            `;
+          }).join("")}
+
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+    };
+
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-6">
@@ -560,6 +703,16 @@ export function ConfigViews(props: ConfigViewsProps) {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handlePrintCatalog}
+                className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-100 flex items-center gap-1.5 shadow-sm"
+              >
+                <svg className="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4" />
+                </svg>
+                Imprimir catálogo
+              </button>
               {props.canWrite ? (
                 <button
                   type="button"
