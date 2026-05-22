@@ -834,79 +834,7 @@ export default function Home() {
 
     return dynamic;
   }, [personal, oficialesSuboficiales, newPersonal, newOficialSuboficial, editPersonal]);
-  const auditUserOptions = useMemo(() => {
-    const uniqueUsers = new Map<string, { value: string; label: string }>();
-    let hasSystemRecords = false;
-
-    const buildAuditUserLabel = (usuario: {
-      accountType?: "SISTEMA" | "PERSONAL";
-      apellido?: string;
-      nombre?: string;
-      personalCi?: string | null;
-      username: string;
-      rol: Role;
-      rango?: { abreviacion: string } | null;
-    }) => {
-      const grado = usuario.rango?.abreviacion || "";
-      const gradoLabel = grado ? `${grado} ` : "";
-      if (usuario.accountType === "PERSONAL" || usuario.personalCi) {
-        const fullName = `${(usuario.apellido ?? "").trim()} ${(usuario.nombre ?? "").trim()}`.trim();
-        const ciRaw = (usuario.personalCi ?? usuario.username).trim();
-        const ciLabel = ciRaw ? formatUruguayanCi(ciRaw) : "CI sin dato";
-        const nameLabel = fullName || "Personal";
-        return `${gradoLabel}${nameLabel} - ${ciLabel} (Personal)`;
-      }
-
-      const fullName = `${(usuario.apellido ?? "").trim()} ${(usuario.nombre ?? "").trim()}`.trim();
-      if (fullName) {
-        return `${gradoLabel}${fullName} (${usuario.username} | ${roleLabel(usuario.rol)})`;
-      }
-
-      return `${usuario.username} (${roleLabel(usuario.rol)})`;
-    };
-
-    // First process all log entries to build the list of users who actually have logs!
-    for (const log of auditoria) {
-      if (log.usuario?.usuarioId) {
-        if (uniqueUsers.has(log.usuario.usuarioId)) continue;
-        uniqueUsers.set(log.usuario.usuarioId, {
-          value: log.usuario.usuarioId,
-          label: buildAuditUserLabel(log.usuario),
-        });
-      } else {
-        // If log represents a personal user action (e.g. login/password change)
-        if (log.detalle && typeof log.detalle === "object" && !Array.isArray(log.detalle)) {
-          const det = log.detalle as Record<string, unknown>;
-          if (det.accountType === "PERSONAL" || det.ci) {
-            const ci = String(det.ci || det.username || log.entidadId || "");
-            const normalized = normalizeCi(ci);
-            const key = `personal:${normalized}`;
-            if (uniqueUsers.has(key)) continue;
-
-            const nameFromRef = log.ciReferencias?.[normalized] || log.ciReferencias?.[ci];
-            const name = nameFromRef || [det.grado || det.gradoAbreviacion, det.nombre, det.apellido].filter(Boolean).join(" ").trim();
-            const label = name ? `${name} - ${formatUruguayanCi(ci)} (Personal)` : `Personal - ${formatUruguayanCi(ci)} (Personal)`;
-
-            uniqueUsers.set(key, {
-              value: key,
-              label,
-            });
-            continue;
-          }
-        }
-        hasSystemRecords = true;
-      }
-    }
-
-    const dynamicOptions = Array.from(uniqueUsers.values()).sort((a, b) => a.label.localeCompare(b.label, "es"));
-    const options = [{ value: AUDIT_USER_FILTER_ALL, label: "Todos los usuarios" }, ...dynamicOptions];
-
-    if (hasSystemRecords) {
-      options.splice(1, 0, { value: AUDIT_USER_FILTER_SYSTEM, label: "Sistema (sin usuario)" });
-    }
-
-    return options;
-  }, [auditoria]);
+  const auditUserOptions: { value: string; label: string }[] = [];
 
   const auditoriaFiltrada = useMemo(() => {
     let filtered = auditoria;
@@ -931,21 +859,52 @@ export default function Home() {
         }
         return true;
       });
-    } else if (auditUserFilter !== AUDIT_USER_FILTER_ALL) {
-      if (auditUserFilter.startsWith("personal:")) {
-        const targetCi = auditUserFilter.slice(9);
-        filtered = filtered.filter((log) => {
-          if (log.usuario?.usuarioId) return false;
-          if (log.detalle && typeof log.detalle === "object" && !Array.isArray(log.detalle)) {
-            const det = log.detalle as Record<string, unknown>;
-            const ci = String(det.ci || det.username || log.entidadId || "");
-            return normalizeCi(ci) === normalizeCi(targetCi);
+    } else if (auditUserFilter && auditUserFilter !== AUDIT_USER_FILTER_ALL) {
+      const query = auditUserFilter.toLowerCase().trim();
+      filtered = filtered.filter((log) => {
+        // 1. Search in system user details
+        if (log.usuario) {
+          const u = log.usuario;
+          const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
+          const username = u.username.toLowerCase();
+          const grado = (u.rango?.abreviacion || "").toLowerCase();
+          const rol = roleLabel(u.rol).toLowerCase();
+          if (
+            fullName.includes(query) ||
+            username.includes(query) ||
+            grado.includes(query) ||
+            rol.includes(query)
+          ) {
+            return true;
           }
-          return false;
-        });
-      } else {
-        filtered = filtered.filter((log) => log.usuario?.usuarioId === auditUserFilter || log.usuarioId === auditUserFilter);
-      }
+        }
+        // 2. Search in log details for personal users
+        if (log.detalle && typeof log.detalle === "object" && !Array.isArray(log.detalle)) {
+          const det = log.detalle as Record<string, unknown>;
+          if (det.accountType === "PERSONAL" || det.ci) {
+            const ci = String(det.ci || det.username || log.entidadId || "").toLowerCase();
+            const detName = `${det.nombre || ""} ${det.apellido || ""}`.toLowerCase();
+            const detGrado = String(det.grado || det.gradoAbreviacion || "").toLowerCase();
+            if (
+              ci.includes(query) ||
+              detName.includes(query) ||
+              detGrado.includes(query)
+            ) {
+              return true;
+            }
+          }
+        }
+        // 3. Match 'sistema' keyword for purely system records
+        if (!log.usuario && query === "sistema") {
+          const isPersonal =
+            log.detalle &&
+            typeof log.detalle === "object" &&
+            !Array.isArray(log.detalle) &&
+            ((log.detalle as any).accountType === "PERSONAL" || (log.detalle as any).ci);
+          if (!isPersonal) return true;
+        }
+        return false;
+      });
     }
 
     return filtered;
@@ -1422,10 +1381,6 @@ export default function Home() {
     setRegistroViewerPage(registroViewerTotalPages);
   }, [registroViewerPage, registroViewerTotalPages]);
 
-  useEffect(() => {
-    if (auditUserOptions.some((option) => option.value === auditUserFilter)) return;
-    setAuditUserFilter(AUDIT_USER_FILTER_ALL);
-  }, [auditUserFilter, auditUserOptions]);
 
   useEffect(() => {
     setAuditPage(1);

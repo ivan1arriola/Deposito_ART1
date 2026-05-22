@@ -297,6 +297,20 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
     );
   }
 
+  const isUndoEvent = detalle.evento === "UNDO_ACCION_AUDITORIA" || (detalle as any).evento === "UNDO_ACCION_AUDITORIA";
+  if (isUndoEvent) {
+    const audId = String((detalle as any).auditoriaIdRestaurada || (detalle as any).auditoriaId || "");
+    const msg = `Fue por un deshacer de la acción #${audId}`;
+    const icon = "🔄";
+    const bg = "bg-amber-50 border-amber-200/40 text-amber-800 font-semibold";
+    return createElement(
+      "div",
+      { className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex items-center gap-2 select-none w-max ${bg}` },
+      createElement("span", { className: "text-sm" }, icon),
+      msg
+    );
+  }
+
   const IGNORED_DIFF_KEYS = new Set([
     "ip",
     "userAgent",

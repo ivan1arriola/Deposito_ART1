@@ -589,7 +589,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
         entidadAfectada: undoResult.entidad,
         accionDeshecha: undoResult.accion,
         entidadIdDeshecho: undoResult.entidadId,
-        mensaje: "Acción de auditoría deshecha/revertida con éxito.",
+        mensaje: `Fue por un deshacer de la acción #${auditoriaId}`,
       },
     });
 
