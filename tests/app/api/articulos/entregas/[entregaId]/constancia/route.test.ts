@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { GET } from "./route";
+import { GET } from "@/app/api/articulos/entregas/[entregaId]/constancia/route";
 import { authorizeRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 

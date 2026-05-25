@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { filterArticuloEntregasHistorial, type ArticuloEntregaHistorialEntry } from "./articulo-entregas-history";
+import { filterArticuloEntregasHistorial, type ArticuloEntregaHistorialEntry } from "@/lib/articulo-entregas-history";
 
 const SAMPLE_ENTREGAS: ArticuloEntregaHistorialEntry[] = [
   {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "./route";
+import { POST } from "@/app/api/prestamos/route";
 import { authorizeRequest } from "@/lib/auth";
 import { ensurePrestamoActuanteCompatibility, upsertPrestamoActuante } from "@/lib/prestamo-actuante";
 import { logAudit } from "@/lib/audit";

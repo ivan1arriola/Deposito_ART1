@@ -1,6 +1,7 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { EquiposUnificarView } from "./EquiposUnificarView";
+import { EquiposUnificarView } from "@/app/components/views/EquiposUnificarView";
 
 describe("EquiposUnificarView Component", () => {
   const defaultEquipos = [
@@ -22,26 +23,26 @@ describe("EquiposUnificarView Component", () => {
   it("renderiza correctamente los títulos y la guía explicativa", () => {
     render(<EquiposUnificarView {...mockProps} />);
 
-    expect(screen.getByText("Unificar Catálogo de Equipos")).toBeInTheDocument();
-    expect(screen.getByText("Herramienta de depuración y consolidación del inventario")).toBeInTheDocument();
-    expect(screen.getByText("¿Cómo funciona la unificación de equipos?")).toBeInTheDocument();
-    expect(screen.getByText(/Todos los registros históricos, incluyendo entregas, devoluciones, préstamos/)).toBeInTheDocument();
+    expect(screen.getByText("Unificar Catálogo de Equipos")).toBeDefined();
+    expect(screen.getByText("Herramienta de depuración y consolidación del inventario")).toBeDefined();
+    expect(screen.getByText("¿Cómo funciona la unificación de equipos?")).toBeDefined();
+    expect(screen.getByText(/Todos los registros históricos, incluyendo entregas, devoluciones, préstamos/)).toBeDefined();
   });
 
   it("muestra advertencia si hay menos de 2 equipos", () => {
     render(<EquiposUnificarView {...mockProps} equipos={[{ itemId: "1", nombre: "Chaleco Único", tipo: "GENERAL", activo: true }]} />);
 
-    expect(screen.getByText("No hay suficientes equipos")).toBeInTheDocument();
-    expect(screen.getByText("Se requieren al menos 2 equipos en el catálogo para poder realizar una fusión.")).toBeInTheDocument();
+    expect(screen.getByText("No hay suficientes equipos")).toBeDefined();
+    expect(screen.getByText("Se requieren al menos 2 equipos en el catálogo para poder realizar una fusión.")).toBeDefined();
   });
 
   it("desactiva los controles si el usuario no tiene permisos de escritura", () => {
     render(<EquiposUnificarView {...mockProps} canWrite={false} />);
 
-    expect(screen.getByText(/Modo solo lectura: Tu cuenta no posee permisos de escritura/)).toBeInTheDocument();
+    expect(screen.getByText(/Modo solo lectura: Tu cuenta no posee permisos de escritura/)).toBeDefined();
     // El botón debe estar deshabilitado
     const button = screen.getByRole("button", { name: "Unificar y eliminar origen" });
-    expect(button).toBeDisabled();
+    expect(button.hasAttribute("disabled")).toBe(true);
   });
 
   it("permite seleccionar equipo origen y equipo destino y llama a los callbacks", () => {
@@ -66,17 +67,17 @@ describe("EquiposUnificarView Component", () => {
     const { rerender } = render(<EquiposUnificarView {...mockProps} />);
     
     let button = screen.getByRole("button", { name: "Unificar y eliminar origen" });
-    expect(button).toBeDisabled();
+    expect(button.hasAttribute("disabled")).toBe(true);
 
     // Rerender con origen seleccionado
     rerender(<EquiposUnificarView {...mockProps} mergeEquipoOrigenId="1" />);
     button = screen.getByRole("button", { name: "Unificar y eliminar origen" });
-    expect(button).toBeDisabled();
+    expect(button.hasAttribute("disabled")).toBe(true);
 
     // Rerender con origen y destino seleccionados
     rerender(<EquiposUnificarView {...mockProps} mergeEquipoOrigenId="1" mergeEquipoDestinoId="2" />);
     button = screen.getByRole("button", { name: "Unificar y eliminar origen" });
-    expect(button).toBeEnabled();
+    expect(button.hasAttribute("disabled")).toBe(false);
   });
 
   it("desencadena la función de unificar al hacer clic en el botón", () => {

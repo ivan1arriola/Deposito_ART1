@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { calcularStockArticulo, calcularStockTodos } from "./stock-calc";
+import { calcularStockArticulo, calcularStockTodos } from "@/lib/stock-calc";
 
 const mockPrisma = {
   articuloStockMovimiento: {
