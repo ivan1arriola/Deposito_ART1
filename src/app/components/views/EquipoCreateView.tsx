@@ -55,7 +55,7 @@ export function EquipoCreateView({ form, saving, onBack, onSubmit, onChange }: E
                 className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
               >
                 <option value="GENERAL">General</option>
-                <option value="FRI">FRI</option>
+                <option value="FRI">F.R.I</option>
               </select>
             </label>
 

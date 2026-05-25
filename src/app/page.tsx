@@ -263,7 +263,7 @@ function formatDurationForStatus(ms: number | null | undefined) {
 }
 
 function tipoEquipoLabel(tipo: TipoEquipo) {
-  return tipo === "FRI" ? "FRI" : "General";
+  return tipo === "FRI" ? "F.R.I" : "General";
 }
 
 function formatElapsedTimer(ms: number | null | undefined) {
@@ -5664,7 +5664,7 @@ export default function Home() {
                 className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="GENERAL">General</option>
-                <option value="FRI">FRI</option>
+                <option value="FRI">F.R.I</option>
               </select>
             </div>
             <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-stone-50 p-2 rounded-lg">

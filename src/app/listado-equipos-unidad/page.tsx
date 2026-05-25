@@ -250,7 +250,7 @@ export default async function ListadoEquiposUnidadPage({
     },
     {
       key: "FRI" as const,
-      title: isAlphaSort ? "Equipos FRI (A-Z)" : "Equipos FRI",
+      title: isAlphaSort ? "Equipos F.R.I (A-Z)" : "Equipos F.R.I",
       items: resumenSeparado.fri,
     },
   ];
@@ -279,7 +279,7 @@ export default async function ListadoEquiposUnidadPage({
       <main className="sheet">
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <h1 className="title">Listado de Equipos de la Unidad</h1>
-        <p className="subtitle">{`Totales por item (subalternos + prestamo + deposito) ${isAlphaSort ? "· Generales y FRI por separado en orden alfabético" : "· Generales primero, luego FRI, respetando el orden asignado"}`}</p>
+        <p className="subtitle">{`Totales por item (subalternos + prestamo + deposito) ${isAlphaSort ? "· Generales y F.R.I por separado en orden alfabético" : "· Generales primero, luego F.R.I, respetando el orden asignado"}`}</p>
         <p className="meta">{`Generado: ${generatedAt} | Equipos listados: ${resumen.length}`}</p>
 
         <section className="totals">
@@ -309,7 +309,7 @@ export default async function ListadoEquiposUnidadPage({
               <section key={section.key}>
                 <p className="subtitle">{`${section.title} · ${section.items.length} equipos`}</p>
                 {section.items.length === 0 ? (
-                  <section className="empty-state">No hay equipos {section.key === "FRI" ? "FRI" : "generales"} registrados.</section>
+                  <section className="empty-state">No hay equipos {section.key === "FRI" ? "F.R.I" : "generales"} registrados.</section>
                 ) : (
                   <section className="table-wrap">
                     <table>

@@ -272,7 +272,7 @@ export function StockView({
   const canEditSie = canWrite && isAdmin;
   const stockTableSections = [
     { key: "GENERAL" as const, title: section === "total" ? "Equipo general" : "Equipo general en depósito", items: resumenGeneral },
-    { key: "FRI" as const, title: section === "total" ? "Equipo FRI" : "Equipo FRI en depósito", items: resumenFri },
+    { key: "FRI" as const, title: section === "total" ? "Equipo F.R.I" : "Equipo F.R.I en depósito", items: resumenFri },
   ];
 
   return (
@@ -300,7 +300,7 @@ export function StockView({
                   type="button"
                   onClick={() => window.open("/listado-equipos-unidad?autoprint=1&sort=alpha", "_blank", "noopener,noreferrer")}
                   className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-stone-200 hover:text-white"
-                  title="Imprimir separando equipos generales y FRI, con orden alfabético dentro de cada grupo"
+                  title="Imprimir separando equipos generales y F.R.I, con orden alfabético dentro de cada grupo"
                 >
                   <SortByAlphaRoundedIcon sx={{ fontSize: 18 }} />
                   <span>Imprimir (A-Z por tipo)</span>
@@ -412,7 +412,7 @@ export function StockView({
                         })
                         .map((catalogItem) => (
                           <option key={catalogItem.itemId} value={catalogItem.itemId}>
-                            {catalogItem.nombre}{catalogItem.tipo === "FRI" ? " (FRI)" : ""}
+                            {catalogItem.nombre}{catalogItem.tipo === "FRI" ? " (F.R.I)" : ""}
                           </option>
                         ))}
                 </select>
@@ -613,7 +613,7 @@ export function StockView({
                         })
                         .map((catalogItem) => (
                           <option key={catalogItem.itemId} value={catalogItem.itemId}>
-                            {catalogItem.nombre}{catalogItem.tipo === "FRI" ? " (FRI)" : ""}
+                            {catalogItem.nombre}{catalogItem.tipo === "FRI" ? " (F.R.I)" : ""}
                           </option>
                         ))}
                     </select>
@@ -857,7 +857,7 @@ export function StockView({
                   </div>
                   {tableSection.items.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-stone-300 px-3 py-6 text-sm text-stone-500">
-                      No hay registros para {tableSection.key === "FRI" ? "equipo FRI" : "equipo general"} en esta vista.
+                      No hay registros para {tableSection.key === "FRI" ? "equipo F.R.I" : "equipo general"} en esta vista.
                     </div>
                   ) : (
                     <div className="overflow-x-auto">

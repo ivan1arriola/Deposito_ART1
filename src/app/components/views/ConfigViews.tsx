@@ -200,7 +200,7 @@ const ARTICULO_TIPO_LABEL: Record<TipoArticulo, string> = {
 };
 const TIPO_EQUIPO_LABEL: Record<TipoEquipo, string> = {
   GENERAL: "General",
-  FRI: "FRI",
+  FRI: "F.R.I",
 };
 
 export function ConfigViews(props: ConfigViewsProps) {
@@ -951,7 +951,7 @@ export function ConfigViews(props: ConfigViewsProps) {
               disabled={!props.canWrite}
             >
               <option value="GENERAL">General</option>
-              <option value="FRI">FRI</option>
+              <option value="FRI">F.R.I</option>
             </select>
             <div className="flex flex-wrap gap-4 text-sm">
               <label className="flex items-center gap-2">
@@ -1001,7 +1001,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                 </button>
               </div>
               <p className="mt-2 text-xs text-stone-600">
-                La vista alfabética muestra primero equipos generales y luego equipos FRI, ordenados A-Z dentro de cada grupo.
+                La vista alfabética muestra primero equipos generales y luego equipos F.R.I, ordenados A-Z dentro de cada grupo.
               </p>
             </div>
 
@@ -1015,7 +1015,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                   },
                   {
                     key: "FRI" as const,
-                    title: "Equipos FRI (A-Z)",
+                    title: "Equipos F.R.I (A-Z)",
                     items: equiposFriAlfabeticos,
                   },
                 ].map((section) => (
@@ -1057,14 +1057,14 @@ export function ConfigViews(props: ConfigViewsProps) {
                     </span>
                   </div>
                   <p className="text-xs text-stone-600 mb-3">
-                    Estos equipos se muestran en hoja y ahora quedan separados entre catálogo general y FRI.
+                    Estos equipos se muestran en hoja y ahora quedan separados entre catálogo general y F.R.I.
                   </p>
                 </div>
                 {props.equiposActivosEnPantalla.length > 0 ? (
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3">
                     <div>
                       <p className="text-sm font-semibold text-stone-900">Editor de orden</p>
-                      <p className="text-xs text-stone-600">Guarda el orden combinado de Generales y FRI para hojas y PDF.</p>
+                      <p className="text-xs text-stone-600">Guarda el orden combinado de Generales y F.R.I para hojas y PDF.</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -1096,7 +1096,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     },
                     {
                       key: "FRI" as const,
-                      title: "Equipos FRI visibles en hoja",
+                      title: "Equipos F.R.I visibles en hoja",
                       items: equiposActivosFriEnPantalla,
                       orderById: activeFriOrderById,
                     },
@@ -1140,7 +1140,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     </span>
                   </div>
                   <p className="mb-3 text-xs text-stone-600">
-                    Estos equipos siguen registrados, pero quedan fuera de hoja y también se separan entre generales y FRI.
+                    Estos equipos siguen registrados, pero quedan fuera de hoja y también se separan entre generales y F.R.I.
                   </p>
                 </div>
                 {props.equiposInactivosEnPantalla.length > 0 ? (
@@ -1179,7 +1179,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     },
                     {
                       key: "FRI" as const,
-                      title: "Equipos FRI ocultos de hoja",
+                      title: "Equipos F.R.I ocultos de hoja",
                       items: equiposInactivosFriEnPantalla,
                       orderById: inactivoFriOrderById,
                     },
