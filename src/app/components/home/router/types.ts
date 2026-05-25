@@ -1,7 +1,7 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import type { PrestamoEditPayload } from "@/app/components/views/FormulariosPrestamosView";
 import type { MainView } from "@/types/views";
-import type { Articulo, OficialSuboficial, Personal, TipoArticulo } from "@/types/entities";
+import type { Articulo, Equipo, OficialSuboficial, Personal, TipoArticulo } from "@/types/entities";
 import type {
   EquipoForm,
   OficialSuboficialForm,
@@ -28,7 +28,7 @@ export type CreationViewsProps = {
   creatingPersonal: boolean;
   rangos: Array<{ rangoId: number; abreviacion: string; nombreCompleto: string; orden: number }>;
   baterias: Array<{ bateriaId: number; nombre: string; orden: number }>;
-  equiposActivos: Array<{ itemId: string; nombre: string; activo: boolean; ordenPdf: number }>;
+  equiposActivos: Equipo[];
   tallaOptionsByKey: Record<string, string[]>;
   maxFechaIngreso: string;
   newPersonalMovimientos: PersonalAltaMovimientoForm[];

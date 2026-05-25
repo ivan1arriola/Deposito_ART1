@@ -2,195 +2,28 @@
  * Tipos de formularios y estados de edicion
  */
 
-import type { RegistroTipo } from "./views";
-import type { TipoOficialSuboficial } from "./entities";
+export { EMPTY_EQUIPO_FORM } from "./forms/EquipoForm";
+export { EMPTY_ITEM_FORM } from "./forms/ItemForm";
+export { EMPTY_OFICIAL_SUBOFICIAL_FORM } from "./forms/OficialSuboficialForm";
+export { EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM } from "./forms/PersonalAltaMovimientoForm";
+export { EMPTY_PERSONAL_FORM } from "./forms/PersonalForm";
+export { EMPTY_PRESTAMO_DRAFT } from "./forms/PrestamoDraft";
+export { EMPTY_STOCK_OPERACION_DRAFT } from "./forms/StockOperacionDraft";
 
-export type StockOperacionTipo = "INGRESO" | "EGRESO";
-export type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
-export type PrestamoEstadoEquipo = "NUEVO" | "BUENO" | "REGULAR" | "MALO";
-export type PrestamoClase = "INTERNO" | "EXTERNO" | "PENDIENTE";
-
-export type PersonalForm = {
-  ci: string;
-  apellido1: string;
-  apellido2: string;
-  nombre1: string;
-  nombre2: string;
-  telefonoContacto: string;
-  esReingreso: boolean;
-  fechaIngreso: string;
-  fechaIngresoOriginal: string;
-  rangoId: string;
-  bateriaId: string;
-  PARKA: string;
-  CAMISACO: string;
-  PANTALON: string;
-  KEPI: string;
-  CALZADO: string;
-};
-
-export type OficialSuboficialForm = {
-  ci: string;
-  tipo: TipoOficialSuboficial;
-  apellido1: string;
-  apellido2: string;
-  nombre1: string;
-  nombre2: string;
-  telefonoContacto: string;
-  rangoId: string;
-  PARKA: string;
-  CAMISACO: string;
-  PANTALON: string;
-  KEPI: string;
-  CALZADO: string;
-};
-
-export type PersonalAltaMovimientoItemForm = {
-  itemId: string;
-  cantidad: string;
-};
-
-export type PersonalAltaMovimientoForm = {
-  tipo: RegistroTipo;
-  fecha: string;
-  comentarios: string;
-  items: PersonalAltaMovimientoItemForm[];
-};
-
-export type EquipoForm = {
-  nombre: string;
-  activo: boolean;
-  ordenPdf: number;
-};
-
-export type ItemForm = EquipoForm;
-
-export type RegistroDraftEquipo = {
-  itemId: string;
-  cantidad: string;
-};
-
-export type RegistroDraftItem = RegistroDraftEquipo;
-
-export type RegistroDraft = {
-  modo: "crear" | "rectificar";
-  registroId: string | null;
-  ci: string;
-  ciList: string[];
-  tipo: RegistroTipo;
-  incluirFueraDeHoja: boolean;
-  fecha: string;
-  comentarios: string;
-  items: RegistroDraftEquipo[];
-};
-
-export type StockOperacionDraftItem = {
-  itemId: string;
-  cantidad: string;
-};
-
-export type StockOperacionDraft = {
-  tipo: StockOperacionTipo;
-  fecha: string;
-  comentarios: string;
-  items: StockOperacionDraftItem[];
-};
-
-export type PrestamoDraftItem = {
-  itemId: string;
-  cantidad: string;
-  estadoEntrega: PrestamoEstadoEquipo;
-  comentarioEntrega: string;
-};
-
-export type PrestamoDraft = {
-  clasePrestamo: PrestamoClase;
-  destinatarioTipo: PrestamoDestinatarioTipo;
-  destinatarioCi: string;
-  destinatarioExternoGrado: string;
-  destinatarioExternoNombre: string;
-  destinatarioExternoApellido: string;
-  destinatarioExternoCi: string;
-  destinatarioExternoUnidadDestino: string;
-  actuanteCi: string;
-  fechaPrestamo: string;
-  fechaEstimadaDevolucionTexto: string;
-  comentarios: string;
-  items: PrestamoDraftItem[];
-};
-
-/**
- * Constantes de formularios vacios
- */
-export const EMPTY_PERSONAL_FORM: PersonalForm = {
-  ci: "",
-  apellido1: "",
-  apellido2: "",
-  nombre1: "",
-  nombre2: "",
-  telefonoContacto: "",
-  esReingreso: false,
-  fechaIngreso: "",
-  fechaIngresoOriginal: "",
-  rangoId: "",
-  bateriaId: "",
-  PARKA: "",
-  CAMISACO: "",
-  PANTALON: "",
-  KEPI: "",
-  CALZADO: "",
-};
-
-export const EMPTY_OFICIAL_SUBOFICIAL_FORM: OficialSuboficialForm = {
-  ci: "",
-  tipo: "OFICIAL",
-  apellido1: "",
-  apellido2: "",
-  nombre1: "",
-  nombre2: "",
-  telefonoContacto: "",
-  rangoId: "",
-  PARKA: "",
-  CAMISACO: "",
-  PANTALON: "",
-  KEPI: "",
-  CALZADO: "",
-};
-
-export const EMPTY_EQUIPO_FORM: EquipoForm = {
-  nombre: "",
-  activo: false,
-  ordenPdf: 1,
-};
-
-export const EMPTY_ITEM_FORM: ItemForm = EMPTY_EQUIPO_FORM;
-
-export const EMPTY_STOCK_OPERACION_DRAFT: StockOperacionDraft = {
-  tipo: "INGRESO",
-  fecha: "",
-  comentarios: "",
-  items: [{ itemId: "", cantidad: "1" }],
-};
-
-export const EMPTY_PRESTAMO_DRAFT: PrestamoDraft = {
-  clasePrestamo: "INTERNO",
-  destinatarioTipo: "PERSONAL",
-  destinatarioCi: "",
-  destinatarioExternoGrado: "",
-  destinatarioExternoNombre: "",
-  destinatarioExternoApellido: "",
-  destinatarioExternoCi: "",
-  destinatarioExternoUnidadDestino: "",
-  actuanteCi: "",
-  fechaPrestamo: "",
-  fechaEstimadaDevolucionTexto: "",
-  comentarios: "",
-  items: [{ itemId: "", cantidad: "1", estadoEntrega: "NUEVO", comentarioEntrega: "" }],
-};
-
-export const EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM: PersonalAltaMovimientoForm = {
-  tipo: "ENTREGA",
-  fecha: "",
-  comentarios: "",
-  items: [{ itemId: "", cantidad: "1" }],
-};
+export type { EquipoForm } from "./forms/EquipoForm";
+export type { ItemForm } from "./forms/ItemForm";
+export type { OficialSuboficialForm } from "./forms/OficialSuboficialForm";
+export type { PersonalAltaMovimientoForm } from "./forms/PersonalAltaMovimientoForm";
+export type { PersonalAltaMovimientoItemForm } from "./forms/PersonalAltaMovimientoItemForm";
+export type { PersonalForm } from "./forms/PersonalForm";
+export type { PrestamoClase } from "./forms/PrestamoClase";
+export type { PrestamoDestinatarioTipo } from "./forms/PrestamoDestinatarioTipo";
+export type { PrestamoDraft } from "./forms/PrestamoDraft";
+export type { PrestamoDraftItem } from "./forms/PrestamoDraftItem";
+export type { PrestamoEstadoEquipo } from "./forms/PrestamoEstadoEquipo";
+export type { RegistroDraft } from "./forms/RegistroDraft";
+export type { RegistroDraftEquipo } from "./forms/RegistroDraftEquipo";
+export type { RegistroDraftItem } from "./forms/RegistroDraftItem";
+export type { StockOperacionDraft } from "./forms/StockOperacionDraft";
+export type { StockOperacionDraftItem } from "./forms/StockOperacionDraftItem";
+export type { StockOperacionTipo } from "./forms/StockOperacionTipo";

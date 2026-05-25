@@ -4,11 +4,11 @@ import {
   createRangoHandler,
   updateRangoHandler,
   deleteRangoHandler,
-  createItemHandler,
+  createEquipoHandler,
   ingresarStockArticuloHandler,
-  updateItemHandler,
-  mergeItemHandler,
-  updateMultipleItemOrdersHandler,
+  updateEquipoHandler,
+  mergeEquipoHandler,
+  updateMultipleEquipoOrdersHandler,
 } from "@/lib/handlers-catalog";
 
 vi.mock("@/lib/api", () => ({
@@ -129,14 +129,15 @@ describe("Handlers de Catalogos - Equipos", () => {
     const onError = vi.fn();
     vi.mocked(api).mockResolvedValue({});
 
-    await createItemHandler("Parka Pixelada", true, { onSuccess, onError });
+    await createEquipoHandler("Parka Pixelada", "GENERAL", true, { onSuccess, onError });
 
     expect(vi.mocked(api)).toHaveBeenCalledWith(
-      "/api/items",
+      "/api/equipos",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({
           nombre: "Parka Pixelada",
+          tipo: "GENERAL",
           activo: true,
         }),
       }),
@@ -148,13 +149,13 @@ describe("Handlers de Catalogos - Equipos", () => {
     const onError = vi.fn();
     vi.mocked(api).mockResolvedValue({});
 
-    await updateItemHandler("12", "Parka Pixelada", true, 4, { onSuccess, onError });
+    await updateEquipoHandler("12", "Parka Pixelada", "FRI", true, 4, { onSuccess, onError });
 
     expect(vi.mocked(api)).toHaveBeenCalledWith(
-      "/api/items/12",
+      "/api/equipos/12",
       expect.objectContaining({
         method: "PUT",
-        body: JSON.stringify({ nombre: "Parka Pixelada", activo: true, ordenPdf: 4 }),
+        body: JSON.stringify({ nombre: "Parka Pixelada", tipo: "FRI", activo: true, ordenPdf: 4 }),
       }),
     );
   });
@@ -164,10 +165,10 @@ describe("Handlers de Catalogos - Equipos", () => {
     const onError = vi.fn();
     vi.mocked(api).mockResolvedValue({});
 
-    await updateMultipleItemOrdersHandler(["12", "18", "25"], { onSuccess, onError });
+    await updateMultipleEquipoOrdersHandler(["12", "18", "25"], { onSuccess, onError });
 
     expect(vi.mocked(api)).toHaveBeenCalledWith(
-      "/api/items",
+      "/api/equipos",
       expect.objectContaining({
         method: "PATCH",
         body: JSON.stringify({ orderedItemIds: ["12", "18", "25"], activo: true }),
@@ -180,13 +181,13 @@ describe("Handlers de Catalogos - Equipos", () => {
     const onError = vi.fn();
     vi.mocked(api).mockResolvedValue({});
 
-    await mergeItemHandler("12", "18", { onSuccess, onError });
+    await mergeEquipoHandler("12", "18", { onSuccess, onError });
 
     expect(vi.mocked(api)).toHaveBeenCalledWith(
-      "/api/items/12",
+      "/api/equipos/12",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ targetItemId: "18" }),
+        body: JSON.stringify({ targetEquipoId: "18" }),
       }),
     );
   });

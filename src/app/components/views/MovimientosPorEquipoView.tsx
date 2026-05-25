@@ -98,7 +98,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
     setCatalogError(null);
 
     try {
-      const response = await fetch(`/api/items/movimientos?ts=${Date.now()}`, {
+      const response = await fetch(`/api/equipos/movimientos?ts=${Date.now()}`, {
         cache: "no-store",
       });
       const payload = (await response.json()) as MovimientosEquipoResponse | { error?: string };
@@ -115,19 +115,19 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
     }
   };
 
-  const loadRows = async (itemId: string) => {
+  const loadRows = async (equipoId: string) => {
     setRowsLoading(true);
     setRowsError(null);
 
     try {
       const params = new URLSearchParams({
-        itemId,
+        equipoId,
         sortBy: sortField,
         sortDirection,
         tipos: serializeMovimientosEquipoTipoFilters(DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS),
         ts: String(Date.now()),
       });
-      const response = await fetch(`/api/items/movimientos?${params.toString()}`, {
+      const response = await fetch(`/api/equipos/movimientos?${params.toString()}`, {
         cache: "no-store",
       });
       const payload = (await response.json()) as MovimientosEquipoResponse | { error?: string };
@@ -160,7 +160,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
   const catalogSearchIndex = useMemo(
     () =>
       buildSearchIndex(catalogByHojaItems, {
-        text: (item) => [item.itemId, item.nombre, item.activo ? "activo en hoja" : "fuera de hoja"].join(" "),
+        text: (item) => [item.equipoId, item.nombre, item.activo ? "activo en hoja" : "fuera de hoja"].join(" "),
       }),
     [catalogByHojaItems],
   );
@@ -321,7 +321,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
               <ul className="divide-y divide-stone-200">
                 {filteredCatalogItems.map((item, index) => (
                   <li
-                    key={item.itemId}
+                    key={item.equipoId}
                     className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${
                       index % 2 === 0 ? "bg-white" : "bg-stone-50/70"
                     }`}
@@ -329,19 +329,19 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                     <div>
                       <p className="text-base font-semibold text-stone-900">{item.nombre}</p>
                       <p className="text-sm text-stone-500">
-                        {`ID ${item.itemId} | ${item.activo ? "Visible en hoja de entrega" : "Fuera de hoja de entrega"}`}
+                        {`ID ${item.equipoId} | ${item.activo ? "Visible en hoja de entrega" : "Fuera de hoja de entrega"}`}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedItemId(item.itemId);
-                        void loadRows(item.itemId);
+                        setSelectedItemId(item.equipoId);
+                        void loadRows(item.equipoId);
                       }}
                       disabled={catalogLoading || rowsLoading}
                       className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 disabled:opacity-60"
                     >
-                      {rowsLoading && selectedItemId === item.itemId ? "Cargando..." : "Ver"}
+                      {rowsLoading && selectedItemId === item.equipoId ? "Cargando..." : "Ver"}
                     </button>
                   </li>
                 ))}
@@ -374,12 +374,12 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                   type="button"
                   onClick={() => {
                     const params = new URLSearchParams({
-                      itemId: activeItem.itemId,
+                      equipoId: activeItem.equipoId,
                       sortBy: sortField,
                       sortDirection,
                       tipos: serializeMovimientosEquipoTipoFilters(tipoFilters),
                     });
-                    window.open(`/api/items/movimientos/pdf?${params.toString()}`, "_blank");
+                    window.open(`/api/equipos/movimientos/pdf?${params.toString()}`, "_blank");
                   }}
                   disabled={rowsLoading || sortedRows.length === 0}
                   className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
@@ -388,7 +388,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                 </button>
                 <button
                   type="button"
-                  onClick={() => void loadRows(activeItem.itemId)}
+                  onClick={() => void loadRows(activeItem.equipoId)}
                   disabled={rowsLoading}
                   className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
                 >

@@ -603,7 +603,7 @@ export function EtiquetadoView({
                   <tr>
                     <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Codigo SIE</th>
                     <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Talla</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Item</th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Equipo</th>
                     <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Acciones</th>
                   </tr>
                 </thead>

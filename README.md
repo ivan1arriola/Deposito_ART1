@@ -84,6 +84,7 @@ npm run dev
 - `npm run db:patch:add-caja-piso-fk`: agrega/backfillea `caja.piso`, aplica FK compuesta `caja(estanteria,piso)->estanteria(codigo,piso)` y regenera Prisma Client
 - `npm run db:patch:drop-personal-tipo`: elimina `personal.tipo`, mantiene integridad por `grado_id` y deriva el tipo de `grado.tipo`, luego regenera Prisma Client
 - `npm run db:patch:add-item-existencia-sie`: agrega `item.existencia_sie` con default `0` en BD existente y regenera Prisma Client
+- `npm run db:patch:add-item-tipo`: agrega `item.tipo` (`GENERAL` / `FRI`) en BD existente y regenera Prisma Client
 - `npm run prisma:generate`: regenera cliente Prisma
 - `npm run prisma:studio`: abre Prisma Studio
 - `npm run user:create -- --username <u> --password <p> --role ADMIN|EDITOR`: crea o actualiza usuario

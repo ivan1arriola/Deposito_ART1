@@ -5,6 +5,7 @@ import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { DestinatarioSearchSelect } from "@/app/components/shared/DestinatarioSearchSelect";
 import { LoadingInline } from "@/app/components/shared";
 import { api } from "@/lib/api";
+import { compareEquiposByTipoAndName, compareEquiposByTipoAndOrder, splitEquiposByTipo } from "@/lib/equipo-sort";
 import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers";
 import { formatUruguayanCi } from "@/lib/ci";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
@@ -55,10 +56,10 @@ export function StockView({
   onReturnPrestamo,
   onReload,
 }: StockViewProps) {
-  const resumen = data?.resumen ?? [];
+  const resumen = useMemo(() => data?.resumen ?? [], [data]);
   const historial = data?.historial ?? [];
   const prestamos = data?.prestamos ?? [];
-  const equiposOrdenados = [...equipos].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
+  const equiposOrdenados = [...equipos].sort(compareEquiposByTipoAndName);
 
   const destinatarioOptions = useMemo(() => {
     return buildDestinatarioOptions(prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales);
@@ -122,7 +123,7 @@ export function StockView({
     setItemTraceError(null);
     setItemTraceLoading(true);
     try {
-      const trace = await api<StockItemTraceData>(`/api/stock/item-trace?itemId=${encodeURIComponent(item.itemId)}`);
+      const trace = await api<StockItemTraceData>(`/api/stock/item-trace?equipoId=${encodeURIComponent(item.equipoId)}`);
       if (itemTraceRequestIdRef.current !== requestId) return;
       setItemTraceData(trace);
     } catch (traceError: unknown) {
@@ -137,7 +138,7 @@ export function StockView({
   function openItemTracePrint() {
     if (!itemTraceDialog) return;
     const query = new URLSearchParams({
-      itemId: itemTraceDialog.item.itemId,
+      equipoId: itemTraceDialog.item.equipoId,
       column: itemTraceDialog.column,
       autoprint: "1",
     });
@@ -216,11 +217,14 @@ export function StockView({
     setSieSavingItemId(item.itemId);
     setSieError(null);
     try {
-      await api<{ itemId: string; existenciaSie: number }>(`/api/items/${encodeURIComponent(item.itemId)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ existenciaSie: parsed }),
-      });
+      await api<{ equipoId: string; itemId: string; existenciaSie: number }>(
+        `/api/equipos/${encodeURIComponent(item.equipoId)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ existenciaSie: parsed }),
+        },
+      );
       setSieDraftByItemId((prev) => {
         const next = { ...prev };
         delete next[item.itemId];
@@ -259,15 +263,17 @@ export function StockView({
       normalizedSearchTermEquipos === ""
         ? resumen
         : resumen.filter((item) => item.nombre.toLowerCase().includes(normalizedSearchTermEquipos));
-    if (ordenAlfabetico) {
-      return [...list].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
-    }
-    return list;
+    return [...list].sort(ordenAlfabetico ? compareEquiposByTipoAndName : compareEquiposByTipoAndOrder);
   }, [resumen, normalizedSearchTermEquipos, ordenAlfabetico]);
+  const { generales: resumenGeneral, fri: resumenFri } = useMemo(() => splitEquiposByTipo(resumenFiltrado), [resumenFiltrado]);
 
   const { showSummaryCards, showManualForm, showStockTable, showHistory, showPrestamos, viewTitle, stockTableTitle } =
     getSectionViewConfig(section);
   const canEditSie = canWrite && isAdmin;
+  const stockTableSections = [
+    { key: "GENERAL" as const, title: section === "total" ? "Equipo general" : "Equipo general en depósito", items: resumenGeneral },
+    { key: "FRI" as const, title: section === "total" ? "Equipo FRI" : "Equipo FRI en depósito", items: resumenFri },
+  ];
 
   return (
     <section className="mt-6 space-y-4">
@@ -294,10 +300,10 @@ export function StockView({
                   type="button"
                   onClick={() => window.open("/listado-equipos-unidad?autoprint=1&sort=alpha", "_blank", "noopener,noreferrer")}
                   className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-stone-200 hover:text-white"
-                  title="Imprimir en estricto orden alfabético general"
+                  title="Imprimir separando equipos generales y FRI, con orden alfabético dentro de cada grupo"
                 >
                   <SortByAlphaRoundedIcon sx={{ fontSize: 18 }} />
-                  <span>Imprimir (Alfabético)</span>
+                  <span>Imprimir (A-Z por tipo)</span>
                 </button>
               </div>
             ) : null}
@@ -398,17 +404,17 @@ export function StockView({
                   onChange={(event) => onDraftItemChange(index, "itemId", event.target.value)}
                   className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 >
-                  <option value="">Seleccionar equipo</option>
-                  {equiposOrdenados
-                    .filter((catalogItem) => {
-                      if (catalogItem.itemId === item.itemId) return true;
-                      return !draft.items.some((selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId);
-                    })
-                    .map((catalogItem) => (
-                      <option key={catalogItem.itemId} value={catalogItem.itemId}>
-                        {catalogItem.nombre}
-                      </option>
-                    ))}
+                      <option value="">Seleccionar equipo</option>
+                      {equiposOrdenados
+                        .filter((catalogItem) => {
+                          if (catalogItem.itemId === item.itemId) return true;
+                          return !draft.items.some((selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId);
+                        })
+                        .map((catalogItem) => (
+                          <option key={catalogItem.itemId} value={catalogItem.itemId}>
+                            {catalogItem.nombre}{catalogItem.tipo === "FRI" ? " (FRI)" : ""}
+                          </option>
+                        ))}
                 </select>
                 <input
                   type="number"
@@ -607,7 +613,7 @@ export function StockView({
                         })
                         .map((catalogItem) => (
                           <option key={catalogItem.itemId} value={catalogItem.itemId}>
-                            {catalogItem.nombre}
+                            {catalogItem.nombre}{catalogItem.tipo === "FRI" ? " (FRI)" : ""}
                           </option>
                         ))}
                     </select>
@@ -818,7 +824,7 @@ export function StockView({
                   onChange={(event) => setOrdenAlfabetico(event.target.checked)}
                   className="h-4 w-4 rounded border-stone-300 text-indigo-700 focus:ring-indigo-500"
                 />
-                <span>Ordenar alfabéticamente</span>
+                <span>Ordenar A-Z por tipo</span>
               </label>
               <label className="w-full sm:w-auto max-w-xs text-xs text-stone-700">
                 <span className="block mb-1">Filtrar equipos</span>
@@ -835,116 +841,132 @@ export function StockView({
           {loading ? <LoadingInline label="Cargando stock..." className="mt-4" textClassName="text-sm font-medium text-stone-600" /> : null}
           {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
           {!loading && !error ? (
-            <div className="mt-3 overflow-x-auto">
-              <table className="min-w-full border-separate border-spacing-0 text-sm">
-                <thead>
-                  <tr>
-                    <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Equipo</th>
-                    {section === "total" ? (
-                      <>
-                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Subalternos</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Prestamo</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Deposito</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Unidad</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Existencia SIE</th>
-                      </>
-                    ) : (
-                      <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Stock deposito</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {resumenFiltrado.length === 0 && !loading && !error ? (
-                    <tr>
-                      <td colSpan={section === "total" ? 6 : 2} className="px-3 py-8 text-center text-stone-500 italic">
-                        No se encontraron equipos que coincidan con "{searchTermEquipos}".
-                      </td>
-                    </tr>
-                  ) : null}
-                  {resumenFiltrado.map((item, index) => (
-                    <tr key={item.itemId} className={index % 2 === 0 ? "bg-white" : "bg-stone-100/80"}>
-                      <td className="border-b border-stone-100 px-3 py-2 text-stone-900">{item.nombre}</td>
-                      {section === "total" ? (
-                        <>
-                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
-                            <button
-                              type="button"
-                              onClick={() => void openItemTraceDialog(item, "SUBALTERNOS")}
-                              className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
-                                item.stockSubalternos < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
-                              }`}
-                              title={`Ver detalle de ${item.nombre} en Subalternos`}
-                            >
-                              {item.stockSubalternos}
-                            </button>
-                          </td>
-                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
-                            <button
-                              type="button"
-                              onClick={() => void openItemTraceDialog(item, "PRESTAMO")}
-                              className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
-                                item.stockPrestamo < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
-                              }`}
-                              title={`Ver detalle de ${item.nombre} en Prestamo`}
-                            >
-                              {item.stockPrestamo}
-                            </button>
-                          </td>
-                          <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
-                            item.stockDeposito < 0 ? "text-rose-600 font-bold" : "text-stone-900"
-                          }`}>
-                            {item.stockDeposito}
-                          </td>
-                          <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
-                            item.stockUnidad < 0 ? "text-rose-600 font-bold" : "text-stone-900"
-                          }`}>
-                            {item.stockUnidad}
-                          </td>
-                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
-                            {canEditSie ? (
-                              <div className="flex items-center justify-end gap-2">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={1}
-                                  value={getSieInputValue(item)}
-                                  disabled={loading || sieSavingItemId !== null}
-                                  onChange={(event) => updateSieDraft(item.itemId, event.target.value)}
-                                  onBlur={() => void persistSieValue(item)}
-                                  onKeyDown={(event) => {
-                                    if (event.key === "Enter") {
-                                      event.preventDefault();
-                                      void persistSieValue(item);
-                                      return;
-                                    }
-                                    if (event.key === "Escape") {
-                                      event.preventDefault();
-                                      resetSieDraft(item);
-                                    }
-                                  }}
-                                  className="w-24 rounded border border-stone-300 px-2 py-1 text-right text-xs font-semibold text-stone-900"
-                                  aria-label={`Existencia del SIE para ${item.nombre}`}
-                                />
-                                {sieSavingItemId === item.itemId ? (
-                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">Guardando</span>
-                                ) : null}
-                              </div>
+            <div className="mt-3 space-y-6">
+              {resumenFiltrado.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-stone-300 px-3 py-8 text-center text-stone-500 italic">
+                  No se encontraron equipos que coincidan con &quot;{searchTermEquipos}&quot;.
+                </div>
+              ) : null}
+              {resumenFiltrado.length > 0 ? stockTableSections.map((tableSection) => (
+                <div key={tableSection.key}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <h4 className="text-sm font-semibold text-stone-900">{tableSection.title}</h4>
+                    <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
+                      {tableSection.items.length}
+                    </span>
+                  </div>
+                  {tableSection.items.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-stone-300 px-3 py-6 text-sm text-stone-500">
+                      No hay registros para {tableSection.key === "FRI" ? "equipo FRI" : "equipo general"} en esta vista.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full border-separate border-spacing-0 text-sm">
+                        <thead>
+                          <tr>
+                            <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Equipo</th>
+                            {section === "total" ? (
+                              <>
+                                <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Subalternos</th>
+                                <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Prestamo</th>
+                                <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Deposito</th>
+                                <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Unidad</th>
+                                <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Existencia SIE</th>
+                              </>
                             ) : (
-                              (item.existenciaSie ?? 0)
+                              <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Stock deposito</th>
                             )}
-                          </td>
-                        </>
-                      ) : (
-                        <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
-                          item.stockDeposito < 0 ? "text-rose-600 font-bold" : "text-stone-900"
-                        }`}>
-                          {item.stockDeposito}
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tableSection.items.map((item, index) => (
+                            <tr key={item.itemId} className={index % 2 === 0 ? "bg-white" : "bg-stone-100/80"}>
+                              <td className="border-b border-stone-100 px-3 py-2 text-stone-900">{item.nombre}</td>
+                              {section === "total" ? (
+                                <>
+                                  <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
+                                    <button
+                                      type="button"
+                                      onClick={() => void openItemTraceDialog(item, "SUBALTERNOS")}
+                                      className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                        item.stockSubalternos < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
+                                      }`}
+                                      title={`Ver detalle de ${item.nombre} en Subalternos`}
+                                    >
+                                      {item.stockSubalternos}
+                                    </button>
+                                  </td>
+                                  <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
+                                    <button
+                                      type="button"
+                                      onClick={() => void openItemTraceDialog(item, "PRESTAMO")}
+                                      className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                        item.stockPrestamo < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
+                                      }`}
+                                      title={`Ver detalle de ${item.nombre} en Prestamo`}
+                                    >
+                                      {item.stockPrestamo}
+                                    </button>
+                                  </td>
+                                  <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
+                                    item.stockDeposito < 0 ? "text-rose-600 font-bold" : "text-stone-900"
+                                  }`}>
+                                    {item.stockDeposito}
+                                  </td>
+                                  <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
+                                    item.stockUnidad < 0 ? "text-rose-600 font-bold" : "text-stone-900"
+                                  }`}>
+                                    {item.stockUnidad}
+                                  </td>
+                                  <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
+                                    {canEditSie ? (
+                                      <div className="flex items-center justify-end gap-2">
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          step={1}
+                                          value={getSieInputValue(item)}
+                                          disabled={loading || sieSavingItemId !== null}
+                                          onChange={(event) => updateSieDraft(item.itemId, event.target.value)}
+                                          onBlur={() => void persistSieValue(item)}
+                                          onKeyDown={(event) => {
+                                            if (event.key === "Enter") {
+                                              event.preventDefault();
+                                              void persistSieValue(item);
+                                              return;
+                                            }
+                                            if (event.key === "Escape") {
+                                              event.preventDefault();
+                                              resetSieDraft(item);
+                                            }
+                                          }}
+                                          className="w-24 rounded border border-stone-300 px-2 py-1 text-right text-xs font-semibold text-stone-900"
+                                          aria-label={`Existencia del SIE para ${item.nombre}`}
+                                        />
+                                        {sieSavingItemId === item.itemId ? (
+                                          <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">Guardando</span>
+                                        ) : null}
+                                      </div>
+                                    ) : (
+                                      (item.existenciaSie ?? 0)
+                                    )}
+                                  </td>
+                                </>
+                              ) : (
+                                <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
+                                  item.stockDeposito < 0 ? "text-rose-600 font-bold" : "text-stone-900"
+                                }`}>
+                                  {item.stockDeposito}
+                                </td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )) : null}
             </div>
           ) : null}
           {!loading && !error && sieError ? (
@@ -1002,7 +1024,7 @@ export function StockView({
             </header>
 
             <div className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700 md:grid-cols-2">
-              <p><span className="font-semibold text-stone-900">Item ID:</span> {itemTraceDialog.item.itemId}</p>
+              <p><span className="font-semibold text-stone-900">Equipo ID:</span> {itemTraceDialog.item.equipoId}</p>
               <p>
                 <span className="font-semibold text-stone-900">Total en columna:</span>{" "}
                 {itemTraceDialog.column === "SUBALTERNOS"

@@ -13,7 +13,7 @@ type Codigo = {
   talle: string;
 };
 
-type Equipo = {
+type EtiquetaEquipo = {
   nombre: string;
   cantidad: number;
   codigos: Codigo[];
@@ -24,7 +24,7 @@ type Caja = {
   piso: string;
   estante: string;
   destino: string;
-  equipos: Equipo[];
+  equipos: EtiquetaEquipo[];
 };
 
 type CodigoLayout = {
@@ -456,7 +456,7 @@ function EquipoCard({
   totalEquipos,
   orientacion,
 }: {
-  equipo: Equipo;
+  equipo: EtiquetaEquipo;
   totalEquipos: number;
   orientacion: EtiquetaOrientacion;
 }) {

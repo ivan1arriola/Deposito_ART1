@@ -39,6 +39,13 @@ enum TipoArticulo {
   @@map("tipo_articulo")
 }
 
+enum TipoItem {
+  GENERAL
+  FRI
+
+  @@map("tipo_item")
+}
+
 enum TipoArticuloStockMovimiento {
   INGRESO
   EGRESO
@@ -269,6 +276,7 @@ model TallaTipo {
 model Item {
   itemId              BigInt               @id @default(autoincrement()) @map("item_id")
   nombre              String               @unique
+  tipo                TipoItem             @default(GENERAL)
   activo              Boolean              @default(true)
   ordenPdf            Int                  @map("orden_pdf")
   existenciaSie       Int                  @default(0) @map("existencia_sie")

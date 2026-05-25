@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { TipoItem } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -8,6 +9,7 @@ import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 
 type ItemPayload = {
   nombre: string;
+  tipo?: TipoItem | string;
   activo?: boolean;
   ordenPdf?: number;
 };
@@ -17,6 +19,7 @@ type ItemExistenciaSiePayload = {
 };
 
 type ItemMergePayload = {
+  targetEquipoId?: string | number;
   targetItemId?: string | number;
 };
 
@@ -32,6 +35,13 @@ function isValidOrder(value: unknown) {
   return value === undefined || (typeof value === "number" && Number.isInteger(value) && value > 0);
 }
 
+function parseTipoItem(value: unknown) {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (raw === TipoItem.GENERAL) return TipoItem.GENERAL;
+  if (raw === TipoItem.FRI) return TipoItem.FRI;
+  return null;
+}
+
 function parseExistenciaSie(value: unknown) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 0) return null;
@@ -41,13 +51,16 @@ function parseExistenciaSie(value: unknown) {
 function serializeItem(item: {
   itemId: bigint;
   nombre: string;
+  tipo: TipoItem;
   activo: boolean;
   ordenPdf: number;
   existenciaSie: number;
 }) {
   return {
+    equipoId: item.itemId.toString(),
     itemId: item.itemId.toString(),
     nombre: item.nombre,
+    tipo: item.tipo,
     activo: item.activo,
     ordenPdf: item.ordenPdf,
     existenciaSie: item.existenciaSie,
@@ -57,6 +70,7 @@ function serializeItem(item: {
 type DeleteImpactData = {
   impacto: {
     item: {
+      equipoId: string;
       itemId: string;
       nombre: string;
     };
@@ -306,6 +320,7 @@ async function buildDeleteImpactData(
   return {
     impacto: {
       item: {
+        equipoId: itemId.toString(),
         itemId: itemId.toString(),
         nombre: itemNombre,
       },
@@ -334,6 +349,7 @@ async function buildDeleteImpactData(
 export const itemByIdRouteTestables = {
   parseItemId,
   isValidOrder,
+  parseTipoItem,
   parseExistenciaSie,
 };
 
@@ -344,7 +360,7 @@ export async function GET(req: Request, context: { params: Promise<{ itemId: str
   const { itemId: itemIdParam } = await context.params;
   const itemId = parseItemId(itemIdParam);
   if (itemId === null) {
-    return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "equipoId invalido." }, { status: 400 });
   }
 
   try {
@@ -355,9 +371,12 @@ export async function GET(req: Request, context: { params: Promise<{ itemId: str
     const { impacto } = await buildDeleteImpactData(prisma, itemId, item.nombre);
     return NextResponse.json(impacto);
   } catch (error: unknown) {
+    if (error instanceof Error && error.message.startsWith("Payload invalido.")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
+      if (code === "P2025") return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
     }
     return NextResponse.json({ error: "No se pudo calcular el impacto de borrado." }, { status: 500 });
   }
@@ -370,18 +389,18 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
   const { itemId: sourceItemIdParam } = await context.params;
   const sourceItemId = parseItemId(sourceItemIdParam);
   if (sourceItemId === null) {
-    return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "equipoId invalido." }, { status: 400 });
   }
 
   const body = (await req.json()) as ItemMergePayload;
-  const targetItemIdRaw = body?.targetItemId;
+  const targetItemIdRaw = body?.targetEquipoId ?? body?.targetItemId;
   if (typeof targetItemIdRaw !== "string" && typeof targetItemIdRaw !== "number") {
-    return NextResponse.json({ error: "Payload invalido. targetItemId es obligatorio." }, { status: 400 });
+    return NextResponse.json({ error: "Payload invalido. targetEquipoId es obligatorio." }, { status: 400 });
   }
 
   const targetItemId = parseItemId(String(targetItemIdRaw));
   if (targetItemId === null) {
-    return NextResponse.json({ error: "targetItemId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "targetEquipoId invalido." }, { status: 400 });
   }
 
   if (targetItemId === sourceItemId) {
@@ -645,10 +664,12 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
     return NextResponse.json({
       ok: true,
       sourceItem: {
+        equipoId: mergeResult.sourceItem.itemId.toString(),
         itemId: mergeResult.sourceItem.itemId.toString(),
         nombre: mergeResult.sourceItem.nombre,
       },
       targetItem: {
+        equipoId: mergeResult.targetItem.itemId.toString(),
         itemId: mergeResult.targetItem.itemId.toString(),
         nombre: mergeResult.targetItem.nombre,
       },
@@ -657,7 +678,7 @@ export async function POST(req: Request, context: { params: Promise<{ itemId: st
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
+      if (code === "P2025") return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
     }
 
     return NextResponse.json({ error: "No se pudo unificar el equipo." }, { status: 500 });
@@ -671,7 +692,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
   const { itemId: itemIdParam } = await context.params;
   const itemId = parseItemId(itemIdParam);
   if (itemId === null) {
-    return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "equipoId invalido." }, { status: 400 });
   }
 
   const body = (await req.json()) as ItemPayload;
@@ -690,6 +711,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
         select: {
           itemId: true,
           nombre: true,
+          tipo: true,
           activo: true,
           ordenPdf: true,
           existenciaSie: true,
@@ -697,6 +719,10 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
       });
 
       const nextActive = body.activo === undefined ? existing.activo : Boolean(body.activo);
+      const nextTipo = body.tipo === undefined ? existing.tipo : parseTipoItem(body.tipo);
+      if (nextTipo === null) {
+        throw new Error("Payload invalido. 'tipo' debe ser GENERAL o FRI.");
+      }
       if (nextActive !== existing.activo) {
         const oldGroupIds = await getOrderedItemIds(tx, existing.activo, itemId);
 
@@ -704,6 +730,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
           where: { itemId },
           data: {
             nombre,
+            tipo: nextTipo,
             activo: nextActive,
             ordenPdf: 1,
           },
@@ -722,6 +749,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
           where: { itemId },
           data: {
             nombre,
+            tipo: nextTipo,
             activo: nextActive,
             ordenPdf: 1,
           },
@@ -738,6 +766,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
         ...updatedRecord,
         previo: {
           nombre: existing.nombre,
+          tipo: existing.tipo,
           activo: existing.activo,
           ordenPdf: existing.ordenPdf,
           existenciaSie: existing.existenciaSie,
@@ -754,6 +783,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
         previo: updated.previo,
         nuevo: {
           nombre: updated.nombre,
+          tipo: updated.tipo,
           activo: updated.activo,
           ordenPdf: updated.ordenPdf,
           existenciaSie: updated.existenciaSie,
@@ -765,7 +795,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
+      if (code === "P2025") return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
       if (code === "P2002") return NextResponse.json({ error: "El nombre ya existe." }, { status: 409 });
     }
 
@@ -783,7 +813,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ itemId: s
   const { itemId: itemIdParam } = await context.params;
   const itemId = parseItemId(itemIdParam);
   if (itemId === null) {
-    return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "equipoId invalido." }, { status: 400 });
   }
 
   const body = (await req.json()) as ItemExistenciaSiePayload;
@@ -802,7 +832,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ itemId: s
     });
 
     if (!current) {
-      return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
+      return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
     }
 
     const updated = await prisma.item.update({
@@ -828,13 +858,14 @@ export async function PATCH(req: Request, context: { params: Promise<{ itemId: s
     });
 
     return NextResponse.json({
+      equipoId: updated.itemId.toString(),
       itemId: updated.itemId.toString(),
       existenciaSie: updated.existenciaSie,
     });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
+      if (code === "P2025") return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
     }
     return NextResponse.json({ error: "No se pudo actualizar la existencia del SIE." }, { status: 500 });
   }
@@ -847,7 +878,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
   const { itemId: itemIdParam } = await context.params;
   const itemId = parseItemId(itemIdParam);
   if (itemId === null) {
-    return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "equipoId invalido." }, { status: 400 });
   }
 
   try {
@@ -1049,7 +1080,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ itemId: 
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Item no encontrado." }, { status: 404 });
+      if (code === "P2025") return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
     }
 
     return NextResponse.json({ error: "No se pudo eliminar el equipo." }, { status: 500 });

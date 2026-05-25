@@ -4,9 +4,10 @@ import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { formatAuditEntityId, resolveAuditEntityName, type AuditCiReferences } from "@/lib/audit-helpers";
 import { formatUruguayanCi, normalizeCi } from "@/lib/ci";
 import { formatDateTimeForDisplay, formatDateTimeExact } from "@/lib/date-helpers";
+import { compareEquiposByTipoAndName } from "@/lib/equipo-sort";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MainView } from "@/types/views";
-import type { Articulo, AuditoriaRecord, FirmaConfig, Rango, Role, TipoArticulo, UsuarioAdmin } from "@/types/entities";
+import type { Articulo, AuditoriaRecord, Equipo, FirmaConfig, Rango, Role, TipoArticulo, TipoEquipo, UsuarioAdmin } from "@/types/entities";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 import { ModalFrame } from "../modals/ModalFrame";
 
@@ -24,7 +25,7 @@ type RangoTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
 type RangoConfig = Rango & { tipo?: RangoTipo };
 type BateriaConfig = { bateriaId: number; nombre: string; orden: number };
 type ArticuloConfig = Articulo;
-type EquipoConfig = { itemId: string; nombre: string; activo: boolean; ordenPdf: number };
+type EquipoConfig = Equipo;
 type EquiposDisplayMode = "por_estado" | "alfabetico";
 type AuditUserOption = {
   value: string;
@@ -59,9 +60,9 @@ interface ConfigViewsProps {
   editArticuloTipo: TipoArticulo;
   // Equipos state
   equipos: EquipoConfig[];
-  newEquipo: { nombre: string; activo: boolean; ordenPdf: number };
+  newEquipo: { nombre: string; tipo: TipoEquipo; activo: boolean; ordenPdf: number };
   editEquipoId: string | null;
-  editEquipo: { nombre: string; activo: boolean; ordenPdf: number };
+  editEquipo: { nombre: string; tipo: TipoEquipo; activo: boolean; ordenPdf: number };
   equiposInactivos: EquipoConfig[];
   equiposInactivosEnPantalla: EquipoConfig[];
   equiposActivosEnPantalla: EquipoConfig[];
@@ -123,11 +124,11 @@ interface ConfigViewsProps {
   onSumarStock?: (articuloId: number) => void;
   onEntregarArticulo?: (articuloId: number) => void;
   // Equipos callbacks
-  onNewEquipoChange: (value: string | boolean, key: keyof Pick<EquipoConfig, "nombre" | "activo">) => void;
+  onNewEquipoChange: (value: string | boolean, key: keyof Pick<EquipoConfig, "nombre" | "tipo" | "activo">) => void;
   onEditEquipoIdChange: (id: string | null) => void;
   onEditEquipoChange: (
     value: string | boolean | number,
-    key: keyof Pick<EquipoConfig, "nombre" | "activo" | "ordenPdf">
+    key: keyof Pick<EquipoConfig, "nombre" | "tipo" | "activo" | "ordenPdf">
   ) => void;
   onCreateEquipo: (event: FormEvent<HTMLFormElement>) => void;
   onUpdateEquipo: (itemId: string) => void;
@@ -140,7 +141,7 @@ interface ConfigViewsProps {
   onResetEquipoOrderDraft: () => void;
   onSaveEquipoInactivoOrder: () => void;
   onResetEquipoInactivoOrderDraft: () => void;
-  renderEquipoCard: (equipo: EquipoConfig, options?: { reorderableInActiveList?: boolean; reorderableInInactiveList?: boolean; orderIndex?: number; orderCount?: number }) => ReactNode;
+  renderEquipoCard: (equipo: EquipoConfig, options?: { reorderableInActiveList?: boolean; reorderableInInactiveList?: boolean; orderIndex?: number; orderCount?: number; orderGroupType?: TipoEquipo }) => ReactNode;
   // Usuarios callbacks
   onNewUserRangoIdChange: (value: string) => void;
   onNewNombreChange: (value: string) => void;
@@ -196,6 +197,10 @@ const ARTICULO_TIPO_OPTIONS: TipoArticulo[] = ["OFICINA", "LIMPIEZA"];
 const ARTICULO_TIPO_LABEL: Record<TipoArticulo, string> = {
   OFICINA: "Oficina",
   LIMPIEZA: "Limpieza",
+};
+const TIPO_EQUIPO_LABEL: Record<TipoEquipo, string> = {
+  GENERAL: "General",
+  FRI: "FRI",
 };
 
 export function ConfigViews(props: ConfigViewsProps) {
@@ -898,23 +903,27 @@ export function ConfigViews(props: ConfigViewsProps) {
   }
 
   if (props.activeView === "equipos") {
-    const activeOrderById = new Map(
-      props.equiposActivosEnPantalla.map((equipo, index) => [equipo.itemId, index]),
-    );
-    const inactivoOrderById = new Map(
-      props.equiposInactivosEnPantalla.map((equipo, index) => [equipo.itemId, index]),
-    );
     const equiposOrdenadosAlfabeticamente = [...props.equipos].sort((a, b) =>
-      a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
+      compareEquiposByTipoAndName(a, b),
     );
-    const mergeTargetEquipos = equiposOrdenadosAlfabeticamente.filter((equipo) => equipo.itemId !== props.mergeEquipoOrigenId);
-    const canMergeEquipos =
-      props.canWrite &&
-      props.equipos.length >= 2 &&
-      props.mergeEquipoOrigenId.trim() !== "" &&
-      props.mergeEquipoDestinoId.trim() !== "" &&
-      props.mergeEquipoOrigenId !== props.mergeEquipoDestinoId;
-
+    const equiposGeneralesAlfabeticos = equiposOrdenadosAlfabeticamente.filter((equipo) => equipo.tipo === "GENERAL");
+    const equiposFriAlfabeticos = equiposOrdenadosAlfabeticamente.filter((equipo) => equipo.tipo === "FRI");
+    const equiposActivosGeneralesEnPantalla = props.equiposActivosEnPantalla.filter((equipo) => equipo.tipo === "GENERAL");
+    const equiposActivosFriEnPantalla = props.equiposActivosEnPantalla.filter((equipo) => equipo.tipo === "FRI");
+    const equiposInactivosGeneralesEnPantalla = props.equiposInactivosEnPantalla.filter((equipo) => equipo.tipo === "GENERAL");
+    const equiposInactivosFriEnPantalla = props.equiposInactivosEnPantalla.filter((equipo) => equipo.tipo === "FRI");
+    const activeGeneralOrderById = new Map(
+      equiposActivosGeneralesEnPantalla.map((equipo, index) => [equipo.itemId, index]),
+    );
+    const activeFriOrderById = new Map(
+      equiposActivosFriEnPantalla.map((equipo, index) => [equipo.itemId, index]),
+    );
+    const inactivoGeneralOrderById = new Map(
+      equiposInactivosGeneralesEnPantalla.map((equipo, index) => [equipo.itemId, index]),
+    );
+    const inactivoFriOrderById = new Map(
+      equiposInactivosFriEnPantalla.map((equipo, index) => [equipo.itemId, index]),
+    );
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
@@ -935,6 +944,15 @@ export function ConfigViews(props: ConfigViewsProps) {
               className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               disabled={!props.canWrite}
             />
+            <select
+              value={props.newEquipo.tipo}
+              onChange={(event) => props.onNewEquipoChange(event.target.value, "tipo")}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              disabled={!props.canWrite}
+            >
+              <option value="GENERAL">General</option>
+              <option value="FRI">FRI</option>
+            </select>
             <div className="flex flex-wrap gap-4 text-sm">
               <label className="flex items-center gap-2">
                 <input
@@ -979,36 +997,53 @@ export function ConfigViews(props: ConfigViewsProps) {
                       : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
                   }`}
                 >
-                  Orden alfabético (todos)
+                  Orden alfabético por tipo
                 </button>
               </div>
               <p className="mt-2 text-xs text-stone-600">
-                La vista alfabética muestra todos los equipos sin separar por si aparecen o no en hoja de entrega.
+                La vista alfabética muestra primero equipos generales y luego equipos FRI, ordenados A-Z dentro de cada grupo.
               </p>
             </div>
 
             {equiposDisplayMode === "alfabetico" ? (
-              <div>
-                <div className="mb-2 flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-stone-900">Todos los equipos (A-Z)</h3>
-                  <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
-                    {equiposOrdenadosAlfabeticamente.length}
-                  </span>
-                </div>
-                <p className="mb-3 text-xs text-stone-600">Incluye equipos visibles y ocultos en hoja.</p>
-                {equiposOrdenadosAlfabeticamente.length > 0 ? (
-                  <div className="space-y-2">
-                    {equiposOrdenadosAlfabeticamente.map((equipo) =>
-                      props.renderEquipoCard(equipo, {
-                        reorderableInActiveList: false,
-                      }),
+              <div className="space-y-6">
+                {[
+                  {
+                    key: "GENERAL" as const,
+                    title: "Equipos generales (A-Z)",
+                    items: equiposGeneralesAlfabeticos,
+                  },
+                  {
+                    key: "FRI" as const,
+                    title: "Equipos FRI (A-Z)",
+                    items: equiposFriAlfabeticos,
+                  },
+                ].map((section) => (
+                  <div key={section.key}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-stone-900">{section.title}</h3>
+                      <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
+                        {section.items.length}
+                      </span>
+                    </div>
+                    <p className="mb-3 text-xs text-stone-600">
+                      Incluye equipos visibles y ocultos en hoja para el tipo {TIPO_EQUIPO_LABEL[section.key]}.
+                    </p>
+                    {section.items.length > 0 ? (
+                      <div className="space-y-2">
+                        {section.items.map((equipo) =>
+                          props.renderEquipoCard(equipo, {
+                            reorderableInActiveList: false,
+                          }),
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
+                        <p className="text-sm text-stone-600">No hay equipos {TIPO_EQUIPO_LABEL[section.key].toLowerCase()} registrados.</p>
+                      </div>
                     )}
                   </div>
-                ) : (
-                  <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                    <p className="text-sm text-stone-600">No hay equipos registrados.</p>
-                  </div>
-                )}
+                ))}
               </div>
             ) : null}
 
@@ -1022,14 +1057,14 @@ export function ConfigViews(props: ConfigViewsProps) {
                     </span>
                   </div>
                   <p className="text-xs text-stone-600 mb-3">
-                    Estos equipos se muestran en hoja y mantienen el editor de orden.
+                    Estos equipos se muestran en hoja y ahora quedan separados entre catálogo general y FRI.
                   </p>
                 </div>
                 {props.equiposActivosEnPantalla.length > 0 ? (
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3">
                     <div>
                       <p className="text-sm font-semibold text-stone-900">Editor de orden</p>
-                      <p className="text-xs text-stone-600">Los cambios impactan el PDF y las hojas de entrega cuando confirmes.</p>
+                      <p className="text-xs text-stone-600">Guarda el orden combinado de Generales y FRI para hojas y PDF.</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -1051,81 +1086,133 @@ export function ConfigViews(props: ConfigViewsProps) {
                     </div>
                   </div>
                 ) : null}
-                {props.equiposActivosEnPantalla.length > 0 ? (
-                  <div className="space-y-2">
-                    {props.equiposActivosEnPantalla.map((equipo) =>
-                      props.renderEquipoCard(equipo, {
-                        reorderableInActiveList: true,
-                        orderIndex: activeOrderById.get(equipo.itemId) ?? -1,
-                        orderCount: props.equiposActivosEnPantalla.length,
-                      }),
-                    )}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                    <p className="text-sm text-stone-600">No hay equipos visibles en hoja.</p>
-                  </div>
-                )}
+                <div className="space-y-6">
+                  {[
+                    {
+                      key: "GENERAL" as const,
+                      title: "Equipos generales visibles en hoja",
+                      items: equiposActivosGeneralesEnPantalla,
+                      orderById: activeGeneralOrderById,
+                    },
+                    {
+                      key: "FRI" as const,
+                      title: "Equipos FRI visibles en hoja",
+                      items: equiposActivosFriEnPantalla,
+                      orderById: activeFriOrderById,
+                    },
+                  ].map((section) => (
+                    <div key={`active-${section.key}`}>
+                      <div className="mb-2 flex items-center gap-2">
+                        <h4 className="text-sm font-semibold text-stone-900">{section.title}</h4>
+                        <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
+                          {section.items.length}
+                        </span>
+                      </div>
+                      {section.items.length > 0 ? (
+                        <div className="space-y-2">
+                          {section.items.map((equipo) =>
+                            props.renderEquipoCard(equipo, {
+                              reorderableInActiveList: true,
+                              orderGroupType: section.key,
+                              orderIndex: section.orderById.get(equipo.itemId) ?? -1,
+                              orderCount: section.items.length,
+                            }),
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
+                          <p className="text-sm text-stone-600">No hay equipos {TIPO_EQUIPO_LABEL[section.key].toLowerCase()} visibles en hoja.</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </>
             ) : null}
 
-          {equiposDisplayMode === "por_estado" ? (
-          <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-stone-900">No aparecen en Hoja de Entrega / Hoja Matriz</h3>
-                <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
-                  {props.equiposInactivos.length}
-                </span>
-              </div>
-              <p className="mb-3 text-xs text-stone-600">
-                Estos equipos siguen registrados, pero están ocultos de las hojas. Puedes definir su orden para cuando imprimas el listado total de stock.
-              </p>
-            </div>
-            {props.equiposInactivosEnPantalla.length > 0 ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3 mb-3">
+            {equiposDisplayMode === "por_estado" ? (
+              <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
                 <div>
-                  <p className="text-sm font-semibold text-stone-900">Editor de orden de inactivos</p>
-                  <p className="text-xs text-stone-600">Define el orden en el que aparecerán al imprimir el listado total de stock.</p>
+                  <div className="mb-2 flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-stone-900">No aparecen en Hoja de Entrega / Hoja Matriz</h3>
+                    <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
+                      {props.equiposInactivos.length}
+                    </span>
+                  </div>
+                  <p className="mb-3 text-xs text-stone-600">
+                    Estos equipos siguen registrados, pero quedan fuera de hoja y también se separan entre generales y FRI.
+                  </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={props.onResetEquipoInactivoOrderDraft}
-                    disabled={!props.canWrite || !props.hasEquipoInactivoOrderDraftChanges}
-                    className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Restablecer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={props.onSaveEquipoInactivoOrder}
-                    disabled={!props.canWrite || !props.hasEquipoInactivoOrderDraftChanges}
-                    className="ej-button rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Guardar orden
-                  </button>
+                {props.equiposInactivosEnPantalla.length > 0 ? (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3 mb-3">
+                    <div>
+                      <p className="text-sm font-semibold text-stone-900">Editor de orden de inactivos</p>
+                      <p className="text-xs text-stone-600">Define el orden combinado para el listado total de stock.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={props.onResetEquipoInactivoOrderDraft}
+                        disabled={!props.canWrite || !props.hasEquipoInactivoOrderDraftChanges}
+                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Restablecer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={props.onSaveEquipoInactivoOrder}
+                        disabled={!props.canWrite || !props.hasEquipoInactivoOrderDraftChanges}
+                        className="ej-button rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Guardar orden
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                <div className="space-y-6">
+                  {[
+                    {
+                      key: "GENERAL" as const,
+                      title: "Equipos generales ocultos de hoja",
+                      items: equiposInactivosGeneralesEnPantalla,
+                      orderById: inactivoGeneralOrderById,
+                    },
+                    {
+                      key: "FRI" as const,
+                      title: "Equipos FRI ocultos de hoja",
+                      items: equiposInactivosFriEnPantalla,
+                      orderById: inactivoFriOrderById,
+                    },
+                  ].map((section) => (
+                    <div key={`inactive-${section.key}`}>
+                      <div className="mb-2 flex items-center gap-2">
+                        <h4 className="text-sm font-semibold text-stone-900">{section.title}</h4>
+                        <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
+                          {section.items.length}
+                        </span>
+                      </div>
+                      {section.items.length > 0 ? (
+                        <div className="space-y-2">
+                          {section.items.map((equipo) =>
+                            props.renderEquipoCard(equipo, {
+                              reorderableInActiveList: false,
+                              reorderableInInactiveList: true,
+                              orderGroupType: section.key,
+                              orderIndex: section.orderById.get(equipo.itemId) ?? -1,
+                              orderCount: section.items.length,
+                            }),
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
+                          <p className="text-sm text-stone-600">No hay equipos {TIPO_EQUIPO_LABEL[section.key].toLowerCase()} ocultos.</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : null}
-            {props.equiposInactivosEnPantalla.length > 0 ? (
-              <div className="space-y-2">
-                {props.equiposInactivosEnPantalla.map((equipo) =>
-                  props.renderEquipoCard(equipo, {
-                    reorderableInActiveList: false,
-                    reorderableInInactiveList: true,
-                    orderIndex: inactivoOrderById.get(equipo.itemId) ?? -1,
-                    orderCount: props.equiposInactivosEnPantalla.length,
-                  }),
-                )}
-              </div>
-            ) : (
-              <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                <p className="text-sm text-stone-600">No hay equipos ocultos.</p>
-              </div>
-            )}
-          </div>
-          ) : null}
 
 
 

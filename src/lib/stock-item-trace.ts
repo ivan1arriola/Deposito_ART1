@@ -271,6 +271,7 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
     });
 
   const payload: StockItemTraceData = {
+    equipoId: item.itemId.toString(),
     itemId: item.itemId.toString(),
     itemNombre: item.nombre,
     totals: {

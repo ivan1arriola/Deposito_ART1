@@ -214,11 +214,11 @@ function buildStyles() {
 export default async function TrazabilidadEquiposPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ autoprint?: string; itemId?: string; column?: string }>;
+  searchParams?: Promise<{ autoprint?: string; equipoId?: string; itemId?: string; column?: string }>;
 }) {
   const params = searchParams ? await searchParams : undefined;
   const shouldAutoPrint = params?.autoprint === "1";
-  const itemId = parseStockTraceItemId(params?.itemId);
+  const itemId = parseStockTraceItemId(params?.equipoId ?? params?.itemId);
   const column = parseStockTraceColumn(params?.column);
   const printedAt = new Date();
   const generatedAt = formatDateTimeForDisplay(printedAt);
@@ -281,17 +281,17 @@ export default async function TrazabilidadEquiposPage({
         <p className="meta">{`Generado: ${generatedAt} | Columna: ${columnLabel}`}</p>
 
         <section className="summary">
-          <div className="summary-item">{`Item ID: ${traceData.itemId}`}</div>
+          <div className="summary-item">{`Equipo ID: ${traceData.equipoId}`}</div>
           <div className="summary-item">{`Total en columna: ${totalEnColumna}`}</div>
         </section>
 
         <h2 className="section-title">
-          {isSubalternos ? "Personal con tenencia neta del item" : "Préstamos activos del item"}
+          {isSubalternos ? "Personal con tenencia neta del equipo" : "Préstamos activos del equipo"}
         </h2>
 
         {isSubalternos ? (
           traceData.subalternos.length === 0 ? (
-            <p className="empty-state">No hay tenencias activas de subalternos para este item.</p>
+            <p className="empty-state">No hay tenencias activas de subalternos para este equipo.</p>
           ) : (
             <section className="trace-list">
               {traceData.subalternos.map((entry) => (
@@ -323,7 +323,7 @@ export default async function TrazabilidadEquiposPage({
             </section>
           )
         ) : traceData.prestamos.length === 0 ? (
-          <p className="empty-state">No hay préstamos activos para este item.</p>
+          <p className="empty-state">No hay préstamos activos para este equipo.</p>
         ) : (
           <section className="trace-list">
             {traceData.prestamos.map((entry) => (

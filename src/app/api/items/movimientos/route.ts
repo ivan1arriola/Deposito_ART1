@@ -12,11 +12,11 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const url = new URL(request.url);
-  const itemIdRaw = url.searchParams.get("itemId");
+  const itemIdRaw = url.searchParams.get("equipoId") ?? url.searchParams.get("itemId");
   const itemId = itemIdRaw === null ? null : parseEquipoMovimientoItemId(itemIdRaw);
 
   if (itemIdRaw !== null && !itemId) {
-    return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "equipoId invalido." }, { status: 400 });
   }
 
   const sort = parseMovimientosEquipoSort(

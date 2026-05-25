@@ -107,6 +107,7 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
   return {
     generatedAt: formatDateTimeForDisplay(new Date()),
     items: items.map((item) => ({
+      equipoId: item.itemId.toString(),
       itemId: item.itemId.toString(),
       nombre: item.nombre,
     })),

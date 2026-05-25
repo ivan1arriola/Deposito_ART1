@@ -195,7 +195,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
           api<Rango[]>("/api/rangos?tipo=SUBOFICIAL", requestInit),
           api<Bateria[]>("/api/baterias", requestInit),
           api<Articulo[]>("/api/articulos", requestInit).catch(() => [] as Articulo[]),
-          api<Equipo[]>("/api/items", requestInit),
+          api<Equipo[]>("/api/equipos", requestInit),
           api<Personal[]>("/api/personal", requestInit),
           api<OficialSuboficial[]>("/api/oficiales-suboficiales", requestInit),
           api<{ total: number }>("/api/registros?summary=1", requestInit).catch(() => ({ total: 0 })),

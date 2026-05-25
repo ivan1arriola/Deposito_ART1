@@ -60,6 +60,7 @@ import type {
   UsuarioAdmin,
   Talla,
   TipoArticulo,
+  TipoEquipo,
 } from "@/types/entities";
 import type {
   PersonalForm,
@@ -109,6 +110,7 @@ import {
   isDateInputAfter,
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
+import { compareEquiposByTipoAndOrder } from "@/lib/equipo-sort";
 import { normalizeSearchTerm } from "@/lib/search";
 import { moveIdInOrder, compareTallaOptions } from "@/lib/array-utils";
 import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
@@ -128,12 +130,12 @@ import {
   deleteArticuloHandler,
   ingresarStockArticuloHandler,
   entregarArticulosPersonalHandler,
-  createItemHandler,
-  updateItemHandler,
-  deleteItemHandler,
-  mergeItemHandler,
-  loadItemDeleteImpactHandler,
-  updateMultipleItemOrdersHandler,
+  createEquipoHandler,
+  updateEquipoHandler,
+  deleteEquipoHandler,
+  mergeEquipoHandler,
+  loadEquipoDeleteImpactHandler,
+  updateMultipleEquipoOrdersHandler,
 } from "@/lib/handlers-catalog";
 import {
   createPersonalHandler,
@@ -258,6 +260,10 @@ function formatDurationForStatus(ms: number | null | undefined) {
   if (typeof ms !== "number" || !Number.isFinite(ms)) return null;
   if (ms < 1000) return `${Math.max(0, Math.round(ms))}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
+}
+
+function tipoEquipoLabel(tipo: TipoEquipo) {
+  return tipo === "FRI" ? "FRI" : "General";
 }
 
 function formatElapsedTimer(ms: number | null | undefined) {
@@ -795,11 +801,43 @@ export default function Home() {
 
   const maxFechaIngreso = getTodayDateInput();
   const equiposOrdenados = useMemo(
-    () => [...equipos].sort((a, b) => a.ordenPdf - b.ordenPdf || a.nombre.localeCompare(b.nombre, "es")),
+    () => [...equipos].sort(compareEquiposByTipoAndOrder),
     [equipos],
   );
   const equiposActivos = useMemo(() => equiposOrdenados.filter((item) => item.activo), [equiposOrdenados]);
   const equiposInactivos = useMemo(() => equiposOrdenados.filter((item) => !item.activo), [equiposOrdenados]);
+  const equiposActivosGenerales = useMemo(
+    () => equiposActivos.filter((item) => item.tipo === "GENERAL"),
+    [equiposActivos],
+  );
+  const equiposActivosFri = useMemo(
+    () => equiposActivos.filter((item) => item.tipo === "FRI"),
+    [equiposActivos],
+  );
+  const equiposInactivosGenerales = useMemo(
+    () => equiposInactivos.filter((item) => item.tipo === "GENERAL"),
+    [equiposInactivos],
+  );
+  const equiposInactivosFri = useMemo(
+    () => equiposInactivos.filter((item) => item.tipo === "FRI"),
+    [equiposInactivos],
+  );
+  const equiposActivosGeneralesIds = useMemo(
+    () => new Set(equiposActivosGenerales.map((item) => item.equipoId)),
+    [equiposActivosGenerales],
+  );
+  const equiposActivosFriIds = useMemo(
+    () => new Set(equiposActivosFri.map((item) => item.equipoId)),
+    [equiposActivosFri],
+  );
+  const equiposInactivosGeneralesIds = useMemo(
+    () => new Set(equiposInactivosGenerales.map((item) => item.equipoId)),
+    [equiposInactivosGenerales],
+  );
+  const equiposInactivosFriIds = useMemo(
+    () => new Set(equiposInactivosFri.map((item) => item.equipoId)),
+    [equiposInactivosFri],
+  );
   const tallaOptionsByKey = useMemo(() => {
     const dynamic = {} as Record<TallaKey, string[]>;
 
@@ -917,47 +955,47 @@ export default function Home() {
   }, [auditoriaFiltrada, auditPageSafe, auditPageSize]);
   const equiposActivosEnPantalla = useMemo(() => {
     if (!equipoOrderDraftIds) return equiposActivos;
-    const activeById = new Map(equiposActivos.map((item) => [item.itemId, item]));
+    const activeById = new Map(equiposActivos.map((item) => [item.equipoId, item]));
     return equipoOrderDraftIds
       .map((itemId) => activeById.get(itemId))
       .filter((item): item is Equipo => item !== undefined);
   }, [equiposActivos, equipoOrderDraftIds]);
   const hasEquipoOrderDraftChanges = useMemo(() => {
     if (!equipoOrderDraftIds) return false;
-    const currentActiveIds = equiposActivos.map((item) => item.itemId);
+    const currentActiveIds = equiposActivos.map((item) => item.equipoId);
     if (equipoOrderDraftIds.length !== currentActiveIds.length) return true;
     return equipoOrderDraftIds.some((itemId, index) => itemId !== currentActiveIds[index]);
   }, [equiposActivos, equipoOrderDraftIds]);
   const equiposInactivosEnPantalla = useMemo(() => {
     if (!equipoInactivoOrderDraftIds) return equiposInactivos;
-    const inactivoById = new Map(equiposInactivos.map((item) => [item.itemId, item]));
+    const inactivoById = new Map(equiposInactivos.map((item) => [item.equipoId, item]));
     return equipoInactivoOrderDraftIds
       .map((itemId) => inactivoById.get(itemId))
       .filter((item): item is Equipo => item !== undefined);
   }, [equiposInactivos, equipoInactivoOrderDraftIds]);
   const hasEquipoInactivoOrderDraftChanges = useMemo(() => {
     if (!equipoInactivoOrderDraftIds) return false;
-    const currentInactivoIds = equiposInactivos.map((item) => item.itemId);
+    const currentInactivoIds = equiposInactivos.map((item) => item.equipoId);
     if (equipoInactivoOrderDraftIds.length !== currentInactivoIds.length) return true;
     return equipoInactivoOrderDraftIds.some((itemId, index) => itemId !== currentInactivoIds[index]);
   }, [equiposInactivos, equipoInactivoOrderDraftIds]);
   const mergeEquipoSource = useMemo(() => {
     if (!mergeEquipoDialog) return null;
-    return equiposOrdenados.find((equipo) => equipo.itemId === mergeEquipoDialog.sourceItemId) ?? null;
+    return equiposOrdenados.find((equipo) => equipo.equipoId === mergeEquipoDialog.sourceItemId) ?? null;
   }, [equiposOrdenados, mergeEquipoDialog]);
   const mergeEquipoTargetOptions = useMemo(() => {
     if (!mergeEquipoDialog) return [] as Equipo[];
-    return equiposOrdenados.filter((equipo) => equipo.itemId !== mergeEquipoDialog.sourceItemId);
+    return equiposOrdenados.filter((equipo) => equipo.equipoId !== mergeEquipoDialog.sourceItemId);
   }, [equiposOrdenados, mergeEquipoDialog]);
   const mergeEquipoDialogTargetId = useMemo(() => {
     if (!mergeEquipoDialog) return "";
-    if (mergeEquipoTargetOptions.some((equipo) => equipo.itemId === mergeEquipoDialog.targetItemId)) {
+    if (mergeEquipoTargetOptions.some((equipo) => equipo.equipoId === mergeEquipoDialog.targetItemId)) {
       return mergeEquipoDialog.targetItemId;
     }
-    return mergeEquipoTargetOptions[0]?.itemId ?? "";
+    return mergeEquipoTargetOptions[0]?.equipoId ?? "";
   }, [mergeEquipoDialog, mergeEquipoTargetOptions]);
   useEffect(() => {
-    const ids = new Set(equipos.map((equipo) => equipo.itemId));
+    const ids = new Set(equipos.map((equipo) => equipo.equipoId));
 
     setMergeEquipoOrigenId((current) => (current !== "" && ids.has(current) ? current : ""));
     setMergeEquipoDestinoId((current) => (current !== "" && ids.has(current) ? current : ""));
@@ -1438,7 +1476,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!equipoOrderDraftIds) return;
-    const currentActiveIds = new Set(equiposActivos.map((item) => item.itemId));
+    const currentActiveIds = new Set(equiposActivos.map((item) => item.equipoId));
     const draftIsValid =
       equipoOrderDraftIds.length === equiposActivos.length && equipoOrderDraftIds.every((itemId) => currentActiveIds.has(itemId));
     if (draftIsValid) return;
@@ -1716,7 +1754,7 @@ export default function Home() {
         return;
       }
       try {
-        await createItemHandler(input.nombre, false, {
+        await createEquipoHandler(input.nombre, "GENERAL", false, {
           onSuccess: async () => {
             setStatus("Equipo creado oculto de hoja de entrega.");
             await Promise.all([loadData(), loadEtiquetadoData()]);
@@ -2410,7 +2448,7 @@ export default function Home() {
 
       setCreatingEquipo(true);
       try {
-        await createItemHandler(newEquipo.nombre, newEquipo.activo, {
+        await createEquipoHandler(newEquipo.nombre, newEquipo.tipo, newEquipo.activo, {
           onSuccess: async () => {
             setNewEquipo(EMPTY_EQUIPO_FORM);
             setStatus("Equipo creado.");
@@ -2428,13 +2466,13 @@ export default function Home() {
   );
 
   const updateEquipo = useCallback(
-    async (itemId: string) => {
+    async (equipoId: string) => {
       if (!canWrite) {
         setStatus("No tienes permisos para editar.");
         return;
       }
       try {
-        await updateItemHandler(itemId, editEquipo.nombre, editEquipo.activo, editEquipo.ordenPdf ?? 0, {
+        await updateEquipoHandler(equipoId, editEquipo.nombre, editEquipo.tipo, editEquipo.activo, editEquipo.ordenPdf ?? 0, {
           onSuccess: async () => {
             setEditEquipoId(null);
             setEditEquipo(EMPTY_EQUIPO_FORM);
@@ -2458,7 +2496,7 @@ export default function Home() {
       }
 
       try {
-        await updateItemHandler(equipo.itemId, equipo.nombre, !equipo.activo, equipo.ordenPdf, {
+        await updateEquipoHandler(equipo.equipoId, equipo.nombre, equipo.tipo, !equipo.activo, equipo.ordenPdf, {
           onSuccess: async () => {
             setStatus(`Equipo ${!equipo.activo ? "visible en hoja" : "oculto de hoja"}.`);
             await loadData();
@@ -2478,7 +2516,7 @@ export default function Home() {
         setStatus("No tienes permisos para editar.");
         return;
       }
-      const currentActiveIds = equiposActivos.map((item) => item.itemId);
+      const currentActiveIds = equiposActivos.map((item) => item.equipoId);
       if (
         orderedItemIds.length === currentActiveIds.length &&
         orderedItemIds.every((itemId, index) => itemId === currentActiveIds[index])
@@ -2487,7 +2525,7 @@ export default function Home() {
       }
 
       try {
-        await updateMultipleItemOrdersHandler(orderedItemIds, {
+        await updateMultipleEquipoOrdersHandler(orderedItemIds, {
           onSuccess: async () => {
             setEquipoOrderDraftIds(null);
             setStatus("Orden de PDF actualizado.");
@@ -2502,23 +2540,30 @@ export default function Home() {
     [canWrite, equiposActivos, loadData],
   );
   const updateEquipoOrderDraft = useCallback(
-    (updater: (currentOrder: string[]) => string[]) => {
+    (tipo: TipoEquipo, updater: (currentOrder: string[]) => string[]) => {
       if (!canWrite) {
         setStatus("No tienes permisos para editar.");
         return;
       }
 
       setEquipoOrderDraftIds((currentDraft) => {
-        const baseOrder = currentDraft ?? equiposActivos.map((item) => item.itemId);
-        return updater(baseOrder);
+        const baseOrder = currentDraft ?? equiposActivos.map((item) => item.equipoId);
+        const generalOrder = baseOrder.filter((itemId) => equiposActivosGeneralesIds.has(itemId));
+        const friOrder = baseOrder.filter((itemId) => equiposActivosFriIds.has(itemId));
+
+        if (tipo === "FRI") {
+          return [...generalOrder, ...updater(friOrder)];
+        }
+
+        return [...updater(generalOrder), ...friOrder];
       });
     },
-    [canWrite, equiposActivos],
+    [canWrite, equiposActivos, equiposActivosFriIds, equiposActivosGeneralesIds],
   );
 
   const moveEquipoInDraft = useCallback(
-    (itemId: string, direction: "up" | "down") => {
-      updateEquipoOrderDraft((currentOrder) => {
+    (itemId: string, direction: "up" | "down", tipo: TipoEquipo) => {
+      updateEquipoOrderDraft(tipo, (currentOrder) => {
         const currentIndex = currentOrder.indexOf(itemId);
         if (currentIndex < 0) return currentOrder;
         const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
@@ -2530,8 +2575,8 @@ export default function Home() {
   );
 
   const setEquipoDraftPosition = useCallback(
-    (itemId: string, nextPosition: number) => {
-      updateEquipoOrderDraft((currentOrder) => {
+    (itemId: string, nextPosition: number, tipo: TipoEquipo) => {
+      updateEquipoOrderDraft(tipo, (currentOrder) => {
         const currentIndex = currentOrder.indexOf(itemId);
         const targetIndex = nextPosition - 1;
         if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentOrder.length || currentIndex === targetIndex) {
@@ -2549,7 +2594,7 @@ export default function Home() {
         setStatus("No tienes permisos para editar.");
         return;
       }
-      const currentInactivoIds = equiposInactivos.map((item) => item.itemId);
+      const currentInactivoIds = equiposInactivos.map((item) => item.equipoId);
       if (
         orderedItemIds.length === currentInactivoIds.length &&
         orderedItemIds.every((itemId, index) => itemId === currentInactivoIds[index])
@@ -2558,7 +2603,7 @@ export default function Home() {
       }
 
       try {
-        await updateMultipleItemOrdersHandler(
+        await updateMultipleEquipoOrdersHandler(
           orderedItemIds,
           {
             onSuccess: async () => {
@@ -2578,23 +2623,30 @@ export default function Home() {
   );
 
   const updateEquipoInactivoOrderDraft = useCallback(
-    (updater: (currentOrder: string[]) => string[]) => {
+    (tipo: TipoEquipo, updater: (currentOrder: string[]) => string[]) => {
       if (!canWrite) {
         setStatus("No tienes permisos para editar.");
         return;
       }
 
       setEquipoInactivoOrderDraftIds((currentDraft) => {
-        const baseOrder = currentDraft ?? equiposInactivos.map((item) => item.itemId);
-        return updater(baseOrder);
+        const baseOrder = currentDraft ?? equiposInactivos.map((item) => item.equipoId);
+        const generalOrder = baseOrder.filter((itemId) => equiposInactivosGeneralesIds.has(itemId));
+        const friOrder = baseOrder.filter((itemId) => equiposInactivosFriIds.has(itemId));
+
+        if (tipo === "FRI") {
+          return [...generalOrder, ...updater(friOrder)];
+        }
+
+        return [...updater(generalOrder), ...friOrder];
       });
     },
-    [canWrite, equiposInactivos],
+    [canWrite, equiposInactivos, equiposInactivosFriIds, equiposInactivosGeneralesIds],
   );
 
   const moveEquipoInactivoInDraft = useCallback(
-    (itemId: string, direction: "up" | "down") => {
-      updateEquipoInactivoOrderDraft((currentOrder) => {
+    (itemId: string, direction: "up" | "down", tipo: TipoEquipo) => {
+      updateEquipoInactivoOrderDraft(tipo, (currentOrder) => {
         const currentIndex = currentOrder.indexOf(itemId);
         if (currentIndex < 0) return currentOrder;
         const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
@@ -2606,8 +2658,8 @@ export default function Home() {
   );
 
   const setEquipoInactivoDraftPosition = useCallback(
-    (itemId: string, nextPosition: number) => {
-      updateEquipoInactivoOrderDraft((currentOrder) => {
+    (itemId: string, nextPosition: number, tipo: TipoEquipo) => {
+      updateEquipoInactivoOrderDraft(tipo, (currentOrder) => {
         const currentIndex = currentOrder.indexOf(itemId);
         const targetIndex = nextPosition - 1;
         if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentOrder.length || currentIndex === targetIndex) {
@@ -2620,17 +2672,17 @@ export default function Home() {
   );
 
   const deleteEquipo = useCallback(
-    async (itemId: string) => {
+    async (equipoId: string) => {
       if (!canDelete) {
         setStatus("No tienes permisos para eliminar.");
         return;
       }
-      const item = equipos.find((entry) => entry.itemId === itemId);
+      const item = equipos.find((entry) => entry.equipoId === equipoId);
       let impacto:
-        | Awaited<ReturnType<typeof loadItemDeleteImpactHandler>>
+        | Awaited<ReturnType<typeof loadEquipoDeleteImpactHandler>>
         | null = null;
       try {
-        impacto = await loadItemDeleteImpactHandler(itemId, {
+        impacto = await loadEquipoDeleteImpactHandler(equipoId, {
           onSuccess: () => {},
           onError: (message) => setStatus(message),
         });
@@ -2693,7 +2745,7 @@ export default function Home() {
         tone: "danger",
         onConfirm: async () => {
           try {
-            await deleteItemHandler(itemId, {
+            await deleteEquipoHandler(equipoId, {
               onSuccess: async () => {
                 setStatus("Equipo eliminado con limpieza de movimientos relacionados.");
                 await loadData();
@@ -2716,13 +2768,13 @@ export default function Home() {
         return;
       }
 
-      const source = equiposOrdenados.find((equipo) => equipo.itemId === sourceItemId);
+      const source = equiposOrdenados.find((equipo) => equipo.equipoId === sourceItemId);
       if (!source) {
         setStatus("No se encontro el equipo a reasignar.");
         return;
       }
 
-      const firstTarget = equiposOrdenados.find((equipo) => equipo.itemId !== sourceItemId);
+      const firstTarget = equiposOrdenados.find((equipo) => equipo.equipoId !== sourceItemId);
       if (!firstTarget) {
         setStatus("Debes tener al menos dos equipos para poder reasignar.");
         return;
@@ -2730,7 +2782,7 @@ export default function Home() {
 
       setMergeEquipoDialog({
         sourceItemId,
-        targetItemId: firstTarget.itemId,
+        targetItemId: firstTarget.equipoId,
       });
     },
     [canDelete, equiposOrdenados],
@@ -2752,9 +2804,9 @@ export default function Home() {
       return;
     }
 
-    const source = equiposOrdenados.find((equipo) => equipo.itemId === mergeEquipoDialog.sourceItemId);
+    const source = equiposOrdenados.find((equipo) => equipo.equipoId === mergeEquipoDialog.sourceItemId);
     const targetItemId = mergeEquipoDialogTargetId;
-    const target = equiposOrdenados.find((equipo) => equipo.itemId === targetItemId);
+    const target = equiposOrdenados.find((equipo) => equipo.equipoId === targetItemId);
 
     if (!source || !target) {
       setStatus("No se encontraron los equipos seleccionados.");
@@ -2763,7 +2815,7 @@ export default function Home() {
 
     setMergeEquipoSaving(true);
     try {
-      const result = await mergeItemHandler(source.itemId, target.itemId, {
+      const result = await mergeEquipoHandler(source.equipoId, target.equipoId, {
         onSuccess: () => {},
         onError: (message) => setStatus(message),
       });
@@ -2810,8 +2862,8 @@ export default function Home() {
         return;
       }
 
-      const origen = equipos.find((equipo) => equipo.itemId === origenItemId);
-      const destino = equipos.find((equipo) => equipo.itemId === destinoItemId);
+      const origen = equipos.find((equipo) => equipo.equipoId === origenItemId);
+      const destino = equipos.find((equipo) => equipo.equipoId === destinoItemId);
       if (!origen || !destino) {
         setStatus("No se encontraron los equipos seleccionados.");
         return;
@@ -2829,7 +2881,7 @@ export default function Home() {
         tone: "danger",
         onConfirm: async () => {
           try {
-            const result = await mergeItemHandler(origenItemId, destinoItemId, {
+            const result = await mergeEquipoHandler(origenItemId, destinoItemId, {
               onSuccess: () => {},
               onError: (message) => setStatus(message),
             });
@@ -5562,21 +5614,28 @@ export default function Home() {
 
   function renderEquipoCard(
     equipo: Equipo,
-    options?: { reorderableInActiveList?: boolean; reorderableInInactiveList?: boolean; orderIndex?: number; orderCount?: number },
+    options?: {
+      reorderableInActiveList?: boolean;
+      reorderableInInactiveList?: boolean;
+      orderIndex?: number;
+      orderCount?: number;
+      orderGroupType?: TipoEquipo;
+    },
   ) {
     const reorderableInActiveList = options?.reorderableInActiveList === true;
     const reorderableInInactiveList = options?.reorderableInInactiveList === true;
     const isReorderable = reorderableInActiveList || reorderableInInactiveList;
     const orderIndex = options?.orderIndex ?? -1;
     const orderCount = options?.orderCount ?? 0;
+    const orderGroupType = options?.orderGroupType ?? equipo.tipo;
     const currentOrderLabel = isReorderable && orderIndex >= 0 ? orderIndex + 1 : (equipo.ordenPdf > 10000 ? equipo.ordenPdf - 10000 : equipo.ordenPdf);
 
     return (
       <div
-        key={equipo.itemId}
+        key={equipo.equipoId}
         className="rounded-2xl border border-stone-200 bg-white/95 p-4 shadow-sm transition-[box-shadow,border-color,background-color] duration-200 hover:shadow-md"
       >
-        {editEquipoId === equipo.itemId ? (
+        {editEquipoId === equipo.equipoId ? (
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wide text-stone-700 mb-1">Nombre</label>
@@ -5597,6 +5656,17 @@ export default function Home() {
                 className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-stone-700 mb-1">Tipo</label>
+              <select
+                value={editEquipo.tipo}
+                onChange={(event) => setEditEquipo((prev) => ({ ...prev, tipo: event.target.value as TipoEquipo }))}
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="GENERAL">General</option>
+                <option value="FRI">FRI</option>
+              </select>
+            </div>
             <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-stone-50 p-2 rounded-lg">
               <input
                 type="checkbox"
@@ -5607,7 +5677,7 @@ export default function Home() {
               <span className="font-medium text-stone-700">Aparece en Hoja de Entrega</span>
             </label>
             <div className="flex gap-2 pt-2">
-              <SmallActionButton text="Guardar" tone="ok" onClick={() => void updateEquipo(equipo.itemId)} />
+              <SmallActionButton text="Guardar" tone="ok" onClick={() => void updateEquipo(equipo.equipoId)} />
               <SmallActionButton
                 text="Cancelar"
                 tone="neutral"
@@ -5623,6 +5693,13 @@ export default function Home() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-stone-900">{equipo.nombre}</h3>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  equipo.tipo === "FRI"
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-sky-100 text-sky-800"
+                }`}>
+                  {tipoEquipoLabel(equipo.tipo)}
+                </span>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                   equipo.activo
                     ? "bg-green-100 text-green-700"
@@ -5652,7 +5729,7 @@ export default function Home() {
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.itemId, "up") : moveEquipoInactivoInDraft(equipo.itemId, "up")}
+                      onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.equipoId, "up", orderGroupType) : moveEquipoInactivoInDraft(equipo.equipoId, "up", orderGroupType)}
                       disabled={!canWrite || orderIndex <= 0}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-300 bg-white text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
                       title="Subir una posicion"
@@ -5663,7 +5740,7 @@ export default function Home() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.itemId, "down") : moveEquipoInactivoInDraft(equipo.itemId, "down")}
+                      onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.equipoId, "down", orderGroupType) : moveEquipoInactivoInDraft(equipo.equipoId, "down", orderGroupType)}
                       disabled={!canWrite || orderIndex < 0 || orderIndex >= orderCount - 1}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-300 bg-white text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
                       title="Bajar una posicion"
@@ -5677,12 +5754,12 @@ export default function Home() {
                     <span>Ir a</span>
                     <select
                       value={currentOrderLabel}
-                      onChange={(event) => reorderableInActiveList ? setEquipoDraftPosition(equipo.itemId, Number(event.target.value)) : setEquipoInactivoDraftPosition(equipo.itemId, Number(event.target.value))}
+                      onChange={(event) => reorderableInActiveList ? setEquipoDraftPosition(equipo.equipoId, Number(event.target.value), orderGroupType) : setEquipoInactivoDraftPosition(equipo.equipoId, Number(event.target.value), orderGroupType)}
                       disabled={!canWrite}
                       className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs font-semibold text-stone-700 outline-none"
                     >
                       {Array.from({ length: orderCount }, (_, index) => index + 1).map((position) => (
-                        <option key={`${equipo.itemId}-position-${position}`} value={position}>
+                        <option key={`${equipo.equipoId}-position-${position}`} value={position}>
                           {position}
                         </option>
                       ))}
@@ -5706,9 +5783,10 @@ export default function Home() {
                       icon: "edit",
                       tone: "primary",
                       onClick: () => {
-                        setEditEquipoId(equipo.itemId);
+                        setEditEquipoId(equipo.equipoId);
                         setEditEquipo({
                           nombre: equipo.nombre,
+                          tipo: equipo.tipo,
                           activo: equipo.activo,
                           ordenPdf: equipo.ordenPdf,
                         });
@@ -5718,13 +5796,13 @@ export default function Home() {
                       label: "Reasignar",
                       icon: "drag",
                       tone: "secondary",
-                      onClick: () => openMergeEquipoDialog(equipo.itemId),
+                      onClick: () => openMergeEquipoDialog(equipo.equipoId),
                     },
                     {
                       label: "Eliminar",
                       icon: "trash",
                       tone: "danger",
-                      onClick: () => void deleteEquipo(equipo.itemId),
+                      onClick: () => void deleteEquipo(equipo.equipoId),
                     },
                   ]}
                 />

@@ -11,9 +11,9 @@ export async function GET(req: Request) {
   }
 
   const url = new URL(req.url);
-  const itemId = parseStockTraceItemId(url.searchParams.get("itemId"));
+  const itemId = parseStockTraceItemId(url.searchParams.get("equipoId") ?? url.searchParams.get("itemId"));
   if (!itemId) {
-    return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+    return NextResponse.json({ error: "equipoId invalido." }, { status: 400 });
   }
 
   const payload = await buildStockItemTraceData(itemId, prisma);

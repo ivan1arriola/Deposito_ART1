@@ -6,6 +6,7 @@ import {
 } from "@/app/components/print/InstitutionalPrintHeader";
 import { FirmaLineasHtml } from "@/app/components/shared/FirmaLineasHtml";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
+import { compareEquiposByTipoAndName, compareEquiposByTipoAndOrder, splitEquiposByTipo } from "@/lib/equipo-sort";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
 import { prisma } from "@/lib/prisma";
@@ -19,6 +20,8 @@ export const metadata = {
 type ItemResumen = {
   itemId: string;
   nombre: string;
+  tipo: "GENERAL" | "FRI";
+  ordenPdf: number;
   stockSubalternos: number;
   stockPrestamo: number;
   stockDeposito: number;
@@ -212,8 +215,7 @@ export default async function ListadoEquiposUnidadPage({
 
   const [items, stockSummaryMaps, firmas] = await Promise.all([
     prisma.item.findMany({
-      orderBy: isAlphaSort ? [{ nombre: "asc" }] : [{ ordenPdf: "asc" }, { nombre: "asc" }],
-      select: { itemId: true, nombre: true, existenciaSie: true },
+      select: { itemId: true, nombre: true, tipo: true, ordenPdf: true, existenciaSie: true },
     }),
     buildStockSummaryMaps(prisma),
     getFirmaConfig(),
@@ -229,6 +231,8 @@ export default async function ListadoEquiposUnidadPage({
     return {
       itemId: itemKey,
       nombre: item.nombre,
+      tipo: item.tipo,
+      ordenPdf: item.ordenPdf,
       stockSubalternos,
       stockPrestamo,
       stockDeposito,
@@ -236,6 +240,20 @@ export default async function ListadoEquiposUnidadPage({
       existenciaSie: item.existenciaSie,
     };
   });
+  const resumenOrdenado = [...resumen].sort(isAlphaSort ? compareEquiposByTipoAndName : compareEquiposByTipoAndOrder);
+  const resumenSeparado = splitEquiposByTipo(resumenOrdenado);
+  const resumenPorTipo = [
+    {
+      key: "GENERAL" as const,
+      title: isAlphaSort ? "Equipos generales (A-Z)" : "Equipos generales",
+      items: resumenSeparado.generales,
+    },
+    {
+      key: "FRI" as const,
+      title: isAlphaSort ? "Equipos FRI (A-Z)" : "Equipos FRI",
+      items: resumenSeparado.fri,
+    },
+  ];
 
   const totalSubalternos = resumen.reduce((total, item) => total + item.stockSubalternos, 0);
   const totalPrestamo = resumen.reduce((total, item) => total + item.stockPrestamo, 0);
@@ -261,7 +279,7 @@ export default async function ListadoEquiposUnidadPage({
       <main className="sheet">
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <h1 className="title">Listado de Equipos de la Unidad</h1>
-        <p className="subtitle">{`Totales por item (subalternos + prestamo + deposito) ${isAlphaSort ? "· Orden Alfabético" : "· Orden Asignado"}`}</p>
+        <p className="subtitle">{`Totales por item (subalternos + prestamo + deposito) ${isAlphaSort ? "· Generales y FRI por separado en orden alfabético" : "· Generales primero, luego FRI, respetando el orden asignado"}`}</p>
         <p className="meta">{`Generado: ${generatedAt} | Equipos listados: ${resumen.length}`}</p>
 
         <section className="totals">
@@ -283,42 +301,53 @@ export default async function ListadoEquiposUnidadPage({
           </article>
         </section>
 
-        {resumen.length === 0 ? (
+        {resumenOrdenado.length === 0 ? (
           <section className="empty-state">No hay equipos registrados para imprimir.</section>
         ) : (
-          <section className="table-wrap">
-            <table>
-              <colgroup>
-                <col className="col-equipo" />
-                <col className="col-numeric" />
-                <col className="col-numeric" />
-                <col className="col-numeric" />
-                <col className="col-numeric" />
-                <col className="col-numeric" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>Equipo</th>
-                  <th className="numeric">Subalternos</th>
-                  <th className="numeric">Prestamo</th>
-                  <th className="numeric">Deposito</th>
-                  <th className="numeric">Unidad</th>
-                  <th className="numeric">Existencia SIE</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resumen.map((item) => (
-                  <tr key={`item-print-${item.itemId}`}>
-                    <td>{item.nombre}</td>
-                    <td className="numeric">{item.stockSubalternos}</td>
-                    <td className="numeric">{item.stockPrestamo}</td>
-                    <td className="numeric">{item.stockDeposito}</td>
-                    <td className="numeric">{item.stockUnidad}</td>
-                    <td className="numeric">{item.existenciaSie}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <section className="space-y-4">
+            {resumenPorTipo.map((section) => (
+              <section key={section.key}>
+                <p className="subtitle">{`${section.title} · ${section.items.length} equipos`}</p>
+                {section.items.length === 0 ? (
+                  <section className="empty-state">No hay equipos {section.key === "FRI" ? "FRI" : "generales"} registrados.</section>
+                ) : (
+                  <section className="table-wrap">
+                    <table>
+                      <colgroup>
+                        <col className="col-equipo" />
+                        <col className="col-numeric" />
+                        <col className="col-numeric" />
+                        <col className="col-numeric" />
+                        <col className="col-numeric" />
+                        <col className="col-numeric" />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th>Equipo</th>
+                          <th className="numeric">Subalternos</th>
+                          <th className="numeric">Prestamo</th>
+                          <th className="numeric">Deposito</th>
+                          <th className="numeric">Unidad</th>
+                          <th className="numeric">Existencia SIE</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {section.items.map((item) => (
+                          <tr key={`item-print-${section.key}-${item.itemId}`}>
+                            <td>{item.nombre}</td>
+                            <td className="numeric">{item.stockSubalternos}</td>
+                            <td className="numeric">{item.stockPrestamo}</td>
+                            <td className="numeric">{item.stockDeposito}</td>
+                            <td className="numeric">{item.stockUnidad}</td>
+                            <td className="numeric">{item.existenciaSie}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </section>
+                )}
+              </section>
+            ))}
           </section>
         )}
 

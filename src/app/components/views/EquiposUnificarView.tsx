@@ -4,10 +4,13 @@ import { Box, Button, Card, CardContent, Divider, FormControl, InputLabel, MenuI
 import CompareArrowsRoundedIcon from "@mui/icons-material/CompareArrowsRounded";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import type { Equipo } from "@/types/entities";
+
+type MergeableEquipo = Pick<Equipo, "itemId" | "nombre" | "tipo" | "activo">;
 
 type EquiposUnificarViewProps = {
   canWrite: boolean;
-  equipos: Array<{ itemId: string; nombre: string; activo: boolean }>;
+  equipos: MergeableEquipo[];
   mergeEquipoOrigenId: string;
   mergeEquipoDestinoId: string;
   onMergeEquipoOrigenIdChange: (id: string) => void;

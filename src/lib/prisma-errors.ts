@@ -9,6 +9,7 @@ const UNAVAILABLE_MESSAGE_SNIPPETS = [
   "Server has closed the connection",
   "Connection terminated unexpectedly",
 ];
+const MISSING_COLUMN_PREFIX = "The column `";
 
 function extractErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
@@ -38,6 +39,12 @@ export function isPrismaDatabaseUnavailable(error: unknown) {
   const message = extractErrorMessage(error);
   if (!message) return false;
   return UNAVAILABLE_MESSAGE_SNIPPETS.some((snippet) => message.includes(snippet));
+}
+
+export function hasPrismaMissingColumn(error: unknown, columnName: string) {
+  const message = extractErrorMessage(error);
+  if (!message) return false;
+  return message.includes(`${MISSING_COLUMN_PREFIX}${columnName}\``) && message.includes("does not exist");
 }
 
 function delay(ms: number) {

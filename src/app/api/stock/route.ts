@@ -172,7 +172,7 @@ export async function GET(req: Request) {
   const [items, stockSummaryMaps] = await Promise.all([
     prisma.item.findMany({
       orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
-      select: { itemId: true, nombre: true, activo: true, ordenPdf: true, existenciaSie: true },
+      select: { itemId: true, nombre: true, tipo: true, activo: true, ordenPdf: true, existenciaSie: true },
     }),
     buildStockSummaryMaps(prisma),
   ]);
@@ -276,8 +276,10 @@ export async function GET(req: Request) {
     const stockDeposito = stockUnidad - stockSubalternos - stockPrestamo;
 
     return {
+      equipoId: key,
       itemId: key,
       nombre: item.nombre,
+      tipo: item.tipo,
       ordenPdf: item.ordenPdf,
       apareceEnHoja: item.activo,
       existenciaSie: item.existenciaSie,

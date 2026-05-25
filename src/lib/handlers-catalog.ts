@@ -4,6 +4,7 @@
  */
 
 import { api } from "@/lib/api";
+import type { TipoArticulo, TipoEquipo } from "@/types/entities";
 
 interface CallbackProps {
   onSuccess: (data?: unknown) => void;
@@ -114,7 +115,7 @@ export async function deleteBateriaHandler(bateriaId: number, callbacks: Callbac
 
 // ==================== ARTICULOS ====================
 
-export async function createArticuloHandler(nombre: string, tipo: "OFICINA" | "LIMPIEZA", callbacks: CallbackProps) {
+export async function createArticuloHandler(nombre: string, tipo: TipoArticulo, callbacks: CallbackProps) {
   try {
     await api("/api/articulos", {
       method: "POST",
@@ -132,7 +133,7 @@ export async function createArticuloHandler(nombre: string, tipo: "OFICINA" | "L
 export async function updateArticuloHandler(
   articuloId: number,
   nombre: string,
-  tipo: "OFICINA" | "LIMPIEZA",
+  tipo: TipoArticulo,
   callbacks: CallbackProps
 ) {
   try {
@@ -180,18 +181,19 @@ export async function ingresarStockArticuloHandler(
   }
 }
 
-// ==================== ITEMS ====================
+// ==================== EQUIPOS ====================
 
-export async function createItemHandler(
+export async function createEquipoHandler(
   nombre: string,
+  tipo: TipoEquipo,
   activo: boolean,
   callbacks: CallbackProps
 ) {
   try {
-    await api("/api/items", {
+    await api("/api/equipos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, activo }),
+      body: JSON.stringify({ nombre, tipo, activo }),
     });
     callbacks.onSuccess();
   } catch (error) {
@@ -201,18 +203,19 @@ export async function createItemHandler(
   }
 }
 
-export async function updateItemHandler(
-  itemId: string,
+export async function updateEquipoHandler(
+  equipoId: string,
   nombre: string,
+  tipo: TipoEquipo,
   activo: boolean,
   ordenPdf: number,
   callbacks: CallbackProps
 ) {
   try {
-    await api(`/api/items/${itemId}`, {
+    await api(`/api/equipos/${equipoId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, activo, ordenPdf }),
+      body: JSON.stringify({ nombre, tipo, activo, ordenPdf }),
     });
     callbacks.onSuccess();
   } catch (error) {
@@ -222,9 +225,9 @@ export async function updateItemHandler(
   }
 }
 
-export async function deleteItemHandler(itemId: string, callbacks: CallbackProps) {
+export async function deleteEquipoHandler(equipoId: string, callbacks: CallbackProps) {
   try {
-    await api(`/api/items/${itemId}`, { method: "DELETE" });
+    await api(`/api/equipos/${equipoId}`, { method: "DELETE" });
     callbacks.onSuccess();
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo eliminar el equipo.";
@@ -233,13 +236,15 @@ export async function deleteItemHandler(itemId: string, callbacks: CallbackProps
   }
 }
 
-export type ItemMergeResult = {
+export type EquipoMergeResult = {
   ok: boolean;
   sourceItem: {
+    equipoId: string;
     itemId: string;
     nombre: string;
   };
   targetItem: {
+    equipoId: string;
     itemId: string;
     nombre: string;
   };
@@ -255,12 +260,12 @@ export type ItemMergeResult = {
   };
 };
 
-export async function mergeItemHandler(sourceItemId: string, targetItemId: string, callbacks: CallbackProps) {
+export async function mergeEquipoHandler(sourceEquipoId: string, targetEquipoId: string, callbacks: CallbackProps) {
   try {
-    const result = await api<ItemMergeResult>(`/api/items/${sourceItemId}`, {
+    const result = await api<EquipoMergeResult>(`/api/equipos/${sourceEquipoId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ targetItemId }),
+      body: JSON.stringify({ targetEquipoId }),
     });
     callbacks.onSuccess(result);
     return result;
@@ -271,8 +276,9 @@ export async function mergeItemHandler(sourceItemId: string, targetItemId: strin
   }
 }
 
-export type ItemDeleteImpact = {
+export type EquipoDeleteImpact = {
   item: {
+    equipoId: string;
     itemId: string;
     nombre: string;
   };
@@ -319,9 +325,9 @@ export type ItemDeleteImpact = {
   }>;
 };
 
-export async function loadItemDeleteImpactHandler(itemId: string, callbacks: CallbackProps) {
+export async function loadEquipoDeleteImpactHandler(equipoId: string, callbacks: CallbackProps) {
   try {
-    const result = await api<ItemDeleteImpact>(`/api/items/${itemId}`, { method: "GET" });
+    const result = await api<EquipoDeleteImpact>(`/api/equipos/${equipoId}`, { method: "GET" });
     callbacks.onSuccess(result);
     return result;
   } catch (error) {
@@ -331,16 +337,16 @@ export async function loadItemDeleteImpactHandler(itemId: string, callbacks: Cal
   }
 }
 
-export async function updateMultipleItemOrdersHandler(
-  orderedItemIds: string[],
+export async function updateMultipleEquipoOrdersHandler(
+  orderedEquipoIds: string[],
   callbacks: CallbackProps,
   activo = true,
 ) {
   try {
-    await api("/api/items", {
+    await api("/api/equipos", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderedItemIds, activo }),
+      body: JSON.stringify({ orderedItemIds: orderedEquipoIds, activo }),
     });
     callbacks.onSuccess();
   } catch (error) {
@@ -349,6 +355,16 @@ export async function updateMultipleItemOrdersHandler(
     throw error;
   }
 }
+
+export type ItemMergeResult = EquipoMergeResult;
+export type ItemDeleteImpact = EquipoDeleteImpact;
+
+export const createItemHandler = createEquipoHandler;
+export const updateItemHandler = updateEquipoHandler;
+export const deleteItemHandler = deleteEquipoHandler;
+export const mergeItemHandler = mergeEquipoHandler;
+export const loadItemDeleteImpactHandler = loadEquipoDeleteImpactHandler;
+export const updateMultipleItemOrdersHandler = updateMultipleEquipoOrdersHandler;
 
 export async function entregarArticulosPersonalHandler(
   personalCi: string,
@@ -372,4 +388,3 @@ export async function entregarArticulosPersonalHandler(
     throw error;
   }
 }
-

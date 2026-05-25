@@ -9,7 +9,7 @@ type EquipoCreateViewProps = {
   saving: boolean;
   onBack: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onChange: (key: keyof Pick<EquipoForm, "nombre" | "activo">, value: string | boolean) => void;
+  onChange: (key: keyof Pick<EquipoForm, "nombre" | "tipo" | "activo">, value: string | boolean) => void;
 };
 
 export function EquipoCreateView({ form, saving, onBack, onSubmit, onChange }: EquipoCreateViewProps) {
@@ -45,6 +45,18 @@ export function EquipoCreateView({ form, saving, onBack, onSubmit, onChange }: E
                 placeholder="Nuevo equipo"
                 className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
               />
+            </label>
+
+            <label className="mt-4 block">
+              <span className="block text-xs font-medium text-stone-700">Tipo de equipo *</span>
+              <select
+                value={form.tipo}
+                onChange={(event) => onChange("tipo", event.target.value)}
+                className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
+              >
+                <option value="GENERAL">General</option>
+                <option value="FRI">FRI</option>
+              </select>
             </label>
 
             <label className="mt-4 flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5">

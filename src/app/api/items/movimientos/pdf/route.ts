@@ -16,9 +16,9 @@ export async function GET(request: Request) {
 
   try {
     const url = new URL(request.url);
-    const itemId = parseEquipoMovimientoItemId(url.searchParams.get("itemId"));
+    const itemId = parseEquipoMovimientoItemId(url.searchParams.get("equipoId") ?? url.searchParams.get("itemId"));
     if (!itemId) {
-      return NextResponse.json({ error: "itemId invalido." }, { status: 400 });
+      return NextResponse.json({ error: "equipoId invalido." }, { status: 400 });
     }
 
     const sort = parseMovimientosEquipoSort(
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
     return new NextResponse(pdfBlob, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="movimientos-equipo-${data.selectedItem.itemId}-${new Date().getTime()}.pdf"`,
+        "Content-Disposition": `inline; filename="movimientos-equipo-${data.selectedItem.equipoId}-${new Date().getTime()}.pdf"`,
       },
     });
   } catch (error) {
