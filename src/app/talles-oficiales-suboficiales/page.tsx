@@ -9,6 +9,7 @@ import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
 import { tallasMap } from "@/lib/form-mappers";
+import { buildDynamicTallaColumnWidths } from "@/lib/personal-tallas-print-layout";
 import { prisma } from "@/lib/prisma";
 import { compareRanks } from "@/lib/rank-order";
 import { TALLA_KEYS, TALLA_LABELS } from "@/lib/tallas";
@@ -114,6 +115,14 @@ export default async function TallesOficialesSuboficialesPage({
     if (byNombre2 !== 0) return byNombre2;
     return a.ci.localeCompare(b.ci, "es", { sensitivity: "base" });
   });
+  const registrosRows = registros.map((registro) => ({
+    ...registro,
+    talles: tallasMap(registro.tallas),
+  }));
+  const tallaColumnWidths = buildDynamicTallaColumnWidths(
+    38,
+    registrosRows.map((registro) => registro.talles),
+  );
 
   const printedAt = new Date();
   const generatedAt = formatDateTimeForDisplay(printedAt);
@@ -201,6 +210,9 @@ export default async function TallesOficialesSuboficialesPage({
           font-size: 10pt;
           font-weight: 700;
           text-align: left;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          line-height: 1.1;
         }
 
         td {
@@ -212,27 +224,16 @@ export default async function TallesOficialesSuboficialesPage({
         }
 
         .col-index {
-          width: 6%;
           font-weight: 700;
           text-align: center;
         }
 
         .col-grado {
-          width: 10%;
           font-weight: 700;
           text-align: center;
         }
 
-        .col-nombre {
-          width: 22%;
-        }
-
-        .col-apellido {
-          width: 22%;
-        }
-
         .col-tipo {
-          width: 10%;
           font-size: 10pt;
           font-weight: 700;
           text-align: center;
@@ -294,13 +295,13 @@ export default async function TallesOficialesSuboficialesPage({
         <section className="table-wrap">
           <table>
             <colgroup>
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "22%" }} />
-              <col style={{ width: "22%" }} />
-              <col style={{ width: "10%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "20%" }} />
+              <col style={{ width: "20%" }} />
+              <col style={{ width: "8%" }} />
               {TALLA_KEYS.map((key) => (
-                <col key={`col-${key}`} style={{ width: "6%" }} />
+                <col key={`col-${key}`} style={{ width: tallaColumnWidths[key] }} />
               ))}
             </colgroup>
             <thead>
@@ -316,8 +317,7 @@ export default async function TallesOficialesSuboficialesPage({
               </tr>
             </thead>
             <tbody>
-              {registros.map((registro, index) => {
-                const talles = tallasMap(registro.tallas);
+              {registrosRows.map((registro, index) => {
                 const typeLabel = registro.rango.tipo === TipoPersonal.OFICIAL ? "Oficial" : "Suboficial";
                 return (
                   <tr key={`${registro.rango.tipo}-${registro.ci}`}>
@@ -328,7 +328,7 @@ export default async function TallesOficialesSuboficialesPage({
                     <td className="col-tipo">{typeLabel}</td>
                     {TALLA_KEYS.map((key) => (
                       <td key={`${registro.ci}-${key}`} className="talla-value">
-                        {talles[key] !== "-" ? talles[key] : "Sin dato"}
+                        {registro.talles[key] !== "-" ? registro.talles[key] : "Sin dato"}
                       </td>
                     ))}
                   </tr>

@@ -7,8 +7,10 @@ import {
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { tallasMap } from "@/lib/form-mappers";
+import { buildDynamicTallaColumnWidths } from "@/lib/personal-tallas-print-layout";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
+import { TALLA_KEYS, TALLA_LABELS } from "@/lib/tallas";
 import { TipoPersonal } from "@/generated/prisma/client";
 
 export const revalidate = 0;
@@ -56,6 +58,14 @@ export default async function TallasUnidadPage({
   });
 
   personal.sort(comparePersonalByHierarchy);
+  const personalRows = personal.map((persona) => ({
+    ...persona,
+    talles: tallasMap(persona.tallas),
+  }));
+  const tallaColumnWidths = buildDynamicTallaColumnWidths(
+    40,
+    personalRows.map((persona) => persona.talles),
+  );
 
   const printedAt = new Date();
   const generatedAt = formatDateTimeForDisplay(printedAt);
@@ -125,10 +135,9 @@ export default async function TallasUnidadPage({
         col.col-numero { width: 4%; }
         col.col-ci { width: 10%; }
         col.col-grado { width: 8%; }
-        col.col-apellidos { width: 14%; }
-        col.col-nombres { width: 13%; }
-        col.col-bateria { width: 14%; }
-        col.col-talla { width: 7.4%; }
+        col.col-apellidos { width: 13%; }
+        col.col-nombres { width: 12%; }
+        col.col-bateria { width: 13%; }
 
         thead {
           display: table-header-group;
@@ -149,6 +158,9 @@ export default async function TallasUnidadPage({
           font-size: 9pt;
           font-weight: 700;
           text-align: center;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          line-height: 1.1;
         }
 
         tbody td {
@@ -206,11 +218,9 @@ export default async function TallasUnidadPage({
               <col className="col-apellidos" />
               <col className="col-nombres" />
               <col className="col-bateria" />
-              <col className="col-talla" />
-              <col className="col-talla" />
-              <col className="col-talla" />
-              <col className="col-talla" />
-              <col className="col-talla" />
+              {TALLA_KEYS.map((key) => (
+                <col key={`col-${key}`} style={{ width: tallaColumnWidths[key] }} />
+              ))}
             </colgroup>
             <thead>
               <tr>
@@ -220,17 +230,13 @@ export default async function TallasUnidadPage({
                 <th>Apellidos</th>
                 <th>Nombres</th>
                 <th>Batería</th>
-                <th>Parka</th>
-                <th>Camisaco</th>
-                <th>Pantalón</th>
-                <th>Kepi</th>
-                <th>Calzado</th>
+                {TALLA_KEYS.map((key) => (
+                  <th key={`head-${key}`}>{TALLA_LABELS[key]}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {personal.map((persona, index) => {
-                const tallas = tallasMap(persona.tallas);
-
+              {personalRows.map((persona, index) => {
                 return (
                   <tr key={persona.ci}>
                     <td className="cell-center cell-strong">{index + 1}</td>
@@ -239,11 +245,11 @@ export default async function TallasUnidadPage({
                     <td>{buildApellidos(persona)}</td>
                     <td>{buildNombres(persona)}</td>
                     <td>{persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
-                    <td className="cell-center">{tallas.PARKA !== "-" ? tallas.PARKA : "Sin dato"}</td>
-                    <td className="cell-center">{tallas.CAMISACO !== "-" ? tallas.CAMISACO : "Sin dato"}</td>
-                    <td className="cell-center">{tallas.PANTALON !== "-" ? tallas.PANTALON : "Sin dato"}</td>
-                    <td className="cell-center">{tallas.KEPI !== "-" ? tallas.KEPI : "Sin dato"}</td>
-                    <td className="cell-center">{tallas.CALZADO !== "-" ? tallas.CALZADO : "Sin dato"}</td>
+                    {TALLA_KEYS.map((key) => (
+                      <td key={`${persona.ci}-${key}`} className="cell-center">
+                        {persona.talles[key] !== "-" ? persona.talles[key] : "Sin dato"}
+                      </td>
+                    ))}
                   </tr>
                 );
               })}

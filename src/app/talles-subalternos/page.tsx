@@ -9,6 +9,7 @@ import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
 import { tallasMap } from "@/lib/form-mappers";
+import { buildDynamicTallaColumnWidths } from "@/lib/personal-tallas-print-layout";
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
 import { TALLA_KEYS, TALLA_LABELS } from "@/lib/tallas";
@@ -62,6 +63,14 @@ export default async function TallesSubalternosPage({
   ]);
 
   personal.sort(comparePersonalByHierarchy);
+  const personalRows = personal.map((persona) => ({
+    ...persona,
+    talles: tallasMap(persona.tallas),
+  }));
+  const tallaColumnWidths = buildDynamicTallaColumnWidths(
+    41,
+    personalRows.map((persona) => persona.talles),
+  );
   const printedAt = new Date();
   const generatedAt = formatDateTimeForDisplay(printedAt);
   const institutionalPrintDate = formatInstitutionalPrintDate(printedAt);
@@ -148,6 +157,9 @@ export default async function TallesSubalternosPage({
           font-size: 10pt;
           font-weight: 700;
           text-align: left;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          line-height: 1.1;
         }
 
         td {
@@ -159,27 +171,16 @@ export default async function TallesSubalternosPage({
         }
 
         .col-index {
-          width: 6%;
           font-weight: 700;
           text-align: center;
         }
 
         .col-grado {
-          width: 10%;
           font-weight: 700;
           text-align: center;
         }
 
-        .col-nombre {
-          width: 18%;
-        }
-
-        .col-apellido {
-          width: 20%;
-        }
-
         .col-bateria {
-          width: 10%;
           text-align: center;
         }
 
@@ -239,13 +240,13 @@ export default async function TallesSubalternosPage({
         <section className="table-wrap">
           <table>
             <colgroup>
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "20%" }} />
-              <col style={{ width: "10%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "19%" }} />
+              <col style={{ width: "9%" }} />
               {TALLA_KEYS.map((key) => (
-                <col key={`col-${key}`} style={{ width: "7.2%" }} />
+                <col key={`col-${key}`} style={{ width: tallaColumnWidths[key] }} />
               ))}
             </colgroup>
             <thead>
@@ -261,8 +262,7 @@ export default async function TallesSubalternosPage({
               </tr>
             </thead>
             <tbody>
-              {personal.map((persona, index) => {
-                const talles = tallasMap(persona.tallas);
+              {personalRows.map((persona, index) => {
                 return (
                   <tr key={persona.ci}>
                     <td className="col-index">{index + 1}</td>
@@ -272,7 +272,7 @@ export default async function TallesSubalternosPage({
                     <td className="col-bateria">{persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
                     {TALLA_KEYS.map((key) => (
                       <td key={`${persona.ci}-${key}`} className="talla-value">
-                        {talles[key] !== "-" ? talles[key] : "Sin dato"}
+                        {persona.talles[key] !== "-" ? persona.talles[key] : "Sin dato"}
                       </td>
                     ))}
                   </tr>
