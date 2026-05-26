@@ -90,6 +90,8 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
       FROM movimiento_item mi
       INNER JOIN movimiento m
         ON m.movimiento_id = mi.movimiento_id
+      INNER JOIN movimiento_destinatario_personal mdp
+        ON mdp.movimiento_id = m.movimiento_id
       WHERE m.tipo IN ('ENTREGA', 'DEVOLUCION')
       GROUP BY mi.item_id
     `,
@@ -216,6 +218,9 @@ export async function buildPersonalByItemMap(prisma: PrismaLike) {
     where: {
       tipo: {
         in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION],
+      },
+      destinatarioPersonal: {
+        isNot: null,
       },
     },
     select: {

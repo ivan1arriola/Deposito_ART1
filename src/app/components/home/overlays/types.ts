@@ -78,7 +78,7 @@ export type HomeOverlaysLayerProps = {
   addRegistroItem: () => void;
   removeRegistroItem: (index: number) => void;
   deleteRegistro: (registro: RegistroView) => void;
-  saveRegistro: () => Promise<void>;
+  saveRegistro: (printAfterSave?: boolean) => Promise<void>;
   personalObservacionDraft: PersonalObservacionDraft | null;
   personalObservacionSaving: boolean;
   setPersonalObservacionDraft: Dispatch<SetStateAction<PersonalObservacionDraft | null>>;

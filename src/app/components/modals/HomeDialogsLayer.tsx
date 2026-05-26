@@ -66,7 +66,10 @@ type HomeDialogsLayerProps = {
   maxFechaIngreso: string;
   registroSaving: boolean;
   onCloseRegistroEditor: () => void;
-  onRegistroDraftChange: (field: "fecha" | "comentarios", value: string) => void;
+  onRegistroDraftChange: (
+    field: "fecha" | "comentarios" | "destinatarioTipo" | "recintoClase" | "recintoNombre",
+    value: string,
+  ) => void;
   onToggleRegistroIncluirFueraDeHoja: () => void;
   onToggleRegistroDestinatario: (ci: string) => void;
   onSelectAllRegistroDestinatarios: () => void;
@@ -75,6 +78,7 @@ type HomeDialogsLayerProps = {
   onAddRegistroItem: () => void;
   onRemoveRegistroItem: (index: number) => void;
   onSubmitRegistro: () => void;
+  onSubmitRegistroAndPrint: () => void;
   personalObservacionDraft: PersonalObservacionDraft | null;
   personalObservacionSaving: boolean;
   onClosePersonalObservacion: () => void;
@@ -144,6 +148,7 @@ export function HomeDialogsLayer({
   onAddRegistroItem,
   onRemoveRegistroItem,
   onSubmitRegistro,
+  onSubmitRegistroAndPrint,
   personalObservacionDraft,
   personalObservacionSaving,
   onClosePersonalObservacion,
@@ -226,6 +231,9 @@ export function HomeDialogsLayer({
         onClose={onCloseRegistroEditor}
         onDateChange={(value) => onRegistroDraftChange("fecha", value)}
         onComentariosChange={(value) => onRegistroDraftChange("comentarios", value)}
+        onDestinatarioTipoChange={(value) => onRegistroDraftChange("destinatarioTipo", value)}
+        onRecintoClaseChange={(value) => onRegistroDraftChange("recintoClase", value)}
+        onRecintoNombreChange={(value) => onRegistroDraftChange("recintoNombre", value)}
         onToggleIncluirFueraDeHoja={onToggleRegistroIncluirFueraDeHoja}
         onToggleDestinatario={onToggleRegistroDestinatario}
         onSelectAllDestinatarios={onSelectAllRegistroDestinatarios}
@@ -234,6 +242,7 @@ export function HomeDialogsLayer({
         onAddItem={onAddRegistroItem}
         onRemoveItem={onRemoveRegistroItem}
         onSubmit={onSubmitRegistro}
+        onSubmitAndPrint={onSubmitRegistroAndPrint}
       />
 
       <PersonalObservacionModal

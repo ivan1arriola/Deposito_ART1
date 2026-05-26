@@ -409,6 +409,7 @@ model Movimiento {
   usuarioEntrega    Usuario            @relation("movimiento_usuario_entrega", fields: [usuarioEntregaId], references: [usuarioId])
   destinatarioPersonal MovimientoDestinatarioPersonal?
   destinatarioExterno MovimientoDestinatarioExterno?
+  destinatarioRecinto MovimientoDestinatarioRecinto?
   items             MovimientoItem[]
   prestamoActivo    PrestamoActivo?
   prestamoHistorial PrestamoHistorial?
@@ -436,6 +437,17 @@ model MovimientoDestinatarioExterno {
 
   @@index([personaExternaCi])
   @@map("movimiento_destinatario_externo")
+}
+
+model MovimientoDestinatarioRecinto {
+  movimientoId BigInt     @id @map("movimiento_id")
+  clase        String     @db.VarChar(16)
+  nombre       String
+  movimiento   Movimiento @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
+
+  @@index([clase])
+  @@index([nombre])
+  @@map("movimiento_destinatario_recinto")
 }
 
 model MovimientoItem {

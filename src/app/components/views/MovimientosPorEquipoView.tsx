@@ -32,7 +32,11 @@ type RegistroMovimientoDetail = {
   fecha: string;
   tipo: "ENTREGA" | "DEVOLUCION";
   comentarios: string | null;
+  destinatarioTipo: "PERSONAL" | "RECINTO";
+  recintoClase: string | null;
+  recintoNombre: string | null;
   ci: string;
+  perfilCi: string | null;
   persona: string;
   bateria: string | null;
   usuarioEntregaId: string;
@@ -534,10 +538,10 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                               className="font-mono text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
                               title="Ver ficha completa"
                             >
-                              {row.ci ?? "-"}
+                              {row.ci || "-"}
                             </button>
                           ) : (
-                            <span className="font-mono">{row.ci ?? "-"}</span>
+                            <span className="font-mono">{row.ci || "-"}</span>
                           )}
                         </td>
                         <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.gradoAbreviacion}</td>
@@ -660,17 +664,25 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                       <p className="text-sm text-stone-600">{originDialog.registro.tipo} | {originDialog.registro.fecha}</p>
                     </header>
                     <div className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700 md:grid-cols-2">
-                      <p><span className="font-semibold text-stone-900">Persona:</span> {originDialog.registro.persona}</p>
-                      <p>
-                        <span className="font-semibold text-stone-900">CI:</span>{" "}
-                        <button
-                          type="button"
-                          onClick={() => void openPersonaProfile(originDialog.registro.ci)}
-                          className="font-mono text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
-                        >
-                          {originDialog.registro.ci}
-                        </button>
-                      </p>
+                      <p><span className="font-semibold text-stone-900">Destinatario:</span> {originDialog.registro.persona}</p>
+                      {originDialog.registro.destinatarioTipo === "PERSONAL" ? (
+                        <p>
+                          <span className="font-semibold text-stone-900">CI:</span>{" "}
+                          {originDialog.registro.perfilCi ? (
+                            <button
+                              type="button"
+                              onClick={() => void openPersonaProfile(originDialog.registro.perfilCi!)}
+                              className="font-mono text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900"
+                            >
+                              {originDialog.registro.ci}
+                            </button>
+                          ) : (
+                            <span className="font-mono">{originDialog.registro.ci || "-"}</span>
+                          )}
+                        </p>
+                      ) : (
+                        <p><span className="font-semibold text-stone-900">Clase de recinto:</span> {originDialog.registro.recintoClase ?? "-"}</p>
+                      )}
                       <p><span className="font-semibold text-stone-900">Batería:</span> {originDialog.registro.bateria ?? "-"}</p>
                       <p><span className="font-semibold text-stone-900">Registrado por:</span> {originDialog.registro.usuarioEntregaNombre}</p>
                     </div>
@@ -692,7 +704,14 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                         </p>
                       ))}
                     </section>
-                    <footer className="flex justify-end border-t border-stone-200 pt-3">
+                    <footer className="flex flex-wrap justify-end gap-2 border-t border-stone-200 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => window.open(`/api/registros/${encodeURIComponent(originDialog.registro.registroId)}/recibo`, "_blank")}
+                        className="rounded-lg bg-indigo-700 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-800"
+                      >
+                        Abrir recibo
+                      </button>
                       <button
                         type="button"
                         onClick={() => setOriginDialog(null)}

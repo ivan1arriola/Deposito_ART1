@@ -169,7 +169,25 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
         maxFechaIngreso={maxFechaIngreso}
         registroSaving={registroSaving}
         onCloseRegistroEditor={() => setRegistroDraft(null)}
-        onRegistroDraftChange={(field: "fecha" | "comentarios", value: string) => setRegistroDraft((prev) => (prev ? { ...prev, [field]: value } : prev))}
+        onRegistroDraftChange={(
+          field: "fecha" | "comentarios" | "destinatarioTipo" | "recintoClase" | "recintoNombre",
+          value: string,
+        ) =>
+          setRegistroDraft((prev) => {
+            if (!prev) return prev;
+            if (field === "destinatarioTipo") {
+              const nextTipo = value as "PERSONAL" | "RECINTO";
+              return {
+                ...prev,
+                destinatarioTipo: nextTipo,
+                ciList: nextTipo === "PERSONAL" ? prev.ciList : [],
+                ci: nextTipo === "PERSONAL" ? prev.ci : "",
+                recintoNombre: nextTipo === "RECINTO" ? prev.recintoNombre : "",
+              };
+            }
+            return { ...prev, [field]: value };
+          })
+        }
         onToggleRegistroIncluirFueraDeHoja={() =>
           setRegistroDraft((prev) => (prev ? { ...prev, incluirFueraDeHoja: !prev.incluirFueraDeHoja } : prev))
         }
@@ -181,6 +199,7 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
         onRemoveRegistroItem={removeRegistroItem}
         onDeleteRegistro={deleteRegistro}
         onSubmitRegistro={() => void saveRegistro()}
+        onSubmitRegistroAndPrint={() => void saveRegistro(true)}
         personalObservacionDraft={personalObservacionDraft}
         personalObservacionSaving={personalObservacionSaving}
         onClosePersonalObservacion={() => setPersonalObservacionDraft(null)}

@@ -188,6 +188,12 @@ async function buildDeleteImpactData(
                 },
               },
             },
+            destinatarioRecinto: {
+              select: {
+                clase: true,
+                nombre: true,
+              },
+            },
             _count: {
               select: { items: true },
             },

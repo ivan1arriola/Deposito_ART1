@@ -129,6 +129,12 @@ export async function getMovimientosEquipoData(itemId: bigint | null = null): Pr
               },
             },
           },
+          destinatarioRecinto: {
+            select: {
+              clase: true,
+              nombre: true,
+            },
+          },
           prestamoActivo: {
             select: {
               estado: true,

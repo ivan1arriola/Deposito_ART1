@@ -1,6 +1,7 @@
 "use client";
 
 import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded";
+import ApartmentRoundedIcon from "@mui/icons-material/ApartmentRounded";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import ForwardToInboxOutlinedIcon from "@mui/icons-material/ForwardToInboxOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
@@ -52,6 +53,7 @@ type PersonalSectionProps = {
   emailAllDeliverySheetsDisabledReason: string | null;
   onPrintPersonnelByBattery: () => void;
   onOpenMassEntrega: () => void;
+  onOpenRecintoEntrega: () => void;
   onOpenCreate: () => void;
   onToggleTallas: (ci: string) => void;
   onDeletePersonal: (ci: string) => void;
@@ -276,6 +278,7 @@ export function PersonalSection({
   emailAllDeliverySheetsDisabledReason,
   onPrintPersonnelByBattery,
   onOpenMassEntrega,
+  onOpenRecintoEntrega,
   onOpenCreate,
   onToggleTallas,
   onDeletePersonal,
@@ -305,7 +308,7 @@ export function PersonalSection({
   const canShowAscensoBlock = Boolean(isAdmin && editingPersona && canPromoteEditPersonalToSuboficial);
 
   const actionGridClass = canWrite
-    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
     : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4";
 
   const personalConErrorReingreso = useMemo(() => {
@@ -343,6 +346,17 @@ export function PersonalSection({
               tone="emerald"
               onClick={onOpenMassEntrega}
               disabled={loading || personalFiltrado.length === 0}
+            />
+          ) : null}
+          {canWrite ? (
+            <QuickActionButton
+              eyebrow="Recintos"
+              title="Entrega a recinto"
+              description="Registra una entrega a un recinto dentro o fuera de la unidad."
+              icon={<ApartmentRoundedIcon fontSize="small" />}
+              tone="slate"
+              onClick={onOpenRecintoEntrega}
+              disabled={loading}
             />
           ) : null}
           <QuickActionButton

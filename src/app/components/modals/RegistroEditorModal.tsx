@@ -19,6 +19,9 @@ type RegistroEditorModalProps = {
   onClose: () => void;
   onDateChange: (value: string) => void;
   onComentariosChange: (value: string) => void;
+  onDestinatarioTipoChange: (value: RegistroDraft["destinatarioTipo"]) => void;
+  onRecintoClaseChange: (value: RegistroDraft["recintoClase"]) => void;
+  onRecintoNombreChange: (value: string) => void;
   onToggleIncluirFueraDeHoja: () => void;
   onToggleDestinatario: (ci: string) => void;
   onSelectAllDestinatarios: () => void;
@@ -27,6 +30,7 @@ type RegistroEditorModalProps = {
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
   onSubmit: () => void;
+  onSubmitAndPrint: () => void;
 };
 
 export function RegistroEditorModal({
@@ -39,6 +43,9 @@ export function RegistroEditorModal({
   onClose,
   onDateChange,
   onComentariosChange,
+  onDestinatarioTipoChange,
+  onRecintoClaseChange,
+  onRecintoNombreChange,
   onToggleIncluirFueraDeHoja,
   onToggleDestinatario,
   onSelectAllDestinatarios,
@@ -47,6 +54,7 @@ export function RegistroEditorModal({
   onAddItem,
   onRemoveItem,
   onSubmit,
+  onSubmitAndPrint,
 }: RegistroEditorModalProps) {
   const [destinatarioSearch, setDestinatarioSearch] = useState("");
 
@@ -81,6 +89,8 @@ export function RegistroEditorModal({
   );
   const canIncludeFueraDeHoja = draft.modo === "crear" && draft.tipo === "ENTREGA";
   const includeInactiveItems = canIncludeFueraDeHoja && draft.incluirFueraDeHoja;
+  const showPersonalDestinatarios = !isRectificacion && draft.destinatarioTipo === "PERSONAL";
+  const showRecintoFields = draft.destinatarioTipo === "RECINTO";
 
   return (
     <ModalFrame onClose={onClose} size="lg" closeOnBackdrop={false}>
@@ -96,9 +106,8 @@ export function RegistroEditorModal({
                 : "Registrar Devolución"}
           </h3>
           {isRectificacion ? <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(draft.ci)}`}</p> : null}
-          {!isRectificacion ? (
-            <p className="text-xs text-stone-600">{`Destinatarios seleccionados: ${selectedCis.length}`}</p>
-          ) : null}
+          {!isRectificacion && draft.destinatarioTipo === "PERSONAL" ? <p className="text-xs text-stone-600">{`Destinatarios seleccionados: ${selectedCis.length}`}</p> : null}
+          {!isRectificacion && draft.destinatarioTipo === "RECINTO" ? <p className="text-xs text-stone-600">Destino: recinto</p> : null}
           {draft.modo === "rectificar" && draft.registroId ? <p className="text-xs text-stone-600">{`Registro #${draft.registroId}`}</p> : null}
           {personaLabel ? <p className="text-xs font-medium text-stone-700">{`Subalterno: ${personaLabel}`}</p> : null}
         </div>
@@ -119,6 +128,20 @@ export function RegistroEditorModal({
       ) : null}
 
       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {!isRectificacion ? (
+          <label className="text-xs text-stone-700 sm:col-span-2">
+            Tipo de destinatario
+            <select
+              value={draft.destinatarioTipo}
+              disabled={saving}
+              onChange={(event) => onDestinatarioTipoChange(event.target.value as RegistroDraft["destinatarioTipo"])}
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            >
+              <option value="PERSONAL">Personal</option>
+              <option value="RECINTO">Recinto</option>
+            </select>
+          </label>
+        ) : null}
         <label className="text-xs text-stone-700">
           Fecha
           <DateTextInput
@@ -141,6 +164,33 @@ export function RegistroEditorModal({
         </label>
       </div>
 
+      {showRecintoFields ? (
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[180px_minmax(0,1fr)]">
+          <label className="text-xs text-stone-700">
+            Clase de recinto
+            <select
+              value={draft.recintoClase}
+              disabled={saving}
+              onChange={(event) => onRecintoClaseChange(event.target.value as RegistroDraft["recintoClase"])}
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            >
+              <option value="INTERNO">Dentro de la unidad</option>
+              <option value="EXTERNO">Fuera de la unidad</option>
+            </select>
+          </label>
+          <label className="text-xs text-stone-700">
+            Nombre del recinto
+            <input
+              value={draft.recintoNombre}
+              disabled={saving}
+              onChange={(event) => onRecintoNombreChange(event.target.value)}
+              placeholder="Ej.: Batería A / Ministerio de Defensa"
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+      ) : null}
+
       {canIncludeFueraDeHoja ? (
         <label className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           <input
@@ -156,7 +206,7 @@ export function RegistroEditorModal({
         </label>
       ) : null}
 
-      {!isRectificacion ? (
+      {showPersonalDestinatarios ? (
         <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">Destinatarios</p>
@@ -272,20 +322,32 @@ export function RegistroEditorModal({
             Equipo
           </button>
         </div>
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={saving}
-          className="rounded bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {saving
-            ? draft.modo === "rectificar"
-              ? "Guardando rectificación..."
-              : "Guardando movimiento..."
-            : draft.modo === "rectificar"
-              ? "Guardar rectificación"
-              : "Guardar movimiento"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {draft.modo === "crear" && draft.destinatarioTipo === "RECINTO" ? (
+            <button
+              type="button"
+              onClick={onSubmitAndPrint}
+              disabled={saving}
+              className="rounded border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? "Preparando..." : "Guardar e imprimir recibo"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={saving}
+            className="rounded bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving
+              ? draft.modo === "rectificar"
+                ? "Guardando rectificación..."
+                : "Guardando movimiento..."
+              : draft.modo === "rectificar"
+                ? "Guardar rectificación"
+                : "Guardar movimiento"}
+          </button>
+        </div>
       </div>
     </ModalFrame>
   );

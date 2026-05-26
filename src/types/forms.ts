@@ -21,7 +21,7 @@ export type { PrestamoDestinatarioTipo } from "./forms/PrestamoDestinatarioTipo"
 export type { PrestamoDraft } from "./forms/PrestamoDraft";
 export type { PrestamoDraftItem } from "./forms/PrestamoDraftItem";
 export type { PrestamoEstadoEquipo } from "./forms/PrestamoEstadoEquipo";
-export type { RegistroDraft } from "./forms/RegistroDraft";
+export type { RegistroDraft, RegistroDestinatarioTipo, RegistroRecintoClase } from "./forms/RegistroDraft";
 export type { RegistroDraftEquipo } from "./forms/RegistroDraftEquipo";
 export type { RegistroDraftItem } from "./forms/RegistroDraftItem";
 export type { StockOperacionDraft } from "./forms/StockOperacionDraft";

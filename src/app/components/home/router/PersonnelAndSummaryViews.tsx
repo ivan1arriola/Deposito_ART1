@@ -47,6 +47,7 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
     bulkDeliveryEmailDisabledReason,
     printPersonnelByBattery,
     openMassRegistro,
+    openRecintoRegistro,
     setActiveView,
     toggleTallas,
     deletePersonal,
@@ -137,6 +138,7 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
           emailAllDeliverySheetsDisabledReason={bulkDeliveryEmailDisabledReason}
           onPrintPersonnelByBattery={printPersonnelByBattery}
           onOpenMassEntrega={() => openMassRegistro("ENTREGA")}
+          onOpenRecintoEntrega={() => openRecintoRegistro("ENTREGA")}
           onOpenCreate={() => setActiveView("personal_nuevo")}
           onToggleTallas={toggleTallas}
           onDeletePersonal={(ci) => void deletePersonal(ci)}

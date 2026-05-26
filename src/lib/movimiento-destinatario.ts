@@ -28,14 +28,20 @@ type PersonaExternaShape = {
   unidadDestino: string;
 };
 
+type RecintoDestinatarioShape = {
+  clase: string;
+  nombre: string;
+};
+
 type DestinatarioSource = {
   destinatarioPersonal?: { personal: PersonalDestinatarioShape } | null;
   destinatarioExterno?: { personaExterna: PersonaExternaShape } | null;
+  destinatarioRecinto?: RecintoDestinatarioShape | null;
 };
 
 export type DestinatarioMovimientoResumen = {
   clase: "INTERNO" | "EXTERNO";
-  tipo: "PERSONAL" | "OFICIAL" | "SUBOFICIAL" | "EXTERNO";
+  tipo: "PERSONAL" | "OFICIAL" | "SUBOFICIAL" | "EXTERNO" | "RECINTO";
   ci: string;
   perfilCi: string | null;
   nombre: string;
@@ -79,6 +85,16 @@ export function buildPersonaExternaEtiqueta(personaExterna: PersonaExternaShape)
   return joinNames(personaExterna.grado, buildPersonaExternaNombre(personaExterna));
 }
 
+export function normalizeRecintoClase(value: string | null | undefined) {
+  const normalized = String(value ?? "").trim().toUpperCase();
+  if (normalized === "EXTERNO") return "EXTERNO" as const;
+  return "INTERNO" as const;
+}
+
+export function buildRecintoDestinatarioEtiqueta(recinto: RecintoDestinatarioShape) {
+  return joinNames(recinto.nombre);
+}
+
 export function resolveDestinatarioMovimiento(source: DestinatarioSource): DestinatarioMovimientoResumen | null {
   if (source.destinatarioPersonal?.personal) {
     const personal = source.destinatarioPersonal.personal;
@@ -110,6 +126,25 @@ export function resolveDestinatarioMovimiento(source: DestinatarioSource): Desti
       gradoAbreviacion: null,
       gradoOrden: null,
       unidadDestino: personaExterna.unidadDestino,
+      bateria: null,
+    };
+  }
+
+  if (source.destinatarioRecinto) {
+    const recinto = source.destinatarioRecinto;
+    const clase = normalizeRecintoClase(recinto.clase);
+    const etiqueta = buildRecintoDestinatarioEtiqueta(recinto);
+    return {
+      clase,
+      tipo: "RECINTO",
+      ci: "",
+      perfilCi: null,
+      nombre: etiqueta,
+      etiqueta,
+      grado: clase === "EXTERNO" ? "Recinto externo" : "Recinto interno",
+      gradoAbreviacion: "RECINTO",
+      gradoOrden: null,
+      unidadDestino: clase === "EXTERNO" ? "Fuera de la unidad" : "Dentro de la unidad",
       bateria: null,
     };
   }

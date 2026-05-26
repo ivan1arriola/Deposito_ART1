@@ -102,6 +102,20 @@ export type PrestamoWithRelations = Prisma.MovimientoGetPayload<{
   include: typeof prestamoInclude;
 }>;
 
+type PrestamoDestinatarioResumen = {
+  clase: "INTERNO" | "EXTERNO" | "PENDIENTE";
+  tipo: "PERSONAL" | "OFICIAL" | "SUBOFICIAL" | "EXTERNO" | null;
+  ci: string | null;
+  perfilCi: string | null;
+  nombre: string;
+  etiqueta: string;
+  grado: string | null;
+  gradoAbreviacion: string | null;
+  gradoOrden: number | null;
+  unidadDestino: string | null;
+  bateria: string | null;
+};
+
 function formatUserLabel(user: {
   rango: { abreviacion: string };
   apellido: string;
@@ -113,9 +127,23 @@ function formatUserLabel(user: {
 
 export function formatPrestamoDestinatario(
   data: Pick<PrestamoWithRelations, "destinatarioPersonal" | "destinatarioExterno">,
-) {
+): PrestamoDestinatarioResumen {
   const destinatario = resolveDestinatarioMovimiento(data);
-  if (destinatario) return destinatario;
+  if (destinatario && destinatario.tipo !== "RECINTO") {
+    return {
+      clase: destinatario.clase,
+      tipo: destinatario.tipo,
+      ci: destinatario.ci,
+      perfilCi: destinatario.perfilCi,
+      nombre: destinatario.nombre,
+      etiqueta: destinatario.etiqueta,
+      grado: destinatario.grado,
+      gradoAbreviacion: destinatario.gradoAbreviacion,
+      gradoOrden: destinatario.gradoOrden,
+      unidadDestino: destinatario.unidadDestino,
+      bateria: destinatario.bateria,
+    };
+  }
   return {
     clase: "PENDIENTE" as const,
     tipo: null,

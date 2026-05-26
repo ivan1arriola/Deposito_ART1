@@ -6,6 +6,7 @@ import { logAudit } from "@/lib/audit";
 import { notifyAdminOnMovement } from "@/lib/notify-admins";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { isValidUruguayanCi } from "@/lib/ci";
+import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -23,11 +24,27 @@ type MovimientoItemPayload = {
 type MovimientoPayload = {
   ci?: string;
   ciList?: string[];
+  destinatarioTipo?: string;
+  recintoClase?: string;
+  recintoNombre?: string;
   fecha?: string;
   tipo: TipoMovimiento | string;
   comentarios?: string;
   items: MovimientoItemPayload[];
 };
+
+type MovimientoRecintoClase = "INTERNO" | "EXTERNO";
+
+type ParsedDestinatarioPayload =
+  | {
+      destinatarioTipo: "PERSONAL";
+      targetCis: string[];
+    }
+  | {
+      destinatarioTipo: "RECINTO";
+      recintoClase: MovimientoRecintoClase;
+      recintoNombre: string;
+    };
 
 function parseBigIntId(value: unknown) {
   if (typeof value === "bigint") return value;
@@ -74,6 +91,49 @@ function parseTargetCiList(ciValue: unknown, ciListValue: unknown) {
   return deduped;
 }
 
+function parseDestinatarioTipo(value: unknown) {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (raw === "" || raw === "PERSONAL") return "PERSONAL" as const;
+  if (raw === "RECINTO") return "RECINTO" as const;
+  return null;
+}
+
+function parseRecintoClase(value: unknown) {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (raw === "" || raw === "INTERNO") return "INTERNO" as const;
+  if (raw === "EXTERNO") return "EXTERNO" as const;
+  return null;
+}
+
+function parseRecintoNombre(value: unknown) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function parseDestinatarioPayload(candidate: Record<string, unknown>): ParsedDestinatarioPayload | null {
+  const destinatarioTipo = parseDestinatarioTipo(candidate.destinatarioTipo);
+  if (!destinatarioTipo) return null;
+
+  if (destinatarioTipo === "RECINTO") {
+    const recintoClase = parseRecintoClase(candidate.recintoClase);
+    const recintoNombre = parseRecintoNombre(candidate.recintoNombre);
+    if (!recintoClase || !recintoNombre) return null;
+    return {
+      destinatarioTipo,
+      recintoClase,
+      recintoNombre,
+    };
+  }
+
+  const targetCis = parseTargetCiList(candidate.ci, candidate.ciList);
+  if (!targetCis) return null;
+  return {
+    destinatarioTipo,
+    targetCis,
+  };
+}
+
 function readRequestMeta(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   const realIp = request.headers.get("x-real-ip");
@@ -110,10 +170,23 @@ function buildPersonalAuditDetail(personal: {
   };
 }
 
+function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombre: string }) {
+  return {
+    clase: recinto.clase,
+    nombre: recinto.nombre,
+    scopeLabel: recinto.clase === "EXTERNO" ? "FUERA_UNIDAD" : "DENTRO_UNIDAD",
+  };
+}
+
+function formatRecintoNotificationLabel(recinto: { clase: MovimientoRecintoClase; nombre: string }) {
+  const scope = recinto.clase === "EXTERNO" ? "fuera de la unidad" : "dentro de la unidad";
+  return `${recinto.nombre} (${scope})`;
+}
+
 function isValidPayload(body: unknown): body is MovimientoPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  if (!parseTargetCiList(candidate.ci, candidate.ciList)) return false;
+  if (!parseDestinatarioPayload(candidate)) return false;
   if (!parseTipoMovimiento(candidate.tipo)) return false;
   if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
   return true;
@@ -164,8 +237,34 @@ export async function GET(req: Request) {
           personal: {
             select: {
               ci: true,
+              apellido1: true,
+              apellido2: true,
+              nombre1: true,
+              nombre2: true,
+              rango: {
+                select: {
+                  abreviacion: true,
+                  nombreCompleto: true,
+                  tipo: true,
+                },
+              },
+              subalterno: {
+                select: {
+                  bateria: {
+                    select: {
+                      nombre: true,
+                    },
+                  },
+                },
+              },
             },
           },
+        },
+      },
+      destinatarioRecinto: {
+        select: {
+          clase: true,
+          nombre: true,
         },
       },
       items: {
@@ -204,40 +303,46 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json(
-    movimientos.map((movimiento) => ({
-      registroId: movimiento.movimientoId.toString(),
-      auditoria: (() => {
-        const audit = auditoriaByMovimientoId.get(movimiento.movimientoId.toString());
-        if (!audit) return null;
-        return {
-          auditoriaId: audit.auditoriaId.toString(),
-          createdAt: formatDateTimeForDisplay(audit.createdAt),
-          usuarioId: audit.usuarioId,
-          usuario: audit.usuario
-            ? {
-                usuarioId: audit.usuario.usuarioId,
-                username: audit.usuario.username,
-                rol: audit.usuario.rol,
-              }
-            : null,
-          detalle: audit.detalle,
-          accion: audit.accion,
-        };
-      })(),
-      ci: movimiento.destinatarioPersonal?.personal.ci ?? "",
-      usuarioEntregaId: movimiento.usuarioEntregaId,
-      usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
-      fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
-      tipo: movimiento.tipo,
-      afectaStock: true,
-      comentarios: movimiento.observaciones,
-      createdAt: formatDateTimeForDisplay(movimiento.createdAt),
-      items: movimiento.items.map((detail) => ({
-        itemId: detail.itemId.toString(),
-        nombre: detail.item.nombre,
-        cantidad: detail.cantidad,
-      })),
-    })),
+    movimientos.map((movimiento) => {
+      const destinatario = resolveDestinatarioMovimiento(movimiento);
+      return {
+        registroId: movimiento.movimientoId.toString(),
+        auditoria: (() => {
+          const audit = auditoriaByMovimientoId.get(movimiento.movimientoId.toString());
+          if (!audit) return null;
+          return {
+            auditoriaId: audit.auditoriaId.toString(),
+            createdAt: formatDateTimeForDisplay(audit.createdAt),
+            usuarioId: audit.usuarioId,
+            usuario: audit.usuario
+              ? {
+                  usuarioId: audit.usuario.usuarioId,
+                  username: audit.usuario.username,
+                  rol: audit.usuario.rol,
+                }
+              : null,
+            detalle: audit.detalle,
+            accion: audit.accion,
+          };
+        })(),
+        ci: destinatario?.ci ?? "",
+        destinatarioTipo: movimiento.destinatarioRecinto ? "RECINTO" : "PERSONAL",
+        recintoClase: movimiento.destinatarioRecinto?.clase ?? null,
+        recintoNombre: movimiento.destinatarioRecinto?.nombre ?? null,
+        usuarioEntregaId: movimiento.usuarioEntregaId,
+        usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
+        fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
+        tipo: movimiento.tipo,
+        afectaStock: true,
+        comentarios: movimiento.observaciones,
+        createdAt: formatDateTimeForDisplay(movimiento.createdAt),
+        items: movimiento.items.map((detail) => ({
+          itemId: detail.itemId.toString(),
+          nombre: detail.item.nombre,
+          cantidad: detail.cantidad,
+        })),
+      };
+    }),
   );
 }
 
@@ -251,9 +356,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Payload invalido. Revisa destinatarios, tipo y equipos." }, { status: 400 });
   }
 
-  const targetCis = parseTargetCiList(body.ci, body.ciList);
-  if (!targetCis) {
-    return NextResponse.json({ error: "Debes enviar al menos una CI valida." }, { status: 400 });
+  const destinatarioPayload = parseDestinatarioPayload(body as Record<string, unknown>);
+  if (!destinatarioPayload) {
+    return NextResponse.json({ error: "Destinatario invalido." }, { status: 400 });
   }
 
   const tipo = parseTipoMovimiento(body.tipo);
@@ -285,26 +390,28 @@ export async function POST(req: Request) {
 
   const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
   const [personalRecords, itemsFound] = await Promise.all([
-    prisma.personal.findMany({
-      where: { ci: { in: targetCis }, rango: { tipo: TipoPersonal.SUBALTERNO } },
-      select: {
-        ci: true,
-        apellido1: true,
-        apellido2: true,
-        nombre1: true,
-        nombre2: true,
-        rango: {
-          select: { nombreCompleto: true, abreviacion: true },
-        },
-        subalterno: {
+    destinatarioPayload.destinatarioTipo === "PERSONAL"
+      ? prisma.personal.findMany({
+          where: { ci: { in: destinatarioPayload.targetCis }, rango: { tipo: TipoPersonal.SUBALTERNO } },
           select: {
-            bateria: {
-              select: { nombre: true },
+            ci: true,
+            apellido1: true,
+            apellido2: true,
+            nombre1: true,
+            nombre2: true,
+            rango: {
+              select: { nombreCompleto: true, abreviacion: true },
+            },
+            subalterno: {
+              select: {
+                bateria: {
+                  select: { nombre: true },
+                },
+              },
             },
           },
-        },
-      },
-    }),
+        })
+      : Promise.resolve([]),
     prisma.item.findMany({
       where: { itemId: { in: itemIds } },
       select: { itemId: true, nombre: true },
@@ -312,12 +419,15 @@ export async function POST(req: Request) {
   ]);
 
   const personalByCi = new Map(personalRecords.map((personalRecord) => [personalRecord.ci, personalRecord]));
-  const missingCis = targetCis.filter((targetCi) => !personalByCi.has(targetCi));
-  if (missingCis.length > 0) {
-    const preview = missingCis.slice(0, 3).join(", ");
-    const suffix = missingCis.length > 3 ? "..." : "";
-    return NextResponse.json({ error: `No existe personal para las CIs: ${preview}${suffix}` }, { status: 404 });
+  if (destinatarioPayload.destinatarioTipo === "PERSONAL") {
+    const missingCis = destinatarioPayload.targetCis.filter((targetCi) => !personalByCi.has(targetCi));
+    if (missingCis.length > 0) {
+      const preview = missingCis.slice(0, 3).join(", ");
+      const suffix = missingCis.length > 3 ? "..." : "";
+      return NextResponse.json({ error: `No existe personal para las CIs: ${preview}${suffix}` }, { status: 404 });
+    }
   }
+
   if (itemsFound.length !== itemIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
@@ -334,8 +444,41 @@ export async function POST(req: Request) {
 
   try {
     const createdMovimientos = await prisma.$transaction(async (tx) => {
-      const created: Array<{ movimientoId: bigint; ci: string }> = [];
-      for (const targetCi of targetCis) {
+      const created: Array<{ movimientoId: bigint; ci: string | null }> = [];
+
+      if (destinatarioPayload.destinatarioTipo === "RECINTO") {
+        const movimiento = await tx.movimiento.create({
+          data: {
+            usuarioEntregaId: auth.user.usuarioId,
+            fecha,
+            tipo,
+            afectaStock,
+            observaciones: comentarios,
+          },
+          select: { movimientoId: true },
+        });
+
+        await tx.movimientoDestinatarioRecinto.create({
+          data: {
+            movimientoId: movimiento.movimientoId,
+            clase: destinatarioPayload.recintoClase,
+            nombre: destinatarioPayload.recintoNombre,
+          },
+        });
+
+        await tx.movimientoItem.createMany({
+          data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
+            movimientoId: movimiento.movimientoId,
+            itemId: BigInt(itemId),
+            cantidad,
+          })),
+        });
+
+        created.push({ movimientoId: movimiento.movimientoId, ci: null });
+        return created;
+      }
+
+      for (const targetCi of destinatarioPayload.targetCis) {
         const movimiento = await tx.movimiento.create({
           data: {
             usuarioEntregaId: auth.user.usuarioId,
@@ -364,39 +507,75 @@ export async function POST(req: Request) {
 
         created.push({ movimientoId: movimiento.movimientoId, ci: targetCi });
       }
+
       return created;
     });
 
-    await Promise.all(
-      createdMovimientos.map(async (movimiento) => {
-        const personalRecord = personalByCi.get(movimiento.ci);
-        if (!personalRecord) return;
+    if (destinatarioPayload.destinatarioTipo === "RECINTO") {
+      const createdMovimiento = createdMovimientos[0];
+      await logAudit({
+        usuarioId: auth.user.usuarioId,
+        accion: "CREATE",
+        entidad: "REGISTRO",
+        entidadId: createdMovimiento.movimientoId.toString(),
+        detalle: {
+          evento: "MOVIMIENTO_VESTUARIO_RECINTO",
+          destinatarioTipo: "RECINTO",
+          recinto: buildRecintoAuditDetail({
+            clase: destinatarioPayload.recintoClase,
+            nombre: destinatarioPayload.recintoNombre,
+          }),
+          tipo,
+          afectaStock,
+          fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
+          comentarios,
+          totalEquipos: itemsDetallados.length,
+          totalUnidades,
+          totalDestinatarios: 1,
+          items: itemsDetallados,
+          ip: requestMeta.ip,
+          userAgent: requestMeta.userAgent,
+        },
+      });
+    } else {
+      await Promise.all(
+        createdMovimientos.map(async (movimiento) => {
+          const personalRecord = movimiento.ci ? personalByCi.get(movimiento.ci) : null;
+          if (!personalRecord || !movimiento.ci) return;
 
-        await logAudit({
-          usuarioId: auth.user.usuarioId,
-          accion: "CREATE",
-          entidad: "REGISTRO",
-          entidadId: movimiento.movimientoId.toString(),
-          detalle: {
-            evento: "MOVIMIENTO_VESTUARIO",
-            ci: movimiento.ci,
-            personal: buildPersonalAuditDetail(personalRecord),
-            tipo,
-            afectaStock,
-            fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
-            comentarios,
-            totalEquipos: itemsDetallados.length,
-            totalUnidades,
-            totalDestinatarios: targetCis.length,
-            items: itemsDetallados,
-            ip: requestMeta.ip,
-            userAgent: requestMeta.userAgent,
-          },
-        });
-      }),
-    );
+          await logAudit({
+            usuarioId: auth.user.usuarioId,
+            accion: "CREATE",
+            entidad: "REGISTRO",
+            entidadId: movimiento.movimientoId.toString(),
+            detalle: {
+              evento: "MOVIMIENTO_VESTUARIO",
+              ci: movimiento.ci,
+              personal: buildPersonalAuditDetail(personalRecord),
+              tipo,
+              afectaStock,
+              fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
+              comentarios,
+              totalEquipos: itemsDetallados.length,
+              totalUnidades,
+              totalDestinatarios: destinatarioPayload.targetCis.length,
+              items: itemsDetallados,
+              ip: requestMeta.ip,
+              userAgent: requestMeta.userAgent,
+            },
+          });
+        }),
+      );
+    }
 
     try {
+      const detail =
+        destinatarioPayload.destinatarioTipo === "RECINTO"
+          ? `${tipo} a recinto ${formatRecintoNotificationLabel({
+              clase: destinatarioPayload.recintoClase,
+              nombre: destinatarioPayload.recintoNombre,
+            })}.`
+          : `${tipo} para ${destinatarioPayload.targetCis.length} personal(es).`;
       await notifyAdminOnMovement(
         {
           usuarioId: auth.user.usuarioId,
@@ -405,43 +584,53 @@ export async function POST(req: Request) {
           apellido: auth.user.apellido,
           rol: auth.user.rol,
         },
-        `${tipo} para ${targetCis.length} personal(es).`,
+        detail,
         "/",
       );
     } catch {
       // No bloquear registro por fallas de push.
     }
 
-    const tipoLabel = tipo === TipoMovimiento.ENTREGA ? "entrega" : "devolucion";
-    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
-    const resumenItems = itemsDetallados
-      .slice(0, 4)
-      .map((item) => `${item.nombre} x${item.cantidad}`)
-      .join(", ");
-    const resumenItemsLine = itemsDetallados.length > 4 ? `${resumenItems}, ...` : resumenItems;
+    if (destinatarioPayload.destinatarioTipo === "PERSONAL") {
+      const tipoLabel = tipo === TipoMovimiento.ENTREGA ? "entrega" : "devolucion";
+      const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+      const resumenItems = itemsDetallados
+        .slice(0, 4)
+        .map((item) => `${item.nombre} x${item.cantidad}`)
+        .join(", ");
+      const resumenItemsLine = itemsDetallados.length > 4 ? `${resumenItems}, ...` : resumenItems;
 
-    await Promise.allSettled(
-      targetCis.map((targetCi) =>
-        sendPersonalMovementEmailNotification({
-          request: req,
-          ci: targetCi,
-          subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
-          headline: `Se registro una ${tipoLabel} de vestuario en tu ficha.`,
-          detailLines: [
-            `Tipo: ${tipo}`,
-            `Fecha: ${formatDateOnlyForDisplay(body.fecha || getTodayDateInput())}`,
-            `Total de unidades: ${totalUnidades}`,
-            `Items: ${resumenItemsLine}`,
-            comentarios ? `Comentarios: ${comentarios}` : "",
-          ],
-          actorLabel,
-          portalPath: "/",
-        }),
-      ),
-    );
+      await Promise.allSettled(
+        destinatarioPayload.targetCis.map((targetCi) =>
+          sendPersonalMovementEmailNotification({
+            request: req,
+            ci: targetCi,
+            subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
+            headline: `Se registro una ${tipoLabel} de vestuario en tu ficha.`,
+            detailLines: [
+              `Tipo: ${tipo}`,
+              `Fecha: ${formatDateOnlyForDisplay(body.fecha || getTodayDateInput())}`,
+              `Total de unidades: ${totalUnidades}`,
+              `Items: ${resumenItemsLine}`,
+              comentarios ? `Comentarios: ${comentarios}` : "",
+            ],
+            actorLabel,
+            portalPath: "/",
+          }),
+        ),
+      );
+    }
 
     if (createdMovimientos.length === 1) {
-        return NextResponse.json({ ok: true, registroId: createdMovimientos[0].movimientoId.toString(), createdCount: 1 }, { status: 201 });
+      return NextResponse.json(
+        {
+          ok: true,
+          registroId: createdMovimientos[0].movimientoId.toString(),
+          createdCount: 1,
+          destinatarioTipo: destinatarioPayload.destinatarioTipo,
+        },
+        { status: 201 },
+      );
     }
 
     return NextResponse.json(
@@ -449,7 +638,7 @@ export async function POST(req: Request) {
         ok: true,
         createdCount: createdMovimientos.length,
         registroIds: createdMovimientos.map((movimiento) => movimiento.movimientoId.toString()),
-        ciList: targetCis,
+        ciList: destinatarioPayload.destinatarioTipo === "PERSONAL" ? destinatarioPayload.targetCis : [],
       },
       { status: 201 },
     );

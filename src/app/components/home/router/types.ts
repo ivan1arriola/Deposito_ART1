@@ -181,6 +181,7 @@ export type PersonnelAndSummaryViewsProps = {
   bulkDeliveryEmailDisabledReason: string | null;
   printPersonnelByBattery: () => void;
   openMassRegistro: (tipo: "ENTREGA" | "DEVOLUCION") => void;
+  openRecintoRegistro: (tipo: "ENTREGA" | "DEVOLUCION", options?: { incluirFueraDeHoja?: boolean }) => void;
   setActiveView: Dispatch<SetStateAction<MainView>>;
   toggleTallas: (ci: string) => void;
   deletePersonal: (ci: string) => void;

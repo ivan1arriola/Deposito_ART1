@@ -67,6 +67,12 @@ const movimientoHistorialInclude = {
       },
     },
   },
+  destinatarioRecinto: {
+    select: {
+      clase: true,
+      nombre: true,
+    },
+  },
   items: {
     include: {
       item: {
@@ -327,7 +333,7 @@ export async function GET(req: Request) {
           id: `personal-${movimiento.movimientoId.toString()}`,
           fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
           createdAt: formatDateTimeForDisplay(movimiento.createdAt),
-          origen: "PERSONAL" as const,
+          origen: movimiento.destinatarioRecinto ? ("RECINTO" as const) : ("PERSONAL" as const),
           tipo: movimiento.tipo,
           afectaStock: true,
           comentarios: movimiento.observaciones,

@@ -3853,6 +3853,9 @@ export default function Home() {
       ci,
       ciList: [ci],
       tipo,
+      destinatarioTipo: "PERSONAL",
+      recintoClase: "INTERNO",
+      recintoNombre: "",
       incluirFueraDeHoja: options.incluirFueraDeHoja ?? false,
       fecha: getTodayDateInput(),
       comentarios: "",
@@ -3875,7 +3878,31 @@ export default function Home() {
       ci: "",
       ciList: [],
       tipo,
+      destinatarioTipo: "PERSONAL",
+      recintoClase: "INTERNO",
+      recintoNombre: "",
       incluirFueraDeHoja: false,
+      fecha: getTodayDateInput(),
+      comentarios: "",
+      items: [{ itemId: "", cantidad: "1" }],
+    });
+  }
+
+  function openRecintoRegistro(tipo: RegistroTipo, options: { incluirFueraDeHoja?: boolean } = {}) {
+    if (!canWrite) {
+      setStatus("No tienes permisos para registrar movimientos.");
+      return;
+    }
+    setRegistroDraft({
+      modo: "crear",
+      registroId: null,
+      ci: "",
+      ciList: [],
+      tipo,
+      destinatarioTipo: "RECINTO",
+      recintoClase: "INTERNO",
+      recintoNombre: "",
+      incluirFueraDeHoja: options.incluirFueraDeHoja ?? false,
       fecha: getTodayDateInput(),
       comentarios: "",
       items: [{ itemId: "", cantidad: "1" }],
@@ -3977,6 +4004,9 @@ export default function Home() {
       ci: registro.ci,
       ciList: [registro.ci],
       tipo: registro.tipo,
+      destinatarioTipo: "PERSONAL",
+      recintoClase: "INTERNO",
+      recintoNombre: "",
       incluirFueraDeHoja: false,
       fecha: formatDateOnlyForDisplay(registro.fecha),
       comentarios: registro.comentarios ?? "",
@@ -4016,7 +4046,7 @@ export default function Home() {
 
   function toggleRegistroDestinatario(ci: string) {
     setRegistroDraft((prev) => {
-      if (!prev || prev.modo !== "crear") return prev;
+      if (!prev || prev.modo !== "crear" || prev.destinatarioTipo !== "PERSONAL") return prev;
       const targetCi = ci.trim();
       if (targetCi === "") return prev;
       const exists = prev.ciList.includes(targetCi);
@@ -4031,7 +4061,7 @@ export default function Home() {
 
   function selectAllRegistroDestinatarios() {
     setRegistroDraft((prev) => {
-      if (!prev || prev.modo !== "crear") return prev;
+      if (!prev || prev.modo !== "crear" || prev.destinatarioTipo !== "PERSONAL") return prev;
       const ciList = Array.from(new Set(personalFiltrado.map((persona) => persona.ci)));
       return {
         ...prev,
@@ -4043,7 +4073,7 @@ export default function Home() {
 
   function clearRegistroDestinatarios() {
     setRegistroDraft((prev) => {
-      if (!prev || prev.modo !== "crear") return prev;
+      if (!prev || prev.modo !== "crear" || prev.destinatarioTipo !== "PERSONAL") return prev;
       return {
         ...prev,
         ciList: [],
@@ -4052,9 +4082,10 @@ export default function Home() {
     });
   }
 
-  async function saveRegistro() {
+  async function saveRegistro(printAfterSave = false) {
     if (!registroDraft || registroSaving) return;
     const isRectificacion = registroDraft.modo === "rectificar" && registroDraft.registroId !== null;
+    const isRecinto = registroDraft.destinatarioTipo === "RECINTO";
     if (!parseDateInput(registroDraft.fecha).valid) {
       setStatus("La fecha del movimiento debe estar en formato DD/MM/AAAA.");
       return;
@@ -4080,10 +4111,19 @@ export default function Home() {
       return;
     }
 
-    const targetCis = isRectificacion
-      ? [registroDraft.ci]
-      : Array.from(new Set(registroDraft.ciList.map((ci) => ci.trim()).filter((ci) => ci !== "")));
-    if (targetCis.length === 0) {
+    const targetCis =
+      isRecinto || (isRectificacion && registroDraft.destinatarioTipo !== "PERSONAL")
+        ? []
+        : isRectificacion
+          ? [registroDraft.ci]
+          : Array.from(new Set(registroDraft.ciList.map((ci) => ci.trim()).filter((ci) => ci !== "")));
+
+    if (isRecinto) {
+      if (registroDraft.recintoNombre.trim() === "") {
+        setStatus("Debes indicar el nombre del recinto.");
+        return;
+      }
+    } else if (targetCis.length === 0) {
       setStatus("Debes seleccionar al menos una persona para registrar el movimiento.");
       return;
     }
@@ -4091,12 +4131,15 @@ export default function Home() {
     setRegistroSaving(true);
     setStatus(isRectificacion ? "Actualizando rectificación..." : "Guardando movimiento...");
     try {
-      await api(isRectificacion ? `/api/registros/${registroDraft.registroId}` : "/api/registros", {
+      const response = await api<{ registroId?: string }>(isRectificacion ? `/api/registros/${registroDraft.registroId}` : "/api/registros", {
         method: isRectificacion ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ci: targetCis[0],
           ciList: targetCis,
+          destinatarioTipo: registroDraft.destinatarioTipo,
+          recintoClase: isRecinto ? registroDraft.recintoClase : undefined,
+          recintoNombre: isRecinto ? registroDraft.recintoNombre.trim() : undefined,
           tipo: registroDraft.tipo,
           fecha: registroDraft.fecha,
           comentarios: registroDraft.comentarios.trim() || undefined,
@@ -4104,15 +4147,22 @@ export default function Home() {
         }),
       });
       setStatus(
-        isRectificacion
-          ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} rectificada para ${formatUruguayanCi(registroDraft.ci)}.`
-          : targetCis.length === 1
-            ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} registrada para ${formatUruguayanCi(targetCis[0])}.`
-            : `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} masiva registrada para ${targetCis.length} personas.`,
+        isRecinto
+          ? isRectificacion
+            ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} rectificada para recinto ${registroDraft.recintoNombre.trim()}.`
+            : `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} registrada para recinto ${registroDraft.recintoNombre.trim()}.`
+          : isRectificacion
+            ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} rectificada para ${formatUruguayanCi(registroDraft.ci)}.`
+            : targetCis.length === 1
+              ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} registrada para ${formatUruguayanCi(targetCis[0])}.`
+              : `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} masiva registrada para ${targetCis.length} personas.`,
       );
+      if (printAfterSave && !isRectificacion && isRecinto && response.registroId) {
+        window.open(`/api/registros/${encodeURIComponent(response.registroId)}/recibo`, "_blank", "noopener,noreferrer");
+      }
       setRegistroDraft(null);
       await loadData();
-      if (registroViewer && targetCis.includes(registroViewer.ci)) {
+      if (!isRecinto && registroViewer && targetCis.includes(registroViewer.ci)) {
         await loadRegistroViewer(registroViewer.ci, registroViewer.nombre);
       }
     } catch (error: unknown) {
@@ -6757,6 +6807,7 @@ export default function Home() {
             bulkDeliveryEmailDisabledReason={bulkDeliveryEmailDisabledReason}
             printPersonnelByBattery={printPersonnelByBattery}
             openMassRegistro={openMassRegistro}
+            openRecintoRegistro={openRecintoRegistro}
             toggleTallas={toggleTallas}
             deletePersonal={deletePersonal}
             openRegistro={openRegistro}

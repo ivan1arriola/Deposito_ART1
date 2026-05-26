@@ -149,6 +149,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
     bulkDeliveryEmailDisabledReason,
     printPersonnelByBattery,
     openMassRegistro,
+    openRecintoRegistro,
     toggleTallas,
     deletePersonal,
     openRegistro,
@@ -377,6 +378,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
         bulkDeliveryEmailDisabledReason={bulkDeliveryEmailDisabledReason}
         printPersonnelByBattery={printPersonnelByBattery}
         openMassRegistro={openMassRegistro}
+        openRecintoRegistro={openRecintoRegistro}
         setActiveView={setActiveView}
         toggleTallas={toggleTallas}
         deletePersonal={deletePersonal}
