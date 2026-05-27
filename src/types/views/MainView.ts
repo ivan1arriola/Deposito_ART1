@@ -49,6 +49,7 @@ export type MainView =
   | "persona_ficha"
   | "hoja-de-entrega"
   | "movimientos_fuera_hoja"
+  | "movimientos_recintos"
   | "movimientos_por_equipo"
   | "equipos_unificar"
   | "personal_bajas";

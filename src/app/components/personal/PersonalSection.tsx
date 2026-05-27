@@ -58,7 +58,7 @@ type PersonalSectionProps = {
   onOpenCreate: () => void;
   onToggleTallas: (ci: string) => void;
   onDeletePersonal: (ci: string) => void;
-  onOpenRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION") => void;
+  onOpenRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION") => void;
   onOpenPersonalObservacion: (persona: Personal) => void;
   onOpenRegistroViewer: (persona: Personal) => void;
   onOpenProfile: (persona: Personal) => void;
@@ -498,6 +498,7 @@ export function PersonalSection({
           onToggleTallas={onToggleTallas}
           onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
           onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
+          onAsignacion={(ci) => onOpenRegistro(ci, "ASIGNACION")}
           onObservacion={onOpenPersonalObservacion}
           onViewMoves={onOpenRegistroViewer}
           onOpenProfile={onOpenProfile}
@@ -526,6 +527,7 @@ export function PersonalSection({
           onToggleTallas={onToggleTallas}
           onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
           onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
+          onAsignacion={(ci) => onOpenRegistro(ci, "ASIGNACION")}
           onObservacion={onOpenPersonalObservacion}
           onViewMoves={onOpenRegistroViewer}
           onOpenProfile={onOpenProfile}

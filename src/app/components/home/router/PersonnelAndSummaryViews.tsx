@@ -6,6 +6,7 @@ import { OficialesSuboficialesResumenView } from "@/app/components/views/Oficial
 import { HojaMatrixView } from "@/app/components/views/HojaMatrixView";
 import { EquipoResumenView } from "@/app/components/views/EquipoResumenView";
 import { MovimientosFueraHojaView } from "@/app/components/views/MovimientosFueraHojaView";
+import { MovimientosRecintosView } from "@/app/components/views/MovimientosRecintosView";
 import { TallasResumenView } from "@/app/components/views/TallasResumenView";
 import { PersonalBajasView } from "@/app/components/views/PersonalBajasView";
 import type { PersonalForm } from "@/types/forms";
@@ -228,6 +229,10 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
 
       {activeView === "movimientos_fuera_hoja" ? (
         <MovimientosFueraHojaView canWrite={canWrite} onOpenRegistro={openRegistro} />
+      ) : null}
+
+      {activeView === "movimientos_recintos" ? (
+        <MovimientosRecintosView canWrite={canWrite} onOpenRegistro={openRecintoRegistro} />
       ) : null}
 
       {isTallasResumenView ? (

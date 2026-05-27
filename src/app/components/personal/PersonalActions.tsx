@@ -13,6 +13,7 @@ type PersonalActionsProps = {
   onToggleTallas: () => void;
   onEntrega: () => void;
   onDevolucion: () => void;
+  onAsignacion: () => void;
   onObservacion: () => void;
   onViewMoves: () => void;
   onOpenProfile: () => void;
@@ -30,6 +31,7 @@ export function PersonalActions({
   onToggleTallas,
   onEntrega,
   onDevolucion,
+  onAsignacion,
   onObservacion,
   onViewMoves,
   onOpenProfile,
@@ -48,6 +50,7 @@ export function PersonalActions({
     navy: "border-[rgba(37,58,89,0.9)] bg-[linear-gradient(180deg,rgba(49,74,115,0.98)_0%,rgba(31,48,76,0.98)_100%)]",
     charcoal: "border-[rgba(35,41,52,0.92)] bg-[linear-gradient(180deg,rgba(49,58,72,0.98)_0%,rgba(31,37,47,0.98)_100%)]",
     dossier: "border-[rgba(21,56,101,0.9)] bg-[linear-gradient(180deg,rgba(26,63,119,0.98)_0%,rgba(16,38,73,0.98)_100%)]",
+    indigo: "border-[rgba(55,48,163,0.9)] bg-[linear-gradient(180deg,rgba(79,70,229,0.98)_0%,rgba(49,46,129,0.98)_100%)]",
   } as const;
 
   return (
@@ -89,6 +92,12 @@ export function PersonalActions({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
             </svg>
             Devolución
+          </button>
+          <button type="button" onClick={onAsignacion} className={`${actionWithIconClass} ${actionToneClass.indigo}`}>
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Asignación
           </button>
           <button type="button" onClick={onObservacion} className={`${actionWithIconClass} ${actionToneClass.steel}`}>
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

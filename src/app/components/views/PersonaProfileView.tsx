@@ -431,7 +431,8 @@ export function PersonaProfileView({
                      <div className={`absolute left-0 top-1 z-10 flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl border-2 sm:border-4 border-white shadow-md ${
                        entry.tipo === "ENTREGA" ? "bg-emerald-500 text-white" :
                        entry.tipo === "DEVOLUCION" ? "bg-amber-500 text-white" :
-                       entry.tipo === "PRESTAMO" ? "bg-indigo-600 text-white" : "bg-cyan-500 text-white"
+                       entry.tipo === "PRESTAMO" ? "bg-indigo-600 text-white" :
+                       entry.tipo === "ASIGNACION" ? "bg-violet-500 text-white" : "bg-cyan-500 text-white"
                      }`}>
                         <DescriptionRoundedIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />
                      </div>

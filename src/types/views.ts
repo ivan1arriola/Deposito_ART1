@@ -15,6 +15,7 @@ export type { HojaMatrixItem } from "./views/HojaMatrixItem";
 export type { HojaMatrixRow } from "./views/HojaMatrixRow";
 export type { MainView } from "./views/MainView";
 export type { MovimientoFueraHojaViewRow } from "./views/MovimientoFueraHojaViewRow";
+export type { MovimientoRecintoViewRow } from "./views/MovimientoRecintoViewRow";
 export type { PrestamoHistorialTipo } from "./views/PrestamoHistorialTipo";
 export type { PrestamoStockEntry } from "./views/PrestamoStockEntry";
 export type { RegistroTipo } from "./views/RegistroTipo";

@@ -19,6 +19,7 @@ type PersonalTableDesktopProps = {
   onToggleTallas: (ci: string) => void;
   onEntrega: (ci: string) => void;
   onDevolucion: (ci: string) => void;
+  onAsignacion: (ci: string) => void;
   onObservacion: (persona: Personal) => void;
   onViewMoves: (persona: Personal) => void;
   onOpenProfile: (persona: Personal) => void;
@@ -35,6 +36,7 @@ export function PersonalTableDesktop({
   onToggleTallas,
   onEntrega,
   onDevolucion,
+  onAsignacion,
   onObservacion,
   onViewMoves,
   onOpenProfile,
@@ -109,6 +111,7 @@ export function PersonalTableDesktop({
                         onToggleTallas={() => onToggleTallas(persona.ci)}
                         onEntrega={() => onEntrega(persona.ci)}
                         onDevolucion={() => onDevolucion(persona.ci)}
+                        onAsignacion={() => onAsignacion(persona.ci)}
                         onObservacion={() => onObservacion(persona)}
                         onViewMoves={() => onViewMoves(persona)}
                         onOpenProfile={() => onOpenProfile(persona)}
