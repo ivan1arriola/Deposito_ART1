@@ -5,6 +5,7 @@ import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import { prisma } from "@/lib/prisma";
+import { MOVIMIENTO_TIPOS_REGISTRO_Y_PRESTAMO } from "@/lib/tipo-movimiento";
 import type { EquipoMovimientoCatalogItem, EquipoMovimientoViewRow } from "@/types/views";
 
 export type MovimientosEquipoData = {
@@ -88,7 +89,7 @@ export async function getMovimientosEquipoData(itemId: bigint | null = null): Pr
     where: {
       itemId,
       movimiento: {
-        tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION, TipoMovimiento.PRESTAMO] },
+        tipo: { in: MOVIMIENTO_TIPOS_REGISTRO_Y_PRESTAMO },
       },
     },
     select: {

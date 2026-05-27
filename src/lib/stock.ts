@@ -1,4 +1,10 @@
 import { Prisma, TipoMovimiento, TipoStockOperacion } from "@/generated/prisma/client";
+import {
+  MOVIMIENTO_TIPO_ASIGNACION,
+  MOVIMIENTO_TIPO_DEVOLUCION,
+  MOVIMIENTO_TIPO_ENTREGA,
+  MOVIMIENTO_TIPOS_REGISTRO,
+} from "@/lib/tipo-movimiento";
 
 type PrismaLike = Pick<Prisma.TransactionClient, "movimiento" | "stockOperacion" | "prestamoActivo">;
 type PrismaRawLike = Pick<Prisma.TransactionClient, "$queryRaw">;
@@ -9,14 +15,14 @@ type StockMapOptions = {
 
 export function movimientoStockDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO") {
   switch (tipo) {
-    case TipoMovimiento.ENTREGA:
+    case MOVIMIENTO_TIPO_ENTREGA:
     case "ENTREGA":
-    case TipoMovimiento.ASIGNACION:
+    case MOVIMIENTO_TIPO_ASIGNACION:
     case "ASIGNACION":
     case TipoMovimiento.PRESTAMO:
     case "PRESTAMO":
       return -1;
-    case TipoMovimiento.DEVOLUCION:
+    case MOVIMIENTO_TIPO_DEVOLUCION:
     case "DEVOLUCION":
       return 1;
     default:
@@ -26,10 +32,10 @@ export function movimientoStockDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "D
 
 export function movimientoPersonalDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO") {
   switch (tipo) {
-    case TipoMovimiento.ENTREGA:
+    case MOVIMIENTO_TIPO_ENTREGA:
     case "ENTREGA":
       return 1;
-    case TipoMovimiento.DEVOLUCION:
+    case MOVIMIENTO_TIPO_DEVOLUCION:
     case "DEVOLUCION":
       return -1;
     default:
@@ -131,7 +137,7 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
     prisma.movimiento.findMany({
       where: {
         tipo: {
-          in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION],
+          in: MOVIMIENTO_TIPOS_REGISTRO,
         },
         ...(options.excludeMovimientoId ? { movimientoId: { not: options.excludeMovimientoId } } : {}),
       },
@@ -230,7 +236,7 @@ export async function buildPersonalByItemMap(prisma: PrismaLike) {
   const movimientos = await prisma.movimiento.findMany({
     where: {
       tipo: {
-        in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION],
+        in: [MOVIMIENTO_TIPO_ENTREGA, MOVIMIENTO_TIPO_DEVOLUCION],
       },
       destinatarioPersonal: {
         isNot: null,

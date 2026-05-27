@@ -8,6 +8,11 @@ import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-noti
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import {
+  MOVIMIENTO_TIPO_ASIGNACION,
+  MOVIMIENTO_TIPO_DEVOLUCION,
+  MOVIMIENTO_TIPO_ENTREGA,
+} from "@/lib/tipo-movimiento";
+import {
   dateInputToDate,
   formatDateOnlyForDisplay,
   formatDateOnlyFromDate,
@@ -85,9 +90,9 @@ function parseCantidad(value: unknown) {
 
 function parseTipoMovimiento(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
-  if (raw === "ENTREGA") return TipoMovimiento.ENTREGA;
-  if (raw === "DEVOLUCION") return TipoMovimiento.DEVOLUCION;
-  if (raw === "ASIGNACION") return TipoMovimiento.ASIGNACION;
+  if (raw === "ENTREGA") return MOVIMIENTO_TIPO_ENTREGA;
+  if (raw === "DEVOLUCION") return MOVIMIENTO_TIPO_DEVOLUCION;
+  if (raw === "ASIGNACION") return MOVIMIENTO_TIPO_ASIGNACION;
   return null;
 }
 
@@ -194,10 +199,10 @@ function validateDestinatarioTipoForMovimiento(
   tipo: TipoMovimiento,
   destinatarioPayload: ParsedDestinatarioPayload,
 ) {
-  if (tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION) {
+  if (tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION) {
     return destinatarioPayload.destinatarioTipo === "PERSONAL";
   }
-  if (tipo === TipoMovimiento.ASIGNACION) {
+  if (tipo === MOVIMIENTO_TIPO_ASIGNACION) {
     return true;
   }
   return false;
@@ -439,9 +444,9 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
 
   if (
     !movimiento ||
-    (movimiento.tipo !== TipoMovimiento.ENTREGA &&
-      movimiento.tipo !== TipoMovimiento.DEVOLUCION &&
-      movimiento.tipo !== TipoMovimiento.ASIGNACION)
+    (movimiento.tipo !== MOVIMIENTO_TIPO_ENTREGA &&
+      movimiento.tipo !== MOVIMIENTO_TIPO_DEVOLUCION &&
+      movimiento.tipo !== MOVIMIENTO_TIPO_ASIGNACION)
   ) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
   }
@@ -530,9 +535,9 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
   if (
     !existing ||
-    (existing.tipo !== TipoMovimiento.ENTREGA &&
-      existing.tipo !== TipoMovimiento.DEVOLUCION &&
-      existing.tipo !== TipoMovimiento.ASIGNACION)
+    (existing.tipo !== MOVIMIENTO_TIPO_ENTREGA &&
+      existing.tipo !== MOVIMIENTO_TIPO_DEVOLUCION &&
+      existing.tipo !== MOVIMIENTO_TIPO_ASIGNACION)
   ) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
   }
@@ -610,11 +615,11 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       },
     });
 
-    if (!personal || ((tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION) && personal.rango.tipo !== "SUBALTERNO")) {
+    if (!personal || ((tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION) && personal.rango.tipo !== "SUBALTERNO")) {
       return NextResponse.json(
         {
           error:
-            tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION
+            tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION
               ? "El destinatario interno debe ser un subalterno valido."
               : "El destinatario interno debe existir en personal.",
         },
@@ -714,7 +719,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
     const auditDetail = {
       evento:
-        tipo === TipoMovimiento.ASIGNACION
+        tipo === MOVIMIENTO_TIPO_ASIGNACION
           ? "MOVIMIENTO_ASIGNACION_RECTIFICADO"
           : "MOVIMIENTO_VESTUARIO_RECTIFICADO",
       destinatarioAnterior: buildExistingDestinatarioAuditDetail(existing),
@@ -777,7 +782,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
           ci: existingPersonal.ci,
           subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
           headline:
-            tipo === TipoMovimiento.ASIGNACION
+            tipo === MOVIMIENTO_TIPO_ASIGNACION
               ? "Se actualizo una asignacion de equipo en tu ficha."
               : "Se actualizo un movimiento en tu ficha de vestuario.",
           detailLines: [
@@ -827,9 +832,9 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
 
   if (
     !existing ||
-    (existing.tipo !== TipoMovimiento.ENTREGA &&
-      existing.tipo !== TipoMovimiento.DEVOLUCION &&
-      existing.tipo !== TipoMovimiento.ASIGNACION)
+    (existing.tipo !== MOVIMIENTO_TIPO_ENTREGA &&
+      existing.tipo !== MOVIMIENTO_TIPO_DEVOLUCION &&
+      existing.tipo !== MOVIMIENTO_TIPO_ASIGNACION)
   ) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
   }
@@ -860,7 +865,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
       entidad: "REGISTRO",
       entidadId: existing.movimientoId.toString(),
       detalle: {
-        evento: existing.tipo === TipoMovimiento.ASIGNACION ? "MOVIMIENTO_ASIGNACION_ELIMINADO" : "MOVIMIENTO_VESTUARIO_ELIMINADO",
+        evento: existing.tipo === MOVIMIENTO_TIPO_ASIGNACION ? "MOVIMIENTO_ASIGNACION_ELIMINADO" : "MOVIMIENTO_VESTUARIO_ELIMINADO",
         destinatario: buildExistingDestinatarioAuditDetail(existing),
         ci: existingPersonal?.ci ?? null,
         personal: existingPersonal ? buildPersonalAuditDetail(existingPersonal) : null,
@@ -884,7 +889,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
           ci: existingPersonal.ci,
           subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
           headline:
-            existing.tipo === TipoMovimiento.ASIGNACION
+            existing.tipo === MOVIMIENTO_TIPO_ASIGNACION
               ? "Se elimino una asignacion de equipo de tu ficha."
               : "Se elimino un movimiento de tu ficha de vestuario.",
           detailLines: [

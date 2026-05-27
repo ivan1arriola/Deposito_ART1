@@ -7,6 +7,11 @@ import { getPersonalSelfContact } from "@/lib/personal-auth";
 import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
 import { prestamoInclude, serializePrestamoWithActuante } from "@/lib/prestamos";
 import { prisma } from "@/lib/prisma";
+import {
+  MOVIMIENTO_TIPO_DEVOLUCION,
+  MOVIMIENTO_TIPO_ENTREGA,
+  MOVIMIENTO_TIPOS_REGISTRO,
+} from "@/lib/tipo-movimiento";
 
 type PersonaProfileTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
 type PersonaProfileTimelineType = "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO";
@@ -214,7 +219,7 @@ export async function GET(request: Request) {
     prisma.movimiento.findMany({
       where: {
         destinatarioPersonal: { is: { ci } },
-        tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION] },
+        tipo: { in: MOVIMIENTO_TIPOS_REGISTRO },
       },
       include: {
         usuarioEntrega: {
@@ -275,9 +280,9 @@ export async function GET(request: Request) {
 
   const registros = registrosRaw.map((movimiento) => {
     const registroTipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION" =
-      movimiento.tipo === TipoMovimiento.ENTREGA
+      movimiento.tipo === MOVIMIENTO_TIPO_ENTREGA
         ? "ENTREGA"
-        : movimiento.tipo === TipoMovimiento.DEVOLUCION
+        : movimiento.tipo === MOVIMIENTO_TIPO_DEVOLUCION
           ? "DEVOLUCION"
           : "ASIGNACION";
 

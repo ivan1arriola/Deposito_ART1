@@ -22,6 +22,12 @@ import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import { formatPrestamoDestinatario, prestamoInclude, serializePrestamoWithActuante } from "@/lib/prestamos";
 import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
+import {
+  MOVIMIENTO_TIPO_ASIGNACION,
+  MOVIMIENTO_TIPO_DEVOLUCION,
+  MOVIMIENTO_TIPO_ENTREGA,
+  MOVIMIENTO_TIPOS_REGISTRO,
+} from "@/lib/tipo-movimiento";
 import type { StockDashboardData } from "@/types/views";
 
 type StockItemPayload = {
@@ -221,7 +227,7 @@ export async function GET(req: Request) {
       }),
       prisma.movimiento.findMany({
         where: {
-          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION] },
+          tipo: { in: MOVIMIENTO_TIPOS_REGISTRO },
         },
         include: movimientoHistorialInclude,
         orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
@@ -346,9 +352,9 @@ export async function GET(req: Request) {
     const historialPersonal: StockHistorialInternalEntry[] = movimientos
       .map((movimiento) => {
         if (
-          movimiento.tipo !== TipoMovimiento.ENTREGA &&
-          movimiento.tipo !== TipoMovimiento.DEVOLUCION &&
-          movimiento.tipo !== TipoMovimiento.ASIGNACION
+          movimiento.tipo !== MOVIMIENTO_TIPO_ENTREGA &&
+          movimiento.tipo !== MOVIMIENTO_TIPO_DEVOLUCION &&
+          movimiento.tipo !== MOVIMIENTO_TIPO_ASIGNACION
         ) {
           return null;
         }

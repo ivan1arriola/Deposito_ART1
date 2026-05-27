@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "@/app/api/registros/route";
+import { GET, POST } from "@/app/api/registros/route";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { notifyAdminOnMovement } from "@/lib/notify-admins";
@@ -50,6 +50,9 @@ vi.mock("@/lib/movimiento-destinatario-recinto-compat", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    movimiento: {
+      count: vi.fn(),
+    },
     item: {
       findMany: vi.fn(),
     },
@@ -65,6 +68,12 @@ function createRequest(body: unknown) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+  });
+}
+
+function createGetRequest(url: string) {
+  return new Request(url, {
+    method: "GET",
   });
 }
 
@@ -87,7 +96,22 @@ describe("POST /api/registros", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuthorizedUser();
+    vi.mocked(prisma.movimiento.count).mockResolvedValue(7 as never);
     vi.mocked(prisma.item.findMany).mockResolvedValue([{ itemId: BigInt(1), nombre: "Notebook táctica" }] as never);
+  });
+
+  it("incluye ASIGNACION en summary sin inyectar undefined al filtro", async () => {
+    const response = await GET(createGetRequest("http://localhost:3000/api/registros?summary=1"));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ total: 7 });
+    expect(prisma.movimiento.count).toHaveBeenCalledWith({
+      where: {
+        tipo: {
+          in: ["ENTREGA", "DEVOLUCION", "ASIGNACION"],
+        },
+      },
+    });
   });
 
   it("rechaza entrega a recinto porque entrega y devolución son exclusivas de personal", async () => {

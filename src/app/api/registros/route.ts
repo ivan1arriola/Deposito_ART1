@@ -9,6 +9,12 @@ import { isValidUruguayanCi } from "@/lib/ci";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import {
+  MOVIMIENTO_TIPO_ASIGNACION,
+  MOVIMIENTO_TIPO_DEVOLUCION,
+  MOVIMIENTO_TIPO_ENTREGA,
+  MOVIMIENTO_TIPOS_REGISTRO,
+} from "@/lib/tipo-movimiento";
+import {
   dateInputToDate,
   formatDateOnlyForDisplay,
   formatDateOnlyFromDate,
@@ -79,9 +85,9 @@ function parseCantidad(value: unknown) {
 
 function parseTipoMovimiento(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
-  if (raw === "ENTREGA") return TipoMovimiento.ENTREGA;
-  if (raw === "DEVOLUCION") return TipoMovimiento.DEVOLUCION;
-  if (raw === "ASIGNACION") return TipoMovimiento.ASIGNACION;
+  if (raw === "ENTREGA") return MOVIMIENTO_TIPO_ENTREGA;
+  if (raw === "DEVOLUCION") return MOVIMIENTO_TIPO_DEVOLUCION;
+  if (raw === "ASIGNACION") return MOVIMIENTO_TIPO_ASIGNACION;
   return null;
 }
 
@@ -178,10 +184,10 @@ function validateDestinatarioTipoForMovimiento(
   tipo: TipoMovimiento,
   destinatarioPayload: ParsedDestinatarioPayload,
 ) {
-  if (tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION) {
+  if (tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION) {
     return destinatarioPayload.destinatarioTipo === "PERSONAL";
   }
-  if (tipo === TipoMovimiento.ASIGNACION) {
+  if (tipo === MOVIMIENTO_TIPO_ASIGNACION) {
     return true;
   }
   return false;
@@ -281,7 +287,7 @@ export async function GET(req: Request) {
 
   const where: Prisma.MovimientoWhereInput = {
     ...(ci ? { destinatarioPersonal: { is: { ci } } } : {}),
-    tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION] },
+    tipo: { in: MOVIMIENTO_TIPOS_REGISTRO },
   };
 
   if (summaryOnly) {
@@ -485,7 +491,7 @@ export async function POST(req: Request) {
       ? prisma.personal.findMany({
           where: {
             ci: { in: destinatarioPayload.targetCis },
-            ...(tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION ? { rango: { tipo: TipoPersonal.SUBALTERNO } } : {}),
+            ...(tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION ? { rango: { tipo: TipoPersonal.SUBALTERNO } } : {}),
           },
           select: {
             ci: true,
@@ -519,7 +525,7 @@ export async function POST(req: Request) {
       const preview = missingCis.slice(0, 3).join(", ");
       const suffix = missingCis.length > 3 ? "..." : "";
       const error =
-        tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION
+        tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION
           ? `No existe personal subalterno para las CIs: ${preview}${suffix}`
           : `No existe personal para las CIs: ${preview}${suffix}`;
       return NextResponse.json({ error }, { status: 404 });
@@ -718,7 +724,7 @@ export async function POST(req: Request) {
             entidad: "REGISTRO",
             entidadId: movimiento.movimientoId.toString(),
             detalle: {
-              evento: tipo === TipoMovimiento.ASIGNACION ? "MOVIMIENTO_ASIGNACION" : "MOVIMIENTO_VESTUARIO",
+              evento: tipo === MOVIMIENTO_TIPO_ASIGNACION ? "MOVIMIENTO_ASIGNACION" : "MOVIMIENTO_VESTUARIO",
               ci: movimiento.ci,
               personal: buildPersonalAuditDetail(personalRecord),
               tipo,
@@ -764,7 +770,7 @@ export async function POST(req: Request) {
 
     if (destinatarioPayload.destinatarioTipo === "PERSONAL") {
       const tipoLabel =
-        tipo === TipoMovimiento.ENTREGA ? "entrega" : tipo === TipoMovimiento.DEVOLUCION ? "devolucion" : "asignacion";
+        tipo === MOVIMIENTO_TIPO_ENTREGA ? "entrega" : tipo === MOVIMIENTO_TIPO_DEVOLUCION ? "devolucion" : "asignacion";
       const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
       const resumenItems = itemsDetallados
         .slice(0, 4)
@@ -779,7 +785,7 @@ export async function POST(req: Request) {
             ci: targetCi,
             subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
             headline:
-              tipo === TipoMovimiento.ASIGNACION
+              tipo === MOVIMIENTO_TIPO_ASIGNACION
                 ? "Se registro una asignacion de equipo en tu ficha."
                 : `Se registro una ${tipoLabel} de vestuario en tu ficha.`,
             detailLines: [

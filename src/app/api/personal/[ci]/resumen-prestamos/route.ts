@@ -8,6 +8,13 @@ import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 import { normalizeOutputText } from "@/lib/spanish-text";
+import {
+  MOVIMIENTO_TIPO_ASIGNACION,
+  MOVIMIENTO_TIPO_DEVOLUCION,
+  MOVIMIENTO_TIPO_ENTREGA,
+  MOVIMIENTO_TIPO_PRESTAMO,
+  MOVIMIENTO_TIPOS_REGISTRO,
+} from "@/lib/tipo-movimiento";
 
 const MM_TO_PT = 2.834645669;
 const A4_WIDTH = 210 * MM_TO_PT;
@@ -101,9 +108,9 @@ function militaryShortLabel(gradoAbreviacion: string, apellido: string, nombre: 
 }
 
 function movementTypeLabel(tipo: TipoMovimiento) {
-  if (tipo === TipoMovimiento.ENTREGA) return "ENTREGA";
-  if (tipo === TipoMovimiento.DEVOLUCION) return "DEVOLUCION";
-  if (tipo === TipoMovimiento.ASIGNACION) return "ASIGNACION";
+  if (tipo === MOVIMIENTO_TIPO_ENTREGA) return "ENTREGA";
+  if (tipo === MOVIMIENTO_TIPO_DEVOLUCION) return "DEVOLUCION";
+  if (tipo === MOVIMIENTO_TIPO_ASIGNACION) return "ASIGNACION";
   return "PRESTAMO PENDIENTE";
 }
 
@@ -113,21 +120,21 @@ function movementTypeColor(tipo: TipoMovimiento) {
 }
 
 function movementReference(movimiento: MovimientoResumen) {
-  if (movimiento.tipo === TipoMovimiento.PRESTAMO) {
+  if (movimiento.tipo === MOVIMIENTO_TIPO_PRESTAMO) {
     return movimiento.prestamoActivo?.reciboNumero ?? `PR-${movimiento.movimientoId.toString().padStart(8, "0")}`;
   }
   return `MV-${movimiento.movimientoId.toString().padStart(8, "0")}`;
 }
 
 function resolveItemEstado(movimiento: MovimientoResumen, item: MovimientoResumen["items"][number]) {
-  if (movimiento.tipo === TipoMovimiento.DEVOLUCION) {
+  if (movimiento.tipo === MOVIMIENTO_TIPO_DEVOLUCION) {
     return item.estadoDevolucion ?? item.estadoEntrega ?? "BUENO";
   }
   return item.estadoEntrega ?? item.estadoDevolucion ?? "BUENO";
 }
 
 function resolveItemObservacion(movimiento: MovimientoResumen, item: MovimientoResumen["items"][number]) {
-  if (movimiento.tipo === TipoMovimiento.DEVOLUCION) {
+  if (movimiento.tipo === MOVIMIENTO_TIPO_DEVOLUCION) {
     return item.comentarioDevolucion ?? item.comentarioEntrega ?? "-";
   }
   return item.comentarioEntrega ?? item.comentarioDevolucion ?? "-";
@@ -211,8 +218,8 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     where: {
       destinatarioPersonal: { is: { ci } },
       OR: [
-        { tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION] } },
-        { tipo: TipoMovimiento.PRESTAMO, prestamoActivo: { isNot: null } },
+        { tipo: { in: MOVIMIENTO_TIPOS_REGISTRO } },
+        { tipo: MOVIMIENTO_TIPO_PRESTAMO, prestamoActivo: { isNot: null } },
       ],
     },
     include: MOVIMIENTO_RESUMEN_INCLUDE,
@@ -233,7 +240,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       acc[movimiento.tipo] += 1;
       return acc;
     },
-    { [TipoMovimiento.ENTREGA]: 0, [TipoMovimiento.DEVOLUCION]: 0, [TipoMovimiento.ASIGNACION]: 0, [TipoMovimiento.PRESTAMO]: 0 },
+    { [MOVIMIENTO_TIPO_ENTREGA]: 0, [MOVIMIENTO_TIPO_DEVOLUCION]: 0, [MOVIMIENTO_TIPO_ASIGNACION]: 0, [MOVIMIENTO_TIPO_PRESTAMO]: 0 },
   );
   const totalUnidades = movimientos.reduce(
     (acc, movimiento) => acc + movimiento.items.reduce((itemsAcc, item) => itemsAcc + item.cantidad, 0),
@@ -295,7 +302,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       
       // Resumen (Una sola fila compacta)
       drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 18, rgb(0, 0, 0), false);
-      const summaryText = `RESUMEN GENERAL: ${movimientos.length} Movimientos — ${totalUnidades} Unidades — ENTREGAS: ${movementsByType[TipoMovimiento.ENTREGA]} | DEVOLUCIONES: ${movementsByType[TipoMovimiento.DEVOLUCION]} | ASIGNACIONES: ${movementsByType[TipoMovimiento.ASIGNACION]} | PRÉSTAMOS: ${movementsByType[TipoMovimiento.PRESTAMO]}`;
+      const summaryText = `RESUMEN GENERAL: ${movimientos.length} Movimientos — ${totalUnidades} Unidades — ENTREGAS: ${movementsByType[MOVIMIENTO_TIPO_ENTREGA]} | DEVOLUCIONES: ${movementsByType[MOVIMIENTO_TIPO_DEVOLUCION]} | ASIGNACIONES: ${movementsByType[MOVIMIENTO_TIPO_ASIGNACION]} | PRÉSTAMOS: ${movementsByType[MOVIMIENTO_TIPO_PRESTAMO]}`;
       drawTextAt(currentPage!, bold, summaryText, PAGE_MARGIN_X + RECEIPT_PADDING + 8, currentY + 5, 8.5);
       
       currentY += 28;
