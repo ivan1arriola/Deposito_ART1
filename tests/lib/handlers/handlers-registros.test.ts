@@ -100,7 +100,7 @@ describe("Handlers de Registros", () => {
       vi.mocked(api).mockRejectedValue(new Error("No se pudo conectar"));
 
       try {
-        await loadRegistrosHandler("1234567890", { onError });
+        await loadRegistrosHandler("1234567890", { onError, onLoad: vi.fn() });
       } catch {
         // Error esperado
       }

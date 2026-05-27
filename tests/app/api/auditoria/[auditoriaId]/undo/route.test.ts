@@ -133,7 +133,7 @@ describe("POST /api/auditoria/[auditoriaId]/undo", () => {
     sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
 
     mockTx.auditoria.findUnique.mockResolvedValue({
-      auditoriaId: 100n,
+      auditoriaId: BigInt(100),
       createdAt: sixDaysAgo,
       entidad: "ARTICULO",
       accion: "UPDATE",
@@ -159,7 +159,7 @@ describe("POST /api/auditoria/[auditoriaId]/undo", () => {
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
     mockTx.auditoria.findUnique.mockResolvedValue({
-      auditoriaId: 100n,
+      auditoriaId: BigInt(100),
       createdAt: twoDaysAgo,
       entidad: "ARTICULO",
       accion: "UPDATE",
@@ -195,7 +195,7 @@ describe("POST /api/auditoria/[auditoriaId]/undo", () => {
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
     mockTx.auditoria.findUnique.mockResolvedValue({
-      auditoriaId: 101n,
+      auditoriaId: BigInt(101),
       createdAt: oneDayAgo,
       entidad: "ARTICULO",
       accion: "CREATE",
@@ -227,7 +227,7 @@ describe("POST /api/auditoria/[auditoriaId]/undo", () => {
     hoursAgo.setHours(hoursAgo.getHours() - 3);
 
     mockTx.auditoria.findUnique.mockResolvedValue({
-      auditoriaId: 102n,
+      auditoriaId: BigInt(102),
       createdAt: hoursAgo,
       entidad: "GRADO_PERSONAL",
       accion: "DELETE",
