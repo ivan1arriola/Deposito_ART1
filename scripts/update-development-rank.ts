@@ -5,7 +5,7 @@ import { normalizePgConnectionStringSecurity } from "../src/lib/postgres-connect
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  console.error("DATABASE_URL no esta definido.");
+  
   process.exit(1);
 }
 
@@ -66,7 +66,7 @@ async function main() {
 
     console.log("¡Migración de rango de desarrollo completada con éxito!");
   } catch (error) {
-    console.error("Error al ejecutar el script:", error);
+    console.log("Error al ejecutar el script:", error);
   } finally {
     await prisma.$disconnect();
   }

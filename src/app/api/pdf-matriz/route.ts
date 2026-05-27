@@ -119,7 +119,6 @@ export async function POST(request: NextRequest): Promise<Response> {
     });
 
     doc.on("error", (err: Error) => {
-      console.error("PDFDocument stream error:", err);
       throw err;
     });
 
@@ -324,7 +323,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       // Finalizar documento
       doc.end();
     } catch (contentError) {
-      console.error("Error adding content to PDF:", contentError);
       doc.end();
       throw contentError;
     }
@@ -337,9 +335,8 @@ export async function POST(request: NextRequest): Promise<Response> {
 
       doc.on("end", () => {
         clearTimeout(timeout);
-        try {
+          try {
           const pdfBuffer = Buffer.concat(chunks);
-          console.log(`Matriz PDF generada exitosamente: ${pdfBuffer.length} bytes`);
 
           resolve(
             new NextResponse(pdfBuffer, {
@@ -351,19 +348,17 @@ export async function POST(request: NextRequest): Promise<Response> {
             })
           );
         } catch (bufferError) {
-          console.error("Error concatenating PDF buffer:", bufferError);
           reject(bufferError);
         }
       });
 
       doc.on("error", (err: Error) => {
         clearTimeout(timeout);
-        console.error("PDF document error during generation:", err);
         reject(err);
       });
     });
   } catch (error) {
-    console.error("Error in PDF matriz generation endpoint:", error);
+    
     const message = error instanceof Error ? error.message : "Failed to generate PDF";
     return NextResponse.json(
       { error: `PDF generation failed: ${message}` },

@@ -285,10 +285,10 @@ export function ConfigViews(props: ConfigViewsProps) {
         const data = await res.json();
         setTrashDetails(data.payload);
       } else {
-        console.error("Error fetching trash details");
+        console.log("Error fetching trash details");
       }
     } catch (err) {
-      console.error(err);
+      console.log(err);
     } finally {
       setTrashDetailsLoading(false);
     }

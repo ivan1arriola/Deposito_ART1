@@ -621,7 +621,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
         return NextResponse.json({ error: "Esta entidad no soporta la función de deshacer." }, { status: 400 });
       }
     }
-    console.error("Error en Deshacer Auditoría:", error);
+    console.log("Error en Deshacer Auditoría:", error);
     return NextResponse.json({ error: "Error interno al deshacer la acción de auditoría." }, { status: 500 });
   }
 }

@@ -26,6 +26,7 @@ import {
 type MovimientoItemPayload = {
   itemId: string | number;
   cantidad: number | string;
+  comentario?: string;
 };
 
 type MovimientoPayload = {
@@ -138,11 +139,15 @@ function parseRecintoNombre(value: unknown) {
 }
 
 function sanitizeExternalPayload(value: MovimientoPayload["destinatarioExterno"] | undefined) {
+  let ci = String(value?.ci ?? "").trim();
+  if (!ci.startsWith("SD-")) {
+    ci = ci.replace(/\D/g, "");
+  }
   return {
     grado: String(value?.grado ?? "").trim(),
     nombre: String(value?.nombre ?? "").trim(),
     apellido: String(value?.apellido ?? "").trim(),
-    ci: String(value?.ci ?? "").trim().replace(/\D/g, ""),
+    ci,
     unidadDestino: String(value?.unidadDestino ?? "").trim(),
   };
 }
@@ -164,7 +169,7 @@ function parseDestinatarioPayload(candidate: Record<string, unknown>): ParsedDes
 
   if (destinatarioTipo === "EXTERNO") {
     const externo = sanitizeExternalPayload(candidate.destinatarioExterno as MovimientoPayload["destinatarioExterno"]);
-    if (!isValidUruguayanCi(externo.ci)) return null;
+    if (!externo.ci.startsWith("SD-") && !isValidUruguayanCi(externo.ci)) return null;
     if (!externo.grado || !externo.nombre || !externo.apellido || !externo.unidadDestino) return null;
     return {
       destinatarioTipo,
@@ -472,17 +477,22 @@ export async function POST(req: Request) {
     .map((item) => ({
       itemId: parseBigIntId(item.itemId),
       cantidad: parseCantidad(item.cantidad),
+      comentario: typeof item.comentario === "string" ? item.comentario.trim() : "",
     }))
-    .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{ itemId: bigint; cantidad: number }>;
+    .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{ itemId: bigint; cantidad: number; comentario: string }>;
 
   if (parsedEquipos.length === 0) {
     return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
   }
 
-  const dedupedEquipos = new Map<string, number>();
+  const dedupedEquipos = new Map<string, { cantidad: number; comentario: string }>();
   for (const item of parsedEquipos) {
     const key = item.itemId.toString();
-    dedupedEquipos.set(key, (dedupedEquipos.get(key) ?? 0) + item.cantidad);
+    const existing = dedupedEquipos.get(key);
+    dedupedEquipos.set(key, {
+      cantidad: (existing?.cantidad ?? 0) + item.cantidad,
+      comentario: existing?.comentario ? `${existing.comentario} | ${item.comentario}` : item.comentario,
+    });
   }
 
   const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
@@ -539,10 +549,11 @@ export async function POST(req: Request) {
   const comentarios = body.comentarios?.trim() || null;
   const afectaStock = true;
   const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
-  const itemsDetallados = Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
+  const itemsDetallados = Array.from(dedupedEquipos.entries()).map(([itemId, { cantidad, comentario }]) => ({
     itemId,
     nombre: itemNombrePorId.get(itemId) ?? "Equipo sin nombre",
     cantidad,
+    comentario,
   }));
   const totalUnidades = itemsDetallados.reduce((acumulado, item) => acumulado + item.cantidad, 0);
 
@@ -571,10 +582,11 @@ export async function POST(req: Request) {
         });
 
         await tx.movimientoItem.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
+          data: Array.from(dedupedEquipos.entries()).map(([itemId, { cantidad, comentario }]) => ({
             movimientoId: movimiento.movimientoId,
             itemId: BigInt(itemId),
             cantidad,
+            comentarioEntrega: comentario || null,
           })),
         });
 
@@ -619,10 +631,11 @@ export async function POST(req: Request) {
         });
 
         await tx.movimientoItem.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
+          data: Array.from(dedupedEquipos.entries()).map(([itemId, { cantidad, comentario }]) => ({
             movimientoId: movimiento.movimientoId,
             itemId: BigInt(itemId),
             cantidad,
+            comentarioEntrega: comentario || null,
           })),
         });
 
@@ -650,10 +663,11 @@ export async function POST(req: Request) {
         });
 
         await tx.movimientoItem.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
+          data: Array.from(dedupedEquipos.entries()).map(([itemId, { cantidad, comentario }]) => ({
             movimientoId: movimiento.movimientoId,
             itemId: BigInt(itemId),
             cantidad,
+            comentarioEntrega: comentario || null,
           })),
         });
 

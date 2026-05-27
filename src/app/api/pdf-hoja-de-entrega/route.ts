@@ -319,7 +319,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       },
     });
   } catch (error) {
-    console.error("Error in PDF generation endpoint:", error);
+    console.log("Error in PDF generation endpoint:", error);
     const message = error instanceof Error ? error.message : "Failed to generate PDF";
     return NextResponse.json(
       { error: `PDF generation failed: ${message}` },

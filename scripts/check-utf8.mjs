@@ -193,16 +193,16 @@ if (fixBom && fixedBomCount > 0) {
 }
 
 if (findings.length > 0) {
-  console.error("Se detectaron problemas de codificacion UTF-8:");
+  console.log("Se detectaron problemas de codificacion UTF-8:");
   for (const finding of findings) {
-    console.error(`- ${finding}`);
+    console.log(`- ${finding}`);
   }
 
   if (bomFiles.length > 0 && !fixBom) {
-    console.error("Tip: ejecuta 'npm run check:encoding:fix' para remover BOM automaticamente.");
+    console.log("Tip: ejecuta 'npm run check:encoding:fix' para remover BOM automaticamente.");
   }
 
-  console.error(`Resumen: ${findings.length} problema(s) detectado(s).`);
+  console.log(`Resumen: ${findings.length} problema(s) detectado(s).`);
   process.exit(1);
 }
 

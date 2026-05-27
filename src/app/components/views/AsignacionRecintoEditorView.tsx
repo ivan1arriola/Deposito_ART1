@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
-import type { Equipo } from "@/types/entities";
+import type { Equipo, Rango } from "@/types/entities";
 import { api } from "@/lib/api";
 import { getTodayDateInput } from "@/lib/date-helpers";
+import { isValidUruguayanCi } from "@/lib/ci";
 
 type AsignacionRecintoEditorViewProps = {
   equiposOrdenados: Equipo[];
+  rangos?: Rango[];
+  baterias?: Array<{ bateriaId: number; nombre: string; orden: number }>;
   maxFechaIngreso: string;
   onBack: () => void;
   onSuccess: () => void;
@@ -16,58 +19,69 @@ type AsignacionRecintoEditorViewProps = {
 type Draft = {
   fecha: string;
   comentarios: string;
-  destinatarioTipo: "RECINTO" | "EXTERNO";
-  recintoClase: "INTERNO" | "EXTERNO";
-  recintoNombre: string;
-  destinatarioExternoGrado: string;
-  destinatarioExternoCi: string;
-  destinatarioExternoNombre: string;
-  destinatarioExternoApellido: string;
-  destinatarioExternoUnidadDestino: string;
-  items: Array<{ itemId: string; cantidad: number }>;
+  entidadBeneficiariaTipo: "INTERNO" | "EXTERNO";
+  entidadBeneficiariaDetalle: string;
+  grado: string;
+  ci: string;
+  nombre: string;
+  apellido: string;
+  items: Array<{ itemId: string; cantidad: number; comentario: string }>;
 };
 
 export function AsignacionRecintoEditorView({
   equiposOrdenados,
-  maxFechaIngreso,
+  rangos = [],
+  baterias = [],
   onBack,
   onSuccess,
 }: AsignacionRecintoEditorViewProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [entidadesPrevias, setEntidadesPrevias] = useState<string[]>([]);
+
+  useEffect(() => {
+    api("/api/entidades-beneficiarias")
+      .then((res) => res.json())
+      .then((data: string[]) => {
+        const set = new Set<string>(data);
+        baterias.forEach(b => set.add(b.nombre));
+        setEntidadesPrevias(Array.from(set).sort());
+      })
+      .catch(() => {
+        setEntidadesPrevias(baterias.map(b => b.nombre).sort());
+      });
+  }, [baterias]);
 
   const [draft, setDraft] = useState<Draft>({
     fecha: getTodayDateInput(),
     comentarios: "",
-    destinatarioTipo: "RECINTO",
-    recintoClase: "INTERNO",
-    recintoNombre: "",
-    destinatarioExternoGrado: "",
-    destinatarioExternoCi: "",
-    destinatarioExternoNombre: "",
-    destinatarioExternoApellido: "",
-    destinatarioExternoUnidadDestino: "",
-    items: [{ itemId: "", cantidad: 1 }],
+    entidadBeneficiariaTipo: "INTERNO",
+    entidadBeneficiariaDetalle: "",
+    grado: "",
+    ci: "",
+    nombre: "",
+    apellido: "",
+    items: [{ itemId: "", cantidad: 1, comentario: "" }],
   });
 
   const equiposOrdenadosAlfabeticamente = [...equiposOrdenados].sort((a, b) =>
     a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
   );
 
-  const updateDraft = (field: keyof Draft, value: any) => {
+  const updateDraft = <K extends keyof Draft>(field: K, value: Draft[K]) => {
     setDraft((prev) => ({ ...prev, [field]: value }));
   };
 
-  const onItemChange = (index: number, field: "itemId" | "cantidad", value: string) => {
+  const onItemChange = (index: number, field: "itemId" | "cantidad" | "comentario", value: string | number) => {
     setDraft((prev) => {
       const next = [...prev.items];
-      next[index] = { ...next[index], [field]: field === "cantidad" ? Number(value) : value };
+      next[index] = { ...next[index], [field]: value };
       return { ...prev, items: next };
     });
   };
 
   const onAddItem = () => {
-    setDraft((prev) => ({ ...prev, items: [...prev.items, { itemId: "", cantidad: 1 }] }));
+    setDraft((prev) => ({ ...prev, items: [...prev.items, { itemId: "", cantidad: 1, comentario: "" }] }));
   };
 
   const onRemoveItem = (index: number) => {
@@ -90,21 +104,43 @@ export function AsignacionRecintoEditorView({
       return;
     }
 
+    if (!draft.grado || !draft.nombre || !draft.apellido) {
+      setError("Debes completar el grado, nombre y apellido del destinatario.");
+      setSaving(false);
+      return;
+    }
+    
+    if (draft.ci.trim() !== "" && !isValidUruguayanCi(draft.ci)) {
+      setError("La Cédula de Identidad ingresada no es válida.");
+      setSaving(false);
+      return;
+    }
+
+    if (!draft.entidadBeneficiariaDetalle) {
+      setError("Debes detallar la entidad beneficiaria.");
+      setSaving(false);
+      return;
+    }
+
     try {
+      const unidadDestino = draft.entidadBeneficiariaTipo === "INTERNO" 
+        ? `Interno a la Unidad - ${draft.entidadBeneficiariaDetalle}` 
+        : `Externo a la Unidad - ${draft.entidadBeneficiariaDetalle}`;
+
+      const finalCi = draft.ci.trim() === "" ? `SD-${Date.now()}` : draft.ci;
+
       const payload = {
         modo: "crear",
         tipo: "ASIGNACION",
         fecha: draft.fecha,
-        destinatarioTipo: draft.destinatarioTipo,
-        recintoClase: draft.destinatarioTipo === "RECINTO" ? draft.recintoClase : undefined,
-        recintoNombre: draft.destinatarioTipo === "RECINTO" ? draft.recintoNombre : undefined,
-        destinatarioExterno: draft.destinatarioTipo === "EXTERNO" ? {
-          grado: draft.destinatarioExternoGrado,
-          ci: draft.destinatarioExternoCi,
-          nombre: draft.destinatarioExternoNombre,
-          apellido: draft.destinatarioExternoApellido,
-          unidadDestino: draft.destinatarioExternoUnidadDestino,
-        } : undefined,
+        destinatarioTipo: "EXTERNO",
+        destinatarioExterno: {
+          grado: draft.grado,
+          ci: finalCi,
+          nombre: draft.nombre,
+          apellido: draft.apellido,
+          unidadDestino: unidadDestino,
+        },
         items: validItems,
         comentarios: draft.comentarios,
       };
@@ -126,8 +162,8 @@ export function AsignacionRecintoEditorView({
       <article className="ej-card rounded-2xl p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-stone-900">Registrar Asignación a Recinto / Externo</h2>
-            <p className="mt-1 text-sm text-stone-600">Completa los datos para asignar equipo a un destino que no es personal de la unidad.</p>
+            <h2 className="text-xl font-bold text-stone-900">Registrar Asignación</h2>
+            <p className="mt-1 text-sm text-stone-600">Completa los datos para asignar equipo a un beneficiario.</p>
           </div>
           <button
             type="button"
@@ -146,19 +182,6 @@ export function AsignacionRecintoEditorView({
 
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="text-sm font-medium text-stone-700">
-            Tipo de destinatario
-            <select
-              value={draft.destinatarioTipo}
-              onChange={(e) => updateDraft("destinatarioTipo", e.target.value)}
-              disabled={saving}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            >
-              <option value="RECINTO">Recinto</option>
-              <option value="EXTERNO">Persona Externa</option>
-            </select>
-          </label>
-
-          <label className="text-sm font-medium text-stone-700">
             Fecha
             <DateTextInput
               value={draft.fecha}
@@ -167,63 +190,36 @@ export function AsignacionRecintoEditorView({
               className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             />
           </label>
-
-          <label className="text-sm font-medium text-stone-700 sm:col-span-2">
-            Comentarios (opcional)
-            <input
-              value={draft.comentarios}
-              onChange={(e) => updateDraft("comentarios", e.target.value)}
-              disabled={saving}
-              placeholder="Detalle breve"
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-          </label>
         </div>
 
-        {draft.destinatarioTipo === "RECINTO" ? (
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-8 space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-stone-600 border-b border-stone-200 pb-2">
+            Datos del Destinatario
+          </h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="text-sm font-medium text-stone-700">
-              Clase de recinto
+              Grado
               <select
-                value={draft.recintoClase}
-                onChange={(e) => updateDraft("recintoClase", e.target.value)}
+                value={draft.grado}
+                onChange={(e) => updateDraft("grado", e.target.value)}
                 disabled={saving}
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white"
               >
-                <option value="INTERNO">Dentro de la unidad</option>
-                <option value="EXTERNO">Fuera de la unidad</option>
+                <option value="">Seleccionar grado</option>
+                {rangos
+                  .filter((r) => r.nombreCompleto !== "Desarrollo" && r.abreviacion !== "Desarrollo")
+                  .map((r) => (
+                    <option key={r.rangoId} value={r.abreviacion}>
+                      {r.abreviacion} - {r.nombreCompleto}
+                    </option>
+                  ))}
               </select>
             </label>
             <label className="text-sm font-medium text-stone-700">
-              Nombre del recinto
+              CI (Opcional)
               <input
-                value={draft.recintoNombre}
-                onChange={(e) => updateDraft("recintoNombre", e.target.value)}
-                disabled={saving}
-                placeholder="Ej.: Batería A / Ministerio de Defensa"
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
-          </div>
-        ) : null}
-
-        {draft.destinatarioTipo === "EXTERNO" ? (
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="text-sm font-medium text-stone-700">
-              Grado
-              <input
-                value={draft.destinatarioExternoGrado}
-                onChange={(e) => updateDraft("destinatarioExternoGrado", e.target.value)}
-                disabled={saving}
-                placeholder="Ej.: Tte. 1ro."
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="text-sm font-medium text-stone-700">
-              CI
-              <input
-                value={draft.destinatarioExternoCi}
-                onChange={(e) => updateDraft("destinatarioExternoCi", e.target.value)}
+                value={draft.ci}
+                onChange={(e) => updateDraft("ci", e.target.value)}
                 disabled={saving}
                 placeholder="Ej.: 5.123.456-7"
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -232,8 +228,8 @@ export function AsignacionRecintoEditorView({
             <label className="text-sm font-medium text-stone-700">
               Nombres
               <input
-                value={draft.destinatarioExternoNombre}
-                onChange={(e) => updateDraft("destinatarioExternoNombre", e.target.value)}
+                value={draft.nombre}
+                onChange={(e) => updateDraft("nombre", e.target.value)}
                 disabled={saving}
                 placeholder="Nombres"
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -242,65 +238,103 @@ export function AsignacionRecintoEditorView({
             <label className="text-sm font-medium text-stone-700">
               Apellidos
               <input
-                value={draft.destinatarioExternoApellido}
-                onChange={(e) => updateDraft("destinatarioExternoApellido", e.target.value)}
+                value={draft.apellido}
+                onChange={(e) => updateDraft("apellido", e.target.value)}
                 disabled={saving}
                 placeholder="Apellidos"
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
             </label>
-            <label className="text-sm font-medium text-stone-700 sm:col-span-2">
-              Unidad de destino
-              <input
-                value={draft.destinatarioExternoUnidadDestino}
-                onChange={(e) => updateDraft("destinatarioExternoUnidadDestino", e.target.value)}
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-stone-600 border-b border-stone-200 pb-2">
+            Entidad Beneficiaria
+          </h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="text-sm font-medium text-stone-700">
+              Tipo de Entidad
+              <select
+                value={draft.entidadBeneficiariaTipo}
+                onChange={(e) => updateDraft("entidadBeneficiariaTipo", e.target.value)}
                 disabled={saving}
-                placeholder="Ej.: Brigada de Infantería No. 5"
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              >
+                <option value="INTERNO">Interno a la Unidad</option>
+                <option value="EXTERNO">Externo a la Unidad</option>
+              </select>
+            </label>
+            <label className="text-sm font-medium text-stone-700">
+              Detalle de Entidad
+              <input
+                list="entidades-previas"
+                value={draft.entidadBeneficiariaDetalle}
+                onChange={(e) => updateDraft("entidadBeneficiariaDetalle", e.target.value)}
+                disabled={saving}
+                placeholder={draft.entidadBeneficiariaTipo === "INTERNO" ? "Ej.: Batería Comando" : "Ej.: Brigada de Infantería No. 5"}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
+              <datalist id="entidades-previas">
+                {entidadesPrevias.map((entidad, idx) => (
+                  <option key={idx} value={entidad} />
+                ))}
+              </datalist>
             </label>
           </div>
-        ) : null}
+        </div>
 
         <div className="mt-8 space-y-3">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-stone-600">Equipos Asignados</h3>
+          <h3 className="text-sm font-bold uppercase tracking-wide text-stone-600 border-b border-stone-200 pb-2">
+            Equipos Asignados
+          </h3>
           {draft.items.map((item, index) => (
-            <div key={index} className="flex flex-col sm:flex-row items-center gap-3 bg-stone-50 p-3 rounded-lg border border-stone-200">
-              <select
-                value={item.itemId}
-                onChange={(e) => onItemChange(index, "itemId", e.target.value)}
-                disabled={saving}
-                className="w-full sm:flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white"
-              >
-                <option value="">Seleccionar equipo</option>
-                {equiposOrdenadosAlfabeticamente.map((catalogItem) => {
-                  const isSelectedByOther = draft.items.some((i, idx) => idx !== index && i.itemId === catalogItem.itemId);
-                  if (isSelectedByOther) return null;
-                  return (
-                    <option key={catalogItem.itemId} value={catalogItem.itemId}>
-                      {catalogItem.nombre}
-                    </option>
-                  );
-                })}
-              </select>
-              <div className="flex w-full sm:w-auto items-center gap-3">
-                <input
-                  type="number"
-                  min={1}
-                  value={item.cantidad}
-                  onChange={(e) => onItemChange(index, "cantidad", e.target.value)}
+            <div key={index} className="flex flex-col gap-3 bg-stone-50 p-4 rounded-lg border border-stone-200">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <select
+                  value={item.itemId}
+                  onChange={(e) => onItemChange(index, "itemId", e.target.value)}
                   disabled={saving}
-                  className="w-24 rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => onRemoveItem(index)}
-                  disabled={saving || draft.items.length <= 1}
-                  className="w-full sm:w-auto rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-800 hover:bg-rose-200 disabled:opacity-50 transition-colors"
+                  className="w-full sm:flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white"
                 >
-                  Quitar
-                </button>
+                  <option value="">Seleccionar equipo</option>
+                  {equiposOrdenadosAlfabeticamente.map((catalogItem) => {
+                    const isSelectedByOther = draft.items.some((i, idx) => idx !== index && i.itemId === catalogItem.itemId);
+                    if (isSelectedByOther) return null;
+                    return (
+                      <option key={catalogItem.itemId} value={catalogItem.itemId}>
+                        {catalogItem.nombre}
+                      </option>
+                    );
+                  })}
+                </select>
+                <div className="flex w-full sm:w-auto items-center gap-3">
+                  <input
+                    type="number"
+                    min={1}
+                    value={item.cantidad}
+                    onChange={(e) => onItemChange(index, "cantidad", Number(e.target.value))}
+                    disabled={saving}
+                    className="w-24 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onRemoveItem(index)}
+                    disabled={saving || draft.items.length <= 1}
+                    className="w-full sm:w-auto rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-800 hover:bg-rose-200 disabled:opacity-50 transition-colors"
+                  >
+                    Quitar
+                  </button>
+                </div>
               </div>
+              <input
+                type="text"
+                value={item.comentario}
+                onChange={(e) => onItemChange(index, "comentario", e.target.value)}
+                disabled={saving}
+                placeholder="Comentario sobre el equipo (opcional)"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white"
+              />
             </div>
           ))}
           
@@ -313,6 +347,19 @@ export function AsignacionRecintoEditorView({
             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-200 text-stone-700">+</span>
             Agregar otro equipo
           </button>
+        </div>
+
+        <div className="mt-6">
+          <label className="text-sm font-medium text-stone-700">
+            Comentarios generales (opcional)
+            <input
+              value={draft.comentarios}
+              onChange={(e) => updateDraft("comentarios", e.target.value)}
+              disabled={saving}
+              placeholder="Detalle breve del recibo"
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+          </label>
         </div>
 
         <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-stone-100">

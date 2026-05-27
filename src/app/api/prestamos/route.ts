@@ -567,7 +567,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(serializePrestamoWithActuante(created, actuanteByMovimientoId), { status: 201 });
   } catch (error) {
-    console.error("ERROR REGISTRANDO PRESTAMO:", error);
+    console.log("ERROR REGISTRANDO PRESTAMO:", error);
     return NextResponse.json({ error: "No se pudo registrar el préstamo." }, { status: 500 });
   }
 }

@@ -270,11 +270,11 @@ for (const filePath of listTrackedFiles()) {
 }
 
 if (findings.length > 0) {
-  console.error("Se detectaron riesgos de pérdida de caracteres en español:");
+  console.log("Se detectaron riesgos de pérdida de caracteres en español:");
   for (const finding of findings) {
-    console.error(`- ${finding}`);
+    console.log(`- ${finding}`);
   }
-  console.error(`Resumen: ${findings.length} problema(s) detectado(s).`);
+  console.log(`Resumen: ${findings.length} problema(s) detectado(s).`);
   if (!DO_FIX) process.exit(1);
 }
 

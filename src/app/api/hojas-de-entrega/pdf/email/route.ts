@@ -196,7 +196,7 @@ async function runHojasEntregaEmailJob(input: {
     const message = error instanceof Error ? error.message : "No se pudo enviar el PDF por correo.";
     metrics.totalMs = Math.max(0, Date.now() - startedAtMs);
     await failHojasEntregaEmailJob(input.jobId, message, { metrics });
-    console.error("[hojas-entrega-email-job] failed", {
+    console.log("[hojas-entrega-email-job] failed", {
       jobId: input.jobId,
       to: input.recipient,
       metrics,

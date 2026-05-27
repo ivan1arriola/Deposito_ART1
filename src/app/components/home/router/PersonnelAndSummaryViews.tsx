@@ -246,6 +246,8 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
       {activeView === "asignacion_recinto_nueva" ? (
         <AsignacionRecintoEditorView
           equiposOrdenados={equiposOrdenados}
+          rangos={rangos}
+          baterias={baterias}
           maxFechaIngreso={maxFechaIngreso}
           onBack={() => setActiveView("movimientos_recintos")}
           onSuccess={() => setActiveView("movimientos_recintos")}

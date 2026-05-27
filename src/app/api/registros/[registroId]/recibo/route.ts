@@ -279,25 +279,30 @@ export async function GET(request: Request, context: { params: Promise<{ registr
       : "Dentro de la Unidad"
     : isExterno
       ? registro.destinatarioExterno?.personaExterna
-        ? `CI ${formatUruguayanCi(registro.destinatarioExterno.personaExterna.ci)} | ${registro.destinatarioExterno.personaExterna.unidadDestino}`
+        ? registro.destinatarioExterno.personaExterna.unidadDestino
         : "-"
     : registro.destinatarioPersonal?.personal
-      ? `CI ${formatUruguayanCi(registro.destinatarioPersonal.personal.ci)}${
-          registro.destinatarioPersonal.personal.subalterno?.bateria?.nombre
-            ? ` | Batería ${registro.destinatarioPersonal.personal.subalterno.bateria.nombre}`
-            : ""
-        }`
+      ? registro.destinatarioPersonal.personal.subalterno?.bateria?.nombre
+        ? `Batería ${registro.destinatarioPersonal.personal.subalterno.bateria.nombre}`
+        : "Interno a la Unidad"
       : "-";
 
   const destinatarioFinalLabel = isRecinto 
     ? `${registro.destinatarioRecinto?.nombre ?? "Recinto no definido"} - ${destinoDetalle}`
     : destinatarioLabel;
 
-  const tableRows = registro.items.map((item) => ({
-    cantidad: String(item.cantidad),
-    efecto: item.item.nombre,
-    observaciones: registro.observaciones ?? "-",
-  }));
+  const tableRows = registro.items.map((item) => {
+    let observaciones = item.comentarioEntrega?.trim() || "";
+    if (registro.observaciones && registro.observaciones.trim() !== "") {
+      observaciones = observaciones ? `${observaciones} | ${registro.observaciones}` : registro.observaciones;
+    }
+    
+    return {
+      cantidad: String(item.cantidad),
+      efecto: item.item.nombre,
+      observaciones: observaciones || "-",
+    };
+  });
 
   const pdfDoc = await PDFDocument.create();
   const assets = await createReceiptPdfAssets(pdfDoc);
@@ -342,7 +347,8 @@ export async function GET(request: Request, context: { params: Promise<{ registr
         : registro.destinatarioPersonal?.personal?.ci;
 
       if (ciValue) {
-        drawField(page, assets, header.innerX, y, 150, 30, "Cédula de identidad", formatUruguayanCi(ciValue));
+        const ciDisplayValue = ciValue.startsWith("SD-") ? "-" : formatUruguayanCi(ciValue);
+        drawField(page, assets, header.innerX, y, 150, 30, "Cédula de identidad", ciDisplayValue);
 
         const detailValue = isExterno
           ? registro.destinatarioExterno?.personaExterna?.unidadDestino ?? "-"
@@ -357,7 +363,7 @@ export async function GET(request: Request, context: { params: Promise<{ registr
           y,
           header.innerW - 156,
           30,
-          isExterno ? "Unidad de destino" : "Detalle",
+          isExterno ? "Entidad beneficiaria" : "Detalle",
           detailValue,
         );
       } else {

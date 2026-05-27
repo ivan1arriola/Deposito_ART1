@@ -49,7 +49,7 @@ export async function logoutHandler(callbacks: CallbackProps) {
   try {
     await signOut({ redirect: false });
   } catch (error) {
-    console.error("Error al cerrar sesión:", error);
+    
   } finally {
     callbacks.onSuccess?.();
   }

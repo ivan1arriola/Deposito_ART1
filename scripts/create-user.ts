@@ -6,7 +6,6 @@ import { normalizePgConnectionStringSecurity } from "../src/lib/postgres-connect
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  console.error("DATABASE_URL no esta definido.");
   process.exit(1);
 }
 
@@ -31,9 +30,6 @@ const mailReferenciaArg = getArg("mail", "").trim();
 const mailReferencia = mailReferenciaArg || null;
 
 if (!username || !password || password.length < 8) {
-  console.error(
-    "Uso: npm run user:create -- --username admin --password <min8> [--role ADMIN|EDITOR|READ_ONLY] [--rango-id 1] [--grado \"Sdo. 1°\"] [--nombre Nombre] [--apellido Apellido] [--mail mail@dominio]",
-  );
   process.exit(1);
 }
 
@@ -121,6 +117,5 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error);
   process.exit(1);
 });

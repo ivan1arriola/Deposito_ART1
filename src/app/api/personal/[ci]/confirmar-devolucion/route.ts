@@ -89,7 +89,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Error al confirmar devolucion y baja:", error);
+    console.log("Error al confirmar devolucion y baja:", error);
     return NextResponse.json({ error: "No se pudo confirmar la baja del personal." }, { status: 500 });
   }
 }

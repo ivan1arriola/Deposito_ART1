@@ -423,10 +423,10 @@ export default function Home() {
         const data = await response.json();
         setPapeleraRecords(data);
       } else {
-        console.error("No se pudo cargar la papelera");
+        
       }
     } catch (err) {
-      console.error(err);
+      
     } finally {
       setPapeleraLoading(false);
     }
@@ -452,7 +452,6 @@ export default function Home() {
         setStatus(data.error || "No se pudo restaurar.");
       }
     } catch (err) {
-      console.error(err);
       setStatus("Error de red al restaurar.");
     }
   }, [loadPapelera, loadData]);
@@ -470,7 +469,6 @@ export default function Home() {
         setStatus(data.error || "No se pudo eliminar permanentemente.");
       }
     } catch (err) {
-      console.error(err);
       setStatus("Error de red al eliminar permanentemente.");
     }
   }, [loadPapelera]);
@@ -6767,7 +6765,7 @@ export default function Home() {
             requiredPersonalFields={requiredPersonalFields}
             canSubmitPersonal={canSubmitPersonal}
             creatingPersonal={creatingPersonal}
-            rangos={rangos}
+            rangos={rangosConfigView}
             baterias={baterias}
             equiposActivos={equiposActivos}
             tallaOptionsByKey={tallaOptionsByKey}

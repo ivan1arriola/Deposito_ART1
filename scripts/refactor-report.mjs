@@ -1794,7 +1794,7 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("No se pudo generar el reporte arquitectonico de refactorizacion.");
-  console.error(error);
+  console.log("No se pudo generar el reporte arquitectonico de refactorizacion.");
+  console.log(error);
   process.exit(1);
 });

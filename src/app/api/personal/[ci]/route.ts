@@ -541,7 +541,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
 
     return NextResponse.json({ status: "HISTORIAL", ci: ciDecoded });
   } catch (error) {
-    console.error("Error al procesar baja de personal:", error);
+    console.log("Error al procesar baja de personal:", error);
     return NextResponse.json({ error: "No se pudo procesar la baja del personal." }, { status: 500 });
   }
 }

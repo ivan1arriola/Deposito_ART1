@@ -360,7 +360,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
       );
     }
 
-    console.error("ascenso-sargento-primero: unexpected error", error);
+    console.log("ascenso-sargento-primero: unexpected error", error);
     return NextResponse.json({ error: "No se pudo completar el ascenso." }, { status: 500 });
   }
 }

@@ -135,7 +135,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Error al reactivar personal:", error);
+    console.log("Error al reactivar personal:", error);
     return NextResponse.json({ error: "No se pudo reactivar el personal desde el historial." }, { status: 500 });
   }
 }

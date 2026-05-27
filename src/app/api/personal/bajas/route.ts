@@ -116,7 +116,7 @@ export async function GET(req: Request) {
       historial: historyList,
     });
   } catch (error) {
-    console.error("Error al obtener lista de bajas:", error);
+    console.log("Error al obtener lista de bajas:", error);
     return NextResponse.json({ error: "No se pudo recuperar la información de bajas." }, { status: 500 });
   }
 }

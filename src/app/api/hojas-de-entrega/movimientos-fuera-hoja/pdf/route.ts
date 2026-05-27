@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error generating PDF:", error);
+    console.log("Error generating PDF:", error);
     return NextResponse.json({ error: "Error al generar el PDF" }, { status: 500 });
   }
 }

@@ -82,9 +82,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
     response = await fetch(url, fetchOptions);
     console.log("[api] fetch completado");
   } catch (error) {
-    if (!isAbortError(error)) {
-      console.error("[api] error ejecutando fetch:", error);
-    } else {
+    if (isAbortError(error)) {
       console.log("[api] fetch abortado");
     }
     console.groupEnd();
@@ -107,9 +105,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
     console.log("[api] rawBody recibido:", rawBody);
     console.log("[api] rawBody length:", rawBody.length);
   } catch (error) {
-    if (!isAbortError(error)) {
-      console.error("[api] error leyendo response.text():", error);
-    } else {
+    if (isAbortError(error)) {
       console.log("[api] lectura de body abortada");
     }
     console.groupEnd();
@@ -124,8 +120,6 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
       data = JSON.parse(rawBody);
       console.log("[api] JSON parseado correctamente:", data);
     } catch (error) {
-      console.error("[api] error parseando JSON:", error);
-      console.error("[api] respuesta cruda invalida:", rawBody);
       console.groupEnd();
       throw new Error("El servidor devolvió una respuesta inválida.");
     }
@@ -134,25 +128,16 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    console.error("[api] response no OK");
-    console.error("[api] status:", response.status);
-    console.error("[api] data de error:", data);
-
     const message =
       typeof data === "object" && data && "error" in data && typeof (data as { error?: unknown }).error === "string"
         ? (data as { error: string }).error
         : "Error en la operacion.";
-
-    console.error("[api] mensaje de error final:", message);
 
     console.groupEnd();
     throw new Error(message || "Error en la operacion.");
   }
 
   if (data === null) {
-    console.error("[api] data es null después de una respuesta OK");
-    console.error("[api] esto suele pasar si el endpoint responde 204 o body vacío");
-
     console.groupEnd();
     throw new Error("El servidor no devolvió datos. No se pudo completar la lectura.");
   }

@@ -61,7 +61,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error generating item movements PDF:", error);
+    console.log("Error generating item movements PDF:", error);
     return NextResponse.json({ error: "Error al generar el PDF" }, { status: 500 });
   }
 }
