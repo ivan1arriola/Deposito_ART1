@@ -265,11 +265,9 @@ export async function GET(request: Request, context: { params: Promise<{ registr
   const destinatarioLabel = isRecinto
     ? registro.destinatarioRecinto?.nombre ?? "Recinto no definido"
     : isExterno
-      ? isExternalAssignment
-        ? registro.destinatarioExterno?.personaExterna?.unidadDestino?.replace("Externo a la Unidad - ", "").trim() || "Persona Externa"
-        : registro.destinatarioExterno?.personaExterna
-          ? buildPersonaExternaEtiqueta(registro.destinatarioExterno.personaExterna)
-          : "Destinatario externo no definido"
+      ? registro.destinatarioExterno?.personaExterna
+        ? buildPersonaExternaEtiqueta(registro.destinatarioExterno.personaExterna)
+        : "Destinatario externo no definido"
     : registro.destinatarioPersonal?.personal
       ? `${registro.destinatarioPersonal.personal.rango.abreviacion} ${buildPersonalDestinatarioNombre(registro.destinatarioPersonal.personal)}`
           .replace(/\s+/g, " ")
@@ -291,9 +289,21 @@ export async function GET(request: Request, context: { params: Promise<{ registr
         : "Interno a la Unidad"
       : "-";
 
-  const destinatarioFinalLabel = isRecinto 
-    ? `${registro.destinatarioRecinto?.nombre ?? "Recinto no definido"} - ${destinoDetalle}`
-    : destinatarioLabel;
+  const isAsignacionExterno = isExterno; // Even if it is INTERNO under the hood, it's saved as externo in the DB for Asignaciones
+  
+  let destinoFull = "No definido";
+  if (isRecinto) {
+    const clase = registro.destinatarioRecinto?.clase === "EXTERNO" ? "Fuera de la Unidad" : "Dentro de la Unidad";
+    destinoFull = `${registro.destinatarioRecinto?.nombre ?? "Recinto no definido"} - ${clase}`;
+  } else if (isExterno) {
+    const unidad = registro.destinatarioExterno?.personaExterna?.unidadDestino || "";
+    const isInterno = unidad.startsWith("Interno a la Unidad");
+    const name = unidad.replace("Externo a la Unidad - ", "").replace("Interno a la Unidad - ", "").trim();
+    destinoFull = `${name} - ${isInterno ? "Dentro de la Unidad" : "Fuera de la Unidad"}`;
+  } else if (isPersonal) {
+    const bat = registro.destinatarioPersonal?.personal?.subalterno?.bateria?.nombre;
+    destinoFull = bat ? `Batería ${bat} - Dentro de la Unidad` : "Dentro de la Unidad";
+  }
 
   const tableRows = registro.items.map((item) => {
     let observaciones = item.comentarioEntrega?.trim() || "";
@@ -341,40 +351,21 @@ export async function GET(request: Request, context: { params: Promise<{ registr
       header.innerX,
       y,
       header.innerW,
-      isRecinto ? "Destino" : isExterno ? "Destinatario externo" : "Destinatario",
-      destinatarioFinalLabel,
+      "Destino",
+      destinoFull,
     );
 
-    if (!isRecinto) {
+    if (isExterno || isPersonal) {
       const ciValue = isExterno
         ? registro.destinatarioExterno?.personaExterna?.ci
         : registro.destinatarioPersonal?.personal?.ci;
 
-      if (ciValue && !isExternalAssignment) {
-        const ciDisplayValue = ciValue.startsWith("SD-") ? "-" : formatUruguayanCi(ciValue);
-        drawField(page, assets, header.innerX, y, 150, 30, "Cédula de identidad", ciDisplayValue);
-
-        const detailValue = isExterno
-          ? registro.destinatarioExterno?.personaExterna?.unidadDestino ?? "-"
-          : registro.destinatarioPersonal?.personal?.subalterno?.bateria?.nombre
-            ? `Batería ${registro.destinatarioPersonal.personal.subalterno.bateria.nombre}`
-            : "-";
-
-        drawField(
-          page,
-          assets,
-          header.innerX + 156,
-          y,
-          header.innerW - 156,
-          30,
-          isExterno ? "Entidad beneficiaria" : "Detalle",
-          detailValue,
-        );
+      if (ciValue && !ciValue.startsWith("SD-")) {
+        const ciDisplayValue = formatUruguayanCi(ciValue);
+        drawField(page, assets, header.innerX, y, header.innerW - 156, 30, "Superior responsable", destinatarioLabel);
+        drawField(page, assets, header.innerX + header.innerW - 150, y, 150, 30, "Cédula de identidad", ciDisplayValue);
       } else {
-        const detailValue = isExternalAssignment 
-          ? registro.destinatarioExterno?.personaExterna?.unidadDestino?.replace("Externo a la Unidad - ", "").trim() || "-"
-          : destinoDetalle;
-        drawField(page, assets, header.innerX, y, header.innerW, 30, isExternalAssignment ? "Entidad beneficiaria" : "Detalle", detailValue);
+        drawField(page, assets, header.innerX, y, header.innerW, 30, "Superior responsable", destinatarioLabel);
       }
       y += 36;
     }

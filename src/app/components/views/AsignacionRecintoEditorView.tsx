@@ -1,16 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
-import type { Equipo, Rango } from "@/types/entities";
+import type { Equipo, Rango, Personal, OficialSuboficial } from "@/types/entities";
 import { api } from "@/lib/api";
 import { getTodayDateInput } from "@/lib/date-helpers";
 import { isValidUruguayanCi } from "@/lib/ci";
+import { DestinatarioSearchSelect } from "@/app/components/shared/DestinatarioSearchSelect";
+import { apellidosLabel, nombresLabel } from "@/lib/formatters";
 
 type AsignacionRecintoEditorViewProps = {
   equiposOrdenados: Equipo[];
   rangos?: Rango[];
   baterias?: Array<{ bateriaId: number; nombre: string; orden: number }>;
+  personal?: Personal[];
+  oficialesSuboficiales?: OficialSuboficial[];
   maxFechaIngreso: string;
   onBack: () => void;
   onSuccess: () => void;
@@ -21,6 +25,7 @@ type Draft = {
   comentarios: string;
   entidadBeneficiariaTipo: "INTERNO" | "EXTERNO";
   entidadBeneficiariaDetalle: string;
+  personalCi: string;
   grado: string;
   ci: string;
   nombre: string;
@@ -32,6 +37,8 @@ export function AsignacionRecintoEditorView({
   equiposOrdenados,
   rangos = [],
   baterias = [],
+  personal = [],
+  oficialesSuboficiales = [],
   onBack,
   onSuccess,
 }: AsignacionRecintoEditorViewProps) {
@@ -57,12 +64,55 @@ export function AsignacionRecintoEditorView({
     comentarios: "",
     entidadBeneficiariaTipo: "INTERNO",
     entidadBeneficiariaDetalle: "",
+    personalCi: "",
     grado: "",
     ci: "",
     nombre: "",
     apellido: "",
     items: [{ itemId: "", cantidad: 1, comentario: "" }],
   });
+
+  const recipientOptions = useMemo(() => {
+    const list = [];
+    for (const p of personal) {
+      list.push({
+        ci: p.ci,
+        label: `${p.rango.abreviacion} ${apellidosLabel(p)}, ${nombresLabel(p)}`,
+        data: { grado: p.rango.abreviacion, nombre: nombresLabel(p), apellido: apellidosLabel(p), ci: p.ci }
+      });
+    }
+    for (const p of oficialesSuboficiales) {
+      list.push({
+        ci: p.ci,
+        label: `${p.gradoMando.abreviacion} ${p.apellido}, ${p.nombre}`,
+        data: { grado: p.gradoMando.abreviacion, nombre: p.nombre, apellido: p.apellido, ci: p.ci }
+      });
+    }
+    return list.sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+  }, [personal, oficialesSuboficiales]);
+
+  const onPersonalCiChange = (ci: string) => {
+    const selected = recipientOptions.find(opt => opt.ci === ci);
+    if (selected) {
+      setDraft(prev => ({
+        ...prev,
+        personalCi: ci,
+        grado: selected.data.grado,
+        nombre: selected.data.nombre,
+        apellido: selected.data.apellido,
+        ci: selected.data.ci
+      }));
+    } else {
+      setDraft(prev => ({
+        ...prev,
+        personalCi: ci,
+        grado: "",
+        nombre: "",
+        apellido: "",
+        ci: ""
+      }));
+    }
+  };
 
   const equiposOrdenadosAlfabeticamente = [...equiposOrdenados].sort((a, b) =>
     a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
@@ -104,16 +154,23 @@ export function AsignacionRecintoEditorView({
       return;
     }
 
-    if (!draft.grado || !draft.nombre || !draft.apellido) {
-      setError("Debes completar el grado, nombre y apellido del destinatario.");
-      setSaving(false);
-      return;
-    }
-    
-    if (draft.ci.trim() !== "" && !isValidUruguayanCi(draft.ci)) {
-      setError("La Cédula de Identidad ingresada no es válida.");
-      setSaving(false);
-      return;
+    if (draft.entidadBeneficiariaTipo === "INTERNO") {
+      if (!draft.personalCi) {
+        setError("Debes seleccionar el personal destinatario.");
+        setSaving(false);
+        return;
+      }
+    } else {
+      if (!draft.grado || !draft.nombre || !draft.apellido) {
+        setError("Debes completar el grado, nombre y apellido del destinatario.");
+        setSaving(false);
+        return;
+      }
+      if (draft.ci.trim() !== "" && !isValidUruguayanCi(draft.ci)) {
+        setError("La Cédula de Identidad ingresada no es válida.");
+        setSaving(false);
+        return;
+      }
     }
 
     if (!draft.entidadBeneficiariaDetalle) {
@@ -194,62 +251,6 @@ export function AsignacionRecintoEditorView({
 
         <div className="mt-8 space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wide text-stone-600 border-b border-stone-200 pb-2">
-            Datos del Destinatario
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="text-sm font-medium text-stone-700">
-              Grado
-              <select
-                value={draft.grado}
-                onChange={(e) => updateDraft("grado", e.target.value)}
-                disabled={saving}
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white"
-              >
-                <option value="">Seleccionar grado</option>
-                {rangos
-                  .filter((r) => r.nombreCompleto !== "Desarrollo" && r.abreviacion !== "Desarrollo")
-                  .map((r) => (
-                    <option key={r.rangoId} value={r.abreviacion}>
-                      {r.abreviacion} - {r.nombreCompleto}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label className="text-sm font-medium text-stone-700">
-              CI (Opcional)
-              <input
-                value={draft.ci}
-                onChange={(e) => updateDraft("ci", e.target.value)}
-                disabled={saving}
-                placeholder="Ej.: 5.123.456-7"
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="text-sm font-medium text-stone-700">
-              Nombres
-              <input
-                value={draft.nombre}
-                onChange={(e) => updateDraft("nombre", e.target.value)}
-                disabled={saving}
-                placeholder="Nombres"
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="text-sm font-medium text-stone-700">
-              Apellidos
-              <input
-                value={draft.apellido}
-                onChange={(e) => updateDraft("apellido", e.target.value)}
-                disabled={saving}
-                placeholder="Apellidos"
-                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="mt-8 space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-stone-600 border-b border-stone-200 pb-2">
             Entidad Beneficiaria
           </h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -266,7 +267,7 @@ export function AsignacionRecintoEditorView({
               </select>
             </label>
             <label className="text-sm font-medium text-stone-700">
-              Detalle de Entidad
+              {draft.entidadBeneficiariaTipo === "INTERNO" ? "Detalle de Entidad" : "Entidad receptora"}
               <input
                 list="entidades-previas"
                 value={draft.entidadBeneficiariaDetalle}
@@ -282,6 +283,79 @@ export function AsignacionRecintoEditorView({
               </datalist>
             </label>
           </div>
+        </div>
+
+        <div className="mt-8 space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-stone-600 border-b border-stone-200 pb-2">
+            Datos del Destinatario
+          </h3>
+          {draft.entidadBeneficiariaTipo === "INTERNO" ? (
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-1">
+                  Personal Destinatario *
+                </label>
+                <DestinatarioSearchSelect
+                  options={recipientOptions}
+                  value={draft.personalCi}
+                  disabled={saving}
+                  placeholder="Buscar destinatario por grado, apellido, nombre o CI"
+                  onChange={onPersonalCiChange}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <label className="text-sm font-medium text-stone-700">
+                Grado
+                <select
+                  value={draft.grado}
+                  onChange={(e) => updateDraft("grado", e.target.value)}
+                  disabled={saving}
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white"
+                >
+                  <option value="">Seleccionar grado</option>
+                  {rangos
+                    .filter((r) => r.nombreCompleto !== "Desarrollo" && r.abreviacion !== "Desarrollo")
+                    .map((r) => (
+                      <option key={r.rangoId} value={r.abreviacion}>
+                        {r.abreviacion} - {r.nombreCompleto}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="text-sm font-medium text-stone-700">
+                CI (Opcional)
+                <input
+                  value={draft.ci}
+                  onChange={(e) => updateDraft("ci", e.target.value)}
+                  disabled={saving}
+                  placeholder="Ej.: 5.123.456-7"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-sm font-medium text-stone-700">
+                Nombres
+                <input
+                  value={draft.nombre}
+                  onChange={(e) => updateDraft("nombre", e.target.value)}
+                  disabled={saving}
+                  placeholder="Nombres"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-sm font-medium text-stone-700">
+                Apellidos
+                <input
+                  value={draft.apellido}
+                  onChange={(e) => updateDraft("apellido", e.target.value)}
+                  disabled={saving}
+                  placeholder="Apellidos"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+          )}
         </div>
 
         <div className="mt-8 space-y-3">

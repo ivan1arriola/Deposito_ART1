@@ -248,6 +248,8 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
           equiposOrdenados={equiposOrdenados}
           rangos={rangos}
           baterias={baterias}
+          personal={personal}
+          oficialesSuboficiales={oficialesSuboficiales}
           maxFechaIngreso={maxFechaIngreso}
           onBack={() => setActiveView("movimientos_recintos")}
           onSuccess={() => setActiveView("movimientos_recintos")}
