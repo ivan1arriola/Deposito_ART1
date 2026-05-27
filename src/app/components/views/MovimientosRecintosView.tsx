@@ -78,9 +78,9 @@ export function MovimientosRecintosView({ canWrite, onOpenRegistro }: Movimiento
       <article className="ej-card rounded-2xl p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-stone-900">Movimientos a Recintos y Externos</h2>
+            <h2 className="text-base font-semibold text-stone-900">Asignaciones a Recintos y Externos</h2>
             <p className="mt-1 text-xs text-stone-600">
-              Listado global de asignaciones, entregas y devoluciones a recintos, departamentos internos o personal externo.
+              Listado global de asignaciones realizadas a recintos, departamentos internos o personal externo.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -88,27 +88,11 @@ export function MovimientosRecintosView({ canWrite, onOpenRegistro }: Movimiento
               <>
                 <button
                   type="button"
-                  onClick={() => onOpenRegistro("ENTREGA")}
-                  disabled={loading}
-                  className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-800 disabled:opacity-60"
-                >
-                  Entrega
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onOpenRegistro("DEVOLUCION")}
-                  disabled={loading}
-                  className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-60"
-                >
-                  Devolución
-                </button>
-                <button
-                  type="button"
                   onClick={() => onOpenRegistro("ASIGNACION")}
                   disabled={loading}
                   className="rounded-lg bg-violet-700 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-violet-800 disabled:opacity-60"
                 >
-                  Asignación
+                  Registrar Asignación
                 </button>
               </>
             ) : null}
@@ -146,14 +130,14 @@ export function MovimientosRecintosView({ canWrite, onOpenRegistro }: Movimiento
 
         {loading && rows.length === 0 ? (
           <LoadingInline
-            label="Cargando movimientos a recintos..."
+            label="Cargando asignaciones a recintos..."
             className="mt-3"
             textClassName="text-sm font-medium text-stone-600"
           />
         ) : null}
 
         {!loading && !error && sortedRows.length === 0 ? (
-          <p className="mt-3 text-xs text-stone-600">No hay movimientos para mostrar con el filtro actual.</p>
+          <p className="mt-3 text-xs text-stone-600">No hay asignaciones para mostrar con el filtro actual.</p>
         ) : null}
       </article>
 

@@ -183,7 +183,7 @@ const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix
   { view: "hoja_matrix", label: "Hoja matriz", icon: icons.matrix },
   { view: "equipo_resumen", label: "Resumen de equipo en baterías", icon: icons.resumenEquipo },
   { view: "movimientos_fuera_hoja", label: "Movimientos fuera de hoja", icon: icons.history },
-  { view: "movimientos_recintos", label: "Movimientos a Recintos/Externos", icon: icons.history },
+  { view: "movimientos_recintos", label: "Asignaciones a Recintos", icon: icons.history },
   { view: "personal_bajas", label: "Bajas y devoluciones", icon: icons.trash },
 ];
 

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   const movimientos = await prisma.movimiento.findMany({
     where: {
-      tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION] },
+      tipo: TipoMovimiento.ASIGNACION,
       OR: [
         { destinatarioRecinto: { isNot: null } },
         { destinatarioExterno: { isNot: null } }
