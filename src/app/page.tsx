@@ -7036,7 +7036,6 @@ export default function Home() {
             addRegistroItem={addRegistroItem}
             removeRegistroItem={removeRegistroItem}
             deleteRegistro={deleteRegistro}
-            deleteRecintoRegistro={deleteRecintoRegistro}
             saveRegistro={saveRegistro}
             personalObservacionDraft={personalObservacionDraft}
             personalObservacionSaving={personalObservacionSaving}

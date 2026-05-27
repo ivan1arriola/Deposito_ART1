@@ -49,7 +49,7 @@ type StockView = Extract<
   MainView,
   "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "equipo_nuevo" | "movimientos_por_equipo" | "equipos_unificar"
 >;
-type PrestamosView = Extract<MainView, "prestamos_registrar" | "prestamos_vigentes" | "prestamos_historial" | "formularios">;
+type PrestamosView = Extract<MainView, "prestamos_registrar" | "prestamos_vigentes" | "prestamos_historial" | "movimientos_recintos" | "formularios">;
 type TallasResumenView = Extract<
   MainView,
   "tallas_resumen" | "tallas_resumen_subalternos_unidad" | "tallas_resumen_subalternos_bateria" | "tallas_resumen_oficiales_suboficiales"
@@ -170,6 +170,7 @@ const prestamosViews: Array<NavOption<PrestamosView>> = [
   { view: "prestamos_registrar", label: "Registrar prestamo", shortLabel: "Registrar", icon: icons.altas, writeOnly: true },
   { view: "prestamos_vigentes", label: "Prestamos vigentes", shortLabel: "Vigentes", icon: icons.prestamos },
   { view: "prestamos_historial", label: "Historial de Préstamos", shortLabel: "Historial", icon: icons.history },
+  { view: "movimientos_recintos", label: "Asignaciones a Recintos", shortLabel: "Recintos", icon: icons.history },
 ];
 
 const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
@@ -178,12 +179,11 @@ const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
   { view: "etiquetado_imprimir_todas", label: "Imprimir todas", shortLabel: "Imprimir", icon: icons.imprimir },
 ];
 
-const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen" | "movimientos_fuera_hoja" | "movimientos_recintos" | "personal_bajas">>> = [
+const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen" | "movimientos_fuera_hoja" | "personal_bajas">>> = [
   { view: "personal", label: "Personal subalterno", icon: icons.personal },
   { view: "hoja_matrix", label: "Hoja matriz", icon: icons.matrix },
   { view: "equipo_resumen", label: "Resumen de equipo en baterías", icon: icons.resumenEquipo },
   { view: "movimientos_fuera_hoja", label: "Movimientos fuera de hoja", icon: icons.history },
-  { view: "movimientos_recintos", label: "Asignaciones a Recintos", icon: icons.history },
   { view: "personal_bajas", label: "Bajas y devoluciones", icon: icons.trash },
 ];
 
@@ -430,7 +430,6 @@ export function MainNavigation({
     activeView === "hoja_matrix" ||
     activeView === "equipo_resumen" ||
     activeView === "movimientos_fuera_hoja" ||
-    activeView === "movimientos_recintos" ||
     activeView === "personal_bajas";
   const isOficialesSuboficialesView =
     activeView === "oficiales" ||
@@ -624,17 +623,19 @@ export function MainNavigation({
         </ExpandedMenuGroup>
       ) : null}
 
-      <ExpandedMenuGroup title="Préstamos" icon={icons.prestamos} compact={false}>
+      <ExpandedMenuGroup title="Préstamos" icon={icons.prestamos} compact={false} collapsed={collapsed}>
         {filteredPrestamosViews.map((item) => (
-          <Button
-            key={item.view}
-            variant="text"
-            startIcon={item.icon}
-            onClick={() => handleSelectView(item.view)}
-            sx={inlineSubmenuButtonSx(activeView === item.view, false)}
-          >
-            {item.label}
-          </Button>
+          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+            <Button
+              key={item.view}
+              variant="text"
+              startIcon={item.icon}
+              onClick={() => handleSelectView(item.view)}
+              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+            >
+              {!collapsed && item.label}
+            </Button>
+          </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
