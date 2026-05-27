@@ -6,8 +6,7 @@ export type MovimientoRecintoViewRow = {
   tipo: TipoMovimiento;
   clase: "INTERNO" | "EXTERNO";
   nombre: string;
-  item: string;
-  cantidad: number;
+  items: { item: string; cantidad: number }[];
   observaciones: string | null;
   usuarioEntrega: string | null;
 };

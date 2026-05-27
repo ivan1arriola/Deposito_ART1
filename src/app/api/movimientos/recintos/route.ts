@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     },
   });
 
-  const rows = movimientos.flatMap((movimiento) => {
+  const rows = movimientos.map((movimiento) => {
     let clase: "INTERNO" | "EXTERNO" = "INTERNO";
     let nombre = "";
 
@@ -58,22 +58,22 @@ export async function GET(request: Request) {
       nombre = movimiento.destinatarioExterno.personaExterna
         ? `${movimiento.destinatarioExterno.personaExterna.apellido} ${movimiento.destinatarioExterno.personaExterna.nombre}`.trim()
         : "Persona Externa";
-    } else {
-      return [];
     }
 
-    return movimiento.items.map((detail) => ({
+    return {
       movimientoId: movimiento.movimientoId.toString(),
       fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
       tipo: movimiento.tipo,
       clase,
       nombre,
-      item: detail.item.nombre,
-      cantidad: detail.cantidad,
+      items: movimiento.items.map((detail) => ({
+        item: detail.item.nombre,
+        cantidad: detail.cantidad,
+      })),
       observaciones: movimiento.observaciones,
       usuarioEntrega: movimiento.usuarioEntrega ? `${movimiento.usuarioEntrega.apellido} ${movimiento.usuarioEntrega.nombre}`.trim() || movimiento.usuarioEntrega.username : null,
-    }));
-  });
+    };
+  }).filter(row => row.nombre !== "");
 
   return NextResponse.json({
     generatedAt: new Date().toISOString(),

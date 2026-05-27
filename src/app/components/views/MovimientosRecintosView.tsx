@@ -56,7 +56,15 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
   const rowSearchIndex = useMemo(
     () =>
       buildSearchIndex(rows, {
-        text: (row) => [row.fecha, row.tipo, row.clase, row.nombre, row.item, row.observaciones || "", row.usuarioEntrega || ""].join(" "),
+        text: (row) => [
+          row.fecha,
+          row.tipo,
+          row.clase,
+          row.nombre,
+          ...(row.items || []).map((i) => `${i.item} ${i.cantidad}`),
+          row.observaciones || "",
+          row.usuarioEntrega || "",
+        ].join(" "),
       }),
     [rows],
   );
@@ -162,9 +170,9 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
               </thead>
               <tbody>
                 {sortedRows.map((row, index) => (
-                  <tr key={`${row.movimientoId}-${row.item}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-mono text-stone-800">{row.fecha}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">
+                  <tr key={`${row.movimientoId}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-mono text-stone-800 align-top">{row.fecha}</td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900 align-top">
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                         row.tipo === "ENTREGA" ? "bg-emerald-100 text-emerald-800" :
                         row.tipo === "DEVOLUCION" ? "bg-amber-100 text-amber-800" :
@@ -174,13 +182,27 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
                         {row.tipo}
                       </span>
                     </td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-xs font-semibold uppercase text-stone-500">{row.clase}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-bold text-stone-900">{row.nombre}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.item}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-bold text-stone-900">{row.cantidad}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-xs text-stone-600">{row.usuarioEntrega || "-"}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-700">{row.observaciones || "-"}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-right">
+                    <td className="border-b border-stone-200 px-3 py-2 text-xs font-semibold uppercase text-stone-500 align-top">{row.clase}</td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-bold text-stone-900 align-top">{row.nombre}</td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800 align-top">
+                      <div className="flex flex-col gap-1">
+                        {(row.items || []).map((i, idx) => (
+                          <span key={idx} className="block">{i.item}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-bold text-stone-900 align-top">
+                      <div className="flex flex-col gap-1">
+                        {(row.items || []).map((i, idx) => (
+                          <span key={idx} className="block">{i.cantidad}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-xs text-stone-600 align-top">{row.usuarioEntrega || "-"}</td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-700 align-top max-w-[200px] truncate" title={row.observaciones || ""}>
+                      {row.observaciones || "-"}
+                    </td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-right align-top">
                       <div className="inline-flex items-center justify-end gap-1">
                         <button
                           type="button"
