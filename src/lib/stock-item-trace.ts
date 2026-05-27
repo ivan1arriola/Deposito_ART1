@@ -97,6 +97,19 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
                 nombre: true,
               },
             },
+            destinatarioExterno: {
+              select: {
+                personaExterna: {
+                  select: {
+                    ci: true,
+                    grado: true,
+                    nombre: true,
+                    apellido: true,
+                    unidadDestino: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -238,8 +251,18 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
     const tipoMovimiento = movimientoItem.movimiento.tipo;
     if (tipoMovimiento !== TipoMovimiento.ASIGNACION) continue;
     const recinto = movimientoItem.movimiento.destinatarioRecinto;
-    if (!recinto) continue;
-    const nombre = recinto.nombre;
+    const personal = movimientoItem.movimiento.destinatarioPersonal?.personal;
+    const externo = movimientoItem.movimiento.destinatarioExterno?.personaExterna;
+    
+    let nombre = "Asignación sin destinatario";
+    if (recinto) {
+      nombre = recinto.nombre;
+    } else if (personal) {
+      nombre = buildPersonalDestinatarioEtiqueta(personal);
+    } else if (externo) {
+      nombre = `${externo.grado} ${externo.apellido}, ${externo.nombre} (${externo.unidadDestino})`;
+    }
+
     const delta = movimientoItem.cantidad; // Asignación implies items moved to the recinto, assuming positive for trace. Wait, stockAsignacion = SUM(mi.cantidad), so it's a positive delta.
     const existing = recintosByNombre.get(nombre);
     if (existing) {
