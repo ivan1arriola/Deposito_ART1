@@ -335,12 +335,8 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     if (isRecinto) {
       drawField(page, assets, header.innerX, y, 150, 30, "Clase de recinto", recintoClase === "EXTERNO" ? "Externo" : "Interno");
       drawField(page, assets, header.innerX + 156, y, header.innerW - 156, 30, "Alcance", destinoDetalle);
-    } else if (isExterno) {
-      drawField(page, assets, header.innerX, y, 210, 30, "Detalle", destinoDetalle);
-      drawField(page, assets, header.innerX + 216, y, header.innerW - 216, 30, "Usuario actuante", usuarioEntregaLabel);
     } else {
-      drawField(page, assets, header.innerX, y, 210, 30, "Detalle", destinoDetalle);
-      drawField(page, assets, header.innerX + 216, y, header.innerW - 216, 30, "Usuario actuante", usuarioEntregaLabel);
+      drawField(page, assets, header.innerX, y, header.innerW, 30, "Detalle", destinoDetalle);
     }
     y += 36;
 
