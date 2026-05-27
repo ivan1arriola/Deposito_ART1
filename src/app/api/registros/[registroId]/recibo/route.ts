@@ -275,8 +275,8 @@ export async function GET(request: Request, context: { params: Promise<{ registr
   const recintoClase = registro.destinatarioRecinto ? normalizeRecintoClase(registro.destinatarioRecinto.clase) : null;
   const destinoDetalle = isRecinto
     ? recintoClase === "EXTERNO"
-      ? "Externo a la Unidad"
-      : "Interno a la Unidad"
+      ? "Fuera de la Unidad"
+      : "Dentro de la Unidad"
     : isExterno
       ? registro.destinatarioExterno?.personaExterna
         ? `CI ${formatUruguayanCi(registro.destinatarioExterno.personaExterna.ci)} | ${registro.destinatarioExterno.personaExterna.unidadDestino}`
@@ -288,6 +288,10 @@ export async function GET(request: Request, context: { params: Promise<{ registr
             : ""
         }`
       : "-";
+
+  const destinatarioFinalLabel = isRecinto 
+    ? `${registro.destinatarioRecinto?.nombre ?? "Recinto no definido"} - ${destinoDetalle}`
+    : destinatarioLabel;
 
   const tableRows = registro.items.map((item) => ({
     cantidad: String(item.cantidad),
@@ -328,17 +332,14 @@ export async function GET(request: Request, context: { params: Promise<{ registr
       header.innerX,
       y,
       header.innerW,
-      isRecinto ? "Recinto" : isExterno ? "Destinatario externo" : "Destinatario",
-      destinatarioLabel,
+      isRecinto ? "Destino" : isExterno ? "Destinatario externo" : "Destinatario",
+      destinatarioFinalLabel,
     );
 
-    if (isRecinto) {
-      drawField(page, assets, header.innerX, y, 150, 30, "Clase de recinto", recintoClase === "EXTERNO" ? "Externo" : "Interno");
-      drawField(page, assets, header.innerX + 156, y, header.innerW - 156, 30, "Alcance", destinoDetalle);
-    } else {
+    if (!isRecinto) {
       drawField(page, assets, header.innerX, y, header.innerW, 30, "Detalle", destinoDetalle);
+      y += 36;
     }
-    y += 36;
 
     y = drawFieldMultiline(page, assets, header.innerX, y, header.innerW, "Comentarios", registro.observaciones ?? "-");
     y = drawSectionTitle(
