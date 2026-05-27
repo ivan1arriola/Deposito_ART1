@@ -250,6 +250,7 @@ export function StockView({
 
   const {
     totalSubalternos,
+    totalAsignacion,
     totalPrestamo,
     totalDeposito,
     totalUnidad,
@@ -321,10 +322,14 @@ export function StockView({
 
         {showSummaryCards ? (
           section === "total" ? (
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total subalternos</p>
                 <p className="mt-2 text-2xl font-bold text-stone-900">{totalSubalternos}</p>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total recintos</p>
+                <p className="mt-2 text-2xl font-bold text-stone-900">{totalAsignacion}</p>
               </div>
               <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Total prestamo</p>
@@ -868,6 +873,7 @@ export function StockView({
                             {section === "total" ? (
                               <>
                                 <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Subalternos</th>
+                                <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Recintos</th>
                                 <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Prestamo</th>
                                 <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Deposito</th>
                                 <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Unidad</th>
@@ -895,6 +901,11 @@ export function StockView({
                                     >
                                       {item.stockSubalternos}
                                     </button>
+                                  </td>
+                                  <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
+                                    item.stockAsignacion < 0 ? "text-rose-600 font-bold" : "text-stone-900"
+                                  }`}>
+                                    {item.stockAsignacion}
                                   </td>
                                   <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
                                     <button

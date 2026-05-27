@@ -234,8 +234,8 @@ export function ConfigViews(props: ConfigViewsProps) {
       if (props.reloadCurrentViewData) {
         await props.reloadCurrentViewData(true);
       }
-    } catch (err: any) {
-      setUndoError(err.message || "Error al intentar deshacer la acción.");
+    } catch (err: unknown) {
+      setUndoError(err instanceof Error ? err.message : "Error al intentar deshacer la acción.");
     } finally {
       setUndoingId(null);
     }
@@ -255,8 +255,9 @@ export function ConfigViews(props: ConfigViewsProps) {
   };
 
   // Local state for Papelera interactive preview
-  const [selectedTrashRecord, setSelectedTrashRecord] = useState<any | null>(null);
-  const [trashDetails, setTrashDetails] = useState<any | null>(null);
+  type TrashRecord = NonNullable<ConfigViewsProps["papeleraRecords"]>[0];
+  const [selectedTrashRecord, setSelectedTrashRecord] = useState<TrashRecord | null>(null);
+  const [trashDetails, setTrashDetails] = useState<unknown | null>(null);
   const [trashDetailsLoading, setTrashDetailsLoading] = useState(false);
   const [trashModalAction, setTrashModalAction] = useState<"restore" | "delete" | null>(null);
 
@@ -274,7 +275,7 @@ export function ConfigViews(props: ConfigViewsProps) {
     });
   }, [props.papeleraRecords, trashSearchQuery, trashTypeFilter]);
 
-  const handleOpenTrashModal = async (record: any, action: "restore" | "delete") => {
+  const handleOpenTrashModal = async (record: TrashRecord, action: "restore" | "delete") => {
     setSelectedTrashRecord(record);
     setTrashModalAction(action);
     setTrashDetailsLoading(true);
@@ -534,7 +535,7 @@ export function ConfigViews(props: ConfigViewsProps) {
 
   if (props.activeView === "articulos") {
     // Group articles by tipo
-    const grouped: Record<TipoArticulo, typeof props.articulos> = {} as any;
+    const grouped: Record<TipoArticulo, typeof props.articulos> = {} as Record<TipoArticulo, typeof props.articulos>;
     for (const art of props.articulos) {
       if (!grouped[art.tipo]) {
         grouped[art.tipo] = [];

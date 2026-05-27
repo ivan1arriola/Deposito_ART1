@@ -86,6 +86,7 @@ export function buildActuanteOptions(oficialesSuboficiales: OficialSuboficial[],
 
 export function getStockSummaryMetrics(resumen: StockDashboardData["resumen"]) {
   const totalSubalternos = resumen.reduce((total, item) => total + item.stockSubalternos, 0);
+  const totalAsignacion = resumen.reduce((total, item) => total + item.stockAsignacion, 0);
   const totalPrestamo = resumen.reduce((total, item) => total + item.stockPrestamo, 0);
   const totalDeposito = resumen.reduce((total, item) => total + item.stockDeposito, 0);
   const totalUnidad = resumen.reduce((total, item) => total + item.stockUnidad, 0);
@@ -94,6 +95,7 @@ export function getStockSummaryMetrics(resumen: StockDashboardData["resumen"]) {
 
   return {
     totalSubalternos,
+    totalAsignacion,
     totalPrestamo,
     totalDeposito,
     totalUnidad,
@@ -123,7 +125,7 @@ export function getSectionViewConfig(section: StockSection) {
                 : "Historial de stock",
     stockTableTitle:
       section === "total"
-        ? "Totales por item (subalternos + préstamo + depósito)"
+        ? "Totales por item (subalternos + recintos + préstamo + depósito)"
         : "Stock interno de depósito por equipo",
   };
 }

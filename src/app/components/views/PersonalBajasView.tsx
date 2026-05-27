@@ -73,8 +73,8 @@ export function PersonalBajasView() {
       const data = await res.json();
       setPendientes(data.pendientes || []);
       setHistorial(data.historial || []);
-    } catch (err: any) {
-      setError(err.message || "Error al conectar con el servidor.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al conectar con el servidor.");
     } finally {
       setLoading(false);
     }
@@ -99,8 +99,8 @@ export function PersonalBajasView() {
       setConfirmCi(null);
       await fetchBajasData();
       setTimeout(() => setSuccess(null), 6000);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setConfirmingAction(false);
     }
@@ -121,8 +121,8 @@ export function PersonalBajasView() {
       setReactivateCi(null);
       await fetchBajasData();
       setTimeout(() => setSuccess(null), 6000);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setReactivatingAction(false);
     }
