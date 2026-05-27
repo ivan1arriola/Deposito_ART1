@@ -153,6 +153,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
     toggleTallas,
     deletePersonal,
     openRegistro,
+    deleteRecintoRegistro,
     openPersonalObservacion,
     openRegistroViewer,
     openPersonaProfileFromPersonal,
@@ -383,6 +384,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
         toggleTallas={toggleTallas}
         deletePersonal={deletePersonal}
         openRegistro={openRegistro}
+        deleteRecintoRegistro={deleteRecintoRegistro}
         openPersonalObservacion={openPersonalObservacion}
         openRegistroViewer={openRegistroViewer}
         openPersonaProfileFromPersonal={openPersonaProfileFromPersonal}
@@ -409,6 +411,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
         equipoResumenLoading={equipoResumenLoading}
         equipoResumenError={equipoResumenError}
         loadEquipoResumen={loadEquipoResumen}
+        equiposOrdenados={equiposOrdenados}
       />
 
       <StockPrestamoViews

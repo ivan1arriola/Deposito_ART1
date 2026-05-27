@@ -50,6 +50,7 @@ export type MainView =
   | "hoja-de-entrega"
   | "movimientos_fuera_hoja"
   | "movimientos_recintos"
+  | "asignacion_recinto_nueva"
   | "movimientos_por_equipo"
   | "equipos_unificar"
   | "personal_bajas";

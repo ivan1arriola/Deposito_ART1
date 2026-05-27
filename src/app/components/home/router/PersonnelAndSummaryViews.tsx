@@ -7,6 +7,7 @@ import { HojaMatrixView } from "@/app/components/views/HojaMatrixView";
 import { EquipoResumenView } from "@/app/components/views/EquipoResumenView";
 import { MovimientosFueraHojaView } from "@/app/components/views/MovimientosFueraHojaView";
 import { MovimientosRecintosView } from "@/app/components/views/MovimientosRecintosView";
+import { AsignacionRecintoEditorView } from "@/app/components/views/AsignacionRecintoEditorView";
 import { TallasResumenView } from "@/app/components/views/TallasResumenView";
 import { PersonalBajasView } from "@/app/components/views/PersonalBajasView";
 import type { PersonalForm } from "@/types/forms";
@@ -53,6 +54,7 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
     toggleTallas,
     deletePersonal,
     openRegistro,
+    deleteRecintoRegistro,
     openPersonalObservacion,
     openRegistroViewer,
     openPersonaProfileFromPersonal,
@@ -79,6 +81,7 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
     equipoResumenLoading,
     equipoResumenError,
     loadEquipoResumen,
+    equiposOrdenados,
   } = props;
 
   const isTallasResumenView =
@@ -232,7 +235,21 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
       ) : null}
 
       {activeView === "movimientos_recintos" ? (
-        <MovimientosRecintosView canWrite={canWrite} onOpenRegistro={openRecintoRegistro} />
+        <MovimientosRecintosView
+          canWrite={canWrite}
+          canDelete={isAdmin}
+          onOpenRegistro={() => setActiveView("asignacion_recinto_nueva")}
+          onDeleteRegistro={deleteRecintoRegistro}
+        />
+      ) : null}
+
+      {activeView === "asignacion_recinto_nueva" ? (
+        <AsignacionRecintoEditorView
+          equiposOrdenados={equiposOrdenados}
+          maxFechaIngreso={maxFechaIngreso}
+          onBack={() => setActiveView("movimientos_recintos")}
+          onSuccess={() => setActiveView("movimientos_recintos")}
+        />
       ) : null}
 
       {isTallasResumenView ? (

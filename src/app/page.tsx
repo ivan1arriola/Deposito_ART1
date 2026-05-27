@@ -4271,6 +4271,33 @@ export default function Home() {
     });
   }
 
+  function deleteRecintoRegistro(registroId: string, fechaLabel: string, nombreLabel: string, onSuccess: () => void) {
+    if (!canDeleteRegistros) {
+      setStatus("Solo un administrador puede eliminar movimientos.");
+      return;
+    }
+
+    openConfirmDialog({
+      title: "Eliminar asignación",
+      message: `Se eliminará la asignación a ${nombreLabel} del ${fechaLabel}. Esta acción no se puede deshacer.`,
+      confirmText: "Eliminar",
+      tone: "danger",
+      onConfirm: async () => {
+        setStatus("Eliminando asignación...");
+        try {
+          await api(`/api/registros/${registroId}`, {
+            method: "DELETE",
+          });
+          setStatus(`Asignación a ${nombreLabel} eliminada.`);
+          onSuccess();
+          await loadData();
+        } catch (error: unknown) {
+          setStatus(error instanceof Error ? error.message : "No se pudo eliminar la asignación.");
+        }
+      },
+    });
+  }
+
   async function saveStockOperation() {
     if (stockSaving) return;
     if (!parseDateInput(stockDraft.fecha).valid) {
@@ -6873,6 +6900,7 @@ export default function Home() {
             toggleTallas={toggleTallas}
             deletePersonal={deletePersonal}
             openRegistro={openRegistro}
+            deleteRecintoRegistro={deleteRecintoRegistro}
             openPersonalObservacion={openPersonalObservacion}
             openRegistroViewer={openRegistroViewer}
             openPersonaProfileFromPersonal={openPersonaProfileFromPersonal}
@@ -7008,6 +7036,7 @@ export default function Home() {
             addRegistroItem={addRegistroItem}
             removeRegistroItem={removeRegistroItem}
             deleteRegistro={deleteRegistro}
+            deleteRecintoRegistro={deleteRecintoRegistro}
             saveRegistro={saveRegistro}
             personalObservacionDraft={personalObservacionDraft}
             personalObservacionSaving={personalObservacionSaving}

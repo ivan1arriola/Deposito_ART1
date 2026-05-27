@@ -14,10 +14,12 @@ type MovimientosRecintosResponse = {
 
 type MovimientosRecintosViewProps = {
   canWrite: boolean;
+  canDelete: boolean;
   onOpenRegistro: (tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION") => void;
+  onDeleteRegistro: (registroId: string, fechaLabel: string, nombreLabel: string, onSuccess: () => void) => void;
 };
 
-export function MovimientosRecintosView({ canWrite, onOpenRegistro }: MovimientosRecintosViewProps) {
+export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, onDeleteRegistro }: MovimientosRecintosViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
@@ -155,6 +157,7 @@ export function MovimientosRecintosView({ canWrite, onOpenRegistro }: Movimiento
                   <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Cantidad</th>
                   <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Autor</th>
                   <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Observaciones</th>
+                  {canDelete && <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600 text-right">Acciones</th>}
                 </tr>
               </thead>
               <tbody>
@@ -177,6 +180,21 @@ export function MovimientosRecintosView({ canWrite, onOpenRegistro }: Movimiento
                     <td className="border-b border-stone-200 px-3 py-2 text-sm font-bold text-stone-900">{row.cantidad}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-xs text-stone-600">{row.usuarioEntrega || "-"}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-700">{row.observaciones || "-"}</td>
+                    {canDelete && (
+                      <td className="border-b border-stone-200 px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={() => onDeleteRegistro(row.movimientoId, row.fecha, row.nombre, () => void loadRows())}
+                          disabled={loading}
+                          className="inline-flex rounded p-1.5 text-stone-400 hover:bg-rose-50 hover:text-rose-600 transition-colors disabled:opacity-50"
+                          title="Eliminar asignación"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

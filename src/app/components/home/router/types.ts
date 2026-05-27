@@ -186,6 +186,7 @@ export type PersonnelAndSummaryViewsProps = {
   toggleTallas: (ci: string) => void;
   deletePersonal: (ci: string) => void;
   openRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION", options?: { incluirFueraDeHoja?: boolean }) => void;
+  deleteRecintoRegistro: (registroId: string, fechaLabel: string, nombreLabel: string, onSuccess: () => void) => void;
   openPersonalObservacion: (persona: Personal) => Promise<void>;
   openRegistroViewer: (persona: Personal) => Promise<void>;
   openPersonaProfileFromPersonal: (persona: Personal) => Promise<void>;
@@ -212,6 +213,7 @@ export type PersonnelAndSummaryViewsProps = {
   equipoResumenLoading: boolean;
   equipoResumenError: string | null;
   loadEquipoResumen: () => Promise<void>;
+  equiposOrdenados: import("@/types/entities").Equipo[];
 };
 
 export type StockPrestamoViewsProps = {
