@@ -1,14 +1,14 @@
 {
   "name": "deposito-art1",
-  "version": "6.4.4",
+  "version": "6.4.5",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
     "prepare": "node scripts/install-git-hooks.mjs",
     "predev": "prisma generate",
-    "dev": "next dev",
+    "dev": "NODE_OPTIONS='--max-old-space-size=8192' next dev",
     "prebuild": "npm run check:encoding && prisma generate && NODE_ENV=development vitest run",
-    "build": "next build",
+    "build": "NODE_OPTIONS='--max-old-space-size=8192' next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
