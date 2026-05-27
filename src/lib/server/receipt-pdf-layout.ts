@@ -45,7 +45,7 @@ export type ReceiptAcknowledgementConfig = {
   leftSignatureTitle: string;
   leftSignatureName: string;
   rightSignatureTitle: string;
-  rightSignatureName: string;
+  rightSignatureName: string | string[];
   footerNote: string;
   sectionTitle?: string;
   leftStampTitle?: string | null;
@@ -372,8 +372,16 @@ export function drawAcknowledgementFooter(
   drawCenteredText(page, assets.bold, config.leftSignatureTitle, innerX, signW, lineY + 4, 9);
   drawCenteredText(page, assets.regular, config.leftSignatureName, innerX, signW, lineY + 16, 8);
   drawCenteredText(page, assets.bold, config.rightSignatureTitle, innerX + signW + signGap, signW, lineY + 4, 9);
-  drawCenteredText(page, assets.regular, config.rightSignatureName, innerX + signW + signGap, signW, lineY + 16, 8);
-  y = lineY + 34;
+  
+  if (Array.isArray(config.rightSignatureName)) {
+    config.rightSignatureName.forEach((nameLine, idx) => {
+      drawCenteredText(page, assets.regular, nameLine, innerX + signW + signGap, signW, lineY + 16 + (idx * 12), 8);
+    });
+    y = lineY + 34 + (config.rightSignatureName.length - 1) * 12;
+  } else {
+    drawCenteredText(page, assets.regular, config.rightSignatureName, innerX + signW + signGap, signW, lineY + 16, 8);
+    y = lineY + 34;
+  }
 
   if (config.leftStampTitle || config.rightStampTitle) {
     const stampGap = 12;

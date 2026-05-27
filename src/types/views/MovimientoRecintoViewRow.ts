@@ -9,4 +9,10 @@ export type MovimientoRecintoViewRow = {
   items: { item: string; cantidad: number }[];
   observaciones: string | null;
   usuarioEntrega: string | null;
+  responsableInfo?: {
+    ci: string;
+    grado: string;
+    nombre: string;
+    apellido: string;
+  };
 };

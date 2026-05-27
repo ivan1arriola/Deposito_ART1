@@ -260,12 +260,16 @@ export async function GET(request: Request, context: { params: Promise<{ registr
       .replace(/\s+/g, " ")
       .trim() || registro.usuarioEntrega.username;
 
+  const isExternalAssignment = isExterno && !registro.destinatarioExterno?.personaExterna?.unidadDestino?.startsWith("Interno");
+
   const destinatarioLabel = isRecinto
     ? registro.destinatarioRecinto?.nombre ?? "Recinto no definido"
     : isExterno
-      ? registro.destinatarioExterno?.personaExterna
-        ? buildPersonaExternaEtiqueta(registro.destinatarioExterno.personaExterna)
-        : "Destinatario externo no definido"
+      ? isExternalAssignment
+        ? registro.destinatarioExterno?.personaExterna?.unidadDestino?.replace("Externo a la Unidad - ", "").trim() || "Persona Externa"
+        : registro.destinatarioExterno?.personaExterna
+          ? buildPersonaExternaEtiqueta(registro.destinatarioExterno.personaExterna)
+          : "Destinatario externo no definido"
     : registro.destinatarioPersonal?.personal
       ? `${registro.destinatarioPersonal.personal.rango.abreviacion} ${buildPersonalDestinatarioNombre(registro.destinatarioPersonal.personal)}`
           .replace(/\s+/g, " ")
@@ -346,7 +350,7 @@ export async function GET(request: Request, context: { params: Promise<{ registr
         ? registro.destinatarioExterno?.personaExterna?.ci
         : registro.destinatarioPersonal?.personal?.ci;
 
-      if (ciValue) {
+      if (ciValue && !isExternalAssignment) {
         const ciDisplayValue = ciValue.startsWith("SD-") ? "-" : formatUruguayanCi(ciValue);
         drawField(page, assets, header.innerX, y, 150, 30, "Cédula de identidad", ciDisplayValue);
 
@@ -367,7 +371,10 @@ export async function GET(request: Request, context: { params: Promise<{ registr
           detailValue,
         );
       } else {
-        drawField(page, assets, header.innerX, y, header.innerW, 30, "Detalle", destinoDetalle);
+        const detailValue = isExternalAssignment 
+          ? registro.destinatarioExterno?.personaExterna?.unidadDestino?.replace("Externo a la Unidad - ", "").trim() || "-"
+          : destinoDetalle;
+        drawField(page, assets, header.innerX, y, header.innerW, 30, isExternalAssignment ? "Entidad beneficiaria" : "Detalle", detailValue);
       }
       y += 36;
     }
@@ -416,8 +423,16 @@ export async function GET(request: Request, context: { params: Promise<{ registr
           ? "Recibe devolución"
           : "Registra asignación",
     leftSignatureName: usuarioEntregaLabel,
-    rightSignatureTitle: isRecinto ? "Superior responsable" : isExterno ? "Recibe asignación" : "Recibe",
-    rightSignatureName: destinatarioLabel,
+    rightSignatureTitle: isRecinto ? "Superior responsable" : isExternalAssignment ? "Recibe asignación" : "Recibe",
+    rightSignatureName: isExternalAssignment ? [
+      "Grado y Nombre: _______________________________",
+      "Firma: _________________________________________   CI: ________________",
+    ] : isExterno ? [
+      `${registro.destinatarioExterno?.personaExterna?.grado ?? ""} ${registro.destinatarioExterno?.personaExterna?.nombre ?? ""} ${registro.destinatarioExterno?.personaExterna?.apellido ?? ""}`.trim(),
+      registro.destinatarioExterno?.personaExterna?.ci && !registro.destinatarioExterno.personaExterna.ci.startsWith("SD-")
+        ? `CI: ${formatUruguayanCi(registro.destinatarioExterno.personaExterna.ci)}`
+        : ""
+    ].filter(Boolean) : destinatarioLabel,
     footerNote: `Generado: ${formatDateUy(now)} ${formatTimeUy(now)}`,
     sectionTitle: "Constancia",
   });

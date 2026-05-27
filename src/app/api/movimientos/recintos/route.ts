@@ -49,15 +49,27 @@ export async function GET(request: Request) {
   const rows = movimientos.map((movimiento) => {
     let clase: "INTERNO" | "EXTERNO" = "INTERNO";
     let nombre = "";
+    let responsableInfo = undefined;
 
     if (movimiento.destinatarioRecinto) {
       clase = movimiento.destinatarioRecinto.clase === "EXTERNO" ? "EXTERNO" : "INTERNO";
       nombre = movimiento.destinatarioRecinto.nombre;
     } else if (movimiento.destinatarioExterno) {
-      clase = "EXTERNO";
-      nombre = movimiento.destinatarioExterno.personaExterna
-        ? `${movimiento.destinatarioExterno.personaExterna.apellido} ${movimiento.destinatarioExterno.personaExterna.nombre}`.trim()
-        : "Persona Externa";
+      const ext = movimiento.destinatarioExterno.personaExterna;
+      if (ext) {
+        const unidadDestino = ext.unidadDestino || "";
+        clase = unidadDestino.startsWith("Interno a la Unidad") ? "INTERNO" : "EXTERNO";
+        nombre = unidadDestino.replace("Interno a la Unidad - ", "").replace("Externo a la Unidad - ", "").trim() || "Persona Externa";
+        responsableInfo = {
+          ci: ext.ci,
+          grado: ext.grado,
+          nombre: ext.nombre,
+          apellido: ext.apellido,
+        };
+      } else {
+        clase = "EXTERNO";
+        nombre = "Persona Externa";
+      }
     }
 
     return {
@@ -72,6 +84,7 @@ export async function GET(request: Request) {
       })),
       observaciones: movimiento.observaciones,
       usuarioEntrega: movimiento.usuarioEntrega ? `${movimiento.usuarioEntrega.apellido} ${movimiento.usuarioEntrega.nombre}`.trim() || movimiento.usuarioEntrega.username : null,
+      responsableInfo,
     };
   }).filter(row => row.nombre !== "");
 
