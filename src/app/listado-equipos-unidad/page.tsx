@@ -225,8 +225,9 @@ export default async function ListadoEquiposUnidadPage({
     const itemKey = item.itemId.toString();
     const stockUnidad = stockSummaryMaps.unidadByItem.get(itemKey) ?? 0;
     const stockSubalternos = stockSummaryMaps.personalByItem.get(itemKey) ?? 0;
+    const stockAsignacion = stockSummaryMaps.asignacionByItem.get(itemKey) ?? 0;
     const stockPrestamo = stockSummaryMaps.prestamoByItem.get(itemKey) ?? 0;
-    const stockDeposito = stockUnidad - stockSubalternos - stockPrestamo;
+    const stockDeposito = stockUnidad - stockSubalternos - stockAsignacion - stockPrestamo;
 
     return {
       itemId: itemKey,

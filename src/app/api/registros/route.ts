@@ -7,6 +7,7 @@ import { notifyAdminOnMovement } from "@/lib/notify-admins";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
+import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -27,6 +28,13 @@ type MovimientoPayload = {
   destinatarioTipo?: string;
   recintoClase?: string;
   recintoNombre?: string;
+  destinatarioExterno?: {
+    grado?: string;
+    nombre?: string;
+    apellido?: string;
+    ci?: string;
+    unidadDestino?: string;
+  };
   fecha?: string;
   tipo: TipoMovimiento | string;
   comentarios?: string;
@@ -39,6 +47,16 @@ type ParsedDestinatarioPayload =
   | {
       destinatarioTipo: "PERSONAL";
       targetCis: string[];
+    }
+  | {
+      destinatarioTipo: "EXTERNO";
+      externo: {
+        grado: string;
+        nombre: string;
+        apellido: string;
+        ci: string;
+        unidadDestino: string;
+      };
     }
   | {
       destinatarioTipo: "RECINTO";
@@ -63,6 +81,7 @@ function parseTipoMovimiento(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
   if (raw === "ENTREGA") return TipoMovimiento.ENTREGA;
   if (raw === "DEVOLUCION") return TipoMovimiento.DEVOLUCION;
+  if (raw === "ASIGNACION") return TipoMovimiento.ASIGNACION;
   return null;
 }
 
@@ -95,6 +114,7 @@ function parseDestinatarioTipo(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
   if (raw === "" || raw === "PERSONAL") return "PERSONAL" as const;
   if (raw === "RECINTO") return "RECINTO" as const;
+  if (raw === "EXTERNO") return "EXTERNO" as const;
   return null;
 }
 
@@ -109,6 +129,16 @@ function parseRecintoNombre(value: unknown) {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed === "" ? null : trimmed;
+}
+
+function sanitizeExternalPayload(value: MovimientoPayload["destinatarioExterno"] | undefined) {
+  return {
+    grado: String(value?.grado ?? "").trim(),
+    nombre: String(value?.nombre ?? "").trim(),
+    apellido: String(value?.apellido ?? "").trim(),
+    ci: String(value?.ci ?? "").trim().replace(/\D/g, ""),
+    unidadDestino: String(value?.unidadDestino ?? "").trim(),
+  };
 }
 
 function parseDestinatarioPayload(candidate: Record<string, unknown>): ParsedDestinatarioPayload | null {
@@ -126,12 +156,35 @@ function parseDestinatarioPayload(candidate: Record<string, unknown>): ParsedDes
     };
   }
 
+  if (destinatarioTipo === "EXTERNO") {
+    const externo = sanitizeExternalPayload(candidate.destinatarioExterno as MovimientoPayload["destinatarioExterno"]);
+    if (!isValidUruguayanCi(externo.ci)) return null;
+    if (!externo.grado || !externo.nombre || !externo.apellido || !externo.unidadDestino) return null;
+    return {
+      destinatarioTipo,
+      externo,
+    };
+  }
+
   const targetCis = parseTargetCiList(candidate.ci, candidate.ciList);
   if (!targetCis) return null;
   return {
     destinatarioTipo,
     targetCis,
   };
+}
+
+function validateDestinatarioTipoForMovimiento(
+  tipo: TipoMovimiento,
+  destinatarioPayload: ParsedDestinatarioPayload,
+) {
+  if (tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION) {
+    return destinatarioPayload.destinatarioTipo === "PERSONAL";
+  }
+  if (tipo === TipoMovimiento.ASIGNACION) {
+    return true;
+  }
+  return false;
 }
 
 function readRequestMeta(request: Request) {
@@ -178,16 +231,34 @@ function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombr
   };
 }
 
+function buildExternoAuditDetail(externo: ParsedDestinatarioPayload & { destinatarioTipo: "EXTERNO" }) {
+  return {
+    ci: externo.externo.ci,
+    grado: externo.externo.grado,
+    nombre: externo.externo.nombre,
+    apellido: externo.externo.apellido,
+    unidadDestino: externo.externo.unidadDestino,
+  };
+}
+
 function formatRecintoNotificationLabel(recinto: { clase: MovimientoRecintoClase; nombre: string }) {
   const scope = recinto.clase === "EXTERNO" ? "fuera de la unidad" : "dentro de la unidad";
   return `${recinto.nombre} (${scope})`;
 }
 
+function formatExternoNotificationLabel(externo: ParsedDestinatarioPayload & { destinatarioTipo: "EXTERNO" }) {
+  return `${externo.externo.grado} ${externo.externo.apellido}, ${externo.externo.nombre} (${externo.externo.unidadDestino})`
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function isValidPayload(body: unknown): body is MovimientoPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  if (!parseDestinatarioPayload(candidate)) return false;
-  if (!parseTipoMovimiento(candidate.tipo)) return false;
+  const tipo = parseTipoMovimiento(candidate.tipo);
+  const destinatarioPayload = parseDestinatarioPayload(candidate);
+  if (!tipo || !destinatarioPayload) return false;
+  if (!validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload)) return false;
   if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
   return true;
 }
@@ -195,6 +266,8 @@ function isValidPayload(body: unknown): body is MovimientoPayload {
 export async function GET(req: Request) {
   const auth = await authorizeRequest(req, "read_data");
   if (!auth.ok) return auth.response;
+
+  await ensureMovimientoDestinatarioRecintoCompatibility();
 
   const url = new URL(req.url);
   const ci = (url.searchParams.get("ci") ?? "").trim();
@@ -208,7 +281,7 @@ export async function GET(req: Request) {
 
   const where: Prisma.MovimientoWhereInput = {
     ...(ci ? { destinatarioPersonal: { is: { ci } } } : {}),
-    tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+    tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION] },
   };
 
   if (summaryOnly) {
@@ -257,6 +330,19 @@ export async function GET(req: Request) {
                   },
                 },
               },
+            },
+          },
+        },
+      },
+      destinatarioExterno: {
+        select: {
+          personaExterna: {
+            select: {
+              ci: true,
+              grado: true,
+              nombre: true,
+              apellido: true,
+              unidadDestino: true,
             },
           },
         },
@@ -326,7 +412,7 @@ export async function GET(req: Request) {
           };
         })(),
         ci: destinatario?.ci ?? "",
-        destinatarioTipo: movimiento.destinatarioRecinto ? "RECINTO" : "PERSONAL",
+        destinatarioTipo: movimiento.destinatarioRecinto ? "RECINTO" : movimiento.destinatarioExterno ? "EXTERNO" : "PERSONAL",
         recintoClase: movimiento.destinatarioRecinto?.clase ?? null,
         recintoNombre: movimiento.destinatarioRecinto?.nombre ?? null,
         usuarioEntregaId: movimiento.usuarioEntregaId,
@@ -350,6 +436,8 @@ export async function POST(req: Request) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
 
+  await ensureMovimientoDestinatarioRecintoCompatibility();
+
   const body = await req.json();
   const requestMeta = readRequestMeta(req);
   if (!isValidPayload(body)) {
@@ -365,6 +453,9 @@ export async function POST(req: Request) {
   const fecha = parseFecha(body.fecha);
   if (!tipo || !fecha) {
     return NextResponse.json({ error: "tipo o fecha invalidos." }, { status: 400 });
+  }
+  if (!validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload)) {
+    return NextResponse.json({ error: "El tipo de destinatario no es valido para este movimiento." }, { status: 400 });
   }
 
   if (body.fecha && isDateInputAfterToday(body.fecha)) {
@@ -392,7 +483,10 @@ export async function POST(req: Request) {
   const [personalRecords, itemsFound] = await Promise.all([
     destinatarioPayload.destinatarioTipo === "PERSONAL"
       ? prisma.personal.findMany({
-          where: { ci: { in: destinatarioPayload.targetCis }, rango: { tipo: TipoPersonal.SUBALTERNO } },
+          where: {
+            ci: { in: destinatarioPayload.targetCis },
+            ...(tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION ? { rango: { tipo: TipoPersonal.SUBALTERNO } } : {}),
+          },
           select: {
             ci: true,
             apellido1: true,
@@ -400,7 +494,7 @@ export async function POST(req: Request) {
             nombre1: true,
             nombre2: true,
             rango: {
-              select: { nombreCompleto: true, abreviacion: true },
+              select: { nombreCompleto: true, abreviacion: true, tipo: true },
             },
             subalterno: {
               select: {
@@ -424,7 +518,11 @@ export async function POST(req: Request) {
     if (missingCis.length > 0) {
       const preview = missingCis.slice(0, 3).join(", ");
       const suffix = missingCis.length > 3 ? "..." : "";
-      return NextResponse.json({ error: `No existe personal para las CIs: ${preview}${suffix}` }, { status: 404 });
+      const error =
+        tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION
+          ? `No existe personal subalterno para las CIs: ${preview}${suffix}`
+          : `No existe personal para las CIs: ${preview}${suffix}`;
+      return NextResponse.json({ error }, { status: 404 });
     }
   }
 
@@ -463,6 +561,54 @@ export async function POST(req: Request) {
             movimientoId: movimiento.movimientoId,
             clase: destinatarioPayload.recintoClase,
             nombre: destinatarioPayload.recintoNombre,
+          },
+        });
+
+        await tx.movimientoItem.createMany({
+          data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
+            movimientoId: movimiento.movimientoId,
+            itemId: BigInt(itemId),
+            cantidad,
+          })),
+        });
+
+        created.push({ movimientoId: movimiento.movimientoId, ci: null });
+        return created;
+      }
+
+      if (destinatarioPayload.destinatarioTipo === "EXTERNO") {
+        const movimiento = await tx.movimiento.create({
+          data: {
+            usuarioEntregaId: auth.user.usuarioId,
+            fecha,
+            tipo,
+            afectaStock,
+            observaciones: comentarios,
+          },
+          select: { movimientoId: true },
+        });
+
+        await tx.personaExterna.upsert({
+          where: { ci: destinatarioPayload.externo.ci },
+          create: {
+            ci: destinatarioPayload.externo.ci,
+            grado: destinatarioPayload.externo.grado,
+            nombre: destinatarioPayload.externo.nombre,
+            apellido: destinatarioPayload.externo.apellido,
+            unidadDestino: destinatarioPayload.externo.unidadDestino,
+          },
+          update: {
+            grado: destinatarioPayload.externo.grado,
+            nombre: destinatarioPayload.externo.nombre,
+            apellido: destinatarioPayload.externo.apellido,
+            unidadDestino: destinatarioPayload.externo.unidadDestino,
+          },
+        });
+
+        await tx.movimientoDestinatarioExterno.create({
+          data: {
+            movimientoId: movimiento.movimientoId,
+            personaExternaCi: destinatarioPayload.externo.ci,
           },
         });
 
@@ -519,12 +665,35 @@ export async function POST(req: Request) {
         entidad: "REGISTRO",
         entidadId: createdMovimiento.movimientoId.toString(),
         detalle: {
-          evento: "MOVIMIENTO_VESTUARIO_RECINTO",
+          evento: "MOVIMIENTO_ASIGNACION_RECINTO",
           destinatarioTipo: "RECINTO",
           recinto: buildRecintoAuditDetail({
             clase: destinatarioPayload.recintoClase,
             nombre: destinatarioPayload.recintoNombre,
           }),
+          tipo,
+          afectaStock,
+          fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
+          comentarios,
+          totalEquipos: itemsDetallados.length,
+          totalUnidades,
+          totalDestinatarios: 1,
+          items: itemsDetallados,
+          ip: requestMeta.ip,
+          userAgent: requestMeta.userAgent,
+        },
+      });
+    } else if (destinatarioPayload.destinatarioTipo === "EXTERNO") {
+      const createdMovimiento = createdMovimientos[0];
+      await logAudit({
+        usuarioId: auth.user.usuarioId,
+        accion: "CREATE",
+        entidad: "REGISTRO",
+        entidadId: createdMovimiento.movimientoId.toString(),
+        detalle: {
+          evento: "MOVIMIENTO_ASIGNACION_EXTERNO",
+          destinatarioTipo: "EXTERNO",
+          externo: buildExternoAuditDetail(destinatarioPayload),
           tipo,
           afectaStock,
           fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
@@ -549,7 +718,7 @@ export async function POST(req: Request) {
             entidad: "REGISTRO",
             entidadId: movimiento.movimientoId.toString(),
             detalle: {
-              evento: "MOVIMIENTO_VESTUARIO",
+              evento: tipo === TipoMovimiento.ASIGNACION ? "MOVIMIENTO_ASIGNACION" : "MOVIMIENTO_VESTUARIO",
               ci: movimiento.ci,
               personal: buildPersonalAuditDetail(personalRecord),
               tipo,
@@ -575,6 +744,8 @@ export async function POST(req: Request) {
               clase: destinatarioPayload.recintoClase,
               nombre: destinatarioPayload.recintoNombre,
             })}.`
+          : destinatarioPayload.destinatarioTipo === "EXTERNO"
+            ? `${tipo} a externo ${formatExternoNotificationLabel(destinatarioPayload)}.`
           : `${tipo} para ${destinatarioPayload.targetCis.length} personal(es).`;
       await notifyAdminOnMovement(
         {
@@ -592,7 +763,8 @@ export async function POST(req: Request) {
     }
 
     if (destinatarioPayload.destinatarioTipo === "PERSONAL") {
-      const tipoLabel = tipo === TipoMovimiento.ENTREGA ? "entrega" : "devolucion";
+      const tipoLabel =
+        tipo === TipoMovimiento.ENTREGA ? "entrega" : tipo === TipoMovimiento.DEVOLUCION ? "devolucion" : "asignacion";
       const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
       const resumenItems = itemsDetallados
         .slice(0, 4)
@@ -606,7 +778,10 @@ export async function POST(req: Request) {
             request: req,
             ci: targetCi,
             subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
-            headline: `Se registro una ${tipoLabel} de vestuario en tu ficha.`,
+            headline:
+              tipo === TipoMovimiento.ASIGNACION
+                ? "Se registro una asignacion de equipo en tu ficha."
+                : `Se registro una ${tipoLabel} de vestuario en tu ficha.`,
             detailLines: [
               `Tipo: ${tipo}`,
               `Fecha: ${formatDateOnlyForDisplay(body.fecha || getTodayDateInput())}`,

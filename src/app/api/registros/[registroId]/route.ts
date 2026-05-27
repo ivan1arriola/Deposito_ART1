@@ -3,8 +3,10 @@ import { Prisma, TipoMovimiento } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { isValidUruguayanCi } from "@/lib/ci";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
+import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -24,6 +26,13 @@ type UpdateMovimientoPayload = {
   destinatarioTipo?: string;
   recintoClase?: string;
   recintoNombre?: string;
+  destinatarioExterno?: {
+    grado?: string;
+    nombre?: string;
+    apellido?: string;
+    ci?: string;
+    unidadDestino?: string;
+  };
   fecha?: string;
   tipo: TipoMovimiento | string;
   comentarios?: string;
@@ -36,6 +45,16 @@ type ParsedDestinatarioPayload =
   | {
       destinatarioTipo: "PERSONAL";
       targetCis: string[];
+    }
+  | {
+      destinatarioTipo: "EXTERNO";
+      externo: {
+        grado: string;
+        nombre: string;
+        apellido: string;
+        ci: string;
+        unidadDestino: string;
+      };
     }
   | {
       destinatarioTipo: "RECINTO";
@@ -68,6 +87,7 @@ function parseTipoMovimiento(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
   if (raw === "ENTREGA") return TipoMovimiento.ENTREGA;
   if (raw === "DEVOLUCION") return TipoMovimiento.DEVOLUCION;
+  if (raw === "ASIGNACION") return TipoMovimiento.ASIGNACION;
   return null;
 }
 
@@ -99,6 +119,7 @@ function parseDestinatarioTipo(value: unknown) {
   const raw = String(value ?? "").trim().toUpperCase();
   if (raw === "" || raw === "PERSONAL") return "PERSONAL" as const;
   if (raw === "RECINTO") return "RECINTO" as const;
+  if (raw === "EXTERNO") return "EXTERNO" as const;
   return null;
 }
 
@@ -113,6 +134,16 @@ function parseRecintoNombre(value: unknown) {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed === "" ? null : trimmed;
+}
+
+function sanitizeExternalPayload(value: UpdateMovimientoPayload["destinatarioExterno"] | undefined) {
+  return {
+    grado: String(value?.grado ?? "").trim(),
+    nombre: String(value?.nombre ?? "").trim(),
+    apellido: String(value?.apellido ?? "").trim(),
+    ci: String(value?.ci ?? "").trim().replace(/\D/g, ""),
+    unidadDestino: String(value?.unidadDestino ?? "").trim(),
+  };
 }
 
 function parseDestinatarioPayload(
@@ -134,6 +165,23 @@ function parseDestinatarioPayload(
     };
   }
 
+  if (destinatarioTipo === "EXTERNO") {
+    const fallbackExterno = fallback?.destinatarioTipo === "EXTERNO" ? fallback : null;
+    const externoBase = sanitizeExternalPayload(candidate.destinatarioExterno as UpdateMovimientoPayload["destinatarioExterno"]);
+    const externo = {
+      grado: externoBase.grado || fallbackExterno?.externo.grado || "",
+      nombre: externoBase.nombre || fallbackExterno?.externo.nombre || "",
+      apellido: externoBase.apellido || fallbackExterno?.externo.apellido || "",
+      ci: externoBase.ci || fallbackExterno?.externo.ci || "",
+      unidadDestino: externoBase.unidadDestino || fallbackExterno?.externo.unidadDestino || "",
+    };
+    if (!externo.grado || !externo.nombre || !externo.apellido || !externo.unidadDestino || !isValidUruguayanCi(externo.ci)) return null;
+    return {
+      destinatarioTipo,
+      externo,
+    };
+  }
+
   const targetCis = parseTargetCiList(candidate.ci, candidate.ciList) ?? (fallback?.destinatarioTipo === "PERSONAL" ? fallback.targetCis : null);
   if (!targetCis || targetCis.length === 0) return null;
   return {
@@ -142,10 +190,28 @@ function parseDestinatarioPayload(
   };
 }
 
+function validateDestinatarioTipoForMovimiento(
+  tipo: TipoMovimiento,
+  destinatarioPayload: ParsedDestinatarioPayload,
+) {
+  if (tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION) {
+    return destinatarioPayload.destinatarioTipo === "PERSONAL";
+  }
+  if (tipo === TipoMovimiento.ASIGNACION) {
+    return true;
+  }
+  return false;
+}
+
 function isValidPayload(body: unknown): body is UpdateMovimientoPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  if (!parseTipoMovimiento(candidate.tipo)) return false;
+  const tipo = parseTipoMovimiento(candidate.tipo);
+  if (!tipo) return false;
+  const destinatarioPayload = parseDestinatarioPayload(candidate);
+  if (candidate.destinatarioTipo !== undefined && (!destinatarioPayload || !validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload))) {
+    return false;
+  }
   if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
   return true;
 }
@@ -194,6 +260,16 @@ function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombr
   };
 }
 
+function buildExternoAuditDetail(externo: ParsedDestinatarioPayload & { destinatarioTipo: "EXTERNO" }) {
+  return {
+    ci: externo.externo.ci,
+    grado: externo.externo.grado,
+    nombre: externo.externo.nombre,
+    apellido: externo.externo.apellido,
+    unidadDestino: externo.externo.unidadDestino,
+  };
+}
+
 const registroInclude = {
   usuarioEntrega: {
     select: {
@@ -237,6 +313,19 @@ const registroInclude = {
       },
     },
   },
+  destinatarioExterno: {
+    select: {
+      personaExterna: {
+        select: {
+          ci: true,
+          grado: true,
+          nombre: true,
+          apellido: true,
+          unidadDestino: true,
+        },
+      },
+    },
+  },
   destinatarioRecinto: {
     select: {
       clase: true,
@@ -270,6 +359,19 @@ function buildExistingDestinatarioPayload(existing: RegistroWithRelations): Pars
     };
   }
 
+  if (existing.destinatarioExterno?.personaExterna) {
+    return {
+      destinatarioTipo: "EXTERNO",
+      externo: {
+        grado: existing.destinatarioExterno.personaExterna.grado,
+        nombre: existing.destinatarioExterno.personaExterna.nombre,
+        apellido: existing.destinatarioExterno.personaExterna.apellido,
+        ci: existing.destinatarioExterno.personaExterna.ci,
+        unidadDestino: existing.destinatarioExterno.personaExterna.unidadDestino,
+      },
+    };
+  }
+
   if (existing.destinatarioPersonal?.personal) {
     return {
       destinatarioTipo: "PERSONAL",
@@ -287,6 +389,22 @@ function buildExistingDestinatarioAuditDetail(existing: RegistroWithRelations) {
       recinto: buildRecintoAuditDetail({
         clase: existing.destinatarioRecinto.clase === "EXTERNO" ? "EXTERNO" : "INTERNO",
         nombre: existing.destinatarioRecinto.nombre,
+      }),
+    };
+  }
+
+  if (existing.destinatarioExterno?.personaExterna) {
+    return {
+      destinatarioTipo: "EXTERNO",
+      externo: buildExternoAuditDetail({
+        destinatarioTipo: "EXTERNO",
+        externo: {
+          grado: existing.destinatarioExterno.personaExterna.grado,
+          nombre: existing.destinatarioExterno.personaExterna.nombre,
+          apellido: existing.destinatarioExterno.personaExterna.apellido,
+          ci: existing.destinatarioExterno.personaExterna.ci,
+          unidadDestino: existing.destinatarioExterno.personaExterna.unidadDestino,
+        },
       }),
     };
   }
@@ -312,12 +430,19 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({ error: "registroId invalido." }, { status: 400 });
   }
 
+  await ensureMovimientoDestinatarioRecintoCompatibility();
+
   const movimiento = await prisma.movimiento.findUnique({
     where: { movimientoId },
     include: registroInclude,
   });
 
-  if (!movimiento || (movimiento.tipo !== TipoMovimiento.ENTREGA && movimiento.tipo !== TipoMovimiento.DEVOLUCION)) {
+  if (
+    !movimiento ||
+    (movimiento.tipo !== TipoMovimiento.ENTREGA &&
+      movimiento.tipo !== TipoMovimiento.DEVOLUCION &&
+      movimiento.tipo !== TipoMovimiento.ASIGNACION)
+  ) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
   }
 
@@ -331,7 +456,7 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
     fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
     tipo: movimiento.tipo,
     comentarios: movimiento.observaciones,
-    destinatarioTipo: movimiento.destinatarioRecinto ? "RECINTO" : "PERSONAL",
+    destinatarioTipo: movimiento.destinatarioRecinto ? "RECINTO" : movimiento.destinatarioExterno ? "EXTERNO" : "PERSONAL",
     recintoClase: movimiento.destinatarioRecinto?.clase ?? null,
     recintoNombre: movimiento.destinatarioRecinto?.nombre ?? null,
     ci: destinatario.ci,
@@ -358,6 +483,8 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({ error: "registroId invalido." }, { status: 400 });
   }
 
+  await ensureMovimientoDestinatarioRecintoCompatibility();
+
   const body = await req.json();
   if (!isValidPayload(body)) {
     return NextResponse.json({ error: "Payload invalido. Revisa tipo, fecha y equipos." }, { status: 400 });
@@ -367,6 +494,12 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   const fecha = parseFecha(body.fecha);
   if (!tipo || !fecha) {
     return NextResponse.json({ error: "tipo o fecha invalidos." }, { status: 400 });
+  }
+  if (body.destinatarioTipo !== undefined) {
+    const explicitDestinatario = parseDestinatarioPayload(body as Record<string, unknown>);
+    if (!explicitDestinatario || !validateDestinatarioTipoForMovimiento(tipo, explicitDestinatario)) {
+      return NextResponse.json({ error: "El tipo de destinatario no es valido para este movimiento." }, { status: 400 });
+    }
   }
 
   if (body.fecha && isDateInputAfterToday(body.fecha)) {
@@ -395,7 +528,12 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     include: registroInclude,
   });
 
-  if (!existing || (existing.tipo !== TipoMovimiento.ENTREGA && existing.tipo !== TipoMovimiento.DEVOLUCION)) {
+  if (
+    !existing ||
+    (existing.tipo !== TipoMovimiento.ENTREGA &&
+      existing.tipo !== TipoMovimiento.DEVOLUCION &&
+      existing.tipo !== TipoMovimiento.ASIGNACION)
+  ) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
   }
 
@@ -407,6 +545,9 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   const nextDestinatarioPayload = parseDestinatarioPayload(body as Record<string, unknown>, currentDestinatarioPayload);
   if (!nextDestinatarioPayload) {
     return NextResponse.json({ error: "Destinatario invalido." }, { status: 400 });
+  }
+  if (!validateDestinatarioTipoForMovimiento(tipo, nextDestinatarioPayload)) {
+    return NextResponse.json({ error: "El tipo de destinatario no es valido para este movimiento." }, { status: 400 });
   }
 
   const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
@@ -469,8 +610,16 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       },
     });
 
-    if (!personal || personal.rango.tipo !== "SUBALTERNO") {
-      return NextResponse.json({ error: "El destinatario interno debe ser un subalterno válido." }, { status: 404 });
+    if (!personal || ((tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION) && personal.rango.tipo !== "SUBALTERNO")) {
+      return NextResponse.json(
+        {
+          error:
+            tipo === TipoMovimiento.ENTREGA || tipo === TipoMovimiento.DEVOLUCION
+              ? "El destinatario interno debe ser un subalterno valido."
+              : "El destinatario interno debe existir en personal.",
+        },
+        { status: 404 },
+      );
     }
 
     nextPersonalRecord = {
@@ -502,6 +651,9 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       await tx.movimientoDestinatarioPersonal.deleteMany({
         where: { movimientoId: existing.movimientoId },
       });
+      await tx.movimientoDestinatarioExterno.deleteMany({
+        where: { movimientoId: existing.movimientoId },
+      });
       await tx.movimientoDestinatarioRecinto.deleteMany({
         where: { movimientoId: existing.movimientoId },
       });
@@ -512,6 +664,30 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
             movimientoId: existing.movimientoId,
             clase: nextDestinatarioPayload.recintoClase,
             nombre: nextDestinatarioPayload.recintoNombre,
+          },
+        });
+      } else if (nextDestinatarioPayload.destinatarioTipo === "EXTERNO") {
+        await tx.personaExterna.upsert({
+          where: { ci: nextDestinatarioPayload.externo.ci },
+          create: {
+            ci: nextDestinatarioPayload.externo.ci,
+            grado: nextDestinatarioPayload.externo.grado,
+            nombre: nextDestinatarioPayload.externo.nombre,
+            apellido: nextDestinatarioPayload.externo.apellido,
+            unidadDestino: nextDestinatarioPayload.externo.unidadDestino,
+          },
+          update: {
+            grado: nextDestinatarioPayload.externo.grado,
+            nombre: nextDestinatarioPayload.externo.nombre,
+            apellido: nextDestinatarioPayload.externo.apellido,
+            unidadDestino: nextDestinatarioPayload.externo.unidadDestino,
+          },
+        });
+
+        await tx.movimientoDestinatarioExterno.create({
+          data: {
+            movimientoId: existing.movimientoId,
+            personaExternaCi: nextDestinatarioPayload.externo.ci,
           },
         });
       } else {
@@ -538,8 +714,8 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
     const auditDetail = {
       evento:
-        nextDestinatarioPayload.destinatarioTipo === "RECINTO" || existing.destinatarioRecinto
-          ? "MOVIMIENTO_VESTUARIO_RECINTO_RECTIFICADO"
+        tipo === TipoMovimiento.ASIGNACION
+          ? "MOVIMIENTO_ASIGNACION_RECTIFICADO"
           : "MOVIMIENTO_VESTUARIO_RECTIFICADO",
       destinatarioAnterior: buildExistingDestinatarioAuditDetail(existing),
       destinatarioNuevo:
@@ -551,6 +727,11 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
                 nombre: nextDestinatarioPayload.recintoNombre,
               }),
             }
+          : nextDestinatarioPayload.destinatarioTipo === "EXTERNO"
+            ? {
+                destinatarioTipo: "EXTERNO",
+                externo: buildExternoAuditDetail(nextDestinatarioPayload),
+              }
           : {
               destinatarioTipo: "PERSONAL",
               ci: nextDestinatarioPayload.targetCis[0],
@@ -595,7 +776,10 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
           request: req,
           ci: existingPersonal.ci,
           subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
-          headline: "Se actualizo un movimiento en tu ficha de vestuario.",
+          headline:
+            tipo === TipoMovimiento.ASIGNACION
+              ? "Se actualizo una asignacion de equipo en tu ficha."
+              : "Se actualizo un movimiento en tu ficha de vestuario.",
           detailLines: [
             `Tipo anterior: ${existing.tipo}`,
             `Tipo nuevo: ${tipo}`,
@@ -634,18 +818,26 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
     return NextResponse.json({ error: "registroId invalido." }, { status: 400 });
   }
 
+  await ensureMovimientoDestinatarioRecintoCompatibility();
+
   const existing = await prisma.movimiento.findUnique({
     where: { movimientoId },
     include: registroInclude,
   });
 
-  if (!existing || (existing.tipo !== TipoMovimiento.ENTREGA && existing.tipo !== TipoMovimiento.DEVOLUCION)) {
+  if (
+    !existing ||
+    (existing.tipo !== TipoMovimiento.ENTREGA &&
+      existing.tipo !== TipoMovimiento.DEVOLUCION &&
+      existing.tipo !== TipoMovimiento.ASIGNACION)
+  ) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
   }
 
   const existingPersonal = existing.destinatarioPersonal?.personal ?? null;
+  const existingExterno = existing.destinatarioExterno?.personaExterna ?? null;
   const existingRecinto = existing.destinatarioRecinto ?? null;
-  if (!existingPersonal && !existingRecinto) {
+  if (!existingPersonal && !existingRecinto && !existingExterno) {
     return NextResponse.json({ error: "El registro no tiene destinatario asociado." }, { status: 409 });
   }
 
@@ -668,7 +860,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
       entidad: "REGISTRO",
       entidadId: existing.movimientoId.toString(),
       detalle: {
-        evento: existingRecinto ? "MOVIMIENTO_VESTUARIO_RECINTO_ELIMINADO" : "MOVIMIENTO_VESTUARIO_ELIMINADO",
+        evento: existing.tipo === TipoMovimiento.ASIGNACION ? "MOVIMIENTO_ASIGNACION_ELIMINADO" : "MOVIMIENTO_VESTUARIO_ELIMINADO",
         destinatario: buildExistingDestinatarioAuditDetail(existing),
         ci: existingPersonal?.ci ?? null,
         personal: existingPersonal ? buildPersonalAuditDetail(existingPersonal) : null,
@@ -691,7 +883,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
           request: req,
           ci: existingPersonal.ci,
           subject: "Notificacion de movimiento - Sistema de Depósito General - Artilleria 1",
-          headline: "Se elimino un movimiento de tu ficha de vestuario.",
+          headline:
+            existing.tipo === TipoMovimiento.ASIGNACION
+              ? "Se elimino una asignacion de equipo de tu ficha."
+              : "Se elimino un movimiento de tu ficha de vestuario.",
           detailLines: [
             `Tipo eliminado: ${existing.tipo}`,
             `Fecha del registro: ${formatDateOnlyFromDate(existing.fecha) ?? "-"}`,
@@ -707,7 +902,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
     return NextResponse.json({
       ok: true,
       registroId: existing.movimientoId.toString(),
-      destinatarioTipo: existingRecinto ? "RECINTO" : "PERSONAL",
+      destinatarioTipo: existingRecinto ? "RECINTO" : existingExterno ? "EXTERNO" : "PERSONAL",
       ci: existingPersonal?.ci ?? "",
     });
   } catch {

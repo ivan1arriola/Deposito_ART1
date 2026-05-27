@@ -7,8 +7,9 @@ import type { StockSection } from "./types";
 
 export const ESTADO_OPTIONS: PrestamoEstadoEquipo[] = ["NUEVO", "BUENO", "REGULAR", "MALO"];
 
-export function historyBadgeClass(tipo: "INGRESO" | "EGRESO" | "ENTREGA" | "DEVOLUCION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO") {
+export function historyBadgeClass(tipo: "INGRESO" | "EGRESO" | "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO") {
   if (tipo === "INGRESO" || tipo === "DEVOLUCION" || tipo === "DEVOLUCION_PRESTAMO") return "bg-emerald-100 text-emerald-800";
+  if (tipo === "ASIGNACION") return "bg-indigo-100 text-indigo-800";
   if (tipo === "PRESTAMO") return "bg-amber-100 text-amber-800";
   return "bg-rose-100 text-rose-800";
 }

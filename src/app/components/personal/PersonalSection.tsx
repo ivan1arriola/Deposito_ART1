@@ -54,6 +54,7 @@ type PersonalSectionProps = {
   onPrintPersonnelByBattery: () => void;
   onOpenMassEntrega: () => void;
   onOpenRecintoEntrega: () => void;
+  onOpenAsignacion: () => void;
   onOpenCreate: () => void;
   onToggleTallas: (ci: string) => void;
   onDeletePersonal: (ci: string) => void;
@@ -279,6 +280,7 @@ export function PersonalSection({
   onPrintPersonnelByBattery,
   onOpenMassEntrega,
   onOpenRecintoEntrega,
+  onOpenAsignacion,
   onOpenCreate,
   onToggleTallas,
   onDeletePersonal,
@@ -308,7 +310,7 @@ export function PersonalSection({
   const canShowAscensoBlock = Boolean(isAdmin && editingPersona && canPromoteEditPersonalToSuboficial);
 
   const actionGridClass = canWrite
-    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7"
     : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4";
 
   const personalConErrorReingreso = useMemo(() => {
@@ -356,6 +358,17 @@ export function PersonalSection({
               icon={<ApartmentRoundedIcon fontSize="small" />}
               tone="slate"
               onClick={onOpenRecintoEntrega}
+              disabled={loading}
+            />
+          ) : null}
+          {canWrite ? (
+            <QuickActionButton
+              eyebrow="Asignación"
+              title="Registrar asignación"
+              description="Entrega definitiva a personal, recinto o destinatario externo."
+              icon={<FactCheckOutlinedIcon fontSize="small" />}
+              tone="indigo"
+              onClick={onOpenAsignacion}
               disabled={loading}
             />
           ) : null}

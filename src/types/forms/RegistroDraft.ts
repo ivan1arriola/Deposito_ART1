@@ -1,7 +1,7 @@
 import type { RegistroTipo } from "../views/RegistroTipo";
 import type { RegistroDraftEquipo } from "./RegistroDraftEquipo";
 
-export type RegistroDestinatarioTipo = "PERSONAL" | "RECINTO";
+export type RegistroDestinatarioTipo = "PERSONAL" | "RECINTO" | "EXTERNO";
 export type RegistroRecintoClase = "INTERNO" | "EXTERNO";
 
 export type RegistroDraft = {
@@ -13,6 +13,11 @@ export type RegistroDraft = {
   destinatarioTipo: RegistroDestinatarioTipo;
   recintoClase: RegistroRecintoClase;
   recintoNombre: string;
+  destinatarioExternoGrado: string;
+  destinatarioExternoNombre: string;
+  destinatarioExternoApellido: string;
+  destinatarioExternoCi: string;
+  destinatarioExternoUnidadDestino: string;
   incluirFueraDeHoja: boolean;
   fecha: string;
   comentarios: string;

@@ -6,6 +6,7 @@ import { logAudit } from "@/lib/audit";
 import { applyItemOrder, getOrderedItemIds, insertItemAtOrder } from "@/lib/item-ordering";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
+import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 
 type ItemPayload = {
   nombre: string;
@@ -370,6 +371,7 @@ export async function GET(req: Request, context: { params: Promise<{ itemId: str
   }
 
   try {
+    await ensureMovimientoDestinatarioRecintoCompatibility();
     const item = await prisma.item.findUniqueOrThrow({
       where: { itemId },
       select: { itemId: true, nombre: true },

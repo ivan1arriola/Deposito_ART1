@@ -9,7 +9,7 @@ import { prestamoInclude, serializePrestamoWithActuante } from "@/lib/prestamos"
 import { prisma } from "@/lib/prisma";
 
 type PersonaProfileTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
-type PersonaProfileTimelineType = "ENTREGA" | "DEVOLUCION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO";
+type PersonaProfileTimelineType = "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO";
 
 type PersonaProfileTimelineEntry = {
   id: string;
@@ -142,7 +142,7 @@ function buildPersonaProfileTimeline(
   registros: Array<{
     registroId: string;
     fecha: string;
-    tipo: "ENTREGA" | "DEVOLUCION";
+    tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION";
     usuarioEntregaNombre: string;
     items: Array<{ nombre: string; cantidad: number }>;
   }>,
@@ -151,7 +151,7 @@ function buildPersonaProfileTimeline(
   const registrosTimeline = registros.map((registro) => ({
     id: `registro-${registro.registroId}`,
     fecha: registro.fecha,
-    tipo: registro.tipo === "ENTREGA" ? "ENTREGA" : "DEVOLUCION",
+    tipo: registro.tipo === "ENTREGA" ? "ENTREGA" : registro.tipo === "DEVOLUCION" ? "DEVOLUCION" : "ASIGNACION",
     descripcion: `Registro ${registro.tipo.toLowerCase()} · ${registro.items.reduce((acc, item) => acc + item.cantidad, 0)} unidades`,
     responsable: registro.usuarioEntregaNombre?.trim() || null,
     estadoPrestamo: null,
@@ -214,7 +214,7 @@ export async function GET(request: Request) {
     prisma.movimiento.findMany({
       where: {
         destinatarioPersonal: { is: { ci } },
-        tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+        tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION] },
       },
       include: {
         usuarioEntrega: {
@@ -274,8 +274,12 @@ export async function GET(request: Request) {
   );
 
   const registros = registrosRaw.map((movimiento) => {
-    const registroTipo: "ENTREGA" | "DEVOLUCION" =
-      movimiento.tipo === TipoMovimiento.ENTREGA ? "ENTREGA" : "DEVOLUCION";
+    const registroTipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION" =
+      movimiento.tipo === TipoMovimiento.ENTREGA
+        ? "ENTREGA"
+        : movimiento.tipo === TipoMovimiento.DEVOLUCION
+          ? "DEVOLUCION"
+          : "ASIGNACION";
 
     return {
       registroId: movimiento.movimientoId.toString(),

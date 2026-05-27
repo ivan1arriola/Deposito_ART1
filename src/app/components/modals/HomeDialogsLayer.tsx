@@ -1,7 +1,7 @@
 "use client";
 
 import { apellidosLabel, nombresLabel, roleDescription, roleLabel, roleScope } from "@/lib/formatters";
-import type { Equipo, Personal, PersonalObservacion, Rango, Role } from "@/types/entities";
+import type { Equipo, OficialSuboficial, Personal, PersonalObservacion, Rango, Role } from "@/types/entities";
 import type { RegistroDraft, RegistroDraftEquipo } from "@/types/forms";
 import type { ConfirmDialogState, RegistroView, RegistroViewerState } from "@/types/views";
 import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDialogState, UserRoleDialogState } from "@/app/types/home";
@@ -62,12 +62,23 @@ type HomeDialogsLayerProps = {
   registroDraft: RegistroDraft | null;
   personaRegistro: Personal | null;
   personalFiltrado: Personal[];
+  oficialesSuboficiales: OficialSuboficial[];
   equiposOrdenados: Equipo[];
   maxFechaIngreso: string;
   registroSaving: boolean;
   onCloseRegistroEditor: () => void;
   onRegistroDraftChange: (
-    field: "fecha" | "comentarios" | "destinatarioTipo" | "recintoClase" | "recintoNombre",
+    field:
+      | "fecha"
+      | "comentarios"
+      | "destinatarioTipo"
+      | "recintoClase"
+      | "recintoNombre"
+      | "destinatarioExternoGrado"
+      | "destinatarioExternoNombre"
+      | "destinatarioExternoApellido"
+      | "destinatarioExternoCi"
+      | "destinatarioExternoUnidadDestino",
     value: string,
   ) => void;
   onToggleRegistroIncluirFueraDeHoja: () => void;
@@ -135,6 +146,7 @@ export function HomeDialogsLayer({
   registroDraft,
   personaRegistro,
   personalFiltrado,
+  oficialesSuboficiales,
   equiposOrdenados,
   maxFechaIngreso,
   registroSaving,
@@ -225,6 +237,7 @@ export function HomeDialogsLayer({
         draft={registroDraft}
         personaLabel={personaRegistro ? `${apellidosLabel(personaRegistro)}, ${nombresLabel(personaRegistro)}` : null}
         personalFiltrado={personalFiltrado}
+        oficialesSuboficiales={oficialesSuboficiales}
         equiposOrdenados={equiposOrdenados}
         maxFechaIngreso={maxFechaIngreso}
         saving={registroSaving}
@@ -234,6 +247,11 @@ export function HomeDialogsLayer({
         onDestinatarioTipoChange={(value) => onRegistroDraftChange("destinatarioTipo", value)}
         onRecintoClaseChange={(value) => onRegistroDraftChange("recintoClase", value)}
         onRecintoNombreChange={(value) => onRegistroDraftChange("recintoNombre", value)}
+        onDestinatarioExternoGradoChange={(value) => onRegistroDraftChange("destinatarioExternoGrado", value)}
+        onDestinatarioExternoNombreChange={(value) => onRegistroDraftChange("destinatarioExternoNombre", value)}
+        onDestinatarioExternoApellidoChange={(value) => onRegistroDraftChange("destinatarioExternoApellido", value)}
+        onDestinatarioExternoCiChange={(value) => onRegistroDraftChange("destinatarioExternoCi", value)}
+        onDestinatarioExternoUnidadDestinoChange={(value) => onRegistroDraftChange("destinatarioExternoUnidadDestino", value)}
         onToggleIncluirFueraDeHoja={onToggleRegistroIncluirFueraDeHoja}
         onToggleDestinatario={onToggleRegistroDestinatario}
         onSelectAllDestinatarios={onSelectAllRegistroDestinatarios}

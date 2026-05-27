@@ -6,7 +6,7 @@ export type StockHistorialEntry = {
   id: string;
   fecha: string;
   createdAt: string;
-  origen: "MANUAL" | "PERSONAL" | "RECINTO" | "PRESTAMO";
+  origen: "MANUAL" | "PERSONAL" | "RECINTO" | "EXTERNO" | "PRESTAMO";
   tipo: StockOperacionViewTipo | RegistroTipo | PrestamoHistorialTipo;
   afectaStock: boolean;
   comentarios: string | null;

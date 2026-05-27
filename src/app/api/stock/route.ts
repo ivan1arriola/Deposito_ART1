@@ -19,6 +19,7 @@ import {
   stockOperacionDeltaFactor,
 } from "@/lib/stock";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
+import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import { formatPrestamoDestinatario, prestamoInclude, serializePrestamoWithActuante } from "@/lib/prestamos";
 import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
 import type { StockDashboardData } from "@/types/views";
@@ -63,6 +64,19 @@ const movimientoHistorialInclude = {
               bateria: true,
             },
           },
+        },
+      },
+    },
+  },
+  destinatarioExterno: {
+    select: {
+      personaExterna: {
+        select: {
+          ci: true,
+          grado: true,
+          nombre: true,
+          apellido: true,
+          unidadDestino: true,
         },
       },
     },
@@ -166,6 +180,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "El cliente Prisma de stock no esta listo. Reinicia el servidor de desarrollo." }, { status: 503 });
   }
 
+  await ensureMovimientoDestinatarioRecintoCompatibility();
+
   const url = new URL(req.url);
   const limitRaw = Number(url.searchParams.get("limit") ?? "200");
   const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 20), 400) : 200;
@@ -205,7 +221,7 @@ export async function GET(req: Request) {
       }),
       prisma.movimiento.findMany({
         where: {
-          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION] },
         },
         include: movimientoHistorialInclude,
         orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
@@ -228,6 +244,7 @@ export async function GET(req: Request) {
   }
   const stockUnidadByItem = stockSummaryMaps.unidadByItem;
   const stockPersonalByItem = stockSummaryMaps.personalByItem;
+  const stockAsignacionByItem = stockSummaryMaps.asignacionByItem;
   const stockPrestamoByItem = stockSummaryMaps.prestamoByItem;
 
   const auditUserByEntity = new Map<string, string | null>();
@@ -278,8 +295,9 @@ export async function GET(req: Request) {
     const key = item.itemId.toString();
     const stockUnidad = stockUnidadByItem.get(key) ?? 0;
     const stockSubalternos = stockPersonalByItem.get(key) ?? 0;
+    const stockAsignacion = stockAsignacionByItem.get(key) ?? 0;
     const stockPrestamo = stockPrestamoByItem.get(key) ?? 0;
-    const stockDeposito = stockUnidad - stockSubalternos - stockPrestamo;
+    const stockDeposito = stockUnidad - stockSubalternos - stockAsignacion - stockPrestamo;
 
     return {
       equipoId: key,
@@ -290,6 +308,7 @@ export async function GET(req: Request) {
       apareceEnHoja: item.activo,
       existenciaSie: item.existenciaSie,
       stockSubalternos,
+      stockAsignacion,
       stockPrestamo,
       stockDeposito,
       stockUnidad,
@@ -326,14 +345,20 @@ export async function GET(req: Request) {
 
     const historialPersonal: StockHistorialInternalEntry[] = movimientos
       .map((movimiento) => {
-        if (movimiento.tipo !== "ENTREGA" && movimiento.tipo !== "DEVOLUCION") return null;
+        if (
+          movimiento.tipo !== TipoMovimiento.ENTREGA &&
+          movimiento.tipo !== TipoMovimiento.DEVOLUCION &&
+          movimiento.tipo !== TipoMovimiento.ASIGNACION
+        ) {
+          return null;
+        }
         const destinatario = resolveDestinatarioMovimiento(movimiento);
         if (!destinatario) return null;
         return {
           id: `personal-${movimiento.movimientoId.toString()}`,
           fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
           createdAt: formatDateTimeForDisplay(movimiento.createdAt),
-          origen: movimiento.destinatarioRecinto ? ("RECINTO" as const) : ("PERSONAL" as const),
+          origen: movimiento.destinatarioRecinto ? ("RECINTO" as const) : movimiento.destinatarioExterno ? ("EXTERNO" as const) : ("PERSONAL" as const),
           tipo: movimiento.tipo,
           afectaStock: true,
           comentarios: movimiento.observaciones,

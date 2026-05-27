@@ -4,7 +4,8 @@ import { TipoMovimiento, type Prisma } from "@/generated/prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
-import { buildPersonalDestinatarioNombre, normalizeRecintoClase } from "@/lib/movimiento-destinatario";
+import { buildPersonaExternaEtiqueta, buildPersonalDestinatarioNombre, normalizeRecintoClase } from "@/lib/movimiento-destinatario";
+import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import { prisma } from "@/lib/prisma";
 import {
   A4_HEIGHT,
@@ -177,6 +178,19 @@ const registroReciboInclude = {
       },
     },
   },
+  destinatarioExterno: {
+    select: {
+      personaExterna: {
+        select: {
+          ci: true,
+          grado: true,
+          nombre: true,
+          apellido: true,
+          unidadDestino: true,
+        },
+      },
+    },
+  },
   destinatarioRecinto: {
     select: {
       clase: true,
@@ -210,20 +224,31 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     return NextResponse.json({ error: "registroId invalido." }, { status: 400 });
   }
 
+  await ensureMovimientoDestinatarioRecintoCompatibility();
+
   const registro = await prisma.movimiento.findUnique({
     where: { movimientoId: registroId },
     include: registroReciboInclude,
   });
 
-  if (!registro || (registro.tipo !== TipoMovimiento.ENTREGA && registro.tipo !== TipoMovimiento.DEVOLUCION)) {
+  if (
+    !registro ||
+    (registro.tipo !== TipoMovimiento.ENTREGA &&
+      registro.tipo !== TipoMovimiento.DEVOLUCION &&
+      registro.tipo !== TipoMovimiento.ASIGNACION)
+  ) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
   }
 
   const isRecinto = Boolean(registro.destinatarioRecinto);
+  const isExterno = Boolean(registro.destinatarioExterno);
   const now = new Date();
-  const documentNumber = `${registro.tipo === TipoMovimiento.ENTREGA ? "ER" : "DR"}-${registro.movimientoId.toString().padStart(8, "0")}`;
-  const tipoLabel = registro.tipo === TipoMovimiento.ENTREGA ? "Entrega" : "Devolución";
-  const subtitle = `${tipoLabel} ${isRecinto ? "a recinto" : "a personal"}`;
+  const documentPrefix =
+    registro.tipo === TipoMovimiento.ENTREGA ? "ER" : registro.tipo === TipoMovimiento.DEVOLUCION ? "DR" : "AR";
+  const documentNumber = `${documentPrefix}-${registro.movimientoId.toString().padStart(8, "0")}`;
+  const tipoLabel =
+    registro.tipo === TipoMovimiento.ENTREGA ? "Entrega" : registro.tipo === TipoMovimiento.DEVOLUCION ? "Devolución" : "Asignación";
+  const subtitle = `${tipoLabel} ${isRecinto ? "a recinto" : isExterno ? "a externo" : "a personal"}`;
   const fechaMovimiento = formatDateOnlyFromDate(registro.fecha) ?? "-";
   const usuarioEntregaLabel =
     `${registro.usuarioEntrega.rango?.abreviacion ?? ""} ${registro.usuarioEntrega.apellido}, ${registro.usuarioEntrega.nombre}`
@@ -232,6 +257,10 @@ export async function GET(request: Request, context: { params: Promise<{ registr
 
   const destinatarioLabel = isRecinto
     ? registro.destinatarioRecinto?.nombre ?? "Recinto no definido"
+    : isExterno
+      ? registro.destinatarioExterno?.personaExterna
+        ? buildPersonaExternaEtiqueta(registro.destinatarioExterno.personaExterna)
+        : "Destinatario externo no definido"
     : registro.destinatarioPersonal?.personal
       ? `${registro.destinatarioPersonal.personal.rango.abreviacion} ${buildPersonalDestinatarioNombre(registro.destinatarioPersonal.personal)}`
           .replace(/\s+/g, " ")
@@ -243,6 +272,10 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     ? recintoClase === "EXTERNO"
       ? "Fuera de la unidad"
       : "Dentro de la unidad"
+    : isExterno
+      ? registro.destinatarioExterno?.personaExterna
+        ? `CI ${formatUruguayanCi(registro.destinatarioExterno.personaExterna.ci)} | ${registro.destinatarioExterno.personaExterna.unidadDestino}`
+        : "-"
     : registro.destinatarioPersonal?.personal
       ? `CI ${formatUruguayanCi(registro.destinatarioPersonal.personal.ci)}${
           registro.destinatarioPersonal.personal.subalterno?.bateria?.nombre
@@ -290,13 +323,16 @@ export async function GET(request: Request, context: { params: Promise<{ registr
       header.innerX,
       y,
       header.innerW,
-      isRecinto ? "Recinto" : "Destinatario",
+      isRecinto ? "Recinto" : isExterno ? "Destinatario externo" : "Destinatario",
       destinatarioLabel,
     );
 
     if (isRecinto) {
       drawField(page, assets, header.innerX, y, 150, 30, "Clase de recinto", recintoClase === "EXTERNO" ? "Externo" : "Interno");
       drawField(page, assets, header.innerX + 156, y, header.innerW - 156, 30, "Alcance", destinoDetalle);
+    } else if (isExterno) {
+      drawField(page, assets, header.innerX, y, 210, 30, "Detalle", destinoDetalle);
+      drawField(page, assets, header.innerX + 216, y, header.innerW - 216, 30, "Usuario actuante", usuarioEntregaLabel);
     } else {
       drawField(page, assets, header.innerX, y, 210, 30, "Detalle", destinoDetalle);
       drawField(page, assets, header.innerX + 216, y, header.innerW - 216, 30, "Usuario actuante", usuarioEntregaLabel);
@@ -304,7 +340,7 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     y += 36;
 
     y = drawFieldMultiline(page, assets, header.innerX, y, header.innerW, "Comentarios", registro.observaciones ?? "-");
-    y = drawSectionTitle(page, assets, header.innerX, y, header.innerW, "Equipos entregados");
+    y = drawSectionTitle(page, assets, header.innerX, y, header.innerW, registro.tipo === TipoMovimiento.DEVOLUCION ? "Equipos devueltos" : "Equipos entregados");
     y = drawTableHeader(page, assets, header.innerX, y, header.innerW);
 
     return {
@@ -327,13 +363,16 @@ export async function GET(request: Request, context: { params: Promise<{ registr
   const footerBody =
     registro.tipo === TipoMovimiento.ENTREGA
       ? `Se deja constancia que el Depósito General hace entrega de los efectos detallados a ${destinatarioLabel}, según lo asentado en el presente recibo.`
-      : `Se deja constancia que el Depósito General recibe la devolución de los efectos detallados desde ${destinatarioLabel}, según lo asentado en el presente recibo.`;
+      : registro.tipo === TipoMovimiento.DEVOLUCION
+        ? `Se deja constancia que el Depósito General recibe la devolución de los efectos detallados desde ${destinatarioLabel}, según lo asentado en el presente recibo.`
+        : `Se deja constancia que el Depósito General registra la asignación de los efectos detallados a ${destinatarioLabel}, según lo asentado en el presente recibo.`;
 
   drawAcknowledgementFooter(current.page, assets, Math.max(current.y + 12, CONTENT_BOTTOM - FOOTER_RESERVE + 12), {
     body: footerBody,
-    leftSignatureTitle: registro.tipo === TipoMovimiento.ENTREGA ? "Entrega" : "Recibe devolución",
+    leftSignatureTitle:
+      registro.tipo === TipoMovimiento.ENTREGA ? "Entrega" : registro.tipo === TipoMovimiento.DEVOLUCION ? "Recibe devolución" : "Registra asignación",
     leftSignatureName: usuarioEntregaLabel,
-    rightSignatureTitle: isRecinto ? "Responsable del recinto" : "Recibe",
+    rightSignatureTitle: isRecinto ? "Responsable del recinto" : isExterno ? "Recibe asignación" : "Recibe",
     rightSignatureName: destinatarioLabel,
     footerNote: `Generado: ${formatDateUy(now)} ${formatTimeUy(now)}`,
     sectionTitle: "Constancia",

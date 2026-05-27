@@ -5,7 +5,7 @@ import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { formatUruguayanCi } from "@/lib/ci";
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
-import type { Equipo, Personal } from "@/types/entities";
+import type { Equipo, OficialSuboficial, Personal } from "@/types/entities";
 import type { RegistroDraft } from "@/types/forms";
 import { ModalFrame } from "./ModalFrame";
 
@@ -13,6 +13,7 @@ type RegistroEditorModalProps = {
   draft: RegistroDraft | null;
   personaLabel: string | null;
   personalFiltrado: Personal[];
+  oficialesSuboficiales: OficialSuboficial[];
   equiposOrdenados: Equipo[];
   maxFechaIngreso: string;
   saving: boolean;
@@ -22,6 +23,11 @@ type RegistroEditorModalProps = {
   onDestinatarioTipoChange: (value: RegistroDraft["destinatarioTipo"]) => void;
   onRecintoClaseChange: (value: RegistroDraft["recintoClase"]) => void;
   onRecintoNombreChange: (value: string) => void;
+  onDestinatarioExternoGradoChange: (value: string) => void;
+  onDestinatarioExternoNombreChange: (value: string) => void;
+  onDestinatarioExternoApellidoChange: (value: string) => void;
+  onDestinatarioExternoCiChange: (value: string) => void;
+  onDestinatarioExternoUnidadDestinoChange: (value: string) => void;
   onToggleIncluirFueraDeHoja: () => void;
   onToggleDestinatario: (ci: string) => void;
   onSelectAllDestinatarios: () => void;
@@ -37,6 +43,7 @@ export function RegistroEditorModal({
   draft,
   personaLabel,
   personalFiltrado,
+  oficialesSuboficiales,
   equiposOrdenados,
   maxFechaIngreso,
   saving,
@@ -46,6 +53,11 @@ export function RegistroEditorModal({
   onDestinatarioTipoChange,
   onRecintoClaseChange,
   onRecintoNombreChange,
+  onDestinatarioExternoGradoChange,
+  onDestinatarioExternoNombreChange,
+  onDestinatarioExternoApellidoChange,
+  onDestinatarioExternoCiChange,
+  onDestinatarioExternoUnidadDestinoChange,
   onToggleIncluirFueraDeHoja,
   onToggleDestinatario,
   onSelectAllDestinatarios,
@@ -58,22 +70,26 @@ export function RegistroEditorModal({
 }: RegistroEditorModalProps) {
   const [destinatarioSearch, setDestinatarioSearch] = useState("");
 
-  const personalFiltradoOrdenado = useMemo(
-    () =>
-      [...personalFiltrado].sort((a, b) =>
-        `${apellidosLabel(a)} ${nombresLabel(a)}`.localeCompare(`${apellidosLabel(b)} ${nombresLabel(b)}`, "es", {
-          sensitivity: "base",
-        }),
-      ),
-    [personalFiltrado],
-  );
+  const personalDestinatarioOptions = useMemo(() => {
+    const subalternos = personalFiltrado.map((persona) => ({
+      ci: persona.ci,
+      label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`.replace(/\s+/g, " ").trim(),
+      batteryLabel: persona.bateria?.nombre ?? null,
+    }));
+    const mandos = oficialesSuboficiales.map((registro) => ({
+      ci: registro.ci,
+      label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`.replace(/\s+/g, " ").trim(),
+      batteryLabel: null,
+    }));
+    return [...subalternos, ...mandos].sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+  }, [oficialesSuboficiales, personalFiltrado]);
   const personalSearchIndex = useMemo(
     () =>
-      buildSearchIndex(personalFiltradoOrdenado, {
-        text: (persona) => `${apellidosLabel(persona)} ${nombresLabel(persona)}`,
+      buildSearchIndex(personalDestinatarioOptions, {
+        text: (persona) => `${persona.label} ${persona.batteryLabel ?? ""}`,
         digits: (persona) => `${persona.ci} ${formatUruguayanCi(persona.ci)}`,
       }),
-    [personalFiltradoOrdenado],
+    [personalDestinatarioOptions],
   );
   const personalVisible = useMemo(
     () => filterSearchIndex(personalSearchIndex, destinatarioSearch),
@@ -81,33 +97,35 @@ export function RegistroEditorModal({
   );
   if (!draft) return null;
   const isRectificacion = draft.modo === "rectificar";
+  const movementLabel = draft.tipo === "ENTREGA" ? "Entrega" : draft.tipo === "DEVOLUCION" ? "Devolución" : "Asignación";
   const selectedCis =
     draft.ciList.length > 0 ? Array.from(new Set(draft.ciList)) : draft.ci.trim() !== "" ? [draft.ci.trim()] : [];
   const selectedCiSet = new Set(selectedCis);
   const equiposOrdenadosAlfabeticamente = [...equiposOrdenados].sort((a, b) =>
     a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
   );
-  const canIncludeFueraDeHoja = draft.modo === "crear" && draft.tipo === "ENTREGA";
+  const canIncludeFueraDeHoja = draft.modo === "crear" && (draft.tipo === "ENTREGA" || draft.tipo === "ASIGNACION");
   const includeInactiveItems = canIncludeFueraDeHoja && draft.incluirFueraDeHoja;
   const showPersonalDestinatarios = !isRectificacion && draft.destinatarioTipo === "PERSONAL";
   const showRecintoFields = draft.destinatarioTipo === "RECINTO";
+  const showExternoFields = draft.destinatarioTipo === "EXTERNO";
+  const canPrintReceipt =
+    draft.modo === "crear" &&
+    (draft.destinatarioTipo === "RECINTO" ||
+      draft.destinatarioTipo === "EXTERNO" ||
+      (draft.tipo === "ASIGNACION" && draft.destinatarioTipo === "PERSONAL" && selectedCis.length === 1));
 
   return (
     <ModalFrame onClose={onClose} size="lg" closeOnBackdrop={false}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-stone-900">
-            {draft.modo === "rectificar"
-              ? draft.tipo === "ENTREGA"
-                ? "Rectificar Entrega"
-                : "Rectificar Devolución"
-              : draft.tipo === "ENTREGA"
-                ? "Registrar Entrega"
-                : "Registrar Devolución"}
+            {draft.modo === "rectificar" ? `Rectificar ${movementLabel}` : `Registrar ${movementLabel}`}
           </h3>
           {isRectificacion ? <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(draft.ci)}`}</p> : null}
           {!isRectificacion && draft.destinatarioTipo === "PERSONAL" ? <p className="text-xs text-stone-600">{`Destinatarios seleccionados: ${selectedCis.length}`}</p> : null}
           {!isRectificacion && draft.destinatarioTipo === "RECINTO" ? <p className="text-xs text-stone-600">Destino: recinto</p> : null}
+          {!isRectificacion && draft.destinatarioTipo === "EXTERNO" ? <p className="text-xs text-stone-600">Destino: externo</p> : null}
           {draft.modo === "rectificar" && draft.registroId ? <p className="text-xs text-stone-600">{`Registro #${draft.registroId}`}</p> : null}
           {personaLabel ? <p className="text-xs font-medium text-stone-700">{`Subalterno: ${personaLabel}`}</p> : null}
         </div>
@@ -138,7 +156,8 @@ export function RegistroEditorModal({
               className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             >
               <option value="PERSONAL">Personal</option>
-              <option value="RECINTO">Recinto</option>
+              {draft.tipo === "ASIGNACION" ? <option value="RECINTO">Recinto</option> : null}
+              {draft.tipo === "ASIGNACION" ? <option value="EXTERNO">Externo</option> : null}
             </select>
           </label>
         ) : null}
@@ -191,6 +210,61 @@ export function RegistroEditorModal({
         </div>
       ) : null}
 
+      {showExternoFields ? (
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <label className="text-xs text-stone-700">
+            Grado
+            <input
+              value={draft.destinatarioExternoGrado}
+              disabled={saving}
+              onChange={(event) => onDestinatarioExternoGradoChange(event.target.value)}
+              placeholder="Ej.: Tte. 1ro."
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="text-xs text-stone-700">
+            CI
+            <input
+              value={draft.destinatarioExternoCi}
+              disabled={saving}
+              onChange={(event) => onDestinatarioExternoCiChange(event.target.value)}
+              placeholder="Ej.: 5.123.456-7"
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="text-xs text-stone-700">
+            Nombre
+            <input
+              value={draft.destinatarioExternoNombre}
+              disabled={saving}
+              onChange={(event) => onDestinatarioExternoNombreChange(event.target.value)}
+              placeholder="Nombre"
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="text-xs text-stone-700">
+            Apellido
+            <input
+              value={draft.destinatarioExternoApellido}
+              disabled={saving}
+              onChange={(event) => onDestinatarioExternoApellidoChange(event.target.value)}
+              placeholder="Apellido"
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="text-xs text-stone-700 sm:col-span-2">
+            Unidad de destino
+            <input
+              value={draft.destinatarioExternoUnidadDestino}
+              disabled={saving}
+              onChange={(event) => onDestinatarioExternoUnidadDestinoChange(event.target.value)}
+              placeholder="Ej.: Brigada de Infantería No. 5"
+              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+      ) : null}
+
       {canIncludeFueraDeHoja ? (
         <label className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           <input
@@ -214,7 +288,7 @@ export function RegistroEditorModal({
               <button
                 type="button"
                 onClick={onSelectAllDestinatarios}
-                disabled={saving || personalFiltradoOrdenado.length === 0}
+                disabled={saving || personalDestinatarioOptions.length === 0}
                 className="rounded border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Seleccionar todos
@@ -238,7 +312,7 @@ export function RegistroEditorModal({
           />
           <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-stone-200 bg-white p-2">
             {personalVisible.length === 0 ? (
-              <p className="px-2 py-2 text-xs text-stone-500">No hay subalternos para el filtro actual.</p>
+              <p className="px-2 py-2 text-xs text-stone-500">No hay personal para el filtro actual.</p>
             ) : (
               personalVisible.map((persona) => {
                 const checked = selectedCiSet.has(persona.ci);
@@ -256,7 +330,7 @@ export function RegistroEditorModal({
                       onChange={() => onToggleDestinatario(persona.ci)}
                     />
                     <span className="font-mono text-[11px] text-stone-600">{formatUruguayanCi(persona.ci)}</span>
-                    <span className="text-stone-800">{`${apellidosLabel(persona)}, ${nombresLabel(persona)}`}</span>
+                    <span className="text-stone-800">{persona.label}</span>
                   </label>
                 );
               })
@@ -323,7 +397,7 @@ export function RegistroEditorModal({
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
-          {draft.modo === "crear" && draft.destinatarioTipo === "RECINTO" ? (
+          {canPrintReceipt ? (
             <button
               type="button"
               onClick={onSubmitAndPrint}

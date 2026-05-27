@@ -1,1 +1,1 @@
-export type RegistroTipo = "ENTREGA" | "DEVOLUCION";
+export type RegistroTipo = "ENTREGA" | "DEVOLUCION" | "ASIGNACION";

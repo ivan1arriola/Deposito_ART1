@@ -63,6 +63,7 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
     registroDraft,
     personaRegistro,
     personalFiltrado,
+    oficialesSuboficiales,
     equiposOrdenados,
     maxFechaIngreso,
     registroSaving,
@@ -165,24 +166,40 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
         registroDraft={registroDraft}
         personaRegistro={personaRegistro}
         personalFiltrado={personalFiltrado}
+        oficialesSuboficiales={oficialesSuboficiales}
         equiposOrdenados={equiposOrdenados}
         maxFechaIngreso={maxFechaIngreso}
         registroSaving={registroSaving}
         onCloseRegistroEditor={() => setRegistroDraft(null)}
         onRegistroDraftChange={(
-          field: "fecha" | "comentarios" | "destinatarioTipo" | "recintoClase" | "recintoNombre",
+          field:
+            | "fecha"
+            | "comentarios"
+            | "destinatarioTipo"
+            | "recintoClase"
+            | "recintoNombre"
+            | "destinatarioExternoGrado"
+            | "destinatarioExternoNombre"
+            | "destinatarioExternoApellido"
+            | "destinatarioExternoCi"
+            | "destinatarioExternoUnidadDestino",
           value: string,
         ) =>
           setRegistroDraft((prev) => {
             if (!prev) return prev;
             if (field === "destinatarioTipo") {
-              const nextTipo = value as "PERSONAL" | "RECINTO";
+              const nextTipo = value as "PERSONAL" | "RECINTO" | "EXTERNO";
               return {
                 ...prev,
                 destinatarioTipo: nextTipo,
                 ciList: nextTipo === "PERSONAL" ? prev.ciList : [],
                 ci: nextTipo === "PERSONAL" ? prev.ci : "",
                 recintoNombre: nextTipo === "RECINTO" ? prev.recintoNombre : "",
+                destinatarioExternoGrado: nextTipo === "EXTERNO" ? prev.destinatarioExternoGrado : "",
+                destinatarioExternoNombre: nextTipo === "EXTERNO" ? prev.destinatarioExternoNombre : "",
+                destinatarioExternoApellido: nextTipo === "EXTERNO" ? prev.destinatarioExternoApellido : "",
+                destinatarioExternoCi: nextTipo === "EXTERNO" ? prev.destinatarioExternoCi : "",
+                destinatarioExternoUnidadDestino: nextTipo === "EXTERNO" ? prev.destinatarioExternoUnidadDestino : "",
               };
             }
             return { ...prev, [field]: value };

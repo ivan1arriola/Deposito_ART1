@@ -10,6 +10,7 @@ export type StockResumen = {
   apareceEnHoja: boolean;
   existenciaSie: number;
   stockSubalternos: number;
+  stockAsignacion: number;
   stockPrestamo: number;
   stockDeposito: number;
   stockUnidad: number;

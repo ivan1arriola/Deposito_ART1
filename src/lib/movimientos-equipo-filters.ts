@@ -1,10 +1,11 @@
 import type { EquipoMovimientoViewRow } from "@/types/views";
 
-export type MovimientosEquipoTipoFilter = "ENTREGA" | "DEVOLUCION" | "PRESTAMO_PENDIENTE";
+export type MovimientosEquipoTipoFilter = "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO_PENDIENTE";
 
 export const DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS: MovimientosEquipoTipoFilter[] = [
   "ENTREGA",
   "DEVOLUCION",
+  "ASIGNACION",
   "PRESTAMO_PENDIENTE",
 ];
 
@@ -39,6 +40,7 @@ export function applyMovimientosEquipoTipoFilters(
   return rows.filter((row) => {
     if (row.tipo === "ENTREGA") return enabled.has("ENTREGA");
     if (row.tipo === "DEVOLUCION") return enabled.has("DEVOLUCION");
+    if (row.tipo === "ASIGNACION") return enabled.has("ASIGNACION");
 
     return enabled.has("PRESTAMO_PENDIENTE") && row.prestamoEstado === "PENDIENTE";
   });

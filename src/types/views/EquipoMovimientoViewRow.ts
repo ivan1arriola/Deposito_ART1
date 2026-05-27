@@ -1,7 +1,7 @@
 export type EquipoMovimientoViewRow = {
   movimientoId: string;
   fecha: string;
-  tipo: "ENTREGA" | "DEVOLUCION" | "PRESTAMO";
+  tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO";
   tipoLabel: string;
   prestamoEstado: "PENDIENTE" | "DEVUELTO" | null;
   clasePrestamo: "INTERNO" | "EXTERNO" | "PENDIENTE" | null;

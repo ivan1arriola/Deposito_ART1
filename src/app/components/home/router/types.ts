@@ -180,12 +180,12 @@ export type PersonnelAndSummaryViewsProps = {
   bulkDeliveryEmailBusy: boolean;
   bulkDeliveryEmailDisabledReason: string | null;
   printPersonnelByBattery: () => void;
-  openMassRegistro: (tipo: "ENTREGA" | "DEVOLUCION") => void;
-  openRecintoRegistro: (tipo: "ENTREGA" | "DEVOLUCION", options?: { incluirFueraDeHoja?: boolean }) => void;
+  openMassRegistro: (tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION") => void;
+  openRecintoRegistro: (tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION", options?: { incluirFueraDeHoja?: boolean }) => void;
   setActiveView: Dispatch<SetStateAction<MainView>>;
   toggleTallas: (ci: string) => void;
   deletePersonal: (ci: string) => void;
-  openRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION", options?: { incluirFueraDeHoja?: boolean }) => void;
+  openRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION", options?: { incluirFueraDeHoja?: boolean }) => void;
   openPersonalObservacion: (persona: Personal) => Promise<void>;
   openRegistroViewer: (persona: Personal) => Promise<void>;
   openPersonaProfileFromPersonal: (persona: Personal) => Promise<void>;

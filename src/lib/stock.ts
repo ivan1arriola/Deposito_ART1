@@ -7,10 +7,12 @@ type StockMapOptions = {
   excludeMovimientoId?: bigint | null;
 };
 
-export function movimientoStockDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "PRESTAMO") {
+export function movimientoStockDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO") {
   switch (tipo) {
     case TipoMovimiento.ENTREGA:
     case "ENTREGA":
+    case TipoMovimiento.ASIGNACION:
+    case "ASIGNACION":
     case TipoMovimiento.PRESTAMO:
     case "PRESTAMO":
       return -1;
@@ -22,7 +24,7 @@ export function movimientoStockDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "D
   }
 }
 
-export function movimientoPersonalDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "PRESTAMO") {
+export function movimientoPersonalDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO") {
   switch (tipo) {
     case TipoMovimiento.ENTREGA:
     case "ENTREGA":
@@ -67,7 +69,7 @@ function rowsToItemMap(rows: AggregateRow[]) {
 }
 
 export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
-  const [unidadRows, personalRows, prestamoRows] = await Promise.all([
+  const [unidadRows, personalRows, asignacionRows, prestamoRows] = await Promise.all([
     prisma.$queryRaw<AggregateRow[]>`
       SELECT
         soi.item_id AS "itemId",
@@ -99,6 +101,16 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
       SELECT
         mi.item_id AS "itemId",
         SUM(mi.cantidad)::bigint AS total
+      FROM movimiento_item mi
+      INNER JOIN movimiento m
+        ON m.movimiento_id = mi.movimiento_id
+      WHERE m.tipo = 'ASIGNACION'
+      GROUP BY mi.item_id
+    `,
+    prisma.$queryRaw<AggregateRow[]>`
+      SELECT
+        mi.item_id AS "itemId",
+        SUM(mi.cantidad)::bigint AS total
       FROM prestamo_activo pa
       INNER JOIN movimiento_item mi
         ON mi.movimiento_id = pa.movimiento_id
@@ -109,6 +121,7 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
   return {
     unidadByItem: rowsToItemMap(unidadRows),
     personalByItem: rowsToItemMap(personalRows),
+    asignacionByItem: rowsToItemMap(asignacionRows),
     prestamoByItem: rowsToItemMap(prestamoRows),
   };
 }
@@ -118,7 +131,7 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
     prisma.movimiento.findMany({
       where: {
         tipo: {
-          in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION],
+          in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION],
         },
         ...(options.excludeMovimientoId ? { movimientoId: { not: options.excludeMovimientoId } } : {}),
       },

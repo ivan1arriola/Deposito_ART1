@@ -1,8 +1,10 @@
 import type { RegistroTipo } from "../views/RegistroTipo";
 import type { PersonalAltaMovimientoItemForm } from "./PersonalAltaMovimientoItemForm";
 
+export type PersonalAltaMovimientoTipo = Exclude<RegistroTipo, "ASIGNACION">;
+
 export type PersonalAltaMovimientoForm = {
-  tipo: RegistroTipo;
+  tipo: PersonalAltaMovimientoTipo;
   fecha: string;
   comentarios: string;
   items: PersonalAltaMovimientoItemForm[];

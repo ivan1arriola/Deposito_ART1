@@ -56,6 +56,7 @@ enum TipoArticuloStockMovimiento {
 enum TipoMovimiento {
   ENTREGA
   DEVOLUCION
+  ASIGNACION
   PRESTAMO
 
   @@map("tipo_movimiento")

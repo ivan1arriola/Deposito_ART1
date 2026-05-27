@@ -3600,7 +3600,7 @@ export default function Home() {
       id: `registro-${registro.registroId}`,
       dbId: registro.registroId,
       fecha: registro.fecha,
-      tipo: registro.tipo === "ENTREGA" ? "ENTREGA" : "DEVOLUCION",
+      tipo: registro.tipo === "ENTREGA" ? "ENTREGA" : registro.tipo === "DEVOLUCION" ? "DEVOLUCION" : "ASIGNACION",
       descripcion: `Registro ${registro.tipo.toLowerCase()} · ${registro.items.reduce((acc, item) => acc + item.cantidad, 0)} unidades`,
       responsable:
         registro.usuarioEntregaNombre?.trim() ||
@@ -3856,6 +3856,11 @@ export default function Home() {
       destinatarioTipo: "PERSONAL",
       recintoClase: "INTERNO",
       recintoNombre: "",
+      destinatarioExternoGrado: "",
+      destinatarioExternoNombre: "",
+      destinatarioExternoApellido: "",
+      destinatarioExternoCi: "",
+      destinatarioExternoUnidadDestino: "",
       incluirFueraDeHoja: options.incluirFueraDeHoja ?? false,
       fecha: getTodayDateInput(),
       comentarios: "",
@@ -3868,8 +3873,10 @@ export default function Home() {
       setStatus("No tienes permisos para registrar movimientos.");
       return;
     }
-    if (personalFiltrado.length === 0) {
-      setStatus("No hay personal disponible para registrar una entrega masiva.");
+    const destinatariosDisponibles =
+      tipo === "ASIGNACION" ? personal.length + oficialesSuboficiales.length : personalFiltrado.length;
+    if (destinatariosDisponibles === 0) {
+      setStatus(tipo === "ASIGNACION" ? "No hay personal disponible para registrar una asignación." : "No hay personal disponible para registrar una entrega masiva.");
       return;
     }
     setRegistroDraft({
@@ -3881,6 +3888,11 @@ export default function Home() {
       destinatarioTipo: "PERSONAL",
       recintoClase: "INTERNO",
       recintoNombre: "",
+      destinatarioExternoGrado: "",
+      destinatarioExternoNombre: "",
+      destinatarioExternoApellido: "",
+      destinatarioExternoCi: "",
+      destinatarioExternoUnidadDestino: "",
       incluirFueraDeHoja: false,
       fecha: getTodayDateInput(),
       comentarios: "",
@@ -3902,6 +3914,11 @@ export default function Home() {
       destinatarioTipo: "RECINTO",
       recintoClase: "INTERNO",
       recintoNombre: "",
+      destinatarioExternoGrado: "",
+      destinatarioExternoNombre: "",
+      destinatarioExternoApellido: "",
+      destinatarioExternoCi: "",
+      destinatarioExternoUnidadDestino: "",
       incluirFueraDeHoja: options.incluirFueraDeHoja ?? false,
       fecha: getTodayDateInput(),
       comentarios: "",
@@ -4007,6 +4024,11 @@ export default function Home() {
       destinatarioTipo: "PERSONAL",
       recintoClase: "INTERNO",
       recintoNombre: "",
+      destinatarioExternoGrado: "",
+      destinatarioExternoNombre: "",
+      destinatarioExternoApellido: "",
+      destinatarioExternoCi: "",
+      destinatarioExternoUnidadDestino: "",
       incluirFueraDeHoja: false,
       fecha: formatDateOnlyForDisplay(registro.fecha),
       comentarios: registro.comentarios ?? "",
@@ -4062,7 +4084,13 @@ export default function Home() {
   function selectAllRegistroDestinatarios() {
     setRegistroDraft((prev) => {
       if (!prev || prev.modo !== "crear" || prev.destinatarioTipo !== "PERSONAL") return prev;
-      const ciList = Array.from(new Set(personalFiltrado.map((persona) => persona.ci)));
+      const ciList = Array.from(
+        new Set(
+          (prev.tipo === "ASIGNACION"
+            ? [...personal.map((persona) => persona.ci), ...oficialesSuboficiales.map((registro) => registro.ci)]
+            : personalFiltrado.map((persona) => persona.ci)),
+        ),
+      );
       return {
         ...prev,
         ciList,
@@ -4086,12 +4114,19 @@ export default function Home() {
     if (!registroDraft || registroSaving) return;
     const isRectificacion = registroDraft.modo === "rectificar" && registroDraft.registroId !== null;
     const isRecinto = registroDraft.destinatarioTipo === "RECINTO";
+    const isExterno = registroDraft.destinatarioTipo === "EXTERNO";
+    const movementLabel =
+      registroDraft.tipo === "ENTREGA" ? "Entrega" : registroDraft.tipo === "DEVOLUCION" ? "Devolución" : "Asignación";
     if (!parseDateInput(registroDraft.fecha).valid) {
       setStatus("La fecha del movimiento debe estar en formato DD/MM/AAAA.");
       return;
     }
     if (isDateInputAfterToday(registroDraft.fecha)) {
       setStatus("La fecha del movimiento no puede ser futura.");
+      return;
+    }
+    if (registroDraft.tipo !== "ASIGNACION" && registroDraft.destinatarioTipo !== "PERSONAL") {
+      setStatus("Entrega y devolución solo admiten destinatario personal subalterno.");
       return;
     }
     const payloadEquipos = registroDraft.items
@@ -4112,7 +4147,7 @@ export default function Home() {
     }
 
     const targetCis =
-      isRecinto || (isRectificacion && registroDraft.destinatarioTipo !== "PERSONAL")
+      isRecinto || isExterno || (isRectificacion && registroDraft.destinatarioTipo !== "PERSONAL")
         ? []
         : isRectificacion
           ? [registroDraft.ci]
@@ -4121,6 +4156,20 @@ export default function Home() {
     if (isRecinto) {
       if (registroDraft.recintoNombre.trim() === "") {
         setStatus("Debes indicar el nombre del recinto.");
+        return;
+      }
+    } else if (isExterno) {
+      if (
+        !registroDraft.destinatarioExternoGrado.trim() ||
+        !registroDraft.destinatarioExternoNombre.trim() ||
+        !registroDraft.destinatarioExternoApellido.trim() ||
+        !registroDraft.destinatarioExternoUnidadDestino.trim()
+      ) {
+        setStatus("Debes completar todos los datos del destinatario externo.");
+        return;
+      }
+      if (!isValidUruguayanCi(registroDraft.destinatarioExternoCi.trim())) {
+        setStatus("La CI del destinatario externo no es válida.");
         return;
       }
     } else if (targetCis.length === 0) {
@@ -4140,6 +4189,15 @@ export default function Home() {
           destinatarioTipo: registroDraft.destinatarioTipo,
           recintoClase: isRecinto ? registroDraft.recintoClase : undefined,
           recintoNombre: isRecinto ? registroDraft.recintoNombre.trim() : undefined,
+          destinatarioExterno: isExterno
+            ? {
+                grado: registroDraft.destinatarioExternoGrado.trim(),
+                nombre: registroDraft.destinatarioExternoNombre.trim(),
+                apellido: registroDraft.destinatarioExternoApellido.trim(),
+                ci: registroDraft.destinatarioExternoCi.trim(),
+                unidadDestino: registroDraft.destinatarioExternoUnidadDestino.trim(),
+              }
+            : undefined,
           tipo: registroDraft.tipo,
           fecha: registroDraft.fecha,
           comentarios: registroDraft.comentarios.trim() || undefined,
@@ -4149,20 +4207,24 @@ export default function Home() {
       setStatus(
         isRecinto
           ? isRectificacion
-            ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} rectificada para recinto ${registroDraft.recintoNombre.trim()}.`
-            : `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} registrada para recinto ${registroDraft.recintoNombre.trim()}.`
+            ? `${movementLabel} rectificada para recinto ${registroDraft.recintoNombre.trim()}.`
+            : `${movementLabel} registrada para recinto ${registroDraft.recintoNombre.trim()}.`
+          : isExterno
+            ? isRectificacion
+              ? `${movementLabel} rectificada para ${registroDraft.destinatarioExternoApellido.trim()}, ${registroDraft.destinatarioExternoNombre.trim()}.`
+              : `${movementLabel} registrada para ${registroDraft.destinatarioExternoApellido.trim()}, ${registroDraft.destinatarioExternoNombre.trim()}.`
           : isRectificacion
-            ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} rectificada para ${formatUruguayanCi(registroDraft.ci)}.`
+            ? `${movementLabel} rectificada para ${formatUruguayanCi(registroDraft.ci)}.`
             : targetCis.length === 1
-              ? `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} registrada para ${formatUruguayanCi(targetCis[0])}.`
-              : `${registroDraft.tipo === "ENTREGA" ? "Entrega" : "Devolución"} masiva registrada para ${targetCis.length} personas.`,
+              ? `${movementLabel} registrada para ${formatUruguayanCi(targetCis[0])}.`
+              : `${movementLabel} masiva registrada para ${targetCis.length} personas.`,
       );
-      if (printAfterSave && !isRectificacion && isRecinto && response.registroId) {
+      if (printAfterSave && !isRectificacion && response.registroId) {
         window.open(`/api/registros/${encodeURIComponent(response.registroId)}/recibo`, "_blank", "noopener,noreferrer");
       }
       setRegistroDraft(null);
       await loadData();
-      if (!isRecinto && registroViewer && targetCis.includes(registroViewer.ci)) {
+      if (!isRecinto && !isExterno && registroViewer && targetCis.includes(registroViewer.ci)) {
         await loadRegistroViewer(registroViewer.ci, registroViewer.nombre);
       }
     } catch (error: unknown) {
@@ -4183,7 +4245,7 @@ export default function Home() {
     }
 
     const fechaLabel = formatDateOnlyForDisplay(registro.fecha);
-    const tipoLabel = registro.tipo === "ENTREGA" ? "entrega" : "devolución";
+    const tipoLabel = registro.tipo === "ENTREGA" ? "entrega" : registro.tipo === "DEVOLUCION" ? "devolución" : "asignación";
 
     openConfirmDialog({
       title: "Eliminar movimiento",
@@ -6934,6 +6996,7 @@ export default function Home() {
             registroDraft={registroDraft}
             personaRegistro={personaRegistro}
             personalFiltrado={personalFiltrado}
+            oficialesSuboficiales={oficialesSuboficiales}
             equiposOrdenados={equiposOrdenados}
             maxFechaIngreso={maxFechaIngreso}
             registroSaving={registroSaving}

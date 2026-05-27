@@ -30,9 +30,9 @@ type MovimientosEquipoResponse = {
 type RegistroMovimientoDetail = {
   registroId: string;
   fecha: string;
-  tipo: "ENTREGA" | "DEVOLUCION";
+  tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION";
   comentarios: string | null;
-  destinatarioTipo: "PERSONAL" | "RECINTO";
+  destinatarioTipo: "PERSONAL" | "RECINTO" | "EXTERNO";
   recintoClase: string | null;
   recintoNombre: string | null;
   ci: string;
@@ -57,6 +57,7 @@ type CatalogHojaFilter = "TODOS" | "EN_HOJA" | "FUERA_HOJA";
 const MOVIMIENTOS_EQUIPO_TIPO_OPTIONS: Array<{ value: MovimientosEquipoTipoFilter; label: string; hint: string }> = [
   { value: "ENTREGA", label: "Entregas", hint: "Movimientos de entrega" },
   { value: "DEVOLUCION", label: "Devoluciones", hint: "Movimientos de devolución" },
+  { value: "ASIGNACION", label: "Asignaciones", hint: "Movimientos de asignación" },
   { value: "PRESTAMO_PENDIENTE", label: "Préstamos pendientes", hint: "Solo préstamos en estado pendiente" },
 ];
 
@@ -69,6 +70,7 @@ const CATALOG_HOJA_FILTER_OPTIONS: Array<{ value: CatalogHojaFilter; label: stri
 function tipoBadgeClass(tipo: EquipoMovimientoViewRow["tipo"]) {
   if (tipo === "ENTREGA") return "bg-emerald-100 text-emerald-800";
   if (tipo === "DEVOLUCION") return "bg-sky-100 text-sky-800";
+  if (tipo === "ASIGNACION") return "bg-indigo-100 text-indigo-800";
   return "bg-amber-100 text-amber-800";
 }
 
@@ -680,6 +682,8 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                             <span className="font-mono">{originDialog.registro.ci || "-"}</span>
                           )}
                         </p>
+                      ) : originDialog.registro.destinatarioTipo === "EXTERNO" ? (
+                        <p><span className="font-semibold text-stone-900">CI externa:</span> <span className="font-mono">{originDialog.registro.ci || "-"}</span></p>
                       ) : (
                         <p><span className="font-semibold text-stone-900">Clase de recinto:</span> {originDialog.registro.recintoClase ?? "-"}</p>
                       )}

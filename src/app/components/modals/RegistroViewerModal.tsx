@@ -44,7 +44,7 @@ export function RegistroViewerModal({
     <ModalFrame onClose={onClose} size="xl" closeOnBackdrop={false}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold text-stone-900">Visualizador de Entregas / Devoluciones</h3>
+          <h3 className="text-base font-semibold text-stone-900">Visualizador de movimientos</h3>
           <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(viewer.ci)}`}</p>
           <p className="text-xs font-medium text-stone-700">{`Subalterno: ${viewer.nombre}`}</p>
         </div>
@@ -96,6 +96,8 @@ export function RegistroViewerModal({
                           ? "bg-emerald-100 text-emerald-800"
                           : registro.tipo === "DEVOLUCION"
                             ? "bg-amber-100 text-amber-800"
+                            : registro.tipo === "ASIGNACION"
+                              ? "bg-indigo-100 text-indigo-800"
                             : "bg-sky-100 text-sky-800"
                       }`}
                     >

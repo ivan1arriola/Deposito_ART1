@@ -3,6 +3,7 @@ import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDial
 import type {
   CurrentUser,
   Equipo,
+  OficialSuboficial,
   Personal,
   PersonalObservacion,
   Rango,
@@ -67,6 +68,7 @@ export type HomeOverlaysLayerProps = {
   registroDraft: RegistroDraft | null;
   personaRegistro: Personal | null;
   personalFiltrado: Personal[];
+  oficialesSuboficiales: OficialSuboficial[];
   equiposOrdenados: Equipo[];
   maxFechaIngreso: string;
   registroSaving: boolean;

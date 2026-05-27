@@ -13,7 +13,17 @@ interface CallbackProps {
 interface RegistroPayload {
   ci?: string;
   ciList?: string[];
-  tipo: "ENTREGA" | "DEVOLUCION" | "AJUSTE";
+  destinatarioTipo?: "PERSONAL" | "RECINTO" | "EXTERNO";
+  recintoClase?: "INTERNO" | "EXTERNO";
+  recintoNombre?: string;
+  destinatarioExterno?: {
+    grado?: string;
+    nombre?: string;
+    apellido?: string;
+    ci?: string;
+    unidadDestino?: string;
+  };
+  tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "AJUSTE";
   afectaStock?: boolean;
   fecha: string;
   comentarios?: string;

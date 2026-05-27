@@ -3,6 +3,7 @@ import "server-only";
 import { TipoMovimiento } from "@/generated/prisma/client";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
+import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import { prisma } from "@/lib/prisma";
 import type { EquipoMovimientoCatalogItem, EquipoMovimientoViewRow } from "@/types/views";
 
@@ -37,6 +38,7 @@ export function buildMovimientoTipoLabel(
 ) {
   if (tipo === "ENTREGA") return "Entrega";
   if (tipo === "DEVOLUCION") return "Devolución";
+  if (tipo === "ASIGNACION") return "Asignación";
   if (clasePrestamo === "EXTERNO" && prestamoEstado === "PENDIENTE") return "Préstamo externo (pendiente)";
   if (clasePrestamo === "EXTERNO" && prestamoEstado === "DEVUELTO") return "Préstamo externo (devuelto)";
   if (clasePrestamo === "INTERNO" && prestamoEstado === "PENDIENTE") return "Préstamo interno (pendiente)";
@@ -80,11 +82,13 @@ export async function getMovimientosEquipoData(itemId: bigint | null = null): Pr
     };
   }
 
+  await ensureMovimientoDestinatarioRecintoCompatibility();
+
   const movimientoItems = await prisma.movimientoItem.findMany({
     where: {
       itemId,
       movimiento: {
-        tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.PRESTAMO] },
+        tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION, TipoMovimiento.PRESTAMO] },
       },
     },
     select: {

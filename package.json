@@ -1,6 +1,6 @@
 {
   "name": "deposito-art1",
-  "version": "6.2.7",
+  "version": "6.2.8",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
@@ -34,6 +34,7 @@
     "db:patch:add-articulo-stock-movimiento": "prisma db execute --file prisma/patches/20260520_add_articulo_stock_movimiento.sql && prisma generate",
     "db:patch:add-articulo-entrega-personal": "prisma db execute --file prisma/patches/20260520_add_articulo_entrega_personal.sql && prisma generate",
     "db:patch:add-movimiento-destinatario-recinto": "prisma db execute --file prisma/patches/20260526_add_movimiento_destinatario_recinto.sql && prisma generate",
+    "db:patch:add-movimiento-asignacion": "prisma db execute --file prisma/patches/20260526_add_movimiento_asignacion.sql && prisma generate",
     "prisma:studio": "prisma studio",
     "user:create": "tsx scripts/create-user.ts",
     "docs:producto": "node scripts/generate-product-presentation-pdf.mjs",

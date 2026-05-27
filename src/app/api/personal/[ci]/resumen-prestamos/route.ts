@@ -103,6 +103,7 @@ function militaryShortLabel(gradoAbreviacion: string, apellido: string, nombre: 
 function movementTypeLabel(tipo: TipoMovimiento) {
   if (tipo === TipoMovimiento.ENTREGA) return "ENTREGA";
   if (tipo === TipoMovimiento.DEVOLUCION) return "DEVOLUCION";
+  if (tipo === TipoMovimiento.ASIGNACION) return "ASIGNACION";
   return "PRESTAMO PENDIENTE";
 }
 
@@ -210,7 +211,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     where: {
       destinatarioPersonal: { is: { ci } },
       OR: [
-        { tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] } },
+        { tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION] } },
         { tipo: TipoMovimiento.PRESTAMO, prestamoActivo: { isNot: null } },
       ],
     },
@@ -232,7 +233,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       acc[movimiento.tipo] += 1;
       return acc;
     },
-    { [TipoMovimiento.ENTREGA]: 0, [TipoMovimiento.DEVOLUCION]: 0, [TipoMovimiento.PRESTAMO]: 0 },
+    { [TipoMovimiento.ENTREGA]: 0, [TipoMovimiento.DEVOLUCION]: 0, [TipoMovimiento.ASIGNACION]: 0, [TipoMovimiento.PRESTAMO]: 0 },
   );
   const totalUnidades = movimientos.reduce(
     (acc, movimiento) => acc + movimiento.items.reduce((itemsAcc, item) => itemsAcc + item.cantidad, 0),
@@ -294,7 +295,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       
       // Resumen (Una sola fila compacta)
       drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 18, rgb(0, 0, 0), false);
-      const summaryText = `RESUMEN GENERAL: ${movimientos.length} Movimientos — ${totalUnidades} Unidades — ENTREGAS: ${movementsByType[TipoMovimiento.ENTREGA]} | DEVOLUCIONES: ${movementsByType[TipoMovimiento.DEVOLUCION]} | PRÉSTAMOS: ${movementsByType[TipoMovimiento.PRESTAMO]}`;
+      const summaryText = `RESUMEN GENERAL: ${movimientos.length} Movimientos — ${totalUnidades} Unidades — ENTREGAS: ${movementsByType[TipoMovimiento.ENTREGA]} | DEVOLUCIONES: ${movementsByType[TipoMovimiento.DEVOLUCION]} | ASIGNACIONES: ${movementsByType[TipoMovimiento.ASIGNACION]} | PRÉSTAMOS: ${movementsByType[TipoMovimiento.PRESTAMO]}`;
       drawTextAt(currentPage!, bold, summaryText, PAGE_MARGIN_X + RECEIPT_PADDING + 8, currentY + 5, 8.5);
       
       currentY += 28;

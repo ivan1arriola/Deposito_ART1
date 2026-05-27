@@ -139,6 +139,7 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
           onPrintPersonnelByBattery={printPersonnelByBattery}
           onOpenMassEntrega={() => openMassRegistro("ENTREGA")}
           onOpenRecintoEntrega={() => openRecintoRegistro("ENTREGA")}
+          onOpenAsignacion={() => openMassRegistro("ASIGNACION")}
           onOpenCreate={() => setActiveView("personal_nuevo")}
           onToggleTallas={toggleTallas}
           onDeletePersonal={(ci) => void deletePersonal(ci)}

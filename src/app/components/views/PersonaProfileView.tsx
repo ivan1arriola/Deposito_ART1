@@ -22,7 +22,7 @@ import TimelineRoundedIcon from "@mui/icons-material/TimelineRounded";
 import NoteAltRoundedIcon from "@mui/icons-material/NoteAltRounded";
 
 export type PersonaProfileTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
-export type PersonaProfileTimelineType = "ENTREGA" | "DEVOLUCION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO";
+export type PersonaProfileTimelineType = "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO";
 
 export type PersonaProfileIdentity = {
   ci: string;
@@ -84,6 +84,7 @@ type PersonaProfileViewProps = {
 function movementTypeStyles(tipo: PersonaProfileTimelineType) {
   if (tipo === "ENTREGA") return "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20";
   if (tipo === "DEVOLUCION") return "bg-amber-500/10 text-amber-600 border border-amber-500/20";
+  if (tipo === "ASIGNACION") return "bg-violet-500/10 text-violet-600 border border-violet-500/20";
   if (tipo === "PRESTAMO") return "bg-indigo-500/10 text-indigo-600 border border-indigo-500/20";
   return "bg-cyan-500/10 text-cyan-600 border border-cyan-500/20";
 }
@@ -153,7 +154,7 @@ export function PersonaProfileView({
       acc[entry.tipo] += 1;
       return acc;
     },
-    { ENTREGA: 0, DEVOLUCION: 0, PRESTAMO: 0, DEVOLUCION_PRESTAMO: 0 },
+    { ENTREGA: 0, DEVOLUCION: 0, ASIGNACION: 0, PRESTAMO: 0, DEVOLUCION_PRESTAMO: 0 },
   );
 
   return (
