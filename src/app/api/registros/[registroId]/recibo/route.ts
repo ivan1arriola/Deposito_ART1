@@ -247,6 +247,7 @@ export async function GET(request: Request, context: { params: Promise<{ registr
 
   const isRecinto = Boolean(registro.destinatarioRecinto);
   const isExterno = Boolean(registro.destinatarioExterno);
+  const isPersonal = Boolean(registro.destinatarioPersonal);
   const now = new Date();
   const documentPrefix =
     registro.tipo === MOVIMIENTO_TIPO_ENTREGA ? "ER" : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION ? "DR" : "AR";
