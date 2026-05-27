@@ -337,7 +337,32 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     );
 
     if (!isRecinto) {
-      drawField(page, assets, header.innerX, y, header.innerW, 30, "Detalle", destinoDetalle);
+      const ciValue = isExterno
+        ? registro.destinatarioExterno?.personaExterna?.ci
+        : registro.destinatarioPersonal?.personal?.ci;
+
+      if (ciValue) {
+        drawField(page, assets, header.innerX, y, 150, 30, "Cédula de identidad", formatUruguayanCi(ciValue));
+
+        const detailValue = isExterno
+          ? registro.destinatarioExterno?.personaExterna?.unidadDestino ?? "-"
+          : registro.destinatarioPersonal?.personal?.subalterno?.bateria?.nombre
+            ? `Batería ${registro.destinatarioPersonal.personal.subalterno.bateria.nombre}`
+            : "-";
+
+        drawField(
+          page,
+          assets,
+          header.innerX + 156,
+          y,
+          header.innerW - 156,
+          30,
+          isExterno ? "Unidad de destino" : "Detalle",
+          detailValue,
+        );
+      } else {
+        drawField(page, assets, header.innerX, y, header.innerW, 30, "Detalle", destinoDetalle);
+      }
       y += 36;
     }
 
