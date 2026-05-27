@@ -595,7 +595,6 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
 
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
-    console.error("Error en Deshacer Auditoría:", error);
     if (error instanceof Error) {
       if (error.message === "AUDIT_NOT_FOUND") {
         return NextResponse.json({ error: "Registro de auditoría no encontrado." }, { status: 404 });
@@ -622,6 +621,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
         return NextResponse.json({ error: "Esta entidad no soporta la función de deshacer." }, { status: 400 });
       }
     }
+    console.error("Error en Deshacer Auditoría:", error);
     return NextResponse.json({ error: "Error interno al deshacer la acción de auditoría." }, { status: 500 });
   }
 }
