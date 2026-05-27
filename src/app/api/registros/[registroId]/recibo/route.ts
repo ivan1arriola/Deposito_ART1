@@ -334,7 +334,7 @@ export async function GET(request: Request, context: { params: Promise<{ registr
 
     if (isRecinto) {
       drawField(page, assets, header.innerX, y, 150, 30, "Clase de recinto", recintoClase === "EXTERNO" ? "Externo" : "Interno");
-      drawField(page, assets, header.innerX + 156, y, header.innerW - 156, 30, "Superior responsable", destinoDetalle);
+      drawField(page, assets, header.innerX + 156, y, header.innerW - 156, 30, "Alcance", destinoDetalle);
     } else {
       drawField(page, assets, header.innerX, y, header.innerW, 30, "Detalle", destinoDetalle);
     }
@@ -384,7 +384,7 @@ export async function GET(request: Request, context: { params: Promise<{ registr
           ? "Recibe devolución"
           : "Registra asignación",
     leftSignatureName: usuarioEntregaLabel,
-    rightSignatureTitle: isRecinto ? "Responsable del recinto" : isExterno ? "Recibe asignación" : "Recibe",
+    rightSignatureTitle: isRecinto ? "Superior responsable" : isExterno ? "Recibe asignación" : "Recibe",
     rightSignatureName: destinatarioLabel,
     footerNote: `Generado: ${formatDateUy(now)} ${formatTimeUy(now)}`,
     sectionTitle: "Constancia",
