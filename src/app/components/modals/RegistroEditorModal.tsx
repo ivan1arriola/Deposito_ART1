@@ -23,6 +23,10 @@ type RegistroEditorModalProps = {
   onDestinatarioTipoChange: (value: RegistroDraft["destinatarioTipo"]) => void;
   onRecintoClaseChange: (value: RegistroDraft["recintoClase"]) => void;
   onRecintoNombreChange: (value: string) => void;
+  onRecintoResponsableGradoChange: (value: string) => void;
+  onRecintoResponsableNombreChange: (value: string) => void;
+  onRecintoResponsableApellidoChange: (value: string) => void;
+  onRecintoResponsableCiChange: (value: string) => void;
   onDestinatarioExternoGradoChange: (value: string) => void;
   onDestinatarioExternoNombreChange: (value: string) => void;
   onDestinatarioExternoApellidoChange: (value: string) => void;
@@ -53,6 +57,10 @@ export function RegistroEditorModal({
   onDestinatarioTipoChange,
   onRecintoClaseChange,
   onRecintoNombreChange,
+  onRecintoResponsableGradoChange,
+  onRecintoResponsableNombreChange,
+  onRecintoResponsableApellidoChange,
+  onRecintoResponsableCiChange,
   onDestinatarioExternoGradoChange,
   onDestinatarioExternoNombreChange,
   onDestinatarioExternoApellidoChange,
@@ -184,29 +192,77 @@ export function RegistroEditorModal({
       </div>
 
       {showRecintoFields ? (
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[180px_minmax(0,1fr)]">
-          <label className="text-xs text-stone-700">
-            Clase de recinto
-            <select
-              value={draft.recintoClase}
-              disabled={saving}
-              onChange={(event) => onRecintoClaseChange(event.target.value as RegistroDraft["recintoClase"])}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            >
-              <option value="INTERNO">Dentro de la unidad</option>
-              <option value="EXTERNO">Fuera de la unidad</option>
-            </select>
-          </label>
-          <label className="text-xs text-stone-700">
-            Nombre del recinto
-            <input
-              value={draft.recintoNombre}
-              disabled={saving}
-              onChange={(event) => onRecintoNombreChange(event.target.value)}
-              placeholder="Ej.: Batería A / Ministerio de Defensa"
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-          </label>
+        <div className="mt-3 grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[180px_minmax(0,1fr)]">
+            <label className="text-xs text-stone-700">
+              Clase de recinto
+              <select
+                value={draft.recintoClase}
+                disabled={saving}
+                onChange={(event) => onRecintoClaseChange(event.target.value as RegistroDraft["recintoClase"])}
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              >
+                <option value="INTERNO">Dentro de la unidad</option>
+                <option value="EXTERNO">Fuera de la unidad</option>
+              </select>
+            </label>
+            <label className="text-xs text-stone-700">
+              Nombre del recinto
+              <input
+                value={draft.recintoNombre}
+                disabled={saving}
+                onChange={(event) => onRecintoNombreChange(event.target.value)}
+                placeholder="Ej.: Batería A / Ministerio de Defensa"
+                className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
+          
+          <div className="mt-1 rounded-lg border border-stone-200 bg-stone-50 p-3">
+            <p className="text-xs font-semibold text-stone-700 mb-2">Responsable a Cargo (Quien recibe)</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label className="text-xs text-stone-700">
+                Grado (Opcional)
+                <input
+                  value={draft.recintoResponsableGrado}
+                  disabled={saving}
+                  onChange={(event) => onRecintoResponsableGradoChange(event.target.value)}
+                  placeholder="Ej.: Sdo. 1ro."
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs text-stone-700">
+                CI (Opcional)
+                <input
+                  value={draft.recintoResponsableCi}
+                  disabled={saving}
+                  onChange={(event) => onRecintoResponsableCiChange(event.target.value)}
+                  placeholder="Ej.: 5.123.456-7"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs text-stone-700">
+                Nombres (Opcional)
+                <input
+                  value={draft.recintoResponsableNombre}
+                  disabled={saving}
+                  onChange={(event) => onRecintoResponsableNombreChange(event.target.value)}
+                  placeholder="Nombres"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs text-stone-700">
+                Apellidos (Opcional)
+                <input
+                  value={draft.recintoResponsableApellido}
+                  disabled={saving}
+                  onChange={(event) => onRecintoResponsableApellidoChange(event.target.value)}
+                  placeholder="Apellidos"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+          </div>
         </div>
       ) : null}
 

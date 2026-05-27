@@ -214,6 +214,7 @@ export type PersonnelAndSummaryViewsProps = {
   equipoResumenError: string | null;
   loadEquipoResumen: () => Promise<void>;
   equiposOrdenados: import("@/types/entities").Equipo[];
+  onRectifyRegistro: (registroId: string) => Promise<void>;
 };
 
 export type StockPrestamoViewsProps = {

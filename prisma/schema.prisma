@@ -441,10 +441,14 @@ model MovimientoDestinatarioExterno {
 }
 
 model MovimientoDestinatarioRecinto {
-  movimientoId BigInt     @id @map("movimiento_id")
-  clase        String     @db.VarChar(16)
-  nombre       String
-  movimiento   Movimiento @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
+  movimientoId        BigInt     @id @map("movimiento_id")
+  clase               String     @db.VarChar(16)
+  nombre              String
+  responsableGrado    String?    @map("responsable_grado")
+  responsableNombre   String?    @map("responsable_nombre")
+  responsableApellido String?    @map("responsable_apellido")
+  responsableCi       String?    @map("responsable_ci")
+  movimiento          Movimiento @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
 
   @@index([clase])
   @@index([nombre])

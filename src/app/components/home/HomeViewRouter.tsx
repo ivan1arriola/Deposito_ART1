@@ -221,6 +221,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
     printEtiquetaCaja,
     printListadoCajas,
     printTodasEtiquetas,
+    onRectifyRegistro,
   } = props;
 
   return (
@@ -412,6 +413,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
         equipoResumenError={equipoResumenError}
         loadEquipoResumen={loadEquipoResumen}
         equiposOrdenados={equiposOrdenados}
+        onRectifyRegistro={onRectifyRegistro}
       />
 
       <StockPrestamoViews

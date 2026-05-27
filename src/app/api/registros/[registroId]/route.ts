@@ -31,6 +31,12 @@ type UpdateMovimientoPayload = {
   destinatarioTipo?: string;
   recintoClase?: string;
   recintoNombre?: string;
+  destinatarioRecinto?: {
+    grado?: string;
+    nombre?: string;
+    apellido?: string;
+    ci?: string;
+  };
   destinatarioExterno?: {
     grado?: string;
     nombre?: string;
@@ -65,6 +71,12 @@ type ParsedDestinatarioPayload =
       destinatarioTipo: "RECINTO";
       recintoClase: MovimientoRecintoClase;
       recintoNombre: string;
+      recintoResponsable: {
+        grado: string;
+        nombre: string;
+        apellido: string;
+        ci: string;
+      } | null;
     };
 
 function parseMovimientoId(raw: string) {
@@ -163,10 +175,20 @@ function parseDestinatarioPayload(
     const recintoClase = parseRecintoClase(candidate.recintoClase) ?? fallbackRecinto?.recintoClase ?? null;
     const recintoNombre = parseRecintoNombre(candidate.recintoNombre) ?? fallbackRecinto?.recintoNombre ?? null;
     if (!recintoClase || !recintoNombre) return null;
+    
+    const rawDestinatarioRecinto = candidate.destinatarioRecinto as Record<string, string> | undefined;
+    const recintoResponsable = rawDestinatarioRecinto && (rawDestinatarioRecinto.grado || rawDestinatarioRecinto.nombre || rawDestinatarioRecinto.apellido || rawDestinatarioRecinto.ci) ? {
+      grado: String(rawDestinatarioRecinto.grado ?? "").trim(),
+      nombre: String(rawDestinatarioRecinto.nombre ?? "").trim(),
+      apellido: String(rawDestinatarioRecinto.apellido ?? "").trim(),
+      ci: String(rawDestinatarioRecinto.ci ?? "").trim(),
+    } : null;
+
     return {
       destinatarioTipo,
       recintoClase,
       recintoNombre,
+      recintoResponsable,
     };
   }
 
@@ -257,11 +279,12 @@ function buildPersonalAuditDetail(personal: {
   };
 }
 
-function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombre: string }) {
+function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombre: string; responsable?: Extract<ParsedDestinatarioPayload, { destinatarioTipo: "RECINTO" }>["recintoResponsable"] }) {
   return {
     clase: recinto.clase,
     nombre: recinto.nombre,
     scopeLabel: recinto.clase === "EXTERNO" ? "FUERA_UNIDAD" : "DENTRO_UNIDAD",
+    responsable: recinto.responsable,
   };
 }
 
@@ -335,6 +358,10 @@ const registroInclude = {
     select: {
       clase: true,
       nombre: true,
+      responsableGrado: true,
+      responsableNombre: true,
+      responsableApellido: true,
+      responsableCi: true,
     },
   },
   items: {
@@ -361,6 +388,15 @@ function buildExistingDestinatarioPayload(existing: RegistroWithRelations): Pars
       destinatarioTipo: "RECINTO",
       recintoClase: existing.destinatarioRecinto.clase === "EXTERNO" ? "EXTERNO" : "INTERNO",
       recintoNombre: existing.destinatarioRecinto.nombre,
+      recintoResponsable:
+        existing.destinatarioRecinto.responsableGrado || existing.destinatarioRecinto.responsableNombre
+          ? {
+              grado: existing.destinatarioRecinto.responsableGrado ?? "",
+              nombre: existing.destinatarioRecinto.responsableNombre ?? "",
+              apellido: existing.destinatarioRecinto.responsableApellido ?? "",
+              ci: existing.destinatarioRecinto.responsableCi ?? "",
+            }
+          : null,
     };
   }
 
@@ -669,6 +705,10 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
             movimientoId: existing.movimientoId,
             clase: nextDestinatarioPayload.recintoClase,
             nombre: nextDestinatarioPayload.recintoNombre,
+            responsableGrado: nextDestinatarioPayload.recintoResponsable?.grado || null,
+            responsableNombre: nextDestinatarioPayload.recintoResponsable?.nombre || null,
+            responsableApellido: nextDestinatarioPayload.recintoResponsable?.apellido || null,
+            responsableCi: nextDestinatarioPayload.recintoResponsable?.ci || null,
           },
         });
       } else if (nextDestinatarioPayload.destinatarioTipo === "EXTERNO") {
@@ -730,6 +770,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
               recinto: buildRecintoAuditDetail({
                 clase: nextDestinatarioPayload.recintoClase,
                 nombre: nextDestinatarioPayload.recintoNombre,
+                responsable: nextDestinatarioPayload.recintoResponsable,
               }),
             }
           : nextDestinatarioPayload.destinatarioTipo === "EXTERNO"

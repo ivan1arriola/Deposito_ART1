@@ -13,6 +13,10 @@ export type RegistroDraft = {
   destinatarioTipo: RegistroDestinatarioTipo;
   recintoClase: RegistroRecintoClase;
   recintoNombre: string;
+  recintoResponsableGrado: string;
+  recintoResponsableNombre: string;
+  recintoResponsableApellido: string;
+  recintoResponsableCi: string;
   destinatarioExternoGrado: string;
   destinatarioExternoNombre: string;
   destinatarioExternoApellido: string;

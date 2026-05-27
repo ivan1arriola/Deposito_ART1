@@ -35,6 +35,12 @@ type MovimientoPayload = {
   destinatarioTipo?: string;
   recintoClase?: string;
   recintoNombre?: string;
+  destinatarioRecinto?: {
+    grado?: string;
+    nombre?: string;
+    apellido?: string;
+    ci?: string;
+  };
   destinatarioExterno?: {
     grado?: string;
     nombre?: string;
@@ -69,6 +75,12 @@ type ParsedDestinatarioPayload =
       destinatarioTipo: "RECINTO";
       recintoClase: MovimientoRecintoClase;
       recintoNombre: string;
+      recintoResponsable: {
+        grado: string;
+        nombre: string;
+        apellido: string;
+        ci: string;
+      } | null;
     };
 
 function parseBigIntId(value: unknown) {
@@ -160,10 +172,20 @@ function parseDestinatarioPayload(candidate: Record<string, unknown>): ParsedDes
     const recintoClase = parseRecintoClase(candidate.recintoClase);
     const recintoNombre = parseRecintoNombre(candidate.recintoNombre);
     if (!recintoClase || !recintoNombre) return null;
+    
+    const rawDestinatarioRecinto = candidate.destinatarioRecinto as Record<string, string> | undefined;
+    const recintoResponsable = rawDestinatarioRecinto && (rawDestinatarioRecinto.grado || rawDestinatarioRecinto.nombre || rawDestinatarioRecinto.apellido || rawDestinatarioRecinto.ci) ? {
+      grado: String(rawDestinatarioRecinto.grado ?? "").trim(),
+      nombre: String(rawDestinatarioRecinto.nombre ?? "").trim(),
+      apellido: String(rawDestinatarioRecinto.apellido ?? "").trim(),
+      ci: String(rawDestinatarioRecinto.ci ?? "").trim(),
+    } : null;
+
     return {
       destinatarioTipo,
       recintoClase,
       recintoNombre,
+      recintoResponsable,
     };
   }
 
@@ -234,11 +256,12 @@ function buildPersonalAuditDetail(personal: {
   };
 }
 
-function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombre: string }) {
+function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombre: string; responsable?: Extract<ParsedDestinatarioPayload, { destinatarioTipo: "RECINTO" }>["recintoResponsable"] }) {
   return {
     clase: recinto.clase,
     nombre: recinto.nombre,
     scopeLabel: recinto.clase === "EXTERNO" ? "FUERA_UNIDAD" : "DENTRO_UNIDAD",
+    responsable: recinto.responsable,
   };
 }
 
@@ -362,6 +385,10 @@ export async function GET(req: Request) {
         select: {
           clase: true,
           nombre: true,
+          responsableGrado: true,
+          responsableNombre: true,
+          responsableApellido: true,
+          responsableCi: true,
         },
       },
       items: {
@@ -426,6 +453,14 @@ export async function GET(req: Request) {
         destinatarioTipo: movimiento.destinatarioRecinto ? "RECINTO" : movimiento.destinatarioExterno ? "EXTERNO" : "PERSONAL",
         recintoClase: movimiento.destinatarioRecinto?.clase ?? null,
         recintoNombre: movimiento.destinatarioRecinto?.nombre ?? null,
+        recintoResponsableInfo: movimiento.destinatarioRecinto && (movimiento.destinatarioRecinto.responsableGrado || movimiento.destinatarioRecinto.responsableNombre)
+          ? {
+              grado: movimiento.destinatarioRecinto.responsableGrado ?? "",
+              nombre: movimiento.destinatarioRecinto.responsableNombre ?? "",
+              apellido: movimiento.destinatarioRecinto.responsableApellido ?? "",
+              ci: movimiento.destinatarioRecinto.responsableCi ?? "",
+            }
+          : null,
         usuarioEntregaId: movimiento.usuarioEntregaId,
         usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
         fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
@@ -578,6 +613,10 @@ export async function POST(req: Request) {
             movimientoId: movimiento.movimientoId,
             clase: destinatarioPayload.recintoClase,
             nombre: destinatarioPayload.recintoNombre,
+            responsableGrado: destinatarioPayload.recintoResponsable?.grado || null,
+            responsableNombre: destinatarioPayload.recintoResponsable?.nombre || null,
+            responsableApellido: destinatarioPayload.recintoResponsable?.apellido || null,
+            responsableCi: destinatarioPayload.recintoResponsable?.ci || null,
           },
         });
 
@@ -690,6 +729,7 @@ export async function POST(req: Request) {
           recinto: buildRecintoAuditDetail({
             clase: destinatarioPayload.recintoClase,
             nombre: destinatarioPayload.recintoNombre,
+            responsable: destinatarioPayload.recintoResponsable,
           }),
           tipo,
           afectaStock,

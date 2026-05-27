@@ -240,6 +240,7 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
           canDelete={isAdmin}
           onOpenRegistro={() => setActiveView("asignacion_recinto_nueva")}
           onDeleteRegistro={deleteRecintoRegistro}
+          onRectifyRegistro={props.onRectifyRegistro}
         />
       ) : null}
 

@@ -107,16 +107,16 @@ describe("POST /api/items/[itemId] (Merge unificar equipos)", () => {
     } as never);
 
     mockTx.item.findUniqueOrThrow.mockImplementation(async ({ where }: { where: { itemId: bigint } }) => {
-      if (where.itemId === 10n) return { itemId: 10n, nombre: "Botas Viejas", activo: true, existenciaSie: 5 };
-      if (where.itemId === 20n) return { itemId: 20n, nombre: "Botas Nuevas", activo: true, existenciaSie: 15 };
+      if (where.itemId === BigInt(10)) return { itemId: BigInt(10), nombre: "Botas Viejas", activo: true, existenciaSie: 5 };
+      if (where.itemId === BigInt(20)) return { itemId: BigInt(20), nombre: "Botas Nuevas", activo: true, existenciaSie: 15 };
       throw new Error("Item not found");
     });
 
     mockTx.movimientoItem.findMany.mockImplementation(async ({ where }: { where: { itemId: bigint } }) => {
-      if (where.itemId === 10n) {
+      if (where.itemId === BigInt(10)) {
         return [
           {
-            movimientoId: 100n,
+            movimientoId: BigInt(100),
             cantidad: 2,
             estadoEntrega: "BUENO",
             comentarioEntrega: "entregado",
@@ -129,34 +129,34 @@ describe("POST /api/items/[itemId] (Merge unificar equipos)", () => {
     });
 
     mockTx.stockOperacionItem.findMany.mockImplementation(async ({ where }: { where: { itemId: bigint } }) => {
-      if (where.itemId === 10n) {
-        return [{ stockOperacionId: 50n, cantidad: 10 }];
+      if (where.itemId === BigInt(10)) {
+        return [{ stockOperacionId: BigInt(50), cantidad: 10 }];
       }
       return [];
     });
 
     mockTx.cajaItem.findMany.mockImplementation(async ({ where }: { where: { itemId: bigint } }) => {
-      if (where.itemId === 10n) {
+      if (where.itemId === BigInt(10)) {
         return [{ codigoDepositoGeneral: "CAJA_01", cantidad: 4 }];
       }
       return [];
     });
 
     mockTx.itemCodigoSIE.findMany.mockImplementation(async ({ where }: { where: { itemId: bigint } }) => {
-      if (where.itemId === 10n) {
+      if (where.itemId === BigInt(10)) {
         return [
-          { itemCodigoSIEId: 1n, codigo: "SIE_001", talla: "42" },
-          { itemCodigoSIEId: 2n, codigo: "SIE_002", talla: "44" },
+          { itemCodigoSIEId: BigInt(1), codigo: "SIE_001", talla: "42" },
+          { itemCodigoSIEId: BigInt(2), codigo: "SIE_002", talla: "44" },
         ];
       }
-      if (where.itemId === 20n) {
-        return [{ itemCodigoSIEId: 99n, codigo: "SIE_001", talla: "42" }]; // Codigo SIE_001 ya existe en el target
+      if (where.itemId === BigInt(20)) {
+        return [{ itemCodigoSIEId: BigInt(99), codigo: "SIE_001", talla: "42" }]; // Codigo SIE_001 ya existe en el target
       }
       return [];
     });
 
     mockTx.cajaItemCodigoSIE.findMany.mockResolvedValue([
-      { codigoDepositoGeneral: "CAJA_01", itemCodigoSIEId: 1n },
+      { codigoDepositoGeneral: "CAJA_01", itemCodigoSIEId: BigInt(1) },
     ]);
     mockTx.cajaItemCodigoSIE.findUnique.mockResolvedValue(null);
 
@@ -173,8 +173,8 @@ describe("POST /api/items/[itemId] (Merge unificar equipos)", () => {
     expect(mockTx.movimientoItem.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: {
-          movimientoId: 100n,
-          itemId: 20n,
+          movimientoId: BigInt(100),
+          itemId: BigInt(20),
           cantidad: 2,
           estadoEntrega: "BUENO",
           comentarioEntrega: "entregado",
@@ -185,7 +185,7 @@ describe("POST /api/items/[itemId] (Merge unificar equipos)", () => {
     );
     expect(mockTx.movimientoItem.delete).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { movimientoId_itemId: { movimientoId: 100n, itemId: 10n } },
+        where: { movimientoId_itemId: { movimientoId: BigInt(100), itemId: BigInt(10) } },
       }),
     );
 
@@ -194,36 +194,36 @@ describe("POST /api/items/[itemId] (Merge unificar equipos)", () => {
 
     expect(mockTx.cajaItem.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { codigoDepositoGeneral_itemId: { codigoDepositoGeneral: "CAJA_01", itemId: 20n } },
+        where: { codigoDepositoGeneral_itemId: { codigoDepositoGeneral: "CAJA_01", itemId: BigInt(20) } },
         update: { cantidad: { increment: 4 } },
-        create: { codigoDepositoGeneral: "CAJA_01", itemId: 20n, cantidad: 4 },
+        create: { codigoDepositoGeneral: "CAJA_01", itemId: BigInt(20), cantidad: 4 },
       }),
     );
     expect(mockTx.cajaItem.delete).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { codigoDepositoGeneral_itemId: { codigoDepositoGeneral: "CAJA_01", itemId: 10n } },
+        where: { codigoDepositoGeneral_itemId: { codigoDepositoGeneral: "CAJA_01", itemId: BigInt(10) } },
       }),
     );
 
     expect(mockTx.cajaItemCodigoSIE.create).toHaveBeenCalledWith({
-      data: { codigoDepositoGeneral: "CAJA_01", itemCodigoSIEId: 99n },
+      data: { codigoDepositoGeneral: "CAJA_01", itemCodigoSIEId: BigInt(99) },
     });
     expect(mockTx.itemCodigoSIE.delete).toHaveBeenCalledWith({
-      where: { itemCodigoSIEId: 1n },
+      where: { itemCodigoSIEId: BigInt(1) },
     });
 
     expect(mockTx.itemCodigoSIE.update).toHaveBeenCalledWith({
-      where: { itemCodigoSIEId: 2n },
-      data: { itemId: 20n },
+      where: { itemCodigoSIEId: BigInt(2) },
+      data: { itemId: BigInt(20) },
     });
 
     expect(mockTx.item.update).toHaveBeenCalledWith({
-      where: { itemId: 20n },
+      where: { itemId: BigInt(20) },
       data: { existenciaSie: { increment: 5 } },
     });
 
     expect(mockTx.item.delete).toHaveBeenCalledWith({
-      where: { itemId: 10n },
+      where: { itemId: BigInt(10) },
     });
 
     expect(logAudit).toHaveBeenCalled();

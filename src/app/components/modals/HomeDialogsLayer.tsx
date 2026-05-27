@@ -74,6 +74,10 @@ type HomeDialogsLayerProps = {
       | "destinatarioTipo"
       | "recintoClase"
       | "recintoNombre"
+      | "recintoResponsableGrado"
+      | "recintoResponsableNombre"
+      | "recintoResponsableApellido"
+      | "recintoResponsableCi"
       | "destinatarioExternoGrado"
       | "destinatarioExternoNombre"
       | "destinatarioExternoApellido"
@@ -247,6 +251,10 @@ export function HomeDialogsLayer({
         onDestinatarioTipoChange={(value) => onRegistroDraftChange("destinatarioTipo", value)}
         onRecintoClaseChange={(value) => onRegistroDraftChange("recintoClase", value)}
         onRecintoNombreChange={(value) => onRegistroDraftChange("recintoNombre", value)}
+        onRecintoResponsableGradoChange={(value) => onRegistroDraftChange("recintoResponsableGrado", value)}
+        onRecintoResponsableNombreChange={(value) => onRegistroDraftChange("recintoResponsableNombre", value)}
+        onRecintoResponsableApellidoChange={(value) => onRegistroDraftChange("recintoResponsableApellido", value)}
+        onRecintoResponsableCiChange={(value) => onRegistroDraftChange("recintoResponsableCi", value)}
         onDestinatarioExternoGradoChange={(value) => onRegistroDraftChange("destinatarioExternoGrado", value)}
         onDestinatarioExternoNombreChange={(value) => onRegistroDraftChange("destinatarioExternoNombre", value)}
         onDestinatarioExternoApellidoChange={(value) => onRegistroDraftChange("destinatarioExternoApellido", value)}

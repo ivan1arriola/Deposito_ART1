@@ -3854,6 +3854,10 @@ export default function Home() {
       destinatarioTipo: "PERSONAL",
       recintoClase: "INTERNO",
       recintoNombre: "",
+      recintoResponsableGrado: "",
+      recintoResponsableNombre: "",
+      recintoResponsableApellido: "",
+      recintoResponsableCi: "",
       destinatarioExternoGrado: "",
       destinatarioExternoNombre: "",
       destinatarioExternoApellido: "",
@@ -3886,6 +3890,10 @@ export default function Home() {
       destinatarioTipo: "PERSONAL",
       recintoClase: "INTERNO",
       recintoNombre: "",
+      recintoResponsableGrado: "",
+      recintoResponsableNombre: "",
+      recintoResponsableApellido: "",
+      recintoResponsableCi: "",
       destinatarioExternoGrado: "",
       destinatarioExternoNombre: "",
       destinatarioExternoApellido: "",
@@ -3912,6 +3920,10 @@ export default function Home() {
       destinatarioTipo: "RECINTO",
       recintoClase: "INTERNO",
       recintoNombre: "",
+      recintoResponsableGrado: "",
+      recintoResponsableNombre: "",
+      recintoResponsableApellido: "",
+      recintoResponsableCi: "",
       destinatarioExternoGrado: "",
       destinatarioExternoNombre: "",
       destinatarioExternoApellido: "",
@@ -4022,6 +4034,10 @@ export default function Home() {
       destinatarioTipo: "PERSONAL",
       recintoClase: "INTERNO",
       recintoNombre: "",
+      recintoResponsableGrado: "",
+      recintoResponsableNombre: "",
+      recintoResponsableApellido: "",
+      recintoResponsableCi: "",
       destinatarioExternoGrado: "",
       destinatarioExternoNombre: "",
       destinatarioExternoApellido: "",
@@ -4035,6 +4051,59 @@ export default function Home() {
           ? registro.items.map((item) => ({ itemId: item.itemId, cantidad: String(item.cantidad) }))
           : [{ itemId: "", cantidad: "1" }],
     });
+  }
+
+  async function fetchAndRectifyRegistro(registroId: string) {
+    if (!canWrite) {
+      setStatus("No tienes permisos para rectificar movimientos.");
+      return;
+    }
+    try {
+      setStatus("Cargando datos de la asignación...");
+      const response = await api<{
+        registroId: string;
+        fecha: string;
+        tipo: RegistroTipo;
+        comentarios: string | null;
+        destinatarioTipo: "PERSONAL" | "RECINTO" | "EXTERNO";
+        recintoClase: "INTERNO" | "EXTERNO" | null;
+        recintoNombre: string | null;
+        recintoResponsableInfo: { grado: string; nombre: string; apellido: string; ci: string } | null;
+        destinatarioExternoInfo: { grado: string; nombre: string; apellido: string; ci: string; unidadDestino: string } | null;
+        ci: string;
+        items: Array<{ itemId: string; cantidad: number }>;
+      }>(`/api/registros/${encodeURIComponent(registroId)}`);
+
+      setRegistroDraft({
+        modo: "rectificar",
+        registroId: response.registroId,
+        ci: response.ci,
+        ciList: [response.ci],
+        tipo: response.tipo,
+        destinatarioTipo: response.destinatarioTipo,
+        recintoClase: response.recintoClase ?? "INTERNO",
+        recintoNombre: response.recintoNombre ?? "",
+        recintoResponsableGrado: response.recintoResponsableInfo?.grado ?? "",
+        recintoResponsableNombre: response.recintoResponsableInfo?.nombre ?? "",
+        recintoResponsableApellido: response.recintoResponsableInfo?.apellido ?? "",
+        recintoResponsableCi: response.recintoResponsableInfo?.ci ?? "",
+        destinatarioExternoGrado: response.destinatarioExternoInfo?.grado ?? "",
+        destinatarioExternoNombre: response.destinatarioExternoInfo?.nombre ?? "",
+        destinatarioExternoApellido: response.destinatarioExternoInfo?.apellido ?? "",
+        destinatarioExternoCi: response.destinatarioExternoInfo?.ci ?? "",
+        destinatarioExternoUnidadDestino: response.destinatarioExternoInfo?.unidadDestino ?? "",
+        incluirFueraDeHoja: false,
+        fecha: response.fecha,
+        comentarios: response.comentarios ?? "",
+        items:
+          response.items.length > 0
+            ? response.items.map((item) => ({ itemId: item.itemId, cantidad: String(item.cantidad) }))
+            : [{ itemId: "", cantidad: "1" }],
+      });
+      setStatus("");
+    } catch (error: unknown) {
+      setStatus(error instanceof Error ? error.message : "No se pudo cargar el movimiento para editar.");
+    }
   }
 
   function updateRegistroItem(index: number, field: keyof RegistroDraftEquipo, value: string) {
@@ -4187,6 +4256,12 @@ export default function Home() {
           destinatarioTipo: registroDraft.destinatarioTipo,
           recintoClase: isRecinto ? registroDraft.recintoClase : undefined,
           recintoNombre: isRecinto ? registroDraft.recintoNombre.trim() : undefined,
+          destinatarioRecinto: isRecinto ? {
+            grado: registroDraft.recintoResponsableGrado.trim(),
+            nombre: registroDraft.recintoResponsableNombre.trim(),
+            apellido: registroDraft.recintoResponsableApellido.trim(),
+            ci: registroDraft.recintoResponsableCi.trim(),
+          } : undefined,
           destinatarioExterno: isExterno
             ? {
                 grado: registroDraft.destinatarioExternoGrado.trim(),
@@ -6753,6 +6828,7 @@ export default function Home() {
           ) : null}
 
           <HomeViewRouter
+            onRectifyRegistro={fetchAndRectifyRegistro}
             activeView={activeView}
             ciPlaceholder={ciPlaceholder}
             newPersonal={newPersonal}
