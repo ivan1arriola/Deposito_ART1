@@ -266,9 +266,13 @@ export default async function TrazabilidadEquiposPage({
     oficialNombre: firmas.oficialNombre,
   });
 
-  const isSubalternos = column === "SUBALTERNOS";
-  const columnLabel = isSubalternos ? "Subalternos" : "Prestamo";
-  const totalEnColumna = isSubalternos ? traceData.totals.subalternos : traceData.totals.prestamo;
+  const columnLabel = column === "SUBALTERNOS" ? "Subalternos" : column === "RECINTO" ? "Recintos" : "Préstamos";
+  const totalEnColumna =
+    column === "SUBALTERNOS"
+      ? traceData.totals.subalternos
+      : column === "RECINTO"
+        ? traceData.totals.recinto
+        : traceData.totals.prestamo;
 
   return (
     <>
@@ -286,10 +290,14 @@ export default async function TrazabilidadEquiposPage({
         </section>
 
         <h2 className="section-title">
-          {isSubalternos ? "Personal con tenencia neta del equipo" : "Préstamos activos del equipo"}
+          {column === "SUBALTERNOS"
+            ? "Personal con tenencia neta del equipo"
+            : column === "RECINTO"
+              ? "Recintos con asignaciones activas"
+              : "Préstamos activos del equipo"}
         </h2>
 
-        {isSubalternos ? (
+        {column === "SUBALTERNOS" ? (
           traceData.subalternos.length === 0 ? (
             <p className="empty-state">No hay tenencias activas de subalternos para este equipo.</p>
           ) : (
@@ -322,6 +330,37 @@ export default async function TrazabilidadEquiposPage({
               ))}
             </section>
           )
+        ) : column === "RECINTO" ? (
+          (!traceData.recintos || traceData.recintos.length === 0) ? (
+            <p className="empty-state">No hay asignaciones activas a recintos para este equipo.</p>
+          ) : (
+            <section className="trace-list">
+              {(traceData.recintos || []).map((entry) => (
+                <article key={`print-trace-recinto-${entry.recintoNombre}`} className="trace-card">
+                  <div className="trace-card-header">
+                    <div>
+                      <p className="trace-persona">{entry.recintoNombre}</p>
+                    </div>
+                    <div>
+                      <p className="trace-total">{entry.cantidadNeta > 0 ? `+${entry.cantidadNeta}` : entry.cantidadNeta}</p>
+                    </div>
+                  </div>
+                  <div className="movement-list">
+                    {entry.movimientos.map((movimiento) => (
+                      <p key={`print-trace-recinto-mov-${entry.recintoNombre}-${movimiento.movimientoId}`} className="movement-line">
+                        <span className="movement-delta">
+                          {movimiento.delta > 0 ? `+${movimiento.delta}` : movimiento.delta}
+                        </span>{" "}
+                        ({movimiento.cantidad}) | Mov. #{movimiento.movimientoId} |{" "}
+                        {formatDateOnlyForDisplay(movimiento.fecha)}
+                        {movimiento.observaciones ? ` | Obs: ${movimiento.observaciones}` : ""}
+                      </p>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </section>
+          )
         ) : traceData.prestamos.length === 0 ? (
           <p className="empty-state">No hay préstamos activos para este equipo.</p>
         ) : (
@@ -334,6 +373,7 @@ export default async function TrazabilidadEquiposPage({
                     <p className="trace-line">
                       {entry.destinatarioCi ? `CI ${formatUruguayanCi(entry.destinatarioCi)}` : "CI pendiente"}
                     </p>
+                    <p className="trace-line">{`Clase: ${entry.clasePrestamo}`}</p>
                     <p className="trace-line">{`Recibo: ${entry.reciboNumero} | Préstamo #${entry.prestamoId} | Mov. #${entry.movimientoId}`}</p>
                     <p className="trace-line">{`Fecha: ${formatDateOnlyForDisplay(entry.fechaPrestamo)}`}</p>
                     {entry.observaciones ? <p className="trace-line">{`Obs: ${entry.observaciones}`}</p> : null}

@@ -3,6 +3,8 @@ import { authorizeRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildStockItemTraceData, hasStockItemTraceDelegates, parseStockTraceItemId } from "@/lib/stock-item-trace";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   const auth = await authorizeRequest(req, "read_data");
   if (!auth.ok) return auth.response;

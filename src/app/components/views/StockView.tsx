@@ -83,7 +83,7 @@ export function StockView({
   } | null>(null);
   const [itemTraceDialog, setItemTraceDialog] = useState<{
     item: StockDashboardData["resumen"][number];
-    column: "SUBALTERNOS" | "PRESTAMO";
+    column: "SUBALTERNOS" | "PRESTAMO" | "RECINTO";
   } | null>(null);
   const [itemTraceData, setItemTraceData] = useState<StockItemTraceData | null>(null);
   const [itemTraceLoading, setItemTraceLoading] = useState(false);
@@ -115,7 +115,7 @@ export function StockView({
     setItemTraceError(null);
   }
 
-  async function openItemTraceDialog(item: StockDashboardData["resumen"][number], column: "SUBALTERNOS" | "PRESTAMO") {
+  async function openItemTraceDialog(item: StockDashboardData["resumen"][number], column: "SUBALTERNOS" | "PRESTAMO" | "RECINTO") {
     const requestId = itemTraceRequestIdRef.current + 1;
     itemTraceRequestIdRef.current = requestId;
     setItemTraceDialog({ item, column });
@@ -902,10 +902,17 @@ export function StockView({
                                       {item.stockSubalternos}
                                     </button>
                                   </td>
-                                  <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
-                                    item.stockAsignacion < 0 ? "text-rose-600 font-bold" : "text-stone-900"
-                                  }`}>
-                                    {item.stockAsignacion}
+                                  <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
+                                    <button
+                                      type="button"
+                                      onClick={() => void openItemTraceDialog(item, "RECINTO")}
+                                      className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                        item.stockAsignacion < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
+                                      }`}
+                                      title={`Ver detalle de ${item.nombre} en Recintos`}
+                                    >
+                                      {item.stockAsignacion}
+                                    </button>
                                   </td>
                                   <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
                                     <button
@@ -1029,7 +1036,7 @@ export function StockView({
           <div className="space-y-4">
             <header>
               <h3 className="text-lg font-semibold text-stone-900">
-                Detalle de {itemTraceDialog.column === "SUBALTERNOS" ? "Subalternos" : "Prestamo"}
+                Detalle de {itemTraceDialog.column === "SUBALTERNOS" ? "Subalternos" : itemTraceDialog.column === "RECINTO" ? "Recintos" : "Préstamos"}
               </h3>
               <p className="text-sm text-stone-600">{itemTraceDialog.item.nombre}</p>
             </header>
@@ -1040,7 +1047,9 @@ export function StockView({
                 <span className="font-semibold text-stone-900">Total en columna:</span>{" "}
                 {itemTraceDialog.column === "SUBALTERNOS"
                   ? (itemTraceData?.totals.subalternos ?? itemTraceDialog.item.stockSubalternos)
-                  : (itemTraceData?.totals.prestamo ?? itemTraceDialog.item.stockPrestamo)}
+                  : itemTraceDialog.column === "RECINTO"
+                    ? (itemTraceData?.totals.recinto ?? itemTraceDialog.item.stockAsignacion)
+                    : (itemTraceData?.totals.prestamo ?? itemTraceDialog.item.stockPrestamo)}
               </p>
             </div>
 
@@ -1096,6 +1105,45 @@ export function StockView({
                     </div>
                   ))}
                 </section>
+              ) : itemTraceDialog.column === "RECINTO" ? (
+                <section className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+                    Recintos con asignaciones activas
+                  </p>
+                  {(!itemTraceData.recintos || itemTraceData.recintos.length === 0) ? (
+                    <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-600">
+                      No hay asignaciones activas a recintos para este item.
+                    </p>
+                  ) : null}
+                  {(itemTraceData.recintos || []).map((entry) => (
+                    <div key={`trace-recinto-${entry.recintoNombre}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-stone-900">{entry.recintoNombre}</p>
+                        </div>
+                        <p className={`text-sm font-bold ${entry.cantidadNeta < 0 ? "text-rose-700" : "text-stone-900"}`}>
+                          {entry.cantidadNeta > 0 ? `+${entry.cantidadNeta}` : entry.cantidadNeta}
+                        </p>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        {entry.movimientos.map((movimiento) => (
+                          <div key={`trace-recinto-mov-${entry.recintoNombre}-${movimiento.movimientoId}`} className="rounded-lg border border-stone-200 bg-white px-2 py-1">
+                            <p className="text-xs text-stone-700">
+                              <span className={`font-semibold ${movimiento.delta < 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                                {movimiento.delta > 0 ? `+${movimiento.delta}` : movimiento.delta}
+                              </span>{" "}
+                              ({movimiento.cantidad}) | Mov. #{movimiento.movimientoId} |{" "}
+                              {formatDateOnlyForDisplay(movimiento.fecha)}
+                            </p>
+                            {movimiento.observaciones ? (
+                              <p className="text-xs text-stone-600">Obs: {movimiento.observaciones}</p>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </section>
               ) : (
                 <section className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Préstamos activos del item</p>
@@ -1112,8 +1160,15 @@ export function StockView({
                           <p className="text-xs text-stone-600">
                             {entry.destinatarioCi ? `CI ${formatUruguayanCi(entry.destinatarioCi)}` : "CI pendiente"}
                           </p>
-                          <p className="text-xs text-stone-500">{prestamoClaseLabel(entry.clasePrestamo)}</p>
-                          <p className="text-xs text-stone-600">
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-xs text-stone-500">{prestamoClaseLabel(entry.clasePrestamo)}</p>
+                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+                              entry.clasePrestamo === "EXTERNO" ? "bg-amber-100 text-amber-800" : "bg-sky-100 text-sky-800"
+                            }`}>
+                              {entry.clasePrestamo}
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-600 mt-1">
                             Recibo: {entry.reciboNumero} | Préstamo #{entry.prestamoId} | Mov. #{entry.movimientoId}
                           </p>
                           <p className="text-xs text-stone-500">Fecha: {formatDateOnlyForDisplay(entry.fechaPrestamo)}</p>

@@ -13,10 +13,11 @@ export function parseStockTraceItemId(value: unknown) {
   return BigInt(raw);
 }
 
-export function parseStockTraceColumn(value: unknown): "SUBALTERNOS" | "PRESTAMO" | null {
+export function parseStockTraceColumn(value: unknown): "SUBALTERNOS" | "PRESTAMO" | "RECINTO" | null {
   const raw = String(value ?? "").trim().toUpperCase();
   if (raw === "SUBALTERNOS") return "SUBALTERNOS";
   if (raw === "PRESTAMO") return "PRESTAMO";
+  if (raw === "RECINTO") return "RECINTO";
   return null;
 }
 
@@ -49,7 +50,7 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
         itemId,
         movimiento: {
           tipo: {
-            in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION],
+            in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION],
           },
         },
       },
@@ -88,6 +89,12 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
                     },
                   },
                 },
+              },
+            },
+            destinatarioRecinto: {
+              select: {
+                clase: true,
+                nombre: true,
               },
             },
           },
@@ -218,6 +225,49 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
     });
   }
 
+  const recintosByNombre = new Map<
+    string,
+    {
+      recintoNombre: string;
+      cantidadNeta: number;
+      movimientos: StockItemTraceData["recintos"][number]["movimientos"];
+    }
+  >();
+
+  for (const movimientoItem of movimientoItems) {
+    const tipoMovimiento = movimientoItem.movimiento.tipo;
+    if (tipoMovimiento !== TipoMovimiento.ASIGNACION) continue;
+    const recinto = movimientoItem.movimiento.destinatarioRecinto;
+    if (!recinto) continue;
+    const nombre = recinto.nombre;
+    const delta = movimientoItem.cantidad; // Asignación implies items moved to the recinto, assuming positive for trace. Wait, stockAsignacion = SUM(mi.cantidad), so it's a positive delta.
+    const existing = recintosByNombre.get(nombre);
+    if (existing) {
+      existing.cantidadNeta += delta;
+      existing.movimientos.push({
+        movimientoId: movimientoItem.movimiento.movimientoId.toString(),
+        fecha: formatDateOnlyFromDate(movimientoItem.movimiento.fecha) ?? "",
+        cantidad: movimientoItem.cantidad,
+        delta,
+        observaciones: movimientoItem.movimiento.observaciones ?? null,
+      });
+      continue;
+    }
+    recintosByNombre.set(nombre, {
+      recintoNombre: nombre,
+      cantidadNeta: delta,
+      movimientos: [
+        {
+          movimientoId: movimientoItem.movimiento.movimientoId.toString(),
+          fecha: formatDateOnlyFromDate(movimientoItem.movimiento.fecha) ?? "",
+          cantidad: movimientoItem.cantidad,
+          delta,
+          observaciones: movimientoItem.movimiento.observaciones ?? null,
+        },
+      ],
+    });
+  }
+
   const subalternos = Array.from(subalternosByCi.values())
     .filter((entry) => entry.cantidadNeta !== 0)
     .sort((a, b) => {
@@ -240,6 +290,24 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
           if (movimientoA === movimientoB) return 0;
           return movimientoB > movimientoA ? 1 : -1;
         }),
+    }));
+
+  const recintos = Array.from(recintosByNombre.values())
+    .filter((entry) => entry.cantidadNeta !== 0)
+    .sort((a, b) => {
+      if (b.cantidadNeta !== a.cantidadNeta) return b.cantidadNeta - a.cantidadNeta;
+      return a.recintoNombre.localeCompare(b.recintoNombre, "es", { sensitivity: "base" });
+    })
+    .map((entry) => ({
+      ...entry,
+      movimientos: entry.movimientos.slice().sort((a, b) => {
+        const fechaDiff = b.fecha.localeCompare(a.fecha);
+        if (fechaDiff !== 0) return fechaDiff;
+        const movimientoA = BigInt(a.movimientoId);
+        const movimientoB = BigInt(b.movimientoId);
+        if (movimientoA === movimientoB) return 0;
+        return movimientoB > movimientoA ? 1 : -1;
+      }),
     }));
 
   const prestamos: StockItemTraceData["prestamos"] = prestamosActivos
@@ -277,8 +345,10 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
     totals: {
       subalternos: subalternos.reduce((total, entry) => total + entry.cantidadNeta, 0),
       prestamo: prestamos.reduce((total, entry) => total + entry.cantidad, 0),
+      recinto: recintos.reduce((total, entry) => total + entry.cantidadNeta, 0),
     },
     subalternos,
+    recintos,
     prestamos,
   };
 
