@@ -48,7 +48,7 @@ export function AsignacionRecintoEditorView({
 
   useEffect(() => {
     api("/api/entidades-beneficiarias")
-      .then((res) => res.json())
+      .then((res: unknown) => (res as Response).json())
       .then((data: string[]) => {
         const set = new Set<string>(data);
         baterias.forEach(b => set.add(b.nombre));
