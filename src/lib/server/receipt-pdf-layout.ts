@@ -287,8 +287,7 @@ export function drawReceiptHeaderAndFrame(
   drawCenteredText(page, assets.regular, subtitle, titleAreaX, titleAreaW, subtitleTop, subtitleSize);
 
   drawTextRight(page, assets.bold, `${config.documentLabel}: ${config.documentNumber}`, metaRightX, titleTop + 3, 9);
-  drawTextRight(page, assets.bold, `Fecha: ${config.createdDate}`, metaRightX, titleTop + 14, 9);
-  drawTextRight(page, assets.bold, `Hora: ${config.createdTime}`, metaRightX, titleTop + 25, 9);
+  drawTextRight(page, assets.bold, `Hora: ${config.createdTime}`, metaRightX, titleTop + 14, 9);
 
   const dividerY = yStart + 47;
   drawHorizontalLine(page, innerX, dividerY, innerW, 1);
