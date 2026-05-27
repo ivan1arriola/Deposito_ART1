@@ -54,7 +54,6 @@ type PersonalSectionProps = {
   onPrintPersonnelByBattery: () => void;
   onOpenMassEntrega: () => void;
   onOpenRecintoEntrega: () => void;
-  onOpenAsignacion: () => void;
   onOpenCreate: () => void;
   onToggleTallas: (ci: string) => void;
   onDeletePersonal: (ci: string) => void;
@@ -280,7 +279,6 @@ export function PersonalSection({
   onPrintPersonnelByBattery,
   onOpenMassEntrega,
   onOpenRecintoEntrega,
-  onOpenAsignacion,
   onOpenCreate,
   onToggleTallas,
   onDeletePersonal,
@@ -361,17 +359,7 @@ export function PersonalSection({
               disabled={loading}
             />
           ) : null}
-          {canWrite ? (
-            <QuickActionButton
-              eyebrow="Asignación"
-              title="Registrar asignación"
-              description="Entrega definitiva a personal, recinto o destinatario externo."
-              icon={<FactCheckOutlinedIcon fontSize="small" />}
-              tone="indigo"
-              onClick={onOpenAsignacion}
-              disabled={loading}
-            />
-          ) : null}
+
           <QuickActionButton
             eyebrow="PDF"
             title="Imprimir hojas de entrega"
@@ -498,7 +486,6 @@ export function PersonalSection({
           onToggleTallas={onToggleTallas}
           onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
           onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
-          onAsignacion={(ci) => onOpenRegistro(ci, "ASIGNACION")}
           onObservacion={onOpenPersonalObservacion}
           onViewMoves={onOpenRegistroViewer}
           onOpenProfile={onOpenProfile}
@@ -527,7 +514,6 @@ export function PersonalSection({
           onToggleTallas={onToggleTallas}
           onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
           onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
-          onAsignacion={(ci) => onOpenRegistro(ci, "ASIGNACION")}
           onObservacion={onOpenPersonalObservacion}
           onViewMoves={onOpenRegistroViewer}
           onOpenProfile={onOpenProfile}
