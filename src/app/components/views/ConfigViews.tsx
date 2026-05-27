@@ -257,7 +257,7 @@ export function ConfigViews(props: ConfigViewsProps) {
   // Local state for Papelera interactive preview
   type TrashRecord = NonNullable<ConfigViewsProps["papeleraRecords"]>[0];
   const [selectedTrashRecord, setSelectedTrashRecord] = useState<TrashRecord | null>(null);
-  const [trashDetails, setTrashDetails] = useState<unknown | null>(null);
+  const [trashDetails, setTrashDetails] = useState<any | null>(null);
   const [trashDetailsLoading, setTrashDetailsLoading] = useState(false);
   const [trashModalAction, setTrashModalAction] = useState<"restore" | "delete" | null>(null);
 

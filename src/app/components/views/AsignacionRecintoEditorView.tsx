@@ -258,7 +258,7 @@ export function AsignacionRecintoEditorView({
               Tipo de Entidad
               <select
                 value={draft.entidadBeneficiariaTipo}
-                onChange={(e) => updateDraft("entidadBeneficiariaTipo", e.target.value)}
+                onChange={(e) => updateDraft("entidadBeneficiariaTipo", e.target.value as "INTERNO" | "EXTERNO")}
                 disabled={saving}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               >
