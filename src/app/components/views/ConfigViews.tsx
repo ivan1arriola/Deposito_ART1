@@ -1101,9 +1101,9 @@ export function ConfigViews(props: ConfigViewsProps) {
     });
     return (
       <section className="mt-6 grid grid-cols-1 gap-6">
-        <article className="overflow-hidden rounded-3xl border border-stone-200/50 bg-white/70 backdrop-blur-xl shadow-xl">
+        <article className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-md">
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-stone-900 to-stone-800 px-6 py-8 text-white relative overflow-hidden">
+          <div className="bg-stone-800 px-6 py-8 text-white relative overflow-hidden">
             <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSI+PC9yZWN0Pgo8cGF0aCBkPSJNMCAwTDggOFpNOCAwTDAgOFoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuNCIgc3Ryb2tlLXdpZHRoPSIxIj48L3BhdGg+Cjwvc3ZnPg==')] bg-repeat" />
             <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>

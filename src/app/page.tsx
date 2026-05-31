@@ -5996,7 +5996,6 @@ export default function Home() {
     const orderCount = options?.orderCount ?? 0;
     const orderGroupType = options?.orderGroupType ?? equipo.tipo;
     const currentOrderLabel = isReorderable && orderIndex >= 0 ? orderIndex + 1 : (equipo.ordenPdf > 10000 ? equipo.ordenPdf - 10000 : equipo.ordenPdf);
-    const tipoAssignmentLabel = equipo.tipoEquipoId == null ? "Asignar tipo" : "Reasignar tipo";
     const openEquipoEditForm = (focus: "general" | "tipo" = "general") => {
       setEditEquipoId(equipo.equipoId);
       setEditEquipo({
@@ -6018,198 +6017,199 @@ export default function Home() {
     return (
       <div
         key={equipo.equipoId}
-        className="group relative overflow-hidden rounded-2xl border border-stone-200/60 bg-gradient-to-br from-white/95 to-stone-50/90 p-4 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md hover:bg-white"
+        className="group relative flex overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition-all duration-300 hover:border-stone-300 hover:shadow-md"
       >
-        <div className="absolute top-0 left-0 h-full w-1.5 bg-gradient-to-b from-stone-300 to-stone-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        
         {editEquipoId === equipo.equipoId ? (
-          <div className="relative space-y-4 rounded-xl bg-white/80 p-4 shadow-inner ring-1 ring-stone-100 backdrop-blur-md">
-            <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-stone-500">Nombre del Equipo</label>
-              <input
-                value={editEquipo.nombre}
-                onChange={(event) => setEditEquipo((prev) => ({ ...prev, nombre: event.target.value }))}
-                className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm font-medium text-stone-800 shadow-sm transition-all focus:border-stone-400 focus:outline-none focus:ring-4 focus:ring-stone-100"
-              />
+          <div className="w-full flex-1 p-5">
+            <div className="mb-4">
+              <h3 className="text-lg font-bold text-stone-800">Editar Equipo</h3>
+              <p className="text-xs text-stone-500">Modifica los detalles directamente aquí y guarda los cambios.</p>
             </div>
-            <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-stone-500">Orden de Visualización (PDF)</label>
-              <input
-                type="number"
-                min={1}
-                step={1}
-                value={editEquipo.ordenPdf > 10000 ? editEquipo.ordenPdf - 10000 : editEquipo.ordenPdf}
-                onChange={(event) => setEditEquipo((prev) => ({ ...prev, ordenPdf: Math.max(1, Number(event.target.value) || 1) }))}
-                className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm font-medium text-stone-800 shadow-sm transition-all focus:border-stone-400 focus:outline-none focus:ring-4 focus:ring-stone-100"
-              />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-stone-500">Nombre del Equipo</label>
+                <input
+                  value={editEquipo.nombre}
+                  onChange={(event) => setEditEquipo((prev) => ({ ...prev, nombre: event.target.value }))}
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-800 shadow-sm transition-all focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-stone-500">Orden (PDF)</label>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={editEquipo.ordenPdf > 10000 ? editEquipo.ordenPdf - 10000 : editEquipo.ordenPdf}
+                  onChange={(event) => setEditEquipo((prev) => ({ ...prev, ordenPdf: Math.max(1, Number(event.target.value) || 1) }))}
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-800 shadow-sm transition-all focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                />
+              </div>
+              <div className="col-span-1 md:col-span-2 lg:col-span-1">
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-stone-500">Tipo</label>
+                <select
+                  value={editEquipo.tipo}
+                  onChange={(event) => setEditEquipo((prev) => ({ ...prev, tipo: event.target.value as TipoEquipo }))}
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-800 shadow-sm transition-all focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                >
+                  {tiposEquipoOptions.map((tipoOption) => (
+                    <option key={`edit-equipo-tipo-${tipoOption.clave}`} value={tipoOption.clave}>
+                      {tipoOption.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-1 md:col-span-2 lg:col-span-4 mt-1">
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-stone-200 bg-stone-50 p-3 hover:bg-stone-100">
+                  <input
+                    type="checkbox"
+                    checked={editEquipo.activo}
+                    onChange={(event) => setEditEquipo((prev) => ({ ...prev, activo: event.target.checked }))}
+                    className="h-4 w-4 rounded border-stone-300 text-stone-800 focus:ring-stone-500"
+                  />
+                  <span className="text-sm font-bold text-stone-700">Mostrar en Hoja de Entrega General</span>
+                </label>
+              </div>
             </div>
-            <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-stone-500">Clasificación / Tipo</label>
-              <select
-                value={editEquipo.tipo}
-                onChange={(event) => setEditEquipo((prev) => ({ ...prev, tipo: event.target.value as TipoEquipo }))}
-                className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm font-medium text-stone-800 shadow-sm transition-all focus:border-stone-400 focus:outline-none focus:ring-4 focus:ring-stone-100"
+            <div className="mt-5 flex gap-2 border-t border-stone-100 pt-4">
+              <button
+                type="button"
+                onClick={() => void updateEquipo(equipo.equipoId)}
+                className="rounded-lg bg-stone-800 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-stone-900 active:scale-95"
               >
-                {tiposEquipoOptions.map((tipoOption) => (
-                  <option key={`edit-equipo-tipo-${tipoOption.clave}`} value={tipoOption.clave}>
-                    {tipoOption.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-stone-100 bg-stone-50/50 p-3 transition-colors hover:bg-stone-50">
-              <input
-                type="checkbox"
-                checked={editEquipo.activo}
-                onChange={(event) => setEditEquipo((prev) => ({ ...prev, activo: event.target.checked }))}
-                className="h-4.5 w-4.5 rounded border-stone-300 text-stone-800 focus:ring-stone-500"
-              />
-              <span className="text-sm font-semibold text-stone-700">Mostrar en Hoja de Entrega General</span>
-            </label>
-            <div className="flex gap-2 pt-2">
-              <SmallActionButton text="Guardar Cambios" tone="ok" onClick={() => void updateEquipo(equipo.equipoId)} />
-              <SmallActionButton
-                text="Cancelar"
-                tone="neutral"
+                Guardar Cambios
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   setEditEquipoId(null);
                   setEditEquipo(EMPTY_EQUIPO_FORM);
                 }}
-              />
+                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-bold text-stone-700 shadow-sm transition-all hover:bg-stone-50 active:scale-95"
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h3 className="text-base font-bold text-stone-800 tracking-tight">{equipo.nombre}</h3>
-                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm border ${
-                  equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE
-                    ? "bg-sky-50 text-sky-700 border-sky-200/60"
-                    : "bg-amber-50 text-amber-700 border-amber-200/60"
-                }`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? "bg-sky-500" : "bg-amber-500"}`}></span>
-                  {equipo.tipoLabel ?? equipo.tipo}
-                </span>
-                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm border ${
-                  equipo.activo
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
-                    : "bg-rose-50 text-rose-700 border-rose-200/60"
-                }`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${equipo.activo ? "bg-emerald-500" : "bg-rose-500"}`}></span>
-                  {equipo.activo ? "Visible en Hoja" : "Oculto de Hoja"}
-                </span>
-              </div>
-              <div className="mt-2 flex items-center gap-3 text-xs font-medium text-stone-500">
-                <span className="flex items-center gap-1">
-                  <svg className="h-3.5 w-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-                  {isReorderable ? `Posición en lista actual: ${currentOrderLabel}` : `Posición PDF: ${equipo.ordenPdf > 10000 ? equipo.ordenPdf - 10000 : equipo.ordenPdf}`}
-                </span>
-              </div>
+          <>
+            <div className="flex w-16 shrink-0 flex-col items-center justify-center border-r border-stone-100 bg-stone-50 p-2 text-stone-500">
+              <span className="text-[10px] font-bold uppercase tracking-widest mb-1">Posición</span>
+              <span className="text-lg font-black text-stone-700">
+                {isReorderable ? currentOrderLabel : (equipo.ordenPdf > 10000 ? equipo.ordenPdf - 10000 : equipo.ordenPdf)}
+              </span>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              {canWrite ? (
-                <button
-                  type="button"
-                  onClick={() => void toggleEquipoActivo(equipo)}
-                  className={`flex h-9 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all active:scale-95 shadow-sm ${
-                    equipo.activo
-                      ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:border-rose-300"
-                      : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300"
-                  }`}
-                >
-                  {equipo.activo ? (
-                    <><svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg> Ocultar</>
-                  ) : (
-                    <><svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> Mostrar</>
-                  )}
-                </button>
-              ) : null}
-              
-              {isReorderable ? (
-                <div className="flex h-9 items-center gap-1.5 rounded-xl border border-stone-200/80 bg-stone-50/80 px-1.5 shadow-sm">
-                  <span className="flex h-6 min-w-6 items-center justify-center rounded-lg bg-stone-800 px-1.5 text-[10px] font-black text-white shadow-inner">
-                    {currentOrderLabel}
+            
+            <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-stone-800 tracking-tight mb-1">{equipo.nombre}</h3>
+                <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-stone-500">
+                  <span className="flex items-center gap-1.5 uppercase tracking-wider">
+                    <span className={`h-1.5 w-1.5 rounded-full ${equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? "bg-sky-500" : "bg-amber-500"}`}></span>
+                    {equipo.tipoLabel ?? equipo.tipo}
                   </span>
-                  <div className="flex items-center gap-0.5 border-l border-stone-200 pl-1.5">
-                    <button
-                      type="button"
-                      onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.equipoId, "up", orderGroupType) : moveEquipoInactivoInDraft(equipo.equipoId, "up", orderGroupType)}
-                      disabled={!canWrite || orderIndex <= 0}
-                      className="flex h-6 w-6 items-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
-                      title="Subir una posición"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.equipoId, "down", orderGroupType) : moveEquipoInactivoInDraft(equipo.equipoId, "down", orderGroupType)}
-                      disabled={!canWrite || orderIndex < 0 || orderIndex >= orderCount - 1}
-                      className="flex h-6 w-6 items-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
-                      title="Bajar una posición"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
-                    </button>
-                  </div>
-                  <div className="flex items-center border-l border-stone-200 pl-1.5">
-                    <select
-                      value={currentOrderLabel}
-                      onChange={(event) => reorderableInActiveList ? setEquipoDraftPosition(equipo.equipoId, Number(event.target.value), orderGroupType) : setEquipoInactivoDraftPosition(equipo.equipoId, Number(event.target.value), orderGroupType)}
-                      disabled={!canWrite}
-                      className="h-6 cursor-pointer rounded-lg border-none bg-transparent py-0 pl-1.5 pr-6 text-xs font-bold text-stone-600 outline-none hover:bg-white focus:ring-0"
-                    >
-                      {Array.from({ length: orderCount }, (_, index) => index + 1).map((position) => (
-                        <option key={`${equipo.equipoId}-position-${position}`} value={position}>
-                          Ir a {position}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <span className="text-stone-300">•</span>
+                  <span className="flex items-center gap-1.5 uppercase tracking-wider">
+                    <span className={`h-1.5 w-1.5 rounded-full ${equipo.activo ? "bg-emerald-500" : "bg-rose-500"}`}></span>
+                    {equipo.activo ? "Visible en Hoja" : "Oculto de Hoja"}
+                  </span>
                 </div>
-              ) : null}
+              </div>
 
-              {canWrite ? (
-                <div className="ml-1 border-l border-stone-200/80 pl-2.5">
-                  <ActionMenu
-                    buttonLabel="Acciones"
-                    actions={[
-                      {
-                        label: equipo.activo ? "Ocultar de hoja general" : "Mostrar en hoja general",
-                        icon: equipo.activo ? "x" : "check",
-                        tone: equipo.activo ? "danger" : "success",
-                        onClick: () => void toggleEquipoActivo(equipo),
-                      },
-                      {
-                        label: "Editar equipo",
-                        icon: "edit",
-                        tone: "primary",
-                        onClick: () => openEquipoEditForm("general"),
-                      },
-                      {
-                        label: tipoAssignmentLabel,
-                        icon: "edit",
-                        tone: "secondary",
-                        onClick: () => openEquipoEditForm("tipo"),
-                      },
-                      {
-                        label: "Unificar con otro equipo",
-                        icon: "drag",
-                        tone: "secondary",
-                        onClick: () => openMergeEquipoDialog(equipo.equipoId),
-                      },
-                      {
-                        label: "Eliminar definitivamente",
-                        icon: "trash",
-                        tone: "danger",
-                        onClick: () => void deleteEquipo(equipo.equipoId),
-                      },
-                    ]}
-                  />
-                </div>
-              ) : null}
+              <div className="flex flex-wrap items-center gap-2.5">
+                {canWrite ? (
+                  <button
+                    type="button"
+                    onClick={() => void toggleEquipoActivo(equipo)}
+                    className={`flex h-9 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all active:scale-95 shadow-sm ${
+                      equipo.activo
+                        ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:border-rose-300"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300"
+                    }`}
+                  >
+                    {equipo.activo ? (
+                      <><svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg> Ocultar</>
+                    ) : (
+                      <><svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> Mostrar</>
+                    )}
+                  </button>
+                ) : null}
+                
+                {isReorderable ? (
+                  <div className="flex h-9 items-center gap-1.5 rounded-xl border border-stone-200/80 bg-stone-50/80 px-1.5 shadow-sm">
+                    <div className="flex items-center gap-0.5 border-r border-stone-200 pr-1.5">
+                      <button
+                        type="button"
+                        onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.equipoId, "up", orderGroupType) : moveEquipoInactivoInDraft(equipo.equipoId, "up", orderGroupType)}
+                        disabled={!canWrite || orderIndex <= 0}
+                        className="flex h-6 w-6 items-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
+                        title="Subir una posición"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.equipoId, "down", orderGroupType) : moveEquipoInactivoInDraft(equipo.equipoId, "down", orderGroupType)}
+                        disabled={!canWrite || orderIndex < 0 || orderIndex >= orderCount - 1}
+                        className="flex h-6 w-6 items-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
+                        title="Bajar una posición"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                    </div>
+                    <div className="flex items-center">
+                      <select
+                        value={currentOrderLabel}
+                        onChange={(event) => reorderableInActiveList ? setEquipoDraftPosition(equipo.equipoId, Number(event.target.value), orderGroupType) : setEquipoInactivoDraftPosition(equipo.equipoId, Number(event.target.value), orderGroupType)}
+                        disabled={!canWrite}
+                        className="h-6 cursor-pointer rounded-lg border-none bg-transparent py-0 pl-1.5 pr-6 text-xs font-bold text-stone-600 outline-none hover:bg-white focus:ring-0"
+                      >
+                        {Array.from({ length: orderCount }, (_, index) => index + 1).map((position) => (
+                          <option key={`${equipo.equipoId}-position-${position}`} value={position}>
+                            Ir a {position}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ) : null}
+
+                {canWrite ? (
+                  <div className="ml-1 border-l border-stone-200/80 pl-2.5">
+                    <ActionMenu
+                      buttonLabel="Acciones"
+                      actions={[
+                        {
+                          label: equipo.activo ? "Ocultar de hoja general" : "Mostrar en hoja general",
+                          icon: equipo.activo ? "x" : "check",
+                          tone: equipo.activo ? "danger" : "success",
+                          onClick: () => void toggleEquipoActivo(equipo),
+                        },
+                        {
+                          label: "Editar equipo",
+                          icon: "edit",
+                          tone: "primary",
+                          onClick: () => openEquipoEditForm("general"),
+                        },
+                        {
+                          label: "Unificar con otro equipo",
+                          icon: "drag",
+                          tone: "secondary",
+                          onClick: () => openMergeEquipoDialog(equipo.equipoId),
+                        },
+                        {
+                          label: "Eliminar definitivamente",
+                          icon: "trash",
+                          tone: "danger",
+                          onClick: () => void deleteEquipo(equipo.equipoId),
+                        },
+                      ]}
+                    />
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     );
