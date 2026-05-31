@@ -32,10 +32,10 @@ export async function applyEquipoOrder(tx: ItemOrderTx, orderedIds: bigint[], st
 
   const valueTuples = orderedIds.map((equipoId, index) => Prisma.sql`(${equipoId}, ${startOffset + index + 1})`);
   await tx.$executeRaw`
-    UPDATE "public"."equipo" AS i
+    UPDATE "public"."equipos" AS i
     SET "orden_pdf" = v.orden_pdf::int
-    FROM (VALUES ${Prisma.join(valueTuples)}) AS v(item_id, orden_pdf)
-    WHERE i."item_id" = v.item_id::bigint
+    FROM (VALUES ${Prisma.join(valueTuples)}) AS v(equipo_id, orden_pdf)
+    WHERE i."equipo_id" = v.equipo_id::bigint
   `;
 }
 

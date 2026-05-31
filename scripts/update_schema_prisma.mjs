@@ -52,6 +52,15 @@ for (const { from, to } of mapRenames) {
   schema = schema.replace(from, to);
 }
 
+const dbFieldRenames = [
+  { from: /@map\("item_id"\)/g, to: '@map("equipo_id")' },
+  { from: /@map\("item_codigo_sie_id"\)/g, to: '@map("equipo_codigo_sie_id")' },
+];
+
+for (const { from, to } of dbFieldRenames) {
+  schema = schema.replace(from, to);
+}
+
 // Property Names and relation fields
 const propRenames = [
   { from: /itemId/g, to: "equipoId" },

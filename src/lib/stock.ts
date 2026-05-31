@@ -78,16 +78,16 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
   const [unidadRows, personalRows, asignacionRows, prestamoRows] = await Promise.all([
     prisma.$queryRaw<AggregateRow[]>`
       SELECT
-        soi.item_id AS "equipoId",
+        soi.equipo_id AS "equipoId",
         SUM(CASE WHEN so.tipo = 'INGRESO' THEN soi.cantidad ELSE -soi.cantidad END)::bigint AS total
-      FROM stock_operacion_item soi
+      FROM stock_operacion_equipo soi
       INNER JOIN stock_operacion so
         ON so.stock_operacion_id = soi.stock_operacion_id
-      GROUP BY soi.item_id
+      GROUP BY soi.equipo_id
     `,
     prisma.$queryRaw<AggregateRow[]>`
       SELECT
-        mi.item_id AS "equipoId",
+        mi.equipo_id AS "equipoId",
         SUM(
           CASE
             WHEN m.tipo = 'ENTREGA' THEN mi.cantidad
@@ -95,32 +95,32 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
             ELSE 0
           END
         )::bigint AS total
-      FROM movimiento_item mi
+      FROM movimiento_equipo mi
       INNER JOIN movimiento m
         ON m.movimiento_id = mi.movimiento_id
       INNER JOIN movimiento_destinatario_personal mdp
         ON mdp.movimiento_id = m.movimiento_id
       WHERE m.tipo IN ('ENTREGA', 'DEVOLUCION')
-      GROUP BY mi.item_id
+      GROUP BY mi.equipo_id
     `,
     prisma.$queryRaw<AggregateRow[]>`
       SELECT
-        mi.item_id AS "equipoId",
+        mi.equipo_id AS "equipoId",
         SUM(mi.cantidad)::bigint AS total
-      FROM movimiento_item mi
+      FROM movimiento_equipo mi
       INNER JOIN movimiento m
         ON m.movimiento_id = mi.movimiento_id
       WHERE m.tipo = 'ASIGNACION'
-      GROUP BY mi.item_id
+      GROUP BY mi.equipo_id
     `,
     prisma.$queryRaw<AggregateRow[]>`
       SELECT
-        mi.item_id AS "equipoId",
+        mi.equipo_id AS "equipoId",
         SUM(mi.cantidad)::bigint AS total
       FROM prestamo_activo pa
-      INNER JOIN movimiento_item mi
+      INNER JOIN movimiento_equipo mi
         ON mi.movimiento_id = pa.movimiento_id
-      GROUP BY mi.item_id
+      GROUP BY mi.equipo_id
     `,
   ]);
 

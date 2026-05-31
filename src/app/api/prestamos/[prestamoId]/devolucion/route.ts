@@ -142,15 +142,15 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         );
 
         await tx.$executeRaw`
-          UPDATE "movimiento_item" AS mi
+          UPDATE "movimiento_equipo" AS mi
           SET
             "estado_devolucion" = CAST(v."estado_devolucion" AS "public"."estado_equipo_prestamo"),
             "comentario_devolucion" = v."comentario_devolucion"
           FROM (
             VALUES ${values}
-          ) AS v("movimiento_id", "item_id", "estado_devolucion", "comentario_devolucion")
+          ) AS v("movimiento_id", "equipo_id", "estado_devolucion", "comentario_devolucion")
           WHERE mi."movimiento_id" = v."movimiento_id"
-            AND mi."item_id" = v."item_id"
+            AND mi."equipo_id" = v."equipo_id"
         `;
       }
 

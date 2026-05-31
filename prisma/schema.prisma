@@ -279,7 +279,7 @@ model TallaTipo {
 }
 
 model Equipo {
-  equipoId              BigInt               @id @default(autoincrement()) @map("item_id")
+  equipoId              BigInt               @id @default(autoincrement()) @map("equipo_id")
   nombre              String               @unique
   tipoEquipoId        Int?                 @map("tipo_equipo_id") @db.SmallInt
   activo              Boolean              @default(true)
@@ -296,10 +296,10 @@ model Equipo {
 }
 
 model EquipoCodigoSIE {
-  equipoCodigoSIEId BigInt             @id @default(autoincrement()) @map("item_codigo_sie_id")
+  equipoCodigoSIEId BigInt             @id @default(autoincrement()) @map("equipo_codigo_sie_id")
   codigo          String
   talla           String             @default("-")
-  equipoId          BigInt             @map("item_id")
+  equipoId          BigInt             @map("equipo_id")
   equipo Equipo               @relation(fields: [equipoId], references: [equipoId], onDelete: Cascade)
   cajas           CajaEquipoCodigoSIE[]
 
@@ -323,7 +323,7 @@ model Caja {
 
 model CajaEquipo {
   codigoDepositoGeneral Int    @map("codigo_deposito_general")
-  equipoId                BigInt @map("item_id")
+  equipoId                BigInt @map("equipo_id")
   cantidad              Int    @default(1)
   caja                  Caja   @relation(fields: [codigoDepositoGeneral], references: [codigoDepositoGeneral], onDelete: Cascade)
   equipo Equipo   @relation(fields: [equipoId], references: [equipoId], onDelete: Restrict)
@@ -335,7 +335,7 @@ model CajaEquipo {
 
 model CajaEquipoCodigoSIE {
   codigoDepositoGeneral Int           @map("codigo_deposito_general")
-  equipoCodigoSIEId       BigInt        @map("item_codigo_sie_id")
+  equipoCodigoSIEId       BigInt        @map("equipo_codigo_sie_id")
   caja                  Caja          @relation(fields: [codigoDepositoGeneral], references: [codigoDepositoGeneral], onDelete: Cascade)
   equipoCodigoSIE         EquipoCodigoSIE @relation(fields: [equipoCodigoSIEId], references: [equipoCodigoSIEId], onDelete: Cascade)
 
@@ -468,7 +468,7 @@ model MovimientoDestinatarioRecinto {
 
 model MovimientoEquipo {
   movimientoId         BigInt               @map("movimiento_id")
-  equipoId               BigInt               @map("item_id")
+  equipoId               BigInt               @map("equipo_id")
   cantidad             Int
   estadoEntrega        EstadoEquipoPrestamo @default(BUENO) @map("estado_entrega")
   comentarioEntrega    String?              @map("comentario_entrega")
@@ -551,7 +551,7 @@ model StockOperacion {
 
 model StockOperacionEquipo {
   stockOperacionId BigInt         @map("stock_operacion_id")
-  equipoId           BigInt         @map("item_id")
+  equipoId           BigInt         @map("equipo_id")
   cantidad         Int
   stockOperacion   StockOperacion @relation(fields: [stockOperacionId], references: [stockOperacionId], onDelete: Cascade)
   equipo Equipo           @relation(fields: [equipoId], references: [equipoId])
