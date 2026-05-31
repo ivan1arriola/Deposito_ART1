@@ -292,7 +292,7 @@ model Item {
   tipoEquipo          TipoEquipoCatalogo?  @relation(fields: [tipoEquipoId], references: [tipoEquipoId], onDelete: SetNull)
 
   @@index([tipoEquipoId])
-  @@map("item")
+  @@map("equipos")
 }
 
 model ItemCodigoSIE {

@@ -121,7 +121,7 @@ CREATE TABLE "talla_tipo" (
 INSERT INTO "talla_tipo" ("nombre") VALUES
 ('PARKA'), ('CAMISACO'), ('PANTALON'), ('KEPI'), ('CALZADO');
 
-CREATE TABLE "item" (
+CREATE TABLE "equipos" (
   "item_id" BIGSERIAL PRIMARY KEY,
   "nombre" TEXT NOT NULL UNIQUE,
   "tipo_equipo_id" SMALLINT REFERENCES "tipo_equipo"("tipo_equipo_id") ON DELETE SET NULL,
@@ -172,7 +172,7 @@ CREATE TABLE "item_codigo_sie" (
   "item_codigo_sie_id" BIGSERIAL PRIMARY KEY,
   "codigo" TEXT NOT NULL,
   "talla" TEXT NOT NULL DEFAULT '-',
-  "item_id" BIGINT NOT NULL REFERENCES "item"("item_id") ON DELETE CASCADE,
+  "item_id" BIGINT NOT NULL REFERENCES "equipos"("item_id") ON DELETE CASCADE,
   CONSTRAINT "item_codigo_sie_codigo_formato_chk" CHECK ("codigo" ~ '^([0-9]{8}|[A-Z]{3}[0-9]{2})$'),
   CONSTRAINT "item_codigo_sie_codigo_talla_item_uq" UNIQUE ("codigo", "talla", "item_id")
 );
@@ -207,7 +207,7 @@ CREATE TABLE "caja_item" (
     ON DELETE CASCADE,
   CONSTRAINT "caja_item_item_fk"
     FOREIGN KEY ("item_id")
-    REFERENCES "item"("item_id")
+    REFERENCES "equipos"("item_id")
     ON DELETE RESTRICT
 );
 
@@ -427,7 +427,7 @@ CREATE INDEX "stock_operacion_fecha_idx" ON "stock_operacion"("fecha" DESC);
 
 CREATE TABLE "stock_operacion_item" (
   "stock_operacion_id" BIGINT NOT NULL REFERENCES "stock_operacion"("stock_operacion_id") ON DELETE CASCADE,
-  "item_id" BIGINT NOT NULL REFERENCES "item"("item_id"),
+  "item_id" BIGINT NOT NULL REFERENCES "equipos"("item_id"),
   "cantidad" INTEGER NOT NULL CHECK ("cantidad" > 0),
   PRIMARY KEY ("stock_operacion_id", "item_id")
 );
@@ -596,7 +596,7 @@ CREATE INDEX "movimiento_destinatario_recinto_nombre_idx"
 
 CREATE TABLE "movimiento_item" (
   "movimiento_id" BIGINT NOT NULL REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
-  "item_id" BIGINT NOT NULL REFERENCES "item"("item_id") ON DELETE CASCADE,
+  "item_id" BIGINT NOT NULL REFERENCES "equipos"("item_id") ON DELETE CASCADE,
   "cantidad" INTEGER NOT NULL CHECK ("cantidad" > 0),
   "estado_entrega" "estado_equipo_prestamo" NOT NULL DEFAULT 'NUEVO',
   "comentario_entrega" TEXT,
