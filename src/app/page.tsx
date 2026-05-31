@@ -6175,9 +6175,11 @@ export default function Home() {
                 ) : null}
 
                 {canWrite ? (
-                  <div className="ml-1 border-l border-stone-200/80 pl-2.5">
-                    <ActionMenu
-                      buttonLabel="Acciones"
+                  <>
+                    {isReorderable ? <div className="hidden h-6 w-px bg-stone-200/80 sm:block" /> : null}
+                    <div>
+                      <ActionMenu
+                        buttonLabel="Acciones"
                       actions={[
                         {
                           label: equipo.activo ? "Ocultar de hoja general" : "Mostrar en hoja general",
@@ -6206,6 +6208,7 @@ export default function Home() {
                       ]}
                     />
                   </div>
+                  </>
                 ) : null}
               </div>
             </div>
