@@ -2103,83 +2103,83 @@ export function ConfigViews(props: ConfigViewsProps) {
                         <span className="font-extrabold text-stone-950">1 registro (Activo: {trashDetails.item?.activo ? "Sí" : "No"})</span>
                       </div>
 
-                      {trashDetails.cajaItems?.length > 0 && (
+                      {(trashDetails.cajaItems?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
                             <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Ubicaciones en Cajas del Depósito:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.cajaItems.length} registros</span>
+                          <span className="font-bold text-stone-900">{trashDetails.cajaItems?.length ?? 0} registros</span>
                         </div>
                       )}
 
-                      {trashDetails.itemCodigosSIE?.length > 0 && (
+                      {(trashDetails.itemCodigosSIE?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
                             <SearchOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Códigos de Barra de Inventario (SIE):
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.itemCodigosSIE.length} códigos</span>
+                          <span className="font-bold text-stone-900">{trashDetails.itemCodigosSIE?.length ?? 0} códigos</span>
                         </div>
                       )}
 
-                      {trashDetails.cajaItemCodigosSIE?.length > 0 && (
+                      {(trashDetails.cajaItemCodigosSIE?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
                             <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Asociaciones de Códigos a Cajas:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.cajaItemCodigosSIE.length} registros</span>
+                          <span className="font-bold text-stone-900">{trashDetails.cajaItemCodigosSIE?.length ?? 0} registros</span>
                         </div>
                       )}
 
-                      {trashDetails.movimientoItems?.length > 0 && (
+                      {(trashDetails.movimientoItems?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
                             <InfoOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Historial de Movimientos de Equipos:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.movimientoItems.length} movimientos</span>
+                          <span className="font-bold text-stone-900">{trashDetails.movimientoItems?.length ?? 0} movimientos</span>
                         </div>
                       )}
 
-                      {trashDetails.deletedMovimientos?.length > 0 && (
+                      {(trashDetails.deletedMovimientos?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
                             <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Recibos de Entrega / Préstamos completos:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.deletedMovimientos.length} planillas</span>
+                          <span className="font-bold text-stone-900">{trashDetails.deletedMovimientos?.length ?? 0} planillas</span>
                         </div>
                       )}
 
-                      {trashDetails.deletedPrestamosActivos?.length > 0 && (
+                      {(trashDetails.deletedPrestamosActivos?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2 bg-amber-50/50 p-1.5 rounded-lg border border-amber-100">
                           <span className="text-amber-900 font-bold flex items-center gap-1.5">
                             <WarningAmberOutlinedIcon className="h-4 w-4 text-amber-600" />
                             Préstamos Vigentes (Pendientes de Devolución):
                           </span>
-                          <span className="font-black text-amber-800">{trashDetails.deletedPrestamosActivos.length} activos</span>
+                          <span className="font-black text-amber-800">{trashDetails.deletedPrestamosActivos?.length ?? 0} activos</span>
                         </div>
                       )}
 
-                      {trashDetails.deletedPrestamosHistoriales?.length > 0 && (
+                      {(trashDetails.deletedPrestamosHistoriales?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
                             <CheckCircleOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Historial de Préstamos Finalizados:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.deletedPrestamosHistoriales.length} devueltos</span>
+                          <span className="font-bold text-stone-900">{trashDetails.deletedPrestamosHistoriales?.length ?? 0} devueltos</span>
                         </div>
                       )}
 
-                      {trashDetails.stockOperacionItems?.length > 0 && (
+                      {(trashDetails.stockOperacionItems?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-stone-600 flex items-center gap-1.5">
                             <CheckCircleOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Operaciones de Ajuste de Stock Relacionadas:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.stockOperacionItems.length} registros</span>
+                          <span className="font-bold text-stone-900">{trashDetails.stockOperacionItems?.length ?? 0} registros</span>
                         </div>
                       )}
                     </>
@@ -2193,23 +2193,23 @@ export function ConfigViews(props: ConfigViewsProps) {
                         <span className="font-extrabold text-stone-950">1 registro (Tipo: {trashDetails.articulo?.tipo})</span>
                       </div>
 
-                      {trashDetails.stockMovimientos?.length > 0 && (
+                      {(trashDetails.stockMovimientos?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
                             <InfoOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Movimientos de Stock (Ingresos / Entregas):
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.stockMovimientos.length} transacciones</span>
+                          <span className="font-bold text-stone-900">{trashDetails.stockMovimientos?.length ?? 0} transacciones</span>
                         </div>
                       )}
 
-                      {trashDetails.emptyEntregas?.length > 0 && (
+                      {(trashDetails.emptyEntregas?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-stone-600 flex items-center gap-1.5">
                             <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Planillas de Entregas a Personal Completas:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.emptyEntregas.length} planillas</span>
+                          <span className="font-bold text-stone-900">{trashDetails.emptyEntregas?.length ?? 0} planillas</span>
                         </div>
                       )}
                     </>
