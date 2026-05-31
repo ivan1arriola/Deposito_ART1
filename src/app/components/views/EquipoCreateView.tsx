@@ -19,7 +19,7 @@ export function EquipoCreateView({ form, tiposEquipo, saving, onBack, onSubmit, 
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
               <h2 className="text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Registrar equipo</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
@@ -64,7 +64,7 @@ export function EquipoCreateView({ form, tiposEquipo, saving, onBack, onSubmit, 
               </select>
             </label>
 
-            <label className="mt-4 flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5">
+            <label className="mt-4 flex equipos-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5">
               <input
                 type="checkbox"
                 checked={form.activo}
@@ -83,7 +83,7 @@ export function EquipoCreateView({ form, tiposEquipo, saving, onBack, onSubmit, 
             <button
               type="submit"
               disabled={saving || form.nombre.trim() === ""}
-              className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
+              className="mt-5 inline-flex w-full equipos-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
             >
               {saving ? (
                 <LoadingInline

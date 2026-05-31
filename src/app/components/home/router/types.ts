@@ -43,7 +43,7 @@ export type CreationViewsProps = {
   editNewPersonalMovimiento: (index: number) => void;
   removeNewPersonalMovimiento: (index: number) => void;
   updateNewPersonalMovimientoDraft: (field: "tipo" | "fecha" | "comentarios", value: string) => void;
-  updateNewPersonalMovimientoDraftItem: (itemIndex: number, field: "itemId" | "cantidad", value: string) => void;
+  updateNewPersonalMovimientoDraftItem: (itemIndex: number, field: "equipoId" | "cantidad", value: string) => void;
   addNewPersonalMovimientoDraftItem: () => void;
   removeNewPersonalMovimientoDraftItem: (itemIndex: number) => void;
   editingOficialSuboficialCi: string | null;
@@ -230,7 +230,7 @@ export type StockPrestamoViewsProps = {
   stockSaving: boolean;
   maxFechaIngreso: string;
   setStockDraft: (updater: (prev: StockOperacionDraft) => StockOperacionDraft) => void;
-  updateStockDraftItem: (index: number, field: "itemId" | "cantidad", value: string) => void;
+  updateStockDraftItem: (index: number, field: "equipoId" | "cantidad", value: string) => void;
   addStockDraftItem: () => void;
   removeStockDraftItem: (index: number) => void;
   saveStockOperation: () => Promise<void>;
@@ -247,7 +247,7 @@ export type StockPrestamoViewsProps = {
   returnPrestamo: (
     prestamoId: string,
     fechaDevolucion: string,
-    items?: Array<{ itemId: string; estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion?: string }>,
+    equipos?: Array<{ equipoId: string; estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion?: string }>,
   ) => Promise<void>;
   reloadActiveStockData: () => Promise<void>;
   editingPrestamoId: string | null;
@@ -267,13 +267,13 @@ export type EtiquetadoSectionProps = {
   createEtiquetadoItem: (input: { nombre: string }) => Promise<void>;
   createEtiquetadoEstanteria: (nombreEstanteria: string, piso: number) => Promise<void>;
   deleteEtiquetadoEstanteria: (codigo: string, piso: number) => Promise<void>;
-  createEtiquetadoCodigoSIE: (input: { codigo: string; talla: string; itemId: string; allowDuplicateCodigo?: boolean }) => Promise<void>;
-  updateEtiquetadoCodigoSIE: (input: { originalCodigoSIEId: string; originalCodigo: string; codigo: string; talla: string; itemId: string }) => Promise<void>;
+  createEtiquetadoCodigoSIE: (input: { codigo: string; talla: string; equipoId: string; allowDuplicateCodigo?: boolean }) => Promise<void>;
+  updateEtiquetadoCodigoSIE: (input: { originalCodigoSIEId: string; originalCodigo: string; codigo: string; talla: string; equipoId: string }) => Promise<void>;
   deleteEtiquetadoCodigoSIE: (codigoSIEId: string, codigo: string) => Promise<void>;
   createEtiquetadoCaja: (input: {
     estanteria: string;
     piso: number;
-    items: Array<{ itemId: string; cantidad: number }>;
+    equipos: Array<{ equipoId: string; cantidad: number }>;
     codigosSIEIds: string[];
   }) => Promise<void>;
   deleteEtiquetadoCaja: (codigoDepositoGeneral: number) => Promise<void>;

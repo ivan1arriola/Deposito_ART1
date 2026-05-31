@@ -61,7 +61,7 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
   const rowSearchIndex = useMemo(
     () =>
       buildSearchIndex(rows, {
-        text: (row) => [row.fecha, row.tipo, row.ci, row.gradoAbreviacion, row.persona, row.item, row.observaciones || ""].join(" "),
+        text: (row) => [row.fecha, row.tipo, row.ci, row.gradoAbreviacion, row.persona, row.equipo, row.observaciones || ""].join(" "),
       }),
     [rows],
   );
@@ -75,7 +75,7 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap equipos-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">Movimientos fuera de hoja de entrega</h2>
             <p className="mt-1 text-xs text-stone-600">
@@ -137,7 +137,7 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
           </div>
         </div>
 
-        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:equipos-center">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -147,7 +147,7 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
           <p className="text-xs font-semibold text-stone-600">Mostrando {sortedRows.length} de {rows.length}</p>
         </div>
 
-        <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,220px)_minmax(0,220px)_1fr] md:items-center">
+        <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,220px)_minmax(0,220px)_1fr] md:equipos-center">
           <label className="text-xs text-stone-700">
             Ordenar por
             <select
@@ -207,13 +207,13 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
               </thead>
               <tbody>
                 {sortedRows.map((row, index) => (
-                  <tr key={`${row.movimientoId}-${row.item}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
+                  <tr key={`${row.movimientoId}-${row.equipo}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.fecha}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.tipo}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.ci}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.gradoAbreviacion}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.persona}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.item}</td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.equipo}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.cantidad}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-700">{row.observaciones || "-"}</td>
                   </tr>

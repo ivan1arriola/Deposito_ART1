@@ -35,8 +35,8 @@ type EditPrestamoPayload = {
   fechaDevolucion?: string;
   comentarios?: string;
   motivo?: string;
-  items?: Array<{
-    itemId: string | number;
+  equipos?: Array<{
+    equipoId: string | number;
     cantidad?: number | string;
     estadoEntrega?: string;
     comentarioEntrega?: string;
@@ -55,8 +55,8 @@ type PrestamoAuditSnapshot = {
   comentarios: string | null;
   totalEquipos: number;
   totalUnidades: number;
-  items: Array<{
-    itemId: string;
+  equipos: Array<{
+    equipoId: string;
     nombre: string;
     cantidad: number;
     estadoEntrega: EstadoEquipoPrestamo;
@@ -170,16 +170,16 @@ function buildPrestamoAuditSnapshot(prestamo: PrestamoWithRelations): PrestamoAu
       prestamo.prestamoActivo?.fechaEstimadaDevolucionTexto ??
       null,
     comentarios: prestamo.observaciones ?? null,
-    totalEquipos: prestamo.items.length,
+    totalEquipos: prestamo.equipos.length,
     totalUnidades: totalUnidadesPrestamo(prestamo),
-    items: prestamo.items.map((item) => ({
-      itemId: item.item.itemId.toString(),
-      nombre: item.item.nombre,
-      cantidad: item.cantidad,
-      estadoEntrega: item.estadoEntrega,
-      comentarioEntrega: item.comentarioEntrega,
-      estadoDevolucion: item.estadoDevolucion,
-      comentarioDevolucion: item.comentarioDevolucion,
+    equipos: prestamo.equipos.map((equipo) => ({
+      equipoId: equipo.equipo.equipoId.toString(),
+      nombre: equipo.equipo.nombre,
+      cantidad: equipo.cantidad,
+      estadoEntrega: equipo.estadoEntrega,
+      comentarioEntrega: equipo.comentarioEntrega,
+      estadoDevolucion: equipo.estadoDevolucion,
+      comentarioDevolucion: equipo.comentarioDevolucion,
     })),
   };
 }
@@ -210,37 +210,37 @@ function buildGeneralChanges(before: PrestamoAuditSnapshot, after: PrestamoAudit
 }
 
 function buildItemChanges(before: PrestamoAuditSnapshot, after: PrestamoAuditSnapshot) {
-  const beforeByItemId = new Map(before.items.map((item) => [item.itemId, item]));
+  const beforeByItemId = new Map(before.equipos.map((equipo) => [equipo.equipoId, equipo]));
 
-  return after.items
-    .map((item) => {
-      const previous = beforeByItemId.get(item.itemId);
+  return after.equipos
+    .map((equipo) => {
+      const previous = beforeByItemId.get(equipo.equipoId);
       if (!previous) return null;
 
       const changes: Record<string, { antes: unknown; despues: unknown }> = {};
-      if (previous.cantidad !== item.cantidad) {
-        changes.cantidad = { antes: previous.cantidad, despues: item.cantidad };
+      if (previous.cantidad !== equipo.cantidad) {
+        changes.cantidad = { antes: previous.cantidad, despues: equipo.cantidad };
       }
-      if (previous.estadoEntrega !== item.estadoEntrega) {
-        changes.estadoEntrega = { antes: previous.estadoEntrega, despues: item.estadoEntrega };
+      if (previous.estadoEntrega !== equipo.estadoEntrega) {
+        changes.estadoEntrega = { antes: previous.estadoEntrega, despues: equipo.estadoEntrega };
       }
-      if (previous.comentarioEntrega !== item.comentarioEntrega) {
-        changes.comentarioEntrega = { antes: previous.comentarioEntrega, despues: item.comentarioEntrega };
+      if (previous.comentarioEntrega !== equipo.comentarioEntrega) {
+        changes.comentarioEntrega = { antes: previous.comentarioEntrega, despues: equipo.comentarioEntrega };
       }
-      if (previous.estadoDevolucion !== item.estadoDevolucion) {
-        changes.estadoDevolucion = { antes: previous.estadoDevolucion, despues: item.estadoDevolucion };
+      if (previous.estadoDevolucion !== equipo.estadoDevolucion) {
+        changes.estadoDevolucion = { antes: previous.estadoDevolucion, despues: equipo.estadoDevolucion };
       }
-      if (previous.comentarioDevolucion !== item.comentarioDevolucion) {
+      if (previous.comentarioDevolucion !== equipo.comentarioDevolucion) {
         changes.comentarioDevolucion = {
           antes: previous.comentarioDevolucion,
-          despues: item.comentarioDevolucion,
+          despues: equipo.comentarioDevolucion,
         };
       }
 
       if (Object.keys(changes).length === 0) return null;
       return {
-        itemId: item.itemId,
-        nombre: item.nombre,
+        equipoId: equipo.equipoId,
+        nombre: equipo.nombre,
         changes,
       };
     })
@@ -248,7 +248,7 @@ function buildItemChanges(before: PrestamoAuditSnapshot, after: PrestamoAuditSna
       (
         entry,
       ): entry is {
-        itemId: string;
+        equipoId: string;
         nombre: string;
         changes: Record<string, { antes: unknown; despues: unknown }>;
       } => entry !== null,
@@ -429,16 +429,16 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     }
   }
 
-  const existingItemsById = new Map(existing.items.map((item) => [item.item.itemId.toString(), item]));
-  const itemUpdates = Array.isArray(body.items)
-    ? body.items
-    : existing.items.map((item) => ({
-        itemId: item.item.itemId.toString(),
-        cantidad: item.cantidad,
-        estadoEntrega: item.estadoEntrega,
-        comentarioEntrega: item.comentarioEntrega ?? "",
-        estadoDevolucion: item.estadoDevolucion ?? item.estadoEntrega,
-        comentarioDevolucion: item.comentarioDevolucion ?? "",
+  const existingItemsById = new Map(existing.equipos.map((equipo) => [equipo.equipo.equipoId.toString(), equipo]));
+  const itemUpdates = Array.isArray(body.equipos)
+    ? body.equipos
+    : existing.equipos.map((equipo) => ({
+        equipoId: equipo.equipo.equipoId.toString(),
+        cantidad: equipo.cantidad,
+        estadoEntrega: equipo.estadoEntrega,
+        comentarioEntrega: equipo.comentarioEntrega ?? "",
+        estadoDevolucion: equipo.estadoDevolucion ?? equipo.estadoEntrega,
+        comentarioDevolucion: equipo.comentarioDevolucion ?? "",
       }));
 
   if (itemUpdates.length === 0) {
@@ -446,7 +446,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   }
 
   const parsedItemUpdates: Array<{
-    itemId: bigint;
+    equipoId: bigint;
     cantidad: number;
     estadoEntrega: EstadoEquipoPrestamo;
     comentarioEntrega: string | null;
@@ -455,13 +455,13 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   }> = [];
 
   const seenItemIds = new Set<string>();
-  for (const item of itemUpdates) {
-    const itemId = parseBigIntId(item.itemId);
-    if (!itemId) {
-      return NextResponse.json({ error: "items: itemId inválido." }, { status: 400 });
+  for (const equipo of itemUpdates) {
+    const equipoId = parseBigIntId(equipo.equipoId);
+    if (!equipoId) {
+      return NextResponse.json({ error: "equipos: equipoId inválido." }, { status: 400 });
     }
 
-    const itemIdKey = itemId.toString();
+    const itemIdKey = equipoId.toString();
     if (seenItemIds.has(itemIdKey)) {
       return NextResponse.json({ error: "No puedes repetir equipos en la edición del préstamo." }, { status: 400 });
     }
@@ -472,27 +472,27 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       return NextResponse.json({ error: "Solo puedes editar equipos ya incluidos en el préstamo." }, { status: 400 });
     }
 
-    const cantidad = parseCantidad(item.cantidad ?? existingItem.cantidad);
+    const cantidad = parseCantidad(equipo.cantidad ?? existingItem.cantidad);
     if (cantidad === null) {
-      return NextResponse.json({ error: "items: cantidad inválida." }, { status: 400 });
+      return NextResponse.json({ error: "equipos: cantidad inválida." }, { status: 400 });
     }
 
     const parsedEstadoEntrega =
-      item.estadoEntrega === undefined
+      equipo.estadoEntrega === undefined
         ? existingItem.estadoEntrega
-        : parseEstadoEquipoPrestamo(item.estadoEntrega);
+        : parseEstadoEquipoPrestamo(equipo.estadoEntrega);
     if (!parsedEstadoEntrega) {
-      return NextResponse.json({ error: "items: estadoEntrega inválido." }, { status: 400 });
+      return NextResponse.json({ error: "equipos: estadoEntrega inválido." }, { status: 400 });
     }
 
     const comentarioEntrega =
-      item.comentarioEntrega === undefined
+      equipo.comentarioEntrega === undefined
         ? existingItem.comentarioEntrega
-        : String(item.comentarioEntrega ?? "").trim() || null;
+        : String(equipo.comentarioEntrega ?? "").trim() || null;
 
     if (!existing.prestamoHistorial) {
       parsedItemUpdates.push({
-        itemId,
+        equipoId,
         cantidad,
         estadoEntrega: parsedEstadoEntrega,
         comentarioEntrega,
@@ -503,20 +503,20 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     }
 
     const parsedEstadoDevolucion =
-      item.estadoDevolucion === undefined
+      equipo.estadoDevolucion === undefined
         ? existingItem.estadoDevolucion ?? existingItem.estadoEntrega
-        : parseEstadoEquipoPrestamo(item.estadoDevolucion);
+        : parseEstadoEquipoPrestamo(equipo.estadoDevolucion);
     if (!parsedEstadoDevolucion) {
-      return NextResponse.json({ error: "items: estadoDevolucion inválido." }, { status: 400 });
+      return NextResponse.json({ error: "equipos: estadoDevolucion inválido." }, { status: 400 });
     }
 
     const comentarioDevolucion =
-      item.comentarioDevolucion === undefined
+      equipo.comentarioDevolucion === undefined
         ? existingItem.comentarioDevolucion
-        : String(item.comentarioDevolucion ?? "").trim() || null;
+        : String(equipo.comentarioDevolucion ?? "").trim() || null;
 
     parsedItemUpdates.push({
-      itemId,
+      equipoId,
       cantidad,
       estadoEntrega: parsedEstadoEntrega,
       comentarioEntrega,
@@ -525,7 +525,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     });
   }
 
-  if (parsedItemUpdates.length !== existing.items.length) {
+  if (parsedItemUpdates.length !== existing.equipos.length) {
     return NextResponse.json(
       { error: "Debes incluir todos los equipos del préstamo para poder editarlo." },
       { status: 400 },
@@ -632,20 +632,20 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         });
       }
 
-      for (const item of parsedItemUpdates) {
-        await tx.movimientoItem.update({
+      for (const equipo of parsedItemUpdates) {
+        await tx.movimientoEquipo.update({
           where: {
-            movimientoId_itemId: {
+            movimientoId_equipoId: {
               movimientoId: prestamoId,
-              itemId: item.itemId,
+              equipoId: equipo.equipoId,
             },
           },
           data: {
-            cantidad: item.cantidad,
-            estadoEntrega: item.estadoEntrega,
-            comentarioEntrega: item.comentarioEntrega,
-            estadoDevolucion: item.estadoDevolucion,
-            comentarioDevolucion: item.comentarioDevolucion,
+            cantidad: equipo.cantidad,
+            estadoEntrega: equipo.estadoEntrega,
+            comentarioEntrega: equipo.comentarioEntrega,
+            estadoDevolucion: equipo.estadoDevolucion,
+            comentarioDevolucion: equipo.comentarioDevolucion,
           },
         });
       }
@@ -675,7 +675,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         },
         cambios: {
           generales: generalChanges,
-          items: itemChanges,
+          equipos: itemChanges,
         },
         antes: beforeSnapshot,
         despues: afterSnapshot,
@@ -764,7 +764,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
         },
         fechaPrestamo: formatDateOnlyFromDate(existing.fecha),
         fechaDevolucion: existing.prestamoHistorial ? formatDateOnlyFromDate(existing.prestamoHistorial.fechaDevolucion) : null,
-        totalEquipos: existing.items.length,
+        totalEquipos: existing.equipos.length,
         totalUnidades: totalUnidadesPrestamo(existing),
       },
     });

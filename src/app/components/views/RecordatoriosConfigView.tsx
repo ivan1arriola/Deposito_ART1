@@ -131,7 +131,7 @@ export function RecordatoriosConfigView({
   return (
     <section className="mt-6 flex flex-col gap-6 font-sans">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:equipos-center sm:justify-between">
         <div>
           <h2 className="text-xl font-black tracking-tight text-white drop-shadow-sm">Recordatorios</h2>
           <p className="mt-1 text-sm font-medium text-stone-200/90">
@@ -141,7 +141,7 @@ export function RecordatoriosConfigView({
         <button
           type="button"
           onClick={() => void onReload()}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/20 hover:shadow"
+          className="inline-flex equipos-center justify-center gap-2 rounded-xl border border-stone-200/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/20 hover:shadow"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -184,14 +184,14 @@ export function RecordatoriosConfigView({
       </div>
 
       {/* Widget Settings */}
-      <section className="ej-surface flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between bg-white/50 backdrop-blur-md">
+      <section className="ej-surface flex flex-col gap-4 p-5 sm:flex-row sm:equipos-center sm:justify-between bg-white/50 backdrop-blur-md">
         <div className="flex flex-col gap-1">
           <h3 className="text-sm font-bold uppercase tracking-wider text-stone-800">Widget Flotante</h3>
           <p className="text-xs font-medium text-stone-500">Configura el asistente visual en pantalla</p>
         </div>
         
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-          <label className="flex items-center gap-3 cursor-pointer">
+        <div className="flex flex-col gap-4 sm:flex-row sm:equipos-center sm:gap-6">
+          <label className="flex equipos-center gap-3 cursor-pointer">
             <span className="text-sm font-bold text-stone-700">Mostrar muñeco</span>
             <div className="relative">
               <input
@@ -207,7 +207,7 @@ export function RecordatoriosConfigView({
           
           <div className="hidden h-8 w-px bg-stone-200 sm:block"></div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex equipos-center gap-3">
             <span className="text-sm font-bold text-stone-700">Modelo</span>
             <button
               type="button"
@@ -226,10 +226,10 @@ export function RecordatoriosConfigView({
           type="button"
           onClick={() => setShowCreateForm((current) => !current)}
           aria-expanded={showCreateForm}
-          className="flex w-full items-center justify-between bg-stone-100/50 p-4 transition-colors hover:bg-stone-100/80"
+          className="flex w-full equipos-center justify-between bg-stone-100/50 p-4 transition-colors hover:bg-stone-100/80"
         >
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-ejercito-blue)] text-white shadow-sm">
+          <div className="flex equipos-center gap-3">
+            <div className="flex h-8 w-8 equipos-center justify-center rounded-lg bg-[var(--color-ejercito-blue)] text-white shadow-sm">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
@@ -321,10 +321,10 @@ export function RecordatoriosConfigView({
                 type="button"
                 onClick={() => void submitCreate()}
                 disabled={saving || newTitulo.trim().length < 2 || (isAdmin && selectedNewUsuarioId.trim() === "")}
-                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-ejercito-blue)] px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-800 disabled:opacity-50 disabled:shadow-none"
+                className="inline-flex equipos-center gap-2 rounded-xl bg-[var(--color-ejercito-blue)] px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-800 disabled:opacity-50 disabled:shadow-none"
               >
                 {saving ? (
-                  <span className="flex items-center gap-2">
+                  <span className="flex equipos-center gap-2">
                     <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
                       <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
@@ -348,11 +348,11 @@ export function RecordatoriosConfigView({
       {/* Task List */}
       <section className="flex flex-col gap-3">
         {loading ? (
-          <div className="ej-surface flex items-center justify-center p-8">
+          <div className="ej-surface flex equipos-center justify-center p-8">
             <p className="animate-pulse text-sm font-bold uppercase tracking-widest text-stone-400">Cargando tareas...</p>
           </div>
         ) : tasks.length === 0 ? (
-          <div className="ej-surface flex flex-col items-center justify-center p-10 text-center border-dashed border-2">
+          <div className="ej-surface flex flex-col equipos-center justify-center p-10 text-center border-dashed border-2">
             <div className="mb-3 rounded-full bg-stone-100 p-4">
               <svg className="h-8 w-8 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
@@ -429,11 +429,11 @@ export function RecordatoriosConfigView({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col sm:flex-row sm:items-start gap-4 p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row sm:equipos-start gap-4 p-4 sm:p-5">
                     {/* Botón de completar visualmente prioritario en móviles */}
-                    <div className="flex sm:flex-col sm:items-center justify-between sm:justify-start gap-3 border-b sm:border-b-0 border-stone-100 pb-3 sm:pb-0 sm:pr-4 sm:border-r">
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <div className="relative flex items-center justify-center">
+                    <div className="flex sm:flex-col sm:equipos-center justify-between sm:justify-start gap-3 border-b sm:border-b-0 border-stone-100 pb-3 sm:pb-0 sm:pr-4 sm:border-r">
+                      <label className="flex equipos-center gap-3 cursor-pointer group">
+                        <div className="relative flex equipos-center justify-center">
                           <input
                             type="checkbox"
                             className="peer sr-only"
@@ -450,7 +450,7 @@ export function RecordatoriosConfigView({
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap equipos-center gap-2">
                         <h4 className={`text-base font-black truncate ${task.completada ? 'text-stone-500 line-through' : isUrgent ? 'text-rose-800' : 'text-stone-800'}`}>
                           {task.titulo}
                         </h4>
@@ -461,9 +461,9 @@ export function RecordatoriosConfigView({
                         )}
                       </div>
                       
-                      <div className="mt-1 flex items-center gap-3">
+                      <div className="mt-1 flex equipos-center gap-3">
                         {task.fechaLimite ? (
-                          <div className={`flex items-center gap-1 text-xs font-bold ${isUrgent ? 'text-rose-600' : 'text-stone-500'}`}>
+                          <div className={`flex equipos-center gap-1 text-xs font-bold ${isUrgent ? 'text-rose-600' : 'text-stone-500'}`}>
                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
@@ -487,7 +487,7 @@ export function RecordatoriosConfigView({
                       <button
                         type="button"
                         onClick={() => beginEdit(task)}
-                        className="flex items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-600 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-900"
+                        className="flex equipos-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-600 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-900"
                       >
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -497,7 +497,7 @@ export function RecordatoriosConfigView({
                       <button
                         type="button"
                         onClick={() => void onDeleteTask(task.tareaId)}
-                        className="flex items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 shadow-sm transition-colors hover:bg-rose-100 hover:text-rose-800"
+                        className="flex equipos-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 shadow-sm transition-colors hover:bg-rose-100 hover:text-rose-800"
                       >
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

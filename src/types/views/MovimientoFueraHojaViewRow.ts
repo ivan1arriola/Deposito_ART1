@@ -6,7 +6,7 @@ export type MovimientoFueraHojaViewRow = {
   persona: string;
   gradoAbreviacion: string;
   gradoOrden: number | null;
-  item: string;
+  equipo: string;
   cantidad: number;
   observaciones: string | null;
 };

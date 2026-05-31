@@ -140,7 +140,7 @@ export function DashboardPrincipalView({
     <section className="mt-6 grid grid-cols-1 gap-4">
       <article className="ej-card overflow-hidden rounded-3xl p-0">
         <div className="border-b border-[var(--color-border-subtle)] bg-[linear-gradient(135deg,var(--color-surface-muted)_0%,var(--color-surface-base)_100%)] px-5 py-5 sm:px-6">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_0.7fr] lg:equipos-center">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--color-ejercito-brown)]">Dashboard principal</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)] sm:text-3xl">Bienvenido, {nombreUsuario}</h2>
@@ -178,7 +178,7 @@ export function DashboardPrincipalView({
       </article>
 
       <article className="ej-card rounded-2xl p-4 sm:p-5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:equipos-end sm:justify-between">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--color-ejercito-brown)]">Accesos rapidos</p>
             <h3 className="mt-1 text-lg font-extrabold text-[var(--color-text-primary)]">Navegacion directa por modulo</h3>
@@ -188,7 +188,7 @@ export function DashboardPrincipalView({
 
         <div className="mt-3 flex justify-end">
           <details className="group relative w-full sm:max-w-[26rem]">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-4 py-3 text-sm font-black text-[var(--color-text-primary)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]">
+            <summary className="flex min-h-11 cursor-pointer list-none equipos-center justify-between rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-4 py-3 text-sm font-black text-[var(--color-text-primary)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]">
               <span>Menu de accesos rapidos</span>
               <span className="text-xs font-semibold text-[var(--color-text-secondary)] transition group-open:rotate-180">▼</span>
             </summary>

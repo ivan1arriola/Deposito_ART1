@@ -32,10 +32,10 @@ const mockCreatedPrestamo = {
     fechaEstimadaDevolucionTexto: "30 dias",
   },
   prestamoHistorial: null,
-  items: [
+  equipos: [
     {
-      item: {
-        itemId: BigInt(1),
+      equipo: {
+        equipoId: BigInt(1),
         nombre: "Bolsa Negra P/ Residuos Grande",
         ordenPdf: 1,
       },
@@ -66,7 +66,7 @@ const mockTx = {
     create: vi.fn(),
     update: vi.fn(),
   },
-  movimientoItem: {
+  movimientoEquipo: {
     createMany: vi.fn(),
   },
 };
@@ -96,7 +96,7 @@ vi.mock("@/lib/prestamo-actuante", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    item: {
+    equipo: {
       findMany: vi.fn(),
     },
     personal: {
@@ -130,8 +130,8 @@ describe("POST /api/prestamos", () => {
   }
 
   function mockBaseLookups() {
-    vi.mocked(prisma.item.findMany).mockResolvedValue([
-      { itemId: BigInt(1), nombre: "Bolsa Negra P/ Residuos Grande" },
+    vi.mocked(prisma.equipo.findMany).mockResolvedValue([
+      { equipoId: BigInt(1), nombre: "Bolsa Negra P/ Residuos Grande" },
     ] as never);
     vi.mocked(prisma.rango.findUnique).mockResolvedValue({ orden: 40 } as never);
   }
@@ -168,7 +168,7 @@ describe("POST /api/prestamos", () => {
         fechaPrestamo: "21/05/2026",
         fechaEstimadaDevolucionTexto: "30 dias",
         comentarios: "Grupo Artilleria 2",
-        items: [{ itemId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
+        equipos: [{ equipoId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
       }),
     );
 
@@ -245,7 +245,7 @@ describe("POST /api/prestamos", () => {
         fechaPrestamo: "21/05/2026",
         fechaEstimadaDevolucionTexto: "30 dias",
         comentarios: "Grupo Artilleria 2",
-        items: [{ itemId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
+        equipos: [{ equipoId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
       }),
     );
 
@@ -297,7 +297,7 @@ describe("POST /api/prestamos", () => {
         fechaPrestamo: "21/05/2026",
         fechaEstimadaDevolucionTexto: "30 dias",
         comentarios: "Grupo Artilleria 2",
-        items: [{ itemId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
+        equipos: [{ equipoId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
       }),
     );
 

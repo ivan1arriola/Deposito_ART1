@@ -34,9 +34,9 @@ export async function GET(request: Request) {
           username: true
         }
       },
-      items: {
+      equipos: {
         include: {
-          item: {
+          equipo: {
             select: {
               nombre: true,
             },
@@ -78,8 +78,8 @@ export async function GET(request: Request) {
       tipo: movimiento.tipo,
       clase,
       nombre,
-      items: movimiento.items.map((detail) => ({
-        item: detail.item.nombre,
+      equipos: movimiento.equipos.map((detail) => ({
+        equipo: detail.equipo.nombre,
         cantidad: detail.cantidad,
       })),
       observaciones: movimiento.observaciones,

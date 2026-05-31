@@ -7,12 +7,12 @@ export type PersonalAltaMovimientoForm = {
   tipo: PersonalAltaMovimientoTipo;
   fecha: string;
   comentarios: string;
-  items: PersonalAltaMovimientoItemForm[];
+  equipos: PersonalAltaMovimientoItemForm[];
 };
 
 export const EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM: PersonalAltaMovimientoForm = {
   tipo: "ENTREGA",
   fecha: "",
   comentarios: "",
-  items: [{ itemId: "", cantidad: "1" }],
+  equipos: [{ equipoId: "", cantidad: "1" }],
 };

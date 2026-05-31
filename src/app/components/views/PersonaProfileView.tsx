@@ -41,7 +41,7 @@ export type PersonaProfileIdentity = {
 };
 
 export type PersonaProfileEquipmentRow = {
-  item: string;
+  equipo: string;
   entregado: number;
   devuelto: number;
   saldo: number;
@@ -56,7 +56,7 @@ export type PersonaProfileTimelineEntry = {
   descripcion: string;
   responsable: string | null;
   estadoPrestamo?: "PENDIENTE" | "DEVUELTO" | null;
-  items: Array<{ nombre: string; cantidad: number }>;
+  equipos: Array<{ nombre: string; cantidad: number }>;
 };
 
 export type PersonaProfileState = {
@@ -125,7 +125,7 @@ export function PersonaProfileView({
     return (
       <section className="mt-4 sm:mt-8 space-y-6">
         <article className="rounded-3xl bg-white p-6 sm:p-8 shadow-xl border border-stone-200/50 text-center">
-          <div className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-stone-100 text-stone-300">
+          <div className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 equipos-center justify-center rounded-full bg-stone-100 text-stone-300">
             <PersonRoundedIcon sx={{ fontSize: { xs: 32, sm: 40 } }} />
           </div>
           <h2 className="mt-4 text-lg sm:text-xl font-bold text-stone-900">Perfil no seleccionado</h2>
@@ -134,7 +134,7 @@ export function PersonaProfileView({
              <button
                 type="button"
                 onClick={onBack}
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 sm:px-6 sm:py-3 text-sm font-bold text-white transition hover:bg-black active:scale-95"
+                className="mt-6 inline-flex equipos-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 sm:px-6 sm:py-3 text-sm font-bold text-white transition hover:bg-black active:scale-95"
               >
                 <ArrowBackRoundedIcon fontSize="small" />
                 Volver al inicio
@@ -161,13 +161,13 @@ export function PersonaProfileView({
     <section className="mt-4 sm:mt-8 space-y-4 sm:space-y-6 pb-12">
       {/* Header Profile Card */}
       <article className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-xl border border-stone-200/50">
-        <div className="relative z-10 flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4 sm:gap-5">
-            <div className="flex h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-stone-800 to-stone-900 text-white shadow-lg ring-4 ring-stone-100">
+        <div className="relative z-10 flex flex-col gap-4 sm:gap-6 lg:flex-row lg:equipos-center lg:justify-between">
+          <div className="flex equipos-center gap-4 sm:gap-5">
+            <div className="flex h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 equipos-center justify-center rounded-2xl bg-gradient-to-br from-stone-800 to-stone-900 text-white shadow-lg ring-4 ring-stone-100">
               <MilitaryTechRoundedIcon sx={{ fontSize: { xs: 28, sm: 32 } }} />
             </div>
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap equipos-center gap-2">
                 <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-stone-900 leading-tight truncate">
                   {state.identity.apellido}, {state.identity.nombre}
                 </h2>
@@ -175,19 +175,19 @@ export function PersonaProfileView({
                   {typeLabel}
                 </span>
               </div>
-              <p className="mt-1 text-base sm:text-lg font-black text-stone-500 flex items-center gap-1.5">
+              <p className="mt-1 text-base sm:text-lg font-black text-stone-500 flex equipos-center gap-1.5">
                 <BadgeRoundedIcon sx={{ fontSize: { xs: 20, sm: 22 }, opacity: 0.6 }} />
                 {formatUruguayanCi(state.identity.ci)}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap equipos-center gap-2 sm:gap-3">
             {allowPrintActions && state.identity.tipo === "SUBALTERNO" && (
               <button
                 type="button"
                 onClick={() => onPrintDeliverySheet(state.identity.ci)}
-                className="flex-grow sm:flex-grow-0 inline-flex items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-2.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-black active:scale-95 shadow-lg shadow-stone-900/10"
+                className="flex-grow sm:flex-grow-0 inline-flex equipos-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-2.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-black active:scale-95 shadow-lg shadow-stone-900/10"
               >
                 <PrintRoundedIcon fontSize="small" />
                 Hoja de Entrega
@@ -198,7 +198,7 @@ export function PersonaProfileView({
               <button
                 type="button"
                 onClick={() => onPrintMovementsSummary(state.identity.ci)}
-                className="flex-grow sm:flex-grow-0 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-600/10"
+                className="flex-grow sm:flex-grow-0 inline-flex equipos-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-600/10"
               >
                 <Inventory2RoundedIcon fontSize="small" />
                 Hoja Movimientos
@@ -209,7 +209,7 @@ export function PersonaProfileView({
               type="button"
               onClick={onReload}
               disabled={state.loading}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-stone-600 transition hover:bg-stone-200 active:scale-90 disabled:opacity-50"
+              className="flex h-10 w-10 equipos-center justify-center rounded-xl bg-stone-100 text-stone-600 transition hover:bg-stone-200 active:scale-90 disabled:opacity-50"
             >
               <RefreshRoundedIcon fontSize="small" />
             </button>
@@ -218,7 +218,7 @@ export function PersonaProfileView({
               <button
                 type="button"
                 onClick={onBack}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-stone-600 transition hover:bg-stone-200 active:scale-90"
+                className="flex h-10 w-10 equipos-center justify-center rounded-xl bg-stone-100 text-stone-600 transition hover:bg-stone-200 active:scale-90"
               >
                 <ArrowBackRoundedIcon fontSize="small" />
               </button>
@@ -227,7 +227,7 @@ export function PersonaProfileView({
         </div>
 
         {state.loading && (
-          <div className="mt-4 sm:mt-6 flex items-center gap-3 rounded-2xl bg-indigo-50/50 p-3 sm:p-4 border border-indigo-100 animate-pulse">
+          <div className="mt-4 sm:mt-6 flex equipos-center gap-3 rounded-2xl bg-indigo-50/50 p-3 sm:p-4 border border-indigo-100 animate-pulse">
             <div className="h-2 w-2 rounded-full bg-indigo-600" />
             <p className="text-xs sm:text-sm font-bold text-indigo-700">Sincronizando información...</p>
           </div>
@@ -244,8 +244,8 @@ export function PersonaProfileView({
         <div className="space-y-4 sm:space-y-6">
           {/* Informacion Personal & Tallas Card */}
           <article className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:equipos-center justify-between gap-4 mb-6">
+              <div className="flex equipos-center gap-2">
                  <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
                     <PersonRoundedIcon fontSize="small" />
                  </div>
@@ -266,7 +266,7 @@ export function PersonaProfileView({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 sm:gap-y-4">
               <div className="space-y-1">
                  <p className="text-xs font-black uppercase tracking-widest text-stone-400">Grado</p>
-                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
+                 <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
                     <MilitaryTechRoundedIcon sx={{ fontSize: 20, color: "var(--color-ejercito-gold)" }} />
                     <span className="truncate">{state.identity.gradoAbreviacion} — {state.identity.gradoNombre}</span>
                  </p>
@@ -274,7 +274,7 @@ export function PersonaProfileView({
 
               <div className="space-y-1">
                  <p className="text-xs font-black uppercase tracking-widest text-stone-400">Batería / Unidad</p>
-                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
+                 <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
                     <GroupsRoundedIcon sx={{ fontSize: 20, color: "stone.400" }} />
                     <span className="truncate">{state.identity.bateriaNombre ?? "No aplica / General"}</span>
                  </p>
@@ -282,7 +282,7 @@ export function PersonaProfileView({
 
               <div className="space-y-1">
                  <p className="text-xs font-black uppercase tracking-widest text-stone-400">Contacto</p>
-                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
+                 <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
                     <PhoneRoundedIcon sx={{ fontSize: 18, color: "stone.300" }} />
                     {state.identity.telefonoContacto ?? "Sin teléfono"}
                  </p>
@@ -290,7 +290,7 @@ export function PersonaProfileView({
 
               <div className="space-y-1">
                  <p className="text-xs font-black uppercase tracking-widest text-stone-400">Incorporación</p>
-                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
+                 <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
                     <CalendarTodayRoundedIcon sx={{ fontSize: 18, color: "stone.300" }} />
                     {state.identity.fechaIngreso ?? "No registrada"}
                  </p>
@@ -328,7 +328,7 @@ export function PersonaProfileView({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Equipment Summary Table */}
             <article className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50 overflow-hidden">
-              <div className="flex items-center gap-2 mb-6">
+              <div className="flex equipos-center gap-2 mb-6">
                  <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
                     <Inventory2RoundedIcon fontSize="small" />
                  </div>
@@ -352,9 +352,9 @@ export function PersonaProfileView({
                     </thead>
                     <tbody className="divide-y divide-stone-50">
                       {state.equipmentSummary.map((row) => (
-                        <tr key={`profile-equipment-${row.item}`} className="group hover:bg-stone-50/50 transition-colors">
+                        <tr key={`profile-equipment-${row.equipo}`} className="group hover:bg-stone-50/50 transition-colors">
                           <td className="py-3 pr-2 sm:pr-4">
-                             <p className="font-bold text-stone-800 line-clamp-1 text-sm sm:text-base">{row.item}</p>
+                             <p className="font-bold text-stone-800 line-clamp-1 text-sm sm:text-base">{row.equipo}</p>
                              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-tighter">
                                {row.fuente === "REGISTROS" ? "Suministro" : "Préstamo"}
                              </p>
@@ -377,7 +377,7 @@ export function PersonaProfileView({
             {/* Observaciones Section */}
             {state.identity.tipo === "SUBALTERNO" && (
                <article className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50">
-                  <div className="flex items-center gap-2 mb-6">
+                  <div className="flex equipos-center gap-2 mb-6">
                     <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
                         <NoteAltRoundedIcon fontSize="small" />
                     </div>
@@ -404,8 +404,8 @@ export function PersonaProfileView({
 
           {/* Timeline Section */}
           <article id="profile-timeline" className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:equipos-center justify-between gap-4 mb-8">
+              <div className="flex equipos-center gap-2">
                 <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
                     <TimelineRoundedIcon fontSize="small" />
                 </div>
@@ -428,7 +428,7 @@ export function PersonaProfileView({
               <div className="relative space-y-6 before:absolute before:left-[15px] sm:before:left-[19px] before:top-2 before:bottom-2 before:w-[2px] before:bg-stone-100">
                 {timeline.map((entry) => (
                   <div key={entry.id} className="relative pl-10 sm:pl-12">
-                     <div className={`absolute left-0 top-1 z-10 flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl border-2 sm:border-4 border-white shadow-md ${
+                     <div className={`absolute left-0 top-1 z-10 flex h-8 w-8 sm:h-10 sm:w-10 equipos-center justify-center rounded-xl sm:rounded-2xl border-2 sm:border-4 border-white shadow-md ${
                        entry.tipo === "ENTREGA" ? "bg-emerald-500 text-white" :
                        entry.tipo === "DEVOLUCION" ? "bg-amber-500 text-white" :
                        entry.tipo === "PRESTAMO" ? "bg-indigo-600 text-white" :
@@ -438,8 +438,8 @@ export function PersonaProfileView({
                      </div>
 
                      <div className={movementCardClass(entry)}>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 mb-3">
-                           <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row sm:equipos-center justify-between gap-3 pb-3 border-b border-stone-100 mb-3">
+                           <div className="flex equipos-center gap-2">
                               <span className={`rounded-lg px-2 py-0.5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest ${movementTypeStyles(entry.tipo)}`}>
                                 {entry.tipo.replace("_", " ")}
                               </span>
@@ -449,7 +449,7 @@ export function PersonaProfileView({
                            {entry.tipo === "PRESTAMO" && (
                              <button
                                onClick={() => onPrintPrestamos([entry.dbId || entry.id])}
-                               className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-[10px] sm:text-[11px] font-black text-indigo-700 transition hover:bg-indigo-100 active:scale-95"
+                               className="inline-flex equipos-center justify-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-[10px] sm:text-[11px] font-black text-indigo-700 transition hover:bg-indigo-100 active:scale-95"
                              >
                                <PrintRoundedIcon sx={{ fontSize: 16 }} />
                                REIMPRIMIR RECIBO
@@ -460,18 +460,18 @@ export function PersonaProfileView({
                         <div className="space-y-4">
                            <p className="text-sm sm:text-base font-bold text-stone-800 leading-snug">{entry.descripcion}</p>
                            
-                           {entry.items.length > 0 && (
+                           {entry.equipos.length > 0 && (
                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 bg-stone-50 p-3 sm:p-4 rounded-xl border border-stone-100">
-                                {entry.items.map((item) => (
-                                  <div key={`${entry.id}-${item.nombre}`} className="flex items-center justify-between gap-4 border-b border-stone-200/50 last:border-0 pb-1 last:pb-0">
-                                     <span className="text-xs sm:text-sm font-bold text-stone-600 truncate pr-2">{item.nombre}</span>
-                                     <span className="text-xs sm:text-sm font-black text-stone-900 tabular-nums flex-shrink-0">x{item.cantidad}</span>
+                                {entry.equipos.map((equipo) => (
+                                  <div key={`${entry.id}-${equipo.nombre}`} className="flex equipos-center justify-between gap-4 border-b border-stone-200/50 last:border-0 pb-1 last:pb-0">
+                                     <span className="text-xs sm:text-sm font-bold text-stone-600 truncate pr-2">{equipo.nombre}</span>
+                                     <span className="text-xs sm:text-sm font-black text-stone-900 tabular-nums flex-shrink-0">x{equipo.cantidad}</span>
                                   </div>
                                 ))}
                              </div>
                            )}
 
-                           <div className="flex items-center gap-1.5 pt-1">
+                           <div className="flex equipos-center gap-1.5 pt-1">
                               <NoteAltRoundedIcon sx={{ fontSize: 14, color: "stone.300" }} />
                               <span className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-tight truncate">
                                  Responsable: <span className="text-stone-600">{entry.responsable?.trim() || "SISTEMA"}</span>

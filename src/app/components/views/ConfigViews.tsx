@@ -40,16 +40,16 @@ type PapeleraViewState = {
   removePermanent: (papeleraId: string) => void | Promise<void>;
 };
 type TrashDetails = {
-  item?: { activo?: boolean | null } | null;
+  equipo?: { activo?: boolean | null } | null;
   articulo?: { tipo?: string | null } | null;
-  cajaItems?: unknown[];
+  cajaEquipos?: unknown[];
   itemCodigosSIE?: unknown[];
   cajaItemCodigosSIE?: unknown[];
-  movimientoItems?: unknown[];
+  movimientoEquipos?: unknown[];
   deletedMovimientos?: unknown[];
   deletedPrestamosActivos?: unknown[];
   deletedPrestamosHistoriales?: unknown[];
-  stockOperacionItems?: unknown[];
+  stockOperacionEquipos?: unknown[];
   stockMovimientos?: unknown[];
   emptyEntregas?: unknown[];
 };
@@ -168,11 +168,11 @@ interface ConfigViewsProps {
     key: keyof Pick<EquipoConfig, "nombre" | "tipo" | "activo" | "ordenPdf">
   ) => void;
   onCreateEquipo: (event: FormEvent<HTMLFormElement>) => void;
-  onUpdateEquipo: (itemId: string) => void;
+  onUpdateEquipo: (equipoId: string) => void;
   onToggleEquipoActivo: (equipo: EquipoConfig) => void;
-  onDeleteEquipo: (itemId: string) => void;
-  onMergeEquipoOrigenIdChange: (itemId: string) => void;
-  onMergeEquipoDestinoIdChange: (itemId: string) => void;
+  onDeleteEquipo: (equipoId: string) => void;
+  onMergeEquipoOrigenIdChange: (equipoId: string) => void;
+  onMergeEquipoDestinoIdChange: (equipoId: string) => void;
   onMergeEquipos: (origenItemId: string, destinoItemId: string) => void;
   onSaveEquipoOrder: () => void;
   onResetEquipoOrderDraft: () => void;
@@ -280,7 +280,7 @@ export function ConfigViews(props: ConfigViewsProps) {
   };
 
   const isUndoable = (log: AuditoriaRecord) => {
-    const undoableEntities = ["GRADO_PERSONAL", "BATERIA", "ARTICULO", "ITEM", "PERSONAL", "OBSERVACION"];
+    const undoableEntities = ["GRADO_PERSONAL", "BATERIA", "ARTICULO", "EQUIPO", "PERSONAL", "OBSERVACION"];
     return (log.accion === "CREATE" || log.accion === "UPDATE" || log.accion === "DELETE") && undoableEntities.includes(log.entidad);
   };
 
@@ -301,7 +301,7 @@ export function ConfigViews(props: ConfigViewsProps) {
 
   // Local state for Papelera interactive search & filter
   const [trashSearchQuery, setTrashSearchQuery] = useState("");
-  const [trashTypeFilter, setTrashTypeFilter] = useState<"ALL" | "ITEM" | "ARTICULO">("ALL");
+  const [trashTypeFilter, setTrashTypeFilter] = useState<"ALL" | "EQUIPO" | "ARTICULO">("ALL");
 
   const filteredTrashRecords = useMemo(() => {
     if (!props.papelera) return [];
@@ -384,7 +384,7 @@ export function ConfigViews(props: ConfigViewsProps) {
   const usuariosFiltradosPorTipo = activeUserAccountTypeTab === "SISTEMA" ? usuariosSistema : usuariosPersonalFiltrados;
   const renderTiposEquipoManagement = () => (
     <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
         <div>
           <h3 className="text-sm font-semibold text-stone-900">Tipos de equipo</h3>
           <p className="mt-1 text-xs text-stone-600">
@@ -433,11 +433,11 @@ export function ConfigViews(props: ConfigViewsProps) {
           return (
             <div key={`tipo-equipo-${tipo.clave}`} className="rounded-lg bg-white/90 p-3">
               {tipo.esGeneral ? (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap equipos-center gap-2">
                       <span className="text-sm font-medium text-stone-800">{tipo.nombre}</span>
-                      <span className="inline-flex items-center rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                      <span className="inline-flex equipos-center rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
                         Categoría por defecto
                       </span>
                     </div>
@@ -477,14 +477,14 @@ export function ConfigViews(props: ConfigViewsProps) {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap equipos-center gap-2">
                       <span className="text-sm font-medium text-stone-800">{tipo.nombre}</span>
-                      <span className="inline-flex items-center rounded-full border border-stone-300 bg-stone-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                      <span className="inline-flex equipos-center rounded-full border border-stone-300 bg-stone-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
                         {tipo.clave}
                       </span>
-                      <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-stone-700">
+                      <span className="inline-flex equipos-center rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-stone-700">
                         {equiposRelacionados} equipo{equiposRelacionados === 1 ? "" : "s"}
                       </span>
                     </div>
@@ -568,12 +568,12 @@ export function ConfigViews(props: ConfigViewsProps) {
                       ) : null}
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
                       <div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap equipos-center gap-2">
                           <span className="text-sm font-medium text-stone-800">{props.rangoLabel(rango)}</span>
                           {rango.tipo ? (
-                            <span className="inline-flex items-center rounded-full border border-stone-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                            <span className="inline-flex equipos-center rounded-full border border-stone-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
                               {RANGO_TIPO_LABEL[rango.tipo]}
                             </span>
                           ) : null}
@@ -674,7 +674,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
                   <div>
                     <span className="text-sm font-medium text-stone-800">{bateria.nombre}</span>
                     <p className="mt-1 text-xs text-stone-500">{`Orden ${bateria.orden}`}</p>
@@ -864,9 +864,9 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b border-stone-200 pb-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:equipos-start sm:justify-between border-b border-stone-200 pb-4">
             <div>
-              <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-stone-900 flex equipos-center gap-2">
                 <svg className="w-5 h-5 text-stone-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
@@ -880,7 +880,7 @@ export function ConfigViews(props: ConfigViewsProps) {
               <button
                 type="button"
                 onClick={handlePrintCatalog}
-                className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-100 flex items-center gap-1.5 shadow-sm"
+                className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-100 flex equipos-center gap-1.5 shadow-sm"
               >
                 <svg className="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4" />
@@ -891,7 +891,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                 <button
                   type="button"
                   onClick={() => props.onNavigateView("articulo_stock_ingreso")}
-                  className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-100 flex items-center gap-1.5 shadow-sm"
+                  className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-100 flex equipos-center gap-1.5 shadow-sm"
                 >
                   <svg className="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -912,7 +912,7 @@ export function ConfigViews(props: ConfigViewsProps) {
           </div>
 
           {!props.isAdmin ? (
-            <p className="mt-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600 flex items-center gap-2">
+            <p className="mt-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600 flex equipos-center gap-2">
               <svg className="w-4 h-4 text-stone-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -933,8 +933,8 @@ export function ConfigViews(props: ConfigViewsProps) {
 
               return (
                 <div key={tipo} className="border border-stone-200/70 bg-stone-50/30 p-4 rounded-xl shadow-sm">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3.5 flex items-center justify-between">
-                    <span className="flex items-center gap-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3.5 flex equipos-center justify-between">
+                    <span className="flex equipos-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-stone-400"></span>
                       {ARTICULO_TIPO_LABEL[tipo]}
                     </span>
@@ -978,10 +978,10 @@ export function ConfigViews(props: ConfigViewsProps) {
                             </div>
                           </div>
                         ) : (
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:equipos-center sm:justify-between">
                             {/* Left Side: Name and Category badge */}
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-stone-600 shadow-inner flex-shrink-0">
+                            <div className="flex equipos-center gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-stone-100 flex equipos-center justify-center text-stone-600 shadow-inner flex-shrink-0">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                 </svg>
@@ -990,9 +990,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             </div>
 
                             {/* Right Side: Stock Status and Actions */}
-                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 ml-auto sm:ml-0">
+                            <div className="flex flex-wrap equipos-center gap-2 sm:gap-3 ml-auto sm:ml-0">
                               {/* Stock Badge */}
-                              <div className={`px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 shadow-sm select-none ${
+                              <div className={`px-2.5 py-1 rounded-full text-xs font-bold border flex equipos-center gap-1.5 shadow-sm select-none ${
                                 articulo.stockActual > 0 
                                   ? "bg-green-50/80 border-green-200/60 text-green-700" 
                                   : "bg-red-50/80 border-red-200/60 text-red-700"
@@ -1003,7 +1003,7 @@ export function ConfigViews(props: ConfigViewsProps) {
 
                               {/* Quick Inventory Handlers */}
                               {props.canWrite && (
-                                <div className="flex items-center gap-1">
+                                <div className="flex equipos-center gap-1">
                                   <button
                                     type="button"
                                     title="Sumar stock para este artículo"
@@ -1014,7 +1014,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                                         props.onNavigateView("articulo_stock_ingreso");
                                       }
                                     }}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-stone-700 hover:text-emerald-700 bg-stone-100 hover:bg-emerald-50 border border-stone-200 hover:border-emerald-200 rounded-lg transition-colors duration-150 shadow-sm"
+                                    className="inline-flex equipos-center gap-1 px-2.5 py-1 text-xs font-bold text-stone-700 hover:text-emerald-700 bg-stone-100 hover:bg-emerald-50 border border-stone-200 hover:border-emerald-200 rounded-lg transition-colors duration-150 shadow-sm"
                                   >
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -1031,7 +1031,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                                         props.onNavigateView("articulo_entrega_personal");
                                       }
                                     }}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-stone-700 hover:text-blue-700 bg-stone-100 hover:bg-blue-50 border border-stone-200 hover:border-blue-200 rounded-lg transition-colors duration-150 shadow-sm"
+                                    className="inline-flex equipos-center gap-1 px-2.5 py-1 text-xs font-bold text-stone-700 hover:text-blue-700 bg-stone-100 hover:bg-blue-50 border border-stone-200 hover:border-blue-200 rounded-lg transition-colors duration-150 shadow-sm"
                                   >
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -1043,7 +1043,7 @@ export function ConfigViews(props: ConfigViewsProps) {
 
                               {/* Admin Actions */}
                               {props.isAdmin && (
-                                <div className="flex items-center gap-1 border-l border-stone-200 pl-2 sm:pl-3">
+                                <div className="flex equipos-center gap-1 border-l border-stone-200 pl-2 sm:pl-3">
                                   <SmallActionButton
                                     text="Editar"
                                     tone="edit"
@@ -1075,7 +1075,7 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:equipos-start sm:justify-between">
             <div>
               <h2 className="text-base font-semibold text-stone-900">Tipos de equipo</h2>
               <p className="mt-1 text-xs text-stone-600">
@@ -1113,8 +1113,8 @@ export function ConfigViews(props: ConfigViewsProps) {
         alphabeticItems,
         activeItems,
         inactiveItems,
-        activeOrderById: new Map(activeItems.map((equipo, index) => [equipo.itemId, index])),
-        inactiveOrderById: new Map(inactiveItems.map((equipo, index) => [equipo.itemId, index])),
+        activeOrderById: new Map(activeItems.map((equipo, index) => [equipo.equipoId, index])),
+        inactiveOrderById: new Map(inactiveItems.map((equipo, index) => [equipo.equipoId, index])),
       };
     });
     return (
@@ -1123,7 +1123,7 @@ export function ConfigViews(props: ConfigViewsProps) {
           {/* Header Banner */}
           <div className="bg-stone-800 px-6 py-8 text-white relative overflow-hidden">
             <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSI+PC9yZWN0Pgo8cGF0aCBkPSJNMCAwTDggOFpNOCAwTDAgOFoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuNCIgc3Ryb2tlLXdpZHRoPSIxIj48L3BhdGg+Cjwvc3ZnPg==')] bg-repeat" />
-            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:equipos-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-white/95">Catálogo de Equipos</h2>
                 <p className="mt-2 text-sm font-medium text-stone-300 max-w-xl leading-relaxed">
@@ -1133,7 +1133,7 @@ export function ConfigViews(props: ConfigViewsProps) {
               <button
                 type="button"
                 onClick={() => props.onNavigateView("tipos_equipo")}
-                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white shadow-sm ring-1 ring-white/20 transition-all hover:bg-white/20 hover:scale-105 active:scale-95"
+                className="inline-flex equipos-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white shadow-sm ring-1 ring-white/20 transition-all hover:bg-white/20 hover:scale-105 active:scale-95"
               >
                 <svg className="h-4.5 w-4.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
                 Categorías y Tipos
@@ -1144,7 +1144,7 @@ export function ConfigViews(props: ConfigViewsProps) {
           <div className="p-6 sm:p-8">
             {!props.canWrite ? (
               <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
-                <div className="flex items-center gap-3 text-amber-800">
+                <div className="flex equipos-center gap-3 text-amber-800">
                   <svg className="h-5 w-5 flex-shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                   <p className="text-sm font-bold">Modo de sólo lectura: no tienes permisos para modificar el catálogo.</p>
                 </div>
@@ -1152,8 +1152,8 @@ export function ConfigViews(props: ConfigViewsProps) {
             ) : null}
 
             {/* View Toggle */}
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex w-full items-center rounded-xl bg-stone-100/80 p-1 sm:w-auto shadow-inner ring-1 ring-stone-200/50">
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:equipos-center sm:justify-between">
+              <div className="flex w-full equipos-center rounded-xl bg-stone-100/80 p-1 sm:w-auto shadow-inner ring-1 ring-stone-200/50">
                 <button
                   type="button"
                   onClick={() => setEquiposDisplayMode("por_estado")}
@@ -1189,8 +1189,8 @@ export function ConfigViews(props: ConfigViewsProps) {
                 <div className="space-y-8">
                   {tipoSections.map((section) => (
                     <div key={section.key} className="relative">
-                      <div className="mb-4 flex items-center gap-3 pb-2 border-b border-stone-100">
-                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm ${
+                      <div className="mb-4 flex equipos-center gap-3 pb-2 border-b border-stone-100">
+                        <div className={`flex h-8 w-8 equipos-center justify-center rounded-lg shadow-sm ${
                           section.isGeneral ? "bg-sky-100 text-sky-600" : "bg-amber-100 text-amber-600"
                         }`}>
                           <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
@@ -1198,7 +1198,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                         <h3 className="text-lg font-bold text-stone-800">
                           {section.isGeneral ? "Equipos Generales" : section.label}
                         </h3>
-                        <span className="inline-flex h-6 items-center justify-center rounded-full bg-stone-100 px-2.5 text-xs font-bold text-stone-600 ring-1 ring-stone-200/60">
+                        <span className="inline-flex h-6 equipos-center justify-center rounded-full bg-stone-100 px-2.5 text-xs font-bold text-stone-600 ring-1 ring-stone-200/60">
                           {section.alphabeticItems.length}
                         </span>
                       </div>
@@ -1210,7 +1210,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                           )}
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
+                        <div className="flex flex-col equipos-center justify-center rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
                           <div className="mb-3 rounded-full bg-stone-100 p-3 text-stone-300">
                             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>
                           </div>
@@ -1226,9 +1226,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                 <>
                   <div className="relative">
                     <div className="sticky top-0 z-20 -mx-6 px-6 py-4 backdrop-blur-xl bg-white/80 border-b border-stone-100/80 sm:-mx-8 sm:px-8 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shadow-sm ring-1 ring-emerald-200/50">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:equipos-center sm:justify-between">
+                        <div className="flex equipos-center gap-3">
+                          <div className="flex h-10 w-10 equipos-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shadow-sm ring-1 ring-emerald-200/50">
                             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                           </div>
                           <div>
@@ -1238,7 +1238,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                         </div>
                         
                         {props.equiposActivosEnPantalla.length > 0 && props.hasEquipoOrderDraftChanges ? (
-                          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                          <div className="flex equipos-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
                             <button
                               type="button"
                               onClick={props.onResetEquipoOrderDraft}
@@ -1249,7 +1249,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <button
                               type="button"
                               onClick={props.onSaveEquipoOrder}
-                              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95"
+                              className="inline-flex equipos-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95"
                             >
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                               Guardar Orden
@@ -1262,7 +1262,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     <div className="mt-8 space-y-10">
                       {tipoSections.map((section) => (
                         <div key={`active-${section.key}`}>
-                          <div className="mb-4 flex items-center gap-3">
+                          <div className="mb-4 flex equipos-center gap-3">
                             <h4 className="text-sm font-bold uppercase tracking-widest text-stone-500">
                               {section.isGeneral ? "Generales" : section.label}
                             </h4>
@@ -1275,13 +1275,13 @@ export function ConfigViews(props: ConfigViewsProps) {
                                 props.renderEquipoCard(equipo, {
                                   reorderableInActiveList: true,
                                   orderGroupType: section.key,
-                                  orderIndex: section.activeOrderById.get(equipo.itemId) ?? -1,
+                                  orderIndex: section.activeOrderById.get(equipo.equipoId) ?? -1,
                                   orderCount: section.activeItems.length,
                                 }),
                               )}
                             </div>
                           ) : (
-                            <div className="flex items-center gap-3 rounded-xl border border-stone-100 bg-stone-50/50 px-4 py-3">
+                            <div className="flex equipos-center gap-3 rounded-xl border border-stone-100 bg-stone-50/50 px-4 py-3">
                               <span className="h-1.5 w-1.5 rounded-full bg-stone-300"></span>
                               <p className="text-xs font-medium text-stone-500">Ningún equipo activo en esta categoría.</p>
                             </div>
@@ -1292,9 +1292,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                   </div>
 
                   <div className="relative mt-16 pt-8 border-t-2 border-dashed border-stone-200/50">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 shadow-sm ring-1 ring-rose-200/50">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:equipos-center sm:justify-between mb-8">
+                      <div className="flex equipos-center gap-3">
+                        <div className="flex h-10 w-10 equipos-center justify-center rounded-xl bg-rose-100 text-rose-600 shadow-sm ring-1 ring-rose-200/50">
                           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
                         </div>
                         <div>
@@ -1304,7 +1304,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       </div>
                       
                       {props.equiposInactivosEnPantalla.length > 0 && props.hasEquipoInactivoOrderDraftChanges ? (
-                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <div className="flex equipos-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
                           <button
                             type="button"
                             onClick={props.onResetEquipoInactivoOrderDraft}
@@ -1315,7 +1315,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                           <button
                             type="button"
                             onClick={props.onSaveEquipoInactivoOrder}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-stone-800 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-stone-800/20 transition-all hover:bg-stone-900 active:scale-95"
+                            className="inline-flex equipos-center gap-1.5 rounded-xl bg-stone-800 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-stone-800/20 transition-all hover:bg-stone-900 active:scale-95"
                           >
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                             Guardar Orden Inactivos
@@ -1327,7 +1327,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     <div className="space-y-10 opacity-90">
                       {tipoSections.map((section) => (
                         <div key={`inactive-${section.key}`}>
-                          <div className="mb-4 flex items-center gap-3">
+                          <div className="mb-4 flex equipos-center gap-3">
                             <h4 className="text-sm font-bold uppercase tracking-widest text-stone-500">
                               {section.isGeneral ? "Generales (Ocultos)" : `${section.label} (Ocultos)`}
                             </h4>
@@ -1341,13 +1341,13 @@ export function ConfigViews(props: ConfigViewsProps) {
                                   reorderableInActiveList: false,
                                   reorderableInInactiveList: true,
                                   orderGroupType: section.key,
-                                  orderIndex: section.inactiveOrderById.get(equipo.itemId) ?? -1,
+                                  orderIndex: section.inactiveOrderById.get(equipo.equipoId) ?? -1,
                                   orderCount: section.inactiveItems.length,
                                 }),
                               )}
                             </div>
                           ) : (
-                            <div className="flex items-center gap-3 rounded-xl border border-stone-100 bg-stone-50/50 px-4 py-3">
+                            <div className="flex equipos-center gap-3 rounded-xl border border-stone-100 bg-stone-50/50 px-4 py-3">
                               <span className="h-1.5 w-1.5 rounded-full bg-stone-300"></span>
                               <p className="text-xs font-medium text-stone-500">Ningún equipo oculto en esta categoría.</p>
                             </div>
@@ -1444,7 +1444,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                   </label>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap equipos-center justify-between gap-2">
                 <p className="text-xs text-stone-600">
                   {props.firmaConfig?.updatedAt
                     ? `Última actualización: ${formatDateTimeForDisplay(props.firmaConfig.updatedAt)}`
@@ -1581,7 +1581,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                   key={tab.value}
                   type="button"
                   onClick={() => setActiveUserAccountTypeTab(tab.value)}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`inline-flex equipos-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                     isActive
                       ? "border-stone-900 bg-stone-900 text-white"
                       : "border-stone-300 bg-white text-stone-700 hover:border-stone-500 hover:bg-stone-50"
@@ -1617,7 +1617,7 @@ export function ConfigViews(props: ConfigViewsProps) {
 
               return (
                 <div key={usuario.usuarioId} className="rounded-lg bg-stone-100/80 p-2">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
                     <div>
                       <p className="text-sm font-medium text-stone-900">{`${usuario.grado} ${usuario.apellido}, ${usuario.nombre}`}</p>
                       <p className="mt-1 text-xs text-stone-600">
@@ -1680,7 +1680,7 @@ export function ConfigViews(props: ConfigViewsProps) {
           <p className="mt-1 text-xs text-stone-600">
             Visualice las transiciones exactas de estado (Antes → Ahora) de cada acción administrativa del sistema y deshaga cambios recientes (dentro de los 5 días de validez) de forma segura.
           </p>
-          <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-center">
+          <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1fr)_300px] lg:equipos-center">
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -1725,13 +1725,13 @@ export function ConfigViews(props: ConfigViewsProps) {
             </div>
           </div>
           {undoSuccess && (
-            <div className="mt-3 p-3 bg-green-50 text-green-800 rounded-lg border border-green-200 text-xs font-semibold flex items-center gap-2">
+            <div className="mt-3 p-3 bg-green-50 text-green-800 rounded-lg border border-green-200 text-xs font-semibold flex equipos-center gap-2">
               <CheckCircleOutlinedIcon className="h-4 w-4 text-green-600" />
               {undoSuccess}
             </div>
           )}
           {undoError && (
-            <div className="mt-3 p-3 bg-red-50 text-red-800 rounded-lg border border-red-200 text-xs font-semibold flex items-center gap-2">
+            <div className="mt-3 p-3 bg-red-50 text-red-800 rounded-lg border border-red-200 text-xs font-semibold flex equipos-center gap-2">
               <WarningAmberOutlinedIcon className="h-4 w-4 text-red-600" />
               {undoError}
             </div>
@@ -1745,8 +1745,8 @@ export function ConfigViews(props: ConfigViewsProps) {
               return (
                 <div key={log.auditoriaId} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:shadow transition-shadow duration-150 flex flex-col gap-2 w-full">
                   {/* Día y hora exactas + Auditoría BD # */}
-                  <div className="flex flex-wrap items-center justify-between border-b border-stone-100 pb-2">
-                    <span className="text-[11px] font-bold text-stone-500 bg-stone-50 border border-stone-200/55 px-2 py-0.5 rounded flex items-center gap-1">
+                  <div className="flex flex-wrap equipos-center justify-between border-b border-stone-100 pb-2">
+                    <span className="text-[11px] font-bold text-stone-500 bg-stone-50 border border-stone-200/55 px-2 py-0.5 rounded flex equipos-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
                       {exactTime}
                     </span>
@@ -1821,7 +1821,7 @@ export function ConfigViews(props: ConfigViewsProps) {
 
                   {/* Botón de deshacer (funcional hasta por 5 días) */}
                   {isUndoable(log) && (
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-stone-100">
+                    <div className="flex equipos-center justify-between mt-2 pt-2 border-t border-stone-100">
                       <div>
                         {undoAvailable ? (
                           <span className="text-[10px] text-green-600 bg-green-50 border border-green-200/50 px-2 py-0.5 rounded-full font-semibold">
@@ -1837,7 +1837,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                         type="button"
                         onClick={() => handleUndo(log.auditoriaId)}
                         disabled={undoingId !== null || !undoAvailable}
-                        className={`rounded px-3 py-1 text-xs font-bold shadow-sm transition-all duration-150 flex items-center gap-1 ${
+                        className={`rounded px-3 py-1 text-xs font-bold shadow-sm transition-all duration-150 flex equipos-center gap-1 ${
                           undoAvailable
                             ? "bg-red-600 hover:bg-red-700 text-white active:scale-95"
                             : "bg-stone-100 text-stone-400 cursor-not-allowed border border-stone-200"
@@ -1881,9 +1881,9 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4 shadow-sm border border-stone-200 bg-white">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-stone-100 pb-4">
+          <div className="flex flex-col gap-4 md:flex-row md:equipos-center md:justify-between border-b border-stone-100 pb-4">
             <div>
-              <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
+              <h2 className="text-base font-bold text-stone-900 flex equipos-center gap-2">
                 <DeleteOutlineOutlinedIcon className="h-5 w-5 text-stone-600" />
                 Papelera de Reciclaje
               </h2>
@@ -1894,7 +1894,7 @@ export function ConfigViews(props: ConfigViewsProps) {
 
             {/* Interactive Controls */}
             {!props.papelera?.loading && props.papelera && props.papelera.records.length > 0 && (
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center">
                 {/* Search Bar */}
                 <div className="relative min-w-[220px]">
                   <SearchOutlinedIcon className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
@@ -1922,9 +1922,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setTrashTypeFilter("ITEM")}
+                    onClick={() => setTrashTypeFilter("EQUIPO")}
                     className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
-                      trashTypeFilter === "ITEM"
+                      trashTypeFilter === "EQUIPO"
                         ? "bg-white text-blue-800 shadow-sm"
                         : "text-stone-500 hover:text-stone-950"
                     }`}
@@ -1954,7 +1954,7 @@ export function ConfigViews(props: ConfigViewsProps) {
           ) : (
             <div className="mt-4 space-y-2">
               {filteredTrashRecords.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-stone-250 bg-stone-50 px-6 py-12 text-center flex flex-col items-center justify-center">
+                <div className="rounded-2xl border border-dashed border-stone-250 bg-stone-50 px-6 py-12 text-center flex flex-col equipos-center justify-center">
                   <DeleteOutlineOutlinedIcon className="h-10 w-10 text-stone-300 mb-2.5" />
                   <p className="text-sm font-semibold text-stone-700">La papelera está vacía</p>
                   <p className="text-xs text-stone-500 mt-1 max-w-[340px] leading-relaxed">
@@ -1980,16 +1980,16 @@ export function ConfigViews(props: ConfigViewsProps) {
                   {filteredTrashRecords.map((record) => (
                     <div
                       key={record.papeleraId}
-                      className="group flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50/50 hover:bg-white p-3.5 sm:flex-row sm:items-center sm:justify-between transition-all hover:shadow-sm"
+                      className="group flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50/50 hover:bg-white p-3.5 sm:flex-row sm:equipos-center sm:justify-between transition-all hover:shadow-sm"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex equipos-center gap-3">
                         {/* Dynamic Icon Container */}
-                        <div className={`hidden xs:flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
-                          record.tipo === "ITEM"
+                        <div className={`hidden xs:flex h-9 w-9 equipos-center justify-center rounded-xl transition-all ${
+                          record.tipo === "EQUIPO"
                             ? "bg-blue-50 text-blue-600 border border-blue-150 group-hover:bg-blue-100/70"
                             : "bg-purple-50 text-purple-600 border border-purple-150 group-hover:bg-purple-100/70"
                         }`}>
-                          {record.tipo === "ITEM" ? (
+                          {record.tipo === "EQUIPO" ? (
                             <FolderZipOutlinedIcon className="h-4.5 w-4.5" />
                           ) : (
                             <StorageOutlinedIcon className="h-4.5 w-4.5" />
@@ -1997,18 +1997,18 @@ export function ConfigViews(props: ConfigViewsProps) {
                         </div>
 
                         <div>
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex flex-wrap equipos-center gap-2">
                             <span className="text-sm font-bold text-stone-850">{record.nombre}</span>
-                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border ${
-                              record.tipo === "ITEM"
+                            <span className={`inline-flex equipos-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border ${
+                              record.tipo === "EQUIPO"
                                 ? "bg-blue-50/70 text-blue-700 border-blue-200"
                                 : "bg-purple-50/70 text-purple-700 border-purple-200"
                             }`}>
-                              {record.tipo === "ITEM" ? "Equipo" : "Artículo"}
+                              {record.tipo === "EQUIPO" ? "Equipo" : "Artículo"}
                             </span>
                             <span className="text-[10px] text-stone-400 font-mono">ID: {record.originalId}</span>
                           </div>
-                          <p className="mt-1.5 text-[11px] text-stone-500 flex items-center gap-1">
+                          <p className="mt-1.5 text-[11px] text-stone-500 flex equipos-center gap-1">
                             <InfoOutlinedIcon className="h-3 w-3 inline text-stone-400" />
                             Eliminado el: <strong className="text-stone-700 font-semibold">{formatDateTimeForDisplay(record.createdAt)}</strong>
                           </p>
@@ -2019,7 +2019,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                         <button
                           type="button"
                           onClick={() => handleOpenTrashModal(record, "restore")}
-                          className="rounded-lg border border-emerald-250 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition-all active:scale-95 flex items-center gap-1"
+                          className="rounded-lg border border-emerald-250 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition-all active:scale-95 flex equipos-center gap-1"
                         >
                           <RestoreFromTrashOutlinedIcon className="h-3.5 w-3.5" />
                           Restaurar
@@ -2027,7 +2027,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                         <button
                           type="button"
                           onClick={() => handleOpenTrashModal(record, "delete")}
-                          className="rounded-lg border border-red-250 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-800 hover:bg-red-100 transition-all active:scale-95 flex items-center gap-1"
+                          className="rounded-lg border border-red-250 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-800 hover:bg-red-100 transition-all active:scale-95 flex equipos-center gap-1"
                         >
                           <DeleteOutlineOutlinedIcon className="h-3.5 w-3.5" />
                           Eliminar
@@ -2051,8 +2051,8 @@ export function ConfigViews(props: ConfigViewsProps) {
             }}
             size="lg"
           >
-            <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
-              <h3 className="text-sm font-bold text-stone-900 flex items-center gap-1.5">
+            <div className="flex equipos-center gap-2 border-b border-stone-200 pb-3">
+              <h3 className="text-sm font-bold text-stone-900 flex equipos-center gap-1.5">
                 {trashModalAction === "restore" ? (
                   <RestoreFromTrashOutlinedIcon className="h-4.5 w-4.5 text-emerald-600" />
                 ) : (
@@ -2063,12 +2063,12 @@ export function ConfigViews(props: ConfigViewsProps) {
                   : "Confirmar Eliminación Permanente"
                 }
               </h3>
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border ${
-                selectedTrashRecord.tipo === "ITEM"
+              <span className={`inline-flex equipos-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border ${
+                selectedTrashRecord.tipo === "EQUIPO"
                   ? "bg-blue-50 text-blue-700 border-blue-200"
                   : "bg-purple-50 text-purple-700 border-purple-200"
               }`}>
-                {selectedTrashRecord.tipo === "ITEM" ? "Equipo" : "Artículo"}
+                {selectedTrashRecord.tipo === "EQUIPO" ? "Equipo" : "Artículo"}
               </span>
             </div>
 
@@ -2093,29 +2093,29 @@ export function ConfigViews(props: ConfigViewsProps) {
                 </p>
 
                 <div className="rounded-xl border border-stone-200 bg-white p-3 text-xs space-y-2 max-h-[35vh] overflow-y-auto shadow-inner">
-                  {selectedTrashRecord.tipo === "ITEM" ? (
+                  {selectedTrashRecord.tipo === "EQUIPO" ? (
                     <>
-                      <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                        <span className="font-medium text-stone-700 flex items-center gap-1.5">
+                      <div className="flex equipos-center justify-between border-b border-stone-100 pb-2">
+                        <span className="font-medium text-stone-700 flex equipos-center gap-1.5">
                           <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
                           Ficha base del Equipo:
                         </span>
-                        <span className="font-extrabold text-stone-950">1 registro (Activo: {trashDetails.item?.activo ? "Sí" : "No"})</span>
+                        <span className="font-extrabold text-stone-950">1 registro (Activo: {trashDetails.equipo?.activo ? "Sí" : "No"})</span>
                       </div>
 
-                      {(trashDetails.cajaItems?.length ?? 0) > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                          <span className="text-stone-600 flex items-center gap-1.5">
+                      {(trashDetails.cajaEquipos?.length ?? 0) > 0 && (
+                        <div className="flex equipos-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex equipos-center gap-1.5">
                             <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Ubicaciones en Cajas del Depósito:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.cajaItems?.length ?? 0} registros</span>
+                          <span className="font-bold text-stone-900">{trashDetails.cajaEquipos?.length ?? 0} registros</span>
                         </div>
                       )}
 
                       {(trashDetails.itemCodigosSIE?.length ?? 0) > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                          <span className="text-stone-600 flex items-center gap-1.5">
+                        <div className="flex equipos-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex equipos-center gap-1.5">
                             <SearchOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Códigos de Barra de Inventario (SIE):
                           </span>
@@ -2124,8 +2124,8 @@ export function ConfigViews(props: ConfigViewsProps) {
                       )}
 
                       {(trashDetails.cajaItemCodigosSIE?.length ?? 0) > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                          <span className="text-stone-600 flex items-center gap-1.5">
+                        <div className="flex equipos-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex equipos-center gap-1.5">
                             <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Asociaciones de Códigos a Cajas:
                           </span>
@@ -2133,19 +2133,19 @@ export function ConfigViews(props: ConfigViewsProps) {
                         </div>
                       )}
 
-                      {(trashDetails.movimientoItems?.length ?? 0) > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                          <span className="text-stone-600 flex items-center gap-1.5">
+                      {(trashDetails.movimientoEquipos?.length ?? 0) > 0 && (
+                        <div className="flex equipos-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex equipos-center gap-1.5">
                             <InfoOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Historial de Movimientos de Equipos:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.movimientoItems?.length ?? 0} movimientos</span>
+                          <span className="font-bold text-stone-900">{trashDetails.movimientoEquipos?.length ?? 0} movimientos</span>
                         </div>
                       )}
 
                       {(trashDetails.deletedMovimientos?.length ?? 0) > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                          <span className="text-stone-600 flex items-center gap-1.5">
+                        <div className="flex equipos-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex equipos-center gap-1.5">
                             <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Recibos de Entrega / Préstamos completos:
                           </span>
@@ -2154,8 +2154,8 @@ export function ConfigViews(props: ConfigViewsProps) {
                       )}
 
                       {(trashDetails.deletedPrestamosActivos?.length ?? 0) > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-100 pb-2 bg-amber-50/50 p-1.5 rounded-lg border border-amber-100">
-                          <span className="text-amber-900 font-bold flex items-center gap-1.5">
+                        <div className="flex equipos-center justify-between border-b border-stone-100 pb-2 bg-amber-50/50 p-1.5 rounded-lg border border-amber-100">
+                          <span className="text-amber-900 font-bold flex equipos-center gap-1.5">
                             <WarningAmberOutlinedIcon className="h-4 w-4 text-amber-600" />
                             Préstamos Vigentes (Pendientes de Devolución):
                           </span>
@@ -2164,8 +2164,8 @@ export function ConfigViews(props: ConfigViewsProps) {
                       )}
 
                       {(trashDetails.deletedPrestamosHistoriales?.length ?? 0) > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                          <span className="text-stone-600 flex items-center gap-1.5">
+                        <div className="flex equipos-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex equipos-center gap-1.5">
                             <CheckCircleOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Historial de Préstamos Finalizados:
                           </span>
@@ -2173,20 +2173,20 @@ export function ConfigViews(props: ConfigViewsProps) {
                         </div>
                       )}
 
-                      {(trashDetails.stockOperacionItems?.length ?? 0) > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-stone-600 flex items-center gap-1.5">
+                      {(trashDetails.stockOperacionEquipos?.length ?? 0) > 0 && (
+                        <div className="flex equipos-center justify-between">
+                          <span className="text-stone-600 flex equipos-center gap-1.5">
                             <CheckCircleOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Operaciones de Ajuste de Stock Relacionadas:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.stockOperacionItems?.length ?? 0} registros</span>
+                          <span className="font-bold text-stone-900">{trashDetails.stockOperacionEquipos?.length ?? 0} registros</span>
                         </div>
                       )}
                     </>
                   ) : (
                     <>
-                      <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                        <span className="font-medium text-stone-700 flex items-center gap-1.5">
+                      <div className="flex equipos-center justify-between border-b border-stone-100 pb-2">
+                        <span className="font-medium text-stone-700 flex equipos-center gap-1.5">
                           <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
                           Ficha base del Artículo:
                         </span>
@@ -2194,8 +2194,8 @@ export function ConfigViews(props: ConfigViewsProps) {
                       </div>
 
                       {(trashDetails.stockMovimientos?.length ?? 0) > 0 && (
-                        <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                          <span className="text-stone-600 flex items-center gap-1.5">
+                        <div className="flex equipos-center justify-between border-b border-stone-100 pb-2">
+                          <span className="text-stone-600 flex equipos-center gap-1.5">
                             <InfoOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Movimientos de Stock (Ingresos / Entregas):
                           </span>
@@ -2204,8 +2204,8 @@ export function ConfigViews(props: ConfigViewsProps) {
                       )}
 
                       {(trashDetails.emptyEntregas?.length ?? 0) > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-stone-600 flex items-center gap-1.5">
+                        <div className="flex equipos-center justify-between">
+                          <span className="text-stone-600 flex equipos-center gap-1.5">
                             <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Planillas de Entregas a Personal Completas:
                           </span>
@@ -2217,7 +2217,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                 </div>
 
                 {trashModalAction === "delete" ? (
-                  <div className="rounded-xl border border-red-250 bg-red-50 p-3 text-xs text-red-950 flex gap-2 items-start shadow-sm">
+                  <div className="rounded-xl border border-red-250 bg-red-50 p-3 text-xs text-red-950 flex gap-2 equipos-start shadow-sm">
                     <WarningAmberOutlinedIcon className="h-5 w-5 text-red-750 shrink-0" />
                     <div>
                       <strong className="font-extrabold text-red-900 block mb-0.5">⚠️ ADVERTENCIA CRÍTICA:</strong>
@@ -2225,7 +2225,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-emerald-250 bg-emerald-50 p-3 text-xs text-emerald-950 flex gap-2 items-start shadow-sm">
+                  <div className="rounded-xl border border-emerald-250 bg-emerald-50 p-3 text-xs text-emerald-950 flex gap-2 equipos-start shadow-sm">
                     <CheckCircleOutlinedIcon className="h-5 w-5 text-emerald-750 shrink-0" />
                     <div>
                       <strong className="font-extrabold text-emerald-900 block mb-0.5">💡 NOTA DE RESTAURACIÓN:</strong>

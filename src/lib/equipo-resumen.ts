@@ -18,14 +18,14 @@ function sortResumenRows(a: EquipoResumenRow, b: EquipoResumenRow) {
 }
 
 export async function getEquipoResumenData(): Promise<EquipoResumenData> {
-  const items = await prisma.item.findMany({
+  const equipos = await prisma.equipo.findMany({
     where: { activo: true },
     orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
-    select: { itemId: true, nombre: true },
+    select: { equipoId: true, nombre: true },
   });
 
-  const itemIds = items.map((item) => item.itemId);
-  const itemIndexById = new Map(itemIds.map((itemId, index) => [itemId.toString(), index]));
+  const equipoIds = equipos.map((equipo) => equipo.equipoId);
+  const itemIndexById = new Map(equipoIds.map((equipoId, index) => [equipoId.toString(), index]));
 
   const personal = await prisma.personal.findMany({
     where: {
@@ -44,10 +44,10 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
         include: {
           movimiento: {
             include: {
-              items: {
-                where: itemIds.length > 0 ? { itemId: { in: itemIds } } : undefined,
+              equipos: {
+                where: equipoIds.length > 0 ? { equipoId: { in: equipoIds } } : undefined,
                 select: {
-                  itemId: true,
+                  equipoId: true,
                   cantidad: true,
                 },
               },
@@ -59,7 +59,7 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
   });
 
   const rowsByBattery = new Map<string, EquipoResumenRow>();
-  const unitTotals = Array.from({ length: items.length }, () => 0);
+  const unitTotals = Array.from({ length: equipos.length }, () => 0);
 
   for (const persona of personal) {
     const batteryKey = persona.bateria ? String(persona.bateria.bateriaId) : "NONE";
@@ -72,7 +72,7 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
         key: batteryKey,
         nombre: batteryName,
         orden: batteryOrder,
-        totales: Array.from({ length: items.length }, () => 0),
+        totales: Array.from({ length: equipos.length }, () => 0),
         totalGeneral: 0,
       };
       rowsByBattery.set(batteryKey, summaryRow);
@@ -81,8 +81,8 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
     for (const destinatarioMovimiento of persona.movimientosDestinatario) {
       const movimiento = destinatarioMovimiento.movimiento;
       const factor = movimientoFactor(movimiento.tipo);
-      for (const detail of movimiento.items) {
-        const index = itemIndexById.get(detail.itemId.toString());
+      for (const detail of movimiento.equipos) {
+        const index = itemIndexById.get(detail.equipoId.toString());
         if (index === undefined) continue;
         const delta = detail.cantidad * factor;
         summaryRow.totales[index] += delta;
@@ -102,10 +102,10 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
 
   return {
     generatedAt: formatDateTimeForDisplay(new Date()),
-    items: items.map((item) => ({
-      equipoId: item.itemId.toString(),
-      itemId: item.itemId.toString(),
-      nombre: item.nombre,
+    equipos: equipos.map((equipo) => ({
+      equipoId: equipo.equipoId.toString(),
+      equipoId: equipo.equipoId.toString(),
+      nombre: equipo.nombre,
     })),
     unidad,
     baterias: Array.from(rowsByBattery.values()).sort(sortResumenRows),

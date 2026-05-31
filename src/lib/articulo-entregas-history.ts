@@ -15,7 +15,7 @@ export interface ArticuloEntregaHistorialEntry {
   usuarioEntregaLabel: string;
   fecha: string;
   comentario: string | null;
-  items: ArticuloEntregaHistorialItem[];
+  equipos: ArticuloEntregaHistorialItem[];
 }
 
 export type ArticuloEntregaHistorialFilters = {
@@ -40,7 +40,7 @@ export function filterArticuloEntregasHistorial(
       const matchesOrdenante =
         entrega.ordenanteLabel.toLowerCase().includes(normalizedSearchTerm) ||
         entrega.ordenanteCi.includes(normalizedSearchTerm);
-      const matchesArticulo = entrega.items.some((item) => item.nombre.toLowerCase().includes(normalizedSearchTerm));
+      const matchesArticulo = entrega.equipos.some((equipo) => equipo.nombre.toLowerCase().includes(normalizedSearchTerm));
       const matchesComentario = entrega.comentario?.toLowerCase().includes(normalizedSearchTerm) ?? false;
 
       if (!matchesDestinatario && !matchesOrdenante && !matchesArticulo && !matchesComentario) {

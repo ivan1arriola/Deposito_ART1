@@ -27,7 +27,7 @@ interface RegistroPayload {
   afectaStock?: boolean;
   fecha: string;
   comentarios?: string;
-  items: Array<{ itemId: string; cantidad: number }>;
+  equipos: Array<{ equipoId: string; cantidad: number }>;
 }
 
 interface SaveRegistroOptions extends CallbackProps {
@@ -129,9 +129,9 @@ export async function saveRegistroHandler(
   callbacks: SaveRegistroOptions
 ) {
   try {
-    // Validar items
-    const uniqueItemIds = new Set(payload.items.map((item) => item.itemId));
-    if (uniqueItemIds.size !== payload.items.length) {
+    // Validar equipos
+    const uniqueItemIds = new Set(payload.equipos.map((equipo) => equipo.equipoId));
+    if (uniqueItemIds.size !== payload.equipos.length) {
       const message = "No puedes repetir equipos en un mismo movimiento.";
       callbacks.onError?.(message);
       throw new Error(message);

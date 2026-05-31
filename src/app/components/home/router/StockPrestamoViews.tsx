@@ -152,7 +152,7 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           onRemovePrestamoItem={removePrestamoDraftItem}
           onSubmitPrestamo={() => void savePrestamo(false)}
           onSubmitPrestamoAndPrint={() => void savePrestamo(true)}
-          onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
+          onReturnPrestamo={(prestamoId, fechaDevolucion, equipos) => void returnPrestamo(prestamoId, fechaDevolucion, equipos)}
           onReload={() => void reloadActiveStockData()}
         />
       ) : null}
@@ -185,7 +185,7 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           onRemovePrestamoItem={removePrestamoDraftItem}
           onSubmitPrestamo={() => void savePrestamo(false)}
           onSubmitPrestamoAndPrint={() => void savePrestamo(true)}
-          onReturnPrestamo={(prestamoId, fechaDevolucion, items) => void returnPrestamo(prestamoId, fechaDevolucion, items)}
+          onReturnPrestamo={(prestamoId, fechaDevolucion, equipos) => void returnPrestamo(prestamoId, fechaDevolucion, equipos)}
           onEditPrestamo={(prestamoId, payload) => editPrestamo(prestamoId, payload)}
           onDeletePrestamo={(prestamoId) => void deletePrestamo(prestamoId)}
           onReload={() => void reloadActiveStockData()}

@@ -43,8 +43,8 @@ export function buildEstanteriaKey(codigo: string, piso: number) {
   return `${piso}:${codigo.trim().toUpperCase()}`;
 }
 
-export function sortEtiquetadoItems(items: EtiquetadoItem[]) {
-  return [...items].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
+export function sortEtiquetadoItems(equipos: EtiquetadoItem[]) {
+  return [...equipos].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
 }
 
 export function buildEstanteriaOptions(estanterias: EtiquetadoEstanteria[]) {

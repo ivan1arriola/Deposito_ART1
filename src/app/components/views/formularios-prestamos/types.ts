@@ -20,8 +20,8 @@ export type PrestamoEditPayload = {
   fechaDevolucion?: string;
   comentarios?: string;
   motivo: string;
-  items: Array<{
-    itemId: string;
+  equipos: Array<{
+    equipoId: string;
     cantidad: number;
     estadoEntrega: PrestamoEstadoEquipo;
     comentarioEntrega?: string;
@@ -69,7 +69,7 @@ export type FormulariosPrestamosViewProps = {
   onReturnPrestamo: (
     prestamoId: string,
     fechaDevolucion: string,
-    items?: Array<{ itemId: string; estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion?: string }>,
+    equipos?: Array<{ equipoId: string; estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion?: string }>,
   ) => void;
   onEditPrestamo: (prestamoId: string, payload: PrestamoEditPayload) => Promise<void>;
   onDeletePrestamo: (prestamoId: string) => void;

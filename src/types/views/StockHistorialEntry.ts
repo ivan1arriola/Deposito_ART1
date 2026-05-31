@@ -14,8 +14,8 @@ export type StockHistorialEntry = {
   ci: string | null;
   persona: string | null;
   registradoPor: string | null;
-  items: Array<{
-    itemId: string;
+  equipos: Array<{
+    equipoId: string;
     nombre: string;
     cantidad: number;
     delta: number;

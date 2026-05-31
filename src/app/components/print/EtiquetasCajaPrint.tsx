@@ -75,7 +75,7 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
     main {
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-equipos: center;
       gap: 8mm;
       padding: 6mm 0;
     }
@@ -89,7 +89,7 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
       max-height: ${pageHeight};
       padding: 4mm;
       display: flex;
-      align-items: stretch;
+      align-equipos: stretch;
       justify-content: center;
       page-break-after: always;
       break-after: page;
@@ -110,7 +110,7 @@ function buildPrintStyles(orientacion: EtiquetaOrientacion) {
       margin: 0 auto;
       padding: 14mm 10mm;
       display: flex;
-      align-items: center;
+      align-equipos: center;
       justify-content: center;
       background: #f4f4f4;
       color: #111;
@@ -567,7 +567,7 @@ function EquipoCard({
               {column.map((codigo, index) => (
                 <div
                   key={`${equipo.nombre}-${codigo.codigo}-${codigo.talle}-${columnIndex}-${index}`}
-                  className={`grid gap-2 items-end ${
+                  className={`grid gap-2 equipos-end ${
                     index < column.length - 1 ? `border-b border-black/15 ${codigoLayout.rowPaddingClass}` : ""
                   }`}
                   style={{
@@ -673,7 +673,7 @@ export function EtiquetaCajaPrintSheet({
               </div>
             </div>
 
-            <div className="rounded-[14px] border-[2px] border-black px-4 py-2 flex items-center min-w-0">
+            <div className="rounded-[14px] border-[2px] border-black px-4 py-2 flex equipos-center min-w-0">
               <div className="min-w-0">
                 <div className="text-[11px] font-extrabold uppercase tracking-tight">Códigos registrados</div>
                 <div
@@ -692,7 +692,7 @@ export function EtiquetaCajaPrintSheet({
 
           <div className={`grid ${getLayoutClass(totalEquipos)} gap-3 flex-1 min-h-0 auto-rows-fr`}>
             {cajaModel.equipos.length === 0 ? (
-              <div className="rounded-[14px] border-[2px] border-dashed border-black px-4 py-3 flex items-center justify-center col-span-full">
+              <div className="rounded-[14px] border-[2px] border-dashed border-black px-4 py-3 flex equipos-center justify-center col-span-full">
                 <span className="text-[24px] font-black uppercase tracking-tight">Sin equipos registrados</span>
               </div>
             ) : (
@@ -708,7 +708,7 @@ export function EtiquetaCajaPrintSheet({
           </div>
 
           <div className="rounded-[14px] border-[2px] border-black px-4 py-2 shrink-0">
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+            <div className="grid grid-cols-[1fr_auto_1fr] equipos-center">
               <div className="justify-self-end pr-4">
                 <Image
                   src="/assets/marca-agua-recibo-prestamo-bn.png"

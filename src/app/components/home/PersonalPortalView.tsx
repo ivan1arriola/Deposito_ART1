@@ -104,7 +104,7 @@ export function PersonalPortalView({
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
       <section className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap equipos-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-black tracking-tight text-[var(--color-text-primary)]">Portal de Personal</h1>
             <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Acceso de solo consulta a tu información.</p>
@@ -112,7 +112,7 @@ export function PersonalPortalView({
               {`${currentUser.grado} ${personalFullName} · CI ${personalCiLabel}`}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap equipos-center gap-2">
             <button
               type="button"
               onClick={() => void onReloadProfile()}

@@ -86,8 +86,8 @@ export function FormulariosPrestamosView({
     fechaDevolucion: string;
     comentarios: string;
     motivo: string;
-    items: Array<{
-      itemId: string;
+    equipos: Array<{
+      equipoId: string;
       nombre: string;
       cantidad: string;
       estadoEntrega: PrestamoEstadoEquipo;
@@ -118,10 +118,10 @@ export function FormulariosPrestamosView({
     onReturnPrestamo(
       returnDialog.prestamo.prestamoId,
       fechaDevolucion,
-      returnDialog.prestamo.items.map((item) => {
-        const itemData = getReturnItemData(returnDialog.prestamo.prestamoId, item);
+      returnDialog.prestamo.equipos.map((equipo) => {
+        const itemData = getReturnItemData(returnDialog.prestamo.prestamoId, equipo);
         return {
-          itemId: item.itemId,
+          equipoId: equipo.equipoId,
           estadoDevolucion: itemData.estadoDevolucion,
           comentarioDevolucion: itemData.comentarioDevolucion.trim() || undefined,
         };
@@ -132,12 +132,12 @@ export function FormulariosPrestamosView({
 
   const getReturnItemData = (
     prestamoId: string,
-    item: StockDashboardData["prestamos"][number]["items"][number],
+    equipo: StockDashboardData["prestamos"][number]["equipos"][number],
   ) => {
     const byPrestamo = returnItemsByPrestamo[prestamoId];
-    if (byPrestamo && byPrestamo[item.itemId]) return byPrestamo[item.itemId];
+    if (byPrestamo && byPrestamo[equipo.equipoId]) return byPrestamo[equipo.equipoId];
     return {
-      estadoDevolucion: item.estadoEntrega,
+      estadoDevolucion: equipo.estadoEntrega,
       comentarioDevolucion: "",
     };
   };
@@ -163,14 +163,14 @@ export function FormulariosPrestamosView({
       fechaDevolucion: prestamo.fechaDevolucion || getTodayDateInput(),
       comentarios: prestamo.comentarios ?? "",
       motivo: "",
-      items: prestamo.items.map((item) => ({
-        itemId: item.itemId,
-        nombre: item.nombre,
-        cantidad: String(item.cantidad),
-        estadoEntrega: item.estadoEntrega,
-        comentarioEntrega: item.comentarioEntrega ?? "",
-        estadoDevolucion: item.estadoDevolucion ?? item.estadoEntrega,
-        comentarioDevolucion: item.comentarioDevolucion ?? "",
+      equipos: prestamo.equipos.map((equipo) => ({
+        equipoId: equipo.equipoId,
+        nombre: equipo.nombre,
+        cantidad: String(equipo.cantidad),
+        estadoEntrega: equipo.estadoEntrega,
+        comentarioEntrega: equipo.comentarioEntrega ?? "",
+        estadoDevolucion: equipo.estadoDevolucion ?? equipo.estadoEntrega,
+        comentarioDevolucion: equipo.comentarioDevolucion ?? "",
       })),
     });
   }
@@ -183,16 +183,16 @@ export function FormulariosPrestamosView({
       return;
     }
 
-    const payloadItems = editDialog.items.map((item) => ({
-      itemId: item.itemId,
-      cantidad: Number(item.cantidad),
-      estadoEntrega: item.estadoEntrega,
-      comentarioEntrega: item.comentarioEntrega.trim() || undefined,
-      estadoDevolucion: editDialog.prestamo.estado === "DEVUELTO" ? item.estadoDevolucion : undefined,
-      comentarioDevolucion: editDialog.prestamo.estado === "DEVUELTO" ? item.comentarioDevolucion.trim() || undefined : undefined,
+    const payloadItems = editDialog.equipos.map((equipo) => ({
+      equipoId: equipo.equipoId,
+      cantidad: Number(equipo.cantidad),
+      estadoEntrega: equipo.estadoEntrega,
+      comentarioEntrega: equipo.comentarioEntrega.trim() || undefined,
+      estadoDevolucion: editDialog.prestamo.estado === "DEVUELTO" ? equipo.estadoDevolucion : undefined,
+      comentarioDevolucion: editDialog.prestamo.estado === "DEVUELTO" ? equipo.comentarioDevolucion.trim() || undefined : undefined,
     }));
 
-    if (payloadItems.some((item) => !Number.isInteger(item.cantidad) || item.cantidad <= 0)) {
+    if (payloadItems.some((equipo) => !Number.isInteger(equipo.cantidad) || equipo.cantidad <= 0)) {
       setEditDialogError("Todas las cantidades deben ser enteros mayores a 0.");
       return;
     }
@@ -239,7 +239,7 @@ export function FormulariosPrestamosView({
         fechaDevolucion: editDialog.prestamo.estado === "DEVUELTO" ? editDialog.fechaDevolucion.trim() : undefined,
         comentarios: editDialog.comentarios.trim() || undefined,
         motivo,
-        items: payloadItems,
+        equipos: payloadItems,
       });
       setEditDialog(null);
       if (selectedPrestamo?.prestamoId === editDialog.prestamo.prestamoId) {
@@ -319,12 +319,12 @@ export function FormulariosPrestamosView({
     return buildDestinatarioOptions(editDialog.destinatarioTipo, personal, oficialesSuboficiales);
   }, [editDialog, personal, oficialesSuboficiales]);
   const equiposConSeleccion = useMemo(
-    () => prestamoDraft.items.filter((item) => item.itemId.trim() !== "").length,
-    [prestamoDraft.items],
+    () => prestamoDraft.equipos.filter((equipo) => equipo.equipoId.trim() !== "").length,
+    [prestamoDraft.equipos],
   );
   const totalUnidadesPrestadas = useMemo(
-    () => prestamoDraft.items.reduce((total, item) => total + (Number(item.cantidad) > 0 ? Number(item.cantidad) : 0), 0),
-    [prestamoDraft.items],
+    () => prestamoDraft.equipos.reduce((total, equipo) => total + (Number(equipo.cantidad) > 0 ? Number(equipo.cantidad) : 0), 0),
+    [prestamoDraft.equipos],
   );
 
   const headerTitle =
@@ -347,7 +347,7 @@ export function FormulariosPrestamosView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap equipos-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">{headerTitle}</h2>
             <p className="mt-1 text-xs text-stone-600">{headerDescription}</p>
@@ -413,7 +413,7 @@ export function FormulariosPrestamosView({
       {activeTab === "registrar" ? (
         canWrite ? (
           <article className="ej-card rounded-2xl p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap equipos-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-stone-900">Registrar prestamo</h3>
                 <p className="mt-1 text-xs text-stone-600">Completa los pasos en orden para evitar errores al guardar.</p>
@@ -444,7 +444,7 @@ export function FormulariosPrestamosView({
                   <span className="font-semibold">Fecha prestamo:</span> {prestamoDraft.fechaPrestamo.trim() || "Sin definir"}
                 </p>
                 <p>
-                  <span className="font-semibold">Equipos:</span> {equiposConSeleccion}/{prestamoDraft.items.length} seleccionados
+                  <span className="font-semibold">Equipos:</span> {equiposConSeleccion}/{prestamoDraft.equipos.length} seleccionados
                   {" · "}
                   {totalUnidadesPrestadas} unidades
                 </p>
@@ -626,30 +626,30 @@ export function FormulariosPrestamosView({
               ) : null}
 
               <div className="mt-3 space-y-2">
-                {prestamoDraft.items.map((item, index) => (
+                {prestamoDraft.equipos.map((equipo, index) => (
                   <div
-                    key={`formulario-prestamo-item-${index}`}
+                    key={`formulario-prestamo-equipo-${index}`}
                     className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,1fr)_120px_140px_minmax(0,1fr)_auto]"
                   >
                     <label className="text-[11px] font-semibold uppercase tracking-wide text-stone-600">
                       Equipo
                       <select
-                        value={item.itemId}
+                        value={equipo.equipoId}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoItemChange(index, "itemId", event.target.value)}
+                        onChange={(event) => onPrestamoItemChange(index, "equipoId", event.target.value)}
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
                       >
                         <option value="">Seleccionar equipo</option>
                         {equiposOrdenados
                           .filter((equipo) => {
-                            if (equipo.itemId === item.itemId) return true;
-                            return !prestamoDraft.items.some(
+                            if (equipo.equipoId === equipo.equipoId) return true;
+                            return !prestamoDraft.equipos.some(
                               (selectedItem, selectedIndex) =>
-                                selectedIndex !== index && selectedItem.itemId === equipo.itemId,
+                                selectedIndex !== index && selectedItem.equipoId === equipo.equipoId,
                             );
                           })
                           .map((equipo) => (
-                            <option key={equipo.itemId} value={equipo.itemId}>
+                            <option key={equipo.equipoId} value={equipo.equipoId}>
                               {equipo.nombre}
                             </option>
                           ))}
@@ -661,7 +661,7 @@ export function FormulariosPrestamosView({
                       <input
                         type="number"
                         min={1}
-                        value={item.cantidad}
+                        value={equipo.cantidad}
                         disabled={prestamoSaving}
                         onChange={(event) => onPrestamoItemChange(index, "cantidad", event.target.value)}
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
@@ -671,7 +671,7 @@ export function FormulariosPrestamosView({
                     <label className="text-[11px] font-semibold uppercase tracking-wide text-stone-600">
                       Estado
                       <select
-                        value={item.estadoEntrega}
+                        value={equipo.estadoEntrega}
                         disabled={prestamoSaving}
                         onChange={(event) => onPrestamoItemChange(index, "estadoEntrega", event.target.value)}
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
@@ -687,7 +687,7 @@ export function FormulariosPrestamosView({
                     <label className="text-[11px] font-semibold uppercase tracking-wide text-stone-600">
                       Comentario
                       <input
-                        value={item.comentarioEntrega}
+                        value={equipo.comentarioEntrega}
                         disabled={prestamoSaving}
                         onChange={(event) => onPrestamoItemChange(index, "comentarioEntrega", event.target.value)}
                         placeholder="Comentario del equipo (opcional)"
@@ -695,11 +695,11 @@ export function FormulariosPrestamosView({
                       />
                     </label>
 
-                    <div className="flex items-end">
+                    <div className="flex equipos-end">
                       <button
                         type="button"
                         onClick={() => onRemovePrestamoItem(index)}
-                        disabled={prestamoSaving || prestamoDraft.items.length <= 1}
+                        disabled={prestamoSaving || prestamoDraft.equipos.length <= 1}
                         className="w-full rounded bg-rose-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 md:w-auto"
                       >
                         Quitar
@@ -714,9 +714,9 @@ export function FormulariosPrestamosView({
                   type="button"
                   onClick={onAddPrestamoItem}
                   disabled={prestamoSaving}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50"
+                  className="inline-flex w-full equipos-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50"
                 >
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-800 text-sm leading-none text-white">
+                  <span className="inline-flex h-5 w-5 equipos-center justify-center rounded-full bg-stone-800 text-sm leading-none text-white">
                     +
                   </span>
                   Agregar
@@ -756,7 +756,7 @@ export function FormulariosPrestamosView({
 
       {activeTab === "vigentes" ? (
         <article className="ej-card rounded-2xl p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap equipos-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-stone-900">Prestamos vigentes</h3>
             <a
               href={resumenPrestamosVigentesPrintHref}
@@ -769,7 +769,7 @@ export function FormulariosPrestamosView({
           </div>
           <div className="mt-3">
             <PrestamoList
-              items={prestamosVigentesFiltrados}
+              equipos={prestamosVigentesFiltrados}
               emptyMessage={
                 normalizedPrestamoIdFilter === ""
                   ? "No hay préstamos vigentes."
@@ -793,7 +793,7 @@ export function FormulariosPrestamosView({
           <h3 className="text-sm font-semibold text-stone-900">Historial (todos los prestamos)</h3>
           <div className="mt-3">
             <PrestamoList
-              items={prestamosFiltrados}
+              equipos={prestamosFiltrados}
               emptyMessage={
                 normalizedPrestamoIdFilter === ""
                   ? "No hay préstamos registrados."
@@ -853,24 +853,24 @@ export function FormulariosPrestamosView({
             <section className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos prestados</p>
               <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                {selectedPrestamo.items.map((item) => (
-                  <div key={`${selectedPrestamo.prestamoId}-modal-${item.itemId}`} className="mb-2 rounded-lg border border-stone-200 bg-white p-2 last:mb-0">
+                {selectedPrestamo.equipos.map((equipo) => (
+                  <div key={`${selectedPrestamo.prestamoId}-modal-${equipo.equipoId}`} className="mb-2 rounded-lg border border-stone-200 bg-white p-2 last:mb-0">
                     <p className="text-sm text-stone-700">
-                      <span className="font-semibold text-amber-700">{item.cantidad}</span> {item.nombre}
+                      <span className="font-semibold text-amber-700">{equipo.cantidad}</span> {equipo.nombre}
                     </p>
-                    <p className="text-xs text-stone-600">Entrega: {item.estadoEntrega}{item.comentarioEntrega ? ` | ${item.comentarioEntrega}` : ""}</p>
+                    <p className="text-xs text-stone-600">Entrega: {equipo.estadoEntrega}{equipo.comentarioEntrega ? ` | ${equipo.comentarioEntrega}` : ""}</p>
                     {selectedPrestamo.estado === "PENDIENTE" ? (
                       <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)]">
                         <select
-                          value={getReturnItemData(selectedPrestamo.prestamoId, item).estadoDevolucion}
+                          value={getReturnItemData(selectedPrestamo.prestamoId, equipo).estadoDevolucion}
                           disabled={returningPrestamoId === selectedPrestamo.prestamoId}
                           onChange={(event) =>
                             setReturnItemsByPrestamo((prev) => ({
                               ...prev,
                               [selectedPrestamo.prestamoId]: {
                                 ...(prev[selectedPrestamo.prestamoId] ?? {}),
-                                [item.itemId]: {
-                                  ...getReturnItemData(selectedPrestamo.prestamoId, item),
+                                [equipo.equipoId]: {
+                                  ...getReturnItemData(selectedPrestamo.prestamoId, equipo),
                                   estadoDevolucion: event.target.value as PrestamoEstadoEquipo,
                                 },
                               },
@@ -879,21 +879,21 @@ export function FormulariosPrestamosView({
                           className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
                         >
                           {ESTADO_OPTIONS.map((estado) => (
-                            <option key={`${selectedPrestamo.prestamoId}-${item.itemId}-modal-${estado}`} value={estado}>
+                            <option key={`${selectedPrestamo.prestamoId}-${equipo.equipoId}-modal-${estado}`} value={estado}>
                               {estado}
                             </option>
                           ))}
                         </select>
                         <input
-                          value={getReturnItemData(selectedPrestamo.prestamoId, item).comentarioDevolucion}
+                          value={getReturnItemData(selectedPrestamo.prestamoId, equipo).comentarioDevolucion}
                           disabled={returningPrestamoId === selectedPrestamo.prestamoId}
                           onChange={(event) =>
                             setReturnItemsByPrestamo((prev) => ({
                               ...prev,
                               [selectedPrestamo.prestamoId]: {
                                 ...(prev[selectedPrestamo.prestamoId] ?? {}),
-                                [item.itemId]: {
-                                  ...getReturnItemData(selectedPrestamo.prestamoId, item),
+                                [equipo.equipoId]: {
+                                  ...getReturnItemData(selectedPrestamo.prestamoId, equipo),
                                   comentarioDevolucion: event.target.value,
                                 },
                               },
@@ -905,8 +905,8 @@ export function FormulariosPrestamosView({
                       </div>
                     ) : (
                       <p className="text-xs text-stone-600">
-                        Devolucion: {item.estadoDevolucion ?? "-"}
-                        {item.comentarioDevolucion ? ` | ${item.comentarioDevolucion}` : ""}
+                        Devolucion: {equipo.estadoDevolucion ?? "-"}
+                        {equipo.comentarioDevolucion ? ` | ${equipo.comentarioDevolucion}` : ""}
                       </p>
                     )}
                   </div>
@@ -1253,55 +1253,55 @@ export function FormulariosPrestamosView({
 
             <section className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos</p>
-              {editDialog.items.map((item, index) => (
+              {editDialog.equipos.map((equipo, index) => (
                 <div
-                  key={`edit-prestamo-item-${item.itemId}`}
+                  key={`edit-prestamo-equipo-${equipo.equipoId}`}
                   className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,1fr)_120px_140px_minmax(0,1fr)]"
                 >
-                  <p className="text-sm font-semibold text-stone-900">{item.nombre}</p>
+                  <p className="text-sm font-semibold text-stone-900">{equipo.nombre}</p>
                   <input
                     type="number"
                     min={1}
-                    value={item.cantidad}
+                    value={equipo.cantidad}
                     disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                     onChange={(event) =>
                       setEditDialog((current) => {
                         if (!current) return current;
-                        const nextItems = [...current.items];
+                        const nextItems = [...current.equipos];
                         nextItems[index] = { ...nextItems[index], cantidad: event.target.value };
-                        return { ...current, items: nextItems };
+                        return { ...current, equipos: nextItems };
                       })
                     }
                     className="rounded border border-stone-300 px-3 py-2 text-sm"
                   />
                   <select
-                    value={item.estadoEntrega}
+                    value={equipo.estadoEntrega}
                     disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                     onChange={(event) =>
                       setEditDialog((current) => {
                         if (!current) return current;
-                        const nextItems = [...current.items];
+                        const nextItems = [...current.equipos];
                         nextItems[index] = { ...nextItems[index], estadoEntrega: event.target.value as PrestamoEstadoEquipo };
-                        return { ...current, items: nextItems };
+                        return { ...current, equipos: nextItems };
                       })
                     }
                     className="rounded border border-stone-300 px-3 py-2 text-sm"
                   >
                     {ESTADO_OPTIONS.map((estado) => (
-                      <option key={`edit-prestamo-item-${item.itemId}-${estado}`} value={estado}>
+                      <option key={`edit-prestamo-equipo-${equipo.equipoId}-${estado}`} value={estado}>
                         {estado}
                       </option>
                     ))}
                   </select>
                   <input
-                    value={item.comentarioEntrega}
+                    value={equipo.comentarioEntrega}
                     disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                     onChange={(event) =>
                       setEditDialog((current) => {
                         if (!current) return current;
-                        const nextItems = [...current.items];
+                        const nextItems = [...current.equipos];
                         nextItems[index] = { ...nextItems[index], comentarioEntrega: event.target.value };
-                        return { ...current, items: nextItems };
+                        return { ...current, equipos: nextItems };
                       })
                     }
                     placeholder="Comentario entrega (opcional)"
@@ -1310,33 +1310,33 @@ export function FormulariosPrestamosView({
                   {editDialog.prestamo.estado === "DEVUELTO" ? (
                     <div className="md:col-span-4 grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)]">
                       <select
-                        value={item.estadoDevolucion}
+                        value={equipo.estadoDevolucion}
                         disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                         onChange={(event) =>
                           setEditDialog((current) => {
                             if (!current) return current;
-                            const nextItems = [...current.items];
+                            const nextItems = [...current.equipos];
                             nextItems[index] = { ...nextItems[index], estadoDevolucion: event.target.value as PrestamoEstadoEquipo };
-                            return { ...current, items: nextItems };
+                            return { ...current, equipos: nextItems };
                           })
                         }
                         className="rounded border border-stone-300 px-3 py-2 text-sm"
                       >
                         {ESTADO_OPTIONS.map((estado) => (
-                          <option key={`edit-prestamo-devolucion-${item.itemId}-${estado}`} value={estado}>
+                          <option key={`edit-prestamo-devolucion-${equipo.equipoId}-${estado}`} value={estado}>
                             {estado}
                           </option>
                         ))}
                       </select>
                       <input
-                        value={item.comentarioDevolucion}
+                        value={equipo.comentarioDevolucion}
                         disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                         onChange={(event) =>
                           setEditDialog((current) => {
                             if (!current) return current;
-                            const nextItems = [...current.items];
+                            const nextItems = [...current.equipos];
                             nextItems[index] = { ...nextItems[index], comentarioDevolucion: event.target.value };
-                            return { ...current, items: nextItems };
+                            return { ...current, equipos: nextItems };
                           })
                         }
                         placeholder="Comentario devolución (opcional)"

@@ -1,4 +1,4 @@
 export type RegistroDraftEquipo = {
-  itemId: string;
+  equipoId: string;
   cantidad: string;
 };

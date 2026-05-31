@@ -5,12 +5,12 @@ export type StockOperacionDraft = {
   tipo: StockOperacionTipo;
   fecha: string;
   comentarios: string;
-  items: StockOperacionDraftItem[];
+  equipos: StockOperacionDraftItem[];
 };
 
 export const EMPTY_STOCK_OPERACION_DRAFT: StockOperacionDraft = {
   tipo: "INGRESO",
   fecha: "",
   comentarios: "",
-  items: [{ itemId: "", cantidad: "1" }],
+  equipos: [{ equipoId: "", cantidad: "1" }],
 };

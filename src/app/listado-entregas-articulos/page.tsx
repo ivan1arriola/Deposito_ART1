@@ -102,7 +102,7 @@ function buildStyles() {
       gap: 2mm;
     }
 
-    .totals-item {
+    .totals-equipo {
       border: 1px solid #000;
       background: #ececec;
       padding: 1.8mm 2mm;
@@ -221,18 +221,18 @@ function buildStyles() {
       padding-top: 2mm;
     }
 
-    .items-cell {
+    .equipos-cell {
       gap: 0.7mm;
     }
 
-    .item-list {
+    .equipo-list {
       margin: 0;
       padding-left: 3.7mm;
       display: grid;
       gap: 0.5mm;
     }
 
-    .item-line {
+    .equipo-line {
       margin: 0;
     }
 
@@ -315,11 +315,11 @@ export default async function ListadoEntregasArticulosPage({
   });
 
   const totalUnidades = entregas.reduce(
-    (total, entrega) => total + entrega.items.reduce((subtotal, item) => subtotal + item.cantidad, 0),
+    (total, entrega) => total + entrega.equipos.reduce((subtotal, equipo) => subtotal + equipo.cantidad, 0),
     0,
   );
   const totalPersonas = new Set(entregas.map((entrega) => entrega.personalCi)).size;
-  const totalArticulosDistintos = new Set(entregas.flatMap((entrega) => entrega.items.map((item) => item.articuloId))).size;
+  const totalArticulosDistintos = new Set(entregas.flatMap((entrega) => entrega.equipos.map((equipo) => equipo.articuloId))).size;
 
   const now = new Date();
   const generatedAt = formatGeneratedAt(now);
@@ -354,19 +354,19 @@ export default async function ListadoEntregasArticulosPage({
         ) : null}
 
         <section className="totals">
-          <article className="totals-item">
+          <article className="totals-equipo">
             <p className="totals-label">Entregas</p>
             <p className="totals-value">{entregas.length}</p>
           </article>
-          <article className="totals-item">
+          <article className="totals-equipo">
             <p className="totals-label">Unidades entregadas</p>
             <p className="totals-value">{totalUnidades}</p>
           </article>
-          <article className="totals-item">
+          <article className="totals-equipo">
             <p className="totals-label">Personal beneficiario</p>
             <p className="totals-value">{totalPersonas}</p>
           </article>
-          <article className="totals-item">
+          <article className="totals-equipo">
             <p className="totals-label">Artículos distintos</p>
             <p className="totals-value">{totalArticulosDistintos}</p>
           </article>
@@ -401,7 +401,7 @@ export default async function ListadoEntregasArticulosPage({
               </thead>
               <tbody>
                 {entregas.map((entrega) => {
-                  const totalUnidadesEntrega = entrega.items.reduce((total, item) => total + item.cantidad, 0);
+                  const totalUnidadesEntrega = entrega.equipos.reduce((total, equipo) => total + equipo.cantidad, 0);
                   return (
                     <tr key={`print-entrega-articulos-${entrega.articuloEntregaPersonalId}`}>
                       <td>
@@ -425,17 +425,17 @@ export default async function ListadoEntregasArticulosPage({
                         </div>
                       </td>
                       <td>
-                        <div className="stack items-cell">
+                        <div className="stack equipos-cell">
                           <p>
-                            <span className="label">{`${entrega.items.length} tipos:`}</span>
+                            <span className="label">{`${entrega.equipos.length} tipos:`}</span>
                           </p>
-                          <ul className="item-list">
-                            {entrega.items.map((item) => (
+                          <ul className="equipo-list">
+                            {entrega.equipos.map((equipo) => (
                               <li
-                                key={`listado-entrega-articulo-${entrega.articuloEntregaPersonalId}-${item.articuloId}`}
-                                className="item-line"
+                                key={`listado-entrega-articulo-${entrega.articuloEntregaPersonalId}-${equipo.articuloId}`}
+                                className="equipo-line"
                               >
-                                {`${item.nombre} x${item.cantidad} (${item.tipo})`}
+                                {`${equipo.nombre} x${equipo.cantidad} (${equipo.tipo})`}
                               </li>
                             ))}
                           </ul>

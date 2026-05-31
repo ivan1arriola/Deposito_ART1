@@ -6,7 +6,7 @@ import { buildFirmasHojaEntregaLineas, getFirmaLineBaseIndentPt, getFirmaLineInl
 import { normalizeOutputText } from "@/lib/spanish-text";
 
 interface MatrixRow {
-  item: string;
+  equipo: string;
   entrega: number[];
   entregaTotal: number;
   devolucion: number[];

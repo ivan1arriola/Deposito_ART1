@@ -83,7 +83,7 @@ export async function DELETE(
         personalCi: existing.personalCi,
         personalNombre: pNombre,
         comentarioOriginal: existing.comentario,
-        items: itemsSummary,
+        equipos: itemsSummary,
       },
     });
 

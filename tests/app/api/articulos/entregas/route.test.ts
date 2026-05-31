@@ -61,7 +61,7 @@ describe("POST /api/articulos/entregas", () => {
       createMockRequest({
         personalCi: "12345672",
         ordenanteCi: "12345688",
-        items: [{ articuloId: 1, cantidad: 2 }],
+        equipos: [{ articuloId: 1, cantidad: 2 }],
       }),
     );
 
@@ -85,13 +85,13 @@ describe("POST /api/articulos/entregas", () => {
       createMockRequest({
         personalCi: "12345672",
         ordenanteCi: "12345688",
-        items: [{ articuloId: 1, cantidad: -1 }],
+        equipos: [{ articuloId: 1, cantidad: -1 }],
       }),
     );
 
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.error).toContain("Cada item debe incluir");
+    expect(json.error).toContain("Cada equipo debe incluir");
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
@@ -127,7 +127,7 @@ describe("POST /api/articulos/entregas", () => {
       createMockRequest({
         personalCi: "12345672",
         ordenanteCi: "12345688",
-        items: [{ articuloId: 1, cantidad: 2 }],
+        equipos: [{ articuloId: 1, cantidad: 2 }],
       }),
     );
 
@@ -184,7 +184,7 @@ describe("POST /api/articulos/entregas", () => {
         ordenanteCi: "12345688",
         fecha: "2026-05-20",
         comentario: "Entrega semanal",
-        items: [{ articuloId: 1, cantidad: 3 }],
+        equipos: [{ articuloId: 1, cantidad: 3 }],
       }),
     );
 
@@ -238,7 +238,7 @@ describe("POST /api/articulos/entregas", () => {
       },
     ]);
 
-    // Stock validation: enough stock for both items
+    // Stock validation: enough stock for both equipos
     vi.mocked(calcularStockArticulo)
       .mockResolvedValueOnce(40) // validation: art 1 has 40
       .mockResolvedValueOnce(12) // validation: art 2 has 12
@@ -261,7 +261,7 @@ describe("POST /api/articulos/entregas", () => {
         ordenanteCi: "12345688",
         fecha: "2026-05-20",
         comentario: "Entrega semanal",
-        items: [
+        equipos: [
           { articuloId: 1, cantidad: 5 },
           { articuloId: 2, cantidad: 2 },
         ],
@@ -277,7 +277,7 @@ describe("POST /api/articulos/entregas", () => {
       ordenanteCi: "12345688",
       fecha: "20/05/2026",
       comentario: "Entrega semanal",
-      items: [
+      equipos: [
         {
           articuloId: 1,
           nombre: "Block de Hojas A4",

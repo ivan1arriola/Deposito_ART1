@@ -31,7 +31,7 @@ const mockTx = {
     update: vi.fn(),
     create: vi.fn(),
   },
-  item: {
+  equipo: {
     delete: vi.fn(),
     update: vi.fn(),
     create: vi.fn(),

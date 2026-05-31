@@ -218,7 +218,7 @@ model TipoEquipoCatalogo {
   clave        String @unique
   nombre       String @unique
   orden        Int    @map("orden") @db.SmallInt
-  items        Item[]
+  equipos Equipo[]
 
   @@index([orden])
   @@map("tipo_equipo")
@@ -278,35 +278,35 @@ model TallaTipo {
   @@map("talla_tipo")
 }
 
-model Item {
-  itemId              BigInt               @id @default(autoincrement()) @map("item_id")
+model Equipo {
+  equipoId              BigInt               @id @default(autoincrement()) @map("item_id")
   nombre              String               @unique
   tipoEquipoId        Int?                 @map("tipo_equipo_id") @db.SmallInt
   activo              Boolean              @default(true)
   ordenPdf            Int                  @map("orden_pdf")
   existenciaSie       Int                  @default(0) @map("existencia_sie")
-  movimientoItems     MovimientoItem[]
-  stockOperacionItems StockOperacionItem[]
-  codigosSIE          ItemCodigoSIE[]
-  cajas               CajaItem[]
+  movimientoEquipos     MovimientoEquipo[]
+  stockOperacionEquipos StockOperacionEquipo[]
+  codigosSIE          EquipoCodigoSIE[]
+  cajas               CajaEquipo[]
   tipoEquipo          TipoEquipoCatalogo?  @relation(fields: [tipoEquipoId], references: [tipoEquipoId], onDelete: SetNull)
 
   @@index([tipoEquipoId])
   @@map("equipos")
 }
 
-model ItemCodigoSIE {
-  itemCodigoSIEId BigInt             @id @default(autoincrement()) @map("item_codigo_sie_id")
+model EquipoCodigoSIE {
+  equipoCodigoSIEId BigInt             @id @default(autoincrement()) @map("item_codigo_sie_id")
   codigo          String
   talla           String             @default("-")
-  itemId          BigInt             @map("item_id")
-  item            Item               @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
-  cajas           CajaItemCodigoSIE[]
+  equipoId          BigInt             @map("item_id")
+  equipo Equipo               @relation(fields: [equipoId], references: [equipoId], onDelete: Cascade)
+  cajas           CajaEquipoCodigoSIE[]
 
-  @@index([itemId])
+  @@index([equipoId])
   @@index([codigo])
-  @@unique([codigo, talla, itemId])
-  @@map("item_codigo_sie")
+  @@unique([codigo, talla, equipoId])
+  @@map("equipo_codigo_sie")
 }
 
 model Caja {
@@ -314,34 +314,34 @@ model Caja {
   estanteria            String            @db.VarChar(1)
   piso                  Int               @db.SmallInt
   estanteriaRef         Estanteria        @relation(fields: [estanteria, piso], references: [codigo, piso])
-  items                 CajaItem[]
-  codigosSIE            CajaItemCodigoSIE[]
+  equipos               CajaEquipo[]
+  codigosSIE            CajaEquipoCodigoSIE[]
 
   @@index([estanteria, piso])
   @@map("caja")
 }
 
-model CajaItem {
+model CajaEquipo {
   codigoDepositoGeneral Int    @map("codigo_deposito_general")
-  itemId                BigInt @map("item_id")
+  equipoId                BigInt @map("item_id")
   cantidad              Int    @default(1)
   caja                  Caja   @relation(fields: [codigoDepositoGeneral], references: [codigoDepositoGeneral], onDelete: Cascade)
-  item                  Item   @relation(fields: [itemId], references: [itemId], onDelete: Restrict)
+  equipo Equipo   @relation(fields: [equipoId], references: [equipoId], onDelete: Restrict)
 
-  @@id([codigoDepositoGeneral, itemId])
-  @@index([itemId])
-  @@map("caja_item")
+  @@id([codigoDepositoGeneral, equipoId])
+  @@index([equipoId])
+  @@map("caja_equipo")
 }
 
-model CajaItemCodigoSIE {
+model CajaEquipoCodigoSIE {
   codigoDepositoGeneral Int           @map("codigo_deposito_general")
-  itemCodigoSIEId       BigInt        @map("item_codigo_sie_id")
+  equipoCodigoSIEId       BigInt        @map("item_codigo_sie_id")
   caja                  Caja          @relation(fields: [codigoDepositoGeneral], references: [codigoDepositoGeneral], onDelete: Cascade)
-  itemCodigoSIE         ItemCodigoSIE @relation(fields: [itemCodigoSIEId], references: [itemCodigoSIEId], onDelete: Cascade)
+  equipoCodigoSIE         EquipoCodigoSIE @relation(fields: [equipoCodigoSIEId], references: [equipoCodigoSIEId], onDelete: Cascade)
 
-  @@id([codigoDepositoGeneral, itemCodigoSIEId])
-  @@index([itemCodigoSIEId])
-  @@map("caja_item_codigo_sie")
+  @@id([codigoDepositoGeneral, equipoCodigoSIEId])
+  @@index([equipoCodigoSIEId])
+  @@map("caja_equipo_codigo_sie")
 }
 
 model Personal {
@@ -422,7 +422,7 @@ model Movimiento {
   destinatarioPersonal MovimientoDestinatarioPersonal?
   destinatarioExterno MovimientoDestinatarioExterno?
   destinatarioRecinto MovimientoDestinatarioRecinto?
-  items             MovimientoItem[]
+  equipos           MovimientoEquipo[]
   prestamoActivo    PrestamoActivo?
   prestamoHistorial PrestamoHistorial?
 
@@ -466,20 +466,20 @@ model MovimientoDestinatarioRecinto {
   @@map("movimiento_destinatario_recinto")
 }
 
-model MovimientoItem {
+model MovimientoEquipo {
   movimientoId         BigInt               @map("movimiento_id")
-  itemId               BigInt               @map("item_id")
+  equipoId               BigInt               @map("item_id")
   cantidad             Int
   estadoEntrega        EstadoEquipoPrestamo @default(BUENO) @map("estado_entrega")
   comentarioEntrega    String?              @map("comentario_entrega")
   estadoDevolucion     EstadoEquipoPrestamo? @map("estado_devolucion")
   comentarioDevolucion String?              @map("comentario_devolucion")
   movimiento           Movimiento           @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
-  item                 Item                 @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+  equipo Equipo                 @relation(fields: [equipoId], references: [equipoId], onDelete: Cascade)
 
-  @@id([movimientoId, itemId])
-  @@index([itemId])
-  @@map("movimiento_item")
+  @@id([movimientoId, equipoId])
+  @@index([equipoId])
+  @@map("movimiento_equipo")
 }
 
 model PrestamoActivo {
@@ -543,22 +543,22 @@ model StockOperacion {
   tipo             TipoStockOperacion
   comentarios      String?
   createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
-  items            StockOperacionItem[]
+  equipos          StockOperacionEquipo[]
 
   @@index([fecha(sort: Desc)])
   @@map("stock_operacion")
 }
 
-model StockOperacionItem {
+model StockOperacionEquipo {
   stockOperacionId BigInt         @map("stock_operacion_id")
-  itemId           BigInt         @map("item_id")
+  equipoId           BigInt         @map("item_id")
   cantidad         Int
   stockOperacion   StockOperacion @relation(fields: [stockOperacionId], references: [stockOperacionId], onDelete: Cascade)
-  item             Item           @relation(fields: [itemId], references: [itemId])
+  equipo Equipo           @relation(fields: [equipoId], references: [equipoId])
 
-  @@id([stockOperacionId, itemId])
-  @@index([itemId])
-  @@map("stock_operacion_item")
+  @@id([stockOperacionId, equipoId])
+  @@index([equipoId])
+  @@map("stock_operacion_equipo")
 }
 
 model ConfigFirma {

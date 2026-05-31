@@ -198,7 +198,7 @@ type PersonalSelfContactResponse = {
 
 type HojaEntregaSnapshot = {
   matrix: Array<{
-    item: string;
+    equipo: string;
     entregaTotal: number;
     devolucionTotal: number;
   }>;
@@ -554,7 +554,7 @@ export default function Home() {
   const [equipoInactivoOrderDraftIds, setEquipoInactivoOrderDraftIds] = useState<string[] | null>(null);
   const [mergeEquipoOrigenId, setMergeEquipoOrigenId] = useState("");
   const [mergeEquipoDestinoId, setMergeEquipoDestinoId] = useState("");
-  const [mergeEquipoDialog, setMergeEquipoDialog] = useState<{ sourceItemId: string; targetItemId: string } | null>(null);
+  const [mergeEquipoDialog, setMergeEquipoDialog] = useState<{ sourceItemId: string; targetEquipoId: string } | null>(null);
   const [mergeEquipoSaving, setMergeEquipoSaving] = useState(false);
 
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
@@ -843,14 +843,14 @@ export default function Home() {
     () => [...equipos].sort(compareEquiposByTipoAndOrder),
     [equipos],
   );
-  const equiposActivos = useMemo(() => equiposOrdenados.filter((item) => item.activo), [equiposOrdenados]);
-  const equiposInactivos = useMemo(() => equiposOrdenados.filter((item) => !item.activo), [equiposOrdenados]);
+  const equiposActivos = useMemo(() => equiposOrdenados.filter((equipo) => equipo.activo), [equiposOrdenados]);
+  const equiposInactivos = useMemo(() => equiposOrdenados.filter((equipo) => !equipo.activo), [equiposOrdenados]);
   const equiposActivosIdsByTipo = useMemo(() => {
     const next = new Map<string, Set<string>>();
     for (const tipo of tiposEquipoOptions) {
       next.set(
         tipo.clave,
-        new Set(equiposActivos.filter((item) => item.tipo === tipo.clave).map((item) => item.equipoId)),
+        new Set(equiposActivos.filter((equipo) => equipo.tipo === tipo.clave).map((equipo) => equipo.equipoId)),
       );
     }
     return next;
@@ -860,7 +860,7 @@ export default function Home() {
     for (const tipo of tiposEquipoOptions) {
       next.set(
         tipo.clave,
-        new Set(equiposInactivos.filter((item) => item.tipo === tipo.clave).map((item) => item.equipoId)),
+        new Set(equiposInactivos.filter((equipo) => equipo.tipo === tipo.clave).map((equipo) => equipo.equipoId)),
       );
     }
     return next;
@@ -982,29 +982,29 @@ export default function Home() {
   }, [auditoriaFiltrada, auditPageSafe, auditPageSize]);
   const equiposActivosEnPantalla = useMemo(() => {
     if (!equipoOrderDraftIds) return equiposActivos;
-    const activeById = new Map(equiposActivos.map((item) => [item.equipoId, item]));
+    const activeById = new Map(equiposActivos.map((equipo) => [equipo.equipoId, equipo]));
     return equipoOrderDraftIds
-      .map((itemId) => activeById.get(itemId))
-      .filter((item): item is Equipo => item !== undefined);
+      .map((equipoId) => activeById.get(equipoId))
+      .filter((equipo): equipo is Equipo => equipo !== undefined);
   }, [equiposActivos, equipoOrderDraftIds]);
   const hasEquipoOrderDraftChanges = useMemo(() => {
     if (!equipoOrderDraftIds) return false;
-    const currentActiveIds = equiposActivos.map((item) => item.equipoId);
+    const currentActiveIds = equiposActivos.map((equipo) => equipo.equipoId);
     if (equipoOrderDraftIds.length !== currentActiveIds.length) return true;
-    return equipoOrderDraftIds.some((itemId, index) => itemId !== currentActiveIds[index]);
+    return equipoOrderDraftIds.some((equipoId, index) => equipoId !== currentActiveIds[index]);
   }, [equiposActivos, equipoOrderDraftIds]);
   const equiposInactivosEnPantalla = useMemo(() => {
     if (!equipoInactivoOrderDraftIds) return equiposInactivos;
-    const inactivoById = new Map(equiposInactivos.map((item) => [item.equipoId, item]));
+    const inactivoById = new Map(equiposInactivos.map((equipo) => [equipo.equipoId, equipo]));
     return equipoInactivoOrderDraftIds
-      .map((itemId) => inactivoById.get(itemId))
-      .filter((item): item is Equipo => item !== undefined);
+      .map((equipoId) => inactivoById.get(equipoId))
+      .filter((equipo): equipo is Equipo => equipo !== undefined);
   }, [equiposInactivos, equipoInactivoOrderDraftIds]);
   const hasEquipoInactivoOrderDraftChanges = useMemo(() => {
     if (!equipoInactivoOrderDraftIds) return false;
-    const currentInactivoIds = equiposInactivos.map((item) => item.equipoId);
+    const currentInactivoIds = equiposInactivos.map((equipo) => equipo.equipoId);
     if (equipoInactivoOrderDraftIds.length !== currentInactivoIds.length) return true;
-    return equipoInactivoOrderDraftIds.some((itemId, index) => itemId !== currentInactivoIds[index]);
+    return equipoInactivoOrderDraftIds.some((equipoId, index) => equipoId !== currentInactivoIds[index]);
   }, [equiposInactivos, equipoInactivoOrderDraftIds]);
   const mergeEquipoSource = useMemo(() => {
     if (!mergeEquipoDialog) return null;
@@ -1016,8 +1016,8 @@ export default function Home() {
   }, [equiposOrdenados, mergeEquipoDialog]);
   const mergeEquipoDialogTargetId = useMemo(() => {
     if (!mergeEquipoDialog) return "";
-    if (mergeEquipoTargetOptions.some((equipo) => equipo.equipoId === mergeEquipoDialog.targetItemId)) {
-      return mergeEquipoDialog.targetItemId;
+    if (mergeEquipoTargetOptions.some((equipo) => equipo.equipoId === mergeEquipoDialog.targetEquipoId)) {
+      return mergeEquipoDialog.targetEquipoId;
     }
     return mergeEquipoTargetOptions[0]?.equipoId ?? "";
   }, [mergeEquipoDialog, mergeEquipoTargetOptions]);
@@ -1244,9 +1244,9 @@ export default function Home() {
 
   useEffect(() => {
     if (!equipoOrderDraftIds) return;
-    const currentActiveIds = new Set(equiposActivos.map((item) => item.equipoId));
+    const currentActiveIds = new Set(equiposActivos.map((equipo) => equipo.equipoId));
     const draftIsValid =
-      equipoOrderDraftIds.length === equiposActivos.length && equipoOrderDraftIds.every((itemId) => currentActiveIds.has(itemId));
+      equipoOrderDraftIds.length === equiposActivos.length && equipoOrderDraftIds.every((equipoId) => currentActiveIds.has(equipoId));
     if (draftIsValid) return;
     setEquipoOrderDraftIds(null);
   }, [equipoOrderDraftIds, equiposActivos]);
@@ -1708,9 +1708,9 @@ export default function Home() {
 
                   <div className="max-h-[160px] overflow-y-auto space-y-1.5 pr-1">
                     {movimientosList.map((m: any) => (
-                      <div key={m.articuloStockMovimientoId} className="flex justify-between items-center rounded-lg border border-stone-150 bg-white p-2 text-xs">
+                      <div key={m.articuloStockMovimientoId} className="flex justify-between equipos-center rounded-lg border border-stone-150 bg-white p-2 text-xs">
                         <div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex equipos-center gap-1.5">
                             <span className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
                               m.tipo === "INGRESO" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"
                             }`}>
@@ -1830,18 +1830,18 @@ export default function Home() {
       return;
     }
 
-    const itemsPayload = articuloEntregaPersonalItems.map((item) => ({
-      articuloId: Number(item.articuloId),
-      cantidad: Number(item.cantidad),
+    const itemsPayload = articuloEntregaPersonalItems.map((equipo) => ({
+      articuloId: Number(equipo.articuloId),
+      cantidad: Number(equipo.cantidad),
     }));
 
     for (let i = 0; i < itemsPayload.length; i++) {
-      const item = itemsPayload[i];
-      if (!Number.isInteger(item.articuloId) || item.articuloId <= 0) {
+      const equipo = itemsPayload[i];
+      if (!Number.isInteger(equipo.articuloId) || equipo.articuloId <= 0) {
         setStatus(`Debes seleccionar un artículo en la fila ${i + 1}.`);
         return;
       }
-      if (!Number.isInteger(item.cantidad) || item.cantidad <= 0) {
+      if (!Number.isInteger(equipo.cantidad) || equipo.cantidad <= 0) {
         setStatus(`La cantidad en la fila ${i + 1} debe ser un entero positivo.`);
         return;
       }
@@ -2060,10 +2060,10 @@ export default function Home() {
         setStatus("No tienes permisos para editar.");
         return;
       }
-      const currentActiveIds = equiposActivos.map((item) => item.equipoId);
+      const currentActiveIds = equiposActivos.map((equipo) => equipo.equipoId);
       if (
         orderedItemIds.length === currentActiveIds.length &&
-        orderedItemIds.every((itemId, index) => itemId === currentActiveIds[index])
+        orderedItemIds.every((equipoId, index) => equipoId === currentActiveIds[index])
       ) {
         return;
       }
@@ -2091,10 +2091,10 @@ export default function Home() {
       }
 
       setEquipoOrderDraftIds((currentDraft) => {
-        const baseOrder = currentDraft ?? equiposActivos.map((item) => item.equipoId);
+        const baseOrder = currentDraft ?? equiposActivos.map((equipo) => equipo.equipoId);
         return tiposEquipoOptions.flatMap((tipoOption) => {
           const ids = equiposActivosIdsByTipo.get(tipoOption.clave) ?? new Set<string>();
-          const currentOrderByTipo = baseOrder.filter((itemId) => ids.has(itemId));
+          const currentOrderByTipo = baseOrder.filter((equipoId) => ids.has(equipoId));
           return tipoOption.clave === tipo ? updater(currentOrderByTipo) : currentOrderByTipo;
         });
       });
@@ -2103,9 +2103,9 @@ export default function Home() {
   );
 
   const moveEquipoInDraft = useCallback(
-    (itemId: string, direction: "up" | "down", tipo: TipoEquipo) => {
+    (equipoId: string, direction: "up" | "down", tipo: TipoEquipo) => {
       updateEquipoOrderDraft(tipo, (currentOrder) => {
-        const currentIndex = currentOrder.indexOf(itemId);
+        const currentIndex = currentOrder.indexOf(equipoId);
         if (currentIndex < 0) return currentOrder;
         const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
         if (targetIndex < 0 || targetIndex >= currentOrder.length) return currentOrder;
@@ -2116,9 +2116,9 @@ export default function Home() {
   );
 
   const setEquipoDraftPosition = useCallback(
-    (itemId: string, nextPosition: number, tipo: TipoEquipo) => {
+    (equipoId: string, nextPosition: number, tipo: TipoEquipo) => {
       updateEquipoOrderDraft(tipo, (currentOrder) => {
-        const currentIndex = currentOrder.indexOf(itemId);
+        const currentIndex = currentOrder.indexOf(equipoId);
         const targetIndex = nextPosition - 1;
         if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentOrder.length || currentIndex === targetIndex) {
           return currentOrder;
@@ -2135,10 +2135,10 @@ export default function Home() {
         setStatus("No tienes permisos para editar.");
         return;
       }
-      const currentInactivoIds = equiposInactivos.map((item) => item.equipoId);
+      const currentInactivoIds = equiposInactivos.map((equipo) => equipo.equipoId);
       if (
         orderedItemIds.length === currentInactivoIds.length &&
-        orderedItemIds.every((itemId, index) => itemId === currentInactivoIds[index])
+        orderedItemIds.every((equipoId, index) => equipoId === currentInactivoIds[index])
       ) {
         return;
       }
@@ -2171,10 +2171,10 @@ export default function Home() {
       }
 
       setEquipoInactivoOrderDraftIds((currentDraft) => {
-        const baseOrder = currentDraft ?? equiposInactivos.map((item) => item.equipoId);
+        const baseOrder = currentDraft ?? equiposInactivos.map((equipo) => equipo.equipoId);
         return tiposEquipoOptions.flatMap((tipoOption) => {
           const ids = equiposInactivosIdsByTipo.get(tipoOption.clave) ?? new Set<string>();
-          const currentOrderByTipo = baseOrder.filter((itemId) => ids.has(itemId));
+          const currentOrderByTipo = baseOrder.filter((equipoId) => ids.has(equipoId));
           return tipoOption.clave === tipo ? updater(currentOrderByTipo) : currentOrderByTipo;
         });
       });
@@ -2183,9 +2183,9 @@ export default function Home() {
   );
 
   const moveEquipoInactivoInDraft = useCallback(
-    (itemId: string, direction: "up" | "down", tipo: TipoEquipo) => {
+    (equipoId: string, direction: "up" | "down", tipo: TipoEquipo) => {
       updateEquipoInactivoOrderDraft(tipo, (currentOrder) => {
-        const currentIndex = currentOrder.indexOf(itemId);
+        const currentIndex = currentOrder.indexOf(equipoId);
         if (currentIndex < 0) return currentOrder;
         const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
         if (targetIndex < 0 || targetIndex >= currentOrder.length) return currentOrder;
@@ -2196,9 +2196,9 @@ export default function Home() {
   );
 
   const setEquipoInactivoDraftPosition = useCallback(
-    (itemId: string, nextPosition: number, tipo: TipoEquipo) => {
+    (equipoId: string, nextPosition: number, tipo: TipoEquipo) => {
       updateEquipoInactivoOrderDraft(tipo, (currentOrder) => {
-        const currentIndex = currentOrder.indexOf(itemId);
+        const currentIndex = currentOrder.indexOf(equipoId);
         const targetIndex = nextPosition - 1;
         if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentOrder.length || currentIndex === targetIndex) {
           return currentOrder;
@@ -2215,7 +2215,7 @@ export default function Home() {
         setStatus("No tienes permisos para eliminar.");
         return;
       }
-      const item = equipos.find((entry) => entry.equipoId === equipoId);
+      const equipo = equipos.find((entry) => entry.equipoId === equipoId);
       let impacto:
         | Awaited<ReturnType<typeof loadEquipoDeleteImpactHandler>>
         | null = null;
@@ -2254,7 +2254,7 @@ export default function Home() {
       });
       const resumen = impacto.resumen;
       const messageLines = [
-        `Acción destructiva e irreversible: se eliminará ${item?.nombre ?? "este equipo"} y no se puede deshacer.`,
+        `Acción destructiva e irreversible: se eliminará ${equipo?.nombre ?? "este equipo"} y no se puede deshacer.`,
         `Movimientos afectados: ${resumen.totalMovimientos} (registros: ${resumen.totalRegistros}, stock: ${resumen.totalStock}).`,
         `Movimientos que quedarán vacíos y se eliminarán: ${resumen.movimientosQueSeEliminan}.`,
         `Movimientos que conservaran otros equipos: ${resumen.movimientosQueSeActualizan}.`,
@@ -2320,7 +2320,7 @@ export default function Home() {
 
       setMergeEquipoDialog({
         sourceItemId,
-        targetItemId: firstTarget.equipoId,
+        targetEquipoId: firstTarget.equipoId,
       });
     },
     [canDelete, equiposOrdenados],
@@ -2331,8 +2331,8 @@ export default function Home() {
     setMergeEquipoDialog(null);
   }, [mergeEquipoSaving]);
 
-  const updateMergeEquipoDialogTarget = useCallback((targetItemId: string) => {
-    setMergeEquipoDialog((current) => (current ? { ...current, targetItemId } : current));
+  const updateMergeEquipoDialogTarget = useCallback((targetEquipoId: string) => {
+    setMergeEquipoDialog((current) => (current ? { ...current, targetEquipoId } : current));
   }, []);
 
   const submitMergeEquipoDialog = useCallback(async () => {
@@ -2343,8 +2343,8 @@ export default function Home() {
     }
 
     const source = equiposOrdenados.find((equipo) => equipo.equipoId === mergeEquipoDialog.sourceItemId);
-    const targetItemId = mergeEquipoDialogTargetId;
-    const target = equiposOrdenados.find((equipo) => equipo.equipoId === targetItemId);
+    const targetEquipoId = mergeEquipoDialogTargetId;
+    const target = equiposOrdenados.find((equipo) => equipo.equipoId === targetEquipoId);
 
     if (!source || !target) {
       setStatus("No se encontraron los equipos seleccionados.");
@@ -2358,7 +2358,7 @@ export default function Home() {
         onError: (message) => setStatus(message),
       });
       setStatus(
-        `Equipo unificado: ${result.sourceItem.nombre} -> ${result.targetItem.nombre}. Movimientos afectados: ${result.resumen.totalMovimientosAfectados}.`,
+        `Equipo unificado: ${result.sourceEquipo.nombre} -> ${result.targetEquipo.nombre}. Movimientos afectados: ${result.resumen.totalMovimientosAfectados}.`,
       );
       setMergeEquipoDialog(null);
       setMergeEquipoOrigenId("");
@@ -2424,7 +2424,7 @@ export default function Home() {
               onError: (message) => setStatus(message),
             });
             setStatus(
-              `Equipo unificado: ${result.sourceItem.nombre} -> ${result.targetItem.nombre}. Movimientos afectados: ${result.resumen.totalMovimientosAfectados}.`,
+              `Equipo unificado: ${result.sourceEquipo.nombre} -> ${result.targetEquipo.nombre}. Movimientos afectados: ${result.resumen.totalMovimientosAfectados}.`,
             );
             setMergeEquipoOrigenId("");
             setMergeEquipoDestinoId("");
@@ -2442,7 +2442,7 @@ export default function Home() {
     return {
       ...EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM,
       fecha: getTodayDateInput(),
-      items: [{ itemId: "", cantidad: "1" }],
+      equipos: [{ equipoId: "", cantidad: "1" }],
     };
   }, []);
 
@@ -2457,7 +2457,7 @@ export default function Home() {
     setNewPersonalMovimientoEditIndex(movimientoIndex);
     setNewPersonalMovimientoDraft({
       ...target,
-      items: target.items.map((item) => ({ ...item })),
+      equipos: target.equipos.map((equipo) => ({ ...equipo })),
     });
   }, [newPersonalMovimientos]);
 
@@ -2471,26 +2471,26 @@ export default function Home() {
   }, []);
 
   const updateNewPersonalMovimientoDraft = useCallback(
-    (field: keyof Omit<PersonalAltaMovimientoForm, "items">, value: string) => {
+    (field: keyof Omit<PersonalAltaMovimientoForm, "equipos">, value: string) => {
       setNewPersonalMovimientoDraft((prev) => (prev ? ({ ...prev, [field]: value } as PersonalAltaMovimientoForm) : prev));
     },
     [],
   );
 
-  const updateNewPersonalMovimientoDraftItem = useCallback((itemIndex: number, field: "itemId" | "cantidad", value: string) => {
+  const updateNewPersonalMovimientoDraftItem = useCallback((itemIndex: number, field: "equipoId" | "cantidad", value: string) => {
     setNewPersonalMovimientoDraft((prev) => {
       if (!prev) return prev;
       if (
-        field === "itemId" &&
+        field === "equipoId" &&
         value !== "" &&
-        prev.items.some((item, currentItemIndex) => currentItemIndex !== itemIndex && item.itemId === value)
+        prev.equipos.some((equipo, currentItemIndex) => currentItemIndex !== itemIndex && equipo.equipoId === value)
       ) {
         setStatus("Ese equipo ya fue seleccionado en este movimiento.");
         return prev;
       }
       return {
         ...prev,
-        items: prev.items.map((item, currentItemIndex) => (currentItemIndex === itemIndex ? { ...item, [field]: value } : item)),
+        equipos: prev.equipos.map((equipo, currentItemIndex) => (currentItemIndex === itemIndex ? { ...equipo, [field]: value } : equipo)),
       };
     });
   }, []);
@@ -2500,7 +2500,7 @@ export default function Home() {
       prev
         ? {
             ...prev,
-            items: [...prev.items, { itemId: "", cantidad: "1" }],
+            equipos: [...prev.equipos, { equipoId: "", cantidad: "1" }],
           }
         : prev,
     );
@@ -2509,10 +2509,10 @@ export default function Home() {
   const removeNewPersonalMovimientoDraftItem = useCallback((itemIndex: number) => {
     setNewPersonalMovimientoDraft((prev) => {
       if (!prev) return prev;
-      if (prev.items.length <= 1) return prev;
+      if (prev.equipos.length <= 1) return prev;
       return {
         ...prev,
-        items: prev.items.filter((_, currentItemIndex) => currentItemIndex !== itemIndex),
+        equipos: prev.equipos.filter((_, currentItemIndex) => currentItemIndex !== itemIndex),
       };
     });
   }, []);
@@ -2528,16 +2528,16 @@ export default function Home() {
       return;
     }
 
-    const parsedItems = newPersonalMovimientoDraft.items
-      .map((item) => ({ itemId: item.itemId.trim(), cantidad: Number(item.cantidad) }))
-      .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
+    const parsedItems = newPersonalMovimientoDraft.equipos
+      .map((equipo) => ({ equipoId: equipo.equipoId.trim(), cantidad: Number(equipo.cantidad) }))
+      .filter((equipo) => equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0);
 
     if (parsedItems.length === 0) {
       setStatus("Debes agregar al menos un equipo con cantidad válida.");
       return;
     }
 
-    const uniqueItemIds = new Set(parsedItems.map((item) => item.itemId));
+    const uniqueItemIds = new Set(parsedItems.map((equipo) => equipo.equipoId));
     if (uniqueItemIds.size !== parsedItems.length) {
       setStatus("No puedes repetir equipos en un mismo movimiento.");
       return;
@@ -2546,7 +2546,7 @@ export default function Home() {
     const sanitizedDraft: PersonalAltaMovimientoForm = {
       ...newPersonalMovimientoDraft,
       comentarios: newPersonalMovimientoDraft.comentarios.trim(),
-      items: parsedItems.map((item) => ({ itemId: item.itemId, cantidad: String(item.cantidad) })),
+      equipos: parsedItems.map((equipo) => ({ equipoId: equipo.equipoId, cantidad: String(equipo.cantidad) })),
     };
 
     setNewPersonalMovimientos((prev) => {
@@ -2609,7 +2609,7 @@ export default function Home() {
         tipo: "ENTREGA" | "DEVOLUCION";
         fecha: string;
         comentarios?: string;
-        items: Array<{ itemId: string; cantidad: number }>;
+        equipos: Array<{ equipoId: string; cantidad: number }>;
       }>;
 
       for (const [movimientoIndex, movimiento] of newPersonalMovimientos.entries()) {
@@ -2622,16 +2622,16 @@ export default function Home() {
             return;
           }
 
-          const parsedItems = movimiento.items
-            .map((item) => ({ itemId: item.itemId.trim(), cantidad: Number(item.cantidad) }))
-            .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
+          const parsedItems = movimiento.equipos
+            .map((equipo) => ({ equipoId: equipo.equipoId.trim(), cantidad: Number(equipo.cantidad) }))
+            .filter((equipo) => equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0);
 
           if (parsedItems.length === 0) {
             setStatus(`Debes agregar al menos un equipo con cantidad válida en el movimiento #${movimientoIndex + 1}.`);
             return;
           }
 
-          const uniqueItemIds = new Set(parsedItems.map((item) => item.itemId));
+          const uniqueItemIds = new Set(parsedItems.map((equipo) => equipo.equipoId));
           if (uniqueItemIds.size !== parsedItems.length) {
             setStatus(`No puedes repetir equipos en el movimiento #${movimientoIndex + 1}.`);
             return;
@@ -2641,7 +2641,7 @@ export default function Home() {
           tipo: movimiento.tipo,
           fecha: movimiento.fecha,
           comentarios: movimiento.comentarios.trim() || undefined,
-          items: parsedItems,
+          equipos: parsedItems,
         });
       }
 
@@ -3096,7 +3096,7 @@ export default function Home() {
         const saldo = Math.max(row.devolucionTotal, 0);
         const devuelto = Math.max(entregado - saldo, 0);
         return {
-          item: row.item,
+          equipo: row.equipo,
           entregado,
           devuelto,
           saldo,
@@ -3104,7 +3104,7 @@ export default function Home() {
         };
       })
       .filter((row) => row.entregado > 0 || row.saldo > 0)
-      .sort((left, right) => left.item.localeCompare(right.item, "es", { sensitivity: "base" }));
+      .sort((left, right) => left.equipo.localeCompare(right.equipo, "es", { sensitivity: "base" }));
   }
 
   function buildEquipmentSummaryFromPrestamos(prestamos: PrestamoStockEntry[]): PersonaProfileEquipmentRow[] {
@@ -3113,23 +3113,23 @@ export default function Home() {
     const saldoMap = new Map<string, number>();
 
     for (const prestamo of prestamos) {
-      for (const item of prestamo.items) {
-        prestadoMap.set(item.nombre, (prestadoMap.get(item.nombre) ?? 0) + item.cantidad);
+      for (const equipo of prestamo.equipos) {
+        prestadoMap.set(equipo.nombre, (prestadoMap.get(equipo.nombre) ?? 0) + equipo.cantidad);
         if (prestamo.estado === "DEVUELTO") {
-          devueltoMap.set(item.nombre, (devueltoMap.get(item.nombre) ?? 0) + item.cantidad);
+          devueltoMap.set(equipo.nombre, (devueltoMap.get(equipo.nombre) ?? 0) + equipo.cantidad);
         } else {
-          saldoMap.set(item.nombre, (saldoMap.get(item.nombre) ?? 0) + item.cantidad);
+          saldoMap.set(equipo.nombre, (saldoMap.get(equipo.nombre) ?? 0) + equipo.cantidad);
         }
       }
     }
 
     return Array.from(new Set([...prestadoMap.keys(), ...devueltoMap.keys(), ...saldoMap.keys()]))
       .sort((left, right) => left.localeCompare(right, "es", { sensitivity: "base" }))
-      .map((item) => ({
-        item,
-        entregado: prestadoMap.get(item) ?? 0,
-        devuelto: devueltoMap.get(item) ?? 0,
-        saldo: saldoMap.get(item) ?? 0,
+      .map((equipo) => ({
+        equipo,
+        entregado: prestadoMap.get(equipo) ?? 0,
+        devuelto: devueltoMap.get(equipo) ?? 0,
+        saldo: saldoMap.get(equipo) ?? 0,
         fuente: "PRESTAMOS" as const,
       }))
       .filter((row) => row.entregado > 0 || row.saldo > 0);
@@ -3141,13 +3141,13 @@ export default function Home() {
       dbId: registro.registroId,
       fecha: registro.fecha,
       tipo: registro.tipo === "ENTREGA" ? "ENTREGA" : registro.tipo === "DEVOLUCION" ? "DEVOLUCION" : "ASIGNACION",
-      descripcion: `Registro ${registro.tipo.toLowerCase()} · ${registro.items.reduce((acc, item) => acc + item.cantidad, 0)} unidades`,
+      descripcion: `Registro ${registro.tipo.toLowerCase()} · ${registro.equipos.reduce((acc, equipo) => acc + equipo.cantidad, 0)} unidades`,
       responsable:
         registro.usuarioEntregaNombre?.trim() ||
         registro.auditoria?.usuario?.username ||
         (registro.usuarioEntregaId ? "Usuario eliminado" : null),
       estadoPrestamo: null,
-      items: registro.items.map((item) => ({ nombre: item.nombre, cantidad: item.cantidad })),
+      equipos: registro.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
     })) satisfies PersonaProfileTimelineEntry[];
 
     const prestamosTimeline = prestamos.flatMap((prestamo) => {
@@ -3159,7 +3159,7 @@ export default function Home() {
         descripcion: `Préstamo ${prestamo.reciboNumero} · ${prestamo.estado.toLowerCase()}`,
         responsable: prestamo.usuarioEntregaNombre ?? null,
         estadoPrestamo: prestamo.estado,
-        items: prestamo.items.map((item) => ({ nombre: item.nombre, cantidad: item.cantidad })),
+        equipos: prestamo.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
       };
 
       if (!prestamo.fechaDevolucion) return [prestamoEntry];
@@ -3172,7 +3172,7 @@ export default function Home() {
         descripcion: `Devolución de préstamo ${prestamo.reciboNumero}`,
         responsable: prestamo.usuarioRecibeDevolucionNombre ?? prestamo.usuarioEntregaNombre ?? null,
         estadoPrestamo: "DEVUELTO",
-        items: prestamo.items.map((item) => ({ nombre: item.nombre, cantidad: item.cantidad })),
+        equipos: prestamo.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
       };
 
       return [prestamoEntry, devolucionEntry];
@@ -3408,7 +3408,7 @@ export default function Home() {
       incluirFueraDeHoja: options.incluirFueraDeHoja ?? false,
       fecha: getTodayDateInput(),
       comentarios: "",
-      items: [{ itemId: "", cantidad: "1" }],
+      equipos: [{ equipoId: "", cantidad: "1" }],
     });
   }
 
@@ -3444,7 +3444,7 @@ export default function Home() {
       incluirFueraDeHoja: false,
       fecha: getTodayDateInput(),
       comentarios: "",
-      items: [{ itemId: "", cantidad: "1" }],
+      equipos: [{ equipoId: "", cantidad: "1" }],
     });
   }
 
@@ -3474,7 +3474,7 @@ export default function Home() {
       incluirFueraDeHoja: options.incluirFueraDeHoja ?? false,
       fecha: getTodayDateInput(),
       comentarios: "",
-      items: [{ itemId: "", cantidad: "1" }],
+      equipos: [{ equipoId: "", cantidad: "1" }],
     });
   }
 
@@ -3588,10 +3588,10 @@ export default function Home() {
       incluirFueraDeHoja: false,
       fecha: formatDateOnlyForDisplay(registro.fecha),
       comentarios: registro.comentarios ?? "",
-      items:
-        registro.items.length > 0
-          ? registro.items.map((item) => ({ itemId: item.itemId, cantidad: String(item.cantidad) }))
-          : [{ itemId: "", cantidad: "1" }],
+      equipos:
+        registro.equipos.length > 0
+          ? registro.equipos.map((equipo) => ({ equipoId: equipo.equipoId, cantidad: String(equipo.cantidad) }))
+          : [{ equipoId: "", cantidad: "1" }],
     });
   }
 
@@ -3613,7 +3613,7 @@ export default function Home() {
         recintoResponsableInfo: { grado: string; nombre: string; apellido: string; ci: string } | null;
         destinatarioExternoInfo: { grado: string; nombre: string; apellido: string; ci: string; unidadDestino: string } | null;
         ci: string;
-        items: Array<{ itemId: string; cantidad: number }>;
+        equipos: Array<{ equipoId: string; cantidad: number }>;
       }>(`/api/registros/${encodeURIComponent(registroId)}`);
 
       setRegistroDraft({
@@ -3637,10 +3637,10 @@ export default function Home() {
         incluirFueraDeHoja: false,
         fecha: response.fecha,
         comentarios: response.comentarios ?? "",
-        items:
-          response.items.length > 0
-            ? response.items.map((item) => ({ itemId: item.itemId, cantidad: String(item.cantidad) }))
-            : [{ itemId: "", cantidad: "1" }],
+        equipos:
+          response.equipos.length > 0
+            ? response.equipos.map((equipo) => ({ equipoId: equipo.equipoId, cantidad: String(equipo.cantidad) }))
+            : [{ equipoId: "", cantidad: "1" }],
       });
       setStatus("");
     } catch (error: unknown) {
@@ -3651,27 +3651,27 @@ export default function Home() {
   function updateRegistroItem(index: number, field: keyof RegistroDraftEquipo, value: string) {
     setRegistroDraft((prev) => {
       if (!prev) return prev;
-      if (field === "itemId" && value !== "" && prev.items.some((item, itemIndex) => itemIndex !== index && item.itemId === value)) {
+      if (field === "equipoId" && value !== "" && prev.equipos.some((equipo, itemIndex) => itemIndex !== index && equipo.equipoId === value)) {
         setStatus("Ese equipo ya fue seleccionado en este movimiento.");
         return prev;
       }
-      const items = prev.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item));
-      return { ...prev, items };
+      const equipos = prev.equipos.map((equipo, itemIndex) => (itemIndex === index ? { ...equipo, [field]: value } : equipo));
+      return { ...prev, equipos };
     });
   }
 
   function addRegistroItem() {
     setRegistroDraft((prev) => {
       if (!prev) return prev;
-      return { ...prev, items: [...prev.items, { itemId: "", cantidad: "1" }] };
+      return { ...prev, equipos: [...prev.equipos, { equipoId: "", cantidad: "1" }] };
     });
   }
 
   function removeRegistroItem(index: number) {
     setRegistroDraft((prev) => {
       if (!prev) return prev;
-      if (prev.items.length <= 1) return prev;
-      return { ...prev, items: prev.items.filter((_, itemIndex) => itemIndex !== index) };
+      if (prev.equipos.length <= 1) return prev;
+      return { ...prev, equipos: prev.equipos.filter((_, itemIndex) => itemIndex !== index) };
     });
   }
 
@@ -3738,18 +3738,18 @@ export default function Home() {
       setStatus("Entrega y devolución solo admiten destinatario personal subalterno.");
       return;
     }
-    const payloadEquipos = registroDraft.items
-      .map((item) => ({
-        itemId: item.itemId.trim(),
-        cantidad: Number(item.cantidad),
+    const payloadEquipos = registroDraft.equipos
+      .map((equipo) => ({
+        equipoId: equipo.equipoId.trim(),
+        cantidad: Number(equipo.cantidad),
       }))
-      .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
+      .filter((equipo) => equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0);
 
     if (payloadEquipos.length === 0) {
       setStatus("Debes agregar al menos un equipo con cantidad válida.");
       return;
     }
-    const uniqueItemIds = new Set(payloadEquipos.map((item) => item.itemId));
+    const uniqueItemIds = new Set(payloadEquipos.map((equipo) => equipo.equipoId));
     if (uniqueItemIds.size !== payloadEquipos.length) {
       setStatus("No puedes repetir equipos en un mismo movimiento.");
       return;
@@ -3816,7 +3816,7 @@ export default function Home() {
           tipo: registroDraft.tipo,
           fecha: registroDraft.fecha,
           comentarios: registroDraft.comentarios.trim() || undefined,
-          items: payloadEquipos,
+          equipos: payloadEquipos,
         }),
       });
       setStatus(
@@ -3924,19 +3924,19 @@ export default function Home() {
       return;
     }
 
-    const payloadItems = stockDraft.items
-      .map((item) => ({
-        itemId: item.itemId.trim(),
-        cantidad: Number(item.cantidad),
+    const payloadItems = stockDraft.equipos
+      .map((equipo) => ({
+        equipoId: equipo.equipoId.trim(),
+        cantidad: Number(equipo.cantidad),
       }))
-      .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
+      .filter((equipo) => equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0);
 
     if (payloadItems.length === 0) {
       setStatus("Debes agregar al menos un equipo con cantidad válida.");
       return;
     }
 
-    const uniqueItemIds = new Set(payloadItems.map((item) => item.itemId));
+    const uniqueItemIds = new Set(payloadItems.map((equipo) => equipo.equipoId));
     if (uniqueItemIds.size !== payloadItems.length) {
       setStatus("No puedes repetir equipos en un mismo movimiento de stock.");
       return;
@@ -3952,7 +3952,7 @@ export default function Home() {
           tipo: stockDraft.tipo,
           fecha: stockDraft.fecha,
           comentarios: stockDraft.comentarios.trim() || undefined,
-          items: payloadItems,
+          equipos: payloadItems,
         }),
       });
       setStockDraft({ ...EMPTY_STOCK_OPERACION_DRAFT, fecha: getTodayDateInput() });
@@ -3999,21 +3999,21 @@ export default function Home() {
       return;
     }
 
-    const payloadItems = prestamoDraft.items
-      .map((item) => ({
-        itemId: item.itemId.trim(),
-        cantidad: Number(item.cantidad),
-        estadoEntrega: item.estadoEntrega,
-        comentarioEntrega: item.comentarioEntrega.trim() || undefined,
+    const payloadItems = prestamoDraft.equipos
+      .map((equipo) => ({
+        equipoId: equipo.equipoId.trim(),
+        cantidad: Number(equipo.cantidad),
+        estadoEntrega: equipo.estadoEntrega,
+        comentarioEntrega: equipo.comentarioEntrega.trim() || undefined,
       }))
-      .filter((item) => item.itemId !== "" && Number.isInteger(item.cantidad) && item.cantidad > 0);
+      .filter((equipo) => equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0);
 
     if (payloadItems.length === 0) {
       setStatus("Debes agregar al menos un equipo con cantidad válida.");
       return;
     }
 
-    const uniqueItemIds = new Set(payloadItems.map((item) => item.itemId));
+    const uniqueItemIds = new Set(payloadItems.map((equipo) => equipo.equipoId));
     if (uniqueItemIds.size !== payloadItems.length) {
       setStatus("No puedes repetir equipos en un mismo préstamo.");
       return;
@@ -4043,7 +4043,7 @@ export default function Home() {
           fechaPrestamo: prestamoDraft.fechaPrestamo,
           fechaEstimadaDevolucionTexto: prestamoDraft.fechaEstimadaDevolucionTexto.trim() || undefined,
           comentarios: prestamoDraft.comentarios.trim() || undefined,
-          items: payloadItems,
+          equipos: payloadItems,
         }),
       });
       setPrestamoDraft({ ...EMPTY_PRESTAMO_DRAFT, fechaPrestamo: getTodayDateInput() });
@@ -4062,7 +4062,7 @@ export default function Home() {
   async function returnPrestamo(
     prestamoId: string,
     fechaDevolucion: string,
-    items?: Array<{ itemId: string; estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion?: string }>,
+    equipos?: Array<{ equipoId: string; estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion?: string }>,
   ) {
     if (returningPrestamoId) return;
     setReturningPrestamoId(prestamoId);
@@ -4073,7 +4073,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fechaDevolucion: fechaDevolucion.trim() || getTodayDateInput(),
-          items,
+          equipos,
         }),
       });
       setStatus("Devolución de préstamo registrada.");
@@ -5447,7 +5447,7 @@ export default function Home() {
                 </select>
               </div>
               <div className="col-span-1 md:col-span-2 lg:col-span-4 mt-1">
-                <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-stone-200 bg-stone-50 p-3 hover:bg-stone-100">
+                <label className="flex cursor-pointer equipos-center gap-2.5 rounded-xl border border-stone-200 bg-stone-50 p-3 hover:bg-stone-100">
                   <input
                     type="checkbox"
                     checked={editEquipo.activo}
@@ -5480,35 +5480,35 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <div className="flex w-16 shrink-0 flex-col items-center justify-center border-r border-stone-100 bg-stone-50 p-2 text-stone-500">
+            <div className="flex w-16 shrink-0 flex-col equipos-center justify-center border-r border-stone-100 bg-stone-50 p-2 text-stone-500">
               <span className="text-[10px] font-bold uppercase tracking-widest mb-1">Posición</span>
               <span className="text-lg font-black text-stone-700">
                 {isReorderable ? currentOrderLabel : (equipo.ordenPdf > 10000 ? equipo.ordenPdf - 10000 : equipo.ordenPdf)}
               </span>
             </div>
             
-            <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:equipos-center sm:justify-between">
               <div className="flex-1">
                 <h3 className="text-base font-bold text-stone-800 tracking-tight mb-1">{equipo.nombre}</h3>
-                <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-stone-500">
-                  <span className="flex items-center gap-1.5 uppercase tracking-wider">
+                <div className="flex flex-wrap equipos-center gap-3 text-[11px] font-semibold text-stone-500">
+                  <span className="flex equipos-center gap-1.5 uppercase tracking-wider">
                     <span className={`h-1.5 w-1.5 rounded-full ${equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? "bg-sky-500" : "bg-amber-500"}`}></span>
                     {equipo.tipoLabel ?? equipo.tipo}
                   </span>
                   <span className="text-stone-300">•</span>
-                  <span className="flex items-center gap-1.5 uppercase tracking-wider">
+                  <span className="flex equipos-center gap-1.5 uppercase tracking-wider">
                     <span className={`h-1.5 w-1.5 rounded-full ${equipo.activo ? "bg-emerald-500" : "bg-rose-500"}`}></span>
                     {equipo.activo ? "Visible en Hoja" : "Oculto de Hoja"}
                   </span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex flex-wrap equipos-center gap-2.5">
                 {canWrite ? (
                   <button
                     type="button"
                     onClick={() => void toggleEquipoActivo(equipo)}
-                    className={`flex h-9 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all active:scale-95 shadow-sm ${
+                    className={`flex h-9 equipos-center justify-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all active:scale-95 shadow-sm ${
                       equipo.activo
                         ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:border-rose-300"
                         : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300"
@@ -5523,13 +5523,13 @@ export default function Home() {
                 ) : null}
                 
                 {isReorderable ? (
-                  <div className="flex h-9 items-center gap-1.5 rounded-xl border border-stone-200/80 bg-stone-50/80 px-1.5 shadow-sm">
-                    <div className="flex items-center gap-0.5 border-r border-stone-200 pr-1.5">
+                  <div className="flex h-9 equipos-center gap-1.5 rounded-xl border border-stone-200/80 bg-stone-50/80 px-1.5 shadow-sm">
+                    <div className="flex equipos-center gap-0.5 border-r border-stone-200 pr-1.5">
                       <button
                         type="button"
                         onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.equipoId, "up", orderGroupType) : moveEquipoInactivoInDraft(equipo.equipoId, "up", orderGroupType)}
                         disabled={!canWrite || orderIndex <= 0}
-                        className="flex h-6 w-6 items-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
+                        className="flex h-6 w-6 equipos-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
                         title="Subir una posición"
                       >
                         <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
@@ -5538,13 +5538,13 @@ export default function Home() {
                         type="button"
                         onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.equipoId, "down", orderGroupType) : moveEquipoInactivoInDraft(equipo.equipoId, "down", orderGroupType)}
                         disabled={!canWrite || orderIndex < 0 || orderIndex >= orderCount - 1}
-                        className="flex h-6 w-6 items-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
+                        className="flex h-6 w-6 equipos-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
                         title="Bajar una posición"
                       >
                         <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                       </button>
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex equipos-center">
                       <select
                         value={currentOrderLabel}
                         onChange={(event) => reorderableInActiveList ? setEquipoDraftPosition(equipo.equipoId, Number(event.target.value), orderGroupType) : setEquipoInactivoDraftPosition(equipo.equipoId, Number(event.target.value), orderGroupType)}
@@ -6180,27 +6180,27 @@ export default function Home() {
         }}
       >
         {/* Mobile Header */}
-        <header className="sticky top-0 z-40 flex items-center justify-between border-b border-stone-300/80 bg-white px-4 py-3 shadow-md backdrop-blur-md min-[900px]:hidden -mx-2 sm:-mx-3 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-inner">
+        <header className="sticky top-0 z-40 flex equipos-center justify-between border-b border-stone-300/80 bg-white px-4 py-3 shadow-md backdrop-blur-md min-[900px]:hidden -mx-2 sm:-mx-3 mb-4">
+            <div className="flex equipos-center gap-3">
+              <div className="flex h-10 w-10 equipos-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-inner">
                 <img src="/assets/logo-deposito.png" alt="Escudo" className="h-8 w-8 object-contain drop-shadow-sm" />
               </div>
               <div className="flex flex-col">
                 <h1 className="text-sm font-black tracking-tight text-[var(--color-ejercito-gold)] drop-shadow-sm">
                   DEPÓSITO GENERAL
                 </h1>
-                <div className="flex items-center gap-1.5">
+                <div className="flex equipos-center gap-1.5">
                   <span className="text-[11px] font-black uppercase tracking-wider text-stone-700">Grupo "Brigadier General Manuel Oribe" de Artillería 105mm No. 1</span>
                   <span className="h-1 w-1 rounded-full bg-stone-400"></span>
                   <span className="text-[10px] font-bold text-stone-600">v{appVersion}</span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex equipos-center gap-1">
               <button
                 type="button"
                 onClick={() => setGlobalSearchOpen(true)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+                className="flex h-10 w-10 equipos-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
               >
                 <span className="sr-only">Buscar personal</span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -6210,7 +6210,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(true)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+                className="flex h-10 w-10 equipos-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
               >
                 <span className="sr-only">Abrir menú</span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -6366,9 +6366,9 @@ export default function Home() {
             onEditEquipoIdChange={setEditEquipoId}
             onEditEquipoChange={(value, key) => setEditEquipo((prev) => ({ ...prev, [key]: value }))}
             onCreateEquipo={(event) => void createEquipo(event)}
-            onUpdateEquipo={(itemId) => void updateEquipo(itemId)}
-            onToggleEquipoActivo={(item) => void toggleEquipoActivo(item)}
-            onDeleteEquipo={(itemId) => void deleteEquipo(itemId)}
+            onUpdateEquipo={(equipoId) => void updateEquipo(equipoId)}
+            onToggleEquipoActivo={(equipo) => void toggleEquipoActivo(equipo)}
+            onDeleteEquipo={(equipoId) => void deleteEquipo(equipoId)}
             onMergeEquipoOrigenIdChange={handleMergeEquipoOrigenChange}
             onMergeEquipoDestinoIdChange={handleMergeEquipoDestinoChange}
             onMergeEquipos={mergeEquipos}

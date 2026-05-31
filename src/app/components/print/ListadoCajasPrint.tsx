@@ -82,7 +82,7 @@ function buildPrintStyles() {
       position: relative;
       z-index: 1;
       display: flex;
-      align-items: flex-end;
+      align-equipos: flex-end;
       justify-content: space-between;
       gap: 4mm;
       border-bottom: 0.5mm solid #8a8a8a;

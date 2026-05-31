@@ -5,7 +5,7 @@ import type { EtiquetadoItem } from "./EtiquetadoItem";
 
 export type EtiquetadoDashboardData = {
   generatedAt: string;
-  items: EtiquetadoItem[];
+  equipos: EtiquetadoItem[];
   estanterias: EtiquetadoEstanteria[];
   codigosSIE: EtiquetadoCodigoSIE[];
   cajas: EtiquetadoCaja[];

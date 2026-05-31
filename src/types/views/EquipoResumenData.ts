@@ -1,9 +1,9 @@
-import type { EquipoResumenItem } from "./EquipoResumenItem";
+import type { EquipoResumenEquipo } from "./EquipoResumenEquipo";
 import type { EquipoResumenRow } from "./EquipoResumenRow";
 
 export type EquipoResumenData = {
   generatedAt: string;
-  items: EquipoResumenItem[];
+  equipos: EquipoResumenEquipo[];
   unidad: EquipoResumenRow;
   baterias: EquipoResumenRow[];
 };

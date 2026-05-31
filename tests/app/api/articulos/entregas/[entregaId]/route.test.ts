@@ -144,7 +144,7 @@ describe("DELETE /api/articulos/entregas/[entregaId]", () => {
         personalCi: "12345672",
         personalNombre: "Perez, Juan",
         comentarioOriginal: "Entrega semanal",
-        items: "Block de Hojas A4 (x5), Lavandina (x2)",
+        equipos: "Block de Hojas A4 (x5), Lavandina (x2)",
       },
     });
   });

@@ -75,7 +75,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
               tallaValor: t.valor,
             };
           })
-          .filter((item): item is { ci: string; tallaTipoId: number; tallaValor: string } => item !== null);
+          .filter((equipo): equipo is { ci: string; tallaTipoId: number; tallaValor: string } => equipo !== null);
 
         if (tallasToCreate.length > 0) {
           await tx.personalTalla.createMany({

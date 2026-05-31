@@ -8,7 +8,7 @@ export const tipoEquipoRelationSelect = {
   orden: true,
 } satisfies Prisma.TipoEquipoCatalogoSelect;
 
-export function serializeEquipoTipoData(item: {
+export function serializeEquipoTipoData(equipo: {
   tipoEquipoId: number | null;
   tipoEquipo?: {
     tipoEquipoId: number;
@@ -17,5 +17,5 @@ export function serializeEquipoTipoData(item: {
     orden: number;
   } | null;
 }) {
-  return buildEquipoTipoDescriptor(item.tipoEquipo ?? null);
+  return buildEquipoTipoDescriptor(equipo.tipoEquipo ?? null);
 }

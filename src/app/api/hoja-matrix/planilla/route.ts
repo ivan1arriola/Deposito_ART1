@@ -127,7 +127,7 @@ export async function GET(request: Request) {
   };
 
   const firstItemCol = 4; // D
-  const itemCount = data.items.length;
+  const itemCount = data.equipos.length;
   const equipmentColumnCount = Math.max(itemCount, 1);
   const lastCol = firstItemCol + equipmentColumnCount - 1;
   const topStartRow = 1;
@@ -193,7 +193,7 @@ export async function GET(request: Request) {
     const col = firstItemCol + index;
     worksheet.mergeCells(topStartRow, col, topEndRow, col);
     const headerCell = worksheet.getCell(topStartRow, col);
-    headerCell.value = data.items[index].nombre;
+    headerCell.value = data.equipos[index].nombre;
     headerCell.alignment = {
       horizontal: "center",
       vertical: "middle",
@@ -241,7 +241,7 @@ export async function GET(request: Request) {
 
   const includeBatterySeparators = bateria === null;
   const printableRows = buildPrintableRows(data.rows, includeBatterySeparators);
-  const totalsByItem = Array.from({ length: data.items.length }, () => 0);
+  const totalsByItem = Array.from({ length: data.equipos.length }, () => 0);
   for (const row of data.rows) {
     row.totales.forEach((value, idx) => {
       totalsByItem[idx] += value;

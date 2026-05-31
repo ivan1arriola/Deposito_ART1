@@ -30,7 +30,7 @@ type FichaData = {
   entregas: Array<{ fecha: string | null }>;
   devoluciones: Array<{ fecha: string | null }>;
   matrix: Array<{
-    item: string;
+    equipo: string;
     entrega: number[];
     entregaTotal: number;
     devolucion: number[];

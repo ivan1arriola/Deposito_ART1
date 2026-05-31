@@ -2,9 +2,9 @@ import { TipoMovimiento, type Prisma } from "@/generated/prisma/client";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { buildPersonalDestinatarioEtiqueta, resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { prisma } from "@/lib/prisma";
-import type { StockItemTraceData } from "@/types/views";
+import type { StockEquipoTraceData } from "@/types/views";
 
-type PrismaItemTraceLike = Pick<Prisma.TransactionClient, "item" | "movimientoItem" | "prestamoActivo">;
+type PrismaItemTraceLike = Pick<Prisma.TransactionClient, "equipo" | "movimientoEquipo" | "prestamoActivo">;
 
 export function parseStockTraceItemId(value: unknown) {
   if (typeof value === "bigint") return value;
@@ -23,31 +23,31 @@ export function parseStockTraceColumn(value: unknown): "SUBALTERNOS" | "PRESTAMO
 
 export function hasStockItemTraceDelegates(client: unknown = prisma) {
   const candidate = client as PrismaItemTraceLike & {
-    item?: unknown;
-    movimientoItem?: unknown;
+    equipo?: unknown;
+    movimientoEquipo?: unknown;
     prestamoActivo?: unknown;
   };
   return (
-    typeof candidate.item !== "undefined" &&
-    typeof candidate.movimientoItem !== "undefined" &&
+    typeof candidate.equipo !== "undefined" &&
+    typeof candidate.movimientoEquipo !== "undefined" &&
     typeof candidate.prestamoActivo !== "undefined"
   );
 }
 
-export async function buildStockItemTraceData(itemId: bigint, client: PrismaItemTraceLike = prisma) {
-  const item = await client.item.findUnique({
-    where: { itemId },
+export async function buildStockEquipoTraceData(equipoId: bigint, client: PrismaItemTraceLike = prisma) {
+  const equipo = await client.equipo.findUnique({
+    where: { equipoId },
     select: {
-      itemId: true,
+      equipoId: true,
       nombre: true,
     },
   });
-  if (!item) return null;
+  if (!equipo) return null;
 
-  const [movimientoItems, prestamosActivos] = await Promise.all([
-    client.movimientoItem.findMany({
+  const [movimientoEquipos, prestamosActivos] = await Promise.all([
+    client.movimientoEquipo.findMany({
       where: {
-        itemId,
+        equipoId,
         movimiento: {
           tipo: {
             in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION, TipoMovimiento.ASIGNACION],
@@ -117,9 +117,9 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
     client.prestamoActivo.findMany({
       where: {
         movimiento: {
-          items: {
+          equipos: {
             some: {
-              itemId,
+              equipoId,
             },
           },
         },
@@ -166,9 +166,9 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
                 },
               },
             },
-            items: {
+            equipos: {
               where: {
-                itemId,
+                equipoId,
               },
               select: {
                 cantidad: true,
@@ -192,26 +192,26 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
       bateria: string | null;
       tipoPersonal: "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
       cantidadNeta: number;
-      movimientos: StockItemTraceData["subalternos"][number]["movimientos"];
+      movimientos: StockEquipoTraceData["subalternos"][number]["movimientos"];
     }
   >();
-  for (const movimientoItem of movimientoItems) {
-    const tipoMovimiento = movimientoItem.movimiento.tipo;
+  for (const movimientoEquipo of movimientoEquipos) {
+    const tipoMovimiento = movimientoEquipo.movimiento.tipo;
     if (tipoMovimiento !== TipoMovimiento.ENTREGA && tipoMovimiento !== TipoMovimiento.DEVOLUCION) continue;
-    const personal = movimientoItem.movimiento.destinatarioPersonal?.personal;
+    const personal = movimientoEquipo.movimiento.destinatarioPersonal?.personal;
     if (!personal) continue;
     const ci = personal.ci;
-    const delta = tipoMovimiento === TipoMovimiento.ENTREGA ? movimientoItem.cantidad : -movimientoItem.cantidad;
+    const delta = tipoMovimiento === TipoMovimiento.ENTREGA ? movimientoEquipo.cantidad : -movimientoEquipo.cantidad;
     const existing = subalternosByCi.get(ci);
     if (existing) {
       existing.cantidadNeta += delta;
       existing.movimientos.push({
-        movimientoId: movimientoItem.movimiento.movimientoId.toString(),
+        movimientoId: movimientoEquipo.movimiento.movimientoId.toString(),
         tipo: tipoMovimiento,
-        fecha: formatDateOnlyFromDate(movimientoItem.movimiento.fecha) ?? "",
-        cantidad: movimientoItem.cantidad,
+        fecha: formatDateOnlyFromDate(movimientoEquipo.movimiento.fecha) ?? "",
+        cantidad: movimientoEquipo.cantidad,
         delta,
-        observaciones: movimientoItem.movimiento.observaciones ?? null,
+        observaciones: movimientoEquipo.movimiento.observaciones ?? null,
       });
       continue;
     }
@@ -223,12 +223,12 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
       cantidadNeta: delta,
       movimientos: [
         {
-          movimientoId: movimientoItem.movimiento.movimientoId.toString(),
+          movimientoId: movimientoEquipo.movimiento.movimientoId.toString(),
           tipo: tipoMovimiento,
-          fecha: formatDateOnlyFromDate(movimientoItem.movimiento.fecha) ?? "",
-          cantidad: movimientoItem.cantidad,
+          fecha: formatDateOnlyFromDate(movimientoEquipo.movimiento.fecha) ?? "",
+          cantidad: movimientoEquipo.cantidad,
           delta,
-          observaciones: movimientoItem.movimiento.observaciones ?? null,
+          observaciones: movimientoEquipo.movimiento.observaciones ?? null,
         },
       ],
     });
@@ -239,16 +239,16 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
     {
       recintoNombre: string;
       cantidadNeta: number;
-      movimientos: StockItemTraceData["recintos"][number]["movimientos"];
+      movimientos: StockEquipoTraceData["recintos"][number]["movimientos"];
     }
   >();
 
-  for (const movimientoItem of movimientoItems) {
-    const tipoMovimiento = movimientoItem.movimiento.tipo;
+  for (const movimientoEquipo of movimientoEquipos) {
+    const tipoMovimiento = movimientoEquipo.movimiento.tipo;
     if (tipoMovimiento !== TipoMovimiento.ASIGNACION) continue;
-    const recinto = movimientoItem.movimiento.destinatarioRecinto;
-    const personal = movimientoItem.movimiento.destinatarioPersonal?.personal;
-    const externo = movimientoItem.movimiento.destinatarioExterno?.personaExterna;
+    const recinto = movimientoEquipo.movimiento.destinatarioRecinto;
+    const personal = movimientoEquipo.movimiento.destinatarioPersonal?.personal;
+    const externo = movimientoEquipo.movimiento.destinatarioExterno?.personaExterna;
     
     let nombre = "Asignación sin destinatario";
     if (recinto) {
@@ -259,16 +259,16 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
       nombre = `${externo.grado} ${externo.apellido}, ${externo.nombre} (${externo.unidadDestino})`;
     }
 
-    const delta = movimientoItem.cantidad; // Asignación implies items moved to the recinto, assuming positive for trace. Wait, stockAsignacion = SUM(mi.cantidad), so it's a positive delta.
+    const delta = movimientoEquipo.cantidad; // Asignación implies equipos moved to the recinto, assuming positive for trace. Wait, stockAsignacion = SUM(mi.cantidad), so it's a positive delta.
     const existing = recintosByNombre.get(nombre);
     if (existing) {
       existing.cantidadNeta += delta;
       existing.movimientos.push({
-        movimientoId: movimientoItem.movimiento.movimientoId.toString(),
-        fecha: formatDateOnlyFromDate(movimientoItem.movimiento.fecha) ?? "",
-        cantidad: movimientoItem.cantidad,
+        movimientoId: movimientoEquipo.movimiento.movimientoId.toString(),
+        fecha: formatDateOnlyFromDate(movimientoEquipo.movimiento.fecha) ?? "",
+        cantidad: movimientoEquipo.cantidad,
         delta,
-        observaciones: movimientoItem.movimiento.observaciones ?? null,
+        observaciones: movimientoEquipo.movimiento.observaciones ?? null,
       });
       continue;
     }
@@ -277,11 +277,11 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
       cantidadNeta: delta,
       movimientos: [
         {
-          movimientoId: movimientoItem.movimiento.movimientoId.toString(),
-          fecha: formatDateOnlyFromDate(movimientoItem.movimiento.fecha) ?? "",
-          cantidad: movimientoItem.cantidad,
+          movimientoId: movimientoEquipo.movimiento.movimientoId.toString(),
+          fecha: formatDateOnlyFromDate(movimientoEquipo.movimiento.fecha) ?? "",
+          cantidad: movimientoEquipo.cantidad,
           delta,
-          observaciones: movimientoItem.movimiento.observaciones ?? null,
+          observaciones: movimientoEquipo.movimiento.observaciones ?? null,
         },
       ],
     });
@@ -329,7 +329,7 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
       }),
     }));
 
-  const prestamos: StockItemTraceData["prestamos"] = prestamosActivos
+  const prestamos: StockEquipoTraceData["prestamos"] = prestamosActivos
     .map((prestamo) => {
       const destinatario = resolveDestinatarioMovimiento(prestamo.movimiento);
       return {
@@ -343,7 +343,7 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
         destinatarioEtiqueta: destinatario?.etiqueta ?? "Destinatario pendiente",
         destinatarioUnidadDestino: destinatario?.unidadDestino ?? null,
         observaciones: prestamo.movimiento.observaciones ?? null,
-        cantidad: prestamo.movimiento.items.reduce((total, itemMovimiento) => total + itemMovimiento.cantidad, 0),
+        cantidad: prestamo.movimiento.equipos.reduce((total, itemMovimiento) => total + itemMovimiento.cantidad, 0),
         movimientoId: prestamo.movimiento.movimientoId.toString(),
       };
     })
@@ -357,10 +357,10 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
       return prestamoB > prestamoA ? 1 : -1;
     });
 
-  const payload: StockItemTraceData = {
-    equipoId: item.itemId.toString(),
-    itemId: item.itemId.toString(),
-    itemNombre: item.nombre,
+  const payload: StockEquipoTraceData = {
+    equipoId: equipo.equipoId.toString(),
+    equipoId: equipo.equipoId.toString(),
+    itemNombre: equipo.nombre,
     totals: {
       subalternos: subalternos.reduce((total, entry) => total + entry.cantidadNeta, 0),
       prestamo: prestamos.reduce((total, entry) => total + entry.cantidad, 0),

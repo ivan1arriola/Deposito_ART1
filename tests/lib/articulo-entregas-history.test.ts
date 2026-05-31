@@ -13,7 +13,7 @@ const SAMPLE_ENTREGAS: ArticuloEntregaHistorialEntry[] = [
     usuarioEntregaLabel: "Tte. Perez, Ana",
     fecha: "2026-05-20",
     comentario: "Entrega semanal",
-    items: [
+    equipos: [
       {
         articuloId: 1,
         nombre: "Block de Hojas A4",
@@ -32,7 +32,7 @@ const SAMPLE_ENTREGAS: ArticuloEntregaHistorialEntry[] = [
     usuarioEntregaLabel: "Tte. Perez, Ana",
     fecha: "2026-05-10",
     comentario: null,
-    items: [
+    equipos: [
       {
         articuloId: 2,
         nombre: "Lavandina",

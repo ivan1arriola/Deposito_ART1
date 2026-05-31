@@ -1,5 +1,5 @@
 export type PrestamoItem = {
-  itemId: string;
+  equipoId: string;
   nombre: string;
   cantidad: number;
 };

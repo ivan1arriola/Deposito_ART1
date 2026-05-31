@@ -18,8 +18,8 @@ import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoI
 
 type DevolucionPrestamoPayload = {
   fechaDevolucion?: string;
-  items?: Array<{
-    itemId: string | number;
+  equipos?: Array<{
+    equipoId: string | number;
     estadoDevolucion?: string;
     comentarioDevolucion?: string;
   }>;
@@ -99,30 +99,30 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   }
 
   const devolucionInputByItemId = new Map<string, { estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion: string }>();
-  if (Array.isArray(body.items)) {
-    for (const item of body.items) {
-      const itemId = parseBigIntId(item.itemId);
-      const estadoDevolucion = parseEstadoEquipoPrestamo(item.estadoDevolucion) ?? "NUEVO";
-      const comentarioDevolucion = String(item.comentarioDevolucion ?? "").trim();
-      if (!itemId) {
-        return NextResponse.json({ error: "items: itemId inválido." }, { status: 400 });
+  if (Array.isArray(body.equipos)) {
+    for (const equipo of body.equipos) {
+      const equipoId = parseBigIntId(equipo.equipoId);
+      const estadoDevolucion = parseEstadoEquipoPrestamo(equipo.estadoDevolucion) ?? "NUEVO";
+      const comentarioDevolucion = String(equipo.comentarioDevolucion ?? "").trim();
+      if (!equipoId) {
+        return NextResponse.json({ error: "equipos: equipoId inválido." }, { status: 400 });
       }
-      const key = itemId.toString();
+      const key = equipoId.toString();
       devolucionInputByItemId.set(key, { estadoDevolucion, comentarioDevolucion });
     }
   }
 
   try {
     await prisma.$transaction(async (tx) => {
-      const itemUpdates = existing.items.map((item) => {
-        const itemId = item.itemId.toString();
-        const itemUpdate = devolucionInputByItemId.get(itemId) ?? {
-          estadoDevolucion: item.estadoEntrega,
+      const itemUpdates = existing.equipos.map((equipo) => {
+        const equipoId = equipo.equipoId.toString();
+        const itemUpdate = devolucionInputByItemId.get(equipoId) ?? {
+          estadoDevolucion: equipo.estadoEntrega,
           comentarioDevolucion: "",
         };
         return {
           movimientoId: existing.movimientoId,
-          itemId: item.itemId,
+          equipoId: equipo.equipoId,
           estadoDevolucion: itemUpdate.estadoDevolucion,
           comentarioDevolucion: itemUpdate.comentarioDevolucion || null,
         };
@@ -134,7 +134,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
             (entry) =>
               Prisma.sql`(
                 CAST(${entry.movimientoId} AS bigint),
-                CAST(${entry.itemId} AS bigint),
+                CAST(${entry.equipoId} AS bigint),
                 CAST(${entry.estadoDevolucion} AS text),
                 CAST(${entry.comentarioDevolucion} AS text)
               )`,
@@ -186,17 +186,17 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         fechaEstimadaDevolucionTexto:
           updated.prestamoHistorial?.fechaEstimadaDevolucionTexto ?? existing.prestamoActivo.fechaEstimadaDevolucionTexto ?? null,
         fechaDevolucion: formatDateOnlyForDisplay(fechaDevolucionInput),
-        totalEquipos: updated.items.length,
+        totalEquipos: updated.equipos.length,
         totalUnidades: totalUnidadesPrestamo(updated),
         usuarioRecibeDevolucionId: auth.user.usuarioId,
-        items: updated.items.map((item) => ({
-          itemId: item.item.itemId.toString(),
-          nombre: item.item.nombre,
-          cantidad: item.cantidad,
-          estadoEntrega: item.estadoEntrega,
-          comentarioEntrega: item.comentarioEntrega,
-          estadoDevolucion: item.estadoDevolucion,
-          comentarioDevolucion: item.comentarioDevolucion,
+        equipos: updated.equipos.map((equipo) => ({
+          equipoId: equipo.equipo.equipoId.toString(),
+          nombre: equipo.equipo.nombre,
+          cantidad: equipo.cantidad,
+          estadoEntrega: equipo.estadoEntrega,
+          comentarioEntrega: equipo.comentarioEntrega,
+          estadoDevolucion: equipo.estadoDevolucion,
+          comentarioDevolucion: equipo.comentarioDevolucion,
         })),
       },
     });
@@ -218,11 +218,11 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     }
 
     const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
-    const resumenItems = updated.items
+    const resumenItems = updated.equipos
       .slice(0, 4)
-      .map((item) => `${item.item.nombre} x${item.cantidad}`)
+      .map((equipo) => `${equipo.equipo.nombre} x${equipo.cantidad}`)
       .join(", ");
-    const resumenItemsLine = updated.items.length > 4 ? `${resumenItems}, ...` : resumenItems;
+    const resumenItemsLine = updated.equipos.length > 4 ? `${resumenItems}, ...` : resumenItems;
 
     const destinatarioPersonalCi = updated.destinatarioPersonal?.personal.ci ?? null;
     if (destinatarioPersonalCi) {
@@ -236,7 +236,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
             `Recibo: ${updated.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo.reciboNumero}`,
             `Fecha de devolución: ${formatDateOnlyForDisplay(fechaDevolucionInput)}`,
             `Total de unidades: ${totalUnidadesPrestamo(updated)}`,
-            `Items: ${resumenItemsLine}`,
+            `Equipos: ${resumenItemsLine}`,
           ],
           actorLabel,
           portalPath: "/",

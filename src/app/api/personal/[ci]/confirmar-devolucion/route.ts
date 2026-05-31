@@ -60,7 +60,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
       // 2. Perform same physical cleanup as before
       await tx.personalTalla.deleteMany({ where: { ci: ciDecoded } });
       await tx.observacion.deleteMany({ where: { ci: ciDecoded } });
-      await tx.movimientoItem.deleteMany({
+      await tx.movimientoEquipo.deleteMany({
         where: { movimiento: { destinatarioPersonal: { is: { ci: ciDecoded } } } },
       });
       await tx.movimiento.deleteMany({

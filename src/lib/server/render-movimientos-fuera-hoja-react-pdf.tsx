@@ -157,7 +157,7 @@ export async function renderMovimientosFueraHojaPdf(
     ci: "10%",
     grado: "9%",
     persona: "19%",
-    item: "20%",
+    equipo: "20%",
     cantidad: "6%",
     observaciones: "18%",
   } as const;
@@ -188,7 +188,7 @@ export async function renderMovimientosFueraHojaPdf(
               <View style={[styles.headerCell, { width: widths.persona }]}>
                 <Text>Persona</Text>
               </View>
-              <View style={[styles.headerCell, { width: widths.item }]}>
+              <View style={[styles.headerCell, { width: widths.equipo }]}>
                 <Text>Equipo</Text>
               </View>
               <View style={[styles.headerCell, { width: widths.cantidad }]}>
@@ -203,7 +203,7 @@ export async function renderMovimientosFueraHojaPdf(
               <Text style={styles.muted}>No hay movimientos fuera de hoja.</Text>
             ) : (
               chunk.map((row) => (
-                <View key={`${row.movimientoId}-${row.item}-${row.ci}`} style={styles.row}>
+                <View key={`${row.movimientoId}-${row.equipo}-${row.ci}`} style={styles.row}>
                   <View style={[styles.cell, { width: widths.fecha }]}>
                     <Text style={styles.center}>{row.fecha}</Text>
                   </View>
@@ -219,8 +219,8 @@ export async function renderMovimientosFueraHojaPdf(
                   <View style={[styles.cell, { width: widths.persona }]}>
                     <Text style={styles.left}>{row.persona}</Text>
                   </View>
-                  <View style={[styles.cell, { width: widths.item }]}>
-                    <Text style={styles.left}>{row.item}</Text>
+                  <View style={[styles.cell, { width: widths.equipo }]}>
+                    <Text style={styles.left}>{row.equipo}</Text>
                   </View>
                   <View style={[styles.cell, { width: widths.cantidad }]}>
                     <Text style={styles.center}>{String(row.cantidad)}</Text>

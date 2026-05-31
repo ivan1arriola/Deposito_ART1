@@ -25,5 +25,5 @@ export type RegistroDraft = {
   incluirFueraDeHoja: boolean;
   fecha: string;
   comentarios: string;
-  items: RegistroDraftEquipo[];
+  equipos: RegistroDraftEquipo[];
 };

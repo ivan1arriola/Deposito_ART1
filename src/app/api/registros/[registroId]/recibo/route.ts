@@ -214,9 +214,9 @@ const registroReciboInclude = {
       responsableCi: true,
     },
   },
-  items: {
+  equipos: {
     include: {
-      item: {
+      equipo: {
         select: {
           nombre: true,
           ordenPdf: true,
@@ -224,7 +224,7 @@ const registroReciboInclude = {
       },
     },
     orderBy: {
-      item: {
+      equipo: {
         ordenPdf: "asc",
       },
     },
@@ -326,15 +326,15 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     destinoFull = bat ? `Batería ${bat} - Dentro de la Unidad` : "Dentro de la Unidad";
   }
 
-  const tableRows = registro.items.map((item) => {
-    let observaciones = item.comentarioEntrega?.trim() || "";
+  const tableRows = registro.equipos.map((equipo) => {
+    let observaciones = equipo.comentarioEntrega?.trim() || "";
     if (registro.observaciones && registro.observaciones.trim() !== "") {
       observaciones = observaciones ? `${observaciones} | ${registro.observaciones}` : registro.observaciones;
     }
     
     return {
-      cantidad: String(item.cantidad),
-      efecto: item.item.nombre,
+      cantidad: String(equipo.cantidad),
+      efecto: equipo.equipo.nombre,
       observaciones: observaciones || "-",
     };
   });

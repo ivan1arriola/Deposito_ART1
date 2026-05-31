@@ -10,13 +10,13 @@ export interface EquipoConfigCallbacks {
     key: keyof Pick<EquipoConfig, "nombre" | "tipo" | "activo" | "ordenPdf">
   ) => void;
   onCreateEquipo: (event: FormEvent<HTMLFormElement>) => void;
-  onUpdateEquipo: (itemId: string) => void;
-  onToggleEquipoActivo: (item: EquipoConfig) => void;
-  onDeleteEquipo: (itemId: string) => void;
+  onUpdateEquipo: (equipoId: string) => void;
+  onToggleEquipoActivo: (equipo: EquipoConfig) => void;
+  onDeleteEquipo: (equipoId: string) => void;
   onSaveEquipoOrder: () => void;
   onResetEquipoOrderDraft: () => void;
   renderEquipoCard: (
-    item: EquipoConfig,
+    equipo: EquipoConfig,
     options?: {
       reorderableInActiveList?: boolean;
       reorderableInInactiveList?: boolean;

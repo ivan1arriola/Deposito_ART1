@@ -40,7 +40,7 @@ type PersonalPayload = {
 };
 
 type MovimientoItemPayload = {
-  itemId: string | number;
+  equipoId: string | number;
   cantidad: number | string;
 };
 
@@ -48,7 +48,7 @@ type MovimientoPayload = {
   tipo: TipoMovimiento | string;
   fecha?: string;
   comentarios?: string;
-  items: MovimientoItemPayload[];
+  equipos: MovimientoItemPayload[];
 };
 
 type ParsedMovimiento = {
@@ -56,7 +56,7 @@ type ParsedMovimiento = {
   fecha: Date;
   fechaInput: string;
   comentarios: string | null;
-  items: Array<{ itemId: bigint; cantidad: number }>;
+  equipos: Array<{ equipoId: bigint; cantidad: number }>;
 };
 
 function parseBigIntId(value: unknown) {
@@ -119,12 +119,12 @@ function isValidPayload(body: unknown): body is PersonalPayload {
       if (!parseTipoMovimiento(candidateMovimiento.tipo)) return false;
       if (candidateMovimiento.fecha !== undefined && typeof candidateMovimiento.fecha !== "string") return false;
       if (candidateMovimiento.comentarios !== undefined && typeof candidateMovimiento.comentarios !== "string") return false;
-      if (!Array.isArray(candidateMovimiento.items) || candidateMovimiento.items.length === 0) return false;
+      if (!Array.isArray(candidateMovimiento.equipos) || candidateMovimiento.equipos.length === 0) return false;
 
-      const hasAtLeastOneItem = candidateMovimiento.items.some((item) => {
-        if (!item || typeof item !== "object") return false;
-        const candidateItem = item as Record<string, unknown>;
-        return parseBigIntId(candidateItem.itemId) !== null && parseCantidad(candidateItem.cantidad) !== null;
+      const hasAtLeastOneItem = candidateMovimiento.equipos.some((equipo) => {
+        if (!equipo || typeof equipo !== "object") return false;
+        const candidateItem = equipo as Record<string, unknown>;
+        return parseBigIntId(candidateItem.equipoId) !== null && parseCantidad(candidateItem.cantidad) !== null;
       });
       if (!hasAtLeastOneItem) return false;
     }
@@ -334,7 +334,7 @@ export async function POST(req: Request) {
         tallaValor,
       };
     })
-    .filter((item): item is { tallaTipoId: number; tallaValor: string } => item !== null);
+    .filter((equipo): equipo is { tallaTipoId: number; tallaValor: string } => equipo !== null);
 
   const movimientosPayload = Array.isArray(body.movimientos) ? body.movimientos : [];
   const movimientosParsed: ParsedMovimiento[] = [];
@@ -358,12 +358,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const parsedItems = movimientoRaw.items
-      .map((item) => ({
-        itemId: parseBigIntId(item.itemId),
-        cantidad: parseCantidad(item.cantidad),
+    const parsedItems = movimientoRaw.equipos
+      .map((equipo) => ({
+        equipoId: parseBigIntId(equipo.equipoId),
+        cantidad: parseCantidad(equipo.cantidad),
       }))
-      .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{ itemId: bigint; cantidad: number }>;
+      .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{ equipoId: bigint; cantidad: number }>;
 
     if (parsedItems.length === 0) {
       return NextResponse.json(
@@ -373,9 +373,9 @@ export async function POST(req: Request) {
     }
 
     const dedupedItems = new Map<string, number>();
-    for (const item of parsedItems) {
-      const key = item.itemId.toString();
-      dedupedItems.set(key, (dedupedItems.get(key) ?? 0) + item.cantidad);
+    for (const equipo of parsedItems) {
+      const key = equipo.equipoId.toString();
+      dedupedItems.set(key, (dedupedItems.get(key) ?? 0) + equipo.cantidad);
       movimientoItemIds.add(key);
     }
 
@@ -384,8 +384,8 @@ export async function POST(req: Request) {
       fecha,
       fechaInput,
       comentarios: movimientoRaw.comentarios?.trim() || null,
-      items: Array.from(dedupedItems.entries()).map(([itemId, cantidad]) => ({
-        itemId: BigInt(itemId),
+      equipos: Array.from(dedupedItems.entries()).map(([equipoId, cantidad]) => ({
+        equipoId: BigInt(equipoId),
         cantidad,
       })),
     });
@@ -393,21 +393,21 @@ export async function POST(req: Request) {
 
   const itemNombres = new Map<string, string>();
   if (movimientoItemIds.size > 0) {
-    const itemIds = Array.from(movimientoItemIds.values()).map((itemId) => BigInt(itemId));
-    const itemsFound = await prisma.item.findMany({
-      where: { itemId: { in: itemIds } },
-      select: { itemId: true, nombre: true },
+    const equipoIds = Array.from(movimientoItemIds.values()).map((equipoId) => BigInt(equipoId));
+    const itemsFound = await prisma.equipo.findMany({
+      where: { equipoId: { in: equipoIds } },
+      select: { equipoId: true, nombre: true },
     });
 
-    if (itemsFound.length !== itemIds.length) {
+    if (itemsFound.length !== equipoIds.length) {
       return NextResponse.json(
         { error: "Uno o mas equipos de los movimientos iniciales no existen." },
         { status: 400 },
       );
     }
 
-    for (const item of itemsFound) {
-      itemNombres.set(item.itemId.toString(), item.nombre);
+    for (const equipo of itemsFound) {
+      itemNombres.set(equipo.equipoId.toString(), equipo.nombre);
     }
   }
 
@@ -457,11 +457,11 @@ export async function POST(req: Request) {
           },
         });
 
-        await tx.movimientoItem.createMany({
-          data: movimiento.items.map((item) => ({
+        await tx.movimientoEquipo.createMany({
+          data: movimiento.equipos.map((equipo) => ({
             movimientoId: movimientoCreado.movimientoId,
-            itemId: item.itemId,
-            cantidad: item.cantidad,
+            equipoId: equipo.equipoId,
+            cantidad: equipo.cantidad,
           })),
         });
 
@@ -506,10 +506,10 @@ export async function POST(req: Request) {
 
     if (created) {
       for (const [index, movimiento] of movimientosParsed.entries()) {
-        const itemsDetallados = movimiento.items.map((item) => ({
-          itemId: item.itemId.toString(),
-          nombre: itemNombres.get(item.itemId.toString()) ?? "Equipo sin nombre",
-          cantidad: item.cantidad,
+        const itemsDetallados = movimiento.equipos.map((equipo) => ({
+          equipoId: equipo.equipoId.toString(),
+          nombre: itemNombres.get(equipo.equipoId.toString()) ?? "Equipo sin nombre",
+          cantidad: equipo.cantidad,
         }));
 
         await logAudit({
@@ -526,8 +526,8 @@ export async function POST(req: Request) {
             fechaMovimiento: formatDateOnlyForDisplay(movimiento.fechaInput),
             comentarios: movimiento.comentarios,
             totalEquipos: itemsDetallados.length,
-            totalUnidades: itemsDetallados.reduce((acumulado, item) => acumulado + item.cantidad, 0),
-            items: itemsDetallados,
+            totalUnidades: itemsDetallados.reduce((acumulado, equipo) => acumulado + equipo.cantidad, 0),
+            equipos: itemsDetallados,
           },
         });
       }

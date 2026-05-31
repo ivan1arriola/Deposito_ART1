@@ -143,7 +143,7 @@ function buildStyles() {
       list-style: none;
     }
 
-    .equipos-item {
+    .equipos-equipo {
       margin: 0;
       padding: 0;
     }
@@ -194,9 +194,9 @@ export default async function ListadoAsignacionesPage({
             personaExterna: true,
           },
         },
-        items: {
+        equipos: {
           include: {
-            item: {
+            equipo: {
               select: {
                 nombre: true,
               },
@@ -228,8 +228,8 @@ export default async function ListadoAsignacionesPage({
         fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
         clase,
         nombre,
-        items: movimiento.items.map((detail) => ({
-          item: detail.item.nombre,
+        equipos: movimiento.equipos.map((detail) => ({
+          equipo: detail.equipo.nombre,
           cantidad: detail.cantidad,
         })),
         observaciones: movimiento.observaciones,
@@ -289,9 +289,9 @@ export default async function ListadoAsignacionesPage({
                     </td>
                     <td>
                       <ul className="equipos-list">
-                        {row.items.map((item, idx) => (
-                          <li key={idx} className="equipos-item">
-                            {item.cantidad > 0 ? `+${item.cantidad}` : item.cantidad} {item.item}
+                        {row.equipos.map((equipo, idx) => (
+                          <li key={idx} className="equipos-equipo">
+                            {equipo.cantidad > 0 ? `+${equipo.cantidad}` : equipo.cantidad} {equipo.equipo}
                           </li>
                         ))}
                       </ul>

@@ -25,9 +25,9 @@ describe("Handlers de Registros", () => {
     tipo: "ENTREGA" as const,
     fecha: "2024-02-26",
     comentarios: "Entrega de equipamiento",
-    items: [
-      { itemId: "ITEM1", cantidad: 1 },
-      { itemId: "ITEM2", cantidad: 2 },
+    equipos: [
+      { equipoId: "ITEM1", cantidad: 1 },
+      { equipoId: "ITEM2", cantidad: 2 },
     ],
   };
 
@@ -45,10 +45,10 @@ describe("Handlers de Registros", () => {
       );
     });
 
-    it("debería manejar errores de validación de items", async () => {
+    it("debería manejar errores de validación de equipos", async () => {
       const onError = vi.fn();
-      const invalidPayload = { ...mockRegistroPayload, items: [] };
-      vi.mocked(api).mockRejectedValue(new Error("Items requeridos"));
+      const invalidPayload = { ...mockRegistroPayload, equipos: [] };
+      vi.mocked(api).mockRejectedValue(new Error("Equipos requeridos"));
 
       try {
         await createRegistroHandler(invalidPayload, { onError });
@@ -85,7 +85,7 @@ describe("Handlers de Registros", () => {
           tipo: "ENTREGA" as const,
           fecha: "2024-02-20",
           comentarios: null,
-          items: [],
+          equipos: [],
         },
       ];
       vi.mocked(api).mockResolvedValue(mockRegistros);
@@ -110,13 +110,13 @@ describe("Handlers de Registros", () => {
   });
 
   describe("saveRegistroHandler", () => {
-    it("debería validar items duplicados", async () => {
+    it("debería validar equipos duplicados", async () => {
       const onError = vi.fn();
       const duplicatePayload = {
         ...mockRegistroPayload,
-        items: [
-          { itemId: "ITEM1", cantidad: 1 },
-          { itemId: "ITEM1", cantidad: 1 }, // Duplicado
+        equipos: [
+          { equipoId: "ITEM1", cantidad: 1 },
+          { equipoId: "ITEM1", cantidad: 1 }, // Duplicado
         ],
       };
 

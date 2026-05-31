@@ -54,7 +54,7 @@ export function stockOperacionDeltaFactor(tipo: TipoStockOperacion | "INGRESO" |
 }
 
 type AggregateRow = {
-  itemId: bigint | number | string;
+  equipoId: bigint | number | string;
   total: bigint | number | string | null;
 };
 
@@ -69,7 +69,7 @@ function toSafeInteger(value: AggregateRow["total"]) {
 function rowsToItemMap(rows: AggregateRow[]) {
   const map = new Map<string, number>();
   for (const row of rows) {
-    map.set(String(row.itemId), toSafeInteger(row.total));
+    map.set(String(row.equipoId), toSafeInteger(row.total));
   }
   return map;
 }
@@ -78,7 +78,7 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
   const [unidadRows, personalRows, asignacionRows, prestamoRows] = await Promise.all([
     prisma.$queryRaw<AggregateRow[]>`
       SELECT
-        soi.item_id AS "itemId",
+        soi.item_id AS "equipoId",
         SUM(CASE WHEN so.tipo = 'INGRESO' THEN soi.cantidad ELSE -soi.cantidad END)::bigint AS total
       FROM stock_operacion_item soi
       INNER JOIN stock_operacion so
@@ -87,7 +87,7 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
     `,
     prisma.$queryRaw<AggregateRow[]>`
       SELECT
-        mi.item_id AS "itemId",
+        mi.item_id AS "equipoId",
         SUM(
           CASE
             WHEN m.tipo = 'ENTREGA' THEN mi.cantidad
@@ -105,7 +105,7 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
     `,
     prisma.$queryRaw<AggregateRow[]>`
       SELECT
-        mi.item_id AS "itemId",
+        mi.item_id AS "equipoId",
         SUM(mi.cantidad)::bigint AS total
       FROM movimiento_item mi
       INNER JOIN movimiento m
@@ -115,7 +115,7 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
     `,
     prisma.$queryRaw<AggregateRow[]>`
       SELECT
-        mi.item_id AS "itemId",
+        mi.item_id AS "equipoId",
         SUM(mi.cantidad)::bigint AS total
       FROM prestamo_activo pa
       INNER JOIN movimiento_item mi
@@ -143,9 +143,9 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
       },
       select: {
         tipo: true,
-        items: {
+        equipos: {
           select: {
-            itemId: true,
+            equipoId: true,
             cantidad: true,
           },
         },
@@ -154,9 +154,9 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
     prisma.stockOperacion.findMany({
       select: {
         tipo: true,
-        items: {
+        equipos: {
           select: {
-            itemId: true,
+            equipoId: true,
             cantidad: true,
           },
         },
@@ -166,9 +166,9 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
       select: {
         movimiento: {
           select: {
-            items: {
+            equipos: {
               select: {
-                itemId: true,
+                equipoId: true,
                 cantidad: true,
               },
             },
@@ -183,24 +183,24 @@ export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapO
   for (const movimiento of movimientos) {
     const factor = movimientoStockDeltaFactor(movimiento.tipo);
     if (factor === 0) continue;
-    for (const item of movimiento.items) {
-      const key = item.itemId.toString();
-      stockByItem.set(key, (stockByItem.get(key) ?? 0) + item.cantidad * factor);
+    for (const equipo of movimiento.equipos) {
+      const key = equipo.equipoId.toString();
+      stockByItem.set(key, (stockByItem.get(key) ?? 0) + equipo.cantidad * factor);
     }
   }
 
   for (const operacion of operaciones) {
     const factor = stockOperacionDeltaFactor(operacion.tipo);
-    for (const item of operacion.items) {
-      const key = item.itemId.toString();
-      stockByItem.set(key, (stockByItem.get(key) ?? 0) + item.cantidad * factor);
+    for (const equipo of operacion.equipos) {
+      const key = equipo.equipoId.toString();
+      stockByItem.set(key, (stockByItem.get(key) ?? 0) + equipo.cantidad * factor);
     }
   }
 
   for (const prestamo of prestamosActivos) {
-    for (const item of prestamo.movimiento.items) {
-      const key = item.itemId.toString();
-      stockByItem.set(key, (stockByItem.get(key) ?? 0) - item.cantidad);
+    for (const equipo of prestamo.movimiento.equipos) {
+      const key = equipo.equipoId.toString();
+      stockByItem.set(key, (stockByItem.get(key) ?? 0) - equipo.cantidad);
     }
   }
 
@@ -211,9 +211,9 @@ export async function buildUnidadByItemMap(prisma: Pick<Prisma.TransactionClient
   const operaciones = await prisma.stockOperacion.findMany({
     select: {
       tipo: true,
-      items: {
+      equipos: {
         select: {
-          itemId: true,
+          equipoId: true,
           cantidad: true,
         },
       },
@@ -223,9 +223,9 @@ export async function buildUnidadByItemMap(prisma: Pick<Prisma.TransactionClient
   const unidadByItem = new Map<string, number>();
   for (const operacion of operaciones) {
     const factor = stockOperacionDeltaFactor(operacion.tipo);
-    for (const item of operacion.items) {
-      const key = item.itemId.toString();
-      unidadByItem.set(key, (unidadByItem.get(key) ?? 0) + item.cantidad * factor);
+    for (const equipo of operacion.equipos) {
+      const key = equipo.equipoId.toString();
+      unidadByItem.set(key, (unidadByItem.get(key) ?? 0) + equipo.cantidad * factor);
     }
   }
 
@@ -244,9 +244,9 @@ export async function buildPersonalByItemMap(prisma: PrismaLike) {
     },
     select: {
       tipo: true,
-      items: {
+      equipos: {
         select: {
-          itemId: true,
+          equipoId: true,
           cantidad: true,
         },
       },
@@ -257,9 +257,9 @@ export async function buildPersonalByItemMap(prisma: PrismaLike) {
   for (const movimiento of movimientos) {
     const factor = movimientoPersonalDeltaFactor(movimiento.tipo);
     if (factor === 0) continue;
-    for (const item of movimiento.items) {
-      const key = item.itemId.toString();
-      personalByItem.set(key, (personalByItem.get(key) ?? 0) + item.cantidad * factor);
+    for (const equipo of movimiento.equipos) {
+      const key = equipo.equipoId.toString();
+      personalByItem.set(key, (personalByItem.get(key) ?? 0) + equipo.cantidad * factor);
     }
   }
 
@@ -271,9 +271,9 @@ export async function buildPrestamoActivoByItemMap(prisma: Pick<Prisma.Transacti
     select: {
       movimiento: {
         select: {
-          items: {
+          equipos: {
             select: {
-              itemId: true,
+              equipoId: true,
               cantidad: true,
             },
           },
@@ -284,9 +284,9 @@ export async function buildPrestamoActivoByItemMap(prisma: Pick<Prisma.Transacti
 
   const prestamoByItem = new Map<string, number>();
   for (const prestamo of prestamosActivos) {
-    for (const item of prestamo.movimiento.items) {
-      const key = item.itemId.toString();
-      prestamoByItem.set(key, (prestamoByItem.get(key) ?? 0) + item.cantidad);
+    for (const equipo of prestamo.movimiento.equipos) {
+      const key = equipo.equipoId.toString();
+      prestamoByItem.set(key, (prestamoByItem.get(key) ?? 0) + equipo.cantidad);
     }
   }
 

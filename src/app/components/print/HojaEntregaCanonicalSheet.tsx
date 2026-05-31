@@ -245,14 +245,14 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
           </tr>
 
           {data.matrix.map((row) => (
-            <tr key={`${data.persona.ci}-${row.item}`} className={styles.itemRow}>
-              <td className={styles.left}>{row.item}</td>
+            <tr key={`${data.persona.ci}-${row.equipo}`} className={styles.itemRow}>
+              <td className={styles.left}>{row.equipo}</td>
               {row.entrega.slice(0, 6).map((qty, i) => (
-                <td key={`e-${data.persona.ci}-${row.item}-${i}`}>{qty || ""}</td>
+                <td key={`e-${data.persona.ci}-${row.equipo}-${i}`}>{qty || ""}</td>
               ))}
               <td className={styles.bold}>{row.entregaTotal}</td>
               {row.devolucion.slice(0, 6).map((qty, i) => (
-                <td key={`d-${data.persona.ci}-${row.item}-${i}`}>{qty || ""}</td>
+                <td key={`d-${data.persona.ci}-${row.equipo}-${i}`}>{qty || ""}</td>
               ))}
               <td className={styles.bold}>{row.devolucionTotal}</td>
             </tr>

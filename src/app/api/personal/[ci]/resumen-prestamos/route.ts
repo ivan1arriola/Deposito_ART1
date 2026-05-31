@@ -48,9 +48,9 @@ const MOVIMIENTO_RESUMEN_INCLUDE = {
     },
   },
   prestamoActivo: true,
-  items: {
-    include: { item: true },
-    orderBy: { item: { ordenPdf: "asc" } },
+  equipos: {
+    include: { equipo: true },
+    orderBy: { equipo: { ordenPdf: "asc" } },
   },
 } as const satisfies Prisma.MovimientoInclude;
 
@@ -126,18 +126,18 @@ function movementReference(movimiento: MovimientoResumen) {
   return `MV-${movimiento.movimientoId.toString().padStart(8, "0")}`;
 }
 
-function resolveItemEstado(movimiento: MovimientoResumen, item: MovimientoResumen["items"][number]) {
+function resolveItemEstado(movimiento: MovimientoResumen, equipo: MovimientoResumen["equipos"][number]) {
   if (movimiento.tipo === MOVIMIENTO_TIPO_DEVOLUCION) {
-    return item.estadoDevolucion ?? item.estadoEntrega ?? "BUENO";
+    return equipo.estadoDevolucion ?? equipo.estadoEntrega ?? "BUENO";
   }
-  return item.estadoEntrega ?? item.estadoDevolucion ?? "BUENO";
+  return equipo.estadoEntrega ?? equipo.estadoDevolucion ?? "BUENO";
 }
 
-function resolveItemObservacion(movimiento: MovimientoResumen, item: MovimientoResumen["items"][number]) {
+function resolveItemObservacion(movimiento: MovimientoResumen, equipo: MovimientoResumen["equipos"][number]) {
   if (movimiento.tipo === MOVIMIENTO_TIPO_DEVOLUCION) {
-    return item.comentarioDevolucion ?? item.comentarioEntrega ?? "-";
+    return equipo.comentarioDevolucion ?? equipo.comentarioEntrega ?? "-";
   }
-  return item.comentarioEntrega ?? item.comentarioDevolucion ?? "-";
+  return equipo.comentarioEntrega ?? equipo.comentarioDevolucion ?? "-";
 }
 
 function yForTop(top: number, fontSize: number) {
@@ -243,7 +243,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     { [MOVIMIENTO_TIPO_ENTREGA]: 0, [MOVIMIENTO_TIPO_DEVOLUCION]: 0, [MOVIMIENTO_TIPO_ASIGNACION]: 0, [MOVIMIENTO_TIPO_PRESTAMO]: 0 },
   );
   const totalUnidades = movimientos.reduce(
-    (acc, movimiento) => acc + movimiento.items.reduce((itemsAcc, item) => itemsAcc + item.cantidad, 0),
+    (acc, movimiento) => acc + movimiento.equipos.reduce((itemsAcc, equipo) => itemsAcc + equipo.cantidad, 0),
     0,
   );
 
@@ -316,13 +316,13 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     const fechaM = formatDateOnlyFromDate(mov.fecha) ?? "-";
     const tipoM = movementTypeLabel(mov.tipo);
     const resp = militaryShortLabel(mov.usuarioEntrega.rango?.abreviacion ?? "", mov.usuarioEntrega.apellido, mov.usuarioEntrega.nombre);
-    const totalUnidadesMovimiento = mov.items.reduce((acc, item) => acc + item.cantidad, 0);
+    const totalUnidadesMovimiento = mov.equipos.reduce((acc, equipo) => acc + equipo.cantidad, 0);
 
     // Estimación de altura compacta
     const headerH = 22; // Título del movimiento
     const subHeaderH = 15; // Fecha, responsable
     const tableHeaderH = TABLE_HEADER_HEIGHT;
-    const rowCount = Math.max(mov.items.length, 1);
+    const rowCount = Math.max(mov.equipos.length, 1);
     const rowH = rowCount * TABLE_MIN_ROW_HEIGHT;
     const obsH = mov.observaciones ? wrapText(mov.observaciones, INNER_WIDTH - 20, regular, 8).length * 12 + 15 : 0;
     const spacing = 15;
@@ -356,20 +356,20 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     drawTextAt(currentPage!, bold, "OBSERVACIONES", tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + TABLE_COL_ESTADO, movY + 4, 8);
     movY += tableHeaderH;
 
-    if (mov.items.length === 0) {
+    if (mov.equipos.length === 0) {
       drawRectTop(currentPage!, tableX, movY, tableW, TABLE_MIN_ROW_HEIGHT, rgb(0, 0, 0));
       drawTextAt(currentPage!, regular, "Sin equipos asociados", tableX + 5, movY + 3, 8);
       movY += TABLE_MIN_ROW_HEIGHT;
     } else {
-      for (const item of mov.items) {
+      for (const equipo of mov.equipos) {
         drawRectTop(currentPage!, tableX, movY, tableW, TABLE_MIN_ROW_HEIGHT, rgb(0, 0, 0));
-        drawTextAt(currentPage!, regular, toPrintUppercase(item.item.nombre).slice(0, 60), tableX + 5, movY + 3, 8);
-        drawTextAt(currentPage!, regular, String(item.cantidad), tableX + TABLE_COL_EFECTO + 5, movY + 3, 8);
-        drawTextAt(currentPage!, regular, resolveItemEstado(mov, item), tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + 5, movY + 3, 8);
+        drawTextAt(currentPage!, regular, toPrintUppercase(equipo.equipo.nombre).slice(0, 60), tableX + 5, movY + 3, 8);
+        drawTextAt(currentPage!, regular, String(equipo.cantidad), tableX + TABLE_COL_EFECTO + 5, movY + 3, 8);
+        drawTextAt(currentPage!, regular, resolveItemEstado(mov, equipo), tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + 5, movY + 3, 8);
         drawTextAt(
           currentPage!,
           regular,
-          resolveItemObservacion(mov, item).slice(0, 35),
+          resolveItemObservacion(mov, equipo).slice(0, 35),
           tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + TABLE_COL_ESTADO + 5,
           movY + 3,
           8,

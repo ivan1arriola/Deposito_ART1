@@ -179,8 +179,8 @@ export default async function HojaMatrizPage({
 
   const data = await getHojaMatrixData({ bateria: selectedBattery });
   const sections = buildSections(data.rows, selectedBattery);
-  const grandTotals = buildGrandTotals(data.rows, data.items.length);
-  const itemColumnWidth = `calc((100% - ${LEFT_COLUMNS_WIDTH_MM}mm) / ${Math.max(data.items.length, 1)})`;
+  const grandTotals = buildGrandTotals(data.rows, data.equipos.length);
+  const itemColumnWidth = `calc((100% - ${LEFT_COLUMNS_WIDTH_MM}mm) / ${Math.max(data.equipos.length, 1)})`;
   const institutionalPrintDate = formatInstitutionalPrintDate(new Date());
 
   return (
@@ -268,7 +268,7 @@ export default async function HojaMatrizPage({
             height: 100%;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-equipos: center;
             justify-content: center;
             gap: 1.2mm;
             padding: 2.2mm 2mm;
@@ -293,15 +293,15 @@ export default async function HojaMatrizPage({
             text-align: center;
           }
 
-          .item-header {
+          .equipo-header {
             height: 52mm;
             padding: 0;
             background: #f4f4f4;
           }
 
-          .item-header span {
+          .equipo-header span {
             display: inline-flex;
-            align-items: center;
+            align-equipos: center;
             justify-content: center;
             width: 100%;
             height: 100%;
@@ -456,8 +456,8 @@ export default async function HojaMatrizPage({
                   <col className="col-number" />
                   <col className="col-grade" />
                   <col className="col-name" />
-                  {data.items.map((item) => (
-                    <col key={item.itemId} style={{ width: itemColumnWidth }} />
+                  {data.equipos.map((equipo) => (
+                    <col key={equipo.equipoId} style={{ width: itemColumnWidth }} />
                   ))}
                 </colgroup>
                 <thead>
@@ -475,9 +475,9 @@ export default async function HojaMatrizPage({
                         <div className="identity-battery">{section.headingLabel}</div>
                       </div>
                     </th>
-                    {data.items.map((item) => (
-                      <th key={item.itemId} className="item-header">
-                        <span>{item.nombre.toLocaleUpperCase("es-UY")}</span>
+                    {data.equipos.map((equipo) => (
+                      <th key={equipo.equipoId} className="equipo-header">
+                        <span>{equipo.nombre.toLocaleUpperCase("es-UY")}</span>
                       </th>
                     ))}
                   </tr>
@@ -485,7 +485,7 @@ export default async function HojaMatrizPage({
                     <th className="left-header">N&ordm;</th>
                     <th className="left-header">Grado</th>
                     <th className="left-header">Nombre</th>
-                    <th colSpan={data.items.length} className="equipment-header">
+                    <th colSpan={data.equipos.length} className="equipment-header">
                       EQUIPO
                     </th>
                   </tr>
@@ -494,11 +494,11 @@ export default async function HojaMatrizPage({
                   {section.rows.map((row, index) =>
                     row.kind === "grade" ? (
                       <tr key={`${section.headingLabel}-grade-${row.label}-${index}`} className="grade-separator">
-                        <td colSpan={3 + data.items.length}>{row.label}</td>
+                        <td colSpan={3 + data.equipos.length}>{row.label}</td>
                       </tr>
                     ) : row.kind === "battery" ? (
                       <tr key={`${section.headingLabel}-battery-${row.label}-${index}`} className="battery-separator">
-                        <td colSpan={3 + data.items.length}>{row.label}</td>
+                        <td colSpan={3 + data.equipos.length}>{row.label}</td>
                       </tr>
                     ) : (
                       <tr key={`${section.headingLabel}-person-${row.number}`} className="person-row">

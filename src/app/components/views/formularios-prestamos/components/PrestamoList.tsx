@@ -4,7 +4,7 @@ import type { StockDashboardData } from "@/types/views";
 import { estadoBadgeClass, reciboHref } from "../utils";
 
 type PrestamoListProps = {
-  items: StockDashboardData["prestamos"];
+  equipos: StockDashboardData["prestamos"];
   emptyMessage: string;
   showReturnAction: boolean;
   isAdmin: boolean;
@@ -17,7 +17,7 @@ type PrestamoListProps = {
 };
 
 export function PrestamoList({
-  items,
+  equipos,
   emptyMessage,
   showReturnAction,
   isAdmin,
@@ -30,16 +30,16 @@ export function PrestamoList({
 }: PrestamoListProps) {
   return (
     <div className="space-y-2">
-      {items.length === 0 ? <p className="text-sm text-stone-600">{emptyMessage}</p> : null}
-      {items.map((prestamo) => (
+      {equipos.length === 0 ? <p className="text-sm text-stone-600">{emptyMessage}</p> : null}
+      {equipos.map((prestamo) => (
         <article key={prestamo.prestamoId} className="rounded-xl border border-stone-200 bg-stone-50 p-3 md:p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap equipos-start justify-between gap-3">
             <button
               type="button"
               onClick={() => onSelectPrestamo(prestamo)}
               className="min-w-0 flex-1 text-left"
             >
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap equipos-center gap-2">
                 <p className="text-lg font-semibold leading-tight text-stone-900">{prestamo.reciboNumero}</p>
                 <span className="rounded-full border border-stone-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-stone-600">
                   ID {prestamo.prestamoId}
@@ -69,7 +69,7 @@ export function PrestamoList({
               </p>
             </button>
 
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex flex-wrap equipos-center justify-end gap-2">
               <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${estadoBadgeClass(prestamo.estado)}`}>
                 {prestamo.estado}
               </span>

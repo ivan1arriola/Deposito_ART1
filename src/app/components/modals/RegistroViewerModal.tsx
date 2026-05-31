@@ -42,7 +42,7 @@ export function RegistroViewerModal({
 
   return (
     <ModalFrame onClose={onClose} size="xl" closeOnBackdrop={false}>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex equipos-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-stone-900">Visualizador de movimientos</h3>
           <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(viewer.ci)}`}</p>
@@ -69,9 +69,9 @@ export function RegistroViewerModal({
         {!viewer.loading && !viewer.error
           ? rows.map((registro) => (
               <div key={registro.registroId} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap equipos-center justify-between gap-2">
                   <p className="text-sm font-semibold text-stone-900">{formatDateOnlyForDisplay(registro.fecha)}</p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex equipos-center gap-2">
                     {canWrite && registro.tipo !== "AJUSTE" ? (
                       <button
                         type="button"
@@ -117,9 +117,9 @@ export function RegistroViewerModal({
                 {registro.comentarios ? <p className="mt-1 text-xs text-stone-700">{registro.comentarios}</p> : null}
                 <p className="mt-1 text-xs text-stone-600">Afecta stock: Si</p>
                 <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
-                  {registro.items.map((item) => (
-                    <p key={`${registro.registroId}-${item.itemId}`} className="text-xs text-stone-700">
-                      <span className="font-semibold">{item.cantidad}x</span> {item.nombre}
+                  {registro.equipos.map((equipo) => (
+                    <p key={`${registro.registroId}-${equipo.equipoId}`} className="text-xs text-stone-700">
+                      <span className="font-semibold">{equipo.cantidad}x</span> {equipo.nombre}
                     </p>
                   ))}
                 </div>

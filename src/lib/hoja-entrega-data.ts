@@ -15,9 +15,9 @@ type MovimientoWithItems = {
   fecha: Date;
   tipo: TipoMovimiento;
   observaciones: string | null;
-  items: Array<{
+  equipos: Array<{
     cantidad: number;
-    item: {
+    equipo: {
       nombre: string;
       activo: boolean;
     };
@@ -26,7 +26,7 @@ type MovimientoWithItems = {
 
 type MatrixColumn = {
   fecha: string | null;
-  items: Array<{ nombre: string; cantidad: number }>;
+  equipos: Array<{ nombre: string; cantidad: number }>;
 };
 
 export type MovimientoFueraHojaRow = {
@@ -37,7 +37,7 @@ export type MovimientoFueraHojaRow = {
   persona: string;
   gradoAbreviacion: string;
   gradoOrden: number | null;
-  item: string;
+  equipo: string;
   cantidad: number;
   observaciones: string | null;
 };
@@ -87,10 +87,10 @@ const hojaEntregaPersonalSelect = {
           fecha: true,
           tipo: true,
           observaciones: true,
-          items: {
+          equipos: {
             select: {
               cantidad: true,
-              item: {
+              equipo: {
                 select: {
                   nombre: true,
                   activo: true,
@@ -118,8 +118,8 @@ type HojaEntregaPersonalRecord = Prisma.PersonalGetPayload<{
 function aggregateItems(records: MovimientoWithItems[]) {
   const map = new Map<string, number>();
   for (const record of records) {
-    for (const detail of record.items) {
-      const key = detail.item.nombre;
+    for (const detail of record.equipos) {
+      const key = detail.equipo.nombre;
       map.set(key, (map.get(key) ?? 0) + detail.cantidad);
     }
   }
@@ -137,14 +137,14 @@ function toSixColumns(records: MovimientoWithItems[]): MatrixColumn[] {
 
     columns.push({
       fecha: cutoffRecord ? formatDateOnlyFromDate(cutoffRecord.fecha) : null,
-      items: aggregateItems(oldMovimientos),
+      equipos: aggregateItems(oldMovimientos),
     });
 
     columns.push(
       ...recentMovimientos.map((movimiento) => ({
         fecha: formatDateOnlyFromDate(movimiento.fecha),
-        items: movimiento.items.map((detail) => ({
-          nombre: detail.item.nombre,
+        equipos: movimiento.equipos.map((detail) => ({
+          nombre: detail.equipo.nombre,
           cantidad: detail.cantidad,
         })),
       })),
@@ -153,8 +153,8 @@ function toSixColumns(records: MovimientoWithItems[]): MatrixColumn[] {
     columns.push(
       ...sorted.map((record) => ({
         fecha: formatDateOnlyFromDate(record.fecha),
-        items: record.items.map((detail) => ({
-          nombre: detail.item.nombre,
+        equipos: record.equipos.map((detail) => ({
+          nombre: detail.equipo.nombre,
           cantidad: detail.cantidad,
         })),
       })),
@@ -162,15 +162,15 @@ function toSixColumns(records: MovimientoWithItems[]): MatrixColumn[] {
   }
 
   while (columns.length < 6) {
-    columns.push({ fecha: null, items: [] });
+    columns.push({ fecha: null, equipos: [] });
   }
 
   return columns.slice(0, 6);
 }
 
 function buildMatrix(itemsOrder: string[], entregas: MatrixColumn[], devoluciones: MatrixColumn[]): HojaEntregaMatrixRow[] {
-  const entregaMaps = entregas.map((column) => new Map(column.items.map((item) => [item.nombre, item.cantidad])));
-  const devolucionMaps = devoluciones.map((column) => new Map(column.items.map((item) => [item.nombre, item.cantidad])));
+  const entregaMaps = entregas.map((column) => new Map(column.equipos.map((equipo) => [equipo.nombre, equipo.cantidad])));
+  const devolucionMaps = devoluciones.map((column) => new Map(column.equipos.map((equipo) => [equipo.nombre, equipo.cantidad])));
 
   return itemsOrder.map((itemName) => {
     const entrega = Array.from({ length: 6 }, (_, idx) => entregaMaps[idx]?.get(itemName) ?? 0);
@@ -179,7 +179,7 @@ function buildMatrix(itemsOrder: string[], entregas: MatrixColumn[], devolucione
     const devolucionRegistradaTotal = devolucion.reduce((acc, value) => acc + value, 0);
 
     return {
-      item: itemName,
+      equipo: itemName,
       entrega,
       entregaTotal,
       devolucion,
@@ -250,7 +250,7 @@ export async function getHojaEntregaData(ci: string): Promise<HojaEntregaSheetDa
       },
       select: hojaEntregaPersonalSelect,
     }),
-    prisma.item.findMany({
+    prisma.equipo.findMany({
       where: { activo: true },
       orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
       select: { nombre: true },
@@ -264,7 +264,7 @@ export async function getHojaEntregaData(ci: string): Promise<HojaEntregaSheetDa
 
   return mapPersonaToHojaEntregaData(
     persona,
-    itemCatalog.map((item) => item.nombre),
+    itemCatalog.map((equipo) => equipo.nombre),
     firmas,
   );
 }
@@ -278,7 +278,7 @@ export async function getAllHojasEntregaData(): Promise<HojaEntregaSheetData[]> 
       },
       select: hojaEntregaPersonalSelect,
     }),
-    prisma.item.findMany({
+    prisma.equipo.findMany({
       where: { activo: true },
       orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
       select: { nombre: true },
@@ -286,7 +286,7 @@ export async function getAllHojasEntregaData(): Promise<HojaEntregaSheetData[]> 
     getFirmaConfig(),
   ]);
 
-  const itemOrder = itemCatalog.map((item) => item.nombre);
+  const itemOrder = itemCatalog.map((equipo) => equipo.nombre);
 
   return [...personas]
     .sort(comparePersonalByHierarchy)
@@ -297,9 +297,9 @@ export async function getMovimientosFueraHojaData(): Promise<MovimientoFueraHoja
   const movimientos = await prisma.movimiento.findMany({
     where: {
       tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
-      items: {
+      equipos: {
         some: {
-          item: {
+          equipo: {
             activo: false,
           },
         },
@@ -330,15 +330,15 @@ export async function getMovimientosFueraHojaData(): Promise<MovimientoFueraHoja
           },
         },
       },
-      items: {
+      equipos: {
         where: {
-          item: {
+          equipo: {
             activo: false,
           },
         },
         select: {
           cantidad: true,
-          item: {
+          equipo: {
             select: {
               nombre: true,
             },
@@ -362,7 +362,7 @@ export async function getMovimientosFueraHojaData(): Promise<MovimientoFueraHoja
       .join(" ")
       .trim();
 
-    return movimiento.items.map((detail) => ({
+    return movimiento.equipos.map((detail) => ({
       movimientoId: movimiento.movimientoId.toString(),
       fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
       tipo: movimiento.tipo,
@@ -370,7 +370,7 @@ export async function getMovimientosFueraHojaData(): Promise<MovimientoFueraHoja
       persona,
       gradoAbreviacion: destinatario.rango.abreviacion,
       gradoOrden: destinatario.rango.orden ?? null,
-      item: detail.item.nombre,
+      equipo: detail.equipo.nombre,
       cantidad: detail.cantidad,
       observaciones: movimiento.observaciones,
     }));

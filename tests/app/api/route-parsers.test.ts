@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { itemByIdRouteTestables } from "@/app/api/items/[itemId]/route";
+import { equipoByIdRouteTestables } from "@/app/api/equipos/[equipoId]/route";
 import { prestamoByIdRouteTestables } from "@/app/api/prestamos/[prestamoId]/route";
 import { stockRouteTestables } from "@/app/api/stock/route";
 
@@ -32,10 +32,10 @@ describe("route parser helpers", () => {
       expect(stockRouteTestables.parseTipoStockOperacion("otro")).toBeNull();
     });
 
-    it("isValidPayload exige tipo valido y al menos un item", () => {
-      expect(stockRouteTestables.isValidPayload({ tipo: "INGRESO", items: [{ itemId: "1", cantidad: 1 }] })).toBe(true);
-      expect(stockRouteTestables.isValidPayload({ tipo: "INGRESO", items: [] })).toBe(false);
-      expect(stockRouteTestables.isValidPayload({ tipo: "X", items: [{ itemId: "1", cantidad: 1 }] })).toBe(false);
+    it("isValidPayload exige tipo valido y al menos un equipo", () => {
+      expect(stockRouteTestables.isValidPayload({ tipo: "INGRESO", equipos: [{ equipoId: "1", cantidad: 1 }] })).toBe(true);
+      expect(stockRouteTestables.isValidPayload({ tipo: "INGRESO", equipos: [] })).toBe(false);
+      expect(stockRouteTestables.isValidPayload({ tipo: "X", equipos: [{ equipoId: "1", cantidad: 1 }] })).toBe(false);
       expect(stockRouteTestables.isValidPayload(null)).toBe(false);
     });
 
@@ -84,11 +84,11 @@ describe("route parser helpers", () => {
       expect(Object.keys(changes)).toEqual(["fechaDevolucion", "comentarios"]);
     });
 
-    it("buildItemChanges detecta diferencias por item", () => {
+    it("buildItemChanges detecta diferencias por equipo", () => {
       const before = {
-        items: [
+        equipos: [
           {
-            itemId: "1",
+            equipoId: "1",
             nombre: "Casco",
             cantidad: 1,
             estadoEntrega: "BUENO",
@@ -99,9 +99,9 @@ describe("route parser helpers", () => {
         ],
       };
       const after = {
-        items: [
+        equipos: [
           {
-            itemId: "1",
+            equipoId: "1",
             nombre: "Casco",
             cantidad: 2,
             estadoEntrega: "REGULAR",
@@ -124,26 +124,26 @@ describe("route parser helpers", () => {
     });
   });
 
-  describe("itemByIdRouteTestables", () => {
+  describe("equipoByIdRouteTestables", () => {
     it("parseItemId valida bigint", () => {
-      expect(itemByIdRouteTestables.parseItemId("9")).toBe(BigInt(9));
-      expect(itemByIdRouteTestables.parseItemId("nope")).toBeNull();
+      expect(equipoByIdRouteTestables.parseItemId("9")).toBe(BigInt(9));
+      expect(equipoByIdRouteTestables.parseItemId("nope")).toBeNull();
     });
 
     it("isValidOrder valida numeros enteros positivos o undefined", () => {
-      expect(itemByIdRouteTestables.isValidOrder(undefined)).toBe(true);
-      expect(itemByIdRouteTestables.isValidOrder(1)).toBe(true);
-      expect(itemByIdRouteTestables.isValidOrder(0)).toBe(false);
-      expect(itemByIdRouteTestables.isValidOrder(1.2)).toBe(false);
-      expect(itemByIdRouteTestables.isValidOrder("1")).toBe(false);
+      expect(equipoByIdRouteTestables.isValidOrder(undefined)).toBe(true);
+      expect(equipoByIdRouteTestables.isValidOrder(1)).toBe(true);
+      expect(equipoByIdRouteTestables.isValidOrder(0)).toBe(false);
+      expect(equipoByIdRouteTestables.isValidOrder(1.2)).toBe(false);
+      expect(equipoByIdRouteTestables.isValidOrder("1")).toBe(false);
     });
 
     it("parseExistenciaSie valida enteros mayores o iguales a cero", () => {
-      expect(itemByIdRouteTestables.parseExistenciaSie(0)).toBe(0);
-      expect(itemByIdRouteTestables.parseExistenciaSie("12")).toBe(12);
-      expect(itemByIdRouteTestables.parseExistenciaSie(-1)).toBeNull();
-      expect(itemByIdRouteTestables.parseExistenciaSie(1.5)).toBeNull();
-      expect(itemByIdRouteTestables.parseExistenciaSie("x")).toBeNull();
+      expect(equipoByIdRouteTestables.parseExistenciaSie(0)).toBe(0);
+      expect(equipoByIdRouteTestables.parseExistenciaSie("12")).toBe(12);
+      expect(equipoByIdRouteTestables.parseExistenciaSie(-1)).toBeNull();
+      expect(equipoByIdRouteTestables.parseExistenciaSie(1.5)).toBeNull();
+      expect(equipoByIdRouteTestables.parseExistenciaSie("x")).toBeNull();
     });
   });
 });

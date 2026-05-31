@@ -1,7 +1,7 @@
 import "server-only";
 
 import React from "react";
-import type { EquipoMovimientoCatalogItem, EquipoMovimientoViewRow } from "@/types/views";
+import type { EquipoMovimientoCatalogEquipo, EquipoMovimientoViewRow } from "@/types/views";
 import { buildFirmasInstitucionalesLineas, type FirmasInstitucionalesInput } from "@/lib/firma-lineas";
 import { getArtilleriaLogoDataUrl } from "@/lib/server/react-pdf-assets";
 
@@ -23,7 +23,7 @@ function chunkRows(rows: EquipoMovimientoViewRow[], rowsPerPage: number) {
 }
 
 export async function renderMovimientosEquipoPdf(
-  selectedItem: EquipoMovimientoCatalogItem,
+  selectedItem: EquipoMovimientoCatalogEquipo,
   rows: EquipoMovimientoViewRow[],
   fechaImpresion: string,
   options: RenderMovimientosEquipoPdfOptions = {},

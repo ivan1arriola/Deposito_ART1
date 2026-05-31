@@ -15,7 +15,7 @@ export type PrestamoDraft = {
   fechaPrestamo: string;
   fechaEstimadaDevolucionTexto: string;
   comentarios: string;
-  items: PrestamoDraftItem[];
+  equipos: PrestamoDraftItem[];
 };
 
 export const EMPTY_PRESTAMO_DRAFT: PrestamoDraft = {
@@ -31,5 +31,5 @@ export const EMPTY_PRESTAMO_DRAFT: PrestamoDraft = {
   fechaPrestamo: "",
   fechaEstimadaDevolucionTexto: "",
   comentarios: "",
-  items: [{ itemId: "", cantidad: "1", estadoEntrega: "NUEVO", comentarioEntrega: "" }],
+  equipos: [{ equipoId: "", cantidad: "1", estadoEntrega: "NUEVO", comentarioEntrega: "" }],
 };

@@ -55,7 +55,7 @@ export type StockViewProps = {
   onReturnPrestamo: (
     prestamoId: string,
     fechaDevolucion: string,
-    items?: Array<{ itemId: string; estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion?: string }>,
+    equipos?: Array<{ equipoId: string; estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion?: string }>,
   ) => void;
   onReload: () => void;
 };

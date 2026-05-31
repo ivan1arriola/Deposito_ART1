@@ -1,7 +1,7 @@
-export type StockItemTraceData = {
+export type StockEquipoTraceData = {
   equipoId: string;
   /** @deprecated Usar `equipoId`. */
-  itemId: string;
+  equipoId: string;
   itemNombre: string;
   totals: {
     subalternos: number;

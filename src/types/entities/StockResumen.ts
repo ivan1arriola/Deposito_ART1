@@ -3,7 +3,7 @@ import type { TipoEquipo } from "./TipoEquipo";
 export type StockResumen = {
   equipoId: string;
   /** @deprecated Usar `equipoId`. */
-  itemId: string;
+  equipoId: string;
   nombre: string;
   tipo: TipoEquipo;
   tipoEquipoId?: number | null;

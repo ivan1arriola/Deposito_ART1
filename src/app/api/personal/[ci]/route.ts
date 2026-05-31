@@ -214,7 +214,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         tallaValor,
       };
     })
-    .filter((item): item is { tallaTipoId: number; tallaValor: string } => item !== null);
+    .filter((equipo): equipo is { tallaTipoId: number; tallaValor: string } => equipo !== null);
 
   try {
     const updated = await prisma.$transaction(async (tx) => {
@@ -392,13 +392,13 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
         prestamoActivo: { isNot: null },
       },
       include: {
-        items: { include: { item: true } },
+        equipos: { include: { equipo: true } },
         prestamoActivo: true,
       },
     });
 
     // 2. Calculate outstanding vestuario balance
-    const vestuarioMovements = await prisma.movimientoItem.findMany({
+    const vestuarioMovements = await prisma.movimientoEquipo.findMany({
       where: {
         movimiento: {
           destinatarioPersonal: { is: { ci: ciDecoded } },
@@ -406,14 +406,14 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
         },
       },
       include: {
-        item: true,
+        equipo: true,
         movimiento: true,
       },
     });
 
     const vestuarioBalances: Record<string, { nombre: string; cantidad: number }> = {};
     for (const vm of vestuarioMovements) {
-      const nombre = vm.item.nombre;
+      const nombre = vm.equipo.nombre;
       if (!vestuarioBalances[nombre]) {
         vestuarioBalances[nombre] = { nombre, cantidad: 0 };
       }
@@ -456,13 +456,13 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
           movimientoId: l.movimientoId.toString(),
           reciboNumero: l.prestamoActivo?.reciboNumero,
           fecha: l.fecha,
-          items: l.items.map((i) => ({ nombre: i.item.nombre, cantidad: i.cantidad })),
+          equipos: l.equipos.map((i) => ({ nombre: i.equipo.nombre, cantidad: i.cantidad })),
         })),
         outstandingVestuario,
       });
     }
 
-    // No outstanding items, move directly to history!
+    // No outstanding equipos, move directly to history!
     await prisma.$transaction(async (tx) => {
       const tipo = personalRecord.rango.tipo === TipoPersonal.SUBALTERNO
         ? "SUBALTERNO"
@@ -492,7 +492,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
 
       await tx.personalTalla.deleteMany({ where: { ci: ciDecoded } });
       await tx.observacion.deleteMany({ where: { ci: ciDecoded } });
-      await tx.movimientoItem.deleteMany({
+      await tx.movimientoEquipo.deleteMany({
         where: { movimiento: { destinatarioPersonal: { is: { ci: ciDecoded } } } },
       });
       await tx.movimiento.deleteMany({

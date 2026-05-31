@@ -24,7 +24,7 @@ export type { EtiquetadoSection } from "./etiquetado/types";
 function renderTag(label: string, tone: "neutral" | "accent" = "neutral") {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+      className={`inline-flex equipos-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
         tone === "accent"
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : "border-stone-300 bg-white text-stone-700"
@@ -55,14 +55,14 @@ export function EtiquetadoView({
   onPrintTodas,
 }: EtiquetadoViewProps) {
   const meta = SECTION_META[section];
-  const items = data?.items;
+  const equipos = data?.equipos;
   const estanterias = data?.estanterias;
   const codigosSIE = data?.codigosSIE;
   const cajas = data?.cajas;
 
   const itemOptions = useMemo(() => {
-    return sortEtiquetadoItems(items ?? []);
-  }, [items]);
+    return sortEtiquetadoItems(equipos ?? []);
+  }, [equipos]);
 
   const estanteriasList = useMemo(() => estanterias ?? [], [estanterias]);
   const estanteriaOptions = useMemo(() => {
@@ -93,9 +93,9 @@ export function EtiquetadoView({
   const [showCreateCajaForm, setShowCreateCajaForm] = useState(false);
   const [massOrientationByCodigo, setMassOrientationByCodigo] = useState<Record<number, EtiquetaOrientacion>>({});
 
-  const codigoItemIdValue = itemOptions.some((item) => item.itemId === newCodigoItemId)
+  const codigoItemIdValue = itemOptions.some((equipo) => equipo.equipoId === newCodigoItemId)
     ? newCodigoItemId
-    : (itemOptions[0]?.itemId ?? "");
+    : (itemOptions[0]?.equipoId ?? "");
   const cajaEstanteriaValue = estanteriaOptions.some((option) => option.value === newCajaEstanteria)
     ? newCajaEstanteria
     : (estanteriaOptions[0]?.value ?? "");
@@ -110,15 +110,15 @@ export function EtiquetadoView({
     [codigosSIEDisponibles],
   );
   const codigoSIEItemById = useMemo(
-    () => new Map(codigosSIEDisponibles.map((codigo) => [codigo.codigoSIEId, codigo.itemId])),
+    () => new Map(codigosSIEDisponibles.map((codigo) => [codigo.codigoSIEId, codigo.equipoId])),
     [codigosSIEDisponibles],
   );
   const itemOptionById = useMemo(
-    () => new Map(itemOptions.map((item) => [item.itemId, item])),
+    () => new Map(itemOptions.map((equipo) => [equipo.equipoId, equipo])),
     [itemOptions],
   );
   const selectedCajaItemIds = useMemo(
-    () => newCajaItemIds.filter((itemId) => itemOptionById.has(itemId)),
+    () => newCajaItemIds.filter((equipoId) => itemOptionById.has(equipoId)),
     [newCajaItemIds, itemOptionById],
   );
   const selectedCajaItemSet = useMemo(
@@ -126,17 +126,17 @@ export function EtiquetadoView({
     [selectedCajaItemIds],
   );
   const selectedCajaItems = useMemo(
-    () => itemOptions.filter((item) => selectedCajaItemSet.has(item.itemId)),
+    () => itemOptions.filter((equipo) => selectedCajaItemSet.has(equipo.equipoId)),
     [itemOptions, selectedCajaItemSet],
   );
   const selectedCajaItemsConCantidadDraft = useMemo(
     () =>
-      selectedCajaItemIds.map((itemId) => {
-        const raw = (newCajaCantidadByItemId[itemId] ?? "1").trim();
+      selectedCajaItemIds.map((equipoId) => {
+        const raw = (newCajaCantidadByItemId[equipoId] ?? "1").trim();
         const cantidad = Number(raw);
         const valid = Number.isInteger(cantidad) && cantidad > 0;
         return {
-          itemId,
+          equipoId,
           raw,
           cantidad: valid ? cantidad : 0,
           valid,
@@ -145,35 +145,35 @@ export function EtiquetadoView({
     [newCajaCantidadByItemId, selectedCajaItemIds],
   );
   const cantidadCajaCalculada = useMemo(
-    () => selectedCajaItemsConCantidadDraft.reduce((sum, item) => sum + item.cantidad, 0),
+    () => selectedCajaItemsConCantidadDraft.reduce((sum, equipo) => sum + equipo.cantidad, 0),
     [selectedCajaItemsConCantidadDraft],
   );
   const allSelectedItemsHaveValidCantidad = useMemo(
-    () => selectedCajaItemsConCantidadDraft.every((item) => item.valid),
+    () => selectedCajaItemsConCantidadDraft.every((equipo) => equipo.valid),
     [selectedCajaItemsConCantidadDraft],
   );
   const filteredItemOptions = useMemo(() => {
     const filtro = cajaItemFiltro.trim().toLowerCase();
     if (!filtro) return itemOptions;
-    return itemOptions.filter((item) =>
-      item.nombre.toLowerCase().includes(filtro),
+    return itemOptions.filter((equipo) =>
+      equipo.nombre.toLowerCase().includes(filtro),
     );
   }, [itemOptions, cajaItemFiltro]);
   const allFilteredSelected = useMemo(
-    () => filteredItemOptions.length > 0 && filteredItemOptions.every((item) => selectedCajaItemSet.has(item.itemId)),
+    () => filteredItemOptions.length > 0 && filteredItemOptions.every((equipo) => selectedCajaItemSet.has(equipo.equipoId)),
     [filteredItemOptions, selectedCajaItemSet],
   );
   const codigosPorItemSeleccionado = useMemo(
     () =>
-      selectedCajaItems.map((item) => ({
-        itemId: item.itemId,
-        itemNombre: item.nombre,
-        codigos: codigosSIEDisponibles.filter((codigo) => codigo.itemId === item.itemId),
+      selectedCajaItems.map((equipo) => ({
+        equipoId: equipo.equipoId,
+        itemNombre: equipo.nombre,
+        codigos: codigosSIEDisponibles.filter((codigo) => codigo.equipoId === equipo.equipoId),
       })),
     [selectedCajaItems, codigosSIEDisponibles],
   );
   const codigosPorItemSeleccionadoMap = useMemo(
-    () => new Map(codigosPorItemSeleccionado.map((entry) => [entry.itemId, entry])),
+    () => new Map(codigosPorItemSeleccionado.map((entry) => [entry.equipoId, entry])),
     [codigosPorItemSeleccionado],
   );
 
@@ -181,8 +181,8 @@ export function EtiquetadoView({
     () =>
       newCajaCodigosSIEIds.filter((codigoSIEId) => {
         if (!codigosDisponiblesSet.has(codigoSIEId)) return false;
-        const itemId = codigoSIEItemById.get(codigoSIEId);
-        return typeof itemId === "string" && selectedCajaItemSet.has(itemId);
+        const equipoId = codigoSIEItemById.get(codigoSIEId);
+        return typeof equipoId === "string" && selectedCajaItemSet.has(equipoId);
       }),
     [newCajaCodigosSIEIds, codigosDisponiblesSet, codigoSIEItemById, selectedCajaItemSet],
   );
@@ -246,14 +246,14 @@ export function EtiquetadoView({
     event.preventDefault();
     const codigo = normalizeCode(newCodigoSIE);
     const talla = normalizeCode(newCodigoTalla);
-    const itemId = codigoItemIdValue.trim();
-    if (!codigo || !itemId) return;
+    const equipoId = codigoItemIdValue.trim();
+    if (!codigo || !equipoId) return;
     const tallaNormalizada = talla.length > 0 ? talla : "-";
     const duplicateTupleExists = codigosSIEList.some(
-      (entry) => entry.codigo === codigo && entry.talla === tallaNormalizada && entry.itemId === itemId,
+      (entry) => entry.codigo === codigo && entry.talla === tallaNormalizada && entry.equipoId === equipoId,
     );
     if (duplicateTupleExists) {
-      window.alert("Ya existe un codigo SIE con la misma combinacion de codigo, talla e item.");
+      window.alert("Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo.");
       return;
     }
 
@@ -263,15 +263,15 @@ export function EtiquetadoView({
       : false;
     if (sameCodeEntries.length > 0 && !allowDuplicateCodigo) return;
 
-    onCreateCodigoSIE({ codigo, talla, itemId, allowDuplicateCodigo });
+    onCreateCodigoSIE({ codigo, talla, equipoId, allowDuplicateCodigo });
     setNewCodigoSIE("");
     setNewCodigoTalla("");
   }
 
   function toggleCodigoSIEEnCaja(codigoSIEId: string) {
     if (!codigosDisponiblesSet.has(codigoSIEId)) return;
-    const itemId = codigoSIEItemById.get(codigoSIEId);
-    if (!itemId || !selectedCajaItemSet.has(itemId)) return;
+    const equipoId = codigoSIEItemById.get(codigoSIEId);
+    if (!equipoId || !selectedCajaItemSet.has(equipoId)) return;
     setNewCajaCodigosSIEIds((prev) => {
       const normalized = prev.filter((entry) => codigosDisponiblesSet.has(entry));
       if (normalized.includes(codigoSIEId)) return normalized.filter((entry) => entry !== codigoSIEId);
@@ -279,47 +279,47 @@ export function EtiquetadoView({
     });
   }
 
-  function toggleItemEnCaja(itemId: string) {
+  function toggleItemEnCaja(equipoId: string) {
     setNewCajaItemIds((prev) => {
-      if (prev.includes(itemId)) {
+      if (prev.includes(equipoId)) {
         setNewCajaCodigosSIEIds((prevCodigos) =>
-          prevCodigos.filter((codigoSIEId) => codigoSIEItemById.get(codigoSIEId) !== itemId),
+          prevCodigos.filter((codigoSIEId) => codigoSIEItemById.get(codigoSIEId) !== equipoId),
         );
         setNewCajaCantidadByItemId((prevCantidades) => {
           const next = { ...prevCantidades };
-          delete next[itemId];
+          delete next[equipoId];
           return next;
         });
-        return prev.filter((entry) => entry !== itemId);
+        return prev.filter((entry) => entry !== equipoId);
       }
       setNewCajaCantidadByItemId((prevCantidades) =>
-        prevCantidades[itemId] ? prevCantidades : { ...prevCantidades, [itemId]: "1" },
+        prevCantidades[equipoId] ? prevCantidades : { ...prevCantidades, [equipoId]: "1" },
       );
-      return [...prev, itemId];
+      return [...prev, equipoId];
     });
   }
 
-  function updateCantidadForItem(itemId: string, value: string) {
+  function updateCantidadForItem(equipoId: string, value: string) {
     const normalized = sanitizeNumericInput(value);
-    setNewCajaCantidadByItemId((prev) => ({ ...prev, [itemId]: normalized }));
+    setNewCajaCantidadByItemId((prev) => ({ ...prev, [equipoId]: normalized }));
   }
 
-  function clearCodigosForItem(itemId: string) {
+  function clearCodigosForItem(equipoId: string) {
     setNewCajaCodigosSIEIds((prevCodigos) =>
-      prevCodigos.filter((codigoSIEId) => codigoSIEItemById.get(codigoSIEId) !== itemId),
+      prevCodigos.filter((codigoSIEId) => codigoSIEItemById.get(codigoSIEId) !== equipoId),
     );
   }
 
   function setFilteredItemsSelection(checked: boolean) {
-    const filteredIds = filteredItemOptions.map((item) => item.itemId);
+    const filteredIds = filteredItemOptions.map((equipo) => equipo.equipoId);
     if (filteredIds.length === 0) return;
 
     if (checked) {
       setNewCajaItemIds((prev) => Array.from(new Set([...prev, ...filteredIds])));
       setNewCajaCantidadByItemId((prev) => {
         const next = { ...prev };
-        for (const itemId of filteredIds) {
-          if (!next[itemId]) next[itemId] = "1";
+        for (const equipoId of filteredIds) {
+          if (!next[equipoId]) next[equipoId] = "1";
         }
         return next;
       });
@@ -327,18 +327,18 @@ export function EtiquetadoView({
     }
 
     const filteredSet = new Set(filteredIds);
-    setNewCajaItemIds((prev) => prev.filter((itemId) => !filteredSet.has(itemId)));
+    setNewCajaItemIds((prev) => prev.filter((equipoId) => !filteredSet.has(equipoId)));
     setNewCajaCantidadByItemId((prev) => {
       const next = { ...prev };
-      for (const itemId of filteredIds) {
-        delete next[itemId];
+      for (const equipoId of filteredIds) {
+        delete next[equipoId];
       }
       return next;
     });
     setNewCajaCodigosSIEIds((prevCodigos) =>
       prevCodigos.filter((codigoSIEId) => {
-        const itemId = codigoSIEItemById.get(codigoSIEId);
-        return !itemId || !filteredSet.has(itemId);
+        const equipoId = codigoSIEItemById.get(codigoSIEId);
+        return !equipoId || !filteredSet.has(equipoId);
       }),
     );
   }
@@ -348,9 +348,9 @@ export function EtiquetadoView({
     const estanteriaSeleccionada = estanteriaOptions.find((option) => option.value === cajaEstanteriaValue);
     const estanteria = normalizeEstanteriaName(estanteriaSeleccionada?.codigo ?? "");
     const piso = estanteriaSeleccionada?.piso ?? null;
-    const itemsPayload = selectedCajaItemsConCantidadDraft.map((item) => ({
-      itemId: item.itemId,
-      cantidad: item.cantidad,
+    const itemsPayload = selectedCajaItemsConCantidadDraft.map((equipo) => ({
+      equipoId: equipo.equipoId,
+      cantidad: equipo.cantidad,
     }));
     if (
       !estanteriaSeleccionada ||
@@ -362,7 +362,7 @@ export function EtiquetadoView({
     onCreateCaja({
       estanteria,
       piso,
-      items: itemsPayload,
+      equipos: itemsPayload,
       codigosSIEIds: selectedCajaCodigosSIEIds,
     });
     setNewCajaCantidadByItemId({});
@@ -380,11 +380,11 @@ export function EtiquetadoView({
     onDeleteCodigoSIE(codigoSIEId, codigo);
   }
 
-  function startEditCodigoSIE(codigo: { codigoSIEId: string; codigo: string; talla: string; itemId: string }) {
+  function startEditCodigoSIE(codigo: { codigoSIEId: string; codigo: string; talla: string; equipoId: string }) {
     setEditingCodigoSIEId(codigo.codigoSIEId);
     setEditCodigoSIE(codigo.codigo);
     setEditCodigoTalla(codigo.talla === "-" ? "" : codigo.talla);
-    setEditCodigoItemId(codigo.itemId);
+    setEditCodigoItemId(codigo.equipoId);
   }
 
   function cancelEditCodigoSIE() {
@@ -400,15 +400,15 @@ export function EtiquetadoView({
     if (!originalCodigo) return;
     const codigo = normalizeCode(editCodigoSIE);
     const talla = normalizeCode(editCodigoTalla);
-    const itemId = editCodigoItemId.trim();
-    if (!codigo || !itemId || !SIE_CODE_REGEX.test(codigo)) return;
+    const equipoId = editCodigoItemId.trim();
+    if (!codigo || !equipoId || !SIE_CODE_REGEX.test(codigo)) return;
 
     onUpdateCodigoSIE({
       originalCodigoSIEId: editingCodigoSIEId,
       originalCodigo,
       codigo,
       talla,
-      itemId,
+      equipoId,
     });
     cancelEditCodigoSIE();
   }
@@ -421,7 +421,7 @@ export function EtiquetadoView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap equipos-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">{meta.title}</h2>
             <p className="mt-1 text-xs text-stone-600">{meta.description}</p>
@@ -537,7 +537,7 @@ export function EtiquetadoView({
                 estanteriasList.map((estanteria) => (
                   <div
                     key={`${estanteria.codigo}-${estanteria.piso}`}
-                    className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700"
+                    className="flex equipos-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700"
                   >
                     <span>{estanteria.etiqueta || formatEstanteriaLabel(estanteria.piso, estanteria.codigo)}</span>
                     {canWrite ? (
@@ -581,10 +581,10 @@ export function EtiquetadoView({
                 disabled={!canWrite || itemOptions.length === 0}
                 className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
               >
-                {itemOptions.length === 0 ? <option value="">Sin items</option> : null}
-                {itemOptions.map((item) => (
-                  <option key={`sie-item-${item.itemId}`} value={item.itemId}>
-                    {item.nombre}
+                {itemOptions.length === 0 ? <option value="">Sin equipos</option> : null}
+                {itemOptions.map((equipo) => (
+                  <option key={`sie-equipo-${equipo.equipoId}`} value={equipo.equipoId}>
+                    {equipo.nombre}
                   </option>
                 ))}
               </select>
@@ -650,9 +650,9 @@ export function EtiquetadoView({
                               disabled={!canWrite || itemOptions.length === 0}
                               className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                             >
-                              {itemOptions.map((item) => (
-                                <option key={`sie-item-edit-${codigo.codigoSIEId}-${item.itemId}`} value={item.itemId}>
-                                  {item.nombre}
+                              {itemOptions.map((equipo) => (
+                                <option key={`sie-equipo-edit-${codigo.codigoSIEId}-${equipo.equipoId}`} value={equipo.equipoId}>
+                                  {equipo.nombre}
                                 </option>
                               ))}
                             </select>
@@ -734,9 +734,9 @@ export function EtiquetadoView({
             </div>
           ) : null}
 
-          <div className="flex flex-wrap items-end justify-between gap-2">
+          <div className="flex flex-wrap equipos-end justify-between gap-2">
             <h3 className="text-sm font-semibold text-stone-900">Cajas registradas</h3>
-            <div className="flex w-full flex-wrap items-end justify-end gap-2 md:w-auto">
+            <div className="flex w-full flex-wrap equipos-end justify-end gap-2 md:w-auto">
               <button
                 type="button"
                 onClick={onPrintListadoCajas}
@@ -797,7 +797,7 @@ export function EtiquetadoView({
 
               <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
                 <div className="rounded-xl border border-stone-200 bg-white p-3">
-                  <div className="flex flex-wrap items-end justify-between gap-2">
+                  <div className="flex flex-wrap equipos-end justify-between gap-2">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
                         Equipos de la caja
@@ -831,12 +831,12 @@ export function EtiquetadoView({
                     <p className="mt-2 text-sm text-stone-600">No hay equipos para ese filtro.</p>
                   ) : (
                     <div className="mt-2 max-h-80 space-y-1 overflow-y-auto pr-1">
-                      {filteredItemOptions.map((item) => {
-                        const checked = selectedCajaItemSet.has(item.itemId);
+                      {filteredItemOptions.map((equipo) => {
+                        const checked = selectedCajaItemSet.has(equipo.equipoId);
                         return (
                           <label
-                            key={`caja-item-${item.itemId}`}
-                            className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 text-sm ${
+                            key={`caja-equipo-${equipo.equipoId}`}
+                            className={`flex cursor-pointer equipos-center gap-2 rounded-lg border px-2.5 py-2 text-sm ${
                               checked ? "border-blue-300 bg-blue-50 text-blue-900" : "border-stone-300 bg-white text-stone-700"
                             }`}
                           >
@@ -844,9 +844,9 @@ export function EtiquetadoView({
                               type="checkbox"
                               checked={checked}
                               disabled={!canWrite}
-                              onChange={() => toggleItemEnCaja(item.itemId)}
+                              onChange={() => toggleItemEnCaja(equipo.equipoId)}
                             />
-                            <span className="font-medium">{item.nombre}</span>
+                            <span className="font-medium">{equipo.nombre}</span>
                           </label>
                         );
                       })}
@@ -865,30 +865,30 @@ export function EtiquetadoView({
                     <p className="mt-2 text-sm text-stone-600">Selecciona equipos para configurar códigos.</p>
                   ) : (
                     <div className="mt-2 max-h-80 space-y-2 overflow-y-auto pr-1">
-                      {selectedCajaItems.map((item) => {
-                        const entry = codigosPorItemSeleccionadoMap.get(item.itemId);
+                      {selectedCajaItems.map((equipo) => {
+                        const entry = codigosPorItemSeleccionadoMap.get(equipo.equipoId);
                         const codigos = entry?.codigos ?? [];
                         const selectedCodesForItem = codigos.filter((codigo) => selectedCajaCodigosSet.has(codigo.codigoSIEId));
                         const hasSelectedCodes = selectedCodesForItem.length > 0;
                         return (
-                          <div key={`caja-item-codigos-${item.itemId}`} className="rounded-lg border border-stone-200 bg-stone-50 p-2.5">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div key={`caja-equipo-codigos-${equipo.equipoId}`} className="rounded-lg border border-stone-200 bg-stone-50 p-2.5">
+                            <div className="flex flex-wrap equipos-center justify-between gap-2">
                               <div className="min-w-0">
-                                <p className="text-sm font-semibold text-stone-800">{item.nombre}</p>
+                                <p className="text-sm font-semibold text-stone-800">{equipo.nombre}</p>
                                 <label className="mt-1 block text-[11px] font-medium text-stone-600">
                                   Cantidad del equipo
                                   <input
                                     type="number"
                                     min={1}
-                                    value={newCajaCantidadByItemId[item.itemId] ?? "1"}
-                                    onChange={(event) => updateCantidadForItem(item.itemId, event.target.value)}
+                                    value={newCajaCantidadByItemId[equipo.equipoId] ?? "1"}
+                                    onChange={(event) => updateCantidadForItem(equipo.equipoId, event.target.value)}
                                     className="mt-1 w-28 rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700"
                                   />
                                 </label>
                               </div>
                               <button
                                 type="button"
-                                onClick={() => toggleItemEnCaja(item.itemId)}
+                                onClick={() => toggleItemEnCaja(equipo.equipoId)}
                                 className="rounded border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-100"
                               >
                                 Quitar
@@ -901,7 +901,7 @@ export function EtiquetadoView({
                               <div className="mt-2 flex flex-wrap gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => clearCodigosForItem(item.itemId)}
+                                  onClick={() => clearCodigosForItem(equipo.equipoId)}
                                   className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
                                     hasSelectedCodes
                                       ? "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
@@ -914,7 +914,7 @@ export function EtiquetadoView({
                                   const checked = selectedCajaCodigosSet.has(codigo.codigoSIEId);
                                   return (
                                     <button
-                                      key={`caja-codigo-${item.itemId}-${codigo.codigoSIEId}`}
+                                      key={`caja-codigo-${equipo.equipoId}-${codigo.codigoSIEId}`}
                                       type="button"
                                       onClick={() => toggleCodigoSIEEnCaja(codigo.codigoSIEId)}
                                       className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
@@ -961,7 +961,7 @@ export function EtiquetadoView({
             ) : (
               cajasFiltradas.map((caja) => (
                 <div key={`caja-${caja.codigoDepositoGeneral}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex flex-wrap equipos-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-stone-900">Caja {caja.codigoDepositoGeneral}</p>
                       <p className="text-xs text-stone-600">
@@ -1038,7 +1038,7 @@ export function EtiquetadoView({
 
           {massPrintCodes.length > 0 ? (
             <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap equipos-center gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Orientacion de etiquetas</p>
               </div>
               <p className="mt-1 text-[11px] text-stone-600">
@@ -1066,7 +1066,7 @@ export function EtiquetadoView({
                   return (
                     <div
                       key={`mass-print-orientacion-${caja.codigoDepositoGeneral}`}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-stone-200 bg-white px-2.5 py-2"
+                      className="grid grid-cols-[minmax(0,1fr)_auto] equipos-center gap-2 rounded-lg border border-stone-200 bg-white px-2.5 py-2"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-stone-900">Caja {caja.codigoDepositoGeneral}</p>

@@ -6,11 +6,11 @@ import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import { prisma } from "@/lib/prisma";
 import { MOVIMIENTO_TIPOS_REGISTRO_Y_PRESTAMO } from "@/lib/tipo-movimiento";
-import type { EquipoMovimientoCatalogItem, EquipoMovimientoViewRow } from "@/types/views";
+import type { EquipoMovimientoCatalogEquipo, EquipoMovimientoViewRow } from "@/types/views";
 
 export type MovimientosEquipoData = {
-  items: EquipoMovimientoCatalogItem[];
-  selectedItem: EquipoMovimientoCatalogItem | null;
+  equipos: EquipoMovimientoCatalogEquipo[];
+  selectedItem: EquipoMovimientoCatalogEquipo | null;
   rows: EquipoMovimientoViewRow[];
 };
 
@@ -49,35 +49,35 @@ export function buildMovimientoTipoLabel(
   return "Préstamo";
 }
 
-export async function getMovimientosEquipoData(itemId: bigint | null = null): Promise<MovimientosEquipoData> {
-  const catalog = await prisma.item.findMany({
-    orderBy: [{ nombre: "asc" }, { itemId: "asc" }],
+export async function getMovimientosEquipoData(equipoId: bigint | null = null): Promise<MovimientosEquipoData> {
+  const catalog = await prisma.equipo.findMany({
+    orderBy: [{ nombre: "asc" }, { equipoId: "asc" }],
     select: {
-      itemId: true,
+      equipoId: true,
       nombre: true,
       activo: true,
     },
   });
 
-  const items: EquipoMovimientoCatalogItem[] = catalog.map((item) => ({
-    equipoId: item.itemId.toString(),
-    itemId: item.itemId.toString(),
-    nombre: item.nombre,
-    activo: item.activo,
+  const equipos: EquipoMovimientoCatalogEquipo[] = catalog.map((equipo) => ({
+    equipoId: equipo.equipoId.toString(),
+    equipoId: equipo.equipoId.toString(),
+    nombre: equipo.nombre,
+    activo: equipo.activo,
   }));
 
-  if (!itemId) {
+  if (!equipoId) {
     return {
-      items,
+      equipos,
       selectedItem: null,
       rows: [],
     };
   }
 
-  const selectedRecord = catalog.find((item) => item.itemId === itemId);
+  const selectedRecord = catalog.find((equipo) => equipo.equipoId === equipoId);
   if (!selectedRecord) {
     return {
-      items,
+      equipos,
       selectedItem: null,
       rows: [],
     };
@@ -85,9 +85,9 @@ export async function getMovimientosEquipoData(itemId: bigint | null = null): Pr
 
   await ensureMovimientoDestinatarioRecintoCompatibility();
 
-  const movimientoItems = await prisma.movimientoItem.findMany({
+  const movimientoEquipos = await prisma.movimientoEquipo.findMany({
     where: {
-      itemId,
+      equipoId,
       movimiento: {
         tipo: { in: MOVIMIENTO_TIPOS_REGISTRO_Y_PRESTAMO },
       },
@@ -156,22 +156,22 @@ export async function getMovimientosEquipoData(itemId: bigint | null = null): Pr
     orderBy: [{ movimiento: { fecha: "desc" } }, { movimientoId: "desc" }],
   });
 
-  const rows: EquipoMovimientoViewRow[] = movimientoItems.map((movimientoItem) => {
+  const rows: EquipoMovimientoViewRow[] = movimientoEquipos.map((movimientoEquipo) => {
     const prestamoEstado =
-      movimientoItem.movimiento.tipo === TipoMovimiento.PRESTAMO
+      movimientoEquipo.movimiento.tipo === TipoMovimiento.PRESTAMO
         ? buildPrestamoEstadoLabel(
-            movimientoItem.movimiento.prestamoActivo?.estado ?? null,
-            movimientoItem.movimiento.prestamoHistorial?.estado ?? null,
+            movimientoEquipo.movimiento.prestamoActivo?.estado ?? null,
+            movimientoEquipo.movimiento.prestamoHistorial?.estado ?? null,
           )
         : null;
-    const destinatario = resolveDestinatarioMovimiento(movimientoItem.movimiento);
-    const clasePrestamo = movimientoItem.movimiento.tipo === TipoMovimiento.PRESTAMO ? destinatario?.clase ?? "PENDIENTE" : null;
+    const destinatario = resolveDestinatarioMovimiento(movimientoEquipo.movimiento);
+    const clasePrestamo = movimientoEquipo.movimiento.tipo === TipoMovimiento.PRESTAMO ? destinatario?.clase ?? "PENDIENTE" : null;
 
     return {
-      movimientoId: movimientoItem.movimiento.movimientoId.toString(),
-      fecha: formatDateOnlyFromDate(movimientoItem.movimiento.fecha) ?? "",
-      tipo: movimientoItem.movimiento.tipo,
-      tipoLabel: buildMovimientoTipoLabel(movimientoItem.movimiento.tipo, prestamoEstado, clasePrestamo),
+      movimientoId: movimientoEquipo.movimiento.movimientoId.toString(),
+      fecha: formatDateOnlyFromDate(movimientoEquipo.movimiento.fecha) ?? "",
+      tipo: movimientoEquipo.movimiento.tipo,
+      tipoLabel: buildMovimientoTipoLabel(movimientoEquipo.movimiento.tipo, prestamoEstado, clasePrestamo),
       prestamoEstado,
       clasePrestamo,
       ci: destinatario?.ci ?? null,
@@ -179,16 +179,16 @@ export async function getMovimientosEquipoData(itemId: bigint | null = null): Pr
       persona: destinatario?.nombre ?? "Destinatario pendiente",
       gradoAbreviacion: destinatario?.gradoAbreviacion ?? destinatario?.grado ?? "Pendiente",
       gradoOrden: destinatario?.gradoOrden ?? null,
-      cantidad: movimientoItem.cantidad,
-      observaciones: movimientoItem.movimiento.observaciones,
+      cantidad: movimientoEquipo.cantidad,
+      observaciones: movimientoEquipo.movimiento.observaciones,
     };
   });
 
   return {
-    items,
+    equipos,
     selectedItem: {
-      equipoId: selectedRecord.itemId.toString(),
-      itemId: selectedRecord.itemId.toString(),
+      equipoId: selectedRecord.equipoId.toString(),
+      equipoId: selectedRecord.equipoId.toString(),
       nombre: selectedRecord.nombre,
       activo: selectedRecord.activo,
     },

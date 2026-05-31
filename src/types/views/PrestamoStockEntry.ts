@@ -20,8 +20,8 @@ export type PrestamoStockEntry = {
   usuarioRecibeDevolucionNombre: string | null;
   comentarios: string | null;
   estado: "PENDIENTE" | "DEVUELTO";
-  items: Array<{
-    itemId: string;
+  equipos: Array<{
+    equipoId: string;
     nombre: string;
     cantidad: number;
     estadoEntrega: "NUEVO" | "BUENO" | "REGULAR" | "MALO";

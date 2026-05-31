@@ -27,7 +27,7 @@ function MiniSoldadoAvatarClasico({ size }: MiniSoldadoAvatarProps) {
 
   return (
     <span
-      className="soldier-avatar soldier-float relative inline-flex items-end justify-center"
+      className="soldier-avatar soldier-float relative inline-flex equipos-end justify-center"
       style={{ width: `${size}px`, height: `${height}px` }}
       aria-hidden="true"
     >

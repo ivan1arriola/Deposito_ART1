@@ -6,19 +6,19 @@ import { prisma } from "@/lib/prisma";
 type UpdateCodigoSIEPayload = {
   codigo?: string;
   talla?: string | null;
-  itemId?: string | number;
+  equipoId?: string | number;
 };
 
 function hasEtiquetadoDelegates() {
   const candidate = prisma as typeof prisma & {
-    item?: unknown;
-    itemCodigoSIE?: unknown;
-    cajaItemCodigoSIE?: unknown;
+    equipo?: unknown;
+    equipoCodigoSIE?: unknown;
+    cajaEquipoCodigoSIE?: unknown;
   };
   return (
-    typeof candidate.item !== "undefined" &&
-    typeof candidate.itemCodigoSIE !== "undefined" &&
-    typeof candidate.cajaItemCodigoSIE !== "undefined"
+    typeof candidate.equipo !== "undefined" &&
+    typeof candidate.equipoCodigoSIE !== "undefined" &&
+    typeof candidate.cajaEquipoCodigoSIE !== "undefined"
   );
 }
 
@@ -80,27 +80,27 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
   const body = (await request.json()) as UpdateCodigoSIEPayload;
   const codigo = normalizeCodigoSIEInput(body.codigo);
   const talla = normalizeTalla(body.talla);
-  const itemId = parseItemId(body.itemId);
+  const equipoId = parseItemId(body.equipoId);
 
-  if (!codigo || itemId === null) {
+  if (!codigo || equipoId === null) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo e item son obligatorios. Formatos validos: 8 digitos o 3 letras y 2 numeros." },
+      { error: "Payload invalido. codigo e equipo son obligatorios. Formatos validos: 8 digitos o 3 letras y 2 numeros." },
       { status: 400 },
     );
   }
 
-  const [existing, item] = await Promise.all([
-    prisma.itemCodigoSIE.findUnique({
-      where: { itemCodigoSIEId: codigoSIEId },
+  const [existing, equipo] = await Promise.all([
+    prisma.equipoCodigoSIE.findUnique({
+      where: { equipoCodigoSIEId: codigoSIEId },
       include: {
-        item: {
-          select: { itemId: true, nombre: true },
+        equipo: {
+          select: { equipoId: true, nombre: true },
         },
       },
     }),
-    prisma.item.findUnique({
-      where: { itemId },
-      select: { itemId: true, nombre: true },
+    prisma.equipo.findUnique({
+      where: { equipoId },
+      select: { equipoId: true, nombre: true },
     }),
   ]);
 
@@ -110,28 +110,28 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
   if (existing.codigo !== originalCodigo) {
     return NextResponse.json({ error: "El codigo SIE indicado no coincide con el registro seleccionado." }, { status: 409 });
   }
-  if (!item) {
-    return NextResponse.json({ error: "El item seleccionado no existe." }, { status: 400 });
+  if (!equipo) {
+    return NextResponse.json({ error: "El equipo seleccionado no existe." }, { status: 400 });
   }
 
-  const cajasVinculadas = await prisma.cajaItemCodigoSIE.count({
-    where: { itemCodigoSIEId: existing.itemCodigoSIEId },
+  const cajasVinculadas = await prisma.cajaEquipoCodigoSIE.count({
+    where: { equipoCodigoSIEId: existing.equipoCodigoSIEId },
   });
 
-  if (existing.itemId.toString() !== itemId.toString() && cajasVinculadas > 0) {
+  if (existing.equipoId.toString() !== equipoId.toString() && cajasVinculadas > 0) {
     return NextResponse.json(
-      { error: "No se puede cambiar el item de un codigo SIE que ya esta vinculado a cajas." },
+      { error: "No se puede cambiar el equipo de un codigo SIE que ya esta vinculado a cajas." },
       { status: 409 },
     );
   }
 
   try {
-    const updated = await prisma.itemCodigoSIE.update({
-      where: { itemCodigoSIEId: existing.itemCodigoSIEId },
-      data: { codigo, talla, itemId },
+    const updated = await prisma.equipoCodigoSIE.update({
+      where: { equipoCodigoSIEId: existing.equipoCodigoSIEId },
+      data: { codigo, talla, equipoId },
       include: {
-        item: {
-          select: { itemId: true, nombre: true },
+        equipo: {
+          select: { equipoId: true, nombre: true },
         },
       },
     });
@@ -140,31 +140,31 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
       usuarioId: auth.user.usuarioId,
       accion: "UPDATE",
       entidad: "CODIGO_SIE",
-      entidadId: updated.itemCodigoSIEId.toString(),
+      entidadId: updated.equipoCodigoSIEId.toString(),
       detalle: {
-        codigoSIEId: updated.itemCodigoSIEId.toString(),
+        codigoSIEId: updated.equipoCodigoSIEId.toString(),
         codigoAntes: existing.codigo,
         codigoDespues: updated.codigo,
         tallaAntes: existing.talla,
         tallaDespues: updated.talla,
-        itemIdAntes: existing.item.itemId.toString(),
-        itemIdDespues: updated.item.itemId.toString(),
-        itemNombreAntes: existing.item.nombre,
-        itemNombreDespues: updated.item.nombre,
+        itemIdAntes: existing.equipo.equipoId.toString(),
+        itemIdDespues: updated.equipo.equipoId.toString(),
+        itemNombreAntes: existing.equipo.nombre,
+        itemNombreDespues: updated.equipo.nombre,
         cajasVinculadas,
       },
     });
 
     return NextResponse.json({
-      codigoSIEId: updated.itemCodigoSIEId.toString(),
+      codigoSIEId: updated.equipoCodigoSIEId.toString(),
       codigo: updated.codigo,
       talla: updated.talla,
-      itemId: updated.item.itemId.toString(),
-      itemNombre: updated.item.nombre,
+      equipoId: updated.equipo.equipoId.toString(),
+      itemNombre: updated.equipo.nombre,
     });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-      return NextResponse.json({ error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e item." }, { status: 409 });
+      return NextResponse.json({ error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo." }, { status: 409 });
     }
 
     return NextResponse.json({ error: "No se pudo actualizar el codigo SIE." }, { status: 500 });
@@ -194,11 +194,11 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
     return NextResponse.json({ error: "Falta id del codigo SIE a eliminar." }, { status: 400 });
   }
 
-  const existing = await prisma.itemCodigoSIE.findUnique({
-    where: { itemCodigoSIEId: codigoSIEId },
+  const existing = await prisma.equipoCodigoSIE.findUnique({
+    where: { equipoCodigoSIEId: codigoSIEId },
     include: {
-      item: {
-        select: { itemId: true, nombre: true },
+      equipo: {
+        select: { equipoId: true, nombre: true },
       },
     },
   });
@@ -209,16 +209,16 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
     return NextResponse.json({ error: "El codigo SIE indicado no coincide con el registro seleccionado." }, { status: 409 });
   }
 
-  const cajasVinculadas = await prisma.cajaItemCodigoSIE.count({
+  const cajasVinculadas = await prisma.cajaEquipoCodigoSIE.count({
     where: {
-      itemCodigoSIEId: existing.itemCodigoSIEId,
+      equipoCodigoSIEId: existing.equipoCodigoSIEId,
     },
   });
 
   try {
-    await prisma.itemCodigoSIE.delete({
+    await prisma.equipoCodigoSIE.delete({
       where: {
-        itemCodigoSIEId: existing.itemCodigoSIEId,
+        equipoCodigoSIEId: existing.equipoCodigoSIEId,
       },
     });
 
@@ -226,13 +226,13 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
       usuarioId: auth.user.usuarioId,
       accion: "DELETE",
       entidad: "CODIGO_SIE",
-      entidadId: existing.itemCodigoSIEId.toString(),
+      entidadId: existing.equipoCodigoSIEId.toString(),
       detalle: {
-        codigoSIEId: existing.itemCodigoSIEId.toString(),
+        codigoSIEId: existing.equipoCodigoSIEId.toString(),
         codigo: existing.codigo,
         talla: existing.talla,
-        itemId: existing.item.itemId.toString(),
-        itemNombre: existing.item.nombre,
+        equipoId: existing.equipo.equipoId.toString(),
+        itemNombre: existing.equipo.nombre,
         cajasVinculadasEliminadas: cajasVinculadas,
       },
     });

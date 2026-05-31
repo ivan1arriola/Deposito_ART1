@@ -20,7 +20,7 @@ export interface ConfigViewsProps {
   rangCallbacks: RangoConfigCallbacks;
   bateria: BateriaConfigState;
   bateriaCallbacks: BateriaConfigCallbacks;
-  items: EquipoConfigState;
+  equipos: EquipoConfigState;
   itemCallbacks: EquipoConfigCallbacks;
   usuario: UsuarioConfigState;
   usuarioCallbacks: UsuarioConfigCallbacks;

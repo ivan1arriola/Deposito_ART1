@@ -37,8 +37,8 @@ type PersonalCreateViewProps = {
   onSubmitMovimientoDraft: () => void;
   onEditMovimiento: (index: number) => void;
   onRemoveMovimiento: (index: number) => void;
-  onMovimientoDraftChange: (field: keyof Omit<PersonalAltaMovimientoForm, "items">, value: string) => void;
-  onMovimientoDraftItemChange: (itemIndex: number, field: "itemId" | "cantidad", value: string) => void;
+  onMovimientoDraftChange: (field: keyof Omit<PersonalAltaMovimientoForm, "equipos">, value: string) => void;
+  onMovimientoDraftItemChange: (itemIndex: number, field: "equipoId" | "cantidad", value: string) => void;
   onAddMovimientoDraftItem: () => void;
   onRemoveMovimientoDraftItem: (itemIndex: number) => void;
 };
@@ -102,7 +102,7 @@ export function PersonalCreateView({
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva vista</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Registrar subalterno</h2>
@@ -111,8 +111,8 @@ export function PersonalCreateView({
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-full border border-[rgb(0,56,133,0.25)] bg-[rgb(0,56,133,0.1)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
+            <div className="flex flex-wrap equipos-center gap-2">
+              <span className="inline-flex equipos-center rounded-full border border-[rgb(0,56,133,0.25)] bg-[rgb(0,56,133,0.1)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
                 {`Campos obligatorios: ${requiredPersonalCompleted}/${requiredPersonalFields.length}`}
               </span>
               <button
@@ -214,7 +214,7 @@ export function PersonalCreateView({
               <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
                 <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Destino</legend>
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <label className="md:col-span-3 flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5">
+                  <label className="md:col-span-3 flex equipos-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5">
                     <input
                       type="checkbox"
                       checked={newPersonal.esReingreso}
@@ -309,14 +309,14 @@ export function PersonalCreateView({
 
               <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
                 <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Movimientos iniciales (opcional)</legend>
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap equipos-center justify-between gap-3">
                   <p className="text-xs text-stone-600">
                     Puedes cargar movimientos en esta misma pantalla. Al guardar, se crea la persona y luego se registran sus movimientos.
                   </p>
                   <button
                     type="button"
                     onClick={onOpenMovimientoModal}
-                    className="inline-flex items-center gap-2 rounded-xl bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700"
+                    className="inline-flex equipos-center gap-2 rounded-xl bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700"
                   >
                     <span aria-hidden="true">(+) </span>
                     Agregar movimiento
@@ -331,7 +331,7 @@ export function PersonalCreateView({
                   <div className="mt-3 space-y-3">
                     {movimientos.map((movimiento, movimientoIndex) => (
                       <article key={`movimiento-${movimientoIndex}`} className="rounded-xl border border-stone-200 bg-white p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap equipos-center justify-between gap-2">
                           <div className="space-y-1">
                             <p className="text-xs font-semibold text-stone-800">{`Movimiento #${movimientoIndex + 1}`}</p>
                             <p className="text-xs text-stone-600">
@@ -340,7 +340,7 @@ export function PersonalCreateView({
                             {movimiento.comentarios.trim() !== "" ? <p className="text-xs text-stone-600">{movimiento.comentarios}</p> : null}
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex equipos-center gap-2">
                             <button
                               type="button"
                               onClick={() => onEditMovimiento(movimientoIndex)}
@@ -359,11 +359,11 @@ export function PersonalCreateView({
                         </div>
 
                         <ul className="mt-2 space-y-1 text-xs text-stone-700">
-                          {movimiento.items.map((item, itemIndex) => {
-                            const equipo = equiposActivos.find((candidate) => candidate.itemId === item.itemId);
+                          {movimiento.equipos.map((equipo, itemIndex) => {
+                            const equipo = equiposActivos.find((candidate) => candidate.equipoId === equipo.equipoId);
                             return (
-                              <li key={`movimiento-${movimientoIndex}-resumen-item-${itemIndex}`}>
-                                {`${equipo?.nombre ?? "Equipo sin definir"} x ${item.cantidad}`}
+                              <li key={`movimiento-${movimientoIndex}-resumen-equipo-${itemIndex}`}>
+                                {`${equipo?.nombre ?? "Equipo sin definir"} x ${equipo.cantidad}`}
                               </li>
                             );
                           })}
@@ -423,7 +423,7 @@ export function PersonalCreateView({
                 <button
                   type="submit"
                   disabled={!canSubmitPersonal}
-                  className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
+                  className="mt-5 inline-flex w-full equipos-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
                 >
                   {creatingPersonal ? "Registrando..." : "Registrar subalterno"}
                 </button>
@@ -478,23 +478,23 @@ export function PersonalCreateView({
 
             <section className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-stone-600">Equipos</p>
-              {movimientoDraft.items.map((item, itemIndex) => (
-                <div key={`nuevo-personal-movimiento-item-${itemIndex}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
+              {movimientoDraft.equipos.map((equipo, itemIndex) => (
+                <div key={`nuevo-personal-movimiento-equipo-${itemIndex}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
                   <select
-                    value={item.itemId}
-                    onChange={(event) => onMovimientoDraftItemChange(itemIndex, "itemId", event.target.value)}
+                    value={equipo.equipoId}
+                    onChange={(event) => onMovimientoDraftItemChange(itemIndex, "equipoId", event.target.value)}
                     className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
                   >
                     <option value="">Seleccionar equipo</option>
                     {equiposActivos
                       .filter((equipo) => {
-                        if (equipo.itemId === item.itemId) return true;
-                        return !movimientoDraft.items.some(
-                          (selectedItem, selectedIndex) => selectedIndex !== itemIndex && selectedItem.itemId === equipo.itemId,
+                        if (equipo.equipoId === equipo.equipoId) return true;
+                        return !movimientoDraft.equipos.some(
+                          (selectedItem, selectedIndex) => selectedIndex !== itemIndex && selectedItem.equipoId === equipo.equipoId,
                         );
                       })
                       .map((equipo) => (
-                        <option key={equipo.itemId} value={equipo.itemId}>
+                        <option key={equipo.equipoId} value={equipo.equipoId}>
                           {equipo.nombre}
                         </option>
                       ))}
@@ -503,7 +503,7 @@ export function PersonalCreateView({
                   <input
                     type="number"
                     min={1}
-                    value={item.cantidad}
+                    value={equipo.cantidad}
                     onChange={(event) => onMovimientoDraftItemChange(itemIndex, "cantidad", event.target.value)}
                     className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
                   />
@@ -511,7 +511,7 @@ export function PersonalCreateView({
                   <button
                     type="button"
                     onClick={() => onRemoveMovimientoDraftItem(itemIndex)}
-                    disabled={movimientoDraft.items.length <= 1}
+                    disabled={movimientoDraft.equipos.length <= 1}
                     className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Quitar
@@ -522,7 +522,7 @@ export function PersonalCreateView({
               <button
                 type="button"
                 onClick={onAddMovimientoDraftItem}
-                className="inline-flex items-center gap-2 rounded-xl bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700"
+                className="inline-flex equipos-center gap-2 rounded-xl bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700"
               >
                 <span aria-hidden="true">(+) </span>
                 Agregar equipo

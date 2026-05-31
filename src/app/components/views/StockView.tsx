@@ -12,7 +12,7 @@ import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
 import SortByAlphaRoundedIcon from "@mui/icons-material/SortByAlphaRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import type { StockDashboardData, StockItemTraceData } from "@/types/views";
+import type { StockDashboardData, StockEquipoTraceData } from "@/types/views";
 import type { PrestamoEstadoEquipo } from "@/types/forms";
 import type { StockViewProps } from "./stock/types";
 import {
@@ -81,14 +81,14 @@ export function StockView({
     prestamo: StockDashboardData["prestamos"][number];
     fechaDevolucion: string;
   } | null>(null);
-  const [itemTraceDialog, setItemTraceDialog] = useState<{
-    item: StockDashboardData["resumen"][number];
+  const [equipoTraceDialog, setItemTraceDialog] = useState<{
+    equipo: StockDashboardData["resumen"][number];
     column: "SUBALTERNOS" | "PRESTAMO" | "RECINTO";
   } | null>(null);
-  const [itemTraceData, setItemTraceData] = useState<StockItemTraceData | null>(null);
-  const [itemTraceLoading, setItemTraceLoading] = useState(false);
-  const [itemTraceError, setItemTraceError] = useState<string | null>(null);
-  const itemTraceRequestIdRef = useRef(0);
+  const [equipoTraceData, setEquipoTraceData] = useState<StockEquipoTraceData | null>(null);
+  const [equipoTraceLoading, setItemTraceLoading] = useState(false);
+  const [equipoTraceError, setItemTraceError] = useState<string | null>(null);
+  const equipoTraceRequestIdRef = useRef(0);
   const normalizedPrestamoIdFilter = prestamoIdFilter.trim();
   const prestamosFiltrados =
     normalizedPrestamoIdFilter === ""
@@ -108,38 +108,38 @@ export function StockView({
   }
 
   function closeItemTraceDialog() {
-    itemTraceRequestIdRef.current += 1;
+    equipoTraceRequestIdRef.current += 1;
     setItemTraceDialog(null);
-    setItemTraceData(null);
+    setEquipoTraceData(null);
     setItemTraceLoading(false);
     setItemTraceError(null);
   }
 
-  async function openItemTraceDialog(item: StockDashboardData["resumen"][number], column: "SUBALTERNOS" | "PRESTAMO" | "RECINTO") {
-    const requestId = itemTraceRequestIdRef.current + 1;
-    itemTraceRequestIdRef.current = requestId;
-    setItemTraceDialog({ item, column });
-    setItemTraceData(null);
+  async function openItemTraceDialog(equipo: StockDashboardData["resumen"][number], column: "SUBALTERNOS" | "PRESTAMO" | "RECINTO") {
+    const requestId = equipoTraceRequestIdRef.current + 1;
+    equipoTraceRequestIdRef.current = requestId;
+    setItemTraceDialog({ equipo, column });
+    setEquipoTraceData(null);
     setItemTraceError(null);
     setItemTraceLoading(true);
     try {
-      const trace = await api<StockItemTraceData>(`/api/stock/item-trace?equipoId=${encodeURIComponent(item.equipoId)}`);
-      if (itemTraceRequestIdRef.current !== requestId) return;
-      setItemTraceData(trace);
+      const trace = await api<StockEquipoTraceData>(`/api/stock/equipo-trace?equipoId=${encodeURIComponent(equipo.equipoId)}`);
+      if (equipoTraceRequestIdRef.current !== requestId) return;
+      setEquipoTraceData(trace);
     } catch (traceError: unknown) {
-      if (itemTraceRequestIdRef.current !== requestId) return;
+      if (equipoTraceRequestIdRef.current !== requestId) return;
       setItemTraceError(traceError instanceof Error ? traceError.message : "No se pudo cargar el detalle del equipo.");
     } finally {
-      if (itemTraceRequestIdRef.current !== requestId) return;
+      if (equipoTraceRequestIdRef.current !== requestId) return;
       setItemTraceLoading(false);
     }
   }
 
   function openItemTracePrint() {
-    if (!itemTraceDialog) return;
+    if (!equipoTraceDialog) return;
     const query = new URLSearchParams({
-      equipoId: itemTraceDialog.item.equipoId,
-      column: itemTraceDialog.column,
+      equipoId: equipoTraceDialog.equipo.equipoId,
+      column: equipoTraceDialog.column,
       autoprint: "1",
     });
     window.open(`/trazabilidad-equipos?${query.toString()}`, "_blank", "noopener,noreferrer");
@@ -152,10 +152,10 @@ export function StockView({
     onReturnPrestamo(
       returnDialog.prestamo.prestamoId,
       fechaDevolucion,
-      returnDialog.prestamo.items.map((item) => {
-        const itemData = getReturnItemData(returnDialog.prestamo.prestamoId, item);
+      returnDialog.prestamo.equipos.map((equipo) => {
+        const itemData = getReturnItemData(returnDialog.prestamo.prestamoId, equipo);
         return {
-          itemId: item.itemId,
+          equipoId: equipo.equipoId,
           estadoDevolucion: itemData.estadoDevolucion,
           comentarioDevolucion: itemData.comentarioDevolucion.trim() || undefined,
         };
@@ -166,35 +166,35 @@ export function StockView({
 
   const getReturnItemData = (
     prestamoId: string,
-    item: StockDashboardData["prestamos"][number]["items"][number],
+    equipo: StockDashboardData["prestamos"][number]["equipos"][number],
   ) => {
     const byPrestamo = returnItemsByPrestamo[prestamoId];
-    if (byPrestamo && byPrestamo[item.itemId]) return byPrestamo[item.itemId];
+    if (byPrestamo && byPrestamo[equipo.equipoId]) return byPrestamo[equipo.equipoId];
     return {
-      estadoDevolucion: item.estadoEntrega,
+      estadoDevolucion: equipo.estadoEntrega,
       comentarioDevolucion: "",
     };
   };
 
-  const getSieInputValue = (item: StockDashboardData["resumen"][number]) => {
-    const draftValue = sieDraftByItemId[item.itemId];
-    return draftValue !== undefined ? draftValue : String(item.existenciaSie ?? 0);
+  const getSieInputValue = (equipo: StockDashboardData["resumen"][number]) => {
+    const draftValue = sieDraftByItemId[equipo.equipoId];
+    return draftValue !== undefined ? draftValue : String(equipo.existenciaSie ?? 0);
   };
 
-  function updateSieDraft(itemId: string, value: string) {
+  function updateSieDraft(equipoId: string, value: string) {
     if (!/^\d*$/.test(value)) return;
     setSieError(null);
     setSieDraftByItemId((prev) => ({
       ...prev,
-      [itemId]: value,
+      [equipoId]: value,
     }));
   }
 
-  async function persistSieValue(item: StockDashboardData["resumen"][number]) {
+  async function persistSieValue(equipo: StockDashboardData["resumen"][number]) {
     if (!canEditSie || sieSavingItemId !== null) return;
-    const inputValue = getSieInputValue(item).trim();
+    const inputValue = getSieInputValue(equipo).trim();
     if (inputValue === "") {
-      resetSieDraft(item);
+      resetSieDraft(equipo);
       return;
     }
 
@@ -204,21 +204,21 @@ export function StockView({
       return;
     }
 
-    if (parsed === item.existenciaSie) {
+    if (parsed === equipo.existenciaSie) {
       setSieDraftByItemId((prev) => {
-        if (!(item.itemId in prev)) return prev;
+        if (!(equipo.equipoId in prev)) return prev;
         const next = { ...prev };
-        delete next[item.itemId];
+        delete next[equipo.equipoId];
         return next;
       });
       return;
     }
 
-    setSieSavingItemId(item.itemId);
+    setSieSavingItemId(equipo.equipoId);
     setSieError(null);
     try {
-      await api<{ equipoId: string; itemId: string; existenciaSie: number }>(
-        `/api/equipos/${encodeURIComponent(item.equipoId)}`,
+      await api<{ equipoId: string; equipoId: string; existenciaSie: number }>(
+        `/api/equipos/${encodeURIComponent(equipo.equipoId)}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -227,22 +227,22 @@ export function StockView({
       );
       setSieDraftByItemId((prev) => {
         const next = { ...prev };
-        delete next[item.itemId];
+        delete next[equipo.equipoId];
         return next;
       });
       await onReload();
     } catch (saveError: unknown) {
       setSieError(saveError instanceof Error ? saveError.message : "No se pudo actualizar la existencia del SIE.");
     } finally {
-      setSieSavingItemId((current) => (current === item.itemId ? null : current));
+      setSieSavingItemId((current) => (current === equipo.equipoId ? null : current));
     }
   }
 
-  function resetSieDraft(item: StockDashboardData["resumen"][number]) {
+  function resetSieDraft(equipo: StockDashboardData["resumen"][number]) {
     setSieDraftByItemId((prev) => {
-      if (!(item.itemId in prev)) return prev;
+      if (!(equipo.equipoId in prev)) return prev;
       const next = { ...prev };
-      delete next[item.itemId];
+      delete next[equipo.equipoId];
       return next;
     });
     setSieError(null);
@@ -263,7 +263,7 @@ export function StockView({
     const list =
       normalizedSearchTermEquipos === ""
         ? resumen
-        : resumen.filter((item) => item.nombre.toLowerCase().includes(normalizedSearchTermEquipos));
+        : resumen.filter((equipo) => equipo.nombre.toLowerCase().includes(normalizedSearchTermEquipos));
     return [...list].sort(ordenAlfabetico ? compareEquiposByTipoAndName : compareEquiposByTipoAndOrder);
   }, [resumen, normalizedSearchTermEquipos, ordenAlfabetico]);
 
@@ -275,7 +275,7 @@ export function StockView({
       groupEquiposByTipo(resumenFiltrado).map((group) => ({
         key: group.key,
         title: section === "total" ? `Equipo ${group.label}` : `Equipo ${group.label} en depósito`,
-        items: group.items,
+        equipos: group.equipos,
       })),
     [resumenFiltrado, section],
   );
@@ -283,18 +283,18 @@ export function StockView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap equipos-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">{viewTitle}</h2>
             <p className="mt-1 text-xs text-stone-600">Vista operativa de stock y movimientos.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap equipos-center gap-2.5">
             {section === "total" ? (
-              <div className="flex items-center bg-stone-900 text-white rounded-xl shadow-md p-1 border border-stone-800">
+              <div className="flex equipos-center bg-stone-900 text-white rounded-xl shadow-md p-1 border border-stone-800">
                 <button
                   type="button"
                   onClick={() => window.open("/listado-equipos-unidad?autoprint=1", "_blank", "noopener,noreferrer")}
-                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-[#e5bb37]"
+                  className="flex equipos-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-[#e5bb37]"
                   title="Imprimir con el orden configurado en PDF / Catálogo"
                 >
                   <PrintRoundedIcon sx={{ fontSize: 18 }} />
@@ -304,7 +304,7 @@ export function StockView({
                 <button
                   type="button"
                   onClick={() => window.open("/listado-equipos-unidad?autoprint=1&sort=alpha", "_blank", "noopener,noreferrer")}
-                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-stone-200 hover:text-white"
+                  className="flex equipos-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-stone-200 hover:text-white"
                   title="Imprimir separando equipos por categoría, con orden alfabético dentro de cada grupo"
                 >
                   <SortByAlphaRoundedIcon sx={{ fontSize: 18 }} />
@@ -316,7 +316,7 @@ export function StockView({
               type="button"
               onClick={onReload}
               disabled={loading}
-              className="flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition hover:bg-stone-50 hover:border-stone-400 active:scale-95 disabled:opacity-50"
+              className="flex equipos-center gap-1.5 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition hover:bg-stone-50 hover:border-stone-400 active:scale-95 disabled:opacity-50"
             >
               <RefreshRoundedIcon sx={{ fontSize: 18 }} className={loading ? "animate-spin" : ""} />
               <span>{loading ? "Recargando..." : "Recargar"}</span>
@@ -355,11 +355,11 @@ export function StockView({
                 <p className="mt-2 text-2xl font-bold text-stone-900">{totalDeposito}</p>
               </div>
               <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items con stock</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Equipos con stock</p>
                 <p className="mt-2 text-2xl font-bold text-stone-900">{itemsConStockDeposito}</p>
               </div>
               <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Items negativos</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Equipos negativos</p>
                 <p className={`mt-2 text-2xl font-bold ${itemsNegativosDeposito > 0 ? "text-rose-700" : "text-stone-900"}`}>{itemsNegativosDeposito}</p>
               </div>
             </div>
@@ -394,8 +394,8 @@ export function StockView({
           </div>
 
           <div className="mt-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Items del movimiento</p>
+            <div className="flex equipos-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos del movimiento</p>
               <button
                 type="button"
                 onClick={onAddItem}
@@ -405,22 +405,22 @@ export function StockView({
                 Agregar equipo
               </button>
             </div>
-            {draft.items.map((item, index) => (
-              <div key={`stock-item-${index}`} className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,1fr)_120px_auto]">
+            {draft.equipos.map((equipo, index) => (
+              <div key={`stock-equipo-${index}`} className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,1fr)_120px_auto]">
                 <select
-                  value={item.itemId}
+                  value={equipo.equipoId}
                   disabled={saving}
-                  onChange={(event) => onDraftItemChange(index, "itemId", event.target.value)}
+                  onChange={(event) => onDraftItemChange(index, "equipoId", event.target.value)}
                   className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 >
                       <option value="">Seleccionar equipo</option>
                       {equiposOrdenados
                         .filter((catalogItem) => {
-                          if (catalogItem.itemId === item.itemId) return true;
-                          return !draft.items.some((selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId);
+                          if (catalogItem.equipoId === equipo.equipoId) return true;
+                          return !draft.equipos.some((selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.equipoId === catalogItem.equipoId);
                         })
                         .map((catalogItem) => (
-                          <option key={catalogItem.itemId} value={catalogItem.itemId}>
+                          <option key={catalogItem.equipoId} value={catalogItem.equipoId}>
                             {catalogItem.nombre}{catalogItem.tipoLabel && catalogItem.tipoLabel !== "General" ? ` (${catalogItem.tipoLabel})` : ""}
                           </option>
                         ))}
@@ -428,7 +428,7 @@ export function StockView({
                 <input
                   type="number"
                   min={1}
-                  value={item.cantidad}
+                  value={equipo.cantidad}
                   disabled={saving}
                   onChange={(event) => onDraftItemChange(index, "cantidad", event.target.value)}
                   className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -436,7 +436,7 @@ export function StockView({
                 <button
                   type="button"
                   onClick={() => onRemoveItem(index)}
-                  disabled={saving || draft.items.length <= 1}
+                  disabled={saving || draft.equipos.length <= 1}
                   className="rounded bg-rose-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                 >
                   Quitar
@@ -595,7 +595,7 @@ export function StockView({
               </div>
 
               <div className="mt-3 space-y-2">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex equipos-center justify-between gap-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos prestados</p>
                   <button
                     type="button"
@@ -606,22 +606,22 @@ export function StockView({
                     Agregar equipo
                   </button>
                 </div>
-                {prestamoDraft.items.map((item, index) => (
-                  <div key={`prestamo-item-${index}`} className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,1fr)_120px_140px_minmax(0,1fr)_auto]">
+                {prestamoDraft.equipos.map((equipo, index) => (
+                  <div key={`prestamo-equipo-${index}`} className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,1fr)_120px_140px_minmax(0,1fr)_auto]">
                     <select
-                      value={item.itemId}
+                      value={equipo.equipoId}
                       disabled={prestamoSaving}
-                      onChange={(event) => onPrestamoItemChange(index, "itemId", event.target.value)}
+                      onChange={(event) => onPrestamoItemChange(index, "equipoId", event.target.value)}
                       className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                     >
                       <option value="">Seleccionar equipo</option>
                       {equiposOrdenados
                         .filter((catalogItem) => {
-                          if (catalogItem.itemId === item.itemId) return true;
-                          return !prestamoDraft.items.some((selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId);
+                          if (catalogItem.equipoId === equipo.equipoId) return true;
+                          return !prestamoDraft.equipos.some((selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.equipoId === catalogItem.equipoId);
                         })
                         .map((catalogItem) => (
-                          <option key={catalogItem.itemId} value={catalogItem.itemId}>
+                          <option key={catalogItem.equipoId} value={catalogItem.equipoId}>
                             {catalogItem.nombre}{catalogItem.tipoLabel && catalogItem.tipoLabel !== "General" ? ` (${catalogItem.tipoLabel})` : ""}
                           </option>
                         ))}
@@ -629,13 +629,13 @@ export function StockView({
                     <input
                       type="number"
                       min={1}
-                      value={item.cantidad}
+                      value={equipo.cantidad}
                       disabled={prestamoSaving}
                       onChange={(event) => onPrestamoItemChange(index, "cantidad", event.target.value)}
                       className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
                     />
                     <select
-                      value={item.estadoEntrega}
+                      value={equipo.estadoEntrega}
                       disabled={prestamoSaving}
                       onChange={(event) => onPrestamoItemChange(index, "estadoEntrega", event.target.value)}
                       className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -647,7 +647,7 @@ export function StockView({
                       ))}
                     </select>
                     <input
-                      value={item.comentarioEntrega}
+                      value={equipo.comentarioEntrega}
                       disabled={prestamoSaving}
                       onChange={(event) => onPrestamoItemChange(index, "comentarioEntrega", event.target.value)}
                       placeholder="Comentario del equipo (opcional)"
@@ -656,7 +656,7 @@ export function StockView({
                     <button
                       type="button"
                       onClick={() => onRemovePrestamoItem(index)}
-                      disabled={prestamoSaving || prestamoDraft.items.length <= 1}
+                      disabled={prestamoSaving || prestamoDraft.equipos.length <= 1}
                       className="rounded bg-rose-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                     >
                       Quitar
@@ -687,7 +687,7 @@ export function StockView({
           ) : null}
 
           <article className="ej-card rounded-2xl p-4">
-            <div className="flex flex-wrap items-end justify-between gap-2">
+            <div className="flex flex-wrap equipos-end justify-between gap-2">
               <h3 className="text-sm font-semibold text-stone-900">Prestamos registrados</h3>
               <label className="w-full max-w-xs text-xs text-stone-700">
                 Buscar hoja por ID
@@ -711,7 +711,7 @@ export function StockView({
               ) : null}
               {prestamosFiltrados.map((prestamo) => (
                 <div key={prestamo.prestamoId} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex flex-wrap equipos-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-stone-900">{prestamo.reciboNumero}</p>
                       <p className="text-xs text-stone-600">
@@ -729,7 +729,7 @@ export function StockView({
                       <p className="text-xs text-stone-500">Por oden de: {prestamo.actuanteNombre ?? "No registrado"}</p>
                       {prestamo.fechaDevolucion ? <p className="text-xs text-stone-500">Devuelto: {formatDateOnlyForDisplay(prestamo.fechaDevolucion)}</p> : null}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex equipos-center gap-2">
                       <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${prestamo.estado === "PENDIENTE" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
                         {prestamo.estado}
                       </span>
@@ -755,24 +755,24 @@ export function StockView({
                   </div>
                   {prestamo.comentarios ? <p className="mt-2 text-xs text-stone-700">{prestamo.comentarios}</p> : null}
                   <div className="mt-2 grid grid-cols-1 gap-2">
-                    {prestamo.items.map((item) => (
-                      <div key={`${prestamo.prestamoId}-${item.itemId}`} className="rounded-lg border border-stone-200 bg-white px-2 py-2">
+                    {prestamo.equipos.map((equipo) => (
+                      <div key={`${prestamo.prestamoId}-${equipo.equipoId}`} className="rounded-lg border border-stone-200 bg-white px-2 py-2">
                         <p className="text-xs text-stone-700">
-                          <span className="font-semibold text-amber-700">{item.cantidad}</span> {item.nombre}
+                          <span className="font-semibold text-amber-700">{equipo.cantidad}</span> {equipo.nombre}
                         </p>
-                        <p className="text-xs text-stone-600">Entrega: {item.estadoEntrega}{item.comentarioEntrega ? ` | ${item.comentarioEntrega}` : ""}</p>
+                        <p className="text-xs text-stone-600">Entrega: {equipo.estadoEntrega}{equipo.comentarioEntrega ? ` | ${equipo.comentarioEntrega}` : ""}</p>
                         {prestamo.estado === "PENDIENTE" ? (
                           <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)]">
                             <select
-                              value={getReturnItemData(prestamo.prestamoId, item).estadoDevolucion}
+                              value={getReturnItemData(prestamo.prestamoId, equipo).estadoDevolucion}
                               disabled={returningPrestamoId === prestamo.prestamoId}
                               onChange={(event) =>
                                 setReturnItemsByPrestamo((prev) => ({
                                   ...prev,
                                   [prestamo.prestamoId]: {
                                     ...(prev[prestamo.prestamoId] ?? {}),
-                                    [item.itemId]: {
-                                      ...getReturnItemData(prestamo.prestamoId, item),
+                                    [equipo.equipoId]: {
+                                      ...getReturnItemData(prestamo.prestamoId, equipo),
                                       estadoDevolucion: event.target.value as PrestamoEstadoEquipo,
                                     },
                                   },
@@ -781,21 +781,21 @@ export function StockView({
                               className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
                             >
                               {ESTADO_OPTIONS.map((estado) => (
-                                <option key={`${prestamo.prestamoId}-${item.itemId}-${estado}`} value={estado}>
+                                <option key={`${prestamo.prestamoId}-${equipo.equipoId}-${estado}`} value={estado}>
                                   {estado}
                                 </option>
                               ))}
                             </select>
                             <input
-                              value={getReturnItemData(prestamo.prestamoId, item).comentarioDevolucion}
+                              value={getReturnItemData(prestamo.prestamoId, equipo).comentarioDevolucion}
                               disabled={returningPrestamoId === prestamo.prestamoId}
                               onChange={(event) =>
                                 setReturnItemsByPrestamo((prev) => ({
                                   ...prev,
                                   [prestamo.prestamoId]: {
                                     ...(prev[prestamo.prestamoId] ?? {}),
-                                    [item.itemId]: {
-                                      ...getReturnItemData(prestamo.prestamoId, item),
+                                    [equipo.equipoId]: {
+                                      ...getReturnItemData(prestamo.prestamoId, equipo),
                                       comentarioDevolucion: event.target.value,
                                     },
                                   },
@@ -807,8 +807,8 @@ export function StockView({
                           </div>
                         ) : (
                           <p className="text-xs text-stone-600">
-                            Devolucion: {item.estadoDevolucion ?? "-"}
-                            {item.comentarioDevolucion ? ` | ${item.comentarioDevolucion}` : ""}
+                            Devolucion: {equipo.estadoDevolucion ?? "-"}
+                            {equipo.comentarioDevolucion ? ` | ${equipo.comentarioDevolucion}` : ""}
                           </p>
                         )}
                       </div>
@@ -823,10 +823,10 @@ export function StockView({
 
       {showStockTable ? (
         <article className="ej-card rounded-2xl p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap equipos-center justify-between gap-3">
             <h3 className="text-sm font-semibold text-stone-900">{stockTableTitle}</h3>
-            <div className="flex flex-wrap items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-stone-700 select-none">
+            <div className="flex flex-wrap equipos-center gap-4">
+              <label className="flex equipos-center gap-2 cursor-pointer text-xs font-medium text-stone-700 select-none">
                 <input
                   type="checkbox"
                   checked={ordenAlfabetico}
@@ -858,13 +858,13 @@ export function StockView({
               ) : null}
               {resumenFiltrado.length > 0 ? stockTableSections.map((tableSection) => (
                 <div key={tableSection.key}>
-                  <div className="mb-2 flex items-center gap-2">
+                  <div className="mb-2 flex equipos-center gap-2">
                     <h4 className="text-sm font-semibold text-stone-900">{tableSection.title}</h4>
-                    <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
-                      {tableSection.items.length}
+                    <span className="inline-flex equipos-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
+                      {tableSection.equipos.length}
                     </span>
                   </div>
-                  {tableSection.items.length === 0 ? (
+                  {tableSection.equipos.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-stone-300 px-3 py-6 text-sm text-stone-500">
                       {`No hay registros para la categoría ${tableSection.title.toLowerCase()} en esta vista.`}
                     </div>
@@ -889,96 +889,96 @@ export function StockView({
                           </tr>
                         </thead>
                         <tbody>
-                          {tableSection.items.map((item, index) => (
-                            <tr key={item.itemId} className={index % 2 === 0 ? "bg-white" : "bg-stone-100/80"}>
-                              <td className="border-b border-stone-100 px-3 py-2 text-stone-900">{item.nombre}</td>
+                          {tableSection.equipos.map((equipo, index) => (
+                            <tr key={equipo.equipoId} className={index % 2 === 0 ? "bg-white" : "bg-stone-100/80"}>
+                              <td className="border-b border-stone-100 px-3 py-2 text-stone-900">{equipo.nombre}</td>
                               {section === "total" ? (
                                 <>
                                   <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
                                     <button
                                       type="button"
-                                      onClick={() => void openItemTraceDialog(item, "SUBALTERNOS")}
+                                      onClick={() => void openItemTraceDialog(equipo, "SUBALTERNOS")}
                                       className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
-                                        item.stockSubalternos < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
+                                        equipo.stockSubalternos < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
                                       }`}
-                                      title={`Ver detalle de ${item.nombre} en Subalternos`}
+                                      title={`Ver detalle de ${equipo.nombre} en Subalternos`}
                                     >
-                                      {item.stockSubalternos}
+                                      {equipo.stockSubalternos}
                                     </button>
                                   </td>
                                   <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
                                     <button
                                       type="button"
-                                      onClick={() => void openItemTraceDialog(item, "RECINTO")}
+                                      onClick={() => void openItemTraceDialog(equipo, "RECINTO")}
                                       className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
-                                        item.stockAsignacion < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
+                                        equipo.stockAsignacion < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
                                       }`}
-                                      title={`Ver detalle de ${item.nombre} en Recintos`}
+                                      title={`Ver detalle de ${equipo.nombre} en Recintos`}
                                     >
-                                      {item.stockAsignacion}
+                                      {equipo.stockAsignacion}
                                     </button>
                                   </td>
                                   <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
                                     <button
                                       type="button"
-                                      onClick={() => void openItemTraceDialog(item, "PRESTAMO")}
+                                      onClick={() => void openItemTraceDialog(equipo, "PRESTAMO")}
                                       className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
-                                        item.stockPrestamo < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
+                                        equipo.stockPrestamo < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
                                       }`}
-                                      title={`Ver detalle de ${item.nombre} en Prestamo`}
+                                      title={`Ver detalle de ${equipo.nombre} en Prestamo`}
                                     >
-                                      {item.stockPrestamo}
+                                      {equipo.stockPrestamo}
                                     </button>
                                   </td>
                                   <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
-                                    item.stockDeposito < 0 ? "text-rose-600 font-bold" : "text-stone-900"
+                                    equipo.stockDeposito < 0 ? "text-rose-600 font-bold" : "text-stone-900"
                                   }`}>
-                                    {item.stockDeposito}
+                                    {equipo.stockDeposito}
                                   </td>
                                   <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
-                                    item.stockUnidad < 0 ? "text-rose-600 font-bold" : "text-stone-900"
+                                    equipo.stockUnidad < 0 ? "text-rose-600 font-bold" : "text-stone-900"
                                   }`}>
-                                    {item.stockUnidad}
+                                    {equipo.stockUnidad}
                                   </td>
                                   <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
                                     {canEditSie ? (
-                                      <div className="flex items-center justify-end gap-2">
+                                      <div className="flex equipos-center justify-end gap-2">
                                         <input
                                           type="number"
                                           min={0}
                                           step={1}
-                                          value={getSieInputValue(item)}
+                                          value={getSieInputValue(equipo)}
                                           disabled={loading || sieSavingItemId !== null}
-                                          onChange={(event) => updateSieDraft(item.itemId, event.target.value)}
-                                          onBlur={() => void persistSieValue(item)}
+                                          onChange={(event) => updateSieDraft(equipo.equipoId, event.target.value)}
+                                          onBlur={() => void persistSieValue(equipo)}
                                           onKeyDown={(event) => {
                                             if (event.key === "Enter") {
                                               event.preventDefault();
-                                              void persistSieValue(item);
+                                              void persistSieValue(equipo);
                                               return;
                                             }
                                             if (event.key === "Escape") {
                                               event.preventDefault();
-                                              resetSieDraft(item);
+                                              resetSieDraft(equipo);
                                             }
                                           }}
                                           className="w-24 rounded border border-stone-300 px-2 py-1 text-right text-xs font-semibold text-stone-900"
-                                          aria-label={`Existencia del SIE para ${item.nombre}`}
+                                          aria-label={`Existencia del SIE para ${equipo.nombre}`}
                                         />
-                                        {sieSavingItemId === item.itemId ? (
+                                        {sieSavingItemId === equipo.equipoId ? (
                                           <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">Guardando</span>
                                         ) : null}
                                       </div>
                                     ) : (
-                                      (item.existenciaSie ?? 0)
+                                      (equipo.existenciaSie ?? 0)
                                     )}
                                   </td>
                                 </>
                               ) : (
                                 <td className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
-                                  item.stockDeposito < 0 ? "text-rose-600 font-bold" : "text-stone-900"
+                                  equipo.stockDeposito < 0 ? "text-rose-600 font-bold" : "text-stone-900"
                                 }`}>
-                                  {item.stockDeposito}
+                                  {equipo.stockDeposito}
                                 </td>
                               )}
                             </tr>
@@ -1006,12 +1006,12 @@ export function StockView({
             {historial.length === 0 ? <p className="text-sm text-stone-600">No hay movimientos de stock registrados.</p> : null}
             {historial.map((entry) => (
               <div key={entry.id} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap equipos-center justify-between gap-2">
                   <div>
                     <p className="text-sm font-semibold text-stone-900">{formatDateOnlyForDisplay(entry.fecha)}</p>
                     <p className="text-xs text-stone-600">{entry.persona ?? "Sin destinatario"}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex equipos-center gap-2">
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${historyBadgeClass(entry.tipo)}`}>
                       {entry.tipo}
                     </span>
@@ -1020,12 +1020,12 @@ export function StockView({
                 </div>
                 {entry.comentarios ? <p className="mt-2 text-xs text-stone-700">{entry.comentarios}</p> : null}
                 <div className="mt-2 grid grid-cols-1 gap-1 md:grid-cols-2">
-                  {entry.items.map((item) => (
-                    <p key={`${entry.id}-${item.itemId}`} className="text-xs text-stone-700">
-                      <span className={`font-semibold ${item.delta < 0 ? "text-rose-700" : "text-emerald-700"}`}>
-                        {item.delta > 0 ? `+${item.delta}` : item.delta}
+                  {entry.equipos.map((equipo) => (
+                    <p key={`${entry.id}-${equipo.equipoId}`} className="text-xs text-stone-700">
+                      <span className={`font-semibold ${equipo.delta < 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                        {equipo.delta > 0 ? `+${equipo.delta}` : equipo.delta}
                       </span>{" "}
-                      {item.nombre}
+                      {equipo.nombre}
                     </p>
                   ))}
                 </div>
@@ -1035,49 +1035,49 @@ export function StockView({
         </article>
       ) : null}
 
-      {itemTraceDialog ? (
+      {equipoTraceDialog ? (
         <ModalFrame onClose={closeItemTraceDialog} size="xl">
           <div className="space-y-4">
             <header>
               <h3 className="text-lg font-semibold text-stone-900">
-                Detalle de {itemTraceDialog.column === "SUBALTERNOS" ? "Subalternos" : itemTraceDialog.column === "RECINTO" ? "Recintos" : "Préstamos"}
+                Detalle de {equipoTraceDialog.column === "SUBALTERNOS" ? "Subalternos" : equipoTraceDialog.column === "RECINTO" ? "Recintos" : "Préstamos"}
               </h3>
-              <p className="text-sm text-stone-600">{itemTraceDialog.item.nombre}</p>
+              <p className="text-sm text-stone-600">{equipoTraceDialog.equipo.nombre}</p>
             </header>
 
             <div className="grid grid-cols-1 gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700 md:grid-cols-2">
-              <p><span className="font-semibold text-stone-900">Equipo ID:</span> {itemTraceDialog.item.equipoId}</p>
+              <p><span className="font-semibold text-stone-900">Equipo ID:</span> {equipoTraceDialog.equipo.equipoId}</p>
               <p>
                 <span className="font-semibold text-stone-900">Total en columna:</span>{" "}
-                {itemTraceDialog.column === "SUBALTERNOS"
-                  ? (itemTraceData?.totals.subalternos ?? itemTraceDialog.item.stockSubalternos)
-                  : itemTraceDialog.column === "RECINTO"
-                    ? (itemTraceData?.totals.recinto ?? itemTraceDialog.item.stockAsignacion)
-                    : (itemTraceData?.totals.prestamo ?? itemTraceDialog.item.stockPrestamo)}
+                {equipoTraceDialog.column === "SUBALTERNOS"
+                  ? (equipoTraceData?.totals.subalternos ?? equipoTraceDialog.equipo.stockSubalternos)
+                  : equipoTraceDialog.column === "RECINTO"
+                    ? (equipoTraceData?.totals.recinto ?? equipoTraceDialog.equipo.stockAsignacion)
+                    : (equipoTraceData?.totals.prestamo ?? equipoTraceDialog.equipo.stockPrestamo)}
               </p>
             </div>
 
-            {itemTraceLoading ? (
+            {equipoTraceLoading ? (
               <LoadingInline label="Cargando trazabilidad..." className="mt-1" textClassName="text-sm font-medium text-stone-600" />
             ) : null}
-            {itemTraceError ? (
-              <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{itemTraceError}</p>
+            {equipoTraceError ? (
+              <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{equipoTraceError}</p>
             ) : null}
 
-            {!itemTraceLoading && !itemTraceError && itemTraceData ? (
-              itemTraceDialog.column === "SUBALTERNOS" ? (
+            {!equipoTraceLoading && !equipoTraceError && equipoTraceData ? (
+              equipoTraceDialog.column === "SUBALTERNOS" ? (
                 <section className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
                     Personal con cantidad neta distinta de cero
                   </p>
-                  {itemTraceData.subalternos.length === 0 ? (
+                  {equipoTraceData.subalternos.length === 0 ? (
                     <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-600">
-                      No hay tenencias activas para este item en la columna Subalternos.
+                      No hay tenencias activas para este equipo en la columna Subalternos.
                     </p>
                   ) : null}
-                  {itemTraceData.subalternos.map((entry) => (
+                  {equipoTraceData.subalternos.map((entry) => (
                     <div key={`trace-subalterno-${entry.ci}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="flex flex-wrap equipos-start justify-between gap-2">
                         <div>
                           <p className="text-sm font-semibold text-stone-900">{entry.persona}</p>
                           <p className="text-xs text-stone-600">
@@ -1109,19 +1109,19 @@ export function StockView({
                     </div>
                   ))}
                 </section>
-              ) : itemTraceDialog.column === "RECINTO" ? (
+              ) : equipoTraceDialog.column === "RECINTO" ? (
                 <section className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
                     Recintos con asignaciones activas
                   </p>
-                  {(!itemTraceData.recintos || itemTraceData.recintos.length === 0) ? (
+                  {(!equipoTraceData.recintos || equipoTraceData.recintos.length === 0) ? (
                     <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-600">
-                      No hay asignaciones activas a recintos para este item.
+                      No hay asignaciones activas a recintos para este equipo.
                     </p>
                   ) : null}
-                  {(itemTraceData.recintos || []).map((entry) => (
+                  {(equipoTraceData.recintos || []).map((entry) => (
                     <div key={`trace-recinto-${entry.recintoNombre}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="flex flex-wrap equipos-start justify-between gap-2">
                         <div>
                           <p className="text-sm font-semibold text-stone-900">{entry.recintoNombre}</p>
                         </div>
@@ -1150,21 +1150,21 @@ export function StockView({
                 </section>
               ) : (
                 <section className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Préstamos activos del item</p>
-                  {itemTraceData.prestamos.length === 0 ? (
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Préstamos activos del equipo</p>
+                  {equipoTraceData.prestamos.length === 0 ? (
                     <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-600">
-                      No hay préstamos activos para este item.
+                      No hay préstamos activos para este equipo.
                     </p>
                   ) : null}
-                  {itemTraceData.prestamos.map((entry) => (
+                  {equipoTraceData.prestamos.map((entry) => (
                     <div key={`trace-prestamo-${entry.prestamoId}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="flex flex-wrap equipos-start justify-between gap-2">
                         <div>
                           <p className="text-sm font-semibold text-stone-900">{entry.destinatarioEtiqueta}</p>
                           <p className="text-xs text-stone-600">
                             {entry.destinatarioCi ? `CI ${formatUruguayanCi(entry.destinatarioCi)}` : "CI pendiente"}
                           </p>
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex equipos-center gap-2 mt-0.5">
                             <p className="text-xs text-stone-500">{prestamoClaseLabel(entry.clasePrestamo)}</p>
                             <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
                               entry.clasePrestamo === "EXTERNO" ? "bg-amber-100 text-amber-800" : "bg-sky-100 text-sky-800"

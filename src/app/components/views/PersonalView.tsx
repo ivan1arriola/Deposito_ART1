@@ -74,7 +74,7 @@ export function PersonalView({
 }: PersonalViewProps) {
   return (
     <section className="ej-card mt-6 rounded-2xl p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap equipos-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-stone-900">Personal subalterno</h2>
           <p className="mt-1 text-xs text-stone-600">Orden: grado del personal subalterno, apellidos y nombres.</p>

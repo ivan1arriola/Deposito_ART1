@@ -61,8 +61,8 @@ export function PersonalInlineEditForm({
           {telefonoContactoLooksValid ? "Opcional. Formato uruguayo." : "Ingresa un celular uruguayo válido."}
         </p>
       </div>
-      <div className="flex items-end sm:col-span-2 lg:col-span-1">
-        <label className="flex h-10 w-full items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm cursor-pointer hover:bg-stone-100 transition">
+      <div className="flex equipos-end sm:col-span-2 lg:col-span-1">
+        <label className="flex h-10 w-full equipos-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm cursor-pointer hover:bg-stone-100 transition">
           <input
             type="checkbox"
             checked={editPersonal.esReingreso}

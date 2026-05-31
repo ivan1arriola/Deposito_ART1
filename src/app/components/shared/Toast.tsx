@@ -60,7 +60,7 @@ export function ToastContainer() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[9999] flex flex-col items-end justify-end gap-2 p-4 sm:p-6">
+    <div className="pointer-events-none fixed inset-0 z-[9999] flex flex-col equipos-end justify-end gap-2 p-4 sm:p-6">
       {activeToasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} />
       ))}
@@ -128,7 +128,7 @@ function ToastItem({ toast: toastItem }: { toast: Toast }) {
   return (
     <div
       className={`
-        pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-lg px-4 py-3 shadow-lg transition-all duration-300
+        pointer-events-auto flex w-full max-w-sm equipos-center gap-3 rounded-lg px-4 py-3 shadow-lg transition-all duration-300
         ${getColorClasses()}
         ${isExiting ? "translate-x-full opacity-0" : "translate-x-0 opacity-100"}
       `}

@@ -10,7 +10,7 @@ type MovimientoObservacionInput = {
   fecha: string | Date;
   tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION";
   observaciones: string | null | undefined;
-  items?: MovimientoObservacionItemInput[];
+  equipos?: MovimientoObservacionItemInput[];
 };
 
 export type HojaObservacion = {
@@ -20,7 +20,7 @@ export type HojaObservacion = {
 
 type MovimientoObservacionItemInput = {
   cantidad: number;
-  item: {
+  equipo: {
     nombre: string;
     activo: boolean;
   };
@@ -69,16 +69,16 @@ export function buildHojaObservaciones(
       const tipoStr = String(movimiento.tipo || "").trim().toUpperCase();
       if (tipoStr !== "ENTREGA" && tipoStr !== "DEVOLUCION") return null;
 
-      // Identificar items inactivos (fuera de hoja)
-      const itemsFueraHoja = (movimiento.items || []).filter((it) => {
-        const item = it.item;
-        if (!item) return false;
+      // Identificar equipos inactivos (fuera de hoja)
+      const itemsFueraHoja = (movimiento.equipos || []).filter((it) => {
+        const equipo = it.equipo;
+        if (!equipo) return false;
         // Consideramos fuera de hoja si activo NO es explícitamente true
-        return item.activo !== true;
+        return equipo.activo !== true;
       });
       const isFueraDeHoja = itemsFueraHoja.length > 0;
 
-      // Si no hay comentarios ni items fuera de hoja, no mostramos nada
+      // Si no hay comentarios ni equipos fuera de hoja, no mostramos nada
       if (!comentarios && !isFueraDeHoja) return null;
 
       let texto = "";
@@ -86,7 +86,7 @@ export function buildHojaObservaciones(
 
       if (isFueraDeHoja) {
         const descripcionItems = itemsFueraHoja
-          .map((it) => `${it.cantidad} x ${it.item.nombre}`)
+          .map((it) => `${it.cantidad} x ${it.equipo.nombre}`)
           .join(", ");
         
         const manualPart = comentarios ? ` (${comentarios})` : "";

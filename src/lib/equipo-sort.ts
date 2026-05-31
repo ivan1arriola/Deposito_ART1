@@ -19,22 +19,22 @@ type EquipoTipoSection<T> = {
   key: TipoEquipo;
   label: string;
   order: number;
-  items: T[];
+  equipos: T[];
 };
 
-function resolveTipoOrder(item: EquipoTipoLike | TipoEquipo) {
-  if (typeof item === "string") {
-    return item === GENERAL_TIPO_EQUIPO_CLAVE ? GENERAL_TIPO_EQUIPO_ORDEN : Number.MAX_SAFE_INTEGER;
+function resolveTipoOrder(equipo: EquipoTipoLike | TipoEquipo) {
+  if (typeof equipo === "string") {
+    return equipo === GENERAL_TIPO_EQUIPO_CLAVE ? GENERAL_TIPO_EQUIPO_ORDEN : Number.MAX_SAFE_INTEGER;
   }
-  if (typeof item.tipoOrden === "number" && Number.isFinite(item.tipoOrden)) {
-    return item.tipoOrden;
+  if (typeof equipo.tipoOrden === "number" && Number.isFinite(equipo.tipoOrden)) {
+    return equipo.tipoOrden;
   }
-  if (item.tipo === GENERAL_TIPO_EQUIPO_CLAVE) return GENERAL_TIPO_EQUIPO_ORDEN;
+  if (equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE) return GENERAL_TIPO_EQUIPO_ORDEN;
   return Number.MAX_SAFE_INTEGER;
 }
 
-function resolveTipoLabel(item: EquipoTipoLike) {
-  return item.tipoLabel?.trim() || (item.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? GENERAL_TIPO_EQUIPO_NOMBRE : item.tipo);
+function resolveTipoLabel(equipo: EquipoTipoLike) {
+  return equipo.tipoLabel?.trim() || (equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? GENERAL_TIPO_EQUIPO_NOMBRE : equipo.tipo);
 }
 
 export function compareTipoEquipo(left: TipoEquipo, right: TipoEquipo) {
@@ -69,21 +69,21 @@ export function compareEquiposByTipoAndOrder<T extends EquipoOrdenLike>(left: T,
   return compareEquipoNombre(left.nombre, right.nombre);
 }
 
-export function groupEquiposByTipo<T extends EquipoTipoLike>(items: T[]): Array<EquipoTipoSection<T>> {
+export function groupEquiposByTipo<T extends EquipoTipoLike>(equipos: T[]): Array<EquipoTipoSection<T>> {
   const grouped = new Map<TipoEquipo, EquipoTipoSection<T>>();
 
-  for (const item of items) {
-    const existing = grouped.get(item.tipo);
+  for (const equipo of equipos) {
+    const existing = grouped.get(equipo.tipo);
     if (existing) {
-      existing.items.push(item);
+      existing.equipos.push(equipo);
       continue;
     }
 
-    grouped.set(item.tipo, {
-      key: item.tipo,
-      label: resolveTipoLabel(item),
-      order: resolveTipoOrder(item),
-      items: [item],
+    grouped.set(equipo.tipo, {
+      key: equipo.tipo,
+      label: resolveTipoLabel(equipo),
+      order: resolveTipoOrder(equipo),
+      equipos: [equipo],
     });
   }
 

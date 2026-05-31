@@ -173,9 +173,9 @@ function getFastBatchChunkSizeFromEnv() {
 }
 
 function buildHojaDensityScore(hoja: HojaEntregaSheetData) {
-  const entregasConFecha = hoja.entregas.reduce((acc, item) => acc + (item.fecha ? 1 : 0), 0);
-  const devolucionesConFecha = hoja.devoluciones.reduce((acc, item) => acc + (item.fecha ? 1 : 0), 0);
-  const observacionesChars = hoja.observaciones.reduce((acc, item) => acc + item.texto.length, 0);
+  const entregasConFecha = hoja.entregas.reduce((acc, equipo) => acc + (equipo.fecha ? 1 : 0), 0);
+  const devolucionesConFecha = hoja.devoluciones.reduce((acc, equipo) => acc + (equipo.fecha ? 1 : 0), 0);
+  const observacionesChars = hoja.observaciones.reduce((acc, equipo) => acc + equipo.texto.length, 0);
   return (
     hoja.matrix.length * 8 +
     hoja.observaciones.length * 20 +
@@ -902,9 +902,9 @@ export async function renderHojasEntregaPdf(
 
                 <View style={styles.matrixSection}>
                   {data.matrix.map((row, index) => (
-                    <View key={`${row.item}-${index}`} style={[styles.row, styles.matrixRow]}>
+                    <View key={`${row.equipo}-${index}`} style={[styles.row, styles.matrixRow]}>
                       <View style={[styles.cell, styles.itemCell, itemWidthStyle]}>
-                        <Text style={styles.itemName}>{row.item}</Text>
+                        <Text style={styles.itemName}>{row.equipo}</Text>
                       </View>
 
                       {row.entrega.slice(0, 6).map((qty, idx) => (

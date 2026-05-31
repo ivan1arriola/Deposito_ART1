@@ -6,9 +6,9 @@ import { prisma } from "@/lib/prisma";
 function hasEtiquetadoDelegates() {
   const candidate = prisma as typeof prisma & {
     caja?: unknown;
-    cajaItem?: unknown;
+    cajaEquipo?: unknown;
   };
-  return typeof candidate.caja !== "undefined" && typeof candidate.cajaItem !== "undefined";
+  return typeof candidate.caja !== "undefined" && typeof candidate.cajaEquipo !== "undefined";
 }
 
 function parseCodigoCaja(value: string) {
@@ -37,11 +37,11 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
   const existing = await prisma.caja.findUnique({
     where: { codigoDepositoGeneral },
     include: {
-      items: {
+      equipos: {
         include: {
-          item: {
+          equipo: {
             select: {
-              itemId: true,
+              equipoId: true,
               nombre: true,
             },
           },
@@ -49,11 +49,11 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
       },
       codigosSIE: {
         include: {
-          itemCodigoSIE: {
+          equipoCodigoSIE: {
             select: {
               codigo: true,
               talla: true,
-              item: {
+              equipo: {
                 select: {
                   nombre: true,
                 },
@@ -74,15 +74,15 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
     });
 
     const itemNombres =
-      existing.items.length > 0
-        ? existing.items
-            .map((entry) => entry.item.nombre)
+      existing.equipos.length > 0
+        ? existing.equipos
+            .map((entry) => entry.equipo.nombre)
             .sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }))
-        : Array.from(new Set(existing.codigosSIE.map((entry) => entry.itemCodigoSIE.item.nombre))).sort((a, b) =>
+        : Array.from(new Set(existing.codigosSIE.map((entry) => entry.equipoCodigoSIE.equipo.nombre))).sort((a, b) =>
             a.localeCompare(b, "es", { sensitivity: "base" },
           ));
-    const cantidad = existing.items.length > 0
-      ? existing.items.reduce((sum, entry) => sum + entry.cantidad, 0)
+    const cantidad = existing.equipos.length > 0
+      ? existing.equipos.reduce((sum, entry) => sum + entry.cantidad, 0)
       : existing.codigosSIE.length;
 
     await logAudit({
@@ -92,14 +92,14 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
       entidadId: String(existing.codigoDepositoGeneral),
       detalle: {
         codigoDepositoGeneral: existing.codigoDepositoGeneral,
-        itemIds: existing.items.map((entry) => entry.item.itemId.toString()),
+        equipoIds: existing.equipos.map((entry) => entry.equipo.equipoId.toString()),
         itemNombres,
         cantidad,
         estanteria: existing.estanteria,
         piso: existing.piso,
         codigosSIE: existing.codigosSIE.map((entry) => ({
-          codigo: entry.itemCodigoSIE.codigo,
-          talla: entry.itemCodigoSIE.talla,
+          codigo: entry.equipoCodigoSIE.codigo,
+          talla: entry.equipoCodigoSIE.talla,
         })),
       },
     });

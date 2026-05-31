@@ -23,7 +23,7 @@ const mockTx = {
   personaExterna: {
     upsert: vi.fn(),
   },
-  movimientoItem: {
+  movimientoEquipo: {
     createMany: vi.fn(),
   },
 };
@@ -53,7 +53,7 @@ vi.mock("@/lib/prisma", () => ({
     movimiento: {
       count: vi.fn(),
     },
-    item: {
+    equipo: {
       findMany: vi.fn(),
     },
     personal: {
@@ -97,7 +97,7 @@ describe("POST /api/registros", () => {
     vi.clearAllMocks();
     mockAuthorizedUser();
     vi.mocked(prisma.movimiento.count).mockResolvedValue(7 as never);
-    vi.mocked(prisma.item.findMany).mockResolvedValue([{ itemId: BigInt(1), nombre: "Notebook táctica" }] as never);
+    vi.mocked(prisma.equipo.findMany).mockResolvedValue([{ equipoId: BigInt(1), nombre: "Notebook táctica" }] as never);
   });
 
   it("incluye ASIGNACION en summary sin inyectar undefined al filtro", async () => {
@@ -122,7 +122,7 @@ describe("POST /api/registros", () => {
         recintoNombre: "Polvorín central",
         tipo: "ENTREGA",
         fecha: "26/05/2026",
-        items: [{ itemId: "1", cantidad: 1 }],
+        equipos: [{ equipoId: "1", cantidad: 1 }],
       }),
     );
 
@@ -142,7 +142,7 @@ describe("POST /api/registros", () => {
         ci: "5.106.752-4",
         tipo: "ENTREGA",
         fecha: "26/05/2026",
-        items: [{ itemId: "1", cantidad: 1 }],
+        equipos: [{ equipoId: "1", cantidad: 1 }],
       }),
     );
 
@@ -174,7 +174,7 @@ describe("POST /api/registros", () => {
         tipo: "ASIGNACION",
         fecha: "26/05/2026",
         comentarios: "Asignación permanente",
-        items: [{ itemId: "1", cantidad: 2 }],
+        equipos: [{ equipoId: "1", cantidad: 2 }],
       }),
     );
 

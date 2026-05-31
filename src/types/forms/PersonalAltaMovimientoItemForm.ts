@@ -1,4 +1,4 @@
 export type PersonalAltaMovimientoItemForm = {
-  itemId: string;
+  equipoId: string;
   cantidad: string;
 };

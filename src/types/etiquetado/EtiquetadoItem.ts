@@ -1,5 +1,5 @@
 export type EtiquetadoItem = {
-  itemId: string;
+  equipoId: string;
   nombre: string;
   activo: boolean;
 };

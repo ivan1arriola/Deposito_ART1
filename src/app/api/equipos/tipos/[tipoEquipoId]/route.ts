@@ -114,12 +114,12 @@ export async function DELETE(request: Request, context: { params: Promise<{ tipo
           nombre: true,
           orden: true,
           _count: {
-            select: { items: true },
+            select: { equipos: true },
           },
         },
       });
       const remainingIds = await getOrderedTipoEquipoIds(tx, tipoEquipoId);
-      const reassigned = await tx.item.updateMany({
+      const reassigned = await tx.equipo.updateMany({
         where: { tipoEquipoId },
         data: { tipoEquipoId: null },
       });

@@ -30,7 +30,7 @@ type Draft = {
   ci: string;
   nombre: string;
   apellido: string;
-  items: Array<{ itemId: string; cantidad: number; comentario: string }>;
+  equipos: Array<{ equipoId: string; cantidad: number; comentario: string }>;
 };
 
 export function AsignacionRecintoEditorView({
@@ -69,7 +69,7 @@ export function AsignacionRecintoEditorView({
     ci: "",
     nombre: "",
     apellido: "",
-    items: [{ itemId: "", cantidad: 1, comentario: "" }],
+    equipos: [{ equipoId: "", cantidad: 1, comentario: "" }],
   });
 
   const recipientOptions = useMemo(() => {
@@ -122,23 +122,23 @@ export function AsignacionRecintoEditorView({
     setDraft((prev) => ({ ...prev, [field]: value }));
   };
 
-  const onItemChange = (index: number, field: "itemId" | "cantidad" | "comentario", value: string | number) => {
+  const onItemChange = (index: number, field: "equipoId" | "cantidad" | "comentario", value: string | number) => {
     setDraft((prev) => {
-      const next = [...prev.items];
+      const next = [...prev.equipos];
       next[index] = { ...next[index], [field]: value };
-      return { ...prev, items: next };
+      return { ...prev, equipos: next };
     });
   };
 
   const onAddItem = () => {
-    setDraft((prev) => ({ ...prev, items: [...prev.items, { itemId: "", cantidad: 1, comentario: "" }] }));
+    setDraft((prev) => ({ ...prev, equipos: [...prev.equipos, { equipoId: "", cantidad: 1, comentario: "" }] }));
   };
 
   const onRemoveItem = (index: number) => {
     setDraft((prev) => {
-      const next = [...prev.items];
+      const next = [...prev.equipos];
       next.splice(index, 1);
-      return { ...prev, items: next };
+      return { ...prev, equipos: next };
     });
   };
 
@@ -147,7 +147,7 @@ export function AsignacionRecintoEditorView({
     setSaving(true);
     setError(null);
 
-    const validItems = draft.items.filter((i) => i.itemId && i.cantidad > 0);
+    const validItems = draft.equipos.filter((i) => i.equipoId && i.cantidad > 0);
     if (validItems.length === 0) {
       setError("Debes agregar al menos un equipo válido.");
       setSaving(false);
@@ -198,7 +198,7 @@ export function AsignacionRecintoEditorView({
           apellido: draft.apellido,
           unidadDestino: unidadDestino,
         },
-        items: validItems,
+        equipos: validItems,
         comentarios: draft.comentarios,
       };
 
@@ -217,7 +217,7 @@ export function AsignacionRecintoEditorView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex equipos-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-stone-900">Registrar Asignación</h2>
             <p className="mt-1 text-sm text-stone-600">Completa los datos para asignar equipo a un beneficiario.</p>
@@ -362,31 +362,31 @@ export function AsignacionRecintoEditorView({
           <h3 className="text-sm font-bold uppercase tracking-wide text-stone-600 border-b border-stone-200 pb-2">
             Equipos Asignados
           </h3>
-          {draft.items.map((item, index) => (
+          {draft.equipos.map((equipo, index) => (
             <div key={index} className="flex flex-col gap-3 bg-stone-50 p-4 rounded-lg border border-stone-200">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex flex-col sm:flex-row equipos-start sm:equipos-center gap-3">
                 <select
-                  value={item.itemId}
-                  onChange={(e) => onItemChange(index, "itemId", e.target.value)}
+                  value={equipo.equipoId}
+                  onChange={(e) => onItemChange(index, "equipoId", e.target.value)}
                   disabled={saving}
                   className="w-full sm:flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white"
                 >
                   <option value="">Seleccionar equipo</option>
                   {equiposOrdenadosAlfabeticamente.map((catalogItem) => {
-                    const isSelectedByOther = draft.items.some((i, idx) => idx !== index && i.itemId === catalogItem.itemId);
+                    const isSelectedByOther = draft.equipos.some((i, idx) => idx !== index && i.equipoId === catalogItem.equipoId);
                     if (isSelectedByOther) return null;
                     return (
-                      <option key={catalogItem.itemId} value={catalogItem.itemId}>
+                      <option key={catalogItem.equipoId} value={catalogItem.equipoId}>
                         {catalogItem.nombre}
                       </option>
                     );
                   })}
                 </select>
-                <div className="flex w-full sm:w-auto items-center gap-3">
+                <div className="flex w-full sm:w-auto equipos-center gap-3">
                   <input
                     type="number"
                     min={1}
-                    value={item.cantidad}
+                    value={equipo.cantidad}
                     onChange={(e) => onItemChange(index, "cantidad", Number(e.target.value))}
                     disabled={saving}
                     className="w-24 rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -394,7 +394,7 @@ export function AsignacionRecintoEditorView({
                   <button
                     type="button"
                     onClick={() => onRemoveItem(index)}
-                    disabled={saving || draft.items.length <= 1}
+                    disabled={saving || draft.equipos.length <= 1}
                     className="w-full sm:w-auto rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-800 hover:bg-rose-200 disabled:opacity-50 transition-colors"
                   >
                     Quitar
@@ -403,7 +403,7 @@ export function AsignacionRecintoEditorView({
               </div>
               <input
                 type="text"
-                value={item.comentario}
+                value={equipo.comentario}
                 onChange={(e) => onItemChange(index, "comentario", e.target.value)}
                 disabled={saving}
                 placeholder="Comentario sobre el equipo (opcional)"
@@ -416,9 +416,9 @@ export function AsignacionRecintoEditorView({
             type="button"
             onClick={onAddItem}
             disabled={saving}
-            className="mt-2 inline-flex items-center gap-2 rounded-lg border border-dashed border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-400 transition-colors"
+            className="mt-2 inline-flex equipos-center gap-2 rounded-lg border border-dashed border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-400 transition-colors"
           >
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-200 text-stone-700">+</span>
+            <span className="inline-flex h-5 w-5 equipos-center justify-center rounded-full bg-stone-200 text-stone-700">+</span>
             Agregar otro equipo
           </button>
         </div>

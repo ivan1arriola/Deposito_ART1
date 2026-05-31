@@ -145,11 +145,11 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
         select: {
           movimientoId: true,
           tipo: true,
-          items: {
+          equipos: {
             select: {
-              itemId: true,
+              equipoId: true,
               cantidad: true,
-              item: {
+              equipo: {
                 select: {
                   nombre: true,
                   ordenPdf: true,
@@ -160,22 +160,22 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
         },
       });
 
-      const netoPorItem = new Map<string, { itemId: bigint; nombre: string; ordenPdf: number; cantidadNeta: number }>();
+      const netoPorItem = new Map<string, { equipoId: bigint; nombre: string; ordenPdf: number; cantidadNeta: number }>();
       for (const movimiento of movimientosVestuario) {
         const factor = movimiento.tipo === TipoMovimiento.ENTREGA ? 1 : -1;
-        for (const item of movimiento.items) {
-          const key = item.itemId.toString();
+        for (const equipo of movimiento.equipos) {
+          const key = equipo.equipoId.toString();
           const prev = netoPorItem.get(key);
           if (!prev) {
             netoPorItem.set(key, {
-              itemId: item.itemId,
-              nombre: item.item.nombre,
-              ordenPdf: item.item.ordenPdf,
-              cantidadNeta: item.cantidad * factor,
+              equipoId: equipo.equipoId,
+              nombre: equipo.equipo.nombre,
+              ordenPdf: equipo.equipo.ordenPdf,
+              cantidadNeta: equipo.cantidad * factor,
             });
             continue;
           }
-          prev.cantidadNeta += item.cantidad * factor;
+          prev.cantidadNeta += equipo.cantidad * factor;
         }
       }
 
@@ -226,10 +226,10 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
           data: { reciboNumero },
         });
 
-        await tx.movimientoItem.createMany({
+        await tx.movimientoEquipo.createMany({
           data: itemsPrestamo.map((entry) => ({
             movimientoId: movimientoPrestamo.movimientoId,
-            itemId: entry.itemId,
+            equipoId: entry.equipoId,
             cantidad: entry.cantidadNeta,
             estadoEntrega: EstadoEquipoPrestamo.BUENO,
             comentarioEntrega: null,
@@ -260,7 +260,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
         rangoDestino,
         movimientosEliminados: movimientosEliminados.count,
         itemsPrestamo: itemsPrestamo.map((entry) => ({
-          itemId: entry.itemId.toString(),
+          equipoId: entry.equipoId.toString(),
           nombre: entry.nombre,
           cantidad: entry.cantidadNeta,
         })),

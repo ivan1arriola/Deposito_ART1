@@ -100,7 +100,7 @@ function serializeArticuloEntregaHistorialEntry(
     usuarioEntregaLabel: buildUsuarioEntregaLabel(entrega.usuarioEntrega),
     fecha: formatDateOnlyFromDate(entrega.fecha) ?? "",
     comentario: entrega.comentario,
-    items: entrega.movimientosStock
+    equipos: entrega.movimientosStock
       .map((movimiento) => ({
         articuloId: movimiento.articuloId,
         nombre: movimiento.articulo.nombre,

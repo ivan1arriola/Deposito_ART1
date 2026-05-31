@@ -22,5 +22,5 @@ export type PrestamoRecord = {
   usuarioRecibeDevolucionNombre: string | null;
   comentarios: string | null;
   estado: "PENDIENTE" | "DEVUELTO";
-  items: PrestamoItem[];
+  equipos: PrestamoItem[];
 };

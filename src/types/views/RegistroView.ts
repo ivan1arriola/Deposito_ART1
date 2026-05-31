@@ -19,8 +19,8 @@ export type RegistroView = {
   afectaStock: boolean;
   comentarios: string | null;
   createdAt: string;
-  items: Array<{
-    itemId: string;
+  equipos: Array<{
+    equipoId: string;
     nombre: string;
     cantidad: number;
   }>;

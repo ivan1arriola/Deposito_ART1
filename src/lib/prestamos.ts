@@ -76,18 +76,18 @@ export const prestamoInclude = {
       },
     },
   },
-  items: {
+  equipos: {
     include: {
-      item: {
+      equipo: {
         select: {
-          itemId: true,
+          equipoId: true,
           nombre: true,
           ordenPdf: true,
         },
       },
     },
     orderBy: {
-      item: {
+      equipo: {
         ordenPdf: "asc",
       },
     },
@@ -198,18 +198,18 @@ export function serializePrestamoWithActuante(
       : null,
     comentarios: prestamo.observaciones,
     estado,
-    items: prestamo.items.map((item) => ({
-      itemId: item.item.itemId.toString(),
-      nombre: item.item.nombre,
-      cantidad: item.cantidad,
-      estadoEntrega: item.estadoEntrega,
-      comentarioEntrega: item.comentarioEntrega,
-      estadoDevolucion: item.estadoDevolucion,
-      comentarioDevolucion: item.comentarioDevolucion,
+    equipos: prestamo.equipos.map((equipo) => ({
+      equipoId: equipo.equipo.equipoId.toString(),
+      nombre: equipo.equipo.nombre,
+      cantidad: equipo.cantidad,
+      estadoEntrega: equipo.estadoEntrega,
+      comentarioEntrega: equipo.comentarioEntrega,
+      estadoDevolucion: equipo.estadoDevolucion,
+      comentarioDevolucion: equipo.comentarioDevolucion,
     })),
   };
 }
 
-export function totalUnidadesPrestamo(prestamo: Pick<PrestamoWithRelations, "items">) {
-  return prestamo.items.reduce((acumulado, item) => acumulado + item.cantidad, 0);
+export function totalUnidadesPrestamo(prestamo: Pick<PrestamoWithRelations, "equipos">) {
+  return prestamo.equipos.reduce((acumulado, equipo) => acumulado + equipo.cantidad, 0);
 }

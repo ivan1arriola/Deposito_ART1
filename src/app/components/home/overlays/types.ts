@@ -17,12 +17,12 @@ import type { PersonaProfileState } from "@/app/components/views/PersonaProfileV
 
 export type HomeOverlaysLayerProps = {
   activeView: MainView;
-  mergeEquipoDialog: { sourceItemId: string; targetItemId: string } | null;
+  mergeEquipoDialog: { sourceItemId: string; targetEquipoId: string } | null;
   mergeEquipoSource: Equipo | null;
   mergeEquipoDialogTargetId: string;
   mergeEquipoTargetOptions: Equipo[];
   mergeEquipoSaving: boolean;
-  updateMergeEquipoDialogTarget: (targetItemId: string) => void;
+  updateMergeEquipoDialogTarget: (targetEquipoId: string) => void;
   closeMergeEquipoDialog: () => void;
   submitMergeEquipoDialog: () => Promise<void>;
   showChangePassword: boolean;

@@ -25,7 +25,7 @@ type PrestamoClase = "INTERNO" | "EXTERNO" | "PENDIENTE";
 type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
 
 type PrestamoItemPayload = {
-  itemId: string | number;
+  equipoId: string | number;
   cantidad: number | string;
   estadoEntrega?: string;
   comentarioEntrega?: string;
@@ -46,7 +46,7 @@ type PrestamoPayload = {
   fechaPrestamo?: string;
   fechaEstimadaDevolucionTexto?: string;
   comentarios?: string;
-  items: PrestamoItemPayload[];
+  equipos: PrestamoItemPayload[];
 };
 
 function parseBigIntId(value: unknown) {
@@ -142,7 +142,7 @@ function isValidPayload(body: unknown): body is PrestamoPayload {
   }
 
   if (typeof candidate.actuanteCi !== "string" || String(candidate.actuanteCi).trim() === "") return false;
-  if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
+  if (!Array.isArray(candidate.equipos) || candidate.equipos.length === 0) return false;
   if (candidate.fechaPrestamo !== undefined && typeof candidate.fechaPrestamo !== "string") return false;
   if (candidate.fechaEstimadaDevolucionTexto !== undefined && typeof candidate.fechaEstimadaDevolucionTexto !== "string") return false;
   if (candidate.comentarios !== undefined && typeof candidate.comentarios !== "string") return false;
@@ -252,15 +252,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "CI inválida en 'por orden de:'." }, { status: 400 });
   }
 
-  const parsedItems = body.items
-    .map((item) => ({
-      itemId: parseBigIntId(item.itemId),
-      cantidad: parseCantidad(item.cantidad),
-      estadoEntrega: parseEstadoEquipoPrestamo(item.estadoEntrega) ?? "NUEVO",
-      comentarioEntrega: String(item.comentarioEntrega ?? "").trim(),
+  const parsedItems = body.equipos
+    .map((equipo) => ({
+      equipoId: parseBigIntId(equipo.equipoId),
+      cantidad: parseCantidad(equipo.cantidad),
+      estadoEntrega: parseEstadoEquipoPrestamo(equipo.estadoEntrega) ?? "NUEVO",
+      comentarioEntrega: String(equipo.comentarioEntrega ?? "").trim(),
     }))
-    .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{
-    itemId: bigint;
+    .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{
+    equipoId: bigint;
     cantidad: number;
     estadoEntrega: "NUEVO" | "BUENO" | "REGULAR" | "MALO";
     comentarioEntrega: string;
@@ -271,31 +271,31 @@ export async function POST(request: Request) {
   }
 
   const dedupedItems = new Map<string, { cantidad: number; estadoEntrega: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioEntrega: string }>();
-  for (const item of parsedItems) {
-    const key = item.itemId.toString();
+  for (const equipo of parsedItems) {
+    const key = equipo.equipoId.toString();
     const existing = dedupedItems.get(key);
     if (!existing) {
       dedupedItems.set(key, {
-        cantidad: item.cantidad,
-        estadoEntrega: item.estadoEntrega,
-        comentarioEntrega: item.comentarioEntrega,
+        cantidad: equipo.cantidad,
+        estadoEntrega: equipo.estadoEntrega,
+        comentarioEntrega: equipo.comentarioEntrega,
       });
       continue;
     }
-    if (existing.estadoEntrega !== item.estadoEntrega || existing.comentarioEntrega !== item.comentarioEntrega) {
+    if (existing.estadoEntrega !== equipo.estadoEntrega || existing.comentarioEntrega !== equipo.comentarioEntrega) {
       return NextResponse.json(
         { error: "No puedes repetir el mismo equipo con distinto estado/comentario en un mismo préstamo." },
         { status: 400 },
       );
     }
-    dedupedItems.set(key, { ...existing, cantidad: existing.cantidad + item.cantidad });
+    dedupedItems.set(key, { ...existing, cantidad: existing.cantidad + equipo.cantidad });
   }
 
-  const itemIds = Array.from(dedupedItems.keys()).map((itemId) => BigInt(itemId));
+  const equipoIds = Array.from(dedupedItems.keys()).map((equipoId) => BigInt(equipoId));
   const [itemsFound, destinatarioPersonal, actorRango, actuanteFound] = await Promise.all([
-    prisma.item.findMany({
-      where: { itemId: { in: itemIds } },
-      select: { itemId: true, nombre: true },
+    prisma.equipo.findMany({
+      where: { equipoId: { in: equipoIds } },
+      select: { equipoId: true, nombre: true },
     }),
     clasePrestamo === "INTERNO" && destinatarioTipo
       ? prisma.personal.findFirst({
@@ -337,7 +337,7 @@ export async function POST(request: Request) {
     }),
   ]);
 
-  if (itemsFound.length !== itemIds.length) {
+  if (itemsFound.length !== equipoIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
 
@@ -384,7 +384,7 @@ export async function POST(request: Request) {
 
   const comentarios = body.comentarios?.trim() || null;
   const fechaEstimadaDevolucionTexto = body.fechaEstimadaDevolucionTexto?.trim() || null;
-  const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
+  const itemNombrePorId = new Map(itemsFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
 
   try {
     const created = await prisma.$transaction(async (tx) => {
@@ -451,10 +451,10 @@ export async function POST(request: Request) {
         data: { reciboNumero },
       });
 
-      await tx.movimientoItem.createMany({
-        data: Array.from(dedupedItems.entries()).map(([itemId, entry]) => ({
+      await tx.movimientoEquipo.createMany({
+        data: Array.from(dedupedItems.entries()).map(([equipoId, entry]) => ({
           movimientoId: movimiento.movimientoId,
-          itemId: BigInt(itemId),
+          equipoId: BigInt(equipoId),
           cantidad: entry.cantidad,
           estadoEntrega: entry.estadoEntrega,
           comentarioEntrega: entry.comentarioEntrega || null,
@@ -500,14 +500,14 @@ export async function POST(request: Request) {
             .replace(/\s+/g, " ")
             .trim(),
         },
-        totalEquipos: created.items.length,
+        totalEquipos: created.equipos.length,
         totalUnidades: totalUnidadesPrestamo(created),
-        items: created.items.map((item) => ({
-          itemId: item.item.itemId.toString(),
-          nombre: itemNombrePorId.get(item.item.itemId.toString()) ?? item.item.nombre,
-          cantidad: item.cantidad,
-          estadoEntrega: item.estadoEntrega,
-          comentarioEntrega: item.comentarioEntrega,
+        equipos: created.equipos.map((equipo) => ({
+          equipoId: equipo.equipo.equipoId.toString(),
+          nombre: itemNombrePorId.get(equipo.equipo.equipoId.toString()) ?? equipo.equipo.nombre,
+          cantidad: equipo.cantidad,
+          estadoEntrega: equipo.estadoEntrega,
+          comentarioEntrega: equipo.comentarioEntrega,
         })),
       },
     });
@@ -529,11 +529,11 @@ export async function POST(request: Request) {
     }
 
     const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
-    const resumenItems = created.items
+    const resumenItems = created.equipos
       .slice(0, 4)
-      .map((item) => `${item.item.nombre} x${item.cantidad}`)
+      .map((equipo) => `${equipo.equipo.nombre} x${equipo.cantidad}`)
       .join(", ");
-    const resumenItemsLine = created.items.length > 4 ? `${resumenItems}, ...` : resumenItems;
+    const resumenItemsLine = created.equipos.length > 4 ? `${resumenItems}, ...` : resumenItems;
     const destinatarioPersonalCi = created.destinatarioPersonal?.personal.ci ?? null;
 
     if (destinatarioPersonalCi) {
@@ -547,7 +547,7 @@ export async function POST(request: Request) {
             `Recibo: ${created.prestamoActivo?.reciboNumero ?? `PR-${created.movimientoId.toString().padStart(8, "0")}`}`,
             `Fecha: ${formatDateOnlyForDisplay(fechaPrestamoInput)}`,
             `Total de unidades: ${totalUnidadesPrestamo(created)}`,
-            `Items: ${resumenItemsLine}`,
+            `Equipos: ${resumenItemsLine}`,
             comentarios ? `Comentarios: ${comentarios}` : "",
             fechaEstimadaDevolucionTexto ? `Fecha estimada de devolución: ${fechaEstimadaDevolucionTexto}` : "",
           ],

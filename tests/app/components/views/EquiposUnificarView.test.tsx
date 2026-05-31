@@ -5,9 +5,9 @@ import { EquiposUnificarView } from "@/app/components/views/EquiposUnificarView"
 
 describe("EquiposUnificarView Component", () => {
   const defaultEquipos = [
-    { itemId: "1", nombre: "Chaleco Táctico", tipo: "GENERAL" as const, activo: true },
-    { itemId: "2", nombre: "Casco Kevlar", tipo: "GENERAL" as const, activo: true },
-    { itemId: "3", nombre: "Cinturón de Combate", tipo: "GENERAL" as const, activo: true },
+    { equipoId: "1", nombre: "Chaleco Táctico", tipo: "GENERAL" as const, activo: true },
+    { equipoId: "2", nombre: "Casco Kevlar", tipo: "GENERAL" as const, activo: true },
+    { equipoId: "3", nombre: "Cinturón de Combate", tipo: "GENERAL" as const, activo: true },
   ];
 
   const mockProps = {
@@ -30,7 +30,7 @@ describe("EquiposUnificarView Component", () => {
   });
 
   it("muestra advertencia si hay menos de 2 equipos", () => {
-    render(<EquiposUnificarView {...mockProps} equipos={[{ itemId: "1", nombre: "Chaleco Único", tipo: "GENERAL", activo: true }]} />);
+    render(<EquiposUnificarView {...mockProps} equipos={[{ equipoId: "1", nombre: "Chaleco Único", tipo: "GENERAL", activo: true }]} />);
 
     expect(screen.getByText("No hay suficientes equipos")).toBeDefined();
     expect(screen.getByText("Se requieren al menos 2 equipos registrados en el catálogo para poder realizar una fusión de registros.")).toBeDefined();

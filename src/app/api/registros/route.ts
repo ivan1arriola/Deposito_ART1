@@ -24,7 +24,7 @@ import {
 } from "@/lib/date-helpers";
 
 type MovimientoItemPayload = {
-  itemId: string | number;
+  equipoId: string | number;
   cantidad: number | string;
   comentario?: string;
 };
@@ -51,7 +51,7 @@ type MovimientoPayload = {
   fecha?: string;
   tipo: TipoMovimiento | string;
   comentarios?: string;
-  items: MovimientoItemPayload[];
+  equipos: MovimientoItemPayload[];
 };
 
 type MovimientoRecintoClase = "INTERNO" | "EXTERNO";
@@ -293,7 +293,7 @@ function isValidPayload(body: unknown): body is MovimientoPayload {
   const destinatarioPayload = parseDestinatarioPayload(candidate);
   if (!tipo || !destinatarioPayload) return false;
   if (!validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload)) return false;
-  if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
+  if (!Array.isArray(candidate.equipos) || candidate.equipos.length === 0) return false;
   return true;
 }
 
@@ -387,9 +387,9 @@ export async function GET(req: Request) {
           responsableCi: true,
         },
       },
-      items: {
-        include: { item: true },
-        orderBy: { item: { ordenPdf: "asc" } },
+      equipos: {
+        include: { equipo: true },
+        orderBy: { equipo: { ordenPdf: "asc" } },
       },
     },
     orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
@@ -464,9 +464,9 @@ export async function GET(req: Request) {
         afectaStock: true,
         comentarios: movimiento.observaciones,
         createdAt: formatDateTimeForDisplay(movimiento.createdAt),
-        items: movimiento.items.map((detail) => ({
-          itemId: detail.itemId.toString(),
-          nombre: detail.item.nombre,
+        equipos: movimiento.equipos.map((detail) => ({
+          equipoId: detail.equipoId.toString(),
+          nombre: detail.equipo.nombre,
           cantidad: detail.cantidad,
         })),
       };
@@ -504,29 +504,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
-  const parsedEquipos = body.items
-    .map((item) => ({
-      itemId: parseBigIntId(item.itemId),
-      cantidad: parseCantidad(item.cantidad),
-      comentario: typeof item.comentario === "string" ? item.comentario.trim() : "",
+  const parsedEquipos = body.equipos
+    .map((equipo) => ({
+      equipoId: parseBigIntId(equipo.equipoId),
+      cantidad: parseCantidad(equipo.cantidad),
+      comentario: typeof equipo.comentario === "string" ? equipo.comentario.trim() : "",
     }))
-    .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{ itemId: bigint; cantidad: number; comentario: string }>;
+    .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{ equipoId: bigint; cantidad: number; comentario: string }>;
 
   if (parsedEquipos.length === 0) {
     return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
   }
 
   const dedupedEquipos = new Map<string, { cantidad: number; comentario: string }>();
-  for (const item of parsedEquipos) {
-    const key = item.itemId.toString();
+  for (const equipo of parsedEquipos) {
+    const key = equipo.equipoId.toString();
     const existing = dedupedEquipos.get(key);
     dedupedEquipos.set(key, {
-      cantidad: (existing?.cantidad ?? 0) + item.cantidad,
-      comentario: existing?.comentario ? `${existing.comentario} | ${item.comentario}` : item.comentario,
+      cantidad: (existing?.cantidad ?? 0) + equipo.cantidad,
+      comentario: existing?.comentario ? `${existing.comentario} | ${equipo.comentario}` : equipo.comentario,
     });
   }
 
-  const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
+  const equipoIds = Array.from(dedupedEquipos.keys()).map((equipoId) => BigInt(equipoId));
   const [personalRecords, itemsFound] = await Promise.all([
     destinatarioPayload.destinatarioTipo === "PERSONAL"
       ? prisma.personal.findMany({
@@ -549,9 +549,9 @@ export async function POST(req: Request) {
           },
         })
       : Promise.resolve([]),
-    prisma.item.findMany({
-      where: { itemId: { in: itemIds } },
-      select: { itemId: true, nombre: true },
+    prisma.equipo.findMany({
+      where: { equipoId: { in: equipoIds } },
+      select: { equipoId: true, nombre: true },
     }),
   ]);
 
@@ -569,20 +569,20 @@ export async function POST(req: Request) {
     }
   }
 
-  if (itemsFound.length !== itemIds.length) {
+  if (itemsFound.length !== equipoIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
 
   const comentarios = body.comentarios?.trim() || null;
   const afectaStock = true;
-  const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
-  const itemsDetallados = Array.from(dedupedEquipos.entries()).map(([itemId, { cantidad, comentario }]) => ({
-    itemId,
-    nombre: itemNombrePorId.get(itemId) ?? "Equipo sin nombre",
+  const itemNombrePorId = new Map(itemsFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
+  const itemsDetallados = Array.from(dedupedEquipos.entries()).map(([equipoId, { cantidad, comentario }]) => ({
+    equipoId,
+    nombre: itemNombrePorId.get(equipoId) ?? "Equipo sin nombre",
     cantidad,
     comentario,
   }));
-  const totalUnidades = itemsDetallados.reduce((acumulado, item) => acumulado + item.cantidad, 0);
+  const totalUnidades = itemsDetallados.reduce((acumulado, equipo) => acumulado + equipo.cantidad, 0);
 
   try {
     const createdMovimientos = await prisma.$transaction(async (tx) => {
@@ -612,10 +612,10 @@ export async function POST(req: Request) {
           },
         });
 
-        await tx.movimientoItem.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(([itemId, { cantidad, comentario }]) => ({
+        await tx.movimientoEquipo.createMany({
+          data: Array.from(dedupedEquipos.entries()).map(([equipoId, { cantidad, comentario }]) => ({
             movimientoId: movimiento.movimientoId,
-            itemId: BigInt(itemId),
+            equipoId: BigInt(equipoId),
             cantidad,
             comentarioEntrega: comentario || null,
           })),
@@ -661,10 +661,10 @@ export async function POST(req: Request) {
           },
         });
 
-        await tx.movimientoItem.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(([itemId, { cantidad, comentario }]) => ({
+        await tx.movimientoEquipo.createMany({
+          data: Array.from(dedupedEquipos.entries()).map(([equipoId, { cantidad, comentario }]) => ({
             movimientoId: movimiento.movimientoId,
-            itemId: BigInt(itemId),
+            equipoId: BigInt(equipoId),
             cantidad,
             comentarioEntrega: comentario || null,
           })),
@@ -693,10 +693,10 @@ export async function POST(req: Request) {
           },
         });
 
-        await tx.movimientoItem.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(([itemId, { cantidad, comentario }]) => ({
+        await tx.movimientoEquipo.createMany({
+          data: Array.from(dedupedEquipos.entries()).map(([equipoId, { cantidad, comentario }]) => ({
             movimientoId: movimiento.movimientoId,
-            itemId: BigInt(itemId),
+            equipoId: BigInt(equipoId),
             cantidad,
             comentarioEntrega: comentario || null,
           })),
@@ -730,7 +730,7 @@ export async function POST(req: Request) {
           totalEquipos: itemsDetallados.length,
           totalUnidades,
           totalDestinatarios: 1,
-          items: itemsDetallados,
+          equipos: itemsDetallados,
           ip: requestMeta.ip,
           userAgent: requestMeta.userAgent,
         },
@@ -753,7 +753,7 @@ export async function POST(req: Request) {
           totalEquipos: itemsDetallados.length,
           totalUnidades,
           totalDestinatarios: 1,
-          items: itemsDetallados,
+          equipos: itemsDetallados,
           ip: requestMeta.ip,
           userAgent: requestMeta.userAgent,
         },
@@ -780,7 +780,7 @@ export async function POST(req: Request) {
               totalEquipos: itemsDetallados.length,
               totalUnidades,
               totalDestinatarios: destinatarioPayload.targetCis.length,
-              items: itemsDetallados,
+              equipos: itemsDetallados,
               ip: requestMeta.ip,
               userAgent: requestMeta.userAgent,
             },
@@ -820,7 +820,7 @@ export async function POST(req: Request) {
       const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
       const resumenItems = itemsDetallados
         .slice(0, 4)
-        .map((item) => `${item.nombre} x${item.cantidad}`)
+        .map((equipo) => `${equipo.nombre} x${equipo.cantidad}`)
         .join(", ");
       const resumenItemsLine = itemsDetallados.length > 4 ? `${resumenItems}, ...` : resumenItems;
 
@@ -838,7 +838,7 @@ export async function POST(req: Request) {
               `Tipo: ${tipo}`,
               `Fecha: ${formatDateOnlyForDisplay(body.fecha || getTodayDateInput())}`,
               `Total de unidades: ${totalUnidades}`,
-              `Items: ${resumenItemsLine}`,
+              `Equipos: ${resumenItemsLine}`,
               comentarios ? `Comentarios: ${comentarios}` : "",
             ],
             actorLabel,

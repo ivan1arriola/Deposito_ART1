@@ -98,7 +98,7 @@ function buildStyles() {
       gap: 2mm;
     }
 
-    .totals-item {
+    .totals-equipo {
       border: 1px solid #000;
       background: #ececec;
       padding: 1.8mm 2mm;
@@ -212,18 +212,18 @@ function buildStyles() {
       padding-top: 2mm;
     }
 
-    .items-cell {
+    .equipos-cell {
       gap: 0.7mm;
     }
 
-    .item-list {
+    .equipo-list {
       margin: 0;
       padding-left: 3.7mm;
       display: grid;
       gap: 0.5mm;
     }
 
-    .item-line {
+    .equipo-line {
       margin: 0;
     }
 
@@ -315,11 +315,11 @@ export default async function ResumenPrestamosVigentesPage({
     );
 
   const totalUnidades = prestamos.reduce(
-    (total, prestamo) => total + prestamo.items.reduce((subtotal, item) => subtotal + item.cantidad, 0),
+    (total, prestamo) => total + prestamo.equipos.reduce((subtotal, equipo) => subtotal + equipo.cantidad, 0),
     0,
   );
-  const totalEquiposDistintos = new Set(prestamos.flatMap((prestamo) => prestamo.items.map((item) => item.itemId))).size;
-  const totalTiposPrestados = prestamos.reduce((total, prestamo) => total + prestamo.items.length, 0);
+  const totalEquiposDistintos = new Set(prestamos.flatMap((prestamo) => prestamo.equipos.map((equipo) => equipo.equipoId))).size;
+  const totalTiposPrestados = prestamos.reduce((total, prestamo) => total + prestamo.equipos.length, 0);
 
   const now = new Date();
   const generatedAt = formatGeneratedAt(now);
@@ -345,19 +345,19 @@ export default async function ResumenPrestamosVigentesPage({
         {normalizedPrestamoIdFilter ? <p className="filter">{`Filtro por ID: ${normalizedPrestamoIdFilter}`}</p> : null}
 
         <section className="totals">
-          <article className="totals-item">
+          <article className="totals-equipo">
             <p className="totals-label">Prestamos vigentes</p>
             <p className="totals-value">{prestamos.length}</p>
           </article>
-          <article className="totals-item">
+          <article className="totals-equipo">
             <p className="totals-label">Unidades prestadas</p>
             <p className="totals-value">{totalUnidades}</p>
           </article>
-          <article className="totals-item">
+          <article className="totals-equipo">
             <p className="totals-label">Tipos por prestamos</p>
             <p className="totals-value">{totalTiposPrestados}</p>
           </article>
-          <article className="totals-item">
+          <article className="totals-equipo">
             <p className="totals-label">Equipos distintos</p>
             <p className="totals-value">{totalEquiposDistintos}</p>
           </article>
@@ -388,7 +388,7 @@ export default async function ResumenPrestamosVigentesPage({
               </thead>
               <tbody>
                 {prestamos.map((prestamo) => {
-                  const totalUnidadesPrestamo = prestamo.items.reduce((total, item) => total + item.cantidad, 0);
+                  const totalUnidadesPrestamo = prestamo.equipos.reduce((total, equipo) => total + equipo.cantidad, 0);
                   return (
                     <tr key={`print-prestamo-vigente-${prestamo.prestamoId}`}>
                       <td>
@@ -431,17 +431,17 @@ export default async function ResumenPrestamosVigentesPage({
                         </div>
                       </td>
                       <td>
-                        <div className="stack items-cell">
+                        <div className="stack equipos-cell">
                           <p>
-                            <span className="label">{`${prestamo.items.length} tipos:`}</span>
+                            <span className="label">{`${prestamo.equipos.length} tipos:`}</span>
                           </p>
-                          {prestamo.items.length === 0 ? (
+                          {prestamo.equipos.length === 0 ? (
                             <p>Sin equipos</p>
                           ) : (
-                            <ul className="item-list">
-                              {prestamo.items.map((item) => (
-                                <li key={`prestamo-item-${prestamo.prestamoId}-${item.itemId}`} className="item-line">
-                                  {`${item.nombre} x${item.cantidad} (${item.estadoEntrega})`}
+                            <ul className="equipo-list">
+                              {prestamo.equipos.map((equipo) => (
+                                <li key={`prestamo-equipo-${prestamo.prestamoId}-${equipo.equipoId}`} className="equipo-line">
+                                  {`${equipo.nombre} x${equipo.cantidad} (${equipo.estadoEntrega})`}
                                 </li>
                               ))}
                             </ul>

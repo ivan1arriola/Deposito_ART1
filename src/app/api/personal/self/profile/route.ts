@@ -23,11 +23,11 @@ type PersonaProfileTimelineEntry = {
   descripcion: string;
   responsable: string | null;
   estadoPrestamo?: "PENDIENTE" | "DEVUELTO" | null;
-  items: Array<{ nombre: string; cantidad: number }>;
+  equipos: Array<{ nombre: string; cantidad: number }>;
 };
 
 type PersonaProfileEquipmentRow = {
-  item: string;
+  equipo: string;
   entregado: number;
   devuelto: number;
   saldo: number;
@@ -90,7 +90,7 @@ function formatUsuarioMovimientoLabel(usuario: {
   return label || usuario.username;
 }
 
-function buildEquipmentSummaryFromHoja(hojaSnapshot: { matrix: Array<{ item: string; entregaTotal: number; devolucionTotal: number }> } | null) {
+function buildEquipmentSummaryFromHoja(hojaSnapshot: { matrix: Array<{ equipo: string; entregaTotal: number; devolucionTotal: number }> } | null) {
   if (!hojaSnapshot) return [] as PersonaProfileEquipmentRow[];
   return hojaSnapshot.matrix
     .map((row) => {
@@ -98,7 +98,7 @@ function buildEquipmentSummaryFromHoja(hojaSnapshot: { matrix: Array<{ item: str
       const saldo = Math.max(row.devolucionTotal, 0);
       const devuelto = Math.max(entregado - saldo, 0);
       return {
-        item: row.item,
+        equipo: row.equipo,
         entregado,
         devuelto,
         saldo,
@@ -106,7 +106,7 @@ function buildEquipmentSummaryFromHoja(hojaSnapshot: { matrix: Array<{ item: str
       };
     })
     .filter((row) => row.entregado > 0 || row.saldo > 0)
-    .sort((left, right) => left.item.localeCompare(right.item, "es", { sensitivity: "base" }));
+    .sort((left, right) => left.equipo.localeCompare(right.equipo, "es", { sensitivity: "base" }));
 }
 
 function buildEquipmentSummaryFromPrestamos(
@@ -117,23 +117,23 @@ function buildEquipmentSummaryFromPrestamos(
   const saldoMap = new Map<string, number>();
 
   for (const prestamo of prestamos) {
-    for (const item of prestamo.items) {
-      prestadoMap.set(item.nombre, (prestadoMap.get(item.nombre) ?? 0) + item.cantidad);
+    for (const equipo of prestamo.equipos) {
+      prestadoMap.set(equipo.nombre, (prestadoMap.get(equipo.nombre) ?? 0) + equipo.cantidad);
       if (prestamo.estado === "DEVUELTO") {
-        devueltoMap.set(item.nombre, (devueltoMap.get(item.nombre) ?? 0) + item.cantidad);
+        devueltoMap.set(equipo.nombre, (devueltoMap.get(equipo.nombre) ?? 0) + equipo.cantidad);
       } else {
-        saldoMap.set(item.nombre, (saldoMap.get(item.nombre) ?? 0) + item.cantidad);
+        saldoMap.set(equipo.nombre, (saldoMap.get(equipo.nombre) ?? 0) + equipo.cantidad);
       }
     }
   }
 
   return Array.from(new Set([...prestadoMap.keys(), ...devueltoMap.keys(), ...saldoMap.keys()]))
     .sort((left, right) => left.localeCompare(right, "es", { sensitivity: "base" }))
-    .map((item) => ({
-      item,
-      entregado: prestadoMap.get(item) ?? 0,
-      devuelto: devueltoMap.get(item) ?? 0,
-      saldo: saldoMap.get(item) ?? 0,
+    .map((equipo) => ({
+      equipo,
+      entregado: prestadoMap.get(equipo) ?? 0,
+      devuelto: devueltoMap.get(equipo) ?? 0,
+      saldo: saldoMap.get(equipo) ?? 0,
       fuente: "PRESTAMOS" as const,
     }))
     .filter((row) => row.entregado > 0 || row.saldo > 0);
@@ -145,7 +145,7 @@ function buildPersonaProfileTimeline(
     fecha: string;
     tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION";
     usuarioEntregaNombre: string;
-    items: Array<{ nombre: string; cantidad: number }>;
+    equipos: Array<{ nombre: string; cantidad: number }>;
   }>,
   prestamos: Array<ReturnType<typeof serializePrestamoWithActuante>>,
 ) {
@@ -153,10 +153,10 @@ function buildPersonaProfileTimeline(
     id: `registro-${registro.registroId}`,
     fecha: registro.fecha,
     tipo: registro.tipo === "ENTREGA" ? "ENTREGA" : registro.tipo === "DEVOLUCION" ? "DEVOLUCION" : "ASIGNACION",
-    descripcion: `Registro ${registro.tipo.toLowerCase()} · ${registro.items.reduce((acc, item) => acc + item.cantidad, 0)} unidades`,
+    descripcion: `Registro ${registro.tipo.toLowerCase()} · ${registro.equipos.reduce((acc, equipo) => acc + equipo.cantidad, 0)} unidades`,
     responsable: registro.usuarioEntregaNombre?.trim() || null,
     estadoPrestamo: null,
-    items: registro.items.map((item) => ({ nombre: item.nombre, cantidad: item.cantidad })),
+    equipos: registro.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
   })) satisfies PersonaProfileTimelineEntry[];
 
   const prestamosTimeline = prestamos.flatMap((prestamo) => {
@@ -167,7 +167,7 @@ function buildPersonaProfileTimeline(
       descripcion: `Préstamo ${prestamo.reciboNumero} · ${prestamo.estado.toLowerCase()}`,
       responsable: prestamo.usuarioEntregaNombre ?? null,
       estadoPrestamo: prestamo.estado,
-      items: prestamo.items.map((item) => ({ nombre: item.nombre, cantidad: item.cantidad })),
+      equipos: prestamo.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
     };
 
     if (!prestamo.fechaDevolucion) return [prestamoEntry];
@@ -179,7 +179,7 @@ function buildPersonaProfileTimeline(
       descripcion: `Devolución de préstamo ${prestamo.reciboNumero}`,
       responsable: prestamo.usuarioRecibeDevolucionNombre ?? prestamo.usuarioEntregaNombre ?? null,
       estadoPrestamo: "DEVUELTO",
-      items: prestamo.items.map((item) => ({ nombre: item.nombre, cantidad: item.cantidad })),
+      equipos: prestamo.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
     };
 
     return [prestamoEntry, devolucionEntry];
@@ -240,9 +240,9 @@ export async function GET(request: Request) {
             },
           },
         },
-        items: {
-          include: { item: true },
-          orderBy: { item: { ordenPdf: "asc" } },
+        equipos: {
+          include: { equipo: true },
+          orderBy: { equipo: { ordenPdf: "asc" } },
         },
       },
       orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
@@ -293,10 +293,10 @@ export async function GET(request: Request) {
       afectaStock: true,
       comentarios: movimiento.observaciones,
       createdAt: formatDateTimeForDisplay(movimiento.createdAt),
-      items: movimiento.items.map((item) => ({
-        itemId: item.itemId.toString(),
-        nombre: item.item.nombre,
-        cantidad: item.cantidad,
+      equipos: movimiento.equipos.map((equipo) => ({
+        equipoId: equipo.equipoId.toString(),
+        nombre: equipo.equipo.nombre,
+        cantidad: equipo.cantidad,
       })),
     };
   });
@@ -315,7 +315,7 @@ export async function GET(request: Request) {
           hojaSnapshot
             ? {
                 matrix: hojaSnapshot.matrix.map((row) => ({
-                  item: row.item,
+                  equipo: row.equipo,
                   entregaTotal: row.entregaTotal,
                   devolucionTotal: row.devolucionTotal,
                 })),

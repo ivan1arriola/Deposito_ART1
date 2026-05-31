@@ -1,7 +1,7 @@
 import { extractDateParts, formatDateOnlyForDisplay } from "@/lib/date-helpers";
 
 export type HojaEntregaMatrixRow = {
-  item: string;
+  equipo: string;
   entrega: number[];
   entregaTotal: number;
   devolucion: number[];

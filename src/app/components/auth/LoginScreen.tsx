@@ -79,9 +79,9 @@ export function LoginScreen({
   onResetRequestSubmit,
 }: LoginScreenProps) {
   return (
-    <main className="relative mx-auto flex min-h-dvh w-full max-w-7xl items-center justify-center px-3 py-4 sm:px-6 sm:py-6">
+    <main className="relative mx-auto flex min-h-dvh w-full max-w-7xl equipos-center justify-center px-3 py-4 sm:px-6 sm:py-6">
       <section className="ej-login-shell lg:grid-cols-[1fr_minmax(360px,440px)]">
-        <div className="ej-login-aside relative hidden p-8 lg:flex lg:items-center lg:justify-center xl:p-10">
+        <div className="ej-login-aside relative hidden p-8 lg:flex lg:equipos-center lg:justify-center xl:p-10">
           <Image
             src="/assets/logo-deposito.png"
             alt="Logo Depósito"
@@ -92,7 +92,7 @@ export function LoginScreen({
           />
         </div>
 
-        <div className="relative overflow-y-auto p-5 sm:p-8 lg:flex lg:items-center lg:p-10">
+        <div className="relative overflow-y-auto p-5 sm:p-8 lg:flex lg:equipos-center lg:p-10">
           <div className="w-full lg:mx-auto lg:max-w-[460px]">
             <div className="mb-4 flex justify-center lg:hidden">
               <Image
@@ -196,7 +196,7 @@ export function LoginScreen({
                     type="button"
                     onClick={onToggleLoginPasswordVisibility}
                     aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    className="absolute inset-y-0 right-2 my-1 inline-flex w-8 items-center justify-center rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+                    className="absolute inset-y-0 right-2 my-1 inline-flex w-8 equipos-center justify-center rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
                   >
                     {showLoginPassword ? (
                       <svg

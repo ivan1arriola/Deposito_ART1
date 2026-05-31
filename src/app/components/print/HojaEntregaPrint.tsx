@@ -36,11 +36,11 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     --table-padding-x: 3px;
     --header-row-font-size: 9px;
     --section-title-font-size: 8px;
-    --item-name-font-size: 7px;
+    --equipo-name-font-size: 7px;
     --obs-title-font-size: 8px;
-    --obs-item-font-size: 8px;
-    --obs-item-line-height: 1.2;
-    --obs-item-gap: 2px;
+    --obs-equipo-font-size: 8px;
+    --obs-equipo-line-height: 1.2;
+    --obs-equipo-gap: 2px;
     --info-grid-font-size: 11.5px;
     --info-grid-padding-y: 4px;
     --info-grid-padding-x: 10px;
@@ -70,11 +70,11 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     --table-padding-x: 2.5px;
     --header-row-font-size: 8px;
     --section-title-font-size: 7.3px;
-    --item-name-font-size: 6.4px;
+    --equipo-name-font-size: 6.4px;
     --obs-title-font-size: 7.3px;
-    --obs-item-font-size: 7.1px;
-    --obs-item-line-height: 1.1;
-    --obs-item-gap: 1px;
+    --obs-equipo-font-size: 7.1px;
+    --obs-equipo-line-height: 1.1;
+    --obs-equipo-gap: 1px;
     --info-grid-font-size: 10.8px;
     --info-grid-padding-y: 3px;
     --info-grid-padding-x: 7px;
@@ -92,11 +92,11 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     --table-padding-x: 2px;
     --header-row-font-size: 7.2px;
     --section-title-font-size: 6.8px;
-    --item-name-font-size: 5.9px;
+    --equipo-name-font-size: 5.9px;
     --obs-title-font-size: 6.8px;
-    --obs-item-font-size: 6.4px;
-    --obs-item-line-height: 1.05;
-    --obs-item-gap: 0;
+    --obs-equipo-font-size: 6.4px;
+    --obs-equipo-line-height: 1.05;
+    --obs-equipo-gap: 0;
     --info-grid-font-size: 9.9px;
     --info-grid-padding-y: 2px;
     --info-grid-padding-x: 5px;
@@ -114,11 +114,11 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     --table-padding-x: 1.5px;
     --header-row-font-size: 6.8px;
     --section-title-font-size: 6.2px;
-    --item-name-font-size: 5.5px;
+    --equipo-name-font-size: 5.5px;
     --obs-title-font-size: 6.2px;
-    --obs-item-font-size: 5.9px;
-    --obs-item-line-height: 1;
-    --obs-item-gap: 0;
+    --obs-equipo-font-size: 5.9px;
+    --obs-equipo-line-height: 1;
+    --obs-equipo-gap: 0;
     --info-grid-font-size: 9.1px;
     --info-grid-padding-y: 1px;
     --info-grid-padding-x: 4px;
@@ -251,7 +251,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
   }
 
-  .info-grid-item {
+  .info-grid-equipo {
     min-width: 0;
     padding: var(--info-grid-padding-y) var(--info-grid-padding-x);
     text-align: left;
@@ -259,7 +259,7 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     border-right: 0.8px solid #000;
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-equipos: baseline;
     gap: 3px;
     font-size: var(--info-grid-font-size);
     white-space: normal;
@@ -269,11 +269,11 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     overflow-wrap: break-word;
   }
 
-  .info-grid-item-compact {
+  .info-grid-equipo-compact {
     padding: var(--info-grid-compact-padding-y) var(--info-grid-compact-padding-x);
   }
 
-  .info-grid-item:last-child {
+  .info-grid-equipo:last-child {
     border-right: none;
   }
 
@@ -281,22 +281,22 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     font-weight: bold;
   }
 
-  .item-row td {
+  .equipo-row td {
     background: #fff;
   }
 
-  .item-row td:first-child {
+  .equipo-row td:first-child {
     background: #fff;
     text-align: left;
     padding-left: 6px;
     font-weight: 500;
-    font-size: var(--item-name-font-size);
+    font-size: var(--equipo-name-font-size);
     white-space: normal;
     overflow-wrap: break-word;
     line-height: 1.15;
   }
 
-  .item-row td.bold {
+  .equipo-row td.bold {
     background: #dcdcdc;
   }
 
@@ -332,10 +332,10 @@ export const HOJA_ENTREGA_PRINT_STYLES = `
     padding: 1px 2px !important;
   }
 
-  .obs-item {
-    font-size: var(--obs-item-font-size);
-    line-height: var(--obs-item-line-height);
-    margin-bottom: var(--obs-item-gap);
+  .obs-equipo {
+    font-size: var(--obs-equipo-font-size);
+    line-height: var(--obs-equipo-line-height);
+    margin-bottom: var(--obs-equipo-gap);
   }
 
   .firma-section {
@@ -489,13 +489,13 @@ export function HojaEntregaPrintSheet({
           <tr>
             <td colSpan={15} className="info-grid-shell info-grid-shell-top">
               <div className="info-grid info-grid-3">
-                <div className="info-grid-item">
+                <div className="info-grid-equipo">
                   <span className="header-info-label">Grado:</span> {data.persona.rango}
                 </div>
-                <div className="info-grid-item">
+                <div className="info-grid-equipo">
                   <span className="header-info-label">Apellidos:</span> {nombreCompleto}
                 </div>
-                <div className="info-grid-item">
+                <div className="info-grid-equipo">
                   <span className="header-info-label">Nombres:</span> {nombresCompleto}
                 </div>
               </div>
@@ -504,19 +504,19 @@ export function HojaEntregaPrintSheet({
           <tr>
             <td colSpan={15} className="info-grid-shell">
               <div className="info-grid info-grid-5">
-                <div className="info-grid-item info-grid-item-compact">
+                <div className="info-grid-equipo info-grid-equipo-compact">
                   <span className="header-info-label">Parka:</span> {data.persona.tallas.PARKA}
                 </div>
-                <div className="info-grid-item info-grid-item-compact">
+                <div className="info-grid-equipo info-grid-equipo-compact">
                   <span className="header-info-label">Camisaco:</span> {data.persona.tallas.CAMISACO}
                 </div>
-                <div className="info-grid-item info-grid-item-compact">
+                <div className="info-grid-equipo info-grid-equipo-compact">
                   <span className="header-info-label">Pantalón:</span> {data.persona.tallas.PANTALON}
                 </div>
-                <div className="info-grid-item info-grid-item-compact">
+                <div className="info-grid-equipo info-grid-equipo-compact">
                   <span className="header-info-label">Kepi:</span> {data.persona.tallas.KEPI}
                 </div>
-                <div className="info-grid-item info-grid-item-compact">
+                <div className="info-grid-equipo info-grid-equipo-compact">
                   <span className="header-info-label">Calzado:</span> {data.persona.tallas.CALZADO}
                 </div>
               </div>
@@ -525,14 +525,14 @@ export function HojaEntregaPrintSheet({
           <tr>
             <td colSpan={15} className="info-grid-shell info-grid-shell-bottom">
               <div className={bottomInfoGridClassName}>
-                <div className="info-grid-item info-grid-item-compact">
+                <div className="info-grid-equipo info-grid-equipo-compact">
                   <span className="header-info-label">C.I:</span> {ciWarningPrefix}
                   {ciFormateado}
                 </div>
-                <div className="info-grid-item info-grid-item-compact">
+                <div className="info-grid-equipo info-grid-equipo-compact">
                   <span className="header-info-label">Batería:</span> {data.persona.bateria || "Cdo. y Serv."}
                 </div>
-                <div className="info-grid-item info-grid-item-compact">
+                <div className="info-grid-equipo info-grid-equipo-compact">
                   <span className="header-info-label">
                     {data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:"}
                   </span>{" "}
@@ -541,14 +541,14 @@ export function HojaEntregaPrintSheet({
                     : "-"}
                 </div>
                 {data.persona.esReingreso ? (
-                  <div className="info-grid-item info-grid-item-compact">
+                  <div className="info-grid-equipo info-grid-equipo-compact">
                     <span className="header-info-label">Fecha ingreso:</span>
                     {data.persona.fechaIngresoOriginal
                       ? `${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "day")}/${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "month")}/${getHojaEntregaDatePart(data.persona.fechaIngresoOriginal, "year")}`
                       : "-"}
                   </div>
                 ) : null}
-                <div className="info-grid-item info-grid-item-compact">
+                <div className="info-grid-equipo info-grid-equipo-compact">
                   <span className="header-info-label">Fecha de impresion:</span> {fechaImpresion}
                 </div>
               </div>
@@ -603,14 +603,14 @@ export function HojaEntregaPrintSheet({
           </tr>
 
           {data.matrix.map((row) => (
-            <tr key={`${data.persona.ci}-${row.item}`} className="item-row">
-              <td className="left">{row.item}</td>
+            <tr key={`${data.persona.ci}-${row.equipo}`} className="equipo-row">
+              <td className="left">{row.equipo}</td>
               {row.entrega.slice(0, 6).map((qty, i) => (
-                <td key={`e-${data.persona.ci}-${row.item}-${i}`}>{qty || ""}</td>
+                <td key={`e-${data.persona.ci}-${row.equipo}-${i}`}>{qty || ""}</td>
               ))}
               <td className="bold">{row.entregaTotal}</td>
               {row.devolucion.slice(0, 6).map((qty, i) => (
-                <td key={`d-${data.persona.ci}-${row.item}-${i}`}>{qty || ""}</td>
+                <td key={`d-${data.persona.ci}-${row.equipo}-${i}`}>{qty || ""}</td>
               ))}
               <td className="bold">{row.devolucionTotal}</td>
             </tr>
@@ -620,7 +620,7 @@ export function HojaEntregaPrintSheet({
             <td colSpan={15} className="left obs-cell">
               <div className="obs-title">OBSERVACIONES</div>
               {data.observaciones.map((obs, idx) => (
-                <div key={`${data.persona.ci}-${obs.fecha}-${idx}`} className="obs-item">
+                <div key={`${data.persona.ci}-${obs.fecha}-${idx}`} className="obs-equipo">
                   {getHojaEntregaDatePart(obs.fecha, "day")}/{getHojaEntregaDatePart(obs.fecha, "month")}/{getHojaEntregaDatePart(obs.fecha, "year")} - {obs.texto}
                 </div>
               ))}

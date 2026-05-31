@@ -6,16 +6,16 @@ import { prisma } from "@/lib/prisma";
 type CreateCodigoSIEPayload = {
   codigo?: string;
   talla?: string | null;
-  itemId?: string | number;
+  equipoId?: string | number;
   allowDuplicateCodigo?: boolean;
 };
 
 function hasEtiquetadoDelegates() {
   const candidate = prisma as typeof prisma & {
-    item?: unknown;
-    itemCodigoSIE?: unknown;
+    equipo?: unknown;
+    equipoCodigoSIE?: unknown;
   };
-  return typeof candidate.item !== "undefined" && typeof candidate.itemCodigoSIE !== "undefined";
+  return typeof candidate.equipo !== "undefined" && typeof candidate.equipoCodigoSIE !== "undefined";
 }
 
 const SIE_CODE_REGEX = /^(?:\d{8}|[A-Z]{3}\d{2})$/;
@@ -51,59 +51,59 @@ export async function POST(request: Request) {
   const body = (await request.json()) as CreateCodigoSIEPayload;
   const codigo = normalizeCodigoSIE(body.codigo);
   const talla = normalizeTalla(body.talla);
-  const itemId = parseItemId(body.itemId);
+  const equipoId = parseItemId(body.equipoId);
   const allowDuplicateCodigo = body.allowDuplicateCodigo === true;
 
-  if (!codigo || itemId === null) {
+  if (!codigo || equipoId === null) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo e item son obligatorios. Formatos validos: 8 digitos o 3 letras y 2 numeros." },
+      { error: "Payload invalido. codigo e equipo son obligatorios. Formatos validos: 8 digitos o 3 letras y 2 numeros." },
       { status: 400 },
     );
   }
 
-  const item = await prisma.item.findUnique({
-    where: { itemId },
-    select: { itemId: true, nombre: true },
+  const equipo = await prisma.equipo.findUnique({
+    where: { equipoId },
+    select: { equipoId: true, nombre: true },
   });
-  if (!item) {
-    return NextResponse.json({ error: "El item seleccionado no existe." }, { status: 400 });
+  if (!equipo) {
+    return NextResponse.json({ error: "El equipo seleccionado no existe." }, { status: 400 });
   }
 
-  const existingTuple = await prisma.itemCodigoSIE.findFirst({
+  const existingTuple = await prisma.equipoCodigoSIE.findFirst({
     where: {
       codigo,
       talla,
-      itemId,
+      equipoId,
     },
-    select: { itemCodigoSIEId: true },
+    select: { equipoCodigoSIEId: true },
   });
   if (existingTuple) {
-    return NextResponse.json({ error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e item." }, { status: 409 });
+    return NextResponse.json({ error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo." }, { status: 409 });
   }
 
   if (!allowDuplicateCodigo) {
-    const existingSameCodigo = await prisma.itemCodigoSIE.findMany({
+    const existingSameCodigo = await prisma.equipoCodigoSIE.findMany({
       where: {
         codigo,
         NOT: {
           talla,
-          itemId,
+          equipoId,
         },
       },
       include: {
-        item: {
+        equipo: {
           select: {
-            itemId: true,
+            equipoId: true,
             nombre: true,
           },
         },
       },
-      orderBy: [{ item: { nombre: "asc" } }, { talla: "asc" }],
+      orderBy: [{ equipo: { nombre: "asc" } }, { talla: "asc" }],
     });
 
     if (existingSameCodigo.length > 0) {
       const duplicatesSummary = existingSameCodigo
-        .map((entry) => `${entry.item.nombre} (talla ${entry.talla})`)
+        .map((entry) => `${entry.equipo.nombre} (talla ${entry.talla})`)
         .join("; ");
       return NextResponse.json(
         {
@@ -117,15 +117,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const created = await prisma.itemCodigoSIE.create({
+    const created = await prisma.equipoCodigoSIE.create({
       data: {
         codigo,
         talla,
-        itemId,
+        equipoId,
       },
       include: {
-        item: {
-          select: { itemId: true, nombre: true },
+        equipo: {
+          select: { equipoId: true, nombre: true },
         },
       },
     });
@@ -134,29 +134,29 @@ export async function POST(request: Request) {
       usuarioId: auth.user.usuarioId,
       accion: "CREATE",
       entidad: "CODIGO_SIE",
-      entidadId: created.itemCodigoSIEId.toString(),
+      entidadId: created.equipoCodigoSIEId.toString(),
       detalle: {
-        codigoSIEId: created.itemCodigoSIEId.toString(),
+        codigoSIEId: created.equipoCodigoSIEId.toString(),
         codigo: created.codigo,
         talla: created.talla,
-        itemId: created.item.itemId.toString(),
-        itemNombre: created.item.nombre,
+        equipoId: created.equipo.equipoId.toString(),
+        itemNombre: created.equipo.nombre,
       },
     });
 
     return NextResponse.json(
       {
-        codigoSIEId: created.itemCodigoSIEId.toString(),
+        codigoSIEId: created.equipoCodigoSIEId.toString(),
         codigo: created.codigo,
         talla: created.talla,
-        itemId: created.item.itemId.toString(),
-        itemNombre: created.item.nombre,
+        equipoId: created.equipo.equipoId.toString(),
+        itemNombre: created.equipo.nombre,
       },
       { status: 201 },
     );
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-      return NextResponse.json({ error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e item." }, { status: 409 });
+      return NextResponse.json({ error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo." }, { status: 409 });
     }
 
     return NextResponse.json({ error: "No se pudo registrar el codigo SIE." }, { status: 500 });

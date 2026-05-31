@@ -27,13 +27,13 @@ export async function GET(req: Request) {
             prestamoActivo: { isNot: null },
           },
           include: {
-            items: { include: { item: true } },
+            equipos: { include: { equipo: true } },
             prestamoActivo: true,
           },
         });
 
         // Calculate vestuario balance
-        const vestuarioMovements = await prisma.movimientoItem.findMany({
+        const vestuarioMovements = await prisma.movimientoEquipo.findMany({
           where: {
             movimiento: {
               destinatarioPersonal: { is: { ci: p.ci } },
@@ -41,14 +41,14 @@ export async function GET(req: Request) {
             },
           },
           include: {
-            item: true,
+            equipo: true,
             movimiento: true,
           },
         });
 
         const vestuarioBalances: Record<string, { nombre: string; cantidad: number }> = {};
         for (const vm of vestuarioMovements) {
-          const nombre = vm.item.nombre;
+          const nombre = vm.equipo.nombre;
           if (!vestuarioBalances[nombre]) {
             vestuarioBalances[nombre] = { nombre, cantidad: 0 };
           }
@@ -75,7 +75,7 @@ export async function GET(req: Request) {
             movimientoId: l.movimientoId.toString(),
             reciboNumero: l.prestamoActivo?.reciboNumero,
             fecha: l.fecha,
-            items: l.items.map((i) => ({ nombre: i.item.nombre, cantidad: i.cantidad })),
+            equipos: l.equipos.map((i) => ({ nombre: i.equipo.nombre, cantidad: i.cantidad })),
           })),
           outstandingVestuario,
         };

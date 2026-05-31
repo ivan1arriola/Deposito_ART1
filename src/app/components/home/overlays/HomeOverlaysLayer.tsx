@@ -108,8 +108,8 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
       <MergeEquipoModal
         isOpen={mergeEquipoDialog !== null}
         sourceName={mergeEquipoSource?.nombre ?? ""}
-        targetItemId={mergeEquipoDialogTargetId}
-        targetOptions={mergeEquipoTargetOptions.map((equipo: { itemId: string; nombre: string }) => ({ itemId: equipo.itemId, nombre: equipo.nombre }))}
+        targetEquipoId={mergeEquipoDialogTargetId}
+        targetOptions={mergeEquipoTargetOptions.map((equipo: { equipoId: string; nombre: string }) => ({ equipoId: equipo.equipoId, nombre: equipo.nombre }))}
         saving={mergeEquipoSaving}
         onTargetChange={updateMergeEquipoDialogTarget}
         onClose={closeMergeEquipoDialog}

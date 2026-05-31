@@ -10,7 +10,7 @@ export type EtiquetaOrientacion = "horizontal" | "vertical";
 export type CreateCodigoSIEInput = {
   codigo: string;
   talla: string;
-  itemId: string;
+  equipoId: string;
   allowDuplicateCodigo?: boolean;
 };
 
@@ -19,7 +19,7 @@ export type UpdateCodigoSIEInput = {
   originalCodigo: string;
   codigo: string;
   talla: string;
-  itemId: string;
+  equipoId: string;
 };
 
 export type CreateItemInput = {
@@ -29,8 +29,8 @@ export type CreateItemInput = {
 export type CreateCajaInput = {
   estanteria: string;
   piso: number;
-  items: Array<{
-    itemId: string;
+  equipos: Array<{
+    equipoId: string;
     cantidad: number;
   }>;
   codigosSIEIds: string[];

@@ -25,7 +25,7 @@ type MovimientosFueraHojaSortableRow = {
   persona: string;
   gradoAbreviacion: string;
   gradoOrden: number | null;
-  item: string;
+  equipo: string;
 };
 
 function compareDate(left: MovimientosFueraHojaSortableRow, right: MovimientosFueraHojaSortableRow) {
@@ -37,11 +37,11 @@ function compareDate(left: MovimientosFueraHojaSortableRow, right: MovimientosFu
   const byMovimiento = left.movimientoId.localeCompare(right.movimientoId, "es", { numeric: true });
   if (byMovimiento !== 0) return byMovimiento;
 
-  return collator.compare(left.item, right.item);
+  return collator.compare(left.equipo, right.equipo);
 }
 
 function compareEquipo(left: MovimientosFueraHojaSortableRow, right: MovimientosFueraHojaSortableRow) {
-  const byItem = collator.compare(left.item, right.item);
+  const byItem = collator.compare(left.equipo, right.equipo);
   if (byItem !== 0) return byItem;
 
   const byPersona = collator.compare(left.persona, right.persona);

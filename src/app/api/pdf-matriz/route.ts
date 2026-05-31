@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
 
 interface MatrixItem {
-  itemId: string;
+  equipoId: string;
   nombre: string;
 }
 
@@ -20,7 +20,7 @@ interface MatrixRow {
 }
 
 interface MatrixDataRequest {
-  items: MatrixItem[];
+  equipos: MatrixItem[];
   rows: MatrixRow[];
   generatedAt?: string;
 }
@@ -103,8 +103,8 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     const body = (await request.json()) as MatrixDataRequest;
 
-    if (!body.items || !body.rows) {
-      return NextResponse.json({ error: "Items and rows are required" }, { status: 400 });
+    if (!body.equipos || !body.rows) {
+      return NextResponse.json({ error: "Equipos and rows are required" }, { status: 400 });
     }
 
     const doc = new PDFDocument({
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       const colPersonal = 120;
       const colBateria = 70;
       const colGrado = 50;
-      const colItemWidth = Math.floor((pageWidth - colPersonal - colBateria - colGrado) / (body.items.length + 1)) || 20;
+      const colItemWidth = Math.floor((pageWidth - colPersonal - colBateria - colGrado) / (body.equipos.length + 1)) || 20;
       const rowHeight = 6 * MM_TO_PT;
 
       let currentX = topbarX;
@@ -210,9 +210,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       });
       currentX += colGrado;
 
-      // Items
-      body.items.forEach((item) => {
-        drawTableCell(doc, currentX, tableStartY, colItemWidth, rowHeight, item.nombre.substring(0, 10), {
+      // Equipos
+      body.equipos.forEach((equipo) => {
+        drawTableCell(doc, currentX, tableStartY, colItemWidth, rowHeight, equipo.nombre.substring(0, 10), {
           bold: true,
           bg: COLORS.bgSoft,
           align: "center",
@@ -257,7 +257,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         });
         rowX += colGrado;
 
-        // Items
+        // Equipos
         row.totales.forEach((cantidad) => {
           drawTableCell(doc, rowX, currentY, colItemWidth, rowHeight, String(cantidad), {
             align: "center",
@@ -300,8 +300,8 @@ export async function POST(request: NextRequest): Promise<Response> {
           });
           repX += colGrado;
 
-          body.items.forEach((item) => {
-            drawTableCell(doc, repX, currentY, colItemWidth, rowHeight, item.nombre.substring(0, 10), {
+          body.equipos.forEach((equipo) => {
+            drawTableCell(doc, repX, currentY, colItemWidth, rowHeight, equipo.nombre.substring(0, 10), {
               bold: true,
               bg: COLORS.bgSoft,
               align: "center",

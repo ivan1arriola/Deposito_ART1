@@ -36,7 +36,7 @@ type RegistroEditorModalProps = {
   onToggleDestinatario: (ci: string) => void;
   onSelectAllDestinatarios: () => void;
   onClearDestinatarios: () => void;
-  onItemChange: (index: number, field: "itemId" | "cantidad", value: string) => void;
+  onItemChange: (index: number, field: "equipoId" | "cantidad", value: string) => void;
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
   onSubmit: () => void;
@@ -125,7 +125,7 @@ export function RegistroEditorModal({
 
   return (
     <ModalFrame onClose={onClose} size="lg" closeOnBackdrop={false}>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex equipos-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-stone-900">
             {draft.modo === "rectificar" ? `Rectificar ${movementLabel}` : `Registrar ${movementLabel}`}
@@ -322,7 +322,7 @@ export function RegistroEditorModal({
       ) : null}
 
       {canIncludeFueraDeHoja ? (
-        <label className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        <label className="mt-3 flex equipos-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           <input
             type="checkbox"
             checked={draft.incluirFueraDeHoja}
@@ -338,7 +338,7 @@ export function RegistroEditorModal({
 
       {showPersonalDestinatarios ? (
         <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap equipos-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">Destinatarios</p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -375,7 +375,7 @@ export function RegistroEditorModal({
                 return (
                   <label
                     key={persona.ci}
-                    className={`flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs ${
+                    className={`flex cursor-pointer equipos-center gap-2 rounded px-2 py-1.5 text-xs ${
                       checked ? "bg-emerald-50 text-emerald-900" : "hover:bg-stone-50"
                     }`}
                   >
@@ -397,25 +397,25 @@ export function RegistroEditorModal({
 
       <div className="mt-3 space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos del movimiento</p>
-        {draft.items.map((item, index) => (
-          <div key={`reg-item-${index}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
+        {draft.equipos.map((equipo, index) => (
+          <div key={`reg-equipo-${index}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
             <select
-              value={item.itemId}
+              value={equipo.equipoId}
               disabled={saving}
-              onChange={(event) => onItemChange(index, "itemId", event.target.value)}
+              onChange={(event) => onItemChange(index, "equipoId", event.target.value)}
               className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
             >
               <option value="">Seleccionar equipo</option>
               {equiposOrdenadosAlfabeticamente
                 .filter((catalogItem) => {
-                  if (!includeInactiveItems && !catalogItem.activo && catalogItem.itemId !== item.itemId) return false;
-                  if (catalogItem.itemId === item.itemId) return true;
-                  return !draft.items.some(
-                    (selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.itemId === catalogItem.itemId,
+                  if (!includeInactiveItems && !catalogItem.activo && catalogItem.equipoId !== equipo.equipoId) return false;
+                  if (catalogItem.equipoId === equipo.equipoId) return true;
+                  return !draft.equipos.some(
+                    (selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.equipoId === catalogItem.equipoId,
                   );
                 })
                 .map((catalogItem) => (
-                  <option key={catalogItem.itemId} value={catalogItem.itemId}>
+                  <option key={catalogItem.equipoId} value={catalogItem.equipoId}>
                     {catalogItem.activo ? catalogItem.nombre : `${catalogItem.nombre} (fuera de hoja)`}
                   </option>
                 ))}
@@ -423,7 +423,7 @@ export function RegistroEditorModal({
             <input
               type="number"
               min={1}
-              value={item.cantidad}
+              value={equipo.cantidad}
               disabled={saving}
               onChange={(event) => onItemChange(index, "cantidad", event.target.value)}
               className="rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -431,7 +431,7 @@ export function RegistroEditorModal({
             <button
               type="button"
               onClick={() => onRemoveItem(index)}
-              disabled={saving || draft.items.length <= 1}
+              disabled={saving || draft.equipos.length <= 1}
               className="rounded bg-rose-700 px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
             >
               Quitar
@@ -446,9 +446,9 @@ export function RegistroEditorModal({
             type="button"
             onClick={onAddItem}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex equipos-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-stone-800 text-[10px] font-bold text-white">+</span>
+            <span className="inline-flex h-4 w-4 equipos-center justify-center rounded-full bg-stone-800 text-[10px] font-bold text-white">+</span>
             Equipo
           </button>
         </div>

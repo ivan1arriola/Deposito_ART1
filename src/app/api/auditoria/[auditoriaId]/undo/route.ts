@@ -65,9 +65,9 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
           await tx.articulo.delete({
             where: { articuloId: Number(entidadId) },
           });
-        } else if (entidad === "ITEM") {
-          await tx.item.delete({
-            where: { itemId: BigInt(entidadId) },
+        } else if (entidad === "EQUIPO") {
+          await tx.equipo.delete({
+            where: { equipoId: BigInt(entidadId) },
           });
         } else if (entidad === "PERSONAL") {
           await tx.personalTalla.deleteMany({ where: { ci: entidadId } });
@@ -117,15 +117,15 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
               tipo: previo.tipo as TipoArticulo,
             },
           });
-        } else if (entidad === "ITEM") {
+        } else if (entidad === "EQUIPO") {
           if (detalle.evento === "ITEM_EXISTENCIA_SIE_UPDATE") {
-            await tx.item.update({
-              where: { itemId: BigInt(entidadId) },
+            await tx.equipo.update({
+              where: { equipoId: BigInt(entidadId) },
               data: { existenciaSie: previo.existenciaSie },
             });
           } else {
-            await tx.item.update({
-              where: { itemId: BigInt(entidadId) },
+            await tx.equipo.update({
+              where: { equipoId: BigInt(entidadId) },
               data: {
                 nombre: previo.nombre,
                 activo: previo.activo,
@@ -160,7 +160,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
                 tallaValor: t.valor,
               };
             })
-            .filter((item: any): item is { ci: string; tallaTipoId: number; tallaValor: string } => item !== null);
+            .filter((equipo: any): equipo is { ci: string; tallaTipoId: number; tallaValor: string } => equipo !== null);
 
           if (tallasToCreate.length > 0) {
             await tx.personalTalla.createMany({
@@ -200,12 +200,12 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
               orden: detalle.orden,
             },
           });
-        } else if (entidad === "ARTICULO" || entidad === "ITEM") {
+        } else if (entidad === "ARTICULO" || entidad === "EQUIPO") {
           // Find deleted snapshot in recycle bin
           const recycleRecord = await tx.papeleraRegistro.findFirst({
             where: {
               originalId: String(entidadId),
-              tipo: entidad === "ITEM" ? "ITEM" : "ARTICULO",
+              tipo: entidad === "EQUIPO" ? "EQUIPO" : "ARTICULO",
             },
             orderBy: { createdAt: "desc" },
           });
@@ -216,48 +216,48 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
 
           const payload = recycleRecord.payload as any;
 
-          if (entidad === "ITEM") {
-            const duplicate = await tx.item.findUnique({
-              where: { nombre: payload.item.nombre },
+          if (entidad === "EQUIPO") {
+            const duplicate = await tx.equipo.findUnique({
+              where: { nombre: payload.equipo.nombre },
             });
             if (duplicate) throw new Error("DUPLICATE_NAME");
 
-            await tx.item.create({
+            await tx.equipo.create({
               data: {
-                itemId: BigInt(payload.item.itemId),
-                nombre: payload.item.nombre,
-                activo: payload.item.activo,
-                ordenPdf: payload.item.ordenPdf,
-                existenciaSie: payload.item.existenciaSie,
+                equipoId: BigInt(payload.equipo.equipoId),
+                nombre: payload.equipo.nombre,
+                activo: payload.equipo.activo,
+                ordenPdf: payload.equipo.ordenPdf,
+                existenciaSie: payload.equipo.existenciaSie,
               },
             });
 
-            for (const ci of payload.cajaItems || []) {
-              await tx.cajaItem.create({
+            for (const ci of payload.cajaEquipos || []) {
+              await tx.cajaEquipo.create({
                 data: {
                   codigoDepositoGeneral: Number(ci.codigoDepositoGeneral),
-                  itemId: BigInt(ci.itemId),
+                  equipoId: BigInt(ci.equipoId),
                   cantidad: ci.cantidad,
                 },
               });
             }
 
             for (const sie of payload.itemCodigosSIE || []) {
-              await tx.itemCodigoSIE.create({
+              await tx.equipoCodigoSIE.create({
                 data: {
-                  itemCodigoSIEId: BigInt(sie.itemCodigoSIEId),
+                  equipoCodigoSIEId: BigInt(sie.equipoCodigoSIEId),
                   codigo: sie.codigo,
                   talla: sie.talla,
-                  itemId: BigInt(sie.itemId),
+                  equipoId: BigInt(sie.equipoId),
                 },
               });
             }
 
             for (const ccs of payload.cajaItemCodigosSIE || []) {
-              await tx.cajaItemCodigoSIE.create({
+              await tx.cajaEquipoCodigoSIE.create({
                 data: {
                   codigoDepositoGeneral: Number(ccs.codigoDepositoGeneral),
-                  itemCodigoSIEId: BigInt(ccs.itemCodigoSIEId),
+                  equipoCodigoSIEId: BigInt(ccs.equipoCodigoSIEId),
                 },
               });
             }
@@ -365,11 +365,11 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
               }
             }
 
-            for (const mi of payload.movimientoItems || []) {
-              await tx.movimientoItem.create({
+            for (const mi of payload.movimientoEquipos || []) {
+              await tx.movimientoEquipo.create({
                 data: {
                   movimientoId: BigInt(mi.movimientoId),
-                  itemId: BigInt(mi.itemId),
+                  equipoId: BigInt(mi.equipoId),
                   cantidad: mi.cantidad,
                   estadoEntrega: mi.estadoEntrega,
                   comentarioEntrega: mi.comentarioEntrega,
@@ -379,11 +379,11 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
               });
             }
 
-            for (const soi of payload.stockOperacionItems || []) {
-              await tx.stockOperacionItem.create({
+            for (const soi of payload.stockOperacionEquipos || []) {
+              await tx.stockOperacionEquipo.create({
                 data: {
                   stockOperacionId: BigInt(soi.stockOperacionId),
-                  itemId: BigInt(soi.itemId),
+                  equipoId: BigInt(soi.equipoId),
                   cantidad: soi.cantidad,
                 },
               });
@@ -499,7 +499,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
                     tallaValor: t.valor,
                   };
                 })
-                .filter((item): item is { ci: string; tallaTipoId: number; tallaValor: string } => item !== null);
+                .filter((equipo): equipo is { ci: string; tallaTipoId: number; tallaValor: string } => equipo !== null);
 
               if (tallasToCreate.length > 0) {
                 await tx.personalTalla.createMany({

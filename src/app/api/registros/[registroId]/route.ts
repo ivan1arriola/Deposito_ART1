@@ -21,7 +21,7 @@ import {
 } from "@/lib/date-helpers";
 
 type MovimientoItemPayload = {
-  itemId: string | number;
+  equipoId: string | number;
   cantidad: number | string;
 };
 
@@ -47,7 +47,7 @@ type UpdateMovimientoPayload = {
   fecha?: string;
   tipo: TipoMovimiento | string;
   comentarios?: string;
-  items: MovimientoItemPayload[];
+  equipos: MovimientoItemPayload[];
 };
 
 type MovimientoRecintoClase = "INTERNO" | "EXTERNO";
@@ -239,7 +239,7 @@ function isValidPayload(body: unknown): body is UpdateMovimientoPayload {
   if (candidate.destinatarioTipo !== undefined && (!destinatarioPayload || !validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload))) {
     return false;
   }
-  if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
+  if (!Array.isArray(candidate.equipos) || candidate.equipos.length === 0) return false;
   return true;
 }
 
@@ -360,17 +360,17 @@ const registroInclude = {
       responsableCi: true,
     },
   },
-  items: {
+  equipos: {
     include: {
-      item: {
+      equipo: {
         select: {
-          itemId: true,
+          equipoId: true,
           nombre: true,
           ordenPdf: true,
         },
       },
     },
-    orderBy: { item: { ordenPdf: "asc" } },
+    orderBy: { equipo: { ordenPdf: "asc" } },
   },
 } satisfies Prisma.MovimientoInclude;
 
@@ -502,9 +502,9 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
     bateria: movimiento.destinatarioPersonal?.personal.bateria?.nombre ?? null,
     usuarioEntregaId: movimiento.usuarioEntregaId,
     usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
-    items: movimiento.items.map((detail) => ({
-      itemId: detail.item.itemId.toString(),
-      nombre: detail.item.nombre,
+    equipos: movimiento.equipos.map((detail) => ({
+      equipoId: detail.equipo.equipoId.toString(),
+      nombre: detail.equipo.nombre,
       cantidad: detail.cantidad,
     })),
   });
@@ -543,21 +543,21 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
-  const parsedEquipos = body.items
-    .map((item) => ({
-      itemId: parseBigIntId(item.itemId),
-      cantidad: parseCantidad(item.cantidad),
+  const parsedEquipos = body.equipos
+    .map((equipo) => ({
+      equipoId: parseBigIntId(equipo.equipoId),
+      cantidad: parseCantidad(equipo.cantidad),
     }))
-    .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{ itemId: bigint; cantidad: number }>;
+    .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{ equipoId: bigint; cantidad: number }>;
 
   if (parsedEquipos.length === 0) {
     return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
   }
 
   const dedupedEquipos = new Map<string, number>();
-  for (const item of parsedEquipos) {
-    const key = item.itemId.toString();
-    dedupedEquipos.set(key, (dedupedEquipos.get(key) ?? 0) + item.cantidad);
+  for (const equipo of parsedEquipos) {
+    const key = equipo.equipoId.toString();
+    dedupedEquipos.set(key, (dedupedEquipos.get(key) ?? 0) + equipo.cantidad);
   }
 
   const existing = await prisma.movimiento.findUnique({
@@ -587,30 +587,30 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     return NextResponse.json({ error: "El tipo de destinatario no es valido para este movimiento." }, { status: 400 });
   }
 
-  const itemIds = Array.from(dedupedEquipos.keys()).map((itemId) => BigInt(itemId));
-  const itemsFound = await prisma.item.findMany({
-    where: { itemId: { in: itemIds } },
-    select: { itemId: true, nombre: true },
+  const equipoIds = Array.from(dedupedEquipos.keys()).map((equipoId) => BigInt(equipoId));
+  const itemsFound = await prisma.equipo.findMany({
+    where: { equipoId: { in: equipoIds } },
+    select: { equipoId: true, nombre: true },
   });
-  if (itemsFound.length !== itemIds.length) {
+  if (itemsFound.length !== equipoIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
 
   const comentarios = body.comentarios?.trim() || null;
   const afectaStock = true;
-  const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
-  const itemsNuevos = Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
-    itemId,
-    nombre: itemNombrePorId.get(itemId) ?? "Equipo sin nombre",
+  const itemNombrePorId = new Map(itemsFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
+  const itemsNuevos = Array.from(dedupedEquipos.entries()).map(([equipoId, cantidad]) => ({
+    equipoId,
+    nombre: itemNombrePorId.get(equipoId) ?? "Equipo sin nombre",
     cantidad,
   }));
-  const itemsAnteriores = existing.items.map((detail) => ({
-    itemId: detail.itemId.toString(),
-    nombre: detail.item.nombre,
+  const itemsAnteriores = existing.equipos.map((detail) => ({
+    equipoId: detail.equipoId.toString(),
+    nombre: detail.equipo.nombre,
     cantidad: detail.cantidad,
   }));
-  const totalUnidadesAnterior = itemsAnteriores.reduce((acc, item) => acc + item.cantidad, 0);
-  const totalUnidadesNuevo = itemsNuevos.reduce((acc, item) => acc + item.cantidad, 0);
+  const totalUnidadesAnterior = itemsAnteriores.reduce((acc, equipo) => acc + equipo.cantidad, 0);
+  const totalUnidadesNuevo = itemsNuevos.reduce((acc, equipo) => acc + equipo.cantidad, 0);
   const requestMeta = readRequestMeta(req);
 
   let nextPersonalRecord:
@@ -736,14 +736,14 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
         });
       }
 
-      await tx.movimientoItem.deleteMany({
+      await tx.movimientoEquipo.deleteMany({
         where: { movimientoId: existing.movimientoId },
       });
 
-      await tx.movimientoItem.createMany({
-        data: Array.from(dedupedEquipos.entries()).map(([itemId, cantidad]) => ({
+      await tx.movimientoEquipo.createMany({
+        data: Array.from(dedupedEquipos.entries()).map(([equipoId, cantidad]) => ({
           movimientoId: existing.movimientoId,
-          itemId: BigInt(itemId),
+          equipoId: BigInt(equipoId),
           cantidad,
         })),
       });
@@ -879,12 +879,12 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
     return NextResponse.json({ error: "El registro no tiene destinatario asociado." }, { status: 409 });
   }
 
-  const itemsEliminados = existing.items.map((detail) => ({
-    itemId: detail.itemId.toString(),
-    nombre: detail.item.nombre,
+  const itemsEliminados = existing.equipos.map((detail) => ({
+    equipoId: detail.equipoId.toString(),
+    nombre: detail.equipo.nombre,
     cantidad: detail.cantidad,
   }));
-  const totalUnidadesEliminadas = itemsEliminados.reduce((acc, item) => acc + item.cantidad, 0);
+  const totalUnidadesEliminadas = itemsEliminados.reduce((acc, equipo) => acc + equipo.cantidad, 0);
   const requestMeta = readRequestMeta(req);
 
   try {

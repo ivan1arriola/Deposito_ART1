@@ -6,18 +6,18 @@ import type { EtiquetadoDashboardData } from "@/types/etiquetado";
 
 function hasEtiquetadoDelegates() {
   const candidate = prisma as typeof prisma & {
-    item?: unknown;
+    equipo?: unknown;
     estanteria?: unknown;
-    itemCodigoSIE?: unknown;
+    equipoCodigoSIE?: unknown;
     caja?: unknown;
-    cajaItem?: unknown;
+    cajaEquipo?: unknown;
   };
   return (
-    typeof candidate.item !== "undefined" &&
+    typeof candidate.equipo !== "undefined" &&
     typeof candidate.estanteria !== "undefined" &&
-    typeof candidate.itemCodigoSIE !== "undefined" &&
+    typeof candidate.equipoCodigoSIE !== "undefined" &&
     typeof candidate.caja !== "undefined" &&
-    typeof candidate.cajaItem !== "undefined"
+    typeof candidate.cajaEquipo !== "undefined"
   );
 }
 
@@ -41,11 +41,11 @@ export async function GET(request: Request) {
     );
   }
 
-  const [items, estanterias, codigosSIE, cajas] = await Promise.all([
-    prisma.item.findMany({
-      orderBy: [{ nombre: "asc" }, { itemId: "asc" }],
+  const [equipos, estanterias, codigosSIE, cajas] = await Promise.all([
+    prisma.equipo.findMany({
+      orderBy: [{ nombre: "asc" }, { equipoId: "asc" }],
       select: {
-        itemId: true,
+        equipoId: true,
         nombre: true,
         activo: true,
       },
@@ -57,29 +57,29 @@ export async function GET(request: Request) {
         piso: true,
       },
     }),
-    prisma.itemCodigoSIE.findMany({
+    prisma.equipoCodigoSIE.findMany({
       include: {
-        item: {
+        equipo: {
           select: {
-            itemId: true,
+            equipoId: true,
             nombre: true,
           },
         },
       },
       orderBy: [
-        { item: { nombre: "asc" } },
+        { equipo: { nombre: "asc" } },
         { codigo: "asc" },
         { talla: "asc" },
-        { itemCodigoSIEId: "asc" },
+        { equipoCodigoSIEId: "asc" },
       ],
     }),
     prisma.caja.findMany({
       include: {
-        items: {
+        equipos: {
           include: {
-            item: {
+            equipo: {
               select: {
-                itemId: true,
+                equipoId: true,
                 nombre: true,
               },
             },
@@ -87,14 +87,14 @@ export async function GET(request: Request) {
         },
         codigosSIE: {
           include: {
-            itemCodigoSIE: {
+            equipoCodigoSIE: {
               select: {
-                itemCodigoSIEId: true,
+                equipoCodigoSIEId: true,
                 codigo: true,
                 talla: true,
-                item: {
+                equipo: {
                   select: {
-                    itemId: true,
+                    equipoId: true,
                     nombre: true,
                   },
                 },
@@ -109,10 +109,10 @@ export async function GET(request: Request) {
 
   const data: EtiquetadoDashboardData = {
     generatedAt: formatDateTimeForDisplay(new Date()),
-    items: items.map((item) => ({
-      itemId: item.itemId.toString(),
-      nombre: item.nombre,
-      activo: item.activo,
+    equipos: equipos.map((equipo) => ({
+      equipoId: equipo.equipoId.toString(),
+      nombre: equipo.nombre,
+      activo: equipo.activo,
     })),
     estanterias: estanterias.map((estanteria) => ({
       codigo: estanteria.codigo,
@@ -120,20 +120,20 @@ export async function GET(request: Request) {
       etiqueta: `${estanteria.codigo} Piso ${estanteria.piso}`,
     })),
     codigosSIE: codigosSIE.map((codigoSIE) => ({
-      codigoSIEId: codigoSIE.itemCodigoSIEId.toString(),
+      codigoSIEId: codigoSIE.equipoCodigoSIEId.toString(),
       codigo: codigoSIE.codigo,
       talla: normalizeTalla(codigoSIE.talla),
-      itemId: codigoSIE.itemId.toString(),
-      itemNombre: codigoSIE.item.nombre,
+      equipoId: codigoSIE.equipoId.toString(),
+      itemNombre: codigoSIE.equipo.nombre,
     })),
     cajas: cajas.map((caja) => {
       const codigosConEquipo = caja.codigosSIE
         .map((codigo) => ({
-          codigoSIEId: codigo.itemCodigoSIE.itemCodigoSIEId.toString(),
-          codigo: codigo.itemCodigoSIE.codigo,
-          talla: normalizeTalla(codigo.itemCodigoSIE.talla),
-          itemId: codigo.itemCodigoSIE.item.itemId.toString(),
-          itemNombre: codigo.itemCodigoSIE.item.nombre,
+          codigoSIEId: codigo.equipoCodigoSIE.equipoCodigoSIEId.toString(),
+          codigo: codigo.equipoCodigoSIE.codigo,
+          talla: normalizeTalla(codigo.equipoCodigoSIE.talla),
+          equipoId: codigo.equipoCodigoSIE.equipo.equipoId.toString(),
+          itemNombre: codigo.equipoCodigoSIE.equipo.nombre,
         }))
         .sort((a, b) => {
           const byCodigo = a.codigo.localeCompare(b.codigo, "es", { sensitivity: "base" });
@@ -158,22 +158,22 @@ export async function GET(request: Request) {
       ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
       const equiposBase =
-        caja.items.length > 0
-          ? caja.items
+        caja.equipos.length > 0
+          ? caja.equipos
               .map((entry) => ({
-                itemId: entry.item.itemId.toString(),
-                itemNombre: entry.item.nombre,
+                equipoId: entry.equipo.equipoId.toString(),
+                itemNombre: entry.equipo.nombre,
                 cantidad: entry.cantidad,
               }))
               .sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }))
           : Array.from(
               new Map(
                 codigosConEquipo.map((codigo) => [
-                  codigo.itemId,
+                  codigo.equipoId,
                   {
-                    itemId: codigo.itemId,
+                    equipoId: codigo.equipoId,
                     itemNombre: codigo.itemNombre,
-                    cantidad: codigosConEquipo.filter((entry) => entry.itemId === codigo.itemId).length || 1,
+                    cantidad: codigosConEquipo.filter((entry) => entry.equipoId === codigo.equipoId).length || 1,
                   },
                 ]),
               ).values(),
@@ -181,7 +181,7 @@ export async function GET(request: Request) {
 
       const equipos = equiposBase.map((equipo) => {
         const codigosSIEEquipo = codigosConEquipo
-          .filter((codigo) => codigo.itemId === equipo.itemId)
+          .filter((codigo) => codigo.equipoId === equipo.equipoId)
           .map((codigo) => ({
             codigoSIEId: codigo.codigoSIEId,
             codigo: codigo.codigo,
@@ -189,7 +189,7 @@ export async function GET(request: Request) {
           }));
 
         return {
-          itemId: equipo.itemId,
+          equipoId: equipo.equipoId,
           itemNombre: equipo.itemNombre,
           cantidad: equipo.cantidad,
           codigosSIE: codigosSIEEquipo,

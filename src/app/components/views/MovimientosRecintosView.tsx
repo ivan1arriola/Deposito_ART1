@@ -64,7 +64,7 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
           row.tipo,
           row.clase,
           row.nombre,
-          ...(row.items || []).map((i) => `${i.item} ${i.cantidad}`),
+          ...(row.equipos || []).map((i) => `${i.equipo} ${i.cantidad}`),
           row.observaciones || "",
           row.usuarioEntrega || "",
         ].join(" "),
@@ -89,7 +89,7 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap equipos-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">Asignaciones a Recintos y Externos</h2>
             <p className="mt-1 text-xs text-stone-600">
@@ -136,7 +136,7 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
           </div>
         </div>
 
-        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:equipos-center">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -196,14 +196,14 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
                     <td className="border-b border-stone-200 px-3 py-2 text-sm font-bold text-stone-900 align-top">{row.nombre}</td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800 align-top">
                       <div className="flex flex-col gap-1">
-                        {(row.items || []).map((i, idx) => (
-                          <span key={idx} className="block">{i.item}</span>
+                        {(row.equipos || []).map((i, idx) => (
+                          <span key={idx} className="block">{i.equipo}</span>
                         ))}
                       </div>
                     </td>
                     <td className="border-b border-stone-200 px-3 py-2 text-sm font-bold text-stone-900 align-top">
                       <div className="flex flex-col gap-1">
-                        {(row.items || []).map((i, idx) => (
+                        {(row.equipos || []).map((i, idx) => (
                           <span key={idx} className="block">{i.cantidad}</span>
                         ))}
                       </div>
@@ -213,7 +213,7 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
                       {row.observaciones || "-"}
                     </td>
                     <td className="border-b border-stone-200 px-3 py-2 text-right align-top">
-                      <div className="inline-flex items-center justify-end gap-1">
+                      <div className="inline-flex equipos-center justify-end gap-1">
                         <button
                           type="button"
                           onClick={() => setDetailRow(row)}
@@ -316,9 +316,9 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
               <div>
                 <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">Equipos</p>
                 <div className="mt-2 rounded-lg border border-stone-200 divide-y divide-stone-100">
-                  {(detailRow.items || []).map((i, idx) => (
-                    <div key={idx} className="flex justify-between items-center p-3 bg-stone-50/50">
-                      <span className="text-sm font-medium text-stone-800">{i.item}</span>
+                  {(detailRow.equipos || []).map((i, idx) => (
+                    <div key={idx} className="flex justify-between equipos-center p-3 bg-stone-50/50">
+                      <span className="text-sm font-medium text-stone-800">{i.equipo}</span>
                       <span className="text-sm font-bold text-stone-900 bg-white border border-stone-200 px-2 py-0.5 rounded shadow-sm">x{i.cantidad}</span>
                     </div>
                   ))}
@@ -348,7 +348,7 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
               <button
                 type="button"
                 onClick={() => window.open(`/api/registros/${encodeURIComponent(detailRow.movimientoId)}/recibo`, "_blank", "noopener,noreferrer")}
-                className="rounded-xl bg-violet-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-violet-800 transition-colors flex items-center gap-2"
+                className="rounded-xl bg-violet-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-violet-800 transition-colors flex equipos-center gap-2"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />

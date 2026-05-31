@@ -48,22 +48,22 @@ export type VestuarioTallaDiscordancia = {
 
 export function findVestuarioTallaDiscordancias(
   personalTallas: Partial<Record<TallaKey, string>>,
-  items: Array<{ nombre: string }>,
+  equipos: Array<{ nombre: string }>,
 ): VestuarioTallaDiscordancia[] {
   const discordancias: VestuarioTallaDiscordancia[] = [];
 
-  for (const item of items) {
-    const tallaKey = inferTallaKeyFromItemName(item.nombre);
+  for (const equipo of equipos) {
+    const tallaKey = inferTallaKeyFromItemName(equipo.nombre);
     if (!tallaKey) continue;
 
-    const talleVestuario = inferDeclaredTalla(item.nombre, tallaKey);
+    const talleVestuario = inferDeclaredTalla(equipo.nombre, tallaKey);
     if (!talleVestuario) continue;
 
     const tallePersonal = normalizeTallaValue(tallaKey, personalTallas[tallaKey] ?? null);
     if (tallePersonal === talleVestuario) continue;
 
     discordancias.push({
-      itemNombre: item.nombre,
+      itemNombre: equipo.nombre,
       tallaKey,
       talleVestuario,
       tallePersonal,

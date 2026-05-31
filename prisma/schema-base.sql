@@ -122,7 +122,7 @@ INSERT INTO "talla_tipo" ("nombre") VALUES
 ('PARKA'), ('CAMISACO'), ('PANTALON'), ('KEPI'), ('CALZADO');
 
 CREATE TABLE "equipos" (
-  "item_id" BIGSERIAL PRIMARY KEY,
+  "equipo_id" BIGSERIAL PRIMARY KEY,
   "nombre" TEXT NOT NULL UNIQUE,
   "tipo_equipo_id" SMALLINT REFERENCES "tipo_equipo"("tipo_equipo_id") ON DELETE SET NULL,
   "activo" BOOLEAN NOT NULL DEFAULT TRUE,
@@ -130,11 +130,11 @@ CREATE TABLE "equipos" (
   "existencia_sie" INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE INDEX "item_tipo_equipo_id_idx" ON "item"("tipo_equipo_id");
+CREATE INDEX "equipo_tipo_equipo_id_idx" ON "equipos"("tipo_equipo_id");
 
-CREATE INDEX "item_orden_pdf_nombre_idx" ON "item"("orden_pdf", "nombre");
+CREATE INDEX "equipo_orden_pdf_nombre_idx" ON "equipos"("orden_pdf", "nombre");
 
-INSERT INTO "item" ("nombre", "activo", "orden_pdf") VALUES
+INSERT INTO "equipos" ("nombre", "activo", "orden_pdf") VALUES
 ('Buzo Verde M/C', TRUE, 1),
 ('Buzo M/L V/Oliva', TRUE, 2),
 ('Parka Pixelada 4A', TRUE, 3),
@@ -168,17 +168,17 @@ CREATE TABLE "estanteria" (
   PRIMARY KEY ("codigo", "piso")
 );
 
-CREATE TABLE "item_codigo_sie" (
-  "item_codigo_sie_id" BIGSERIAL PRIMARY KEY,
+CREATE TABLE "equipo_codigo_sie" (
+  "equipo_codigo_sie_id" BIGSERIAL PRIMARY KEY,
   "codigo" TEXT NOT NULL,
   "talla" TEXT NOT NULL DEFAULT '-',
-  "item_id" BIGINT NOT NULL REFERENCES "equipos"("item_id") ON DELETE CASCADE,
-  CONSTRAINT "item_codigo_sie_codigo_formato_chk" CHECK ("codigo" ~ '^([0-9]{8}|[A-Z]{3}[0-9]{2})$'),
-  CONSTRAINT "item_codigo_sie_codigo_talla_item_uq" UNIQUE ("codigo", "talla", "item_id")
+  "equipo_id" BIGINT NOT NULL REFERENCES "equipos"("equipo_id") ON DELETE CASCADE,
+  CONSTRAINT "equipo_codigo_sie_codigo_formato_chk" CHECK ("codigo" ~ '^([0-9]{8}|[A-Z]{3}[0-9]{2})$'),
+  CONSTRAINT "equipo_codigo_sie_codigo_talla_equipo_uq" UNIQUE ("codigo", "talla", "equipo_id")
 );
 
-CREATE INDEX "item_codigo_sie_item_id_idx" ON "item_codigo_sie"("item_id");
-CREATE INDEX "item_codigo_sie_codigo_idx" ON "item_codigo_sie"("codigo");
+CREATE INDEX "equipo_codigo_sie_equipo_id_idx" ON "equipo_codigo_sie"("equipo_id");
+CREATE INDEX "equipo_codigo_sie_codigo_idx" ON "equipo_codigo_sie"("codigo");
 
 CREATE TABLE "caja" (
   "codigo_deposito_general" INTEGER PRIMARY KEY,
@@ -195,39 +195,39 @@ CREATE TABLE "caja" (
 
 CREATE INDEX "caja_estanteria_piso_idx" ON "caja"("estanteria", "piso");
 
-CREATE TABLE "caja_item" (
+CREATE TABLE "caja_equipo" (
   "codigo_deposito_general" INTEGER NOT NULL,
-  "item_id" BIGINT NOT NULL,
+  "equipo_id" BIGINT NOT NULL,
   "cantidad" INTEGER NOT NULL DEFAULT 1,
-  PRIMARY KEY ("codigo_deposito_general", "item_id"),
-  CONSTRAINT "caja_item_cantidad_chk" CHECK ("cantidad" > 0),
-  CONSTRAINT "caja_item_caja_fk"
+  PRIMARY KEY ("codigo_deposito_general", "equipo_id"),
+  CONSTRAINT "caja_equipo_cantidad_chk" CHECK ("cantidad" > 0),
+  CONSTRAINT "caja_equipo_caja_fk"
     FOREIGN KEY ("codigo_deposito_general")
     REFERENCES "caja"("codigo_deposito_general")
     ON DELETE CASCADE,
-  CONSTRAINT "caja_item_item_fk"
-    FOREIGN KEY ("item_id")
-    REFERENCES "equipos"("item_id")
+  CONSTRAINT "caja_equipo_equipo_fk"
+    FOREIGN KEY ("equipo_id")
+    REFERENCES "equipos"("equipo_id")
     ON DELETE RESTRICT
 );
 
-CREATE INDEX "caja_item_item_id_idx" ON "caja_item"("item_id");
+CREATE INDEX "caja_equipo_equipo_id_idx" ON "caja_equipo"("equipo_id");
 
-CREATE TABLE "caja_item_codigo_sie" (
+CREATE TABLE "caja_equipo_codigo_sie" (
   "codigo_deposito_general" INTEGER NOT NULL,
-  "item_codigo_sie_id" BIGINT NOT NULL,
-  PRIMARY KEY ("codigo_deposito_general", "item_codigo_sie_id"),
-  CONSTRAINT "caja_item_codigo_sie_caja_fk"
+  "equipo_codigo_sie_id" BIGINT NOT NULL,
+  PRIMARY KEY ("codigo_deposito_general", "equipo_codigo_sie_id"),
+  CONSTRAINT "caja_equipo_codigo_sie_caja_fk"
     FOREIGN KEY ("codigo_deposito_general")
     REFERENCES "caja"("codigo_deposito_general")
     ON DELETE CASCADE,
-  CONSTRAINT "caja_item_codigo_sie_sie_fk"
-    FOREIGN KEY ("item_codigo_sie_id")
-    REFERENCES "item_codigo_sie"("item_codigo_sie_id")
+  CONSTRAINT "caja_equipo_codigo_sie_sie_fk"
+    FOREIGN KEY ("equipo_codigo_sie_id")
+    REFERENCES "equipo_codigo_sie"("equipo_codigo_sie_id")
     ON DELETE CASCADE
 );
 
-CREATE INDEX "caja_item_codigo_sie_sie_id_idx" ON "caja_item_codigo_sie"("item_codigo_sie_id");
+CREATE INDEX "caja_equipo_codigo_sie_sie_id_idx" ON "caja_equipo_codigo_sie"("equipo_codigo_sie_id");
 
 CREATE TABLE "personal" (
   "ci" TEXT PRIMARY KEY,
@@ -237,6 +237,11 @@ CREATE TABLE "personal" (
   "nombre2" TEXT,
   "telefono_contacto" TEXT,
   "grado_id" SMALLINT NOT NULL,
+  "tipo" "tipo_personal" NOT NULL,
+  "bateria_id" SMALLINT REFERENCES "bateria"("bateria_id") ON DELETE SET NULL,
+  "es_reingreso" BOOLEAN NOT NULL DEFAULT FALSE,
+  "fecha_ingreso" DATE,
+  "fecha_ingreso_original" DATE,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   CONSTRAINT "personal_ci_uruguaya_valida_chk" CHECK (public.es_ci_uruguaya_valida("ci")),
@@ -245,9 +250,7 @@ CREATE TABLE "personal" (
 );
 
 CREATE INDEX "personal_grado_id_idx" ON "personal"("grado_id");
-
-CREATE INDEX "subalterno_bateria_id_idx" ON "subalterno"("bateria_id");
-
+CREATE INDEX "personal_bateria_id_idx" ON "personal"("bateria_id");
 CREATE TABLE "personal_talla" (
   "ci" TEXT NOT NULL REFERENCES "personal"("ci") ON DELETE CASCADE,
   "talla_tipo_id" SMALLINT NOT NULL REFERENCES "talla_tipo"("talla_tipo_id"),
@@ -261,49 +264,6 @@ CREATE TABLE "personal_talla" (
   PRIMARY KEY ("ci", "talla_tipo_id")
 );
 
-CREATE OR REPLACE FUNCTION public.assert_personal_partition(ci_text TEXT)
-RETURNS VOID
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  personal_tipo "tipo_personal";
-  in_subalterno BOOLEAN;
-  in_oficial BOOLEAN;
-  in_suboficial BOOLEAN;
-  total INTEGER;
-BEGIN
-  SELECT g."tipo" INTO personal_tipo
-  FROM "personal" p
-  JOIN "grado" g ON g."grado_id" = p."grado_id"
-  WHERE p."ci" = ci_text;
-
-  IF NOT FOUND THEN
-    RETURN;
-  END IF;
-
-  SELECT
-    EXISTS(SELECT 1 FROM "subalterno" WHERE "ci" = ci_text),
-    EXISTS(SELECT 1 FROM "oficial" WHERE "ci" = ci_text),
-    EXISTS(SELECT 1 FROM "suboficial" WHERE "ci" = ci_text)
-  INTO in_subalterno, in_oficial, in_suboficial;
-
-  total :=
-    (CASE WHEN in_subalterno THEN 1 ELSE 0 END) +
-    (CASE WHEN in_oficial THEN 1 ELSE 0 END) +
-    (CASE WHEN in_suboficial THEN 1 ELSE 0 END);
-
-  IF total <> 1 THEN
-    RAISE EXCEPTION 'La CI % debe estar en exactamente una subtabla. Actual: %.', ci_text, total;
-  END IF;
-
-  IF (personal_tipo = 'SUBALTERNO' AND NOT in_subalterno)
-    OR (personal_tipo = 'OFICIAL' AND NOT in_oficial)
-    OR (personal_tipo = 'SUBOFICIAL' AND NOT in_suboficial) THEN
-    RAISE EXCEPTION 'La CI % tiene tipo % pero no coincide con su subtabla.', ci_text, personal_tipo;
-  END IF;
-END;
-$$;
-
 CREATE TABLE "stock_operacion" (
   "stock_operacion_id" BIGSERIAL PRIMARY KEY,
   "fecha" DATE NOT NULL,
@@ -314,14 +274,14 @@ CREATE TABLE "stock_operacion" (
 
 CREATE INDEX "stock_operacion_fecha_idx" ON "stock_operacion"("fecha" DESC);
 
-CREATE TABLE "stock_operacion_item" (
+CREATE TABLE "stock_operacion_equipo" (
   "stock_operacion_id" BIGINT NOT NULL REFERENCES "stock_operacion"("stock_operacion_id") ON DELETE CASCADE,
-  "item_id" BIGINT NOT NULL REFERENCES "equipos"("item_id"),
+  "equipo_id" BIGINT NOT NULL REFERENCES "equipos"("equipo_id") ON DELETE RESTRICT,
   "cantidad" INTEGER NOT NULL CHECK ("cantidad" > 0),
-  PRIMARY KEY ("stock_operacion_id", "item_id")
+  PRIMARY KEY ("stock_operacion_id", "equipo_id")
 );
 
-CREATE INDEX "stock_operacion_item_item_id_idx" ON "stock_operacion_item"("item_id");
+CREATE INDEX "stock_operacion_equipo_equipo_id_idx" ON "stock_operacion_equipo"("equipo_id");
 
 CREATE TABLE "observacion" (
   "observacion_id" BIGSERIAL PRIMARY KEY,
@@ -483,18 +443,18 @@ CREATE INDEX "movimiento_destinatario_recinto_clase_idx"
 CREATE INDEX "movimiento_destinatario_recinto_nombre_idx"
   ON "movimiento_destinatario_recinto"("nombre");
 
-CREATE TABLE "movimiento_item" (
+CREATE TABLE "movimiento_equipo" (
   "movimiento_id" BIGINT NOT NULL REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
-  "item_id" BIGINT NOT NULL REFERENCES "equipos"("item_id") ON DELETE CASCADE,
+  "equipo_id" BIGINT NOT NULL REFERENCES "equipos"("equipo_id") ON DELETE RESTRICT,
   "cantidad" INTEGER NOT NULL CHECK ("cantidad" > 0),
   "estado_entrega" "estado_equipo_prestamo" NOT NULL DEFAULT 'NUEVO',
   "comentario_entrega" TEXT,
   "estado_devolucion" "estado_equipo_prestamo",
   "comentario_devolucion" TEXT,
-  PRIMARY KEY ("movimiento_id", "item_id")
+  PRIMARY KEY ("movimiento_id", "equipo_id")
 );
 
-CREATE INDEX "movimiento_item_item_id_idx" ON "movimiento_item"("item_id");
+CREATE INDEX "movimiento_equipo_equipo_id_idx" ON "movimiento_equipo"("equipo_id");
 
 CREATE TABLE "prestamo_activo" (
   "movimiento_id" BIGINT PRIMARY KEY REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,

@@ -131,17 +131,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
-  if (!Array.isArray(candidate.items) || candidate.items.length === 0) {
+  if (!Array.isArray(candidate.equipos) || candidate.equipos.length === 0) {
     return NextResponse.json({ error: "Debes enviar al menos un artículo válido." }, { status: 400 });
   }
 
   const normalizedItems = new Map<number, number>();
-  for (const rawItem of candidate.items as EntregaArticuloItemPayload[]) {
+  for (const rawItem of candidate.equipos as EntregaArticuloItemPayload[]) {
     const articuloId = parseArticuloId(rawItem?.articuloId);
     const cantidad = parseCantidad(rawItem?.cantidad);
     if (articuloId === null || cantidad === null) {
       return NextResponse.json(
-        { error: "Cada item debe incluir 'articuloId' y 'cantidad' con enteros positivos." },
+        { error: "Cada equipo debe incluir 'articuloId' y 'cantidad' con enteros positivos." },
         { status: 400 },
       );
     }
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
     normalizedItems.set(articuloId, (normalizedItems.get(articuloId) ?? 0) + cantidad);
   }
 
-  const items = Array.from(normalizedItems.entries()).map(([articuloId, cantidad]) => ({
+  const equipos = Array.from(normalizedItems.entries()).map(([articuloId, cantidad]) => ({
     articuloId,
     cantidad,
   }));
@@ -190,7 +190,7 @@ export async function POST(req: Request) {
           },
         }),
         tx.articulo.findMany({
-          where: { articuloId: { in: items.map((item) => item.articuloId) } },
+          where: { articuloId: { in: equipos.map((equipo) => equipo.articuloId) } },
           select: {
             articuloId: true,
             nombre: true,
@@ -207,18 +207,18 @@ export async function POST(req: Request) {
         throw new Error("ORDENANTE_NOT_FOUND");
       }
 
-      if (articulos.length !== items.length) {
+      if (articulos.length !== equipos.length) {
         throw new Error("ARTICULO_NOT_FOUND");
       }
 
       const articuloById = new Map(articulos.map((articulo) => [articulo.articuloId, articulo]));
-      for (const item of items) {
-        const articulo = articuloById.get(item.articuloId);
+      for (const equipo of equipos) {
+        const articulo = articuloById.get(equipo.articuloId);
         if (!articulo) {
           throw new Error("ARTICULO_NOT_FOUND");
         }
-        const stockDisponible = await calcularStockArticulo(item.articuloId, tx);
-        if (stockDisponible < item.cantidad) {
+        const stockDisponible = await calcularStockArticulo(equipo.articuloId, tx);
+        if (stockDisponible < equipo.cantidad) {
           throw new Error(`INSUFFICIENT_STOCK:${articulo.articuloId}`);
         }
       }
@@ -243,10 +243,10 @@ export async function POST(req: Request) {
 
       // Create the stock movements (EGRESO)
       await tx.articuloStockMovimiento.createMany({
-        data: items.map((item) => ({
-          articuloId: item.articuloId,
+        data: equipos.map((equipo) => ({
+          articuloId: equipo.articuloId,
           tipo: TipoArticuloStockMovimiento.EGRESO,
-          cantidad: item.cantidad,
+          cantidad: equipo.cantidad,
           comentario,
           articuloEntregaPersonalId: entrega.articuloEntregaPersonalId,
         })),
@@ -254,15 +254,15 @@ export async function POST(req: Request) {
 
       // Compute stock dynamically after creating movements
       const articulosActualizados: ArticuloActualizadoEgreso[] = [];
-      for (const item of items) {
-        const articulo = articuloById.get(item.articuloId)!;
-        const stockActual = await calcularStockArticulo(item.articuloId, tx);
+      for (const equipo of equipos) {
+        const articulo = articuloById.get(equipo.articuloId)!;
+        const stockActual = await calcularStockArticulo(equipo.articuloId, tx);
         articulosActualizados.push({
           articuloId: articulo.articuloId,
           nombre: articulo.nombre,
           tipo: articulo.tipo,
           stockActual,
-          cantidadEntregada: item.cantidad,
+          cantidadEntregada: equipo.cantidad,
         });
       }
 
@@ -302,7 +302,7 @@ export async function POST(req: Request) {
         ordenanteCi: result.entrega.ordenanteCi,
         fecha: formatDateOnlyFromDate(result.entrega.fecha) ?? "",
         comentario: result.entrega.comentario,
-        items: result.articulosActualizados.map((articulo) => ({
+        equipos: result.articulosActualizados.map((articulo) => ({
           articuloId: articulo.articuloId,
           nombre: articulo.nombre,
           tipo: articulo.tipo,

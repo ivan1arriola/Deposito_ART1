@@ -85,13 +85,13 @@ export function buildActuanteOptions(oficialesSuboficiales: OficialSuboficial[],
 }
 
 export function getStockSummaryMetrics(resumen: StockDashboardData["resumen"]) {
-  const totalSubalternos = resumen.reduce((total, item) => total + item.stockSubalternos, 0);
-  const totalAsignacion = resumen.reduce((total, item) => total + item.stockAsignacion, 0);
-  const totalPrestamo = resumen.reduce((total, item) => total + item.stockPrestamo, 0);
-  const totalDeposito = resumen.reduce((total, item) => total + item.stockDeposito, 0);
-  const totalUnidad = resumen.reduce((total, item) => total + item.stockUnidad, 0);
-  const itemsConStockDeposito = resumen.filter((item) => item.stockDeposito !== 0).length;
-  const itemsNegativosDeposito = resumen.filter((item) => item.stockDeposito < 0).length;
+  const totalSubalternos = resumen.reduce((total, equipo) => total + equipo.stockSubalternos, 0);
+  const totalAsignacion = resumen.reduce((total, equipo) => total + equipo.stockAsignacion, 0);
+  const totalPrestamo = resumen.reduce((total, equipo) => total + equipo.stockPrestamo, 0);
+  const totalDeposito = resumen.reduce((total, equipo) => total + equipo.stockDeposito, 0);
+  const totalUnidad = resumen.reduce((total, equipo) => total + equipo.stockUnidad, 0);
+  const itemsConStockDeposito = resumen.filter((equipo) => equipo.stockDeposito !== 0).length;
+  const itemsNegativosDeposito = resumen.filter((equipo) => equipo.stockDeposito < 0).length;
 
   return {
     totalSubalternos,
@@ -125,7 +125,7 @@ export function getSectionViewConfig(section: StockSection) {
                 : "Historial de stock",
     stockTableTitle:
       section === "total"
-        ? "Totales por item (subalternos + recintos + préstamo + depósito)"
+        ? "Totales por equipo (subalternos + recintos + préstamo + depósito)"
         : "Stock interno de depósito por equipo",
   };
 }

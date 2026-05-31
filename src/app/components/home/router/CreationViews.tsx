@@ -248,7 +248,7 @@ export function CreationViews(props: CreationViewsProps) {
           ordenanteCi={articuloEntregaPersonalOrdenanteCi}
           fecha={articuloEntregaPersonalFecha}
           comentarios={articuloEntregaPersonalComentarios}
-          items={articuloEntregaPersonalItems}
+          equipos={articuloEntregaPersonalItems}
           saving={articuloEntregaPersonalSaving}
           onBack={() => setActiveView("articulos")}
           onSubmit={() => void submitArticuloEntregaPersonal()}

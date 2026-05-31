@@ -290,14 +290,14 @@ export function resolveEquipoTipoLabel(tiposEquipo: EquipoTipo[], tipo: TipoEqui
 
 export type EquipoMergeResult = {
   ok: boolean;
-  sourceItem: {
+  sourceEquipo: {
     equipoId: string;
-    itemId: string;
+    equipoId: string;
     nombre: string;
   };
-  targetItem: {
+  targetEquipo: {
     equipoId: string;
-    itemId: string;
+    equipoId: string;
     nombre: string;
   };
   resumen: {
@@ -329,9 +329,9 @@ export async function mergeEquipoHandler(sourceEquipoId: string, targetEquipoId:
 }
 
 export type EquipoDeleteImpact = {
-  item: {
+  equipo: {
     equipoId: string;
-    itemId: string;
+    equipoId: string;
     nombre: string;
   };
   resumen: {
@@ -423,14 +423,14 @@ export async function entregarArticulosPersonalHandler(
   ordenanteCi: string,
   fecha: string,
   comentario: string | undefined,
-  items: Array<{ articuloId: number; cantidad: number }>,
+  equipos: Array<{ articuloId: number; cantidad: number }>,
   callbacks: CallbackProps,
 ) {
   try {
     const result = await api("/api/articulos/entregas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ personalCi, ordenanteCi, fecha, comentario, items }),
+      body: JSON.stringify({ personalCi, ordenanteCi, fecha, comentario, equipos }),
     });
     callbacks.onSuccess(result);
     return result;

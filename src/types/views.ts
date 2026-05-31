@@ -4,10 +4,10 @@
 
 export type { AuditFilter } from "./views/AuditFilter";
 export type { ConfirmDialogState } from "./views/ConfirmDialogState";
-export type { EquipoMovimientoCatalogItem } from "./views/EquipoMovimientoCatalogItem";
+export type { EquipoMovimientoCatalogEquipo } from "./views/EquipoMovimientoCatalogEquipo";
 export type { EquipoMovimientoViewRow } from "./views/EquipoMovimientoViewRow";
 export type { EquipoResumenData } from "./views/EquipoResumenData";
-export type { EquipoResumenItem } from "./views/EquipoResumenItem";
+export type { EquipoResumenEquipo } from "./views/EquipoResumenEquipo";
 export type { EquipoResumenRow } from "./views/EquipoResumenRow";
 export type { HojaMatrixData } from "./views/HojaMatrixData";
 export type { HojaMatrixEquipo } from "./views/HojaMatrixEquipo";
@@ -24,6 +24,6 @@ export type { RegistroViewerState } from "./views/RegistroViewerState";
 export type { RegistroViewTipo } from "./views/RegistroViewTipo";
 export type { StockDashboardData } from "./views/StockDashboardData";
 export type { StockHistorialEntry } from "./views/StockHistorialEntry";
-export type { StockItemTraceData } from "./views/StockItemTraceData";
+export type { StockEquipoTraceData } from "./views/StockEquipoTraceData";
 export type { StockOperacionViewTipo } from "./views/StockOperacionViewTipo";
 export type { StockResumenRow } from "./views/StockResumenRow";

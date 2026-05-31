@@ -1,4 +1,4 @@
 export type StockOperacionDraftItem = {
-  itemId: string;
+  equipoId: string;
   cantidad: string;
 };

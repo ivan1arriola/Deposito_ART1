@@ -43,14 +43,14 @@ function AccordionCard({ title, description, open, onToggle, badge, children }: 
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-start justify-between gap-3 text-left"
+        className="flex w-full equipos-start justify-between gap-3 text-left"
         aria-expanded={open}
       >
         <div>
           <h2 className="text-base font-semibold text-stone-900">{title}</h2>
           <p className="mt-1 text-xs text-stone-600">{description}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex equipos-center gap-2">
           {badge ? (
             <span className="inline-flex min-w-[2.5rem] justify-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">
               {badge}
@@ -151,7 +151,7 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
 
       return (
         <article key={`talla-section-${tallaKey}`} className="rounded-xl border border-stone-200 bg-white p-3">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex equipos-center justify-between">
             <div>
               <h3 className="text-sm font-semibold text-stone-900">{TALLA_LABELS[tallaKey]}</h3>
               <p className="mt-1 text-xs text-stone-600">Cantidades absolutas por talla</p>
@@ -172,7 +172,7 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
 
                   return (
                     <article key={`card-${bateria.key}-${tallaKey}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex equipos-center justify-between gap-2">
                         <h4 className="text-sm font-semibold text-stone-900">{bateria.nombre}</h4>
                         {showTotal ? (
                           <span
@@ -256,7 +256,7 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-center rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-6">
+            <div className="flex equipos-center justify-center rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-6">
               <p className="text-xs text-stone-500">No hay datos para esta prenda</p>
             </div>
           )}
@@ -268,7 +268,7 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
   const renderResumenPorBateria = (resumen: ResumenBateria[]) => {
     return resumen.map((bateria) => (
       <article key={`bateria-${bateria.key}`} className="rounded-xl border border-stone-200 bg-white p-3">
-        <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="mb-3 flex equipos-center justify-between gap-2">
           <div>
             <h3 className="text-sm font-semibold text-stone-900">{bateria.nombre}</h3>
             <p className="mt-1 text-xs text-stone-600">Total de subalternos considerados en este grupo</p>
@@ -288,7 +288,7 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
 
             return (
               <article key={`bateria-${bateria.key}-talla-${talla.key}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="mb-3 flex equipos-center justify-between gap-2">
                   <div>
                     <h4 className="text-sm font-semibold text-stone-900">{talla.label}</h4>
                     <p className="mt-1 text-xs text-stone-600">Cantidades absolutas por talla</p>
@@ -330,7 +330,7 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
                     </div>
                   </>
                 ) : (
-                  <div className="flex items-center justify-center rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-6">
+                  <div className="flex equipos-center justify-center rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-6">
                     <p className="text-xs text-stone-500">No hay datos para esta prenda</p>
                   </div>
                 )}
@@ -359,12 +359,12 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
               <QuickPrintLink
                 href="/talles-subalternos?autoprint=1"
                 label="Imprimir nomina de subalternos"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800"
+                className="inline-flex equipos-center justify-center gap-2 rounded-lg border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800"
               />
               <QuickPrintLink
                 href="/resumen-tallas-unidad?autoprint=1"
                 label="Imprimir resumen de subalternos"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-200"
+                className="inline-flex equipos-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-200"
               />
             </div>
           </section>
@@ -376,12 +376,12 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
               <QuickPrintLink
                 href="/talles-oficiales-suboficiales?autoprint=1&tipo=oficial"
                 label="Imprimir nomina de oficiales"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-sky-700 bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-800"
+                className="inline-flex equipos-center justify-center gap-2 rounded-lg border border-sky-700 bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-800"
               />
               <QuickPrintLink
                 href="/resumen-tallas-oficiales-suboficiales?autoprint=1&tipo=oficial"
                 label="Imprimir resumen de oficiales"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-sky-300 bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-900 transition hover:bg-sky-200"
+                className="inline-flex equipos-center justify-center gap-2 rounded-lg border border-sky-300 bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-900 transition hover:bg-sky-200"
               />
             </div>
           </section>
@@ -393,12 +393,12 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
               <QuickPrintLink
                 href="/talles-oficiales-suboficiales?autoprint=1&tipo=suboficial"
                 label="Imprimir nomina de suboficiales"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-700 bg-indigo-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-800"
+                className="inline-flex equipos-center justify-center gap-2 rounded-lg border border-indigo-700 bg-indigo-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-800"
               />
               <QuickPrintLink
                 href="/resumen-tallas-oficiales-suboficiales?autoprint=1&tipo=suboficial"
                 label="Imprimir resumen de suboficiales"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-300 bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-900 transition hover:bg-indigo-200"
+                className="inline-flex equipos-center justify-center gap-2 rounded-lg border border-indigo-300 bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-900 transition hover:bg-indigo-200"
               />
             </div>
           </section>
@@ -410,12 +410,12 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
               <QuickPrintLink
                 href="/talles-toda-unidad?autoprint=1"
                 label="Imprimir nomina de toda la unidad"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-700 bg-amber-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-800"
+                className="inline-flex equipos-center justify-center gap-2 rounded-lg border border-amber-700 bg-amber-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-800"
               />
               <QuickPrintLink
                 href="/resumen-tallas-toda-unidad?autoprint=1"
                 label="Imprimir resumen de toda la unidad"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-200"
+                className="inline-flex equipos-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-200"
               />
             </div>
           </section>
@@ -427,7 +427,7 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
               <QuickPrintLink
                 href="/resumen-talles-por-bateria?autoprint=1"
                 label="Imprimir resumen por bateria"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-700 bg-rose-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-800"
+                className="inline-flex equipos-center justify-center gap-2 rounded-lg border border-rose-700 bg-rose-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-800"
               />
             </div>
           </section>
@@ -505,7 +505,7 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
           <button
             type="button"
             onClick={() => setShowMissingDataWarning((prev) => !prev)}
-            className="fixed bottom-4 right-4 z-[250] inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-900 shadow-lg transition hover:bg-amber-200 md:bottom-6 md:right-6"
+            className="fixed bottom-4 right-4 z-[250] inline-flex equipos-center gap-2 rounded-full border border-amber-300 bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-900 shadow-lg transition hover:bg-amber-200 md:bottom-6 md:right-6"
             aria-expanded={showMissingDataWarning}
             aria-controls="missing-data-warning-panel"
             title="Hay personal con talles sin dato"
@@ -524,7 +524,7 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
               id="missing-data-warning-panel"
               className="fixed inset-x-3 bottom-20 z-[250] max-h-[62vh] overflow-auto rounded-2xl border border-amber-300 bg-white p-3 shadow-2xl md:inset-x-auto md:bottom-20 md:right-6 md:w-[26rem]"
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex equipos-start justify-between gap-2">
                 <div>
                   <p className="text-sm font-semibold text-amber-900">Advertencia de talles</p>
                   <p className="mt-1 text-xs text-stone-700">

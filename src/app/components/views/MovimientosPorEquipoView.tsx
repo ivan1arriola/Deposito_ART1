@@ -17,13 +17,13 @@ import {
   type MovimientosEquipoSortField,
 } from "@/lib/movimientos-equipo-sort";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
-import type { EquipoMovimientoCatalogItem, EquipoMovimientoViewRow, PrestamoStockEntry } from "@/types/views";
+import type { EquipoMovimientoCatalogEquipo, EquipoMovimientoViewRow, PrestamoStockEntry } from "@/types/views";
 
 type MovimientosEquipoResponse = {
   generatedAt: string;
   total: number;
-  items: EquipoMovimientoCatalogItem[];
-  selectedItem: EquipoMovimientoCatalogItem | null;
+  equipos: EquipoMovimientoCatalogEquipo[];
+  selectedItem: EquipoMovimientoCatalogEquipo | null;
   rows: EquipoMovimientoViewRow[];
 };
 
@@ -41,8 +41,8 @@ type RegistroMovimientoDetail = {
   bateria: string | null;
   usuarioEntregaId: string;
   usuarioEntregaNombre: string;
-  items: Array<{
-    itemId: string;
+  equipos: Array<{
+    equipoId: string;
     nombre: string;
     cantidad: number;
   }>;
@@ -81,7 +81,7 @@ type MovimientosPorEquipoViewProps = {
 export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: MovimientosPorEquipoViewProps = {}) {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [items, setItems] = useState<EquipoMovimientoCatalogItem[]>([]);
+  const [equipos, setItems] = useState<EquipoMovimientoCatalogEquipo[]>([]);
   const [selectedItemId, setSelectedItemId] = useState("");
   const [catalogSearch, setCatalogSearch] = useState("");
   const [catalogHojaFilter, setCatalogHojaFilter] = useState<CatalogHojaFilter>("TODOS");
@@ -89,7 +89,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
   const [rowsLoading, setRowsLoading] = useState(false);
   const [rowsError, setRowsError] = useState<string | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
-  const [activeItem, setActiveItem] = useState<EquipoMovimientoCatalogItem | null>(null);
+  const [activeItem, setActiveItem] = useState<EquipoMovimientoCatalogEquipo | null>(null);
   const [rows, setRows] = useState<EquipoMovimientoViewRow[]>([]);
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<MovimientosEquipoSortField>(DEFAULT_MOVIMIENTOS_EQUIPO_SORT.field);
@@ -113,7 +113,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
       }
 
       const data = payload as MovimientosEquipoResponse;
-      setItems(data.items);
+      setItems(data.equipos);
     } catch (nextError: unknown) {
       setCatalogError(nextError instanceof Error ? nextError.message : "No se pudo cargar el menú de equipos.");
     } finally {
@@ -158,15 +158,15 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
   }, []);
 
   const catalogByHojaItems = useMemo(() => {
-    if (catalogHojaFilter === "EN_HOJA") return items.filter((item) => item.activo);
-    if (catalogHojaFilter === "FUERA_HOJA") return items.filter((item) => !item.activo);
-    return items;
-  }, [items, catalogHojaFilter]);
+    if (catalogHojaFilter === "EN_HOJA") return equipos.filter((equipo) => equipo.activo);
+    if (catalogHojaFilter === "FUERA_HOJA") return equipos.filter((equipo) => !equipo.activo);
+    return equipos;
+  }, [equipos, catalogHojaFilter]);
 
   const catalogSearchIndex = useMemo(
     () =>
       buildSearchIndex(catalogByHojaItems, {
-        text: (item) => [item.equipoId, item.nombre, item.activo ? "activo en hoja" : "fuera de hoja"].join(" "),
+        text: (equipo) => [equipo.equipoId, equipo.nombre, equipo.activo ? "activo en hoja" : "fuera de hoja"].join(" "),
       }),
     [catalogByHojaItems],
   );
@@ -257,7 +257,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
     <section className="mt-6 space-y-4">
       {!activeItem ? (
         <article className="ej-card min-h-[calc(100dvh-11.5rem)] rounded-2xl p-4 flex flex-col">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap equipos-start justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold text-stone-900">Movimientos por equipo</h2>
               <p className="mt-1 text-sm text-stone-600">
@@ -283,7 +283,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
             </button>
           </div>
 
-          <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:equipos-end">
             <label className="text-sm text-stone-700">
               Buscar equipo
               <input
@@ -325,29 +325,29 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
               <p className="p-3 text-sm text-stone-600">No hay equipos que coincidan con la búsqueda.</p>
             ) : (
               <ul className="divide-y divide-stone-200">
-                {filteredCatalogItems.map((item, index) => (
+                {filteredCatalogItems.map((equipo, index) => (
                   <li
-                    key={item.equipoId}
-                    className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${
+                    key={equipo.equipoId}
+                    className={`flex flex-wrap equipos-center justify-between gap-2 px-3 py-2 ${
                       index % 2 === 0 ? "bg-white" : "bg-stone-50/70"
                     }`}
                   >
                     <div>
-                      <p className="text-base font-semibold text-stone-900">{item.nombre}</p>
+                      <p className="text-base font-semibold text-stone-900">{equipo.nombre}</p>
                       <p className="text-sm text-stone-500">
-                        {`ID ${item.equipoId} | ${item.activo ? "Visible en hoja de entrega" : "Fuera de hoja de entrega"}`}
+                        {`ID ${equipo.equipoId} | ${equipo.activo ? "Visible en hoja de entrega" : "Fuera de hoja de entrega"}`}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedItemId(item.equipoId);
-                        void loadRows(item.equipoId);
+                        setSelectedItemId(equipo.equipoId);
+                        void loadRows(equipo.equipoId);
                       }}
                       disabled={catalogLoading || rowsLoading}
                       className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 disabled:opacity-60"
                     >
-                      {rowsLoading && selectedItemId === item.equipoId ? "Cargando..." : "Ver"}
+                      {rowsLoading && selectedItemId === equipo.equipoId ? "Cargando..." : "Ver"}
                     </button>
                   </li>
                 ))}
@@ -357,7 +357,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
 
           {catalogError ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{catalogError}</p> : null}
 
-          {!catalogLoading && items.length === 0 ? (
+          {!catalogLoading && equipos.length === 0 ? (
             <p className="mt-3 text-sm text-stone-600">No hay equipos registrados para mostrar.</p>
           ) : null}
         </article>
@@ -366,7 +366,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
       {activeItem ? (
         <>
           <article className="ej-card rounded-2xl p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap equipos-start justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-stone-900">Movimientos del equipo seleccionado</h2>
                 <p className="mt-1 text-sm text-stone-600">Paso 2: listado completo de movimientos por equipo, etiquetados por tipo.</p>
@@ -424,7 +424,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
               </div>
             </div>
 
-            <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,220px)_minmax(0,220px)] md:items-end">
+            <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,220px)_minmax(0,220px)] md:equipos-end">
               <label className="text-sm text-stone-700">
                 Buscar
                 <input
@@ -619,24 +619,24 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                     ) : null}
                     <section className="space-y-2">
                       <p className="text-sm font-semibold uppercase tracking-wide text-stone-600">Equipos del préstamo</p>
-                      {originDialog.prestamo.items.map((item, index) => (
+                      {originDialog.prestamo.equipos.map((equipo, index) => (
                         <div
-                          key={`${originDialog.prestamo.prestamoId}-${item.itemId}`}
+                          key={`${originDialog.prestamo.prestamoId}-${equipo.equipoId}`}
                           className={`rounded-lg border border-stone-200 px-3 py-2 ${
                             index % 2 === 0 ? "bg-white" : "bg-stone-50/70"
                           }`}
                         >
                           <p className="text-base text-stone-900">
-                            <span className="font-semibold">{item.cantidad}</span> {item.nombre}
+                            <span className="font-semibold">{equipo.cantidad}</span> {equipo.nombre}
                           </p>
                           <p className="text-sm text-stone-600">
-                            Entrega: {item.estadoEntrega}
-                            {item.comentarioEntrega ? ` | ${item.comentarioEntrega}` : ""}
+                            Entrega: {equipo.estadoEntrega}
+                            {equipo.comentarioEntrega ? ` | ${equipo.comentarioEntrega}` : ""}
                           </p>
-                          {item.estadoDevolucion ? (
+                          {equipo.estadoDevolucion ? (
                             <p className="text-sm text-stone-600">
-                              Devolución: {item.estadoDevolucion}
-                              {item.comentarioDevolucion ? ` | ${item.comentarioDevolucion}` : ""}
+                              Devolución: {equipo.estadoDevolucion}
+                              {equipo.comentarioDevolucion ? ` | ${equipo.comentarioDevolucion}` : ""}
                             </p>
                           ) : null}
                         </div>
@@ -697,14 +697,14 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
                     ) : null}
                     <section className="space-y-2">
                       <p className="text-sm font-semibold uppercase tracking-wide text-stone-600">Equipos del movimiento</p>
-                      {originDialog.registro.items.map((item, index) => (
+                      {originDialog.registro.equipos.map((equipo, index) => (
                         <p
-                          key={`${originDialog.registro.registroId}-${item.itemId}`}
+                          key={`${originDialog.registro.registroId}-${equipo.equipoId}`}
                           className={`rounded-lg border border-stone-200 px-3 py-2 text-base text-stone-800 ${
                             index % 2 === 0 ? "bg-white" : "bg-stone-50/70"
                           }`}
                         >
-                          <span className="font-semibold">{item.cantidad}</span> {item.nombre}
+                          <span className="font-semibold">{equipo.cantidad}</span> {equipo.nombre}
                         </p>
                       ))}
                     </section>

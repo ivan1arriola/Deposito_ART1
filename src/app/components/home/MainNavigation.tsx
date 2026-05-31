@@ -457,11 +457,11 @@ export function MainNavigation({
     activeView === "personal_nuevo" ||
     activeView === "oficial_nuevo" ||
     activeView === "suboficial_nuevo";
-  const filteredStockViews = stockViews.filter((item) => (item.writeOnly ? canWrite : true));
-  const filteredPrestamosViews = prestamosViews.filter((item) => (item.writeOnly ? canWrite : true));
-  const filteredCreateViews = createViews.filter((item) => (item.adminOnly ? isAdmin : true));
-  const filteredArticuloViews = articuloViews.filter((item) => (item.adminOnly ? isAdmin : true) && (item.writeOnly ? canWrite : true));
-  const filteredConfigViews = configViews.filter((item) => (item.adminOnly ? isAdmin : true));
+  const filteredStockViews = stockViews.filter((equipo) => (equipo.writeOnly ? canWrite : true));
+  const filteredPrestamosViews = prestamosViews.filter((equipo) => (equipo.writeOnly ? canWrite : true));
+  const filteredCreateViews = createViews.filter((equipo) => (equipo.adminOnly ? isAdmin : true));
+  const filteredArticuloViews = articuloViews.filter((equipo) => (equipo.adminOnly ? isAdmin : true) && (equipo.writeOnly ? canWrite : true));
+  const filteredConfigViews = configViews.filter((equipo) => (equipo.adminOnly ? isAdmin : true));
 
   function closeAllMenus() {
     setMenuAnchors({});
@@ -535,75 +535,75 @@ export function MainNavigation({
       </Tooltip>
 
       <ExpandedMenuGroup title="Personal" icon={icons.personal} compact={false} collapsed={collapsed}>
-        {personalViews.map((item) => (
-          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+        {personalViews.map((equipo) => (
+          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
-              startIcon={item.icon}
-              onClick={() => handleSelectView(item.view)}
-              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+              startIcon={equipo.icon}
+              onClick={() => handleSelectView(equipo.view)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
             >
-              {!collapsed && item.label}
+              {!collapsed && equipo.label}
             </Button>
           </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
       <ExpandedMenuGroup title="Oficiales" icon={icons.oficiales} compact={false} collapsed={collapsed}>
-        {oficialesViews.map((item) => (
-          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+        {oficialesViews.map((equipo) => (
+          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
-              startIcon={item.icon}
-              onClick={() => handleSelectView(item.view)}
-              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+              startIcon={equipo.icon}
+              onClick={() => handleSelectView(equipo.view)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
             >
-              {!collapsed && item.label}
+              {!collapsed && equipo.label}
             </Button>
           </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
       <ExpandedMenuGroup title="Stock" icon={icons.stock} compact={false} collapsed={collapsed}>
-        {filteredStockViews.map((item) => (
-          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+        {filteredStockViews.map((equipo) => (
+          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
-              startIcon={item.icon}
-              onClick={() => handleSelectView(item.view)}
-              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+              startIcon={equipo.icon}
+              onClick={() => handleSelectView(equipo.view)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
             >
-              {!collapsed && item.label}
+              {!collapsed && equipo.label}
             </Button>
           </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
       <ExpandedMenuGroup title="Etiquetado" icon={icons.etiquetado} compact={false} collapsed={collapsed}>
-        {etiquetadoViews.map((item) => (
-          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+        {etiquetadoViews.map((equipo) => (
+          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
-              startIcon={item.icon}
-              onClick={() => handleSelectView(item.view)}
-              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+              startIcon={equipo.icon}
+              onClick={() => handleSelectView(equipo.view)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
             >
-              {!collapsed && item.label}
+              {!collapsed && equipo.label}
             </Button>
           </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
       <ExpandedMenuGroup title="Resumen de tallas" icon={icons.resumen} compact={false} collapsed={collapsed}>
-        {tallasResumenViews.map((item) => (
-          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+        {tallasResumenViews.map((equipo) => (
+          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
-              startIcon={item.icon}
-              onClick={() => handleSelectView(item.view)}
-              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+              startIcon={equipo.icon}
+              onClick={() => handleSelectView(equipo.view)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
             >
-              {!collapsed && item.label}
+              {!collapsed && equipo.label}
             </Button>
           </Tooltip>
         ))}
@@ -611,61 +611,61 @@ export function MainNavigation({
 
       {canWrite ? (
         <ExpandedMenuGroup title="Altas de Personal" icon={icons.altas} compact={false}>
-          {filteredCreateViews.map((item) => (
+          {filteredCreateViews.map((equipo) => (
             <Button
-              key={item.view}
+              key={equipo.view}
               variant="text"
-              startIcon={item.icon}
-              onClick={() => handleSelectView(item.view)}
-              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+              startIcon={equipo.icon}
+              onClick={() => handleSelectView(equipo.view)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
             >
-              {item.label}
+              {equipo.label}
             </Button>
           ))}
         </ExpandedMenuGroup>
       ) : null}
 
       <ExpandedMenuGroup title="Préstamos" icon={icons.prestamos} compact={false} collapsed={collapsed}>
-        {filteredPrestamosViews.map((item) => (
-          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+        {filteredPrestamosViews.map((equipo) => (
+          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
-              key={item.view}
+              key={equipo.view}
               variant="text"
-              startIcon={item.icon}
-              onClick={() => handleSelectView(item.view)}
-              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+              startIcon={equipo.icon}
+              onClick={() => handleSelectView(equipo.view)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
             >
-              {!collapsed && item.label}
+              {!collapsed && equipo.label}
             </Button>
           </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
       <ExpandedMenuGroup title="Artículos" icon={icons.stock} compact={false} collapsed={collapsed}>
-        {filteredArticuloViews.map((item) => (
-          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+        {filteredArticuloViews.map((equipo) => (
+          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
-              startIcon={item.icon}
-              onClick={() => handleSelectView(item.view)}
-              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+              startIcon={equipo.icon}
+              onClick={() => handleSelectView(equipo.view)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
             >
-              {!collapsed && item.label}
+              {!collapsed && equipo.label}
             </Button>
           </Tooltip>
         ))}
       </ExpandedMenuGroup>
 
       <ExpandedMenuGroup title="Configuración" icon={icons.config} compact={false} collapsed={collapsed}>
-        {filteredConfigViews.map((item) => (
-          <Tooltip key={item.view} title={item.label} placement="right" disableHoverListener={!collapsed}>
+        {filteredConfigViews.map((equipo) => (
+          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
-              startIcon={item.icon}
-              onClick={() => handleSelectView(item.view)}
-              sx={inlineSubmenuButtonSx(activeView === item.view, false)}
+              startIcon={equipo.icon}
+              onClick={() => handleSelectView(equipo.view)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
             >
-              {!collapsed && item.label}
+              {!collapsed && equipo.label}
             </Button>
           </Tooltip>
         ))}

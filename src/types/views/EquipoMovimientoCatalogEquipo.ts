@@ -1,7 +1,7 @@
-export type EquipoMovimientoCatalogItem = {
+export type EquipoMovimientoCatalogEquipo = {
   equipoId: string;
   /** @deprecated Usar `equipoId`. */
-  itemId: string;
+  equipoId: string;
   nombre: string;
   activo: boolean;
 };

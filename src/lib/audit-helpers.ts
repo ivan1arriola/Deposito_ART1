@@ -49,10 +49,10 @@ function extractNamedQuantities(value: unknown) {
   if (!Array.isArray(value)) return [] as string[];
 
   return value
-    .filter((item) => isObject(item))
-    .map((item) => {
-      const nombre = asText(item.nombre) || "Elemento sin nombre";
-      const cantidad = asText(item.cantidad) || "0";
+    .filter((equipo) => isObject(equipo))
+    .map((equipo) => {
+      const nombre = asText(equipo.nombre) || "Elemento sin nombre";
+      const cantidad = asText(equipo.cantidad) || "0";
       return `${nombre} (${cantidad}x)`;
     });
 }
@@ -133,21 +133,21 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
     lines.push(buildLine("comentarios", "Comentarios", comentarios));
   }
 
-  const items = extractEquipos(info.items);
+  const equipos = extractEquipos(info.equipos);
   const articulos = extractArticulos(info.articulos);
   const itemsAnteriores = extractEquipos(info.itemsAnteriores);
   const itemsNuevos = extractEquipos(info.itemsNuevos);
   if (articulos.length > 0) {
     lines.push(buildLine("articulos", "Artículos", articulos.join(", ")));
   }
-  if (items.length > 0) {
-    lines.push(buildLine("items", "Equipos", items.join(", ")));
+  if (equipos.length > 0) {
+    lines.push(buildLine("equipos", "Equipos", equipos.join(", ")));
   }
   if (itemsAnteriores.length > 0) {
-    lines.push(buildLine("items-anteriores", "Equipos anteriores", itemsAnteriores.join(", ")));
+    lines.push(buildLine("equipos-anteriores", "Equipos anteriores", itemsAnteriores.join(", ")));
   }
   if (itemsNuevos.length > 0) {
-    lines.push(buildLine("items-nuevos", "Equipos nuevos", itemsNuevos.join(", ")));
+    lines.push(buildLine("equipos-nuevos", "Equipos nuevos", itemsNuevos.join(", ")));
   }
 
   const afectaStock = typeof info.afectaStock === "boolean" ? info.afectaStock : null;
@@ -216,7 +216,7 @@ export function auditEntityLabel(entidad: string): string {
     ARTICULO: "artículo",
     ARTICULO_STOCK: "stock de artículo",
     ARTICULO_ENTREGA_PERSONAL: "entrega de artículos",
-    ITEM: "item",
+    EQUIPO: "equipo",
     FIRMAS_CONFIG: "firmas institucionales",
     OBSERVACION: "observación",
     STOCK: "stock",
@@ -233,10 +233,10 @@ function formatValue(val: unknown): string {
   if (val === null || val === undefined) return "—";
   if (typeof val === "boolean") return val ? "Sí" : "No";
   if (Array.isArray(val)) {
-    if (val.every(item => item && typeof item === "object" && "tipo" in item && "valor" in item)) {
+    if (val.every(equipo => equipo && typeof equipo === "object" && "tipo" in equipo && "valor" in equipo)) {
       return val.map(t => `${t.tipo}: ${t.valor}`).join(", ");
     }
-    return val.map(item => item && typeof item === "object" ? JSON.stringify(item) : String(item)).join(", ");
+    return val.map(equipo => equipo && typeof equipo === "object" ? JSON.stringify(equipo) : String(equipo)).join(", ");
   }
   if (typeof val === "object") return JSON.stringify(val);
   return String(val);
@@ -245,7 +245,7 @@ function formatValue(val: unknown): string {
 function buildDiffLine(key: string, label: string, prevStr: string, nextStr: string) {
   return createElement(
     "div",
-    { key, className: "text-[11px] text-stone-700 flex items-center gap-1.5 py-0.5 select-none w-full" },
+    { key, className: "text-[11px] text-stone-700 flex equipos-center gap-1.5 py-0.5 select-none w-full" },
     createElement("span", { className: "font-semibold text-stone-900 w-24 shrink-0 truncate", title: label }, `${label}:`),
     createElement("span", { className: "line-through text-red-700 bg-red-50 border border-red-200/50 px-1.5 py-0.25 rounded text-[10px] font-mono leading-none" }, prevStr),
     createElement("span", { className: "text-stone-400 font-bold text-[9px]" }, "→"),
@@ -291,7 +291,7 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
     }
     return createElement(
       "div",
-      { className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex items-center gap-2 select-none w-max ${bg}` },
+      { className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex equipos-center gap-2 select-none w-max ${bg}` },
       createElement("span", { className: "text-sm" }, icon),
       msg
     );
@@ -305,7 +305,7 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
     const bg = "bg-amber-50 border-amber-200/40 text-amber-800 font-semibold";
     return createElement(
       "div",
-      { className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex items-center gap-2 select-none w-max ${bg}` },
+      { className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex equipos-center gap-2 select-none w-max ${bg}` },
       createElement("span", { className: "text-sm" }, icon),
       msg
     );
@@ -417,7 +417,7 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
     { className: "mt-2 bg-stone-50/70 p-3 rounded-lg border border-stone-200 w-full" },
     createElement(
       "p",
-      { className: "text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center gap-1.5 select-none" },
+      { className: "text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2 flex equipos-center gap-1.5 select-none" },
       createElement("span", { className: "inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" }),
       "Transición de Estado (Antes → Ahora):"
     ),
@@ -432,8 +432,8 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
 export function renderAuditDetalleEquipos(detalle: unknown): string[] | null {
   if (!isObject(detalle)) return null;
 
-  const items = extractEquipos(detalle.items);
-  return items.length > 0 ? items : null;
+  const equipos = extractEquipos(detalle.equipos);
+  return equipos.length > 0 ? equipos : null;
 }
 
 export function resolveAuditEntityName(entidad: string, detalle: unknown, ciReferences?: AuditCiReferences): string | null {
@@ -462,7 +462,7 @@ export function resolveAuditEntityName(entidad: string, detalle: unknown, ciRefe
     if (source.nombre) return `Batería: ${asText(source.nombre)}`;
   }
 
-  if (entidad === "ARTICULO" || entidad === "ITEM") {
+  if (entidad === "ARTICULO" || entidad === "EQUIPO") {
     if (source.nombre) return asText(source.nombre);
   }
 

@@ -9,7 +9,7 @@ import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyForDisplay, formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
-import { buildStockItemTraceData, parseStockTraceColumn, parseStockTraceItemId } from "@/lib/stock-item-trace";
+import { buildStockEquipoTraceData, parseStockTraceColumn, parseStockTraceItemId } from "@/lib/stock-equipo-trace";
 
 export const revalidate = 0;
 export const metadata = {
@@ -74,7 +74,7 @@ function buildStyles() {
       gap: 2mm;
     }
 
-    .summary-item {
+    .summary-equipo {
       font-size: 11pt;
       font-weight: 700;
     }
@@ -115,7 +115,7 @@ function buildStyles() {
     .trace-card-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-equipos: flex-start;
       gap: 2mm;
     }
 
@@ -214,17 +214,17 @@ function buildStyles() {
 export default async function TrazabilidadEquiposPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ autoprint?: string; equipoId?: string; itemId?: string; column?: string }>;
+  searchParams?: Promise<{ autoprint?: string; equipoId?: string; equipoId?: string; column?: string }>;
 }) {
   const params = searchParams ? await searchParams : undefined;
   const shouldAutoPrint = params?.autoprint === "1";
-  const itemId = parseStockTraceItemId(params?.equipoId ?? params?.itemId);
+  const equipoId = parseStockTraceItemId(params?.equipoId ?? params?.equipoId);
   const column = parseStockTraceColumn(params?.column);
   const printedAt = new Date();
   const generatedAt = formatDateTimeForDisplay(printedAt);
   const institutionalPrintDate = formatInstitutionalPrintDate(printedAt);
 
-  if (!itemId || !column) {
+  if (!equipoId || !column) {
     return (
       <>
         {shouldAutoPrint ? <AutoPrintOnLoad /> : null}
@@ -239,7 +239,7 @@ export default async function TrazabilidadEquiposPage({
   }
 
   const [traceData, firmas] = await Promise.all([
-    buildStockItemTraceData(itemId),
+    buildStockEquipoTraceData(equipoId),
     getFirmaConfig(),
   ]);
 
@@ -285,8 +285,8 @@ export default async function TrazabilidadEquiposPage({
         <p className="meta">{`Generado: ${generatedAt} | Columna: ${columnLabel}`}</p>
 
         <section className="summary">
-          <div className="summary-item">{`Equipo ID: ${traceData.equipoId}`}</div>
-          <div className="summary-item">{`Total en columna: ${totalEnColumna}`}</div>
+          <div className="summary-equipo">{`Equipo ID: ${traceData.equipoId}`}</div>
+          <div className="summary-equipo">{`Total en columna: ${totalEnColumna}`}</div>
         </section>
 
         <h2 className="section-title">

@@ -25,8 +25,8 @@ function isLikelyUruguayanCi(value: unknown) {
 
 function collectCisFromDetalle(value: unknown, ciSet: Set<string>) {
   if (Array.isArray(value)) {
-    for (const item of value) {
-      collectCisFromDetalle(item, ciSet);
+    for (const equipo of value) {
+      collectCisFromDetalle(equipo, ciSet);
     }
     return;
   }
@@ -45,8 +45,8 @@ function buildEmbeddedCiReferences(value: unknown) {
   const references: Record<string, string> = {};
 
   if (Array.isArray(value)) {
-    for (const item of value) {
-      Object.assign(references, buildEmbeddedCiReferences(item));
+    for (const equipo of value) {
+      Object.assign(references, buildEmbeddedCiReferences(equipo));
     }
     return references;
   }

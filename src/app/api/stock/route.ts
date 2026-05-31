@@ -32,7 +32,7 @@ import {
 import type { StockDashboardData } from "@/types/views";
 
 type StockItemPayload = {
-  itemId: string | number;
+  equipoId: string | number;
   cantidad: number | string;
 };
 
@@ -40,7 +40,7 @@ type StockPayload = {
   fecha?: string;
   tipo: TipoStockOperacion | string;
   comentarios?: string;
-  items: StockItemPayload[];
+  equipos: StockItemPayload[];
 };
 
 type StockHistorialInternalEntry = StockDashboardData["historial"][number] & {
@@ -50,10 +50,10 @@ type StockHistorialInternalEntry = StockDashboardData["historial"][number] & {
 
 type StockOperacionHistorial = Prisma.StockOperacionGetPayload<{
   include: {
-    items: {
+    equipos: {
       include: {
-        item: {
-          select: { itemId: true; nombre: true };
+        equipo: {
+          select: { equipoId: true; nombre: true };
         };
       };
     };
@@ -90,10 +90,10 @@ const movimientoHistorialInclude = {
       nombre: true,
     },
   },
-  items: {
+  equipos: {
     include: {
-      item: {
-        select: { itemId: true, nombre: true },
+      equipo: {
+        select: { equipoId: true, nombre: true },
       },
     },
   },
@@ -145,24 +145,24 @@ function isValidPayload(body: unknown): body is StockPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
   if (!parseTipoStockOperacion(candidate.tipo)) return false;
-  if (!Array.isArray(candidate.items) || candidate.items.length === 0) return false;
+  if (!Array.isArray(candidate.equipos) || candidate.equipos.length === 0) return false;
   return true;
 }
 
 function hasStockDelegates() {
   const candidate = prisma as typeof prisma & {
     stockOperacion?: unknown;
-    stockOperacionItem?: unknown;
+    stockOperacionEquipo?: unknown;
     movimiento?: unknown;
-    movimientoItem?: unknown;
+    movimientoEquipo?: unknown;
     prestamoActivo?: unknown;
     prestamoHistorial?: unknown;
   };
   return (
     typeof candidate.stockOperacion !== "undefined" &&
-    typeof candidate.stockOperacionItem !== "undefined" &&
+    typeof candidate.stockOperacionEquipo !== "undefined" &&
     typeof candidate.movimiento !== "undefined" &&
-    typeof candidate.movimientoItem !== "undefined" &&
+    typeof candidate.movimientoEquipo !== "undefined" &&
     typeof candidate.prestamoActivo !== "undefined" &&
     typeof candidate.prestamoHistorial !== "undefined"
   );
@@ -194,11 +194,11 @@ export async function GET(req: Request) {
     await ensurePrestamoActuanteCompatibility();
   }
 
-  const [items, stockSummaryMaps] = await Promise.all([
-    prisma.item.findMany({
+  const [equipos, stockSummaryMaps] = await Promise.all([
+    prisma.equipo.findMany({
       orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
       select: {
-        itemId: true,
+        equipoId: true,
         nombre: true,
         tipoEquipoId: true,
         tipoEquipo: {
@@ -220,13 +220,13 @@ export async function GET(req: Request) {
     [stockOperaciones, movimientos, prestamos] = await Promise.all([
       prisma.stockOperacion.findMany({
         include: {
-          items: {
+          equipos: {
             include: {
-              item: {
-                select: { itemId: true, nombre: true },
+              equipo: {
+                select: { equipoId: true, nombre: true },
               },
             },
-            orderBy: { item: { ordenPdf: "asc" } },
+            orderBy: { equipo: { ordenPdf: "asc" } },
           },
         },
         orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
@@ -304,23 +304,23 @@ export async function GET(req: Request) {
     }
   }
 
-  const resumen = items.map((item) => {
-    const key = item.itemId.toString();
+  const resumen = equipos.map((equipo) => {
+    const key = equipo.equipoId.toString();
     const stockUnidad = stockUnidadByItem.get(key) ?? 0;
     const stockSubalternos = stockPersonalByItem.get(key) ?? 0;
     const stockAsignacion = stockAsignacionByItem.get(key) ?? 0;
     const stockPrestamo = stockPrestamoByItem.get(key) ?? 0;
     const stockDeposito = stockUnidad - stockSubalternos - stockAsignacion - stockPrestamo;
-    const tipo = serializeEquipoTipoData(item);
+    const tipo = serializeEquipoTipoData(equipo);
 
     return {
       equipoId: key,
-      itemId: key,
-      nombre: item.nombre,
+      equipoId: key,
+      nombre: equipo.nombre,
       ...tipo,
-      ordenPdf: item.ordenPdf,
-      apareceEnHoja: item.activo,
-      existenciaSie: item.existenciaSie,
+      ordenPdf: equipo.ordenPdf,
+      apareceEnHoja: equipo.activo,
+      existenciaSie: equipo.existenciaSie,
       stockSubalternos,
       stockAsignacion,
       stockPrestamo,
@@ -343,15 +343,15 @@ export async function GET(req: Request) {
       tipo: operacion.tipo,
       afectaStock: true,
       comentarios: operacion.comentarios,
-      totalUnidades: operacion.items.reduce((total, item) => total + item.cantidad, 0),
+      totalUnidades: operacion.equipos.reduce((total, equipo) => total + equipo.cantidad, 0),
       ci: null,
       persona: null,
       registradoPor: auditUserByEntity.get(`STOCK:${operacion.stockOperacionId.toString()}`) ?? null,
-      items: operacion.items.map((item) => ({
-        itemId: item.item.itemId.toString(),
-        nombre: item.item.nombre,
-        cantidad: item.cantidad,
-        delta: item.cantidad * stockOperacionDeltaFactor(operacion.tipo),
+      equipos: operacion.equipos.map((equipo) => ({
+        equipoId: equipo.equipo.equipoId.toString(),
+        nombre: equipo.equipo.nombre,
+        cantidad: equipo.cantidad,
+        delta: equipo.cantidad * stockOperacionDeltaFactor(operacion.tipo),
       })),
       sortFecha: operacion.fecha.getTime(),
       sortCreatedAt: operacion.createdAt.getTime(),
@@ -376,15 +376,15 @@ export async function GET(req: Request) {
           tipo: movimiento.tipo,
           afectaStock: true,
           comentarios: movimiento.observaciones,
-          totalUnidades: movimiento.items.reduce((total, item) => total + item.cantidad, 0),
+          totalUnidades: movimiento.equipos.reduce((total, equipo) => total + equipo.cantidad, 0),
           ci: destinatario.ci,
           persona: destinatario.etiqueta,
           registradoPor: auditUserByEntity.get(`REGISTRO:${movimiento.movimientoId.toString()}`) ?? null,
-          items: movimiento.items.map((item) => ({
-            itemId: item.item.itemId.toString(),
-            nombre: item.item.nombre,
-            cantidad: item.cantidad,
-            delta: item.cantidad * movimientoStockDeltaFactor(movimiento.tipo),
+          equipos: movimiento.equipos.map((equipo) => ({
+            equipoId: equipo.equipo.equipoId.toString(),
+            nombre: equipo.equipo.nombre,
+            cantidad: equipo.cantidad,
+            delta: equipo.cantidad * movimientoStockDeltaFactor(movimiento.tipo),
           })),
           sortFecha: movimiento.fecha.getTime(),
           sortCreatedAt: movimiento.createdAt.getTime(),
@@ -394,7 +394,7 @@ export async function GET(req: Request) {
 
     const historialPrestamos: StockHistorialInternalEntry[] = prestamos.flatMap((prestamo) => {
       const destinatario = formatPrestamoDestinatario(prestamo);
-      const totalUnidades = prestamo.items.reduce((acumulado, item) => acumulado + item.cantidad, 0);
+      const totalUnidades = prestamo.equipos.reduce((acumulado, equipo) => acumulado + equipo.cantidad, 0);
       const usuarioEntregaLabel = `${prestamo.usuarioEntrega.rango.abreviacion} ${prestamo.usuarioEntrega.apellido}, ${prestamo.usuarioEntrega.nombre}`
         .replace(/\s+/g, " ")
         .trim();
@@ -416,11 +416,11 @@ export async function GET(req: Request) {
         ci: destinatario.ci || null,
         persona: destinatario.etiqueta,
         registradoPor: usuarioEntregaLabel || prestamo.usuarioEntrega.username,
-        items: prestamo.items.map((item) => ({
-          itemId: item.item.itemId.toString(),
-          nombre: item.item.nombre,
-          cantidad: item.cantidad,
-          delta: -item.cantidad,
+        equipos: prestamo.equipos.map((equipo) => ({
+          equipoId: equipo.equipo.equipoId.toString(),
+          nombre: equipo.equipo.nombre,
+          cantidad: equipo.cantidad,
+          delta: -equipo.cantidad,
         })),
         sortFecha: prestamo.fecha.getTime(),
         sortCreatedAt: prestamo.createdAt.getTime(),
@@ -440,11 +440,11 @@ export async function GET(req: Request) {
         ci: destinatario.ci || null,
         persona: destinatario.etiqueta,
         registradoPor: usuarioRecibeLabel || prestamo.prestamoHistorial.usuarioRecibeDevolucion?.username || null,
-        items: prestamo.items.map((item) => ({
-          itemId: item.item.itemId.toString(),
-          nombre: item.item.nombre,
-          cantidad: item.cantidad,
-          delta: item.cantidad,
+        equipos: prestamo.equipos.map((equipo) => ({
+          equipoId: equipo.equipo.equipoId.toString(),
+          nombre: equipo.equipo.nombre,
+          cantidad: equipo.cantidad,
+          delta: equipo.cantidad,
         })),
         sortFecha: prestamo.prestamoHistorial.fechaDevolucion.getTime(),
         sortCreatedAt: prestamo.prestamoHistorial.createdAt.getTime(),
@@ -472,7 +472,7 @@ export async function GET(req: Request) {
         ci: entry.ci,
         persona: entry.persona,
         registradoPor: entry.registradoPor,
-        items: entry.items,
+        equipos: entry.equipos,
       }));
   }
 
@@ -499,7 +499,7 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. Revisa tipo, fecha e items." }, { status: 400 });
+    return NextResponse.json({ error: "Payload invalido. Revisa tipo, fecha e equipos." }, { status: 400 });
   }
 
   const tipo = parseTipoStockOperacion(body.tipo);
@@ -512,41 +512,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
-  const parsedItems = body.items
-    .map((item) => ({
-      itemId: parseBigIntId(item.itemId),
-      cantidad: parseCantidad(item.cantidad),
+  const parsedItems = body.equipos
+    .map((equipo) => ({
+      equipoId: parseBigIntId(equipo.equipoId),
+      cantidad: parseCantidad(equipo.cantidad),
     }))
-    .filter((item) => item.itemId !== null && item.cantidad !== null) as Array<{ itemId: bigint; cantidad: number }>;
+    .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{ equipoId: bigint; cantidad: number }>;
 
   if (parsedItems.length === 0) {
     return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
   }
 
   const dedupedItems = new Map<string, number>();
-  for (const item of parsedItems) {
-    const key = item.itemId.toString();
-    dedupedItems.set(key, (dedupedItems.get(key) ?? 0) + item.cantidad);
+  for (const equipo of parsedItems) {
+    const key = equipo.equipoId.toString();
+    dedupedItems.set(key, (dedupedItems.get(key) ?? 0) + equipo.cantidad);
   }
 
-  const itemIds = Array.from(dedupedItems.keys()).map((itemId) => BigInt(itemId));
-  const itemsFound = await prisma.item.findMany({
-    where: { itemId: { in: itemIds } },
-    select: { itemId: true, nombre: true },
+  const equipoIds = Array.from(dedupedItems.keys()).map((equipoId) => BigInt(equipoId));
+  const itemsFound = await prisma.equipo.findMany({
+    where: { equipoId: { in: equipoIds } },
+    select: { equipoId: true, nombre: true },
   });
 
-  if (itemsFound.length !== itemIds.length) {
+  if (itemsFound.length !== equipoIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
 
   const comentarios = body.comentarios?.trim() || null;
-  const itemNombrePorId = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
-  const itemsDetallados = Array.from(dedupedItems.entries()).map(([itemId, cantidad]) => ({
-    itemId,
-    nombre: itemNombrePorId.get(itemId) ?? "Equipo sin nombre",
+  const itemNombrePorId = new Map(itemsFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
+  const itemsDetallados = Array.from(dedupedItems.entries()).map(([equipoId, cantidad]) => ({
+    equipoId,
+    nombre: itemNombrePorId.get(equipoId) ?? "Equipo sin nombre",
     cantidad,
   }));
-  const totalUnidades = itemsDetallados.reduce((total, item) => total + item.cantidad, 0);
+  const totalUnidades = itemsDetallados.reduce((total, equipo) => total + equipo.cantidad, 0);
   const requestMeta = readRequestMeta(req);
 
   try {
@@ -560,10 +560,10 @@ export async function POST(req: Request) {
         select: { stockOperacionId: true },
       });
 
-      await tx.stockOperacionItem.createMany({
-        data: Array.from(dedupedItems.entries()).map(([itemId, cantidad]) => ({
+      await tx.stockOperacionEquipo.createMany({
+        data: Array.from(dedupedItems.entries()).map(([equipoId, cantidad]) => ({
           stockOperacionId: operacion.stockOperacionId,
-          itemId: BigInt(itemId),
+          equipoId: BigInt(equipoId),
           cantidad,
         })),
       });
@@ -583,7 +583,7 @@ export async function POST(req: Request) {
         comentarios,
         totalEquipos: itemsDetallados.length,
         totalUnidades,
-        items: itemsDetallados,
+        equipos: itemsDetallados,
         ip: requestMeta.ip,
         userAgent: requestMeta.userAgent,
       },

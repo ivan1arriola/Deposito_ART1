@@ -46,7 +46,7 @@ export default function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-xl items-center justify-center px-4 py-8">
+    <main className="mx-auto flex min-h-dvh w-full max-w-xl equipos-center justify-center px-4 py-8">
       <section className="w-full rounded-2xl border border-stone-300 bg-white p-5 shadow-sm">
         <h1 className="text-2xl font-black text-stone-900">Validacion de correo</h1>
         <p className={`mt-3 text-sm ${state === "error" ? "text-rose-700" : state === "success" ? "text-emerald-700" : "text-stone-700"}`}>

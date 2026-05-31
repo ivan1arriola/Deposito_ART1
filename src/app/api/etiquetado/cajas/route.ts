@@ -7,34 +7,34 @@ type CreateCajaPayload = {
   codigoDepositoGeneral?: string | number;
   estanteria?: string;
   piso?: string | number;
-  items?: Array<{
-    itemId?: string | number;
+  equipos?: Array<{
+    equipoId?: string | number;
     cantidad?: string | number;
   }>;
   codigosSIEIds?: Array<string | number>;
 };
 
 type ParsedCajaItem = {
-  itemId: bigint;
+  equipoId: bigint;
   cantidad: number;
 };
 
 function hasEtiquetadoDelegates() {
   const candidate = prisma as typeof prisma & {
-    item?: unknown;
+    equipo?: unknown;
     estanteria?: unknown;
-    itemCodigoSIE?: unknown;
+    equipoCodigoSIE?: unknown;
     caja?: unknown;
-    cajaItem?: unknown;
-    cajaItemCodigoSIE?: unknown;
+    cajaEquipo?: unknown;
+    cajaEquipoCodigoSIE?: unknown;
   };
   return (
-    typeof candidate.item !== "undefined" &&
+    typeof candidate.equipo !== "undefined" &&
     typeof candidate.estanteria !== "undefined" &&
-    typeof candidate.itemCodigoSIE !== "undefined" &&
+    typeof candidate.equipoCodigoSIE !== "undefined" &&
     typeof candidate.caja !== "undefined" &&
-    typeof candidate.cajaItem !== "undefined" &&
-    typeof candidate.cajaItemCodigoSIE !== "undefined"
+    typeof candidate.cajaEquipo !== "undefined" &&
+    typeof candidate.cajaEquipoCodigoSIE !== "undefined"
   );
 }
 
@@ -80,11 +80,11 @@ function parseCajaItems(value: unknown): ParsedCajaItem[] | null {
   const parsed: ParsedCajaItem[] = [];
   for (const entry of value) {
     if (!entry || typeof entry !== "object") return null;
-    const candidate = entry as { itemId?: unknown; cantidad?: unknown };
-    const itemId = parseItemId(candidate.itemId);
+    const candidate = entry as { equipoId?: unknown; cantidad?: unknown };
+    const equipoId = parseItemId(candidate.equipoId);
     const cantidad = parseCantidad(candidate.cantidad);
-    if (itemId === null || cantidad === null) return null;
-    parsed.push({ itemId, cantidad });
+    if (equipoId === null || cantidad === null) return null;
+    parsed.push({ equipoId, cantidad });
   }
 
   return parsed;
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
   }
   const estanteria = normalizeEstanteria(body.estanteria);
   const piso = parsePiso(body.piso);
-  const parsedItems = parseCajaItems(body.items);
+  const parsedItems = parseCajaItems(body.equipos);
   if (!parsedItems || parsedItems.length === 0) {
     return NextResponse.json(
       { error: "Payload invalido. Debes enviar al menos un equipo con cantidad valida." },
@@ -140,21 +140,21 @@ export async function POST(request: Request) {
   }
   const cantidadesByItemId = new Map<string, number>();
   for (const entry of parsedItems) {
-    const key = entry.itemId.toString();
+    const key = entry.equipoId.toString();
     cantidadesByItemId.set(key, (cantidadesByItemId.get(key) ?? 0) + entry.cantidad);
   }
-  const items = Array.from(cantidadesByItemId.entries()).map(([itemId, cantidad]) => ({
-    itemId: BigInt(itemId),
+  const equipos = Array.from(cantidadesByItemId.entries()).map(([equipoId, cantidad]) => ({
+    equipoId: BigInt(equipoId),
     cantidad,
   }));
-  const itemIds = items.map((entry) => entry.itemId);
-  const cantidadTotal = items.reduce((sum, entry) => sum + entry.cantidad, 0);
+  const equipoIds = equipos.map((entry) => entry.equipoId);
+  const cantidadTotal = equipos.reduce((sum, entry) => sum + entry.cantidad, 0);
   const codigosSIEIds = parseCodigoSIEIds(body.codigosSIEIds);
   if (codigosSIEIds === null) {
     return NextResponse.json({ error: "Payload invalido. codigosSIEIds debe ser una lista de IDs numericos." }, { status: 400 });
   }
 
-  if (!estanteria || piso === null || itemIds.length === 0 || cantidadTotal <= 0) {
+  if (!estanteria || piso === null || equipoIds.length === 0 || cantidadTotal <= 0) {
     return NextResponse.json(
       { error: "Payload invalido. nombre de estanteria, piso y equipos con cantidad son obligatorios." },
       { status: 400 },
@@ -171,45 +171,45 @@ export async function POST(request: Request) {
       },
       select: { codigo: true, piso: true },
     }),
-    prisma.item.findMany({
-      where: { itemId: { in: itemIds } },
-      select: { itemId: true, nombre: true },
+    prisma.equipo.findMany({
+      where: { equipoId: { in: equipoIds } },
+      select: { equipoId: true, nombre: true },
     }),
   ]);
 
   if (!estanteriaRegistrada) {
     return NextResponse.json({ error: "La estanteria en ese piso no existe. Registrala primero." }, { status: 400 });
   }
-  if (itemsFound.length !== itemIds.length) {
+  if (itemsFound.length !== equipoIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos seleccionados no existen." }, { status: 400 });
   }
 
-  const itemIdSet = new Set(itemIds.map((itemId) => itemId.toString()));
-  const itemNameById = new Map(itemsFound.map((item) => [item.itemId.toString(), item.nombre]));
+  const itemIdSet = new Set(equipoIds.map((equipoId) => equipoId.toString()));
+  const itemNameById = new Map(itemsFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
   const itemNombres = Array.from(itemNameById.values()).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
   let codigosSIEDetalle: Array<{
     codigoSIEId: string;
     codigo: string;
     talla: string;
-    itemId: string;
+    equipoId: string;
     itemNombre: string;
   }> = [];
 
   if (codigosSIEIds.length > 0) {
-    const codesFound = await prisma.itemCodigoSIE.findMany({
+    const codesFound = await prisma.equipoCodigoSIE.findMany({
       where: {
-        itemCodigoSIEId: { in: codigosSIEIds },
+        equipoCodigoSIEId: { in: codigosSIEIds },
       },
       include: {
-        item: {
+        equipo: {
           select: {
-            itemId: true,
+            equipoId: true,
             nombre: true,
           },
         },
       },
     });
-    const foundSet = new Set(codesFound.map((entry) => entry.itemCodigoSIEId.toString()));
+    const foundSet = new Set(codesFound.map((entry) => entry.equipoCodigoSIEId.toString()));
     const missing = codigosSIEIds
       .map((entry) => entry.toString())
       .filter((codigoSIEId) => !foundSet.has(codigoSIEId));
@@ -220,22 +220,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const codeById = new Map(codesFound.map((entry) => [entry.itemCodigoSIEId.toString(), entry]));
+    const codeById = new Map(codesFound.map((entry) => [entry.equipoCodigoSIEId.toString(), entry]));
     codigosSIEDetalle = codigosSIEIds
       .map((entry) => codeById.get(entry.toString()))
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
       .map((entry) => ({
-        codigoSIEId: entry.itemCodigoSIEId.toString(),
+        codigoSIEId: entry.equipoCodigoSIEId.toString(),
         codigo: entry.codigo,
         talla: entry.talla,
-        itemId: entry.item.itemId.toString(),
-        itemNombre: entry.item.nombre,
+        equipoId: entry.equipo.equipoId.toString(),
+        itemNombre: entry.equipo.nombre,
       }));
 
     const codigosFueraDeEquipos = Array.from(
       new Set(
         codigosSIEDetalle
-          .filter((entry) => !itemIdSet.has(entry.itemId))
+          .filter((entry) => !itemIdSet.has(entry.equipoId))
           .map((entry) => `${entry.codigo} (${entry.itemNombre}, talla ${entry.talla})`),
       ),
     );
@@ -263,19 +263,19 @@ export async function POST(request: Request) {
           },
         });
 
-        await tx.cajaItem.createMany({
-          data: items.map((entry) => ({
+        await tx.cajaEquipo.createMany({
+          data: equipos.map((entry) => ({
             codigoDepositoGeneral: codigoAsignado,
-            itemId: entry.itemId,
+            equipoId: entry.equipoId,
             cantidad: entry.cantidad,
           })),
         });
 
         if (codigosSIEIds.length > 0) {
-          await tx.cajaItemCodigoSIE.createMany({
-            data: codigosSIEIds.map((itemCodigoSIEId) => ({
+          await tx.cajaEquipoCodigoSIE.createMany({
+            data: codigosSIEIds.map((equipoCodigoSIEId) => ({
               codigoDepositoGeneral: codigoAsignado,
-              itemCodigoSIEId,
+              equipoCodigoSIEId,
             })),
           });
         }
@@ -290,8 +290,8 @@ export async function POST(request: Request) {
         entidadId: String(codigoDepositoGeneral),
         detalle: {
           codigoDepositoGeneral,
-          items: items.map((entry) => ({
-            itemId: entry.itemId.toString(),
+          equipos: equipos.map((entry) => ({
+            equipoId: entry.equipoId.toString(),
             cantidad: entry.cantidad,
           })),
           itemNombres,

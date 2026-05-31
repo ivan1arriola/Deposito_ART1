@@ -86,7 +86,7 @@ export function OficialSuboficialCreateView({
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva vista</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">{headerTitle}</h2>
@@ -95,8 +95,8 @@ export function OficialSuboficialCreateView({
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-full border border-[rgb(0,56,133,0.25)] bg-[rgb(0,56,133,0.1)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
+            <div className="flex flex-wrap equipos-center gap-2">
+              <span className="inline-flex equipos-center rounded-full border border-[rgb(0,56,133,0.25)] bg-[rgb(0,56,133,0.1)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
                 {`Campos obligatorios: ${requiredCompleted}/${requiredFields.length}`}
               </span>
               <button
@@ -309,7 +309,7 @@ export function OficialSuboficialCreateView({
                 <button
                   type="submit"
                   disabled={!canSubmit}
-                  className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
+                  className="mt-5 inline-flex w-full equipos-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
                 >
                   {saving ? (isEditMode ? "Guardando..." : "Registrando...") : submitLabel}
                 </button>

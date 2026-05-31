@@ -17,8 +17,8 @@ type UseEtiquetadoParams = {
 type CreateEtiquetadoCajaInput = {
   estanteria: string;
   piso: number;
-  items: Array<{
-    itemId: string;
+  equipos: Array<{
+    equipoId: string;
     cantidad: number;
   }>;
   codigosSIEIds: string[];
@@ -210,7 +210,7 @@ export function useEtiquetado({
   );
 
   const createCodigoSIE = useCallback(
-    async (input: { codigo: string; talla: string; itemId: string; allowDuplicateCodigo?: boolean }) => {
+    async (input: { codigo: string; talla: string; equipoId: string; allowDuplicateCodigo?: boolean }) => {
       if (!canWrite) {
         onStatusChange("No tienes permisos para crear.");
         return;
@@ -240,7 +240,7 @@ export function useEtiquetado({
       originalCodigo: string;
       codigo: string;
       talla: string;
-      itemId: string;
+      equipoId: string;
     }) => {
       if (!canWrite) {
         onStatusChange("No tienes permisos para editar.");
@@ -260,7 +260,7 @@ export function useEtiquetado({
             body: JSON.stringify({
               codigo: input.codigo,
               talla: input.talla,
-              itemId: input.itemId,
+              equipoId: input.equipoId,
             }),
           },
         );

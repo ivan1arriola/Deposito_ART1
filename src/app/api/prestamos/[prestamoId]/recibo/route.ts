@@ -166,9 +166,9 @@ const prestamoReciboInclude = {
       },
     },
   },
-  items: {
+  equipos: {
     include: {
-      item: {
+      equipo: {
         select: {
           nombre: true,
           ordenPdf: true,
@@ -176,7 +176,7 @@ const prestamoReciboInclude = {
       },
     },
     orderBy: {
-      item: {
+      equipo: {
         ordenPdf: "asc",
       },
     },
@@ -268,11 +268,11 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       )
     : destinatarioFirmaLabel;
 
-  const rows: TableRow[] = prestamo.items.map((item) => ({
-    cantidad: String(item.cantidad),
-    efecto: toPrintUppercase(item.item.nombre),
-    estado: item.estadoDevolucion ?? item.estadoEntrega,
-    observaciones: item.comentarioDevolucion?.trim() || item.comentarioEntrega?.trim() || "-",
+  const rows: TableRow[] = prestamo.equipos.map((equipo) => ({
+    cantidad: String(equipo.cantidad),
+    efecto: toPrintUppercase(equipo.equipo.nombre),
+    estado: equipo.estadoDevolucion ?? equipo.estadoEntrega,
+    observaciones: equipo.comentarioDevolucion?.trim() || equipo.comentarioEntrega?.trim() || "-",
   }));
 
   const pdfDoc = await PDFDocument.create();

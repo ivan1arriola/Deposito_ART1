@@ -20,7 +20,7 @@ export type ArticuloEntregaPersonalViewProps = {
   ordenanteCi: string;
   fecha: string;
   comentarios: string;
-  items: ArticuloEntregaPersonalDraftItem[];
+  equipos: ArticuloEntregaPersonalDraftItem[];
   saving: boolean;
   onBack: () => void;
   onSubmit: () => void;
@@ -46,7 +46,7 @@ export function ArticuloEntregaPersonalView({
   ordenanteCi,
   fecha,
   comentarios,
-  items,
+  equipos,
   saving,
   onBack,
   onSubmit,
@@ -113,22 +113,22 @@ export function ArticuloEntregaPersonalView({
     let totalQuantity = 0;
     const selectedItemIds = new Set<string>();
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (!item.articuloId) {
+    for (let i = 0; i < equipos.length; i++) {
+      const equipo = equipos[i];
+      if (!equipo.articuloId) {
         return { isValid: false, message: `Selecciona un artículo en la fila ${i + 1}.` };
       }
-      if (selectedItemIds.has(item.articuloId)) {
+      if (selectedItemIds.has(equipo.articuloId)) {
         return { isValid: false, message: "No puedes repetir el mismo artículo en la entrega." };
       }
-      selectedItemIds.add(item.articuloId);
+      selectedItemIds.add(equipo.articuloId);
 
-      const qty = Number(item.cantidad);
+      const qty = Number(equipo.cantidad);
       if (!Number.isInteger(qty) || qty <= 0) {
         return { isValid: false, message: `La cantidad en la fila ${i + 1} debe ser un número entero mayor a 0.` };
       }
 
-      const originalArticulo = articulos.find((a) => String(a.articuloId) === item.articuloId);
+      const originalArticulo = articulos.find((a) => String(a.articuloId) === equipo.articuloId);
       if (!originalArticulo) {
         return { isValid: false, message: `Artículo no encontrado en la fila ${i + 1}.` };
       }
@@ -142,18 +142,18 @@ export function ArticuloEntregaPersonalView({
       totalQuantity += qty;
     }
 
-    if (items.length === 0) {
+    if (equipos.length === 0) {
       return { isValid: false, message: "Agrega al menos un artículo para la entrega." };
     }
 
     return { isValid: true, message: null, totalQuantity };
-  }, [personalCi, ordenanteCi, items, articulos]);
+  }, [personalCi, ordenanteCi, equipos, articulos]);
 
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva entrega</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Entrega de artículos a personal</h2>
@@ -236,7 +236,7 @@ export function ArticuloEntregaPersonalView({
 
             {/* Listado de Artículos */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex equipos-center justify-between">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">Artículos a entregar</h3>
                 <button
                   type="button"
@@ -248,21 +248,21 @@ export function ArticuloEntregaPersonalView({
                 </button>
               </div>
 
-              {items.map((item, index) => {
-                const selectedArt = articulos.find((a) => String(a.articuloId) === item.articuloId) ?? null;
-                const isOverStock = selectedArt && Number(item.cantidad) > selectedArt.stockActual;
+              {equipos.map((equipo, index) => {
+                const selectedArt = articulos.find((a) => String(a.articuloId) === equipo.articuloId) ?? null;
+                const isOverStock = selectedArt && Number(equipo.cantidad) > selectedArt.stockActual;
 
                 return (
                   <div
-                    key={`entrega-item-${index}`}
-                    className={`grid grid-cols-1 gap-3 rounded-2xl border p-4 transition-colors md:grid-cols-[minmax(0,1fr)_120px_auto] items-end ${
+                    key={`entrega-equipo-${index}`}
+                    className={`grid grid-cols-1 gap-3 rounded-2xl border p-4 transition-colors md:grid-cols-[minmax(0,1fr)_120px_auto] equipos-end ${
                       isOverStock ? "border-amber-300 bg-amber-50/50" : "border-stone-200 bg-white"
                     }`}
                   >
                     <div>
                       <label className="block text-xs font-medium text-stone-600 mb-1">Artículo</label>
                       <select
-                        value={item.articuloId}
+                        value={equipo.articuloId}
                         disabled={saving}
                         onChange={(e) => onItemChange(index, "articuloId", e.target.value)}
                         className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
@@ -281,7 +281,7 @@ export function ArticuloEntregaPersonalView({
                       <input
                         type="number"
                         min={1}
-                        value={item.cantidad}
+                        value={equipo.cantidad}
                         disabled={saving}
                         onChange={(e) => onItemChange(index, "cantidad", e.target.value)}
                         className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
@@ -292,7 +292,7 @@ export function ArticuloEntregaPersonalView({
                       <button
                         type="button"
                         onClick={() => onRemoveItem(index)}
-                        disabled={saving || items.length <= 1}
+                        disabled={saving || equipos.length <= 1}
                         className="w-full rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 px-4 py-2.5 text-xs font-bold text-rose-700 transition disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         Quitar
@@ -300,7 +300,7 @@ export function ArticuloEntregaPersonalView({
                     </div>
 
                     {isOverStock && (
-                      <p className="col-span-full text-xs font-semibold text-amber-700 mt-1 flex items-center gap-1">
+                      <p className="col-span-full text-xs font-semibold text-amber-700 mt-1 flex equipos-center gap-1">
                         ⚠️ Cantidad excede el stock disponible ({selectedArt.stockActual} unidades en depósito).
                       </p>
                     )}
@@ -354,7 +354,7 @@ export function ArticuloEntregaPersonalView({
               type="button"
               onClick={onSubmit}
               disabled={saving || !validation.isValid}
-              className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3.5 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)] shadow-md hover:shadow-lg active:scale-[0.98] duration-150"
+              className="mt-6 inline-flex w-full equipos-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3.5 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)] shadow-md hover:shadow-lg active:scale-[0.98] duration-150"
             >
               {saving ? "Registrando entrega..." : "Registrar entrega"}
             </button>

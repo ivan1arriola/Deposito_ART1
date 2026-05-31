@@ -13,7 +13,7 @@ type EquipoResumenViewProps = {
 };
 
 type EquipoResumenDisplayRow = {
-  itemId: string;
+  equipoId: string;
   nombre: string;
   valoresPorBateria: Array<{ key: string; nombre: string; total: number }>;
   totalUnidad: number;
@@ -27,10 +27,10 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
 
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return data.items
-      .map((item, index) => ({
-        itemId: item.itemId,
-        nombre: item.nombre,
+    return data.equipos
+      .map((equipo, index) => ({
+        equipoId: equipo.equipoId,
+        nombre: equipo.nombre,
         valoresPorBateria: data.baterias.map((bateria) => ({
           key: bateria.key,
           nombre: bateria.nombre,
@@ -44,7 +44,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap equipos-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">Resumen de equipo en baterías</h2>
             <p className="mt-1 text-xs text-stone-600">
@@ -86,7 +86,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
 
       {data ? (
         <article className="ej-card rounded-2xl p-4">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+          <div className="mb-4 flex flex-wrap equipos-end justify-between gap-2">
             <div className="flex-1 min-w-[280px]">
               <h3 className="text-base font-semibold text-stone-900">Total de equipo en baterías según hojas de entrega</h3>
               <p className="mt-1 text-xs text-stone-600">
@@ -112,8 +112,8 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
               </p>
             ) : null}
             {rows.map((row) => (
-              <article key={`mobile-${row.itemId}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                <div className="flex items-center justify-between gap-2">
+              <article key={`mobile-${row.equipoId}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                <div className="flex equipos-center justify-between gap-2">
                   <h4 className="text-sm font-semibold text-stone-900">{row.nombre}</h4>
                   <span className="inline-flex min-w-[3rem] justify-center rounded-full bg-emerald-100 px-2.5 py-1 text-sm font-bold text-emerald-800">
                     {row.totalUnidad}
@@ -122,7 +122,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
                 <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Total unidad</p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {row.valoresPorBateria.map((bateria) => (
-                    <div key={`mobile-${row.itemId}-${bateria.key}`} className="rounded-lg border border-stone-200 bg-white px-2 py-2">
+                    <div key={`mobile-${row.equipoId}-${bateria.key}`} className="rounded-lg border border-stone-200 bg-white px-2 py-2">
                       <p className="text-[11px] font-semibold text-stone-500">{bateria.nombre}</p>
                       <p className="mt-1 text-sm font-bold text-stone-900">{bateria.total}</p>
                     </div>
@@ -157,11 +157,11 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
                   </tr>
                 ) : null}
                 {rows.map((row, rowIndex) => (
-                  <tr key={row.itemId} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
+                  <tr key={row.equipoId} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
                     <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">{row.nombre}</td>
                     {row.valoresPorBateria.map((bateria) => (
                       <td
-                        key={`cell-${row.itemId}-${bateria.key}`}
+                        key={`cell-${row.equipoId}-${bateria.key}`}
                         className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900"
                       >
                         {bateria.total}

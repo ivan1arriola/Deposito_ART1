@@ -21,55 +21,55 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
 
       const payload = registro.payload as any;
 
-      if (registro.tipo === "ITEM") {
+      if (registro.tipo === "EQUIPO") {
         // 1. Check duplicate name
-        const duplicate = await tx.item.findUnique({
-          where: { nombre: payload.item.nombre },
+        const duplicate = await tx.equipo.findUnique({
+          where: { nombre: payload.equipo.nombre },
         });
         if (duplicate) {
           throw new Error("DUPLICATE_NAME");
         }
 
-        // 2. Restore Item
-        await tx.item.create({
+        // 2. Restore Equipo
+        await tx.equipo.create({
           data: {
-            itemId: BigInt(payload.item.itemId),
-            nombre: payload.item.nombre,
-            activo: payload.item.activo,
-            ordenPdf: payload.item.ordenPdf,
-            existenciaSie: payload.item.existenciaSie,
+            equipoId: BigInt(payload.equipo.equipoId),
+            nombre: payload.equipo.nombre,
+            activo: payload.equipo.activo,
+            ordenPdf: payload.equipo.ordenPdf,
+            existenciaSie: payload.equipo.existenciaSie,
           },
         });
 
-        // 3. Restore CajaItem
-        for (const ci of payload.cajaItems || []) {
-          await tx.cajaItem.create({
+        // 3. Restore CajaEquipo
+        for (const ci of payload.cajaEquipos || []) {
+          await tx.cajaEquipo.create({
             data: {
               codigoDepositoGeneral: Number(ci.codigoDepositoGeneral),
-              itemId: BigInt(ci.itemId),
+              equipoId: BigInt(ci.equipoId),
               cantidad: ci.cantidad,
             },
           });
         }
 
-        // 4. Restore ItemCodigoSIE
+        // 4. Restore EquipoCodigoSIE
         for (const sie of payload.itemCodigosSIE || []) {
-          await tx.itemCodigoSIE.create({
+          await tx.equipoCodigoSIE.create({
             data: {
-              itemCodigoSIEId: BigInt(sie.itemCodigoSIEId),
+              equipoCodigoSIEId: BigInt(sie.equipoCodigoSIEId),
               codigo: sie.codigo,
               talla: sie.talla,
-              itemId: BigInt(sie.itemId),
+              equipoId: BigInt(sie.equipoId),
             },
           });
         }
 
         // 5. Restore CajaItemCodigoSIE
         for (const ccs of payload.cajaItemCodigosSIE || []) {
-          await tx.cajaItemCodigoSIE.create({
+          await tx.cajaEquipoCodigoSIE.create({
             data: {
               codigoDepositoGeneral: Number(ccs.codigoDepositoGeneral),
-              itemCodigoSIEId: BigInt(ccs.itemCodigoSIEId),
+              equipoCodigoSIEId: BigInt(ccs.equipoCodigoSIEId),
             },
           });
         }
@@ -183,12 +183,12 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
           }
         }
 
-        // 12. Restore MovimientoItem
-        for (const mi of payload.movimientoItems || []) {
-          await tx.movimientoItem.create({
+        // 12. Restore MovimientoEquipo
+        for (const mi of payload.movimientoEquipos || []) {
+          await tx.movimientoEquipo.create({
             data: {
               movimientoId: BigInt(mi.movimientoId),
-              itemId: BigInt(mi.itemId),
+              equipoId: BigInt(mi.equipoId),
               cantidad: mi.cantidad,
               estadoEntrega: mi.estadoEntrega,
               comentarioEntrega: mi.comentarioEntrega,
@@ -198,12 +198,12 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
           });
         }
 
-        // 13. Restore StockOperacionItem
-        for (const soi of payload.stockOperacionItems || []) {
-          await tx.stockOperacionItem.create({
+        // 13. Restore StockOperacionEquipo
+        for (const soi of payload.stockOperacionEquipos || []) {
+          await tx.stockOperacionEquipo.create({
             data: {
               stockOperacionId: BigInt(soi.stockOperacionId),
-              itemId: BigInt(soi.itemId),
+              equipoId: BigInt(soi.equipoId),
               cantidad: soi.cantidad,
             },
           });
