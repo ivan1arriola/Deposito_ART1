@@ -1,1 +1,1 @@
-export type TipoEquipo = "GENERAL" | "FRI";
+export type TipoEquipo = string;

@@ -13,7 +13,7 @@ import type { UsuarioConfigState } from "./UsuarioConfigState";
 import type { UtilityFunctions } from "./UtilityFunctions";
 
 export interface ConfigViewsProps {
-  activeView: "grados" | "baterias" | "equipos" | "firmas" | "usuarios" | "auditoria";
+  activeView: "grados" | "baterias" | "equipos" | "tipos_equipo" | "firmas" | "usuarios" | "auditoria";
   isAdmin: boolean;
   canWrite: boolean;
   rango: RangoConfigState;

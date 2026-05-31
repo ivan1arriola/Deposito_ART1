@@ -12,6 +12,7 @@ import {
   getTodayDateInput,
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
+import { serializeEquipoTipoData, tipoEquipoRelationSelect } from "@/lib/equipo-tipos-data";
 import { prisma } from "@/lib/prisma";
 import {
   buildStockSummaryMaps,
@@ -200,7 +201,17 @@ export async function GET(req: Request) {
   const [items, stockSummaryMaps] = await Promise.all([
     prisma.item.findMany({
       orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
-      select: { itemId: true, nombre: true, tipo: true, activo: true, ordenPdf: true, existenciaSie: true },
+      select: {
+        itemId: true,
+        nombre: true,
+        tipoEquipoId: true,
+        tipoEquipo: {
+          select: tipoEquipoRelationSelect,
+        },
+        activo: true,
+        ordenPdf: true,
+        existenciaSie: true,
+      },
     }),
     buildStockSummaryMaps(prisma),
   ]);
@@ -304,12 +315,13 @@ export async function GET(req: Request) {
     const stockAsignacion = stockAsignacionByItem.get(key) ?? 0;
     const stockPrestamo = stockPrestamoByItem.get(key) ?? 0;
     const stockDeposito = stockUnidad - stockSubalternos - stockAsignacion - stockPrestamo;
+    const tipo = serializeEquipoTipoData(item);
 
     return {
       equipoId: key,
       itemId: key,
       nombre: item.nombre,
-      tipo: item.tipo,
+      ...tipo,
       ordenPdf: item.ordenPdf,
       apareceEnHoja: item.activo,
       existenciaSie: item.existenciaSie,

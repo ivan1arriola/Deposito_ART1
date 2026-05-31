@@ -2,17 +2,19 @@
 
 import type { FormEvent } from "react";
 import { LoadingInline } from "@/app/components/shared";
+import type { EquipoTipo } from "@/types/entities";
 import type { EquipoForm } from "@/types/forms";
 
 type EquipoCreateViewProps = {
   form: EquipoForm;
+  tiposEquipo: EquipoTipo[];
   saving: boolean;
   onBack: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onChange: (key: keyof Pick<EquipoForm, "nombre" | "tipo" | "activo">, value: string | boolean) => void;
 };
 
-export function EquipoCreateView({ form, saving, onBack, onSubmit, onChange }: EquipoCreateViewProps) {
+export function EquipoCreateView({ form, tiposEquipo, saving, onBack, onSubmit, onChange }: EquipoCreateViewProps) {
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
@@ -54,8 +56,11 @@ export function EquipoCreateView({ form, saving, onBack, onSubmit, onChange }: E
                 onChange={(event) => onChange("tipo", event.target.value)}
                 className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
               >
-                <option value="GENERAL">General</option>
-                <option value="FRI">F.R.I</option>
+                {tiposEquipo.map((tipo) => (
+                  <option key={`equipo-tipo-${tipo.clave}`} value={tipo.clave}>
+                    {tipo.nombre}
+                  </option>
+                ))}
               </select>
             </label>
 

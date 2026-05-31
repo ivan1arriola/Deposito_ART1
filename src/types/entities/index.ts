@@ -11,6 +11,7 @@ export type { Bateria } from "./Bateria";
 export type { CurrentUser } from "./CurrentUser";
 export type { DbStatus } from "./DbStatus";
 export type { Equipo } from "./Equipo";
+export type { EquipoTipo } from "./EquipoTipo";
 export type { FirmaConfig } from "./FirmaConfig";
 export type { GradoMando } from "./GradoMando";
 export type { OficialSuboficial } from "./OficialSuboficial";

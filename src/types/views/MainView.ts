@@ -37,6 +37,7 @@ export type MainView =
   | "baterias"
   | "articulos"
   | "equipos"
+  | "tipos_equipo"
   | "recordatorios"
   | "firmas"
   | "usuarios"

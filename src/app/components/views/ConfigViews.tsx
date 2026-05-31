@@ -7,7 +7,7 @@ import { formatDateTimeForDisplay, formatDateTimeExact } from "@/lib/date-helper
 import { compareEquiposByTipoAndName } from "@/lib/equipo-sort";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MainView } from "@/types/views";
-import type { Articulo, AuditoriaRecord, Equipo, FirmaConfig, Rango, Role, TipoArticulo, TipoEquipo, UsuarioAdmin } from "@/types/entities";
+import type { Articulo, AuditoriaRecord, Equipo, EquipoTipo, FirmaConfig, Rango, Role, TipoArticulo, TipoEquipo, UsuarioAdmin } from "@/types/entities";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 import { ModalFrame } from "../modals/ModalFrame";
 
@@ -34,7 +34,7 @@ type AuditUserOption = {
 type UserAccountType = UsuarioAdmin["accountType"];
 
 interface ConfigViewsProps {
-  activeView: "grados" | "baterias" | "articulos" | "equipos" | "firmas" | "usuarios" | "auditoria" | "papelera";
+  activeView: "grados" | "baterias" | "articulos" | "equipos" | "tipos_equipo" | "firmas" | "usuarios" | "auditoria" | "papelera";
   isAdmin: boolean;
   canWrite: boolean;
   // Grados state
@@ -58,6 +58,13 @@ interface ConfigViewsProps {
   editArticuloId: number | null;
   editArticuloNombre: string;
   editArticuloTipo: TipoArticulo;
+  // Tipos de equipo state
+  tiposEquipo: EquipoTipo[];
+  newTipoEquipoNombre: string;
+  newTipoEquipoOrden: string;
+  editTipoEquipoId: number | null;
+  editTipoEquipoNombre: string;
+  editTipoEquipoOrden: string;
   // Equipos state
   equipos: EquipoConfig[];
   newEquipo: { nombre: string; tipo: TipoEquipo; activo: boolean; ordenPdf: number };
@@ -121,6 +128,15 @@ interface ConfigViewsProps {
   onEditArticuloTipoChange: (value: TipoArticulo) => void;
   onUpdateArticulo: (articuloId: number) => void;
   onDeleteArticulo: (articuloId: number) => void;
+  // Tipos de equipo callbacks
+  onNewTipoEquipoNombreChange: (value: string) => void;
+  onNewTipoEquipoOrdenChange: (value: string) => void;
+  onEditTipoEquipoIdChange: (id: number | null) => void;
+  onEditTipoEquipoNombreChange: (value: string) => void;
+  onEditTipoEquipoOrdenChange: (value: string) => void;
+  onCreateTipoEquipo: () => void;
+  onUpdateTipoEquipo: (tipoEquipoId: number) => void;
+  onDeleteTipoEquipo: (tipoEquipoId: number) => void;
   onSumarStock?: (articuloId: number) => void;
   onEntregarArticulo?: (articuloId: number) => void;
   // Equipos callbacks
@@ -198,14 +214,18 @@ const ARTICULO_TIPO_LABEL: Record<TipoArticulo, string> = {
   OFICINA: "Oficina",
   LIMPIEZA: "Limpieza",
 };
-const TIPO_EQUIPO_LABEL: Record<TipoEquipo, string> = {
-  GENERAL: "General",
-  FRI: "F.R.I",
-};
-
 export function ConfigViews(props: ConfigViewsProps) {
   const [activeUserAccountTypeTab, setActiveUserAccountTypeTab] = useState<UserAccountType>("SISTEMA");
   const [personalUsersSearch, setPersonalUsersSearch] = useState("");
+  const equiposCountByTipo = useMemo(() => {
+    const next = new Map<string, number>();
+
+    for (const equipo of props.equipos) {
+      next.set(equipo.tipo, (next.get(equipo.tipo) ?? 0) + 1);
+    }
+
+    return next;
+  }, [props.equipos]);
 
   // Local state for Auditoria Undo capability
   const [undoingId, setUndoingId] = useState<string | null>(null);
@@ -344,6 +364,136 @@ export function ConfigViews(props: ConfigViewsProps) {
     return filterSearchIndex(usuariosPersonalSearchIndex, personalUsersSearch);
   }, [usuariosPersonal, usuariosPersonalSearchIndex, personalUsersSearch, personalUsersSearchTerm]);
   const usuariosFiltradosPorTipo = activeUserAccountTypeTab === "SISTEMA" ? usuariosSistema : usuariosPersonalFiltrados;
+  const renderTiposEquipoManagement = () => (
+    <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-stone-900">Tipos de equipo</h3>
+          <p className="mt-1 text-xs text-stone-600">
+            Los equipos sin tipo relacionado quedan automáticamente en General, y el orden que definas aquí se refleja en stock, hojas y listados.
+          </p>
+        </div>
+        {!props.canWrite ? (
+          <p className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs text-stone-700">
+            Modo solo lectura: puedes consultar tipos, pero no modificarlos.
+          </p>
+        ) : null}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_96px_auto]">
+        <input
+          value={props.newTipoEquipoNombre}
+          onChange={(event) => props.onNewTipoEquipoNombreChange(event.target.value)}
+          placeholder="Nuevo tipo de equipo"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+          disabled={!props.canWrite}
+        />
+        <input
+          type="number"
+          min="1"
+          value={props.newTipoEquipoOrden}
+          onChange={(event) => props.onNewTipoEquipoOrdenChange(event.target.value)}
+          placeholder={String(props.tiposEquipo.filter((tipo) => !tipo.esGeneral).length + 1)}
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+          disabled={!props.canWrite}
+        />
+        <button
+          type="button"
+          onClick={() => props.onCreateTipoEquipo()}
+          disabled={!props.canWrite}
+          className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
+        >
+          Crear tipo
+        </button>
+      </div>
+      <p className="mt-2 text-xs text-stone-500">General siempre queda primero. Los demás tipos usan el orden numérico que indiques.</p>
+
+      <div className="mt-4 space-y-2">
+        {props.tiposEquipo.map((tipo) => {
+          const equiposRelacionados = equiposCountByTipo.get(tipo.clave) ?? 0;
+
+          return (
+            <div key={`tipo-equipo-${tipo.clave}`} className="rounded-lg bg-white/90 p-3">
+              {tipo.esGeneral ? (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-stone-800">{tipo.nombre}</span>
+                      <span className="inline-flex items-center rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                        Categoría por defecto
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-stone-500">Se aplica cuando un equipo no tiene tipo relacionado.</p>
+                  </div>
+                  <span className="text-xs font-medium text-stone-500">{equiposRelacionados} equipo{equiposRelacionados === 1 ? "" : "s"}</span>
+                </div>
+              ) : props.editTipoEquipoId === tipo.tipoEquipoId ? (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_96px_auto]">
+                  <input
+                    value={props.editTipoEquipoNombre}
+                    onChange={(event) => props.onEditTipoEquipoNombreChange(event.target.value)}
+                    className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    value={props.editTipoEquipoOrden}
+                    onChange={(event) => props.onEditTipoEquipoOrdenChange(event.target.value)}
+                    className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+                  />
+                  <div className="flex gap-2">
+                    {props.canWrite ? (
+                      <>
+                        <SmallActionButton text="Ok" tone="ok" onClick={() => props.onUpdateTipoEquipo(tipo.tipoEquipoId ?? 0)} />
+                        <SmallActionButton
+                          text="Cancelar"
+                          tone="neutral"
+                          onClick={() => {
+                            props.onEditTipoEquipoIdChange(null);
+                            props.onEditTipoEquipoNombreChange("");
+                            props.onEditTipoEquipoOrdenChange("");
+                          }}
+                        />
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-stone-800">{tipo.nombre}</span>
+                      <span className="inline-flex items-center rounded-full border border-stone-300 bg-stone-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                        {tipo.clave}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-stone-700">
+                        {equiposRelacionados} equipo{equiposRelacionados === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-stone-500">{`Orden ${tipo.orden}. Si lo borras, sus equipos vuelven a General.`}</p>
+                  </div>
+                  {props.canWrite ? (
+                    <div className="flex gap-2">
+                      <SmallActionButton
+                        text="Editar"
+                        tone="edit"
+                        onClick={() => {
+                          props.onEditTipoEquipoIdChange(tipo.tipoEquipoId);
+                          props.onEditTipoEquipoNombreChange(tipo.nombre);
+                          props.onEditTipoEquipoOrdenChange(String(tipo.orden));
+                        }}
+                      />
+                      <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteTipoEquipo(tipo.tipoEquipoId ?? 0)} />
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   if (props.activeView === "grados") {
     return (
@@ -903,35 +1053,70 @@ export function ConfigViews(props: ConfigViewsProps) {
     );
   }
 
+  if (props.activeView === "tipos_equipo") {
+    return (
+      <section className="mt-6 grid grid-cols-1 gap-4">
+        <article className="ej-card rounded-2xl p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-stone-900">Tipos de equipo</h2>
+              <p className="mt-1 text-xs text-stone-600">
+                Administra las categorías del catálogo y define el orden en que aparecen en stock, hojas y listados.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => props.onNavigateView("equipos")}
+              className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
+            >
+              Ir al catálogo de equipos
+            </button>
+          </div>
+
+          <div className="mt-6">{renderTiposEquipoManagement()}</div>
+        </article>
+      </section>
+    );
+  }
+
   if (props.activeView === "equipos") {
     const equiposOrdenadosAlfabeticamente = [...props.equipos].sort((a, b) =>
       compareEquiposByTipoAndName(a, b),
     );
-    const equiposGeneralesAlfabeticos = equiposOrdenadosAlfabeticamente.filter((equipo) => equipo.tipo === "GENERAL");
-    const equiposFriAlfabeticos = equiposOrdenadosAlfabeticamente.filter((equipo) => equipo.tipo === "FRI");
-    const equiposActivosGeneralesEnPantalla = props.equiposActivosEnPantalla.filter((equipo) => equipo.tipo === "GENERAL");
-    const equiposActivosFriEnPantalla = props.equiposActivosEnPantalla.filter((equipo) => equipo.tipo === "FRI");
-    const equiposInactivosGeneralesEnPantalla = props.equiposInactivosEnPantalla.filter((equipo) => equipo.tipo === "GENERAL");
-    const equiposInactivosFriEnPantalla = props.equiposInactivosEnPantalla.filter((equipo) => equipo.tipo === "FRI");
-    const activeGeneralOrderById = new Map(
-      equiposActivosGeneralesEnPantalla.map((equipo, index) => [equipo.itemId, index]),
-    );
-    const activeFriOrderById = new Map(
-      equiposActivosFriEnPantalla.map((equipo, index) => [equipo.itemId, index]),
-    );
-    const inactivoGeneralOrderById = new Map(
-      equiposInactivosGeneralesEnPantalla.map((equipo, index) => [equipo.itemId, index]),
-    );
-    const inactivoFriOrderById = new Map(
-      equiposInactivosFriEnPantalla.map((equipo, index) => [equipo.itemId, index]),
-    );
+    const tipoSections = props.tiposEquipo.map((tipo) => {
+      const alphabeticItems = equiposOrdenadosAlfabeticamente.filter((equipo) => equipo.tipo === tipo.clave);
+      const activeItems = props.equiposActivosEnPantalla.filter((equipo) => equipo.tipo === tipo.clave);
+      const inactiveItems = props.equiposInactivosEnPantalla.filter((equipo) => equipo.tipo === tipo.clave);
+
+      return {
+        key: tipo.clave,
+        label: tipo.nombre,
+        isGeneral: tipo.esGeneral,
+        alphabeticItems,
+        activeItems,
+        inactiveItems,
+        activeOrderById: new Map(activeItems.map((equipo, index) => [equipo.itemId, index])),
+        inactiveOrderById: new Map(inactiveItems.map((equipo, index) => [equipo.itemId, index])),
+      };
+    });
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-stone-900">Catálogo de Equipos</h2>
-          <p className="mt-1 text-xs text-stone-600">
-            Desde esta vista puedes editar o eliminar equipos existentes y decidir si aparecen en Hoja de Entrega / Hoja Matriz. Las altas nuevas se hacen desde el menú `Stock y Equipos`.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-stone-900">Catálogo de Equipos</h2>
+              <p className="mt-1 text-xs text-stone-600">
+                Desde esta vista puedes editar o eliminar equipos existentes y decidir si aparecen en Hoja de Entrega / Hoja Matriz. Las altas nuevas se hacen desde el menú `Stock y Equipos`.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => props.onNavigateView("tipos_equipo")}
+              className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
+            >
+              Ver tipos de equipo
+            </button>
+          </div>
           {!props.canWrite ? (
             <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
               Modo solo lectura: puedes consultar equipos y su orden, pero no modificarlos.
@@ -951,8 +1136,11 @@ export function ConfigViews(props: ConfigViewsProps) {
               className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               disabled={!props.canWrite}
             >
-              <option value="GENERAL">General</option>
-              <option value="FRI">F.R.I</option>
+              {props.tiposEquipo.map((tipo) => (
+                <option key={`config-equipo-tipo-${tipo.clave}`} value={tipo.clave}>
+                  {tipo.nombre}
+                </option>
+              ))}
             </select>
             <div className="flex flex-wrap gap-4 text-sm">
               <label className="flex items-center gap-2">
@@ -973,6 +1161,24 @@ export function ConfigViews(props: ConfigViewsProps) {
               Crear equipo
             </button>
           </form>
+
+          <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50/80 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-stone-900">Gestión de tipos</h3>
+                <p className="mt-1 text-xs text-stone-600">
+                  Los tipos de equipo ahora se administran desde una vista dedicada para separar categorías del catálogo operativo.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => props.onNavigateView("tipos_equipo")}
+                className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
+              >
+                Abrir tipos de equipo
+              </button>
+            </div>
+          </div>
 
           <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
             <div className="rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3">
@@ -998,41 +1204,32 @@ export function ConfigViews(props: ConfigViewsProps) {
                       : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
                   }`}
                 >
-                  Orden alfabético por tipo
+                  Orden alfabético por categoría
                 </button>
               </div>
               <p className="mt-2 text-xs text-stone-600">
-                La vista alfabética muestra primero equipos generales y luego equipos F.R.I, ordenados A-Z dentro de cada grupo.
+                La vista alfabética muestra los equipos separados por tipo, ordenados A-Z dentro de cada grupo.
               </p>
             </div>
 
             {equiposDisplayMode === "alfabetico" ? (
               <div className="space-y-6">
-                {[
-                  {
-                    key: "GENERAL" as const,
-                    title: "Equipos generales (A-Z)",
-                    items: equiposGeneralesAlfabeticos,
-                  },
-                  {
-                    key: "FRI" as const,
-                    title: "Equipos F.R.I (A-Z)",
-                    items: equiposFriAlfabeticos,
-                  },
-                ].map((section) => (
+                {tipoSections.map((section) => (
                   <div key={section.key}>
                     <div className="mb-2 flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-stone-900">{section.title}</h3>
+                      <h3 className="text-sm font-semibold text-stone-900">
+                        {section.isGeneral ? "Equipos generales (A-Z)" : `Equipos ${section.label} (A-Z)`}
+                      </h3>
                       <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
-                        {section.items.length}
+                        {section.alphabeticItems.length}
                       </span>
                     </div>
                     <p className="mb-3 text-xs text-stone-600">
-                      Incluye equipos visibles y ocultos en hoja para el tipo {TIPO_EQUIPO_LABEL[section.key]}.
+                      Incluye equipos visibles y ocultos en hoja para el tipo {section.label}.
                     </p>
-                    {section.items.length > 0 ? (
+                    {section.alphabeticItems.length > 0 ? (
                       <div className="space-y-2">
-                        {section.items.map((equipo) =>
+                        {section.alphabeticItems.map((equipo) =>
                           props.renderEquipoCard(equipo, {
                             reorderableInActiveList: false,
                           }),
@@ -1040,7 +1237,11 @@ export function ConfigViews(props: ConfigViewsProps) {
                       </div>
                     ) : (
                       <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                        <p className="text-sm text-stone-600">No hay equipos {TIPO_EQUIPO_LABEL[section.key].toLowerCase()} registrados.</p>
+                        <p className="text-sm text-stone-600">
+                          {section.isGeneral
+                            ? "No hay equipos generales registrados."
+                            : `No hay equipos ${section.label} registrados.`}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1058,14 +1259,14 @@ export function ConfigViews(props: ConfigViewsProps) {
                     </span>
                   </div>
                   <p className="text-xs text-stone-600 mb-3">
-                    Estos equipos se muestran en hoja y ahora quedan separados entre catálogo general y F.R.I.
+                    Estos equipos se muestran en hoja y quedan separados por tipo.
                   </p>
                 </div>
                 {props.equiposActivosEnPantalla.length > 0 ? (
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3">
                     <div>
                       <p className="text-sm font-semibold text-stone-900">Editor de orden</p>
-                      <p className="text-xs text-stone-600">Guarda el orden combinado de Generales y F.R.I para hojas y PDF.</p>
+                      <p className="text-xs text-stone-600">Guarda el orden combinado por tipos para hojas y PDF.</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -1088,41 +1289,34 @@ export function ConfigViews(props: ConfigViewsProps) {
                   </div>
                 ) : null}
                 <div className="space-y-6">
-                  {[
-                    {
-                      key: "GENERAL" as const,
-                      title: "Equipos generales visibles en hoja",
-                      items: equiposActivosGeneralesEnPantalla,
-                      orderById: activeGeneralOrderById,
-                    },
-                    {
-                      key: "FRI" as const,
-                      title: "Equipos F.R.I visibles en hoja",
-                      items: equiposActivosFriEnPantalla,
-                      orderById: activeFriOrderById,
-                    },
-                  ].map((section) => (
+                  {tipoSections.map((section) => (
                     <div key={`active-${section.key}`}>
                       <div className="mb-2 flex items-center gap-2">
-                        <h4 className="text-sm font-semibold text-stone-900">{section.title}</h4>
+                        <h4 className="text-sm font-semibold text-stone-900">
+                          {section.isGeneral ? "Equipos generales visibles en hoja" : `Equipos ${section.label} visibles en hoja`}
+                        </h4>
                         <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
-                          {section.items.length}
+                          {section.activeItems.length}
                         </span>
                       </div>
-                      {section.items.length > 0 ? (
+                      {section.activeItems.length > 0 ? (
                         <div className="space-y-2">
-                          {section.items.map((equipo) =>
+                          {section.activeItems.map((equipo) =>
                             props.renderEquipoCard(equipo, {
                               reorderableInActiveList: true,
                               orderGroupType: section.key,
-                              orderIndex: section.orderById.get(equipo.itemId) ?? -1,
-                              orderCount: section.items.length,
+                              orderIndex: section.activeOrderById.get(equipo.itemId) ?? -1,
+                              orderCount: section.activeItems.length,
                             }),
                           )}
                         </div>
                       ) : (
                         <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                          <p className="text-sm text-stone-600">No hay equipos {TIPO_EQUIPO_LABEL[section.key].toLowerCase()} visibles en hoja.</p>
+                          <p className="text-sm text-stone-600">
+                            {section.isGeneral
+                              ? "No hay equipos generales visibles en hoja."
+                              : `No hay equipos ${section.label} visibles en hoja.`}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -1141,7 +1335,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     </span>
                   </div>
                   <p className="mb-3 text-xs text-stone-600">
-                    Estos equipos siguen registrados, pero quedan fuera de hoja y también se separan entre generales y F.R.I.
+                    Estos equipos siguen registrados, pero quedan fuera de hoja y también se separan por tipo.
                   </p>
                 </div>
                 {props.equiposInactivosEnPantalla.length > 0 ? (
@@ -1171,42 +1365,35 @@ export function ConfigViews(props: ConfigViewsProps) {
                   </div>
                 ) : null}
                 <div className="space-y-6">
-                  {[
-                    {
-                      key: "GENERAL" as const,
-                      title: "Equipos generales ocultos de hoja",
-                      items: equiposInactivosGeneralesEnPantalla,
-                      orderById: inactivoGeneralOrderById,
-                    },
-                    {
-                      key: "FRI" as const,
-                      title: "Equipos F.R.I ocultos de hoja",
-                      items: equiposInactivosFriEnPantalla,
-                      orderById: inactivoFriOrderById,
-                    },
-                  ].map((section) => (
+                  {tipoSections.map((section) => (
                     <div key={`inactive-${section.key}`}>
                       <div className="mb-2 flex items-center gap-2">
-                        <h4 className="text-sm font-semibold text-stone-900">{section.title}</h4>
+                        <h4 className="text-sm font-semibold text-stone-900">
+                          {section.isGeneral ? "Equipos generales ocultos de hoja" : `Equipos ${section.label} ocultos de hoja`}
+                        </h4>
                         <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
-                          {section.items.length}
+                          {section.inactiveItems.length}
                         </span>
                       </div>
-                      {section.items.length > 0 ? (
+                      {section.inactiveItems.length > 0 ? (
                         <div className="space-y-2">
-                          {section.items.map((equipo) =>
+                          {section.inactiveItems.map((equipo) =>
                             props.renderEquipoCard(equipo, {
                               reorderableInActiveList: false,
                               reorderableInInactiveList: true,
                               orderGroupType: section.key,
-                              orderIndex: section.orderById.get(equipo.itemId) ?? -1,
-                              orderCount: section.items.length,
+                              orderIndex: section.inactiveOrderById.get(equipo.itemId) ?? -1,
+                              orderCount: section.inactiveItems.length,
                             }),
                           )}
                         </div>
                       ) : (
                         <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                          <p className="text-sm text-stone-600">No hay equipos {TIPO_EQUIPO_LABEL[section.key].toLowerCase()} ocultos.</p>
+                          <p className="text-sm text-stone-600">
+                            {section.isGeneral
+                              ? "No hay equipos generales ocultos."
+                              : `No hay equipos ${section.label} ocultos.`}
+                          </p>
                         </div>
                       )}
                     </div>

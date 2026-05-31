@@ -7,7 +7,6 @@ CREATE TYPE "tipo_stock_operacion" AS ENUM ('INGRESO', 'EGRESO');
 CREATE TYPE "user_role" AS ENUM ('ADMIN', 'EDITOR', 'READ_ONLY');
 CREATE TYPE "tipo_personal" AS ENUM ('SUBALTERNO', 'OFICIAL', 'SUBOFICIAL');
 CREATE TYPE "tipo_articulo" AS ENUM ('OFICINA', 'LIMPIEZA');
-CREATE TYPE "tipo_item" AS ENUM ('GENERAL', 'FRI');
 CREATE TYPE "tipo_articulo_stock_movimiento" AS ENUM ('INGRESO', 'EGRESO');
 CREATE TYPE "tipo_movimiento" AS ENUM ('ENTREGA', 'DEVOLUCION', 'ASIGNACION', 'PRESTAMO');
 CREATE TYPE "estado_prestamo_movimiento" AS ENUM ('PENDIENTE', 'DEVUELTO');
@@ -102,6 +101,18 @@ CREATE TABLE "articulo" (
 
 CREATE INDEX "articulo_tipo_idx" ON "articulo"("tipo");
 
+CREATE TABLE "tipo_equipo" (
+  "tipo_equipo_id" SMALLSERIAL PRIMARY KEY,
+  "clave" TEXT NOT NULL UNIQUE,
+  "nombre" TEXT NOT NULL UNIQUE,
+  "orden" SMALLINT NOT NULL
+);
+
+CREATE INDEX "tipo_equipo_orden_idx" ON "tipo_equipo"("orden");
+
+INSERT INTO "tipo_equipo" ("clave", "nombre", "orden") VALUES
+('FRI', 'F.R.I', 1);
+
 CREATE TABLE "talla_tipo" (
   "talla_tipo_id" SMALLSERIAL PRIMARY KEY,
   "nombre" TEXT NOT NULL UNIQUE
@@ -113,39 +124,41 @@ INSERT INTO "talla_tipo" ("nombre") VALUES
 CREATE TABLE "item" (
   "item_id" BIGSERIAL PRIMARY KEY,
   "nombre" TEXT NOT NULL UNIQUE,
-  "tipo" "tipo_item" NOT NULL DEFAULT 'GENERAL',
+  "tipo_equipo_id" SMALLINT REFERENCES "tipo_equipo"("tipo_equipo_id") ON DELETE SET NULL,
   "activo" BOOLEAN NOT NULL DEFAULT TRUE,
   "orden_pdf" INTEGER NOT NULL,
   "existencia_sie" INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE INDEX "item_tipo_equipo_id_idx" ON "item"("tipo_equipo_id");
+
 CREATE INDEX "item_orden_pdf_nombre_idx" ON "item"("orden_pdf", "nombre");
 
-INSERT INTO "item" ("nombre", "tipo", "activo", "orden_pdf") VALUES
-('Buzo Verde M/C', 'GENERAL', TRUE, 1),
-('Buzo M/L V/Oliva', 'GENERAL', TRUE, 2),
-('Parka Pixelada 4A', 'GENERAL', TRUE, 3),
-('Birrete Eq. Pixelado A4', 'GENERAL', TRUE, 4),
-('Camisaco Eq. Pixelado A4', 'GENERAL', TRUE, 5),
-('Pantalon Eq. Pixelado A4', 'GENERAL', TRUE, 6),
-('Birrete Eq.Pixelado', 'GENERAL', TRUE, 7),
-('Camisaco Eq.Pixelado', 'GENERAL', TRUE, 8),
-('Pantalon Eq.Pixelado', 'GENERAL', TRUE, 9),
-('Parka Pixelada', 'GENERAL', TRUE, 10),
-('Campera Eq. Deportivo Largo', 'GENERAL', TRUE, 11),
-('Pantalon Eq. Deportivo Largo', 'GENERAL', TRUE, 12),
-('Buzo Verde Polar.', 'GENERAL', TRUE, 13),
-('Medias Verdes', 'GENERAL', TRUE, 14),
-('Equipo Termico', 'GENERAL', TRUE, 15),
-('Funda de Almohada', 'GENERAL', TRUE, 16),
-('Sabanas', 'GENERAL', TRUE, 17),
-('Arnes Combate (Y)', 'GENERAL', TRUE, 18),
-('Arnes de tela (H)', 'GENERAL', TRUE, 19),
-('Cinturon de Combate tela (H)', 'GENERAL', TRUE, 20),
-('Cinturon de combate (Y)', 'GENERAL', TRUE, 21),
-('Frazada', 'GENERAL', TRUE, 22),
-('Bota Corta de Cuero SIE', 'GENERAL', TRUE, 23),
-('Bota Corta de tela S.I.E.', 'GENERAL', TRUE, 24);
+INSERT INTO "item" ("nombre", "activo", "orden_pdf") VALUES
+('Buzo Verde M/C', TRUE, 1),
+('Buzo M/L V/Oliva', TRUE, 2),
+('Parka Pixelada 4A', TRUE, 3),
+('Birrete Eq. Pixelado A4', TRUE, 4),
+('Camisaco Eq. Pixelado A4', TRUE, 5),
+('Pantalon Eq. Pixelado A4', TRUE, 6),
+('Birrete Eq.Pixelado', TRUE, 7),
+('Camisaco Eq.Pixelado', TRUE, 8),
+('Pantalon Eq.Pixelado', TRUE, 9),
+('Parka Pixelada', TRUE, 10),
+('Campera Eq. Deportivo Largo', TRUE, 11),
+('Pantalon Eq. Deportivo Largo', TRUE, 12),
+('Buzo Verde Polar.', TRUE, 13),
+('Medias Verdes', TRUE, 14),
+('Equipo Termico', TRUE, 15),
+('Funda de Almohada', TRUE, 16),
+('Sabanas', TRUE, 17),
+('Arnes Combate (Y)', TRUE, 18),
+('Arnes de tela (H)', TRUE, 19),
+('Cinturon de Combate tela (H)', TRUE, 20),
+('Cinturon de combate (Y)', TRUE, 21),
+('Frazada', TRUE, 22),
+('Bota Corta de Cuero SIE', TRUE, 23),
+('Bota Corta de tela S.I.E.', TRUE, 24);
 
 CREATE TABLE "estanteria" (
   "codigo" VARCHAR(1) NOT NULL,

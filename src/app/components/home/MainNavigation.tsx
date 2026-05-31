@@ -47,7 +47,7 @@ type ArticuloView = Extract<MainView, "articulos" | "articulo_nuevo" | "articulo
 type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo">;
 type StockView = Extract<
   MainView,
-  "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "equipo_nuevo" | "movimientos_por_equipo" | "equipos_unificar"
+  "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "tipos_equipo" | "equipo_nuevo" | "movimientos_por_equipo" | "equipos_unificar"
 >;
 type PrestamosView = Extract<MainView, "prestamos_registrar" | "prestamos_vigentes" | "prestamos_historial" | "movimientos_recintos" | "formularios">;
 type TallasResumenView = Extract<
@@ -157,6 +157,7 @@ const createViews: Array<NavOption<CreateView>> = [
 const stockViews: Array<NavOption<StockView>> = [
   { view: "equipo_nuevo", label: "Alta de equipo", shortLabel: "Alta Eq.", icon: icons.altas, writeOnly: true },
   { view: "equipos", label: "Catálogo de Equipos", shortLabel: "Equipos", icon: icons.stock },
+  { view: "tipos_equipo", label: "Tipos de equipo", shortLabel: "Tipos", icon: icons.resumen },
   { view: "equipos_unificar", label: "Unificar Equipos", shortLabel: "Unificar", icon: icons.stock, writeOnly: true },
   { view: "stock_total", label: "Stock de Equipos", shortLabel: "Total", icon: icons.resumen },
   { view: "stock_actual", label: "Stock de Equipos en Depósito", shortLabel: "Depósito", icon: icons.stock },
@@ -439,6 +440,7 @@ export function MainNavigation({
   const isStockView =
     activeView === "stock" ||
     activeView === "equipos" ||
+    activeView === "tipos_equipo" ||
     activeView === "equipo_nuevo" ||
     activeView === "stock_total" ||
     activeView === "stock_actual" ||

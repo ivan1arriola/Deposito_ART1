@@ -61,6 +61,7 @@ export function CreationViews(props: CreationViewsProps) {
     cancelOficialSuboficialForm,
     createOficialSuboficial,
     updateNewOficialSuboficialField,
+    tiposEquipo,
     newEquipo,
     loading,
     creatingEquipo,
@@ -198,6 +199,7 @@ export function CreationViews(props: CreationViewsProps) {
       {activeView === "equipo_nuevo" ? (
         <EquipoCreateView
           form={newEquipo}
+          tiposEquipo={tiposEquipo}
           saving={creatingEquipo}
           onBack={() => setActiveView("equipos")}
           onSubmit={(event) => void createEquipo(event)}

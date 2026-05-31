@@ -6,6 +6,9 @@ export type StockResumen = {
   itemId: string;
   nombre: string;
   tipo: TipoEquipo;
+  tipoEquipoId?: number | null;
+  tipoLabel?: string;
+  tipoOrden?: number;
   ordenPdf: number;
   apareceEnHoja: boolean;
   existenciaSie: number;

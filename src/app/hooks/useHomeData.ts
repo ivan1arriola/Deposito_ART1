@@ -10,6 +10,7 @@ import type {
   CurrentUser,
   DbStatus,
   Equipo,
+  EquipoTipo,
   FirmaConfig,
   OficialSuboficial,
   Personal,
@@ -71,6 +72,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
   const [rangosSuboficiales, setRangosSuboficiales] = useState<Rango[]>([]);
   const [baterias, setBaterias] = useState<Bateria[]>([]);
   const [articulos, setArticulos] = useState<Articulo[]>([]);
+  const [tiposEquipo, setTiposEquipo] = useState<EquipoTipo[]>([]);
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [oficialesSuboficiales, setOficialesSuboficiales] = useState<OficialSuboficial[]>([]);
@@ -143,6 +145,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
     setRangosSuboficiales([]);
     setBaterias([]);
     setArticulos([]);
+    setTiposEquipo([]);
     setEquipos([]);
     setPersonal([]);
     setOficialesSuboficiales([]);
@@ -185,6 +188,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
           rangosSuboficialesData,
           bateriasData,
           articulosData,
+          tiposEquipoData,
           equiposData,
           personalData,
           oficialesSuboficialesData,
@@ -195,6 +199,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
           api<Rango[]>("/api/rangos?tipo=SUBOFICIAL", requestInit),
           api<Bateria[]>("/api/baterias", requestInit),
           api<Articulo[]>("/api/articulos", requestInit).catch(() => [] as Articulo[]),
+          api<EquipoTipo[]>("/api/equipos/tipos", requestInit).catch(() => [] as EquipoTipo[]),
           api<Equipo[]>("/api/equipos", requestInit),
           api<Personal[]>("/api/personal", requestInit),
           api<OficialSuboficial[]>("/api/oficiales-suboficiales", requestInit),
@@ -208,6 +213,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
         setRangosSuboficiales(rangosSuboficialesData);
         setBaterias(bateriasData);
         setArticulos(articulosData);
+        setTiposEquipo(tiposEquipoData);
         setEquipos(equiposData);
         setPersonal(personalData);
         setOficialesSuboficiales(oficialesSuboficialesData);
@@ -457,6 +463,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
     rangosSuboficiales,
     baterias,
     articulos,
+    tiposEquipo,
     equipos,
     personal,
     oficialesSuboficiales,
@@ -497,6 +504,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
     setRangosSuboficiales,
     setBaterias,
     setArticulos,
+    setTiposEquipo,
     setEquipos,
     setPersonal,
     setOficialesSuboficiales,

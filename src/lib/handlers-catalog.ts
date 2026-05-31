@@ -4,7 +4,7 @@
  */
 
 import { api } from "@/lib/api";
-import type { TipoArticulo, TipoEquipo } from "@/types/entities";
+import type { EquipoTipo, TipoArticulo, TipoEquipo } from "@/types/entities";
 
 interface CallbackProps {
   onSuccess: (data?: unknown) => void;
@@ -108,6 +108,54 @@ export async function deleteBateriaHandler(bateriaId: number, callbacks: Callbac
     callbacks.onSuccess();
   } catch (error) {
     const message = error instanceof Error ? error.message : "No se pudo eliminar la batería.";
+    callbacks.onError(message);
+    throw error;
+  }
+}
+
+// ==================== TIPOS DE EQUIPO ====================
+
+export async function createEquipoTipoHandler(nombre: string, orden: number | undefined, callbacks: CallbackProps) {
+  try {
+    const data = await api("/api/equipos/tipos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, orden }),
+    });
+    callbacks.onSuccess(data);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo crear el tipo de equipo.";
+    callbacks.onError(message);
+    throw error;
+  }
+}
+
+export async function updateEquipoTipoHandler(
+  tipoEquipoId: number,
+  nombre: string,
+  orden: number | undefined,
+  callbacks: CallbackProps
+) {
+  try {
+    const data = await api(`/api/equipos/tipos/${tipoEquipoId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, orden }),
+    });
+    callbacks.onSuccess(data);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo actualizar el tipo de equipo.";
+    callbacks.onError(message);
+    throw error;
+  }
+}
+
+export async function deleteEquipoTipoHandler(tipoEquipoId: number, callbacks: CallbackProps) {
+  try {
+    const data = await api(`/api/equipos/tipos/${tipoEquipoId}`, { method: "DELETE" });
+    callbacks.onSuccess(data);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo eliminar el tipo de equipo.";
     callbacks.onError(message);
     throw error;
   }
@@ -234,6 +282,10 @@ export async function deleteEquipoHandler(equipoId: string, callbacks: CallbackP
     callbacks.onError(message);
     throw error;
   }
+}
+
+export function resolveEquipoTipoLabel(tiposEquipo: EquipoTipo[], tipo: TipoEquipo) {
+  return tiposEquipo.find((entry) => entry.clave === tipo)?.nombre ?? tipo;
 }
 
 export type EquipoMergeResult = {

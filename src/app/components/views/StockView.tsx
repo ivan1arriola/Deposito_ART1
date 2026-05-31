@@ -5,7 +5,7 @@ import { DateTextInput } from "@/app/components/shared/DateTextInput";
 import { DestinatarioSearchSelect } from "@/app/components/shared/DestinatarioSearchSelect";
 import { LoadingInline } from "@/app/components/shared";
 import { api } from "@/lib/api";
-import { compareEquiposByTipoAndName, compareEquiposByTipoAndOrder, splitEquiposByTipo } from "@/lib/equipo-sort";
+import { compareEquiposByTipoAndName, compareEquiposByTipoAndOrder, groupEquiposByTipo } from "@/lib/equipo-sort";
 import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers";
 import { formatUruguayanCi } from "@/lib/ci";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
@@ -266,15 +266,19 @@ export function StockView({
         : resumen.filter((item) => item.nombre.toLowerCase().includes(normalizedSearchTermEquipos));
     return [...list].sort(ordenAlfabetico ? compareEquiposByTipoAndName : compareEquiposByTipoAndOrder);
   }, [resumen, normalizedSearchTermEquipos, ordenAlfabetico]);
-  const { generales: resumenGeneral, fri: resumenFri } = useMemo(() => splitEquiposByTipo(resumenFiltrado), [resumenFiltrado]);
 
   const { showSummaryCards, showManualForm, showStockTable, showHistory, showPrestamos, viewTitle, stockTableTitle } =
     getSectionViewConfig(section);
   const canEditSie = canWrite && isAdmin;
-  const stockTableSections = [
-    { key: "GENERAL" as const, title: section === "total" ? "Equipo general" : "Equipo general en depósito", items: resumenGeneral },
-    { key: "FRI" as const, title: section === "total" ? "Equipo F.R.I" : "Equipo F.R.I en depósito", items: resumenFri },
-  ];
+  const stockTableSections = useMemo(
+    () =>
+      groupEquiposByTipo(resumenFiltrado).map((group) => ({
+        key: group.key,
+        title: section === "total" ? `Equipo ${group.label}` : `Equipo ${group.label} en depósito`,
+        items: group.items,
+      })),
+    [resumenFiltrado, section],
+  );
 
   return (
     <section className="mt-6 space-y-4">
@@ -301,10 +305,10 @@ export function StockView({
                   type="button"
                   onClick={() => window.open("/listado-equipos-unidad?autoprint=1&sort=alpha", "_blank", "noopener,noreferrer")}
                   className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-stone-200 hover:text-white"
-                  title="Imprimir separando equipos generales y F.R.I, con orden alfabético dentro de cada grupo"
+                  title="Imprimir separando equipos por categoría, con orden alfabético dentro de cada grupo"
                 >
                   <SortByAlphaRoundedIcon sx={{ fontSize: 18 }} />
-                  <span>Imprimir (A-Z por tipo)</span>
+                  <span>Imprimir (A-Z por categoría)</span>
                 </button>
               </div>
             ) : null}
@@ -417,7 +421,7 @@ export function StockView({
                         })
                         .map((catalogItem) => (
                           <option key={catalogItem.itemId} value={catalogItem.itemId}>
-                            {catalogItem.nombre}{catalogItem.tipo === "FRI" ? " (F.R.I)" : ""}
+                            {catalogItem.nombre}{catalogItem.tipoLabel && catalogItem.tipoLabel !== "General" ? ` (${catalogItem.tipoLabel})` : ""}
                           </option>
                         ))}
                 </select>
@@ -618,7 +622,7 @@ export function StockView({
                         })
                         .map((catalogItem) => (
                           <option key={catalogItem.itemId} value={catalogItem.itemId}>
-                            {catalogItem.nombre}{catalogItem.tipo === "FRI" ? " (F.R.I)" : ""}
+                            {catalogItem.nombre}{catalogItem.tipoLabel && catalogItem.tipoLabel !== "General" ? ` (${catalogItem.tipoLabel})` : ""}
                           </option>
                         ))}
                     </select>
@@ -829,7 +833,7 @@ export function StockView({
                   onChange={(event) => setOrdenAlfabetico(event.target.checked)}
                   className="h-4 w-4 rounded border-stone-300 text-indigo-700 focus:ring-indigo-500"
                 />
-                <span>Ordenar A-Z por tipo</span>
+                <span>Ordenar A-Z por categoría</span>
               </label>
               <label className="w-full sm:w-auto max-w-xs text-xs text-stone-700">
                 <span className="block mb-1">Filtrar equipos</span>
@@ -862,7 +866,7 @@ export function StockView({
                   </div>
                   {tableSection.items.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-stone-300 px-3 py-6 text-sm text-stone-500">
-                      No hay registros para {tableSection.key === "FRI" ? "equipo F.R.I" : "equipo general"} en esta vista.
+                      {`No hay registros para la categoría ${tableSection.title.toLowerCase()} en esta vista.`}
                     </div>
                   ) : (
                     <div className="overflow-x-auto">

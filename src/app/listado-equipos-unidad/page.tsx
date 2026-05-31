@@ -6,7 +6,8 @@ import {
 } from "@/app/components/print/InstitutionalPrintHeader";
 import { FirmaLineasHtml } from "@/app/components/shared/FirmaLineasHtml";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
-import { compareEquiposByTipoAndName, compareEquiposByTipoAndOrder, splitEquiposByTipo } from "@/lib/equipo-sort";
+import { compareEquiposByTipoAndName, compareEquiposByTipoAndOrder, groupEquiposByTipo } from "@/lib/equipo-sort";
+import { serializeEquipoTipoData, tipoEquipoRelationSelect } from "@/lib/equipo-tipos-data";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
 import { prisma } from "@/lib/prisma";
@@ -20,7 +21,10 @@ export const metadata = {
 type ItemResumen = {
   itemId: string;
   nombre: string;
-  tipo: "GENERAL" | "FRI";
+  tipo: string;
+  tipoEquipoId: number | null;
+  tipoLabel: string;
+  tipoOrden: number;
   ordenPdf: number;
   stockSubalternos: number;
   stockPrestamo: number;
@@ -215,7 +219,16 @@ export default async function ListadoEquiposUnidadPage({
 
   const [items, stockSummaryMaps, firmas] = await Promise.all([
     prisma.item.findMany({
-      select: { itemId: true, nombre: true, tipo: true, ordenPdf: true, existenciaSie: true },
+      select: {
+        itemId: true,
+        nombre: true,
+        tipoEquipoId: true,
+        tipoEquipo: {
+          select: tipoEquipoRelationSelect,
+        },
+        ordenPdf: true,
+        existenciaSie: true,
+      },
     }),
     buildStockSummaryMaps(prisma),
     getFirmaConfig(),
@@ -228,11 +241,12 @@ export default async function ListadoEquiposUnidadPage({
     const stockAsignacion = stockSummaryMaps.asignacionByItem.get(itemKey) ?? 0;
     const stockPrestamo = stockSummaryMaps.prestamoByItem.get(itemKey) ?? 0;
     const stockDeposito = stockUnidad - stockSubalternos - stockAsignacion - stockPrestamo;
+    const tipo = serializeEquipoTipoData(item);
 
     return {
       itemId: itemKey,
       nombre: item.nombre,
-      tipo: item.tipo,
+      ...tipo,
       ordenPdf: item.ordenPdf,
       stockSubalternos,
       stockPrestamo,
@@ -242,19 +256,10 @@ export default async function ListadoEquiposUnidadPage({
     };
   });
   const resumenOrdenado = [...resumen].sort(isAlphaSort ? compareEquiposByTipoAndName : compareEquiposByTipoAndOrder);
-  const resumenSeparado = splitEquiposByTipo(resumenOrdenado);
-  const resumenPorTipo = [
-    {
-      key: "GENERAL" as const,
-      title: isAlphaSort ? "Equipos generales (A-Z)" : "Equipos generales",
-      items: resumenSeparado.generales,
-    },
-    {
-      key: "FRI" as const,
-      title: isAlphaSort ? "Equipos F.R.I (A-Z)" : "Equipos F.R.I",
-      items: resumenSeparado.fri,
-    },
-  ];
+  const resumenPorTipo = groupEquiposByTipo(resumenOrdenado).map((section) => ({
+    ...section,
+    title: isAlphaSort ? `Equipos ${section.label} (A-Z)` : `Equipos ${section.label}`,
+  }));
 
   const totalSubalternos = resumen.reduce((total, item) => total + item.stockSubalternos, 0);
   const totalPrestamo = resumen.reduce((total, item) => total + item.stockPrestamo, 0);
@@ -280,7 +285,7 @@ export default async function ListadoEquiposUnidadPage({
       <main className="sheet">
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <h1 className="title">Listado de Equipos de la Unidad</h1>
-        <p className="subtitle">{`Totales por item (subalternos + prestamo + deposito) ${isAlphaSort ? "· Generales y F.R.I por separado en orden alfabético" : "· Generales primero, luego F.R.I, respetando el orden asignado"}`}</p>
+        <p className="subtitle">{`Totales por item (subalternos + prestamo + deposito) ${isAlphaSort ? "· Categorías separadas en orden alfabético" : "· Categorías separadas respetando el orden asignado"}`}</p>
         <p className="meta">{`Generado: ${generatedAt} | Equipos listados: ${resumen.length}`}</p>
 
         <section className="totals">
@@ -310,7 +315,7 @@ export default async function ListadoEquiposUnidadPage({
               <section key={section.key}>
                 <p className="subtitle">{`${section.title} · ${section.items.length} equipos`}</p>
                 {section.items.length === 0 ? (
-                  <section className="empty-state">No hay equipos {section.key === "FRI" ? "F.R.I" : "generales"} registrados.</section>
+                  <section className="empty-state">{`No hay equipos de la categoría ${section.label} registrados.`}</section>
                 ) : (
                   <section className="table-wrap">
                     <table>

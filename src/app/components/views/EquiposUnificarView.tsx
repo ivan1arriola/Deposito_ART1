@@ -96,13 +96,13 @@ export function EquiposUnificarView({
                 </Typography>
                 <Box component="ul" sx={{ pl: 2, m: 0, color: "var(--color-text-secondary)", fontSize: "0.875rem", lineHeight: 1.6 }}>
                   <li>
-                    <strong>Traspaso de Historial:</strong> Todos los registros históricos, incluyendo entregas, devoluciones, préstamos y movimientos de stock del <em>Equipo Origen</em>, se reasignarán automáticamente al <em>Equipo Destino</em>.
+                    <strong>Traspaso de Historial:</strong> Todos los registros históricos, incluyendo entregas, devoluciones, préstamos y movimientos de stock del <em>Equipo Origen</em>, se traspasarán automáticamente al <em>Equipo Destino</em>.
                   </li>
                   <li>
                     <strong>Consolidación del Catálogo:</strong> Una vez completada la transferencia de todos los movimientos, el <em>Equipo Origen</em> se eliminará permanentemente del catálogo de forma segura sin perder la trazabilidad del personal.
                   </li>
                   <li>
-                    <strong>Integridad de los Datos:</strong> El balance de stock histórico se recalcula automáticamente sumando los movimientos reasignados.
+                    <strong>Integridad de los Datos:</strong> El balance de stock histórico se recalcula automáticamente sumando los movimientos traspasados.
                   </li>
                 </Box>
               </Box>

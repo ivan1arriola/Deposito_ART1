@@ -1,7 +1,7 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import type { PrestamoEditPayload } from "@/app/components/views/FormulariosPrestamosView";
 import type { MainView } from "@/types/views";
-import type { Articulo, Equipo, OficialSuboficial, Personal, TipoArticulo } from "@/types/entities";
+import type { Articulo, Equipo, EquipoTipo, OficialSuboficial, Personal, TipoArticulo } from "@/types/entities";
 import type {
   EquipoForm,
   OficialSuboficialForm,
@@ -74,6 +74,7 @@ export type CreationViewsProps = {
   cancelOficialSuboficialForm: () => void;
   createOficialSuboficial: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   updateNewOficialSuboficialField: (field: keyof OficialSuboficialForm, value: string) => void;
+  tiposEquipo: EquipoTipo[];
   newEquipo: EquipoForm;
   loading: boolean;
   creatingEquipo: boolean;

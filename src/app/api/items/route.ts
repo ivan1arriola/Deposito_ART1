@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
-import { TipoItem } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { GENERAL_TIPO_EQUIPO_CLAVE, normalizeEquipoTipoClave } from "@/lib/equipo-tipos";
+import { serializeEquipoTipoData, tipoEquipoRelationSelect } from "@/lib/equipo-tipos-data";
 import { hasPrismaMissingColumn, isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
-
 import { applyItemOrder } from "@/lib/item-ordering";
 
 type ItemPayload = {
   nombre: string;
-  tipo?: TipoItem | string;
+  tipo?: string;
+  tipoEquipoId?: number | string | null;
   activo?: boolean;
   ordenPdf?: number;
 };
@@ -19,18 +21,59 @@ type ReorderItemsPayload = {
   activo?: boolean;
 };
 
+const itemSelect = {
+  itemId: true,
+  nombre: true,
+  tipoEquipoId: true,
+  tipoEquipo: {
+    select: tipoEquipoRelationSelect,
+  },
+  activo: true,
+  ordenPdf: true,
+  existenciaSie: true,
+} satisfies Prisma.ItemSelect;
+
 function parseItemId(value: string | number) {
   const raw = String(value).trim();
   if (!/^\d+$/.test(raw)) return null;
   return BigInt(raw);
 }
 
-function parseTipoItem(value: unknown) {
-  if (typeof value === "undefined") return TipoItem.GENERAL;
-  const raw = String(value ?? "").trim().toUpperCase();
-  if (raw === TipoItem.GENERAL) return TipoItem.GENERAL;
-  if (raw === TipoItem.FRI) return TipoItem.FRI;
-  return null;
+function parseNullableTipoEquipoId(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) return null;
+  return parsed;
+}
+
+async function resolveTipoEquipoId(
+  client: Pick<typeof prisma, "tipoEquipoCatalogo">,
+  body: ItemPayload,
+): Promise<number | null | undefined> {
+  if (Object.prototype.hasOwnProperty.call(body, "tipoEquipoId")) {
+    const parsed = parseNullableTipoEquipoId(body.tipoEquipoId);
+    if (body.tipoEquipoId !== null && body.tipoEquipoId !== undefined && body.tipoEquipoId !== "" && parsed === null) {
+      return undefined;
+    }
+    if (parsed === null) return null;
+
+    const existing = await client.tipoEquipoCatalogo.findUnique({
+      where: { tipoEquipoId: parsed },
+      select: { tipoEquipoId: true },
+    });
+    return existing?.tipoEquipoId;
+  }
+
+  if (typeof body.tipo === "undefined") return null;
+
+  const normalized = normalizeEquipoTipoClave(String(body.tipo ?? ""));
+  if (!normalized || normalized === GENERAL_TIPO_EQUIPO_CLAVE) return null;
+
+  const existing = await client.tipoEquipoCatalogo.findUnique({
+    where: { clave: normalized },
+    select: { tipoEquipoId: true },
+  });
+  return existing?.tipoEquipoId;
 }
 
 function isValidReorderPayload(body: unknown): body is ReorderItemsPayload {
@@ -42,16 +85,24 @@ function isValidReorderPayload(body: unknown): body is ReorderItemsPayload {
 function serializeItem(item: {
   itemId: bigint;
   nombre: string;
-  tipo: TipoItem;
+  tipoEquipoId: number | null;
+  tipoEquipo?: {
+    tipoEquipoId: number;
+    clave: string;
+    nombre: string;
+    orden: number;
+  } | null;
   activo: boolean;
   ordenPdf: number;
   existenciaSie: number;
 }) {
+  const tipo = serializeEquipoTipoData(item);
+
   return {
     equipoId: item.itemId.toString(),
     itemId: item.itemId.toString(),
     nombre: item.nombre,
-    tipo: item.tipo,
+    ...tipo,
     activo: item.activo,
     ordenPdf: item.ordenPdf,
     existenciaSie: item.existenciaSie,
@@ -66,6 +117,7 @@ export async function GET(request: Request) {
     const items = await withPrismaReadRetry(() =>
       prisma.item.findMany({
         orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
+        select: itemSelect,
       }),
     );
 
@@ -77,9 +129,9 @@ export async function GET(request: Request) {
         { status: 503 },
       );
     }
-    if (hasPrismaMissingColumn(error, "item.tipo")) {
+    if (hasPrismaMissingColumn(error, "item.tipo_equipo_id")) {
       return NextResponse.json(
-        { error: "La base de datos no tiene la columna item.tipo. Ejecuta `npm run db:patch:add-item-tipo` y recarga la app." },
+        { error: "La base de datos no tiene la relación item.tipo_equipo_id. Ejecuta `npm run db:patch:refactor-tipo-equipo` y recarga la app." },
         { status: 500 },
       );
     }
@@ -93,11 +145,11 @@ export async function POST(req: Request) {
 
   const body = (await req.json()) as ItemPayload;
   const nombre = typeof body?.nombre === "string" ? body.nombre.trim() : "";
-  const tipo = parseTipoItem(body?.tipo);
+  const tipoEquipoId = await resolveTipoEquipoId(prisma, body);
 
-  if (!nombre || tipo === null) {
+  if (!nombre || typeof tipoEquipoId === "undefined") {
     return NextResponse.json(
-      { error: "Payload invalido. 'nombre' es obligatorio y 'tipo' debe ser GENERAL o FRI." },
+      { error: "Payload inválido. 'nombre' es obligatorio y el tipo de equipo indicado no existe." },
       { status: 400 },
     );
   }
@@ -117,10 +169,11 @@ export async function POST(req: Request) {
     const created = await prisma.item.create({
       data: {
         nombre,
-        tipo,
+        tipoEquipoId,
         activo: isActive,
         ordenPdf: nextOrder,
       },
+      select: itemSelect,
     });
 
     await logAudit({
@@ -130,7 +183,8 @@ export async function POST(req: Request) {
       entidadId: created.itemId.toString(),
       detalle: {
         nombre: created.nombre,
-        tipo: created.tipo,
+        tipoEquipoId: created.tipoEquipoId,
+        tipo: serializeEquipoTipoData(created).tipo,
         activo: created.activo,
         ordenPdf: created.ordenPdf,
         existenciaSie: created.existenciaSie,
@@ -153,12 +207,12 @@ export async function PATCH(req: Request) {
 
   const body = (await req.json()) as ReorderItemsPayload;
   if (!isValidReorderPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. orderedItemIds es obligatorio." }, { status: 400 });
+    return NextResponse.json({ error: "Payload inválido. orderedItemIds es obligatorio." }, { status: 400 });
   }
 
   const orderedItemIds = body.orderedItemIds.map(parseItemId);
   if (orderedItemIds.some((itemId) => itemId === null)) {
-    return NextResponse.json({ error: "orderedItemIds contiene IDs invalidos." }, { status: 400 });
+    return NextResponse.json({ error: "orderedItemIds contiene IDs inválidos." }, { status: 400 });
   }
 
   const parsedIds = orderedItemIds as bigint[];
@@ -174,7 +228,7 @@ export async function PATCH(req: Request) {
       const targetItems = await tx.item.findMany({
         where: { activo: isActive },
         orderBy: [{ ordenPdf: "asc" }, { itemId: "asc" }],
-        select: { itemId: true, nombre: true, tipo: true, activo: true, ordenPdf: true, existenciaSie: true },
+        select: itemSelect,
       });
 
       const targetIds = targetItems.map((item) => item.itemId.toString());
@@ -195,7 +249,7 @@ export async function PATCH(req: Request) {
       return tx.item.findMany({
         where: { itemId: { in: parsedIds } },
         orderBy: [{ ordenPdf: "asc" }, { itemId: "asc" }],
-        select: { itemId: true, nombre: true, tipo: true, activo: true, ordenPdf: true, existenciaSie: true },
+        select: itemSelect,
       });
     }, { maxWait: 5_000, timeout: 20_000 });
 
@@ -210,7 +264,7 @@ export async function PATCH(req: Request) {
         items: reordered.map((item) => ({
           itemId: item.itemId.toString(),
           nombre: item.nombre,
-          tipo: item.tipo,
+          tipo: serializeEquipoTipoData(item).tipo,
           ordenPdf: item.ordenPdf,
         })),
       },

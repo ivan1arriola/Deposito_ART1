@@ -5,8 +5,11 @@ import {
   updateRangoHandler,
   deleteRangoHandler,
   createEquipoHandler,
+  createEquipoTipoHandler,
+  deleteEquipoTipoHandler,
   ingresarStockArticuloHandler,
   updateEquipoHandler,
+  updateEquipoTipoHandler,
   mergeEquipoHandler,
   updateMultipleEquipoOrdersHandler,
 } from "@/lib/handlers-catalog";
@@ -122,6 +125,60 @@ describe("Handlers de Catalogos - Rangos", () => {
 describe("Handlers de Catalogos - Equipos", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("deberia crear un tipo de equipo y propagar la respuesta al callback", async () => {
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    const response = [{ clave: "FRI", nombre: "F.R.I", orden: 1, esGeneral: false }];
+    vi.mocked(api).mockResolvedValue(response);
+
+    await createEquipoTipoHandler("F.R.I", 1, { onSuccess, onError });
+
+    expect(vi.mocked(api)).toHaveBeenCalledWith(
+      "/api/equipos/tipos",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ nombre: "F.R.I", orden: 1 }),
+      }),
+    );
+    expect(onSuccess).toHaveBeenCalledWith(response);
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("deberia actualizar un tipo de equipo con nombre y orden", async () => {
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    vi.mocked(api).mockResolvedValue({ tipoEquipoId: 4, nombre: "Asalto", orden: 2 });
+
+    await updateEquipoTipoHandler(4, "Asalto", 2, { onSuccess, onError });
+
+    expect(vi.mocked(api)).toHaveBeenCalledWith(
+      "/api/equipos/tipos/4",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({ nombre: "Asalto", orden: 2 }),
+      }),
+    );
+    expect(onSuccess).toHaveBeenCalled();
+  });
+
+  it("deberia informar cuantos equipos pasan a General al borrar un tipo", async () => {
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    const response = { ok: true, tipoEquipoId: 4, equiposReasignadosAGeneral: 3 };
+    vi.mocked(api).mockResolvedValue(response);
+
+    await deleteEquipoTipoHandler(4, { onSuccess, onError });
+
+    expect(vi.mocked(api)).toHaveBeenCalledWith(
+      "/api/equipos/tipos/4",
+      expect.objectContaining({
+        method: "DELETE",
+      }),
+    );
+    expect(onSuccess).toHaveBeenCalledWith(response);
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it("deberia enviar el estado de aparicion en hoja al crear un equipo", async () => {

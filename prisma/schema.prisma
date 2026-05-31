@@ -39,13 +39,6 @@ enum TipoArticulo {
   @@map("tipo_articulo")
 }
 
-enum TipoItem {
-  GENERAL
-  FRI
-
-  @@map("tipo_item")
-}
-
 enum TipoArticuloStockMovimiento {
   INGRESO
   EGRESO
@@ -220,6 +213,17 @@ model Articulo {
   @@map("articulo")
 }
 
+model TipoEquipoCatalogo {
+  tipoEquipoId Int    @id @default(autoincrement()) @map("tipo_equipo_id") @db.SmallInt
+  clave        String @unique
+  nombre       String @unique
+  orden        Int    @map("orden") @db.SmallInt
+  items        Item[]
+
+  @@index([orden])
+  @@map("tipo_equipo")
+}
+
 model ArticuloEntregaPersonal {
   articuloEntregaPersonalId BigInt                    @id @default(autoincrement()) @map("articulo_entrega_personal_id")
   personalCi                String                    @map("personal_ci")
@@ -277,7 +281,7 @@ model TallaTipo {
 model Item {
   itemId              BigInt               @id @default(autoincrement()) @map("item_id")
   nombre              String               @unique
-  tipo                TipoItem             @default(GENERAL)
+  tipoEquipoId        Int?                 @map("tipo_equipo_id") @db.SmallInt
   activo              Boolean              @default(true)
   ordenPdf            Int                  @map("orden_pdf")
   existenciaSie       Int                  @default(0) @map("existencia_sie")
@@ -285,7 +289,9 @@ model Item {
   stockOperacionItems StockOperacionItem[]
   codigosSIE          ItemCodigoSIE[]
   cajas               CajaItem[]
+  tipoEquipo          TipoEquipoCatalogo?  @relation(fields: [tipoEquipoId], references: [tipoEquipoId], onDelete: SetNull)
 
+  @@index([tipoEquipoId])
   @@map("item")
 }
 

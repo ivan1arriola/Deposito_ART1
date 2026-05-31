@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import { TipoItem } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { applyItemOrder, getOrderedItemIds, insertItemAtOrder } from "@/lib/item-ordering";
+import { GENERAL_TIPO_EQUIPO_CLAVE, normalizeEquipoTipoClave } from "@/lib/equipo-tipos";
+import { serializeEquipoTipoData, tipoEquipoRelationSelect } from "@/lib/equipo-tipos-data";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 
 type ItemPayload = {
   nombre: string;
-  tipo?: TipoItem | string;
+  tipo?: string;
+  tipoEquipoId?: number | string | null;
   activo?: boolean;
   ordenPdf?: number;
 };
@@ -36,11 +39,53 @@ function isValidOrder(value: unknown) {
   return value === undefined || (typeof value === "number" && Number.isInteger(value) && value > 0);
 }
 
-function parseTipoItem(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
-  if (raw === TipoItem.GENERAL) return TipoItem.GENERAL;
-  if (raw === TipoItem.FRI) return TipoItem.FRI;
-  return null;
+const itemSelect = {
+  itemId: true,
+  nombre: true,
+  tipoEquipoId: true,
+  tipoEquipo: {
+    select: tipoEquipoRelationSelect,
+  },
+  activo: true,
+  ordenPdf: true,
+  existenciaSie: true,
+} satisfies Prisma.ItemSelect;
+
+function parseNullableTipoEquipoId(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) return null;
+  return parsed;
+}
+
+async function resolveTipoEquipoId(
+  client: Pick<typeof prisma, "tipoEquipoCatalogo">,
+  body: ItemPayload,
+): Promise<number | null | undefined> {
+  if (Object.prototype.hasOwnProperty.call(body, "tipoEquipoId")) {
+    const parsed = parseNullableTipoEquipoId(body.tipoEquipoId);
+    if (body.tipoEquipoId !== null && body.tipoEquipoId !== undefined && body.tipoEquipoId !== "" && parsed === null) {
+      return undefined;
+    }
+    if (parsed === null) return null;
+
+    const existing = await client.tipoEquipoCatalogo.findUnique({
+      where: { tipoEquipoId: parsed },
+      select: { tipoEquipoId: true },
+    });
+    return existing?.tipoEquipoId;
+  }
+
+  if (typeof body.tipo === "undefined") return null;
+
+  const normalized = normalizeEquipoTipoClave(String(body.tipo ?? ""));
+  if (!normalized || normalized === GENERAL_TIPO_EQUIPO_CLAVE) return null;
+
+  const existing = await client.tipoEquipoCatalogo.findUnique({
+    where: { clave: normalized },
+    select: { tipoEquipoId: true },
+  });
+  return existing?.tipoEquipoId;
 }
 
 function parseExistenciaSie(value: unknown) {
@@ -52,16 +97,24 @@ function parseExistenciaSie(value: unknown) {
 function serializeItem(item: {
   itemId: bigint;
   nombre: string;
-  tipo: TipoItem;
+  tipoEquipoId: number | null;
+  tipoEquipo?: {
+    tipoEquipoId: number;
+    clave: string;
+    nombre: string;
+    orden: number;
+  } | null;
   activo: boolean;
   ordenPdf: number;
   existenciaSie: number;
 }) {
+  const tipo = serializeEquipoTipoData(item);
+
   return {
     equipoId: item.itemId.toString(),
     itemId: item.itemId.toString(),
     nombre: item.nombre,
-    tipo: item.tipo,
+    ...tipo,
     activo: item.activo,
     ordenPdf: item.ordenPdf,
     existenciaSie: item.existenciaSie,
@@ -356,7 +409,6 @@ async function buildDeleteImpactData(
 export const itemByIdRouteTestables = {
   parseItemId,
   isValidOrder,
-  parseTipoItem,
   parseExistenciaSie,
 };
 
@@ -716,20 +768,16 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
     const updated = await prisma.$transaction(async (tx) => {
       const existing = await tx.item.findUniqueOrThrow({
         where: { itemId },
-        select: {
-          itemId: true,
-          nombre: true,
-          tipo: true,
-          activo: true,
-          ordenPdf: true,
-          existenciaSie: true,
-        },
+        select: itemSelect,
       });
 
       const nextActive = body.activo === undefined ? existing.activo : Boolean(body.activo);
-      const nextTipo = body.tipo === undefined ? existing.tipo : parseTipoItem(body.tipo);
-      if (nextTipo === null) {
-        throw new Error("Payload invalido. 'tipo' debe ser GENERAL o FRI.");
+      const resolvedTipoEquipoId = await resolveTipoEquipoId(tx, body);
+      const nextTipoEquipoId = body.tipo === undefined && !Object.prototype.hasOwnProperty.call(body, "tipoEquipoId")
+        ? existing.tipoEquipoId
+        : resolvedTipoEquipoId;
+      if (typeof nextTipoEquipoId === "undefined") {
+        throw new Error("Payload inválido. El tipo de equipo indicado no existe.");
       }
       if (nextActive !== existing.activo) {
         const oldGroupIds = await getOrderedItemIds(tx, existing.activo, itemId);
@@ -738,7 +786,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
           where: { itemId },
           data: {
             nombre,
-            tipo: nextTipo,
+            tipoEquipoId: nextTipoEquipoId,
             activo: nextActive,
             ordenPdf: 1,
           },
@@ -757,7 +805,7 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
           where: { itemId },
           data: {
             nombre,
-            tipo: nextTipo,
+            tipoEquipoId: nextTipoEquipoId,
             activo: nextActive,
             ordenPdf: 1,
           },
@@ -768,17 +816,23 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
 
       const updatedRecord = await tx.item.findUniqueOrThrow({
         where: { itemId },
+        select: itemSelect,
       });
+
+      const previoTipo = serializeEquipoTipoData(existing);
+      const nuevoTipo = serializeEquipoTipoData(updatedRecord);
 
       return {
         ...updatedRecord,
         previo: {
           nombre: existing.nombre,
-          tipo: existing.tipo,
+          tipo: previoTipo.tipo,
+          tipoEquipoId: existing.tipoEquipoId,
           activo: existing.activo,
           ordenPdf: existing.ordenPdf,
           existenciaSie: existing.existenciaSie,
         },
+        nuevoTipo,
       };
     }, { maxWait: 5_000, timeout: 20_000 });
 
@@ -791,7 +845,8 @@ export async function PUT(req: Request, context: { params: Promise<{ itemId: str
         previo: updated.previo,
         nuevo: {
           nombre: updated.nombre,
-          tipo: updated.tipo,
+          tipo: updated.nuevoTipo.tipo,
+          tipoEquipoId: updated.tipoEquipoId,
           activo: updated.activo,
           ordenPdf: updated.ordenPdf,
           existenciaSie: updated.existenciaSie,

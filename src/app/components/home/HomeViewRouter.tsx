@@ -54,6 +54,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
     cancelOficialSuboficialForm,
     createOficialSuboficial,
     updateNewOficialSuboficialField,
+    tiposEquipo,
     newEquipo,
     creatingEquipo,
     creatingArticulo,
@@ -273,6 +274,7 @@ export function HomeViewRouter(props: HomeViewRouterProps) {
         cancelOficialSuboficialForm={cancelOficialSuboficialForm}
         createOficialSuboficial={createOficialSuboficial}
         updateNewOficialSuboficialField={updateNewOficialSuboficialField}
+        tiposEquipo={tiposEquipo}
         newEquipo={newEquipo}
         loading={loading}
         creatingEquipo={creatingEquipo}
