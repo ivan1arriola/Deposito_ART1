@@ -23,8 +23,7 @@ const mockCreatedPrestamo = {
     apellido: "Rodriguez",
     nombre: "Leandro",
     username: "lrodriguez",
-      bateria: true
-},
+  },
   destinatarioPersonal: null,
   destinatarioExterno: null,
   prestamoActivo: {
@@ -107,8 +106,7 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
     },
     $transaction: vi.fn(async (callback: (tx: typeof mockTx) => unknown) => callback(mockTx)),
-      bateria: true
-},
+  },
 }));
 
 describe("POST /api/prestamos", () => {
@@ -161,7 +159,6 @@ describe("POST /api/prestamos", () => {
         nombreCompleto: "Alferez",
         orden: 5,
       },
-        bateria: true
     } as never);
 
     const res = await POST(
@@ -194,8 +191,7 @@ describe("POST /api/prestamos", () => {
         nombre1: true,
         nombre2: true,
         rango: { select: { tipo: true, abreviacion: true, nombreCompleto: true, orden: true } },
-          bateria: true
-    },
+      },
     });
 
     expect(mockTx.movimientoDestinatarioPersonal.create).not.toHaveBeenCalled();
@@ -225,8 +221,7 @@ describe("POST /api/prestamos", () => {
           nombreCompleto: "Cabo",
           orden: 20,
         },
-          bateria: true
-    } as never)
+      } as never)
       .mockResolvedValueOnce({
         ci: "51067524",
         apellido1: "Rodriguez",
@@ -239,8 +234,7 @@ describe("POST /api/prestamos", () => {
           nombreCompleto: "Alferez",
           orden: 5,
         },
-          bateria: true
-    } as never);
+      } as never);
 
     const res = await POST(
       createMockRequest({
@@ -287,7 +281,6 @@ describe("POST /api/prestamos", () => {
         nombreCompleto: "Alferez",
         orden: 5,
       },
-        bateria: true
     } as never);
 
     const res = await POST(
