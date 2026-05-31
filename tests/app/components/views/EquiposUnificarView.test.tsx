@@ -26,22 +26,22 @@ describe("EquiposUnificarView Component", () => {
     expect(screen.getByText("Unificar Catálogo de Equipos")).toBeDefined();
     expect(screen.getByText("Herramienta de depuración y consolidación del inventario")).toBeDefined();
     expect(screen.getByText("¿Cómo funciona la unificación de equipos?")).toBeDefined();
-    expect(screen.getByText(/Todos los registros históricos, incluyendo entregas, devoluciones, préstamos/)).toBeDefined();
+    expect(screen.getByText(/Todos los registros históricos del/i)).toBeDefined();
   });
 
   it("muestra advertencia si hay menos de 2 equipos", () => {
     render(<EquiposUnificarView {...mockProps} equipos={[{ itemId: "1", nombre: "Chaleco Único", tipo: "GENERAL", activo: true }]} />);
 
     expect(screen.getByText("No hay suficientes equipos")).toBeDefined();
-    expect(screen.getByText("Se requieren al menos 2 equipos en el catálogo para poder realizar una fusión.")).toBeDefined();
+    expect(screen.getByText("Se requieren al menos 2 equipos registrados en el catálogo para poder realizar una fusión de registros.")).toBeDefined();
   });
 
   it("desactiva los controles si el usuario no tiene permisos de escritura", () => {
     render(<EquiposUnificarView {...mockProps} canWrite={false} />);
 
-    expect(screen.getByText(/Modo solo lectura: Tu cuenta no posee permisos de escritura/)).toBeDefined();
+    expect(screen.getByText("Modo de sólo lectura: no tienes permisos para unificar equipos.")).toBeDefined();
     // El botón debe estar deshabilitado
-    const button = screen.getByRole("button", { name: "Unificar y eliminar origen" });
+    const button = screen.getByRole("button", { name: "Unificar y Eliminar Origen" });
     expect(button.hasAttribute("disabled")).toBe(true);
   });
 
@@ -66,17 +66,17 @@ describe("EquiposUnificarView Component", () => {
   it("habilita el botón de fusión solo si se seleccionaron origen y destino válidos", () => {
     const { rerender } = render(<EquiposUnificarView {...mockProps} />);
     
-    let button = screen.getByRole("button", { name: "Unificar y eliminar origen" });
+    let button = screen.getByRole("button", { name: "Unificar y Eliminar Origen" });
     expect(button.hasAttribute("disabled")).toBe(true);
 
     // Rerender con origen seleccionado
     rerender(<EquiposUnificarView {...mockProps} mergeEquipoOrigenId="1" />);
-    button = screen.getByRole("button", { name: "Unificar y eliminar origen" });
+    button = screen.getByRole("button", { name: "Unificar y Eliminar Origen" });
     expect(button.hasAttribute("disabled")).toBe(true);
 
     // Rerender con origen y destino seleccionados
     rerender(<EquiposUnificarView {...mockProps} mergeEquipoOrigenId="1" mergeEquipoDestinoId="2" />);
-    button = screen.getByRole("button", { name: "Unificar y eliminar origen" });
+    button = screen.getByRole("button", { name: "Unificar y Eliminar Origen" });
     expect(button.hasAttribute("disabled")).toBe(false);
   });
 
@@ -91,7 +91,7 @@ describe("EquiposUnificarView Component", () => {
       />
     );
 
-    const button = screen.getByRole("button", { name: "Unificar y eliminar origen" });
+    const button = screen.getByRole("button", { name: "Unificar y Eliminar Origen" });
     fireEvent.click(button);
 
     expect(onMergeMock).toHaveBeenCalledWith("1", "2");
