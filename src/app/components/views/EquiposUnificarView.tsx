@@ -1,9 +1,5 @@
 "use client";
 
-import { Box, Button, Card, CardContent, Divider, FormControl, InputLabel, MenuItem, Select, Stack, Typography } from "@mui/material";
-import CompareArrowsRoundedIcon from "@mui/icons-material/CompareArrowsRounded";
-import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import type { Equipo } from "@/types/entities";
 
 type MergeableEquipo = Pick<Equipo, "itemId" | "nombre" | "tipo" | "activo">;
@@ -43,203 +39,152 @@ export function EquiposUnificarView({
     mergeEquipoOrigenId !== mergeEquipoDestinoId;
 
   return (
-    <Box sx={{ mt: 4, mb: 4 }}>
-      <Card
-        sx={{
-          borderRadius: 4,
-          border: "1px solid var(--color-border-subtle)",
-          bgcolor: "var(--color-surface-base)",
-          boxShadow: "var(--shadow-sm)",
-          overflow: "hidden",
-        }}
-      >
-        <Box
-          sx={{
-            background: "linear-gradient(135deg, var(--color-surface-muted) 0%, var(--color-surface-base) 100%)",
-            px: 3,
-            py: 3,
-            borderBottom: "1px solid var(--color-border-subtle)",
-          }}
-        >
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <CompareArrowsRoundedIcon sx={{ color: "var(--color-ejercito-brown)", fontSize: 28 }} />
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 900, color: "var(--color-text-primary)", tracking: "-0.01em" }}>
-                Unificar Catálogo de Equipos
-              </Typography>
-              <Typography variant="caption" sx={{ color: "var(--color-text-secondary)" }}>
-                Herramienta de depuración y consolidación del inventario
-              </Typography>
-            </Box>
-          </Stack>
-        </Box>
+    <div className="my-8">
+      <div className="overflow-hidden rounded-3xl border border-stone-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+        {/* Encabezado */}
+        <div className="relative border-b border-stone-200/60 bg-gradient-to-r from-stone-50 to-white px-6 py-6 sm:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shadow-sm ring-1 ring-amber-200/50">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-black tracking-tight text-stone-900">Unificar Catálogo de Equipos</h2>
+                <p className="text-sm font-semibold text-stone-500">
+                  Herramienta de depuración y consolidación del inventario
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <CardContent sx={{ p: 3 }}>
-          {/* Detailed Description Callout */}
-          <Box
-            sx={{
-              p: 2.5,
-              borderRadius: 3,
-              bgcolor: "rgba(33, 150, 243, 0.04)",
-              border: "1px solid rgba(33, 150, 243, 0.16)",
-              mb: 4,
-            }}
-          >
-            <Stack direction="row" spacing={2} alignItems="flex-start">
-              <InfoOutlinedIcon sx={{ color: "#1976d2", mt: 0.25 }} />
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#1565c0", mb: 1 }}>
-                  ¿Cómo funciona la unificación de equipos?
-                </Typography>
-                <Typography variant="body2" sx={{ color: "var(--color-text-secondary)", lineHeight: 1.6, mb: 1 }}>
-                  Esta función permite resolver duplicados en el catálogo (por ejemplo, cuando se registran con nombres ligeramente distintos como &quot;Buzo verde&quot; y &quot;Buzo verde m/c&quot;).
-                </Typography>
-                <Box component="ul" sx={{ pl: 2, m: 0, color: "var(--color-text-secondary)", fontSize: "0.875rem", lineHeight: 1.6 }}>
-                  <li>
-                    <strong>Traspaso de Historial:</strong> Todos los registros históricos, incluyendo entregas, devoluciones, préstamos y movimientos de stock del <em>Equipo Origen</em>, se traspasarán automáticamente al <em>Equipo Destino</em>.
-                  </li>
-                  <li>
-                    <strong>Consolidación del Catálogo:</strong> Una vez completada la transferencia de todos los movimientos, el <em>Equipo Origen</em> se eliminará permanentemente del catálogo de forma segura sin perder la trazabilidad del personal.
-                  </li>
-                  <li>
-                    <strong>Integridad de los Datos:</strong> El balance de stock histórico se recalcula automáticamente sumando los movimientos traspasados.
-                  </li>
-                </Box>
-              </Box>
-            </Stack>
-          </Box>
+        <div className="p-6 sm:p-8">
+          {/* Instrucciones simplificadas */}
+          <div className="mb-8 rounded-2xl border border-sky-100 bg-sky-50/50 p-5 shadow-sm">
+            <div className="flex gap-4">
+              <div className="mt-0.5 flex-shrink-0 text-sky-500">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-sky-900 mb-1">¿Cómo funciona la unificación de equipos?</h3>
+                <p className="text-xs font-medium text-sky-800/80 leading-relaxed">
+                  Esta función permite resolver duplicados en el catálogo. Al unificar:
+                </p>
+                <ul className="mt-2 list-inside list-disc text-xs font-medium text-sky-800/80 space-y-1">
+                  <li>Todos los registros históricos del <strong>Equipo Origen</strong> se traspasan al <strong>Equipo Destino</strong>.</li>
+                  <li>El stock se recalcula automáticamente sumando todos los movimientos.</li>
+                  <li>El <strong>Equipo Origen</strong> se elimina permanentemente del sistema de forma segura.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
 
           {!canWrite ? (
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: "var(--color-surface-muted)",
-                border: "1px solid var(--color-border-subtle)",
-                mb: 3,
-              }}
-            >
-              <Typography variant="body2" sx={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>
-                Modo solo lectura: Tu cuenta no posee permisos de escritura/eliminación para unificar equipos.
-              </Typography>
-            </Box>
+            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+              <div className="flex items-center gap-3 text-amber-800">
+                <svg className="h-5 w-5 flex-shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <p className="text-sm font-bold">Modo de sólo lectura: no tienes permisos para unificar equipos.</p>
+              </div>
+            </div>
           ) : null}
 
           {equipos.length < 2 ? (
-            <Box
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                bgcolor: "rgba(255, 152, 0, 0.05)",
-                border: "1px solid rgba(255, 152, 0, 0.2)",
-                textAlign: "center",
-              }}
-            >
-              <WarningAmberRoundedIcon sx={{ color: "#ff9800", fontSize: 40, mb: 1 }} />
-              <Typography variant="body1" sx={{ fontWeight: 700, color: "#e65100", mb: 0.5 }}>
-                No hay suficientes equipos
-              </Typography>
-              <Typography variant="body2" sx={{ color: "var(--color-text-secondary)" }}>
-                Se requieren al menos 2 equipos en el catálogo para poder realizar una fusión.
-              </Typography>
-            </Box>
+            <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-amber-200 bg-amber-50/30 p-10 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-500">
+                <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              </div>
+              <h3 className="mb-2 text-lg font-black text-amber-800">No hay suficientes equipos</h3>
+              <p className="text-sm font-medium text-amber-700/70 max-w-sm">
+                Se requieren al menos 2 equipos registrados en el catálogo para poder realizar una fusión de registros.
+              </p>
+            </div>
           ) : (
-            <Stack spacing={3}>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
-                <FormControl fullWidth size="medium">
-                  <InputLabel id="merge-origen-label" sx={{ fontWeight: 600 }}>Equipo Origen (Se eliminará)</InputLabel>
-                  <Select
-                    labelId="merge-origen-label"
-                    value={mergeEquipoOrigenId}
-                    onChange={(e) => onMergeEquipoOrigenIdChange(e.target.value)}
-                    disabled={!canWrite}
-                    label="Equipo Origen (Se eliminará)"
-                    sx={{
-                      borderRadius: 2.5,
-                      bgcolor: "var(--color-surface-base)",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <MenuItem value="">
-                      <em>Seleccionar equipo origen</em>
-                    </MenuItem>
-                    {equiposOrdenadosAlfabeticamente.map((equipo) => (
-                      <MenuItem key={`merge-origen-opt-${equipo.itemId}`} value={equipo.itemId} sx={{ py: 1.25 }}>
-                        {equipo.nombre}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+            <div className="space-y-8">
+              {/* Controles de Selección */}
+              <div className="relative rounded-3xl border border-stone-200 bg-stone-50/50 p-6 sm:p-8 shadow-inner">
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center pointer-events-none">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-4 border-stone-50 bg-white text-stone-400 shadow-sm z-10">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                  </div>
+                </div>
 
-                <FormControl fullWidth size="medium">
-                  <InputLabel id="merge-destino-label" sx={{ fontWeight: 600 }}>Equipo Destino (Se conservará)</InputLabel>
-                  <Select
-                    labelId="merge-destino-label"
-                    value={mergeEquipoDestinoId}
-                    onChange={(e) => onMergeEquipoDestinoIdChange(e.target.value)}
-                    disabled={!canWrite || mergeEquipoOrigenId.trim() === ""}
-                    label="Equipo Destino (Se conservará)"
-                    sx={{
-                      borderRadius: 2.5,
-                      bgcolor: "var(--color-surface-base)",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <MenuItem value="">
-                      <em>Seleccionar equipo destino</em>
-                    </MenuItem>
-                    {mergeTargetEquipos.map((equipo) => (
-                      <MenuItem key={`merge-destino-opt-${equipo.itemId}`} value={equipo.itemId} sx={{ py: 1.25 }}>
-                        {equipo.nombre}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Stack>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 relative z-0">
+                  {/* Origen */}
+                  <div>
+                    <label htmlFor="merge-origen" className="mb-2.5 flex items-center gap-2 text-sm font-bold text-stone-700">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-[10px] text-rose-600 ring-1 ring-rose-200">1</span>
+                      Equipo Origen (Se eliminará)
+                    </label>
+                    <select
+                      id="merge-origen"
+                      value={mergeEquipoOrigenId}
+                      onChange={(e) => onMergeEquipoOrigenIdChange(e.target.value)}
+                      disabled={!canWrite}
+                      className="w-full cursor-pointer rounded-2xl border-2 border-stone-200 bg-white px-4 py-3.5 text-sm font-semibold text-stone-800 shadow-sm transition-all focus:border-rose-300 focus:outline-none focus:ring-4 focus:ring-rose-100 disabled:opacity-60 disabled:cursor-not-allowed hover:border-stone-300"
+                    >
+                      <option value="" disabled>Selecciona el equipo a eliminar...</option>
+                      {equiposOrdenadosAlfabeticamente.map((equipo) => (
+                        <option key={`merge-origen-opt-${equipo.itemId}`} value={equipo.itemId}>
+                          {equipo.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <Divider sx={{ borderStyle: "dashed", my: 1 }} />
+                  {/* Destino */}
+                  <div>
+                    <label htmlFor="merge-destino" className="mb-2.5 flex items-center gap-2 text-sm font-bold text-stone-700">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-[10px] text-emerald-600 ring-1 ring-emerald-200">2</span>
+                      Equipo Destino (Se conservará)
+                    </label>
+                    <select
+                      id="merge-destino"
+                      value={mergeEquipoDestinoId}
+                      onChange={(e) => onMergeEquipoDestinoIdChange(e.target.value)}
+                      disabled={!canWrite || mergeEquipoOrigenId.trim() === ""}
+                      className="w-full cursor-pointer rounded-2xl border-2 border-stone-200 bg-white px-4 py-3.5 text-sm font-semibold text-stone-800 shadow-sm transition-all focus:border-emerald-300 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:opacity-60 disabled:cursor-not-allowed hover:border-stone-300"
+                    >
+                      <option value="" disabled>Selecciona el equipo que recibirá los datos...</option>
+                      {mergeTargetEquipos.map((equipo) => (
+                        <option key={`merge-destino-opt-${equipo.itemId}`} value={equipo.itemId}>
+                          {equipo.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-              <Box
-                sx={{
-                  p: 2.5,
-                  borderRadius: 3,
-                  bgcolor: "rgba(244, 67, 54, 0.03)",
-                  border: "1px solid rgba(244, 67, 54, 0.12)",
-                }}
-              >
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <WarningAmberRoundedIcon sx={{ color: "error.main", fontSize: 24 }} />
-                  <Typography variant="body2" sx={{ color: "error.dark", fontWeight: 600 }}>
-                    Acción irreversible: Confirme detenidamente que los equipos seleccionados sean los correctos. Una vez unificados, no se podrá deshacer la fusión automática.
-                  </Typography>
-                </Stack>
-              </Box>
+              {/* Advertencia y Botón */}
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between pt-2">
+                <div className="flex flex-1 items-start gap-3 rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
+                  <div className="mt-0.5 text-rose-500">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  </div>
+                  <p className="text-xs font-bold text-rose-700 leading-relaxed">
+                    Acción irreversible: Confirma que los equipos seleccionados sean los correctos. Una vez unificados, no se podrá deshacer la fusión automática.
+                  </p>
+                </div>
 
-              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                <Button
-                  variant="contained"
-                  color="error"
+                <button
+                  type="button"
                   disabled={!canMerge}
                   onClick={() => onMergeEquipos(mergeEquipoOrigenId, mergeEquipoDestinoId)}
-                  sx={{
-                    px: 4,
-                    py: 1.5,
-                    borderRadius: 2.5,
-                    fontWeight: 700,
-                    textTransform: "none",
-                    boxShadow: "var(--shadow-sm)",
-                    "&:hover": {
-                      bgcolor: "error.dark",
-                    },
-                  }}
+                  className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-stone-900 px-8 py-4 text-sm font-black text-white shadow-lg shadow-stone-900/20 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-stone-900/30 disabled:pointer-events-none disabled:opacity-40 active:translate-y-0"
                 >
-                  Unificar y eliminar origen
-                </Button>
-              </Box>
-            </Stack>
+                  <div className="absolute inset-0 flex h-full w-full justify-center [transform:skew(-12deg)_translateX(-100%)] group-hover:duration-1000 group-hover:[transform:skew(-12deg)_translateX(100%)]">
+                    <div className="relative h-full w-8 bg-white/20" />
+                  </div>
+                  <span className="relative z-10 flex items-center gap-2">
+                    Unificar y Eliminar Origen
+                    <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                  </span>
+                </button>
+              </div>
+            </div>
           )}
-        </CardContent>
-      </Card>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }

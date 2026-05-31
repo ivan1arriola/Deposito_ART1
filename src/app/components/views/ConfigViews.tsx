@@ -1100,312 +1100,248 @@ export function ConfigViews(props: ConfigViewsProps) {
       };
     });
     return (
-      <section className="mt-6 grid grid-cols-1 gap-4">
-        <article className="ej-card rounded-2xl p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-stone-900">Catálogo de Equipos</h2>
-              <p className="mt-1 text-xs text-stone-600">
-                Desde esta vista puedes editar o eliminar equipos existentes y decidir si aparecen en Hoja de Entrega / Hoja Matriz. Las altas nuevas se hacen desde el menú `Stock y Equipos`.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => props.onNavigateView("tipos_equipo")}
-              className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
-            >
-              Ver tipos de equipo
-            </button>
-          </div>
-          {!props.canWrite ? (
-            <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
-              Modo solo lectura: puedes consultar equipos y su orden, pero no modificarlos.
-            </p>
-          ) : null}
-          <form onSubmit={props.onCreateEquipo} className="hidden mt-3 space-y-2">
-            <input
-              value={props.newEquipo.nombre}
-              onChange={(event) => props.onNewEquipoChange(event.target.value, "nombre")}
-              placeholder="Nuevo equipo"
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              disabled={!props.canWrite}
-            />
-            <select
-              value={props.newEquipo.tipo}
-              onChange={(event) => props.onNewEquipoChange(event.target.value, "tipo")}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              disabled={!props.canWrite}
-            >
-              {props.tiposEquipo.map((tipo) => (
-                <option key={`config-equipo-tipo-${tipo.clave}`} value={tipo.clave}>
-                  {tipo.nombre}
-                </option>
-              ))}
-            </select>
-            <div className="flex flex-wrap gap-4 text-sm">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={props.newEquipo.activo}
-                  onChange={(event) => props.onNewEquipoChange(event.target.checked, "activo")}
-                  disabled={!props.canWrite}
-                />
-                Aparece en Hoja de Entrega
-              </label>
-            </div>
-            <button
-              type="submit"
-              disabled={!props.canWrite}
-              className="ej-button rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              Crear equipo
-            </button>
-          </form>
-
-          <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50/80 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="mt-6 grid grid-cols-1 gap-6">
+        <article className="overflow-hidden rounded-3xl border border-stone-200/50 bg-white/70 backdrop-blur-xl shadow-xl">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-stone-900 to-stone-800 px-6 py-8 text-white relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSI+PC9yZWN0Pgo8cGF0aCBkPSJNMCAwTDggOFpNOCAwTDAgOFoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuNCIgc3Ryb2tlLXdpZHRoPSIxIj48L3BhdGg+Cjwvc3ZnPg==')] bg-repeat" />
+            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-stone-900">Gestión de tipos</h3>
-                <p className="mt-1 text-xs text-stone-600">
-                  Los tipos de equipo ahora se administran desde una vista dedicada para separar categorías del catálogo operativo.
+                <h2 className="text-2xl font-black tracking-tight text-white/95">Catálogo de Equipos</h2>
+                <p className="mt-2 text-sm font-medium text-stone-300 max-w-xl leading-relaxed">
+                  Administra, edita y elimina equipos. Organiza su aparición en las hojas de entrega o matrices.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => props.onNavigateView("tipos_equipo")}
-                className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
+                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white shadow-sm ring-1 ring-white/20 transition-all hover:bg-white/20 hover:scale-105 active:scale-95"
               >
-                Abrir tipos de equipo
+                <svg className="h-4.5 w-4.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                Categorías y Tipos
               </button>
             </div>
           </div>
 
-          <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
-            <div className="rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">Vista de equipos</p>
-              <div className="mt-2 flex flex-wrap gap-2">
+          <div className="p-6 sm:p-8">
+            {!props.canWrite ? (
+              <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
+                <div className="flex items-center gap-3 text-amber-800">
+                  <svg className="h-5 w-5 flex-shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  <p className="text-sm font-bold">Modo de sólo lectura: no tienes permisos para modificar el catálogo.</p>
+                </div>
+              </div>
+            ) : null}
+
+            {/* View Toggle */}
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex w-full items-center rounded-xl bg-stone-100/80 p-1 sm:w-auto shadow-inner ring-1 ring-stone-200/50">
                 <button
                   type="button"
                   onClick={() => setEquiposDisplayMode("por_estado")}
-                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                  className={`flex-1 sm:flex-none rounded-lg px-4 py-2.5 text-sm font-bold transition-all duration-300 ${
                     equiposDisplayMode === "por_estado"
-                      ? "bg-stone-800 text-white"
-                      : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+                      ? "bg-white text-stone-900 shadow-sm ring-1 ring-stone-200/60"
+                      : "text-stone-500 hover:bg-stone-200/50 hover:text-stone-700"
                   }`}
                 >
-                  Por estado (hoja / fuera de hoja)
+                  Vista por Estado de Hoja
                 </button>
                 <button
                   type="button"
                   onClick={() => setEquiposDisplayMode("alfabetico")}
-                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                  className={`flex-1 sm:flex-none rounded-lg px-4 py-2.5 text-sm font-bold transition-all duration-300 ${
                     equiposDisplayMode === "alfabetico"
-                      ? "bg-stone-800 text-white"
-                      : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+                      ? "bg-white text-stone-900 shadow-sm ring-1 ring-stone-200/60"
+                      : "text-stone-500 hover:bg-stone-200/50 hover:text-stone-700"
                   }`}
                 >
-                  Orden alfabético por categoría
+                  Vista Alfabética (A-Z)
                 </button>
               </div>
-              <p className="mt-2 text-xs text-stone-600">
-                La vista alfabética muestra los equipos separados por tipo, ordenados A-Z dentro de cada grupo.
+              <p className="text-xs font-semibold text-stone-400">
+                {equiposDisplayMode === "por_estado" 
+                  ? "Ordena equipos visibles y ocultos de manera independiente." 
+                  : "Todos los equipos organizados por nombre."}
               </p>
             </div>
 
-            {equiposDisplayMode === "alfabetico" ? (
-              <div className="space-y-6">
-                {tipoSections.map((section) => (
-                  <div key={section.key}>
-                    <div className="mb-2 flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-stone-900">
-                        {section.isGeneral ? "Equipos generales (A-Z)" : `Equipos ${section.label} (A-Z)`}
-                      </h3>
-                      <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
-                        {section.alphabeticItems.length}
-                      </span>
-                    </div>
-                    <p className="mb-3 text-xs text-stone-600">
-                      Incluye equipos visibles y ocultos en hoja para el tipo {section.label}.
-                    </p>
-                    {section.alphabeticItems.length > 0 ? (
-                      <div className="space-y-2">
-                        {section.alphabeticItems.map((equipo) =>
-                          props.renderEquipoCard(equipo, {
-                            reorderableInActiveList: false,
-                          }),
-                        )}
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                        <p className="text-sm text-stone-600">
-                          {section.isGeneral
-                            ? "No hay equipos generales registrados."
-                            : `No hay equipos ${section.label} registrados.`}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            {equiposDisplayMode === "por_estado" ? (
-              <>
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-sm font-semibold text-stone-900">Aparecen en Hoja de Entrega / Hoja Matriz</h3>
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                      {props.equiposActivosEnPantalla.length}
-                    </span>
-                  </div>
-                  <p className="text-xs text-stone-600 mb-3">
-                    Estos equipos se muestran en hoja y quedan separados por tipo.
-                  </p>
-                </div>
-                {props.equiposActivosEnPantalla.length > 0 ? (
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3">
-                    <div>
-                      <p className="text-sm font-semibold text-stone-900">Editor de orden</p>
-                      <p className="text-xs text-stone-600">Guarda el orden combinado por tipos para hojas y PDF.</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={props.onResetEquipoOrderDraft}
-                        disabled={!props.canWrite || !props.hasEquipoOrderDraftChanges}
-                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Restablecer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={props.onSaveEquipoOrder}
-                        disabled={!props.canWrite || !props.hasEquipoOrderDraftChanges}
-                        className="ej-button rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Guardar orden
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-                <div className="space-y-6">
+            <div className="space-y-12">
+              {equiposDisplayMode === "alfabetico" ? (
+                <div className="space-y-8">
                   {tipoSections.map((section) => (
-                    <div key={`active-${section.key}`}>
-                      <div className="mb-2 flex items-center gap-2">
-                        <h4 className="text-sm font-semibold text-stone-900">
-                          {section.isGeneral ? "Equipos generales visibles en hoja" : `Equipos ${section.label} visibles en hoja`}
-                        </h4>
-                        <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
-                          {section.activeItems.length}
+                    <div key={section.key} className="relative">
+                      <div className="mb-4 flex items-center gap-3 pb-2 border-b border-stone-100">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg shadow-sm ${
+                          section.isGeneral ? "bg-sky-100 text-sky-600" : "bg-amber-100 text-amber-600"
+                        }`}>
+                          <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        </div>
+                        <h3 className="text-lg font-bold text-stone-800">
+                          {section.isGeneral ? "Equipos Generales" : section.label}
+                        </h3>
+                        <span className="inline-flex h-6 items-center justify-center rounded-full bg-stone-100 px-2.5 text-xs font-bold text-stone-600 ring-1 ring-stone-200/60">
+                          {section.alphabeticItems.length}
                         </span>
                       </div>
-                      {section.activeItems.length > 0 ? (
-                        <div className="space-y-2">
-                          {section.activeItems.map((equipo) =>
-                            props.renderEquipoCard(equipo, {
-                              reorderableInActiveList: true,
-                              orderGroupType: section.key,
-                              orderIndex: section.activeOrderById.get(equipo.itemId) ?? -1,
-                              orderCount: section.activeItems.length,
-                            }),
+                      
+                      {section.alphabeticItems.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                          {section.alphabeticItems.map((equipo) =>
+                            props.renderEquipoCard(equipo, { reorderableInActiveList: false }),
                           )}
                         </div>
                       ) : (
-                        <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                          <p className="text-sm text-stone-600">
-                            {section.isGeneral
-                              ? "No hay equipos generales visibles en hoja."
-                              : `No hay equipos ${section.label} visibles en hoja.`}
-                          </p>
+                        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
+                          <div className="mb-3 rounded-full bg-stone-100 p-3 text-stone-300">
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>
+                          </div>
+                          <p className="text-sm font-bold text-stone-500">Sin equipos registrados</p>
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
-              </>
-            ) : null}
+              ) : null}
 
-            {equiposDisplayMode === "por_estado" ? (
-              <div className="mt-6 space-y-3 border-t border-stone-200 pt-4">
-                <div>
-                  <div className="mb-2 flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-stone-900">No aparecen en Hoja de Entrega / Hoja Matriz</h3>
-                    <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
-                      {props.equiposInactivos.length}
-                    </span>
-                  </div>
-                  <p className="mb-3 text-xs text-stone-600">
-                    Estos equipos siguen registrados, pero quedan fuera de hoja y también se separan por tipo.
-                  </p>
-                </div>
-                {props.equiposInactivosEnPantalla.length > 0 ? (
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-stone-50/80 px-3 py-3 mb-3">
-                    <div>
-                      <p className="text-sm font-semibold text-stone-900">Editor de orden de inactivos</p>
-                      <p className="text-xs text-stone-600">Define el orden combinado para el listado total de stock.</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={props.onResetEquipoInactivoOrderDraft}
-                        disabled={!props.canWrite || !props.hasEquipoInactivoOrderDraftChanges}
-                        className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Restablecer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={props.onSaveEquipoInactivoOrder}
-                        disabled={!props.canWrite || !props.hasEquipoInactivoOrderDraftChanges}
-                        className="ej-button rounded-xl px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Guardar orden
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-                <div className="space-y-6">
-                  {tipoSections.map((section) => (
-                    <div key={`inactive-${section.key}`}>
-                      <div className="mb-2 flex items-center gap-2">
-                        <h4 className="text-sm font-semibold text-stone-900">
-                          {section.isGeneral ? "Equipos generales ocultos de hoja" : `Equipos ${section.label} ocultos de hoja`}
-                        </h4>
-                        <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
-                          {section.inactiveItems.length}
-                        </span>
+              {equiposDisplayMode === "por_estado" ? (
+                <>
+                  <div className="relative">
+                    <div className="sticky top-0 z-20 -mx-6 px-6 py-4 backdrop-blur-xl bg-white/80 border-b border-stone-100/80 sm:-mx-8 sm:px-8 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shadow-sm ring-1 ring-emerald-200/50">
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-black tracking-tight text-stone-900">Activos en Hoja de Entrega</h3>
+                            <p className="text-xs font-semibold text-emerald-600">{props.equiposActivosEnPantalla.length} equipos visibles</p>
+                          </div>
+                        </div>
+                        
+                        {props.equiposActivosEnPantalla.length > 0 && props.hasEquipoOrderDraftChanges ? (
+                          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <button
+                              type="button"
+                              onClick={props.onResetEquipoOrderDraft}
+                              className="rounded-xl bg-stone-100 px-4 py-2.5 text-xs font-bold text-stone-600 transition-all hover:bg-stone-200 active:scale-95"
+                            >
+                              Deshacer
+                            </button>
+                            <button
+                              type="button"
+                              onClick={props.onSaveEquipoOrder}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                              Guardar Orden
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
-                      {section.inactiveItems.length > 0 ? (
-                        <div className="space-y-2">
-                          {section.inactiveItems.map((equipo) =>
-                            props.renderEquipoCard(equipo, {
-                              reorderableInActiveList: false,
-                              reorderableInInactiveList: true,
-                              orderGroupType: section.key,
-                              orderIndex: section.inactiveOrderById.get(equipo.itemId) ?? -1,
-                              orderCount: section.inactiveItems.length,
-                            }),
+                    </div>
+
+                    <div className="mt-8 space-y-10">
+                      {tipoSections.map((section) => (
+                        <div key={`active-${section.key}`}>
+                          <div className="mb-4 flex items-center gap-3">
+                            <h4 className="text-sm font-bold uppercase tracking-widest text-stone-500">
+                              {section.isGeneral ? "Generales" : section.label}
+                            </h4>
+                            <div className="h-px flex-1 bg-stone-100"></div>
+                            <span className="text-xs font-bold text-stone-400">{section.activeItems.length}</span>
+                          </div>
+                          {section.activeItems.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                              {section.activeItems.map((equipo) =>
+                                props.renderEquipoCard(equipo, {
+                                  reorderableInActiveList: true,
+                                  orderGroupType: section.key,
+                                  orderIndex: section.activeOrderById.get(equipo.itemId) ?? -1,
+                                  orderCount: section.activeItems.length,
+                                }),
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3 rounded-xl border border-stone-100 bg-stone-50/50 px-4 py-3">
+                              <span className="h-1.5 w-1.5 rounded-full bg-stone-300"></span>
+                              <p className="text-xs font-medium text-stone-500">Ningún equipo activo en esta categoría.</p>
+                            </div>
                           )}
                         </div>
-                      ) : (
-                        <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-center">
-                          <p className="text-sm text-stone-600">
-                            {section.isGeneral
-                              ? "No hay equipos generales ocultos."
-                              : `No hay equipos ${section.label} ocultos.`}
-                          </p>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+                  </div>
 
+                  <div className="relative mt-16 pt-8 border-t-2 border-dashed border-stone-200/50">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 shadow-sm ring-1 ring-rose-200/50">
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black tracking-tight text-stone-900">Ocultos de Hoja General</h3>
+                          <p className="text-xs font-semibold text-rose-600">{props.equiposInactivos.length} equipos fuera de hoja</p>
+                        </div>
+                      </div>
+                      
+                      {props.equiposInactivosEnPantalla.length > 0 && props.hasEquipoInactivoOrderDraftChanges ? (
+                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                          <button
+                            type="button"
+                            onClick={props.onResetEquipoInactivoOrderDraft}
+                            className="rounded-xl bg-stone-100 px-4 py-2.5 text-xs font-bold text-stone-600 transition-all hover:bg-stone-200 active:scale-95"
+                          >
+                            Deshacer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={props.onSaveEquipoInactivoOrder}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-stone-800 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-stone-800/20 transition-all hover:bg-stone-900 active:scale-95"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                            Guardar Orden Inactivos
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
 
-
+                    <div className="space-y-10 opacity-90">
+                      {tipoSections.map((section) => (
+                        <div key={`inactive-${section.key}`}>
+                          <div className="mb-4 flex items-center gap-3">
+                            <h4 className="text-sm font-bold uppercase tracking-widest text-stone-500">
+                              {section.isGeneral ? "Generales (Ocultos)" : `${section.label} (Ocultos)`}
+                            </h4>
+                            <div className="h-px flex-1 bg-stone-100"></div>
+                            <span className="text-xs font-bold text-stone-400">{section.inactiveItems.length}</span>
+                          </div>
+                          {section.inactiveItems.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                              {section.inactiveItems.map((equipo) =>
+                                props.renderEquipoCard(equipo, {
+                                  reorderableInActiveList: false,
+                                  reorderableInInactiveList: true,
+                                  orderGroupType: section.key,
+                                  orderIndex: section.inactiveOrderById.get(equipo.itemId) ?? -1,
+                                  orderCount: section.inactiveItems.length,
+                                }),
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3 rounded-xl border border-stone-100 bg-stone-50/50 px-4 py-3">
+                              <span className="h-1.5 w-1.5 rounded-full bg-stone-300"></span>
+                              <p className="text-xs font-medium text-stone-500">Ningún equipo oculto en esta categoría.</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
           </div>
-
         </article>
       </section>
     );
