@@ -8,6 +8,7 @@ import { compareEquiposByTipoAndName } from "@/lib/equipo-sort";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MainView } from "@/types/views";
 import type { Articulo, AuditoriaRecord, Equipo, EquipoTipo, FirmaConfig, Rango, Role, TipoArticulo, TipoEquipo, UsuarioAdmin } from "@/types/entities";
+import type { PapeleraRecord } from "@/app/types/home";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 import { ModalFrame } from "../modals/ModalFrame";
 
@@ -32,6 +33,26 @@ type AuditUserOption = {
   label: string;
 };
 type UserAccountType = UsuarioAdmin["accountType"];
+type PapeleraViewState = {
+  records: PapeleraRecord[];
+  loading: boolean;
+  restore: (papeleraId: string) => void | Promise<void>;
+  removePermanent: (papeleraId: string) => void | Promise<void>;
+};
+type TrashDetails = {
+  item?: { activo?: boolean | null } | null;
+  articulo?: { tipo?: string | null } | null;
+  cajaItems?: unknown[];
+  itemCodigosSIE?: unknown[];
+  cajaItemCodigosSIE?: unknown[];
+  movimientoItems?: unknown[];
+  deletedMovimientos?: unknown[];
+  deletedPrestamosActivos?: unknown[];
+  deletedPrestamosHistoriales?: unknown[];
+  stockOperacionItems?: unknown[];
+  stockMovimientos?: unknown[];
+  emptyEntregas?: unknown[];
+};
 
 interface ConfigViewsProps {
   activeView: "grados" | "baterias" | "articulos" | "equipos" | "tipos_equipo" | "firmas" | "usuarios" | "auditoria" | "papelera";
@@ -192,10 +213,7 @@ interface ConfigViewsProps {
   auditEntityLabel: (entidad: string) => string;
   renderAuditDetalle: (detalle: unknown, ciReferences?: AuditCiReferences, accion?: string) => ReactNode;
   // Papelera state and callbacks
-  papeleraRecords?: Array<{ papeleraId: string; tipo: string; nombre: string; originalId: string; createdAt: string }>;
-  papeleraLoading?: boolean;
-  onRestorePapelera?: (papeleraId: string) => void;
-  onDeletePapeleraPermanent?: (papeleraId: string) => void;
+  papelera?: PapeleraViewState;
   reloadCurrentViewData?: (showSpinner?: boolean) => Promise<void>;
 }
 
@@ -275,9 +293,9 @@ export function ConfigViews(props: ConfigViewsProps) {
   };
 
   // Local state for Papelera interactive preview
-  type TrashRecord = NonNullable<ConfigViewsProps["papeleraRecords"]>[0];
+  type TrashRecord = NonNullable<ConfigViewsProps["papelera"]>["records"][0];
   const [selectedTrashRecord, setSelectedTrashRecord] = useState<TrashRecord | null>(null);
-  const [trashDetails, setTrashDetails] = useState<any | null>(null);
+  const [trashDetails, setTrashDetails] = useState<TrashDetails | null>(null);
   const [trashDetailsLoading, setTrashDetailsLoading] = useState(false);
   const [trashModalAction, setTrashModalAction] = useState<"restore" | "delete" | null>(null);
 
@@ -286,14 +304,14 @@ export function ConfigViews(props: ConfigViewsProps) {
   const [trashTypeFilter, setTrashTypeFilter] = useState<"ALL" | "ITEM" | "ARTICULO">("ALL");
 
   const filteredTrashRecords = useMemo(() => {
-    if (!props.papeleraRecords) return [];
-    return props.papeleraRecords.filter((record) => {
+    if (!props.papelera) return [];
+    return props.papelera.records.filter((record) => {
       const matchesSearch = record.nombre.toLowerCase().includes(trashSearchQuery.toLowerCase()) || 
                             record.originalId.toLowerCase().includes(trashSearchQuery.toLowerCase());
       const matchesType = trashTypeFilter === "ALL" || record.tipo === trashTypeFilter;
       return matchesSearch && matchesType;
     });
-  }, [props.papeleraRecords, trashSearchQuery, trashTypeFilter]);
+  }, [props.papelera, trashSearchQuery, trashTypeFilter]);
 
   const handleOpenTrashModal = async (record: TrashRecord, action: "restore" | "delete") => {
     setSelectedTrashRecord(record);
@@ -304,7 +322,7 @@ export function ConfigViews(props: ConfigViewsProps) {
       const res = await fetch(`/api/papelera/${record.papeleraId}`);
       if (res.ok) {
         const data = await res.json();
-        setTrashDetails(data.payload);
+        setTrashDetails(data.payload as TrashDetails);
       } else {
         console.log("Error fetching trash details");
       }
@@ -318,9 +336,9 @@ export function ConfigViews(props: ConfigViewsProps) {
   const handleConfirmTrashAction = () => {
     if (!selectedTrashRecord || !trashModalAction) return;
     if (trashModalAction === "restore") {
-      props.onRestorePapelera && props.onRestorePapelera(selectedTrashRecord.papeleraId);
+      void props.papelera?.restore(selectedTrashRecord.papeleraId);
     } else {
-      props.onDeletePapeleraPermanent && props.onDeletePapeleraPermanent(selectedTrashRecord.papeleraId);
+      void props.papelera?.removePermanent(selectedTrashRecord.papeleraId);
     }
     // Close modal
     setSelectedTrashRecord(null);
@@ -1875,7 +1893,7 @@ export function ConfigViews(props: ConfigViewsProps) {
             </div>
 
             {/* Interactive Controls */}
-            {!props.papeleraLoading && props.papeleraRecords && props.papeleraRecords.length > 0 && (
+            {!props.papelera?.loading && props.papelera && props.papelera.records.length > 0 && (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 {/* Search Bar */}
                 <div className="relative min-w-[220px]">
@@ -1929,7 +1947,7 @@ export function ConfigViews(props: ConfigViewsProps) {
             )}
           </div>
 
-          {props.papeleraLoading ? (
+          {props.papelera?.loading ? (
             <div className="mt-8 flex justify-center py-12">
               <LoadingInline label="Cargando papelera..." />
             </div>

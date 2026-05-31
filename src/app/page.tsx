@@ -45,6 +45,8 @@ import { SmallActionButton, ActionMenu, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
 import { useLoginState } from "./hooks/useLoginState";
 import { useStockPrestamoDraftItems } from "./hooks/useStockPrestamoDraftItems";
+import { useHomePermissions } from "./hooks/home/useHomePermissions";
+import { usePapelera } from "./hooks/home/usePapelera";
 
 // Importar tipos desde archivos de tipos organizados
 import type {
@@ -418,66 +420,21 @@ export default function Home() {
     clearLoadedData: clearLoadedDataState,
   } = useHomeData({ onStatusChange: setStatus, activeView });
 
-  const [papeleraRecords, setPapeleraRecords] = useState<any[]>([]);
-  const [papeleraLoading, setPapeleraLoading] = useState(false);
-
-  const loadPapelera = useCallback(async () => {
-    setPapeleraLoading(true);
-    try {
-      const response = await fetch("/api/papelera");
-      if (response.ok) {
-        const data = await response.json();
-        setPapeleraRecords(data);
-      } else {
-        
-      }
-    } catch (err) {
-      
-    } finally {
-      setPapeleraLoading(false);
-    }
-  }, []);
+  const {
+    records: papeleraRecords,
+    loading: papeleraLoading,
+    load: loadPapelera,
+    restore: restorePapelera,
+    removePermanent: removePapeleraPermanent,
+  } = usePapelera({
+    onStatusChange: setStatus,
+    onDataChanged: loadData,
+  });
 
   useEffect(() => {
-    if (activeView === "papelera") {
-      void loadPapelera();
-    }
+    if (activeView !== "papelera") return;
+    void loadPapelera();
   }, [activeView, loadPapelera]);
-
-  const restorePapelera = useCallback(async (papeleraId: string) => {
-    try {
-      const response = await fetch(`/api/papelera/${papeleraId}/restore`, {
-        method: "POST",
-      });
-      if (response.ok) {
-        setStatus("Restaurado con éxito.");
-        void loadPapelera();
-        void loadData();
-      } else {
-        const data = await response.json();
-        setStatus(data.error || "No se pudo restaurar.");
-      }
-    } catch (err) {
-      setStatus("Error de red al restaurar.");
-    }
-  }, [loadPapelera, loadData]);
-
-  const deletePapeleraPermanent = useCallback(async (papeleraId: string) => {
-    try {
-      const response = await fetch(`/api/papelera/${papeleraId}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        setStatus("Eliminado permanentemente.");
-        void loadPapelera();
-      } else {
-        const data = await response.json();
-        setStatus(data.error || "No se pudo eliminar permanentemente.");
-      }
-    } catch (err) {
-      setStatus("Error de red al eliminar permanentemente.");
-    }
-  }, [loadPapelera]);
   const {
     loginMode,
     loginUsername,
@@ -682,9 +639,8 @@ export default function Home() {
   const bulkDeliveryPdfLastLoggedPhaseRef = useRef<BulkDeliveryPdfPhase | null>(null);
   const lastToastStatusRef = useRef<string | null>(null);
 
-  const isPersonalAccount = currentUser?.accountType === "PERSONAL";
-  const isAdmin = currentUser?.accountType === "SISTEMA" && currentUser?.rol === "ADMIN";
-  const canWrite = currentUser?.accountType === "SISTEMA" && (currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR");
+  const permissions = useHomePermissions(currentUser);
+  const { isPersonalAccount, isAdmin, canWrite, canManageOwnAccount, canDelete, canDeleteRegistros } = permissions;
   const sessionReferenceEmail = typeof session?.user?.email === "string" ? session.user.email.trim() : "";
   const currentUserReferenceEmail =
     typeof currentUser?.mailReferencia === "string" && currentUser.mailReferencia.trim() !== ""
@@ -696,9 +652,6 @@ export default function Home() {
     : !currentUserReferenceEmail
       ? "Configura un correo de referencia en tu usuario para habilitar este envío."
       : null;
-  const canManageOwnAccount = canWrite || isPersonalAccount;
-  const canDelete = canWrite;
-  const canDeleteRegistros = isAdmin;
   const canRegisterPersonal = canWrite && rangos.length > 0;
   const rangosOficialSuboficialDisponibles = useMemo(
     () => (newOficialSuboficial.tipo === "OFICIAL" ? rangosOficiales : rangosSuboficiales),
@@ -7025,10 +6978,12 @@ export default function Home() {
             auditActionLabel={auditActionLabel}
             auditEntityLabel={auditEntityLabel}
             renderAuditDetalle={renderAuditDetalle}
-            papeleraRecords={papeleraRecords}
-            papeleraLoading={papeleraLoading}
-            onRestorePapelera={restorePapelera}
-            onDeletePapeleraPermanent={deletePapeleraPermanent}
+            papelera={{
+              records: papeleraRecords,
+              loading: papeleraLoading,
+              restore: restorePapelera,
+              removePermanent: removePapeleraPermanent,
+            }}
             reloadCurrentViewData={reloadCurrentViewData}
           />
           ) : null}
