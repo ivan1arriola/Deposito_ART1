@@ -19,9 +19,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
       where: { ci: ciDecoded },
       include: {
         rango: true,
-        subalterno: { include: { bateria: true } },
-        oficial: true,
-        suboficial: true,
+        bateria: true,
         tallas: { include: { tallaTipo: true } },
         observaciones: true,
       },
@@ -50,10 +48,10 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
           rangoId: personalRecord.rangoId,
           createdAt: personalRecord.createdAt,
           tipo,
-          esReingreso: personalRecord.subalterno?.esReingreso ?? null,
-          fechaIngreso: personalRecord.subalterno?.fechaIngreso ?? null,
-          fechaIngresoOriginal: personalRecord.subalterno?.fechaIngresoOriginal ?? null,
-          bateriaId: personalRecord.subalterno?.bateriaId ?? null,
+          esReingreso: personalRecord.esReingreso ?? null,
+          fechaIngreso: personalRecord.fechaIngreso ?? null,
+          fechaIngresoOriginal: personalRecord.fechaIngresoOriginal ?? null,
+          bateriaId: personalRecord.bateriaId ?? null,
           tallas: personalRecord.tallas.map(t => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
           observaciones: personalRecord.observaciones.map(o => ({ texto: o.texto, fecha: o.fecha })),
         },
@@ -68,9 +66,9 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
       await tx.movimiento.deleteMany({
         where: { destinatarioPersonal: { is: { ci: ciDecoded } } },
       });
-      await tx.subalterno.deleteMany({ where: { ci: ciDecoded } });
-      await tx.oficial.deleteMany({ where: { ci: ciDecoded } });
-      await tx.suboficial.deleteMany({ where: { ci: ciDecoded } });
+      
+      
+      
       await tx.personal.delete({ where: { ci: ciDecoded } });
     });
 

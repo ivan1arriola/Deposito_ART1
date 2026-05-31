@@ -145,14 +145,14 @@ function buildPersonalAuditDetail(personal: {
   nombre1: string;
   nombre2: string | null;
   rango: { nombreCompleto: string; abreviacion: string };
-  subalterno: { bateria: { nombre: string } | null } | null;
+  bateria: { nombre: string } | null;
 }) {
   return {
     ci: personal.ci,
     nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
-    bateria: personal.subalterno?.bateria?.nombre ?? null,
+    bateria: personal.bateria?.nombre ?? null,
   };
 }
 
@@ -171,16 +171,15 @@ type PersonalWithRelations = {
     nombreCompleto: string;
     orden: number;
   };
-  subalterno: {
-    esReingreso: boolean;
-    fechaIngreso: Date | null;
-    fechaIngresoOriginal: Date | null;
-    bateriaId: number | null;
-    bateria: {
-      bateriaId: number;
-      nombre: string;
-      orden: number;
-    } | null;
+  tipo: TipoPersonal;
+  esReingreso: boolean | null;
+  fechaIngreso: Date | null;
+  fechaIngresoOriginal: Date | null;
+  bateriaId: number | null;
+  bateria: {
+    bateriaId: number;
+    nombre: string;
+    orden: number;
   } | null;
   tallas: Array<{
     tallaTipoId: number;
@@ -200,13 +199,13 @@ function serializePersonal(persona: PersonalWithRelations) {
     nombre1: persona.nombre1,
     nombre2: persona.nombre2,
     telefonoContacto: persona.telefonoContacto,
-    esReingreso: persona.subalterno?.esReingreso ?? false,
-    fechaIngreso: formatDateOnlyFromDate(persona.subalterno?.fechaIngreso ?? null),
-    fechaIngresoOriginal: formatDateOnlyFromDate(persona.subalterno?.fechaIngresoOriginal ?? null),
+    esReingreso: persona.esReingreso ?? false,
+    fechaIngreso: formatDateOnlyFromDate(persona.fechaIngreso ?? null),
+    fechaIngresoOriginal: formatDateOnlyFromDate(persona.fechaIngresoOriginal ?? null),
     rangoId: persona.rangoId,
-    bateriaId: persona.subalterno?.bateriaId ?? null,
+    bateriaId: persona.bateriaId ?? null,
     rango: persona.rango,
-    bateria: persona.subalterno?.bateria ?? null,
+    bateria: persona.bateria ?? null,
     tallas: persona.tallas,
   };
 }
@@ -252,11 +251,7 @@ export async function GET(request: Request) {
     },
     include: {
       rango: true,
-      subalterno: {
-        include: {
-          bateria: true,
-        },
-      },
+      bateria: true,
       tallas: {
         include: { tallaTipo: true },
         orderBy: { tallaTipoId: "asc" },
@@ -426,19 +421,11 @@ export async function POST(req: Request) {
           nombre1: body.nombre1.trim(),
           nombre2: normalizeNullableText(body.nombre2),
           telefonoContacto,
-          rangoId: Number(body.rangoId),
+          tipo: TipoPersonal.SUBALTERNO, rangoId: Number(body.rangoId),
         },
       });
 
-      await tx.subalterno.create({
-        data: {
-          ci: personalCreated.ci,
-          esReingreso,
-          fechaIngreso,
-          fechaIngresoOriginal,
-          bateriaId,
-        },
-      });
+      
 
       if (tallasToCreate.length > 0) {
         await tx.personalTalla.createMany({
@@ -485,11 +472,7 @@ export async function POST(req: Request) {
         where: { ci: personalCreated.ci },
         include: {
           rango: true,
-          subalterno: {
-            include: {
-              bateria: true,
-            },
-          },
+          bateria: true,
           tallas: {
             include: { tallaTipo: true },
             orderBy: { tallaTipoId: "asc" },

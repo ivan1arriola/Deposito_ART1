@@ -96,6 +96,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
           apellido2: true,
           nombre1: true,
           nombre2: true,
+          tipo: true,
           rango: {
             select: {
               rangoId: true,
@@ -104,17 +105,14 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
               nombreCompleto: true,
               orden: true,
             },
-          },
-          subalterno: {
-            select: { ci: true },
-          },
+          }
         },
       });
 
       if (!persona) {
         throw new AscensoError("PERSONA_NO_ENCONTRADA", "Personal no encontrado.");
       }
-      if (persona.rango.tipo !== TipoPersonal.SUBALTERNO || !persona.subalterno) {
+      if (persona.rango.tipo !== TipoPersonal.SUBALTERNO || (persona.tipo !== TipoPersonal.SUBALTERNO)) {
         throw new AscensoError("PERSONA_NO_SUBALTERNO", "La persona no pertenece a personal subalterno.");
       }
       if (!rankLooksLikeSargento(persona.rango)) {
@@ -253,15 +251,9 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
         },
       });
 
-      await tx.suboficial.upsert({
-        where: { ci: ciDecoded },
-        update: {},
-        create: { ci: ciDecoded },
-      });
+      
 
-      await tx.subalterno.deleteMany({
-        where: { ci: ciDecoded },
-      });
+      
 
       return {
         persona,

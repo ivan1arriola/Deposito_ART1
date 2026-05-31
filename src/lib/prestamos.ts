@@ -18,16 +18,12 @@ export const prestamoInclude = {
               orden: true,
             },
           },
-          subalterno: {
-            select: {
-              bateria: {
-                select: {
-                  nombre: true,
-                  orden: true,
-                },
-              },
-            },
-          },
+          bateria: {
+                            select: {
+                              nombre: true,
+                              orden: true,
+                            },
+                          },
         },
       },
     },

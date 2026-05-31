@@ -117,15 +117,11 @@ const prestamoReciboInclude = {
               abreviacion: true,
             },
           },
-          subalterno: {
-            include: {
-              bateria: {
-                select: {
-                  nombre: true,
-                },
-              },
-            },
-          },
+          bateria: {
+                            select: {
+                              nombre: true,
+                            },
+                          },
         },
       },
     },
@@ -247,7 +243,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
   const tercerCampoLabel = clasePrestamo === "INTERNO" ? "Batería" : "Unidad";
   const tercerCampoValor = isPendiente
     ? ""
-    : (destinatarioExterno?.unidadDestino ?? destinatarioPersonal?.subalterno?.bateria?.nombre ?? "No aplica");
+    : (destinatarioExterno?.unidadDestino ?? destinatarioPersonal?.bateria?.nombre ?? "No aplica");
   const observaciones = prestamo.observaciones?.trim() || "-";
 
   const entregaLabel = militaryShortLabel(

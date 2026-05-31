@@ -41,10 +41,6 @@ const mockTx = {
     update: vi.fn(),
     create: vi.fn(),
   },
-  subalterno: {
-    deleteMany: vi.fn(),
-    upsert: vi.fn(),
-  },
   personalTalla: {
     deleteMany: vi.fn(),
     createMany: vi.fn(),

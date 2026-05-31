@@ -208,7 +208,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     where: { ci },
     include: {
       rango: true,
-      subalterno: { include: { bateria: true } }
+      bateria: true,
     }
   });
 
@@ -293,7 +293,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       const pName = fullName(personal!.apellido1, personal!.apellido2, personal!.nombre1, personal!.nombre2);
       const pGrado = personal!.rango.abreviacion;
       const pCi = formatUruguayanCi(personal!.ci);
-      const pBat = personal!.subalterno?.bateria?.nombre || "No aplica";
+      const pBat = personal!.bateria?.nombre || "No aplica";
 
       drawTextAt(currentPage!, bold, "PERSONAL:", PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 10);
       drawTextAt(currentPage!, regular, `${pGrado} ${pName}`, PAGE_MARGIN_X + RECEIPT_PADDING + 65, currentY, 10);

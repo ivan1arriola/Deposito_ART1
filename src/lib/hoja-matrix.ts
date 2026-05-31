@@ -70,8 +70,8 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
     ...(bateria === null
       ? {}
       : bateria === SIN_BATERIA_LABEL
-        ? { subalterno: { is: { bateriaId: null } } }
-        : { subalterno: { is: { bateria: { nombre: bateria } } } }),
+        ? { }
+        : { }),
   };
 
   const personal = await prisma.personal.findMany({
@@ -80,13 +80,9 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
       rango: {
         select: { abreviacion: true, nombreCompleto: true, orden: true },
       },
-      subalterno: {
-        include: {
-          bateria: {
-            select: { nombre: true, orden: true },
-          },
-        },
-      },
+      bateria: {
+                    select: { nombre: true, orden: true },
+                  },
       movimientosDestinatario: {
         where: {
           movimiento: {
@@ -131,8 +127,8 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
       apellido2: persona.apellido2,
       nombre1: persona.nombre1,
       nombre2: persona.nombre2,
-      bateria: persona.subalterno?.bateria?.nombre ?? null,
-      bateriaOrden: persona.subalterno?.bateria?.orden ?? null,
+      bateria: persona.bateria?.nombre ?? null,
+      bateriaOrden: persona.bateria?.orden ?? null,
       grado: persona.rango.nombreCompleto,
       gradoOrden: persona.rango.orden,
       gradoAbreviacion: persona.rango.abreviacion,

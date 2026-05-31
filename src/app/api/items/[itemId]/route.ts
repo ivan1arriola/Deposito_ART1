@@ -216,15 +216,11 @@ async function buildDeleteImpactData(
                         tipo: true,
                       },
                     },
-                    subalterno: {
-                      select: {
-                        bateria: {
-                          select: {
-                            nombre: true,
-                          },
-                        },
-                      },
-                    },
+                    bateria: {
+                                              select: {
+                                                nombre: true,
+                                              },
+                                            },
                   },
                 },
               },

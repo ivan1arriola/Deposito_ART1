@@ -80,16 +80,15 @@ type PersonalWithRelations = {
     nombreCompleto: string;
     orden: number;
   };
-  subalterno: {
-    esReingreso: boolean;
-    fechaIngreso: Date | null;
-    fechaIngresoOriginal: Date | null;
-    bateriaId: number | null;
-    bateria: {
-      bateriaId: number;
-      nombre: string;
-      orden: number;
-    } | null;
+  tipo: TipoPersonal;
+  esReingreso: boolean | null;
+  fechaIngreso: Date | null;
+  fechaIngresoOriginal: Date | null;
+  bateriaId: number | null;
+  bateria: {
+    bateriaId: number;
+    nombre: string;
+    orden: number;
   } | null;
   tallas: Array<{
     tallaTipoId: number;
@@ -109,13 +108,13 @@ function serializePersonal(persona: PersonalWithRelations) {
     nombre1: persona.nombre1,
     nombre2: persona.nombre2,
     telefonoContacto: persona.telefonoContacto,
-    esReingreso: persona.subalterno?.esReingreso ?? false,
-    fechaIngreso: formatDateOnlyFromDate(persona.subalterno?.fechaIngreso ?? null),
-    fechaIngresoOriginal: formatDateOnlyFromDate(persona.subalterno?.fechaIngresoOriginal ?? null),
+    esReingreso: persona.esReingreso ?? false,
+    fechaIngreso: formatDateOnlyFromDate(persona.fechaIngreso ?? null),
+    fechaIngresoOriginal: formatDateOnlyFromDate(persona.fechaIngresoOriginal ?? null),
     rangoId: persona.rangoId,
-    bateriaId: persona.subalterno?.bateriaId ?? null,
+    bateriaId: persona.bateriaId ?? null,
     rango: persona.rango,
-    bateria: persona.subalterno?.bateria ?? null,
+    bateria: persona.bateria ?? null,
     tallas: persona.tallas,
   };
 }
@@ -223,7 +222,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         where: { ci: ciDecoded },
         include: {
           rango: true,
-          subalterno: true,
+          
           tallas: {
             include: { tallaTipo: true },
             orderBy: { tallaTipoId: "asc" },
@@ -242,10 +241,10 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         nombre2: existing.nombre2,
         telefonoContacto: existing.telefonoContacto,
         rangoId: existing.rangoId,
-        esReingreso: existing.subalterno?.esReingreso ?? false,
-        fechaIngreso: existing.subalterno?.fechaIngreso ? existing.subalterno.fechaIngreso.toISOString().split("T")[0] : null,
-        fechaIngresoOriginal: existing.subalterno?.fechaIngresoOriginal ? existing.subalterno.fechaIngresoOriginal.toISOString().split("T")[0] : null,
-        bateriaId: existing.subalterno?.bateriaId ?? null,
+        esReingreso: existing.esReingreso ?? false,
+        fechaIngreso: existing.fechaIngreso ? existing.fechaIngreso.toISOString().split("T")[0] : null,
+        fechaIngresoOriginal: existing.fechaIngresoOriginal ? existing.fechaIngresoOriginal.toISOString().split("T")[0] : null,
+        bateriaId: existing.bateriaId ?? null,
         tallas: existing.tallas.map(t => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
       };
 
@@ -261,22 +260,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         },
       });
 
-      await tx.subalterno.upsert({
-        where: { ci: ciDecoded },
-        create: {
-          ci: ciDecoded,
-          esReingreso,
-          fechaIngreso,
-          fechaIngresoOriginal,
-          bateriaId,
-        },
-        update: {
-          esReingreso,
-          fechaIngreso,
-          fechaIngresoOriginal,
-          bateriaId,
-        },
-      });
+      
 
       await tx.personalTalla.deleteMany({
         where: { ci: ciDecoded },
@@ -296,11 +280,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         where: { ci: ciDecoded },
         include: {
           rango: true,
-          subalterno: {
-            include: {
-              bateria: true,
-            },
-          },
+          bateria: true,
           tallas: {
             include: { tallaTipo: true },
             orderBy: { tallaTipoId: "asc" },
@@ -335,10 +315,10 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
           nombre2: updatedRecord.nombre2,
           telefonoContacto: updatedRecord.telefonoContacto,
           rangoId: updatedRecord.rangoId,
-          esReingreso: updatedRecord.subalterno?.esReingreso ?? false,
-          fechaIngreso: updatedRecord.subalterno?.fechaIngreso ? updatedRecord.subalterno.fechaIngreso.toISOString().split("T")[0] : null,
-          fechaIngresoOriginal: updatedRecord.subalterno?.fechaIngresoOriginal ? updatedRecord.subalterno.fechaIngresoOriginal.toISOString().split("T")[0] : null,
-          bateriaId: updatedRecord.subalterno?.bateriaId ?? null,
+          esReingreso: updatedRecord.esReingreso ?? false,
+          fechaIngreso: updatedRecord.fechaIngreso ? updatedRecord.fechaIngreso.toISOString().split("T")[0] : null,
+          fechaIngresoOriginal: updatedRecord.fechaIngresoOriginal ? updatedRecord.fechaIngresoOriginal.toISOString().split("T")[0] : null,
+          bateriaId: updatedRecord.bateriaId ?? null,
           tallas: updatedRecord.tallas.map(t => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
         },
       },
@@ -353,7 +333,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         headline: "Se actualizaron datos de tu ficha personal.",
         detailLines: [
           `Rango actualizado: ${updatedRecord.rango.abreviacion} - ${updatedRecord.rango.nombreCompleto}`,
-          bateriaId ? `Bateria: ${updatedRecord.subalterno?.bateria?.nombre ?? `ID ${bateriaId}`}` : "Bateria: sin asignar",
+          bateriaId ? `Bateria: ${updatedRecord.bateria?.nombre ?? `ID ${bateriaId}`}` : "Bateria: sin asignar",
           telefonoContacto ? `Celular: ${telefonoContacto}` : "Celular: sin registrar",
           `Reingreso: ${esReingreso ? "Si" : "No"}`,
           fechaIngresoRaw ? `Fecha ingreso: ${formatDateOnlyForDisplay(fechaIngresoRaw)}` : "",
@@ -394,9 +374,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
       where: { ci: ciDecoded },
       include: {
         rango: true,
-        subalterno: { include: { bateria: true } },
-        oficial: true,
-        suboficial: true,
+        bateria: true,
         tallas: { include: { tallaTipo: true } },
         observaciones: true,
       },
@@ -503,10 +481,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
           rangoId: personalRecord.rangoId,
           createdAt: personalRecord.createdAt,
           tipo,
-          esReingreso: personalRecord.subalterno?.esReingreso ?? null,
-          fechaIngreso: personalRecord.subalterno?.fechaIngreso ?? null,
-          fechaIngresoOriginal: personalRecord.subalterno?.fechaIngresoOriginal ?? null,
-          bateriaId: personalRecord.subalterno?.bateriaId ?? null,
+          esReingreso: personalRecord.esReingreso ?? null,
+          fechaIngreso: personalRecord.fechaIngreso ?? null,
+          fechaIngresoOriginal: personalRecord.fechaIngresoOriginal ?? null,
+          bateriaId: personalRecord.bateriaId ?? null,
           tallas: personalRecord.tallas.map((t) => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
           observaciones: personalRecord.observaciones.map((o) => ({ texto: o.texto, fecha: o.fecha })),
         },
@@ -520,9 +498,9 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
       await tx.movimiento.deleteMany({
         where: { destinatarioPersonal: { is: { ci: ciDecoded } } },
       });
-      await tx.subalterno.deleteMany({ where: { ci: ciDecoded } });
-      await tx.oficial.deleteMany({ where: { ci: ciDecoded } });
-      await tx.suboficial.deleteMany({ where: { ci: ciDecoded } });
+      
+      
+      
       await tx.personal.delete({ where: { ci: ciDecoded } });
     });
 

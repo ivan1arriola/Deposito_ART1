@@ -30,7 +30,8 @@ vi.mock("@/lib/prisma", () => ({
     usuario: {
       create: vi.fn(),
     },
-  },
+      bateria: true
+},
 }));
 
 describe("POST /api/usuarios", () => {
@@ -129,6 +130,7 @@ describe("POST /api/usuarios", () => {
       activo: true,
       createdAt: new Date("2026-05-17T10:00:00Z"),
       updatedAt: new Date("2026-05-17T10:00:00Z"),
+        bateria: true
     };
     vi.mocked(prisma.usuario.create as any).mockResolvedValue(mockCreatedUser as any);
 

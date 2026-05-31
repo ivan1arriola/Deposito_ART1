@@ -197,7 +197,7 @@ model Bateria {
   bateriaId   Int          @id @default(autoincrement()) @map("bateria_id") @db.SmallInt
   nombre      String       @unique
   orden       Int          @map("orden") @db.SmallInt
-  subalternos Subalterno[]
+  personal    Personal[]
 
   @@index([orden])
   @@map("bateria")
@@ -345,25 +345,30 @@ model CajaItemCodigoSIE {
 }
 
 model Personal {
-  ci               String          @id @map("ci")
-  apellido1        String
-  apellido2        String?
-  nombre1          String
-  nombre2          String?
-  telefonoContacto String?         @map("telefono_contacto")
-  rangoId          Int             @map("grado_id") @db.SmallInt
-  baja             Boolean         @default(false) @map("baja")
-  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  rango            Rango           @relation(fields: [rangoId], references: [rangoId])
-  subalterno       Subalterno?
-  oficial          Oficial?
-  suboficial       Suboficial?
-  tallas           PersonalTalla[]
+  ci                   String          @id @map("ci")
+  apellido1            String
+  apellido2            String?
+  nombre1              String
+  nombre2              String?
+  telefonoContacto     String?         @map("telefono_contacto")
+  rangoId              Int             @map("grado_id") @db.SmallInt
+  tipo                 TipoPersonal    @map("tipo")
+  esReingreso          Boolean?        @map("es_reingreso")
+  fechaIngreso         DateTime?       @map("fecha_ingreso") @db.Date
+  fechaIngresoOriginal DateTime?       @map("fecha_ingreso_original") @db.Date
+  bateriaId            Int?            @map("bateria_id") @db.SmallInt
+  baja                 Boolean         @default(false) @map("baja")
+  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  rango                Rango           @relation(fields: [rangoId, tipo], references: [rangoId, tipo])
+  bateria              Bateria?        @relation(fields: [bateriaId], references: [bateriaId])
+  
+  tallas               PersonalTalla[]
   movimientosDestinatario MovimientoDestinatarioPersonal[]
   articuloEntregasRecibidas ArticuloEntregaPersonal[] @relation("articulo_entrega_destinatario")
   articuloEntregasOrdenadas ArticuloEntregaPersonal[] @relation("articulo_entrega_ordenante")
-  observaciones    Observacion[]
+  observaciones        Observacion[]
 
   @@index([rangoId])
   @@map("personal")
@@ -506,39 +511,6 @@ model PrestamoHistorial {
   @@index([fechaDevolucion(sort: Desc)])
   @@index([usuarioRecibeDevolucionId, fechaDevolucion(sort: Desc)])
   @@map("prestamo_historial")
-}
-
-model Subalterno {
-  ci                   String    @id @map("ci")
-  esReingreso          Boolean   @default(false) @map("es_reingreso")
-  fechaIngreso         DateTime? @map("fecha_ingreso") @db.Date
-  fechaIngresoOriginal DateTime? @map("fecha_ingreso_original") @db.Date
-  bateriaId            Int?      @map("bateria_id") @db.SmallInt
-  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  personal             Personal  @relation(fields: [ci], references: [ci], onDelete: Cascade)
-  bateria              Bateria?  @relation(fields: [bateriaId], references: [bateriaId])
-
-  @@index([bateriaId])
-  @@map("subalterno")
-}
-
-model Oficial {
-  ci        String   @id @map("ci")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  personal  Personal @relation(fields: [ci], references: [ci], onDelete: Cascade)
-
-  @@map("oficial")
-}
-
-model Suboficial {
-  ci        String   @id @map("ci")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  personal  Personal @relation(fields: [ci], references: [ci], onDelete: Cascade)
-
-  @@map("suboficial")
 }
 
 model PersonalTalla {

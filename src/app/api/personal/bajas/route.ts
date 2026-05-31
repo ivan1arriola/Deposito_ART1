@@ -13,7 +13,7 @@ export async function GET(req: Request) {
       where: { baja: true },
       include: {
         rango: true,
-        subalterno: { include: { bateria: true } },
+        bateria: true,
       },
     });
 
@@ -69,7 +69,7 @@ export async function GET(req: Request) {
           telefonoContacto: p.telefonoContacto,
           grado: p.rango.nombreCompleto,
           gradoAbreviacion: p.rango.abreviacion,
-          bateria: p.subalterno?.bateria?.nombre ?? null,
+          bateria: p.bateria?.nombre ?? null,
           tipo: p.rango.tipo === TipoPersonal.SUBALTERNO ? "SUBALTERNO" : p.rango.tipo === TipoPersonal.OFICIAL ? "OFICIAL" : "SUBOFICIAL",
           outstandingLoans: activeLoans.map((l) => ({
             movimientoId: l.movimientoId.toString(),

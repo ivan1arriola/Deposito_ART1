@@ -246,39 +246,7 @@ CREATE TABLE "personal" (
 
 CREATE INDEX "personal_grado_id_idx" ON "personal"("grado_id");
 
-CREATE TABLE "subalterno" (
-  "ci" TEXT PRIMARY KEY REFERENCES "personal"("ci") ON DELETE CASCADE,
-  "es_reingreso" BOOLEAN NOT NULL DEFAULT FALSE,
-  "fecha_ingreso" DATE,
-  "fecha_ingreso_original" DATE,
-  "bateria_id" SMALLINT REFERENCES "bateria"("bateria_id"),
-  "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
-  "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
-  CONSTRAINT "subalterno_fecha_ingreso_hoy_chk" CHECK ("fecha_ingreso" IS NULL OR "fecha_ingreso" <= CURRENT_DATE),
-  CONSTRAINT "subalterno_fecha_ingreso_original_hoy_chk" CHECK ("fecha_ingreso_original" IS NULL OR "fecha_ingreso_original" <= CURRENT_DATE),
-  CONSTRAINT "subalterno_reingreso_chk" CHECK (
-    ("es_reingreso" = FALSE AND "fecha_ingreso_original" IS NULL)
-    OR (
-      "es_reingreso" = TRUE
-      AND "fecha_ingreso" IS NOT NULL
-      AND ("fecha_ingreso_original" IS NULL OR "fecha_ingreso_original" <= "fecha_ingreso")
-    )
-  )
-);
-
 CREATE INDEX "subalterno_bateria_id_idx" ON "subalterno"("bateria_id");
-
-CREATE TABLE "oficial" (
-  "ci" TEXT PRIMARY KEY REFERENCES "personal"("ci") ON DELETE CASCADE,
-  "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
-  "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
-);
-
-CREATE TABLE "suboficial" (
-  "ci" TEXT PRIMARY KEY REFERENCES "personal"("ci") ON DELETE CASCADE,
-  "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
-  "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
-);
 
 CREATE TABLE "personal_talla" (
   "ci" TEXT NOT NULL REFERENCES "personal"("ci") ON DELETE CASCADE,
@@ -292,51 +260,6 @@ CREATE TABLE "personal_talla" (
   ),
   PRIMARY KEY ("ci", "talla_tipo_id")
 );
-
-CREATE OR REPLACE FUNCTION public.enforce_subtable_tipo_match()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  expected_tipo "tipo_personal";
-  actual_tipo "tipo_personal";
-BEGIN
-  IF TG_TABLE_NAME = 'subalterno' THEN
-    expected_tipo := 'SUBALTERNO';
-  ELSIF TG_TABLE_NAME = 'oficial' THEN
-    expected_tipo := 'OFICIAL';
-  ELSE
-    expected_tipo := 'SUBOFICIAL';
-  END IF;
-
-  SELECT g."tipo" INTO actual_tipo
-  FROM "personal" p
-  JOIN "grado" g ON g."grado_id" = p."grado_id"
-  WHERE p."ci" = NEW."ci";
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'No existe personal para la CI %.', NEW."ci";
-  END IF;
-
-  IF actual_tipo <> expected_tipo THEN
-    RAISE EXCEPTION 'La CI % es tipo %, no %.', NEW."ci", actual_tipo, expected_tipo;
-  END IF;
-
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER "subalterno_tipo_match_trg"
-BEFORE INSERT OR UPDATE ON "subalterno"
-FOR EACH ROW EXECUTE FUNCTION public.enforce_subtable_tipo_match();
-
-CREATE TRIGGER "oficial_tipo_match_trg"
-BEFORE INSERT OR UPDATE ON "oficial"
-FOR EACH ROW EXECUTE FUNCTION public.enforce_subtable_tipo_match();
-
-CREATE TRIGGER "suboficial_tipo_match_trg"
-BEFORE INSERT OR UPDATE ON "suboficial"
-FOR EACH ROW EXECUTE FUNCTION public.enforce_subtable_tipo_match();
 
 CREATE OR REPLACE FUNCTION public.assert_personal_partition(ci_text TEXT)
 RETURNS VOID
@@ -380,40 +303,6 @@ BEGIN
   END IF;
 END;
 $$;
-
-CREATE OR REPLACE FUNCTION public.validate_personal_partition_trigger()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  PERFORM public.assert_personal_partition(COALESCE(NEW."ci", OLD."ci"));
-  RETURN NULL;
-END;
-$$;
-
-CREATE CONSTRAINT TRIGGER "personal_partition_personal_chk"
-AFTER INSERT OR UPDATE OF "grado_id" ON "personal"
-DEFERRABLE INITIALLY DEFERRED
-FOR EACH ROW
-EXECUTE FUNCTION public.validate_personal_partition_trigger();
-
-CREATE CONSTRAINT TRIGGER "personal_partition_subalterno_chk"
-AFTER INSERT OR DELETE ON "subalterno"
-DEFERRABLE INITIALLY DEFERRED
-FOR EACH ROW
-EXECUTE FUNCTION public.validate_personal_partition_trigger();
-
-CREATE CONSTRAINT TRIGGER "personal_partition_oficial_chk"
-AFTER INSERT OR DELETE ON "oficial"
-DEFERRABLE INITIALLY DEFERRED
-FOR EACH ROW
-EXECUTE FUNCTION public.validate_personal_partition_trigger();
-
-CREATE CONSTRAINT TRIGGER "personal_partition_suboficial_chk"
-AFTER INSERT OR DELETE ON "suboficial"
-DEFERRABLE INITIALLY DEFERRED
-FOR EACH ROW
-EXECUTE FUNCTION public.validate_personal_partition_trigger();
 
 CREATE TABLE "stock_operacion" (
   "stock_operacion_id" BIGSERIAL PRIMARY KEY,

@@ -71,9 +71,9 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
           });
         } else if (entidad === "PERSONAL") {
           await tx.personalTalla.deleteMany({ where: { ci: entidadId } });
-          await tx.subalterno.deleteMany({ where: { ci: entidadId } });
-          await tx.oficial.deleteMany({ where: { ci: entidadId } });
-          await tx.suboficial.deleteMany({ where: { ci: entidadId } });
+          
+          
+          
           await tx.observacion.deleteMany({ where: { ci: entidadId } });
           await tx.personal.delete({ where: { ci: entidadId } });
         } else if (entidad === "OBSERVACION") {
@@ -144,23 +144,6 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
               nombre2: previo.nombre2,
               telefonoContacto: previo.telefonoContacto,
               rangoId: previo.rangoId,
-            },
-          });
-
-          await tx.subalterno.upsert({
-            where: { ci: entidadId },
-            create: {
-              ci: entidadId,
-              esReingreso: previo.esReingreso,
-              fechaIngreso: previo.fechaIngreso ? new Date(previo.fechaIngreso) : null,
-              fechaIngresoOriginal: previo.fechaIngresoOriginal ? new Date(previo.fechaIngresoOriginal) : null,
-              bateriaId: previo.bateriaId,
-            },
-            update: {
-              esReingreso: previo.esReingreso,
-              fechaIngreso: previo.fechaIngreso ? new Date(previo.fechaIngreso) : null,
-              fechaIngresoOriginal: previo.fechaIngresoOriginal ? new Date(previo.fechaIngresoOriginal) : null,
-              bateriaId: previo.bateriaId,
             },
           });
 
@@ -491,31 +474,18 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
                 nombre1: historyRecord.nombre1,
                 nombre2: historyRecord.nombre2,
                 telefonoContacto: historyRecord.telefonoContacto,
-                rangoId: historyRecord.rangoId,
+                tipo: TipoPersonal.SUBALTERNO, rangoId: historyRecord.rangoId,
                 createdAt: historyRecord.createdAt,
                 baja: false,
               },
             });
 
             if (historyRecord.tipo === "SUBALTERNO") {
-              await tx.subalterno.create({
-                data: {
-                  ci: entidadId,
-                  esReingreso: historyRecord.esReingreso ?? false,
-                  fechaIngreso: historyRecord.fechaIngreso,
-                  fechaIngresoOriginal: historyRecord.fechaIngresoOriginal,
-                  bateriaId: historyRecord.bateriaId,
-                  createdAt: historyRecord.createdAt,
-                },
-              });
+              
             } else if (historyRecord.tipo === "OFICIAL") {
-              await tx.oficial.create({
-                data: { ci: entidadId, createdAt: historyRecord.createdAt },
-              });
+              
             } else {
-              await tx.suboficial.create({
-                data: { ci: entidadId, createdAt: historyRecord.createdAt },
-              });
+              
             }
 
             if (tallas.length > 0) {

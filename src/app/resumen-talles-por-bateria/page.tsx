@@ -72,15 +72,11 @@ export default async function ResumenTallesPorBateriaPage({
       where: { rango: { tipo: TipoPersonal.SUBALTERNO } },
       select: {
         ci: true,
-        subalterno: {
-          select: {
-            bateria: {
-              select: {
-                bateriaId: true,
-              },
-            },
-          },
-        },
+        bateria: {
+                        select: {
+                          bateriaId: true,
+                        },
+                      },
         tallas: {
           include: { tallaTipo: true },
           orderBy: { tallaTipoId: "asc" },
@@ -94,7 +90,7 @@ export default async function ResumenTallesPorBateriaPage({
   for (const grupo of grupos) personalPorBateria.set(grupo.key, []);
 
   for (const persona of personal) {
-    const key = persona.subalterno?.bateria?.bateriaId != null ? String(persona.subalterno.bateria.bateriaId) : "NONE";
+    const key = persona.bateria?.bateriaId != null ? String(persona.bateria.bateriaId) : "NONE";
     const bucket = personalPorBateria.get(key);
     if (bucket) {
       bucket.push(persona);

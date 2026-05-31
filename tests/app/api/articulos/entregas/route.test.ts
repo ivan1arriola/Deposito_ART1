@@ -113,6 +113,7 @@ describe("POST /api/articulos/entregas", () => {
       nombre1: "Mario",
       nombre2: null,
       rango: { nombreCompleto: "Capitán", abreviacion: "Cap." },
+        bateria: true
     });
     mockTx.articulo.findMany.mockResolvedValue([
       {
@@ -156,8 +157,8 @@ describe("POST /api/articulos/entregas", () => {
         nombre1: "Luis",
         nombre2: null,
         rango: { nombreCompleto: "Soldado", abreviacion: "Sdo." },
-        subalterno: { bateria: { nombre: "Ba. Obus. A" } },
-      })
+          bateria: true
+    })
       .mockResolvedValueOnce({
         ci: "12345688",
         apellido1: "Lopez",
@@ -165,7 +166,8 @@ describe("POST /api/articulos/entregas", () => {
         nombre1: "Mario",
         nombre2: null,
         rango: { nombreCompleto: "Capitán", abreviacion: "Cap." },
-      });
+          bateria: true
+    });
     mockTx.articulo.findMany.mockResolvedValue([
       {
         articuloId: 1,
@@ -212,8 +214,8 @@ describe("POST /api/articulos/entregas", () => {
         nombre1: "Luis",
         nombre2: null,
         rango: { nombreCompleto: "Soldado", abreviacion: "Sdo." },
-        subalterno: { bateria: { nombre: "Ba. Obus. A" } },
-      })
+          bateria: true
+    })
       .mockResolvedValueOnce({
         ci: "12345688",
         apellido1: "Lopez",
@@ -221,7 +223,8 @@ describe("POST /api/articulos/entregas", () => {
         nombre1: "Mario",
         nombre2: null,
         rango: { nombreCompleto: "Capitán", abreviacion: "Cap." },
-      });
+          bateria: true
+    });
     mockTx.articulo.findMany.mockResolvedValue([
       {
         articuloId: 1,

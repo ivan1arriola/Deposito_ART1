@@ -66,11 +66,7 @@ const movimientoHistorialInclude = {
       personal: {
         include: {
           rango: true,
-          subalterno: {
-            include: {
-              bateria: true,
-            },
-          },
+          bateria: true,
         },
       },
     },

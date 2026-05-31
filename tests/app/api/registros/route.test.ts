@@ -151,6 +151,7 @@ describe("POST /api/registros", () => {
         where: expect.objectContaining({
           ci: { in: ["5.106.752-4"] },
           rango: { tipo: "SUBALTERNO" },
+            bateria: true
         }),
       }),
     );

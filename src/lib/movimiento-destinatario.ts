@@ -12,11 +12,9 @@ type PersonalDestinatarioShape = {
     tipo?: TipoPersonal;
     orden?: number | null;
   };
-  subalterno?: {
-    bateria?: {
-      nombre: string;
-      orden?: number | null;
-    } | null;
+  bateria?: {
+    nombre: string;
+    orden?: number | null;
   } | null;
 };
 
@@ -109,7 +107,7 @@ export function resolveDestinatarioMovimiento(source: DestinatarioSource): Desti
       gradoAbreviacion: personal.rango.abreviacion,
       gradoOrden: personal.rango.orden ?? null,
       unidadDestino: null,
-      bateria: personal.subalterno?.bateria?.nombre ?? null,
+      bateria: personal.bateria?.nombre ?? null,
     };
   }
 

@@ -106,15 +106,11 @@ const entregaConstanciaInclude = {
           abreviacion: true,
         },
       },
-      subalterno: {
-        include: {
-          bateria: {
-            select: {
-              nombre: true,
-            },
-          },
-        },
-      },
+      bateria: {
+                    select: {
+                      nombre: true,
+                    },
+                  },
     },
   },
   ordenante: {
@@ -189,7 +185,7 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
   );
   const destinatarioGrado = entrega.personal.rango.abreviacion;
   const destinatarioCi = formatUruguayanCi(entrega.personal.ci);
-  const bateria = entrega.personal.subalterno?.bateria?.nombre ?? "No aplica";
+  const bateria = entrega.personal.bateria?.nombre ?? "No aplica";
   const destinatarioFirmaLabel = militaryShortLabel(
     entrega.personal.rango.abreviacion,
     entrega.personal.apellido1,

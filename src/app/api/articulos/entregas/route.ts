@@ -81,14 +81,14 @@ function buildPersonalAuditDetail(personal: {
   nombre1: string;
   nombre2: string | null;
   rango: { nombreCompleto: string; abreviacion: string };
-  subalterno?: { bateria: { nombre: string } | null } | null;
+  bateria: { nombre: string } | null;
 }) {
   return {
     ci: personal.ci,
     nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
-    bateria: personal.subalterno?.bateria?.nombre ?? null,
+    bateria: personal.bateria?.nombre ?? null,
   };
 }
 
@@ -168,13 +168,9 @@ export async function POST(req: Request) {
             rango: {
               select: { nombreCompleto: true, abreviacion: true },
             },
-            subalterno: {
-              select: {
-                bateria: {
-                  select: { nombre: true },
-                },
-              },
-            },
+            bateria: {
+                              select: { nombre: true },
+                            },
           },
         }),
         tx.personal.findUnique({
@@ -187,6 +183,9 @@ export async function POST(req: Request) {
             nombre2: true,
             rango: {
               select: { nombreCompleto: true, abreviacion: true },
+            },
+            bateria: {
+              select: { nombre: true },
             },
           },
         }),

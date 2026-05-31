@@ -64,24 +64,20 @@ export default async function ListaPersonalPage({
           orden: true,
         },
       },
-      subalterno: {
-        select: {
-          bateria: {
-            select: {
-              bateriaId: true,
-              nombre: true,
-              orden: true,
-            },
-          },
-        },
-      },
+      bateria: {
+                  select: {
+                    bateriaId: true,
+                    nombre: true,
+                    orden: true,
+                  },
+                },
     },
   });
 
   const grupos = new Map<string, GrupoBateria>();
 
   for (const persona of personal) {
-    const bateria = persona.subalterno?.bateria ?? null;
+    const bateria = persona.bateria ?? null;
     const key = bateria ? String(bateria.bateriaId) : "NONE";
     const group = grupos.get(key);
 

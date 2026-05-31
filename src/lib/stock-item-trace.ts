@@ -78,15 +78,11 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
                         nombreCompleto: true,
                       },
                     },
-                    subalterno: {
-                      select: {
-                        bateria: {
-                          select: {
-                            nombre: true,
-                          },
-                        },
-                      },
-                    },
+                    bateria: {
+                                              select: {
+                                                nombre: true,
+                                              },
+                                            },
                   },
                 },
               },
@@ -222,7 +218,7 @@ export async function buildStockItemTraceData(itemId: bigint, client: PrismaItem
     subalternosByCi.set(ci, {
       ci,
       persona: buildPersonalDestinatarioEtiqueta(personal),
-      bateria: personal.subalterno?.bateria?.nombre ?? null,
+      bateria: personal.bateria?.nombre ?? null,
       tipoPersonal: personal.rango.tipo,
       cantidadNeta: delta,
       movimientos: [

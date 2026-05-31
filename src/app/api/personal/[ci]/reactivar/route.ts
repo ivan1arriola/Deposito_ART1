@@ -48,7 +48,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
           nombre1: historyRecord.nombre1,
           nombre2: historyRecord.nombre2,
           telefonoContacto: historyRecord.telefonoContacto,
-          rangoId: historyRecord.rangoId,
+          tipo: TipoPersonal.SUBALTERNO, rangoId: historyRecord.rangoId,
           createdAt: historyRecord.createdAt,
           baja: false, // Ensure they are fully active now!
         },
@@ -56,30 +56,11 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
 
       // 2. Recreate Category specifics
       if (historyRecord.tipo === "SUBALTERNO") {
-        await tx.subalterno.create({
-          data: {
-            ci: ciDecoded,
-            esReingreso: historyRecord.esReingreso ?? false,
-            fechaIngreso: historyRecord.fechaIngreso,
-            fechaIngresoOriginal: historyRecord.fechaIngresoOriginal,
-            bateriaId: historyRecord.bateriaId,
-            createdAt: historyRecord.createdAt,
-          },
-        });
+        
       } else if (historyRecord.tipo === "OFICIAL") {
-        await tx.oficial.create({
-          data: {
-            ci: ciDecoded,
-            createdAt: historyRecord.createdAt,
-          },
-        });
+        
       } else {
-        await tx.suboficial.create({
-          data: {
-            ci: ciDecoded,
-            createdAt: historyRecord.createdAt,
-          },
-        });
+        
       }
 
       // 3. Recreate Tallas

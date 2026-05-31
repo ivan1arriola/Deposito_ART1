@@ -32,13 +32,9 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
       rango: { tipo: TipoPersonal.SUBALTERNO },
     },
     include: {
-      subalterno: {
-        include: {
-          bateria: {
-            select: { bateriaId: true, nombre: true, orden: true },
-          },
-        },
-      },
+      bateria: {
+                    select: { bateriaId: true, nombre: true, orden: true },
+                  },
       movimientosDestinatario: {
         where: {
           movimiento: {
@@ -66,9 +62,9 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
   const unitTotals = Array.from({ length: items.length }, () => 0);
 
   for (const persona of personal) {
-    const batteryKey = persona.subalterno?.bateria ? String(persona.subalterno.bateria.bateriaId) : "NONE";
-    const batteryName = persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL;
-    const batteryOrder = persona.subalterno?.bateria?.orden ?? null;
+    const batteryKey = persona.bateria ? String(persona.bateria.bateriaId) : "NONE";
+    const batteryName = persona.bateria?.nombre ?? SIN_BATERIA_LABEL;
+    const batteryOrder = persona.bateria?.orden ?? null;
 
     let summaryRow = rowsByBattery.get(batteryKey);
     if (!summaryRow) {

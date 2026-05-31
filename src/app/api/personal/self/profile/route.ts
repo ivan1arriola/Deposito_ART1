@@ -41,6 +41,9 @@ const PERSONAL_PROFILE_SELECT = {
   nombre1: true,
   nombre2: true,
   telefonoContacto: true,
+  esReingreso: true,
+  fechaIngreso: true,
+  fechaIngresoOriginal: true,
   rango: {
     select: {
       tipo: true,
@@ -48,18 +51,11 @@ const PERSONAL_PROFILE_SELECT = {
       nombreCompleto: true,
     },
   },
-  subalterno: {
-    select: {
-      esReingreso: true,
-      fechaIngreso: true,
-      fechaIngresoOriginal: true,
-      bateria: {
-        select: {
-          nombre: true,
+  bateria: {
+          select: {
+            nombre: true,
+          },
         },
-      },
-    },
-  },
   tallas: {
     include: {
       tallaTipo: {
@@ -338,17 +334,17 @@ export async function GET(request: Request) {
       nombre: joinName(persona.nombre1, persona.nombre2),
       gradoAbreviacion: persona.rango.abreviacion,
       gradoNombre: persona.rango.nombreCompleto,
-      bateriaNombre: persona.subalterno?.bateria?.nombre ?? null,
+      bateriaNombre: persona.bateria?.nombre ?? null,
       telefonoContacto: contacto?.telefonoContacto ?? persona.telefonoContacto,
       mailReferencia: contacto?.mailReferencia ?? null,
-      esReingreso: persona.rango.tipo === TipoPersonal.SUBALTERNO ? (persona.subalterno?.esReingreso ?? false) : null,
+      esReingreso: persona.rango.tipo === TipoPersonal.SUBALTERNO ? (persona.esReingreso ?? false) : null,
       fechaIngreso:
         persona.rango.tipo === TipoPersonal.SUBALTERNO
-          ? formatDateOnlyFromDate(persona.subalterno?.fechaIngreso ?? null)
+          ? formatDateOnlyFromDate(persona.fechaIngreso ?? null)
           : null,
       fechaIngresoOriginal:
         persona.rango.tipo === TipoPersonal.SUBALTERNO
-          ? formatDateOnlyFromDate(persona.subalterno?.fechaIngresoOriginal ?? null)
+          ? formatDateOnlyFromDate(persona.fechaIngresoOriginal ?? null)
           : null,
       tallas: persona.tallas.map((talla) => ({
         tallaTipo: { nombre: talla.tallaTipo.nombre },

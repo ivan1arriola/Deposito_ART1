@@ -182,15 +182,11 @@ const registroReciboInclude = {
               abreviacion: true,
             },
           },
-          subalterno: {
-            include: {
-              bateria: {
-                select: {
-                  nombre: true,
-                },
-              },
-            },
-          },
+          bateria: {
+                            select: {
+                              nombre: true,
+                            },
+                          },
         },
       },
     },
@@ -326,7 +322,7 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     const name = unidad.replace("Externo a la Unidad - ", "").replace("Interno a la Unidad - ", "").trim();
     destinoFull = `${name} - ${isInterno ? "Dentro de la Unidad" : "Fuera de la Unidad"}`;
   } else if (isPersonal) {
-    const bat = registro.destinatarioPersonal?.personal?.subalterno?.bateria?.nombre;
+    const bat = registro.destinatarioPersonal?.personal?.bateria?.nombre;
     destinoFull = bat ? `Batería ${bat} - Dentro de la Unidad` : "Dentro de la Unidad";
   }
 

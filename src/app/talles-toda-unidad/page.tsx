@@ -48,11 +48,7 @@ export default async function TallesTodaUnidadPage({
         nombre1: true,
         nombre2: true,
         rango: { select: { abreviacion: true, orden: true } },
-        subalterno: {
-          select: {
-            bateria: { select: { nombre: true } },
-          },
-        },
+        bateria: { select: { nombre: true } },
         tallas: {
           include: { tallaTipo: true },
           orderBy: { tallaTipoId: "asc" },
@@ -441,7 +437,7 @@ export default async function TallesTodaUnidadPage({
                       <td className="col-grado">{persona.rango.abreviacion}</td>
                       <td className="col-nombre">{buildNombres(persona)}</td>
                       <td className="col-apellido">{buildApellidos(persona)}</td>
-                      <td className="col-extra">{persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
+                      <td className="col-extra">{persona.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
                       {TALLA_KEYS.map((key) => (
                         <td key={`sub-${persona.ci}-${key}`} className="talla-value">
                           {persona.talles[key] !== "-" ? persona.talles[key] : "Sin dato"}

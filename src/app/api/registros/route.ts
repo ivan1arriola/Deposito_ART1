@@ -245,14 +245,14 @@ function buildPersonalAuditDetail(personal: {
   nombre1: string;
   nombre2: string | null;
   rango: { nombreCompleto: string; abreviacion: string };
-  subalterno: { bateria: { nombre: string } | null } | null;
+  bateria: { nombre: string } | null;
 }) {
   return {
     ci: personal.ci,
     nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
-    bateria: personal.subalterno?.bateria?.nombre ?? null,
+    bateria: personal.bateria?.nombre ?? null,
   };
 }
 
@@ -355,15 +355,11 @@ export async function GET(req: Request) {
                   tipo: true,
                 },
               },
-              subalterno: {
-                select: {
-                  bateria: {
-                    select: {
-                      nombre: true,
-                    },
-                  },
-                },
-              },
+              bateria: {
+                                  select: {
+                                    nombre: true,
+                                  },
+                                },
             },
           },
         },
@@ -547,13 +543,9 @@ export async function POST(req: Request) {
             rango: {
               select: { nombreCompleto: true, abreviacion: true, tipo: true },
             },
-            subalterno: {
-              select: {
-                bateria: {
-                  select: { nombre: true },
-                },
-              },
-            },
+            bateria: {
+                              select: { nombre: true },
+                            },
           },
         })
       : Promise.resolve([]),

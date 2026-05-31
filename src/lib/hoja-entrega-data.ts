@@ -49,6 +49,9 @@ const hojaEntregaPersonalSelect = {
   apellido2: true,
   nombre1: true,
   nombre2: true,
+  esReingreso: true,
+  fechaIngreso: true,
+  fechaIngresoOriginal: true,
   rango: {
     select: {
       abreviacion: true,
@@ -56,18 +59,11 @@ const hojaEntregaPersonalSelect = {
       orden: true,
     },
   },
-  subalterno: {
-    select: {
-      esReingreso: true,
-      fechaIngreso: true,
-      fechaIngresoOriginal: true,
-      bateria: {
-        select: {
-          nombre: true,
+  bateria: {
+          select: {
+            nombre: true,
+          },
         },
-      },
-    },
-  },
   tallas: {
     select: {
       tallaValor: true,
@@ -212,12 +208,12 @@ function mapPersonaToHojaEntregaData(
       apellido2: persona.apellido2,
       nombre1: persona.nombre1,
       nombre2: persona.nombre2,
-      esReingreso: persona.subalterno?.esReingreso ?? false,
-      fechaIngreso: formatDateOnlyFromDate(persona.subalterno?.fechaIngreso ?? null),
-      fechaIngresoOriginal: formatDateOnlyFromDate(persona.subalterno?.fechaIngresoOriginal ?? null),
+      esReingreso: persona.esReingreso ?? false,
+      fechaIngreso: formatDateOnlyFromDate(persona.fechaIngreso ?? null),
+      fechaIngresoOriginal: formatDateOnlyFromDate(persona.fechaIngresoOriginal ?? null),
       rango: persona.rango.nombreCompleto,
       rangoAbreviacion: persona.rango.abreviacion,
-      bateria: persona.subalterno?.bateria?.nombre ?? null,
+      bateria: persona.bateria?.nombre ?? null,
       tallas: {
         PARKA: tallas.PARKA ?? "-",
         CAMISACO: tallas.CAMISACO ?? "-",

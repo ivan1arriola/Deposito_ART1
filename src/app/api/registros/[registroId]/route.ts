@@ -268,14 +268,14 @@ function buildPersonalAuditDetail(personal: {
   nombre1: string;
   nombre2: string | null;
   rango: { nombreCompleto: string; abreviacion: string };
-  subalterno: { bateria: { nombre: string } | null } | null;
+  bateria: { nombre: string } | null;
 }) {
   return {
     ci: personal.ci,
     nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
-    bateria: personal.subalterno?.bateria?.nombre ?? null,
+    bateria: personal.bateria?.nombre ?? null,
   };
 }
 
@@ -328,15 +328,11 @@ const registroInclude = {
               tipo: true,
             },
           },
-          subalterno: {
-            select: {
-              bateria: {
-                select: {
-                  nombre: true,
-                },
-              },
-            },
-          },
+          bateria: {
+                          select: {
+                            nombre: true,
+                          },
+                        },
         },
       },
     },
@@ -503,7 +499,7 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
     ci: destinatario.ci,
     perfilCi: destinatario.perfilCi,
     persona: destinatario.etiqueta,
-    bateria: movimiento.destinatarioPersonal?.personal.subalterno?.bateria?.nombre ?? null,
+    bateria: movimiento.destinatarioPersonal?.personal.bateria?.nombre ?? null,
     usuarioEntregaId: movimiento.usuarioEntregaId,
     usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
     items: movimiento.items.map((detail) => ({
@@ -625,7 +621,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
         nombre1: string;
         nombre2: string | null;
         rango: { nombreCompleto: string; abreviacion: string };
-        subalterno: { bateria: { nombre: string } | null } | null;
+        bateria: { nombre: string } | null;
       }
     | null = null;
 
@@ -641,13 +637,9 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
         rango: {
           select: { nombreCompleto: true, abreviacion: true, tipo: true },
         },
-        subalterno: {
-          select: {
-            bateria: {
-              select: { nombre: true },
-            },
-          },
-        },
+        bateria: {
+                      select: { nombre: true },
+                    },
       },
     });
 
@@ -673,7 +665,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
         nombreCompleto: personal.rango.nombreCompleto,
         abreviacion: personal.rango.abreviacion,
       },
-      subalterno: personal.subalterno,
+      bateria: personal.bateria,
     };
   }
 

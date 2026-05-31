@@ -221,13 +221,14 @@ export async function POST(request: Request) {
           nombre2,
           telefonoContacto,
           rangoId,
+          tipo,
         },
       });
 
       if (tipo === TipoPersonal.OFICIAL) {
-        await tx.oficial.create({ data: { ci: personal.ci } });
+        
       } else {
-        await tx.suboficial.create({ data: { ci: personal.ci } });
+        
       }
 
       if (tallasToCreate.length > 0) {

@@ -38,15 +38,11 @@ const PERSONAL_IDENTITY_SELECT = {
       orden: true,
     },
   },
-  subalterno: {
-    select: {
-      bateria: {
-        select: {
-          nombre: true,
+  bateria: {
+          select: {
+            nombre: true,
+          },
         },
-      },
-    },
-  },
 } as const satisfies Prisma.PersonalSelect;
 
 type PersonalIdentityRecord = Prisma.PersonalGetPayload<{
@@ -158,7 +154,7 @@ function toPersonalAuthIdentity(record: PersonalIdentityRecord): PersonalAuthIde
     apellido: joinName(record.apellido1, record.apellido2),
     telefonoContacto: record.telefonoContacto,
     mailReferencia: null,
-    bateriaNombre: record.subalterno?.bateria?.nombre ?? null,
+    bateriaNombre: record.bateria?.nombre ?? null,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };

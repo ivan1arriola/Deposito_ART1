@@ -45,11 +45,7 @@ export default async function TallasUnidadPage({
     },
     include: {
       rango: true,
-      subalterno: {
-        include: {
-          bateria: true,
-        },
-      },
+      bateria: true,
       tallas: {
         include: { tallaTipo: true },
         orderBy: { tallaTipoId: "asc" },
@@ -244,7 +240,7 @@ export default async function TallasUnidadPage({
                     <td className="cell-center cell-strong">{persona.rango.abreviacion}</td>
                     <td>{buildApellidos(persona)}</td>
                     <td>{buildNombres(persona)}</td>
-                    <td>{persona.subalterno?.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
+                    <td>{persona.bateria?.nombre ?? SIN_BATERIA_LABEL}</td>
                     {TALLA_KEYS.map((key) => (
                       <td key={`${persona.ci}-${key}`} className="cell-center">
                         {persona.talles[key] !== "-" ? persona.talles[key] : "Sin dato"}
