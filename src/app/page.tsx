@@ -45,8 +45,12 @@ import { SmallActionButton, ActionMenu, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
 import { useLoginState } from "./hooks/useLoginState";
 import { useStockPrestamoDraftItems } from "./hooks/useStockPrestamoDraftItems";
+import { useHomeNavigation } from "./hooks/home/useHomeNavigation";
+import { getEtiquetadoSection, useEtiquetado } from "./hooks/home/useEtiquetado";
 import { useHomePermissions } from "./hooks/home/useHomePermissions";
 import { usePapelera } from "./hooks/home/usePapelera";
+import { useRecordatorios } from "./hooks/home/useRecordatorios";
+import { useStatusToast } from "./hooks/home/useStatusToast";
 
 // Importar tipos desde archivos de tipos organizados
 import type {
@@ -56,9 +60,6 @@ import type {
   Personal,
   OficialSuboficial,
   PersonalObservacion,
-  RecordatorioConfig,
-  RecordatorioTarea,
-  SoldadoWidgetVariant,
   FirmaConfig,
   UsuarioAdmin,
   Talla,
@@ -84,7 +85,6 @@ import type {
   AuditFilter,
   PrestamoStockEntry,
 } from "@/types/views";
-import type { EtiquetadoDashboardData } from "@/types/etiquetado";
 import { ROLE_OPTIONS } from "@/types/entities";
 import {
   EMPTY_PERSONAL_FORM,
@@ -189,7 +189,6 @@ type DeleteTipoEquipoResult = {
   equiposReasignadosAGeneral?: number;
 };
 
-type EtiquetadoSection = "codigos_sie" | "listado_cajas" | "imprimir_todas";
 type PersonalSelfProfileResponse = Omit<PersonaProfileState, "loading" | "error">;
 type PersonalSelfContactResponse = {
   ci: string;
@@ -225,13 +224,19 @@ const STATUS_VERIFYING_SESSION = "Verificando sesión...";
 const STATUS_STARTING_SESSION = "Iniciando sesión...";
 const STATUS_ENTER_CREDENTIALS = "Ingresa tus credenciales.";
 const STATUS_SESSION_CLOSED = "Sesión cerrada. Ingresa tus credenciales.";
+const IGNORED_HOME_STATUS_TOASTS = [
+  "Datos actualizados.",
+  STATUS_VERIFYING_SESSION,
+  STATUS_STARTING_SESSION,
+  STATUS_ENTER_CREDENTIALS,
+  STATUS_SESSION_CLOSED,
+] as const;
 const AUDIT_USER_FILTER_ALL = "__ALL__";
 const AUDIT_USER_FILTER_SYSTEM = "__SYSTEM__";
 const BULK_DELIVERY_EMAIL_TOAST_ID = "bulk-delivery-email-job";
 const DEFAULT_BULK_DELIVERY_PDF_MS_PER_HOJA_ESTIMATE = 450;
 const MAX_BULK_DELIVERY_PDF_LOG_ENTRIES = 12;
 const DISPLAY_BULK_DELIVERY_PDF_LOG_ENTRIES = 4;
-const SOLDADO_WIDGET_VARIANT_STORAGE_KEY = "soldado-recordatorio-widget-variant";
 
 function isActiveHojasEntregaEmailJob(
   job: HojasEntregaEmailJobSnapshot | null | undefined,
@@ -361,17 +366,13 @@ function isAbortError(error: unknown): boolean {
   );
 }
 
-function isSoldadoWidgetVariant(value: string | null): value is SoldadoWidgetVariant {
-  return value === "CLASICO" || value === "TACTICO";
-}
-
 export default function Home() {
   const { data: session } = useSession();
   const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? "6.1.0";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [status, setStatus] = useState(STATUS_VERIFYING_SESSION);
-  const [activeView, setActiveView] = useState<MainView>("dashboard");
+  const { activeView, setActiveView } = useHomeNavigation();
   const {
     loading,
     initMessage,
@@ -430,6 +431,8 @@ export default function Home() {
     onStatusChange: setStatus,
     onDataChanged: loadData,
   });
+  const recordatorios = useRecordatorios(currentUser);
+  const loadRecordatorios = recordatorios.load;
 
   useEffect(() => {
     if (activeView !== "papelera") return;
@@ -598,22 +601,6 @@ export default function Home() {
   const [personaProfileReturnView, setPersonaProfileReturnView] = useState<PersonaProfileReturnView>("personal");
   const [fichaViewingCi, setFichaViewingCi] = useState<string | null>(null);
   const [showConfigViews, setShowConfigViews] = useState(false);
-  const [etiquetadoData, setEtiquetadoData] = useState<EtiquetadoDashboardData | null>(null);
-  const [etiquetadoLoading, setEtiquetadoLoading] = useState(false);
-  const [etiquetadoError, setEtiquetadoError] = useState<string | null>(null);
-  const [recordatorioTasks, setRecordatorioTasks] = useState<RecordatorioTarea[]>([]);
-  const [recordatorioConfig, setRecordatorioConfig] = useState<RecordatorioConfig>({ mostrarMuneco: true });
-  const [soldadoWidgetVariant, setSoldadoWidgetVariant] = useState<SoldadoWidgetVariant>(() => {
-    if (typeof window === "undefined") return "CLASICO";
-    const stored = window.localStorage.getItem(SOLDADO_WIDGET_VARIANT_STORAGE_KEY);
-    return isSoldadoWidgetVariant(stored) ? stored : "CLASICO";
-  });
-  const [recordatoriosLoading, setRecordatoriosLoading] = useState(false);
-  const [recordatoriosSaving, setRecordatoriosSaving] = useState(false);
-  const [recordatoriosError, setRecordatoriosError] = useState<string | null>(null);
-  const recordatorioToastShownRef = useRef<string | null>(null);
-  const recordatoriosRequestRef = useRef<{ id: number; controller: AbortController | null }>({ id: 0, controller: null });
-  const etiquetadoRequestRef = useRef<{ id: number; controller: AbortController | null }>({ id: 0, controller: null });
   const personaProfileRequestRef = useRef<{ id: number; controller: AbortController | null }>({ id: 0, controller: null });
   const configMenuRef = useRef<HTMLDivElement | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
@@ -637,10 +624,39 @@ export default function Home() {
   const [bulkDeliveryEmailJob, setBulkDeliveryEmailJob] = useState<HojasEntregaEmailJobSnapshot | null>(null);
   const bulkDeliveryEmailPollTimeoutRef = useRef<number | null>(null);
   const bulkDeliveryPdfLastLoggedPhaseRef = useRef<BulkDeliveryPdfPhase | null>(null);
-  const lastToastStatusRef = useRef<string | null>(null);
 
   const permissions = useHomePermissions(currentUser);
   const { isPersonalAccount, isAdmin, canWrite, canManageOwnAccount, canDelete, canDeleteRegistros } = permissions;
+  const {
+    activeSection: activeEtiquetadoSection,
+    data: etiquetadoData,
+    loading: etiquetadoLoading,
+    error: etiquetadoError,
+    reload: reloadEtiquetadoData,
+    clearError: clearEtiquetadoError,
+    reset: resetEtiquetado,
+    createItem: createEtiquetadoItem,
+    createEstanteria: createEtiquetadoEstanteria,
+    deleteEstanteria: deleteEtiquetadoEstanteria,
+    createCodigoSIE: createEtiquetadoCodigoSIE,
+    updateCodigoSIE: updateEtiquetadoCodigoSIE,
+    deleteCodigoSIE: deleteEtiquetadoCodigoSIE,
+    createCaja: createEtiquetadoCaja,
+    deleteCaja: deleteEtiquetadoCaja,
+    printEtiquetaCaja,
+    printListadoCajas,
+    printTodasEtiquetas,
+  } = useEtiquetado({
+    activeView,
+    canWrite,
+    loadData,
+    onStatusChange: setStatus,
+  });
+  useStatusToast({
+    status,
+    enabled: Boolean(currentUser),
+    ignoredStatuses: IGNORED_HOME_STATUS_TOASTS,
+  });
   const sessionReferenceEmail = typeof session?.user?.email === "string" ? session.user.email.trim() : "";
   const currentUserReferenceEmail =
     typeof currentUser?.mailReferencia === "string" && currentUser.mailReferencia.trim() !== ""
@@ -666,11 +682,7 @@ export default function Home() {
     activeView === "tipos_equipo";
   const inReminderConfigView = activeView === "recordatorios";
   const inAdminConfigView = activeView === "firmas" || activeView === "usuarios" || activeView === "auditoria" || activeView === "papelera";
-  const inEtiquetadoView =
-    activeView === "etiquetado_codigos_sie" ||
-    activeView === "etiquetado_registrar_caja" ||
-    activeView === "etiquetado_listado_cajas" ||
-    activeView === "etiquetado_imprimir_todas";
+  const inEtiquetadoView = activeEtiquetadoSection !== null;
   const ciPlaceholder = useMemo(() => generatePlaceholderUruguayanCi(), []);
   const normalizedNewCi = normalizeCi(newPersonal.ci.trim());
   const duplicatePersonal = useMemo(() => {
@@ -1119,45 +1131,7 @@ export default function Home() {
     if (inAdminConfigView && !isAdmin) {
       setActiveView("personal");
     }
-  }, [inAdminConfigView, isAdmin]);
-
-  // Handle back button using History API
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      if (event.state && event.state.view) {
-        setActiveView(event.state.view as MainView);
-      } else {
-        const hash = window.location.hash.replace("#", "");
-        if (hash) {
-          setActiveView(hash as MainView);
-        } else {
-          setActiveView("dashboard");
-        }
-      }
-    };
-    
-    window.addEventListener("popstate", handlePopState);
-    
-    const initialHash = window.location.hash.replace("#", "");
-    if (initialHash && initialHash !== "dashboard") {
-      // Sync state to the URL hash on direct link visit
-      setActiveView(initialHash as MainView);
-      window.history.replaceState({ view: initialHash }, "", `#${initialHash}`);
-    } else {
-      // Replace initial state so the first pop works correctly
-      window.history.replaceState({ view: "dashboard" }, "", `#dashboard`);
-    }
-    
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  // Sync activeView changes to history
-  useEffect(() => {
-    const currentHash = window.location.hash.replace("#", "");
-    if (currentHash !== activeView) {
-      window.history.pushState({ view: activeView }, "", `#${activeView}`);
-    }
-  }, [activeView]);
+  }, [inAdminConfigView, isAdmin, setActiveView]);
 
   useEffect(() => {
     if (!currentUser || currentUser.rol !== "ADMIN") return;
@@ -1165,193 +1139,17 @@ export default function Home() {
     void loadAdminData();
   }, [activeView, currentUser, inAdminConfigView, inReminderConfigView, loadAdminData]);
 
-  const loadRecordatorios = useCallback(async () => {
-    if (!currentUser) {
-      recordatoriosRequestRef.current.controller?.abort();
-      recordatoriosRequestRef.current.controller = null;
-      setRecordatorioTasks([]);
-      setRecordatorioConfig({ mostrarMuneco: true });
-      setRecordatoriosError(null);
-      return;
-    }
-    if (currentUser.accountType !== "SISTEMA") {
-      recordatoriosRequestRef.current.controller?.abort();
-      recordatoriosRequestRef.current.controller = null;
-      setRecordatorioTasks([]);
-      setRecordatorioConfig({ mostrarMuneco: true });
-      setRecordatoriosError(null);
-      return;
-    }
-
-    recordatoriosRequestRef.current.controller?.abort();
-    const controller = new AbortController();
-    const requestId = recordatoriosRequestRef.current.id + 1;
-    recordatoriosRequestRef.current = { id: requestId, controller };
-
-    setRecordatoriosLoading(true);
-    setRecordatoriosError(null);
-    try {
-      const [tasksData, configData] = await Promise.all([
-        api<RecordatorioTarea[]>("/api/tareas", { signal: controller.signal }),
-        api<RecordatorioConfig>("/api/tareas/config", { signal: controller.signal }),
-      ]);
-
-      if (recordatoriosRequestRef.current.id !== requestId) return;
-      setRecordatorioTasks(tasksData);
-      setRecordatorioConfig(configData);
-    } catch (error: unknown) {
-      if (isAbortError(error)) return;
-      if (recordatoriosRequestRef.current.id !== requestId) return;
-      const message = error instanceof Error ? error.message : "No se pudieron cargar los recordatorios.";
-      setRecordatoriosError(message);
-    } finally {
-      if (recordatoriosRequestRef.current.id !== requestId) return;
-      setRecordatoriosLoading(false);
-    }
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(SOLDADO_WIDGET_VARIANT_STORAGE_KEY, soldadoWidgetVariant);
-  }, [soldadoWidgetVariant]);
-
-  const createRecordatorioTask = useCallback(
-    async (input: { titulo: string; nota: string; fechaLimite: string | null; prioridad: "NORMAL" | "URGENTE"; usuarioId?: string }) => {
-      setRecordatoriosSaving(true);
-      setRecordatoriosError(null);
-      try {
-        await api<RecordatorioTarea>("/api/tareas", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        });
-        await loadRecordatorios();
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "No se pudo crear la tarea.";
-        setRecordatoriosError(message);
-        toast.error(message);
-      } finally {
-        setRecordatoriosSaving(false);
-      }
-    },
-    [loadRecordatorios],
-  );
-
-  const updateRecordatorioTask = useCallback(
-    async (
-      tareaId: string,
-      input: Partial<{ titulo: string; nota: string; fechaLimite: string | null; prioridad: "NORMAL" | "URGENTE" }> & { completada?: boolean },
-    ) => {
-      setRecordatoriosSaving(true);
-      setRecordatoriosError(null);
-      try {
-        await api<RecordatorioTarea>(`/api/tareas/${encodeURIComponent(tareaId)}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        });
-        await loadRecordatorios();
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "No se pudo actualizar la tarea.";
-        setRecordatoriosError(message);
-        toast.error(message);
-      } finally {
-        setRecordatoriosSaving(false);
-      }
-    },
-    [loadRecordatorios],
-  );
-
-  const deleteRecordatorioTask = useCallback(
-    async (tareaId: string) => {
-      setRecordatoriosSaving(true);
-      setRecordatoriosError(null);
-      try {
-        await api<{ ok: boolean }>(`/api/tareas/${encodeURIComponent(tareaId)}`, {
-          method: "DELETE",
-        });
-        await loadRecordatorios();
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "No se pudo eliminar la tarea.";
-        setRecordatoriosError(message);
-        toast.error(message);
-      } finally {
-        setRecordatoriosSaving(false);
-      }
-    },
-    [loadRecordatorios],
-  );
-
-  const updateRecordatorioConfig = useCallback(async (mostrarMuneco: boolean) => {
-    setRecordatoriosSaving(true);
-    setRecordatoriosError(null);
-    try {
-      const result = await api<RecordatorioConfig>("/api/tareas/config", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mostrarMuneco }),
-      });
-      setRecordatorioConfig(result);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo actualizar la configuración del recordatorio.";
-      setRecordatoriosError(message);
-      toast.error(message);
-    } finally {
-      setRecordatoriosSaving(false);
-    }
-  }, []);
-
-  const toggleSoldadoWidgetVariant = useCallback(() => {
-    setSoldadoWidgetVariant((current) => (current === "CLASICO" ? "TACTICO" : "CLASICO"));
-  }, []);
-
-  useEffect(() => {
-    if (!currentUser) {
-      setRecordatorioTasks([]);
-      setRecordatorioConfig({ mostrarMuneco: true });
-      setRecordatoriosError(null);
-      recordatorioToastShownRef.current = null;
-      return;
-    }
-    void loadRecordatorios();
-  }, [currentUser, loadRecordatorios]);
-
   useEffect(() => {
     return () => {
-      recordatoriosRequestRef.current.controller?.abort();
-      etiquetadoRequestRef.current.controller?.abort();
       personaProfileRequestRef.current.controller?.abort();
     };
   }, []);
-
-  const pendingRecordatorios = useMemo(
-    () => recordatorioTasks.filter((task) => !task.completada),
-    [recordatorioTasks],
-  );
-  const urgentPendingRecordatorios = useMemo(() => {
-    const now = new Date();
-    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    return pendingRecordatorios.filter((task) => task.prioridad === "URGENTE" || (task.fechaLimite && task.fechaLimite <= todayKey)).length;
-  }, [pendingRecordatorios]);
-
-  useEffect(() => {
-    if (!currentUser || recordatoriosLoading) return;
-    if (recordatorioToastShownRef.current === currentUser.usuarioId) return;
-    recordatorioToastShownRef.current = currentUser.usuarioId;
-
-    if (pendingRecordatorios.length <= 0) return;
-    if (urgentPendingRecordatorios > 0) {
-      toast.error(`Tenes ${urgentPendingRecordatorios} tarea(s) urgente(s) en tu recordatorio.`);
-      return;
-    }
-    toast.info(`Tenes ${pendingRecordatorios.length} tarea(s) pendiente(s) en tu recordatorio.`);
-  }, [currentUser, pendingRecordatorios.length, recordatoriosLoading, urgentPendingRecordatorios]);
 
   useEffect(() => {
     if ((activeView === "personal_nuevo" || activeView === "oficial_nuevo" || activeView === "suboficial_nuevo") && !canWrite) {
       setActiveView("personal");
     }
-  }, [activeView, canWrite]);
+  }, [activeView, canWrite, setActiveView]);
 
   useEffect(() => {
     if (editingOficialSuboficialCi) return;
@@ -1368,31 +1166,31 @@ export default function Home() {
     if (activeView === "equipo_nuevo" && !canWrite) {
       setActiveView("personal");
     }
-  }, [activeView, canWrite]);
+  }, [activeView, canWrite, setActiveView]);
 
   useEffect(() => {
     if ((activeView === "bateria_nueva" || activeView === "grado_nuevo") && !isAdmin) {
       setActiveView("personal");
     }
-  }, [activeView, isAdmin]);
+  }, [activeView, isAdmin, setActiveView]);
 
   useEffect(() => {
     if (activeView === "articulo_nuevo" && !isAdmin) {
       setActiveView("articulos");
     }
-  }, [activeView, isAdmin]);
+  }, [activeView, isAdmin, setActiveView]);
 
   useEffect(() => {
     if (activeView === "articulo_stock_ingreso" && !canWrite) {
       setActiveView("articulos");
     }
-  }, [activeView, canWrite]);
+  }, [activeView, canWrite, setActiveView]);
 
   useEffect(() => {
     if (activeView === "usuario_nuevo" && !isAdmin) {
       setActiveView("personal");
     }
-  }, [activeView, isAdmin]);
+  }, [activeView, isAdmin, setActiveView]);
 
   useEffect(() => {
     if (articulos.length === 0) {
@@ -1443,51 +1241,6 @@ export default function Home() {
     if (auditPage <= auditTotalPages) return;
     setAuditPage(auditTotalPages);
   }, [auditPage, auditTotalPages]);
-
-  useEffect(() => {
-    if (!currentUser) {
-      lastToastStatusRef.current = null;
-      return;
-    }
-
-    if (!status || status === lastToastStatusRef.current) return;
-    lastToastStatusRef.current = status;
-
-    const normalized = status.toLowerCase();
-    const shouldIgnore =
-      status === "Datos actualizados." ||
-      status === STATUS_VERIFYING_SESSION ||
-      status === STATUS_STARTING_SESSION ||
-      status === STATUS_ENTER_CREDENTIALS ||
-      status === STATUS_SESSION_CLOSED ||
-      normalized.startsWith("actualizando ") ||
-      normalized.startsWith("guardando ");
-
-    if (shouldIgnore) return;
-
-    const isError =
-      normalized.includes("no se pudo") ||
-      normalized.includes("error") ||
-      normalized.includes("inval") ||
-      normalized.includes("no tienes permisos") ||
-      normalized.includes("solo el administrador") ||
-      normalized.includes("no autorizado") ||
-      normalized.includes("debes ") ||
-      normalized.includes("repetida") ||
-      normalized.includes("repetido") ||
-      normalized.includes("obligatorio") ||
-      normalized.includes("no existe") ||
-      normalized.includes("falta");
-
-    if (isError) {
-      toast.error(status);
-      return;
-    }
-
-    if (normalized.endsWith("...")) return;
-
-    toast.success(status);
-  }, [currentUser, status]);
 
   useEffect(() => {
     if (!equipoOrderDraftIds) return;
@@ -1560,10 +1313,8 @@ export default function Home() {
     setAuditPage(1);
     setAuditPageSize(25);
     setEquipoOrderDraftIds(null);
-    setEtiquetadoData(null);
-    setEtiquetadoLoading(false);
-    setEtiquetadoError(null);
-  }, [clearLoadedDataState]);
+    resetEtiquetado();
+  }, [clearLoadedDataState, resetEtiquetado]);
   useEffect(() => {
     if (activeView !== "hoja_matrix") return;
     void loadHojaMatrix();
@@ -1633,19 +1384,6 @@ export default function Home() {
     }
   }, [activeView, stockDraft.tipo]);
 
-  const getEtiquetadoSection = useCallback((view: MainView): EtiquetadoSection | null => {
-    if (view === "etiquetado_codigos_sie") return "codigos_sie";
-    if (view === "etiquetado_registrar_caja") return "listado_cajas";
-    if (view === "etiquetado_listado_cajas") return "listado_cajas";
-    if (view === "etiquetado_imprimir_todas") return "imprimir_todas";
-    return null;
-  }, []);
-
-  const activeEtiquetadoSection = useMemo(
-    () => getEtiquetadoSection(activeView),
-    [activeView, getEtiquetadoSection],
-  );
-
   const handleSelectMainView = useCallback(
     (view: MainView) => {
       const currentProfile = getStockLoadProfile(activeView);
@@ -1655,55 +1393,15 @@ export default function Home() {
         setStockError(null);
       }
       if (view !== activeView && nextEtiquetadoSection) {
-        setEtiquetadoError(null);
+        clearEtiquetadoError();
       }
       if ((currentProfile?.key ?? null) !== (nextProfile?.key ?? null)) {
         setStockData(null);
       }
       setActiveView(view);
     },
-    [activeView, getEtiquetadoSection, getStockLoadProfile, setStockData, setStockError],
+    [activeView, clearEtiquetadoError, getStockLoadProfile, setActiveView, setStockData, setStockError],
   );
-
-  const loadEtiquetadoData = useCallback(async () => {
-    etiquetadoRequestRef.current.controller?.abort();
-    const controller = new AbortController();
-    const requestId = etiquetadoRequestRef.current.id + 1;
-    etiquetadoRequestRef.current = { id: requestId, controller };
-
-    setEtiquetadoLoading(true);
-    setEtiquetadoError(null);
-    try {
-      const data = await api<EtiquetadoDashboardData>("/api/etiquetado/dashboard", { signal: controller.signal });
-      if (etiquetadoRequestRef.current.id !== requestId) return;
-      setEtiquetadoData(data);
-    } catch (error: unknown) {
-      if (isAbortError(error)) return;
-      if (etiquetadoRequestRef.current.id !== requestId) return;
-      setEtiquetadoError(error instanceof Error ? error.message : "No se pudo cargar el modulo de etiquetado.");
-    } finally {
-      if (etiquetadoRequestRef.current.id !== requestId) return;
-      setEtiquetadoLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!activeEtiquetadoSection) return;
-    if (etiquetadoLoading) return;
-    if (etiquetadoData) return;
-    if (etiquetadoError) return;
-    void loadEtiquetadoData();
-  }, [activeEtiquetadoSection, etiquetadoData, etiquetadoError, etiquetadoLoading, loadEtiquetadoData]);
-
-  useEffect(() => {
-    if (activeEtiquetadoSection) return;
-    etiquetadoRequestRef.current.controller?.abort();
-    etiquetadoRequestRef.current.controller = null;
-  }, [activeEtiquetadoSection]);
-
-  const reloadEtiquetadoData = useCallback(async () => {
-    await loadEtiquetadoData();
-  }, [loadEtiquetadoData]);
 
   const reloadCurrentViewData = useCallback(
     async (showSpinner = false) => {
@@ -1761,273 +1459,6 @@ export default function Home() {
       reloadEtiquetadoData,
     ],
   );
-
-  const createEtiquetadoItem = useCallback(
-    async (input: { nombre: string }) => {
-      if (!canWrite) {
-        setStatus("No tienes permisos para crear.");
-        return;
-      }
-      try {
-        await createEquipoHandler(input.nombre, GENERAL_TIPO_EQUIPO_CLAVE, false, {
-          onSuccess: async () => {
-            setStatus("Equipo creado oculto de hoja de entrega.");
-            await Promise.all([loadData(), loadEtiquetadoData()]);
-          },
-          onError: (message) => setStatus(message),
-        });
-      } catch {
-        // Error manejado en el handler
-      }
-    },
-    [canWrite, loadData, loadEtiquetadoData],
-  );
-
-  const createEtiquetadoEstanteria = useCallback(
-    async (nombreEstanteria: string, piso: number) => {
-      if (!canWrite) {
-        setStatus("No tienes permisos para crear.");
-        return;
-      }
-
-      setStatus("Registrando estantería...");
-      try {
-        await api("/api/etiquetado/estanterias", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nombreEstanteria, piso }),
-        });
-        setStatus("Estanteria registrada.");
-        await loadEtiquetadoData();
-      } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo registrar la estantería.");
-      }
-    },
-    [canWrite, loadEtiquetadoData],
-  );
-
-  const deleteEtiquetadoEstanteria = useCallback(
-    async (codigo: string, piso: number) => {
-      if (!canWrite) {
-        setStatus("No tienes permisos para eliminar.");
-        return;
-      }
-
-      setStatus("Eliminando estantería...");
-      try {
-        await api(`/api/etiquetado/estanterias/${encodeURIComponent(codigo)}/${encodeURIComponent(String(piso))}`, {
-          method: "DELETE",
-        });
-        setStatus("Estanteria eliminada.");
-        await loadEtiquetadoData();
-      } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo eliminar la estantería.");
-      }
-    },
-    [canWrite, loadEtiquetadoData],
-  );
-
-  const createEtiquetadoCodigoSIE = useCallback(
-    async (input: { codigo: string; talla: string; itemId: string; allowDuplicateCodigo?: boolean }) => {
-      if (!canWrite) {
-        setStatus("No tienes permisos para crear.");
-        return;
-      }
-
-      setStatus("Registrando código SIE...");
-      try {
-        await api("/api/etiquetado/codigos-sie", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        });
-        setStatus("Código SIE registrado.");
-        await loadEtiquetadoData();
-      } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo registrar el código SIE.");
-      }
-    },
-    [canWrite, loadEtiquetadoData],
-  );
-
-  const updateEtiquetadoCodigoSIE = useCallback(
-    async (input: { originalCodigoSIEId: string; originalCodigo: string; codigo: string; talla: string; itemId: string }) => {
-      if (!canWrite) {
-        setStatus("No tienes permisos para editar.");
-        return;
-      }
-
-      setStatus("Actualizando código SIE...");
-      try {
-        await api(
-          `/api/etiquetado/codigos-sie/${encodeURIComponent(input.originalCodigo)}?id=${encodeURIComponent(input.originalCodigoSIEId)}`,
-          {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            codigo: input.codigo,
-            talla: input.talla,
-            itemId: input.itemId,
-          }),
-          },
-        );
-        setStatus("Código SIE actualizado.");
-        await loadEtiquetadoData();
-      } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo actualizar el código SIE.");
-      }
-    },
-    [canWrite, loadEtiquetadoData],
-  );
-
-  const deleteEtiquetadoCodigoSIE = useCallback(
-    async (codigoSIEId: string, codigo: string) => {
-      if (!canWrite) {
-        setStatus("No tienes permisos para eliminar.");
-        return;
-      }
-
-      setStatus("Eliminando código SIE...");
-      try {
-        await api(`/api/etiquetado/codigos-sie/${encodeURIComponent(codigo)}?id=${encodeURIComponent(codigoSIEId)}`, {
-          method: "DELETE",
-        });
-        setStatus("Código SIE eliminado.");
-        await loadEtiquetadoData();
-      } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo eliminar el código SIE.");
-      }
-    },
-    [canWrite, loadEtiquetadoData],
-  );
-
-  const createEtiquetadoCaja = useCallback(
-    async (input: {
-      estanteria: string;
-      piso: number;
-      items: Array<{
-        itemId: string;
-        cantidad: number;
-      }>;
-      codigosSIEIds: string[];
-    }) => {
-      if (!canWrite) {
-        setStatus("No tienes permisos para crear.");
-        return;
-      }
-
-      setStatus("Registrando caja...");
-      try {
-        const response = await api<{ ok: true; codigoDepositoGeneral: number }>("/api/etiquetado/cajas", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        });
-        setStatus(`Caja ${response.codigoDepositoGeneral} registrada.`);
-        await loadEtiquetadoData();
-      } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo registrar la caja.");
-      }
-    },
-    [canWrite, loadEtiquetadoData],
-  );
-
-  const deleteEtiquetadoCaja = useCallback(
-    async (codigoDepositoGeneral: number) => {
-      if (!canWrite) {
-        setStatus("No tienes permisos para eliminar.");
-        return;
-      }
-
-      setStatus("Eliminando caja...");
-      try {
-        await api(`/api/etiquetado/cajas/${encodeURIComponent(String(codigoDepositoGeneral))}`, {
-          method: "DELETE",
-        });
-        setStatus("Caja eliminada.");
-        await loadEtiquetadoData();
-      } catch (error: unknown) {
-        setStatus(error instanceof Error ? error.message : "No se pudo eliminar la caja.");
-      }
-    },
-    [canWrite, loadEtiquetadoData],
-  );
-
-  const openEtiquetasPrint = useCallback(
-    (options: {
-      codigos?: number[];
-      orientacion?: "horizontal" | "vertical";
-    }) => {
-      const params = new URLSearchParams();
-      params.set("autoprint", "1");
-      params.set("orientacion", options.orientacion ?? "horizontal");
-      if (options.codigos && options.codigos.length > 0) {
-        params.set("cajas", options.codigos.join(","));
-      }
-      const popup = window.open(`/etiquetas-cajas?${params.toString()}`, "_blank", "noopener,noreferrer");
-      if (!popup) {
-        setStatus("Permite ventanas emergentes para imprimir las etiquetas.");
-        return false;
-      }
-      return true;
-    },
-    [setStatus],
-  );
-
-  const printEtiquetaCaja = useCallback(
-    (codigoDepositoGeneral: number, orientacion: "horizontal" | "vertical") => {
-      openEtiquetasPrint({ codigos: [codigoDepositoGeneral], orientacion });
-    },
-    [openEtiquetasPrint],
-  );
-
-  const printTodasEtiquetas = useCallback(
-    (cajas: Array<{ codigoDepositoGeneral: number; orientacion: "horizontal" | "vertical" }>) => {
-      const cajasNormalizadas = Array.isArray(cajas)
-        ? cajas.filter(
-            (entry) =>
-              Number.isInteger(entry.codigoDepositoGeneral) &&
-              entry.codigoDepositoGeneral > 0 &&
-              (entry.orientacion === "horizontal" || entry.orientacion === "vertical"),
-          )
-        : [];
-      const codigosHorizontal = cajasNormalizadas
-        .filter((entry) => entry.orientacion === "horizontal")
-        .map((entry) => entry.codigoDepositoGeneral);
-      const codigosVertical = cajasNormalizadas
-        .filter((entry) => entry.orientacion === "vertical")
-        .map((entry) => entry.codigoDepositoGeneral);
-
-      const openedHorizontal =
-        codigosHorizontal.length > 0
-          ? openEtiquetasPrint({ orientacion: "horizontal", codigos: codigosHorizontal })
-          : true;
-      const openedVertical =
-        codigosVertical.length > 0
-          ? openEtiquetasPrint({ orientacion: "vertical", codigos: codigosVertical })
-          : true;
-
-      if (!openedHorizontal || !openedVertical) {
-        return;
-      }
-
-      if (codigosHorizontal.length > 0 && codigosVertical.length > 0) {
-        setStatus(
-          `Se abrieron 2 impresiones: ${codigosHorizontal.length} horizontal(es) y ${codigosVertical.length} vertical(es).`,
-        );
-      }
-    },
-    [openEtiquetasPrint, setStatus],
-  );
-
-  const printListadoCajas = useCallback(() => {
-    const params = new URLSearchParams();
-    params.set("autoprint", "1");
-    const popup = window.open(`/listado-cajas?${params.toString()}`, "_blank", "noopener,noreferrer");
-    if (!popup) {
-      setStatus("Permite ventanas emergentes para imprimir el listado de cajas.");
-    }
-  }, []);
 
   const createRango = useCallback(async () => {
     if (!isAdmin) {
@@ -2217,7 +1648,7 @@ export default function Home() {
     } finally {
       setCreatingArticulo(false);
     }
-  }, [isAdmin, newArticuloNombre, newArticuloTipo, loadData]);
+  }, [isAdmin, newArticuloNombre, newArticuloTipo, loadData, setActiveView]);
 
   const updateArticulo = useCallback(
     async (articuloId: number) => {
@@ -2451,6 +1882,7 @@ export default function Home() {
     articuloEntregaPersonalComentarios,
     articuloEntregaPersonalItems,
     loadData,
+    setActiveView,
   ]);
 
   const createTipoEquipo = useCallback(async () => {
@@ -3252,6 +2684,7 @@ export default function Home() {
       newPersonalPhoneLooksValid,
       newPersonalMovimientos,
       loadData,
+      setActiveView,
     ],
   );
 
@@ -3272,13 +2705,13 @@ export default function Home() {
     setEditingOficialSuboficialCi(null);
     setNewOficialSuboficial({ ...EMPTY_OFICIAL_SUBOFICIAL_FORM, tipo, rangoId: "" });
     setActiveView(tipo === "OFICIAL" ? "oficial_nuevo" : "suboficial_nuevo");
-  }, []);
+  }, [setActiveView]);
 
   const startEditOficialSuboficial = useCallback((registro: OficialSuboficial) => {
     setEditingOficialSuboficialCi(registro.ci);
     setNewOficialSuboficial(toEditableOficialSuboficial(registro));
     setActiveView(registro.tipo === "OFICIAL" ? "oficial_nuevo" : "suboficial_nuevo");
-  }, []);
+  }, [setActiveView]);
 
   const submitOficialSuboficial = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -3352,6 +2785,7 @@ export default function Home() {
       newOficialSuboficialPhoneLooksValid,
       editingOficialSuboficialCi,
       loadData,
+      setActiveView,
     ],
   );
 
@@ -3360,7 +2794,7 @@ export default function Home() {
     setEditingOficialSuboficialCi(null);
     setNewOficialSuboficial({ ...EMPTY_OFICIAL_SUBOFICIAL_FORM, tipo });
     setActiveView(tipo === "OFICIAL" ? "oficiales" : "suboficiales");
-  }, [newOficialSuboficial.tipo]);
+  }, [newOficialSuboficial.tipo, setActiveView]);
 
   const createOficialSuboficial = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -5021,7 +4455,7 @@ export default function Home() {
       setActiveView("personal");
       setStatus(STATUS_SESSION_CLOSED);
     }
-  }, [clearLoadedData, setCurrentUser, setLoginPassword, setShowLoginPassword]);
+  }, [clearLoadedData, setActiveView, setCurrentUser, setLoginPassword, setShowLoginPassword]);
 
   const createUsuario = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -6363,8 +5797,8 @@ export default function Home() {
       equipoResumenLoading ||
       stockLoading ||
       etiquetadoLoading ||
-      recordatoriosLoading ||
-      recordatoriosSaving ||
+      recordatorios.loading ||
+      recordatorios.saving ||
       creatingPersonal ||
       creatingOficialSuboficial ||
       mergeEquipoSaving ||
@@ -6407,8 +5841,8 @@ export default function Home() {
       }
       return "Cargando módulo de etiquetado...";
     }
-    if (recordatoriosLoading) return "Cargando tareas y recordatorios...";
-    if (recordatoriosSaving) return "Guardando cambios de recordatorios...";
+    if (recordatorios.loading) return "Cargando tareas y recordatorios...";
+    if (recordatorios.saving) return "Guardando cambios de recordatorios...";
     if (creatingPersonal) return "Guardando alta de personal y actualizando listados...";
     if (creatingOficialSuboficial) return "Guardando alta de oficiales/suboficiales...";
     if (promotingSubalternoCi !== null) return "Procesando ascenso y actualizando datos del legajo...";
@@ -6450,8 +5884,8 @@ export default function Home() {
     mergeEquipoSaving,
     personalObservacionSaving,
     prestamoSaving,
-    recordatoriosLoading,
-    recordatoriosSaving,
+    recordatorios.loading,
+    recordatorios.saving,
     registroSaving,
     returningPrestamoId,
     stockDraft.tipo,
@@ -6797,21 +6231,21 @@ export default function Home() {
 
           {inReminderConfigView ? (
             <RecordatoriosConfigView
-              tasks={recordatorioTasks}
-              config={recordatorioConfig}
+              tasks={recordatorios.tasks}
+              config={recordatorios.config}
               isAdmin={isAdmin}
               currentUserId={currentUser?.usuarioId ?? null}
               userOptions={usuarios.filter((usuario) => usuario.accountType === "SISTEMA")}
-              loading={recordatoriosLoading}
-              saving={recordatoriosSaving}
-              error={recordatoriosError}
-              onCreateTask={createRecordatorioTask}
-              onUpdateTask={updateRecordatorioTask}
-              onDeleteTask={deleteRecordatorioTask}
-              onToggleWidget={updateRecordatorioConfig}
-              soldadoVariant={soldadoWidgetVariant}
-              onToggleSoldadoVariant={toggleSoldadoWidgetVariant}
-              onReload={loadRecordatorios}
+              loading={recordatorios.loading}
+              saving={recordatorios.saving}
+              error={recordatorios.error}
+              onCreateTask={recordatorios.create}
+              onUpdateTask={recordatorios.update}
+              onDeleteTask={recordatorios.remove}
+              onToggleWidget={recordatorios.updateConfig}
+              soldadoVariant={recordatorios.soldadoWidgetVariant}
+              onToggleSoldadoVariant={recordatorios.toggleSoldadoWidgetVariant}
+              onReload={recordatorios.load}
             />
           ) : null}
 
@@ -7288,14 +6722,14 @@ export default function Home() {
             onPrintMovementsSummary={printMovementsSummaryFromProfile}
             fichaViewingCi={fichaViewingCi}
             setActiveView={setActiveView}
-            recordatorioConfig={recordatorioConfig}
-            recordatorioTasks={recordatorioTasks}
-            recordatoriosLoading={recordatoriosLoading}
-            recordatoriosSaving={recordatoriosSaving}
+            recordatorioConfig={recordatorios.config}
+            recordatorioTasks={recordatorios.tasks}
+            recordatoriosLoading={recordatorios.loading}
+            recordatoriosSaving={recordatorios.saving}
             currentUser={currentUser}
-            soldadoWidgetVariant={soldadoWidgetVariant}
-            createRecordatorioTask={createRecordatorioTask}
-            updateRecordatorioTask={updateRecordatorioTask}
+            soldadoWidgetVariant={recordatorios.soldadoWidgetVariant}
+            createRecordatorioTask={recordatorios.create}
+            updateRecordatorioTask={recordatorios.update}
             isAppGlobalBusy={isAppGlobalBusy}
             appBusyLabel={appBusyLabel}
           />

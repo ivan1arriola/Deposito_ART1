@@ -43,7 +43,7 @@ export type ReceiptHeaderConfig = {
 export type ReceiptAcknowledgementConfig = {
   body: string;
   leftSignatureTitle: string;
-  leftSignatureName: string;
+  leftSignatureName: string | string[];
   rightSignatureTitle: string;
   rightSignatureName: string | string[];
   footerNote: string;
@@ -370,18 +370,29 @@ export function drawAcknowledgementFooter(
   drawHorizontalLine(page, innerX, lineY, signW, 1);
   drawHorizontalLine(page, innerX + signW + signGap, lineY, signW, 1);
   drawCenteredText(page, assets.bold, config.leftSignatureTitle, innerX, signW, lineY + 4, 9);
-  drawCenteredText(page, assets.regular, config.leftSignatureName, innerX, signW, lineY + 16, 8);
   drawCenteredText(page, assets.bold, config.rightSignatureTitle, innerX + signW + signGap, signW, lineY + 4, 9);
-  
+
+  let leftEndY = lineY + 34;
+  if (Array.isArray(config.leftSignatureName)) {
+    config.leftSignatureName.forEach((nameLine, idx) => {
+      drawCenteredText(page, assets.regular, nameLine, innerX, signW, lineY + 16 + idx * 12, 8);
+    });
+    leftEndY = lineY + 34 + (config.leftSignatureName.length - 1) * 12;
+  } else {
+    drawCenteredText(page, assets.regular, config.leftSignatureName, innerX, signW, lineY + 16, 8);
+  }
+
+  let rightEndY = lineY + 34;
   if (Array.isArray(config.rightSignatureName)) {
     config.rightSignatureName.forEach((nameLine, idx) => {
       drawCenteredText(page, assets.regular, nameLine, innerX + signW + signGap, signW, lineY + 16 + (idx * 12), 8);
     });
-    y = lineY + 34 + (config.rightSignatureName.length - 1) * 12;
+    rightEndY = lineY + 34 + (config.rightSignatureName.length - 1) * 12;
   } else {
     drawCenteredText(page, assets.regular, config.rightSignatureName, innerX + signW + signGap, signW, lineY + 16, 8);
-    y = lineY + 34;
   }
+
+  y = Math.max(leftEndY, rightEndY);
 
   if (config.leftStampTitle || config.rightStampTitle) {
     const stampGap = 12;

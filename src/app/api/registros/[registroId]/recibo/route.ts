@@ -4,7 +4,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
-import { buildPersonaExternaEtiqueta, buildPersonalDestinatarioNombre, normalizeRecintoClase } from "@/lib/movimiento-destinatario";
+import { buildPersonaExternaEtiqueta, buildPersonalDestinatarioNombre } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import { prisma } from "@/lib/prisma";
 import {
@@ -70,6 +70,18 @@ function parseRegistroId(raw: string) {
   } catch {
     return null;
   }
+}
+
+function joinNonEmpty(...values: Array<string | null | undefined>) {
+  return values
+    .filter((value) => typeof value === "string" && value.trim() !== "")
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function formatApellidoNombre(apellido: string | null | undefined, nombre: string | null | undefined) {
+  return joinNonEmpty(apellido ? `${apellido},` : "", nombre);
 }
 
 function layoutTableRow(row: TableRow, font: PDFFont): TableRowLayout {
@@ -200,6 +212,10 @@ const registroReciboInclude = {
     select: {
       clase: true,
       nombre: true,
+      responsableGrado: true,
+      responsableNombre: true,
+      responsableApellido: true,
+      responsableCi: true,
     },
   },
   items: {
@@ -256,10 +272,10 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     registro.tipo === MOVIMIENTO_TIPO_ENTREGA ? "Entrega" : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION ? "Devolución" : "Asignación";
   const subtitle = `${tipoLabel} ${isRecinto ? "a recinto" : isExterno ? "a externo" : "a personal"}`;
   const fechaMovimiento = formatDateOnlyFromDate(registro.fecha) ?? "-";
-  const usuarioEntregaLabel =
-    `${registro.usuarioEntrega.rango?.abreviacion ?? ""} ${registro.usuarioEntrega.apellido}, ${registro.usuarioEntrega.nombre}`
-      .replace(/\s+/g, " ")
-      .trim() || registro.usuarioEntrega.username;
+  const usuarioEntregaGrado = registro.usuarioEntrega.rango?.abreviacion?.trim() ?? "";
+  const usuarioEntregaNombreApellidoRaw =
+    formatApellidoNombre(registro.usuarioEntrega.apellido, registro.usuarioEntrega.nombre) || registro.usuarioEntrega.username;
+  const usuarioEntregaNombreApellido = normalizeReceiptValue(usuarioEntregaNombreApellidoRaw);
 
   const isExternalAssignment = isExterno && !registro.destinatarioExterno?.personaExterna?.unidadDestino?.startsWith("Interno");
 
@@ -275,23 +291,31 @@ export async function GET(request: Request, context: { params: Promise<{ registr
           .trim()
       : "Destinatario no definido";
 
-  const recintoClase = registro.destinatarioRecinto ? normalizeRecintoClase(registro.destinatarioRecinto.clase) : null;
-  const destinoDetalle = isRecinto
-    ? recintoClase === "EXTERNO"
-      ? "Fuera de la Unidad"
-      : "Dentro de la Unidad"
+  const destinatarioGradoRaw = isRecinto
+    ? registro.destinatarioRecinto?.responsableGrado ?? ""
     : isExterno
-      ? registro.destinatarioExterno?.personaExterna
-        ? registro.destinatarioExterno.personaExterna.unidadDestino
-        : "-"
-    : registro.destinatarioPersonal?.personal
-      ? registro.destinatarioPersonal.personal.subalterno?.bateria?.nombre
-        ? `Batería ${registro.destinatarioPersonal.personal.subalterno.bateria.nombre}`
-        : "Interno a la Unidad"
-      : "-";
+      ? registro.destinatarioExterno?.personaExterna?.grado ?? ""
+      : registro.destinatarioPersonal?.personal?.rango.abreviacion ?? "";
+  const destinatarioNombreApellidoRaw = isRecinto
+    ? formatApellidoNombre(registro.destinatarioRecinto?.responsableApellido, registro.destinatarioRecinto?.responsableNombre)
+    : isExterno
+      ? formatApellidoNombre(
+          registro.destinatarioExterno?.personaExterna?.apellido,
+          registro.destinatarioExterno?.personaExterna?.nombre,
+        )
+      : registro.destinatarioPersonal?.personal
+        ? buildPersonalDestinatarioNombre(registro.destinatarioPersonal.personal)
+        : "";
+  const destinatarioCi = isRecinto
+    ? registro.destinatarioRecinto?.responsableCi ?? ""
+    : isExterno
+      ? registro.destinatarioExterno?.personaExterna?.ci ?? ""
+      : registro.destinatarioPersonal?.personal?.ci ?? "";
+  const destinatarioGrado = normalizeReceiptValue(destinatarioGradoRaw);
+  const destinatarioNombreApellido = normalizeReceiptValue(destinatarioNombreApellidoRaw);
+  const destinatarioCiDisplay =
+    destinatarioCi && !destinatarioCi.startsWith("SD-") ? formatUruguayanCi(destinatarioCi) : null;
 
-  const isAsignacionExterno = isExterno; // Even if it is INTERNO under the hood, it's saved as externo in the DB for Asignaciones
-  
   let destinoFull = "No definido";
   if (isRecinto) {
     const clase = registro.destinatarioRecinto?.clase === "EXTERNO" ? "Fuera de la Unidad" : "Dentro de la Unidad";
@@ -341,9 +365,19 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     );
 
     let y = header.nextY;
-    drawField(page, assets, header.innerX, y, 150, 30, "Tipo", tipoLabel);
-    drawField(page, assets, header.innerX + 156, y, 120, 30, "Fecha del movimiento", fechaMovimiento);
-    drawField(page, assets, header.innerX + 282, y, header.innerW - 282, 30, "Registrado por", usuarioEntregaLabel);
+    const firstRowGap = 6;
+    const tipoWidth = 100;
+    const fechaWidth = 96;
+    const gradoWidth = 72;
+    const nombreWidth = header.innerW - tipoWidth - fechaWidth - gradoWidth - firstRowGap * 3;
+    const fechaX = header.innerX + tipoWidth + firstRowGap;
+    const gradoX = fechaX + fechaWidth + firstRowGap;
+    const nombreX = gradoX + gradoWidth + firstRowGap;
+
+    drawField(page, assets, header.innerX, y, tipoWidth, 30, "Tipo", tipoLabel);
+    drawField(page, assets, fechaX, y, fechaWidth, 30, "Fecha del movimiento", fechaMovimiento);
+    drawField(page, assets, gradoX, y, gradoWidth, 30, "Grado", normalizeReceiptValue(usuarioEntregaGrado));
+    drawField(page, assets, nombreX, y, nombreWidth, 30, "Nombre y apellido", usuarioEntregaNombreApellido);
     y += 36;
 
     y = drawFieldMultiline(
@@ -356,20 +390,25 @@ export async function GET(request: Request, context: { params: Promise<{ registr
       destinoFull,
     );
 
-    if (isExterno || isPersonal) {
-      const ciValue = isExterno
-        ? registro.destinatarioExterno?.personaExterna?.ci
-        : registro.destinatarioPersonal?.personal?.ci;
+    const responsableGap = 6;
+    const responsableGradoWidth = 110;
+    if (destinatarioCiDisplay) {
+      const responsableCiWidth = 150;
+      const responsableNombreWidth = header.innerW - responsableGradoWidth - responsableCiWidth - responsableGap * 2;
+      const responsableNombreX = header.innerX + responsableGradoWidth + responsableGap;
+      const responsableCiX = responsableNombreX + responsableNombreWidth + responsableGap;
 
-      if (ciValue && !ciValue.startsWith("SD-")) {
-        const ciDisplayValue = formatUruguayanCi(ciValue);
-        drawField(page, assets, header.innerX, y, header.innerW - 156, 30, "Superior responsable", destinatarioLabel);
-        drawField(page, assets, header.innerX + header.innerW - 150, y, 150, 30, "Cédula de identidad", ciDisplayValue);
-      } else {
-        drawField(page, assets, header.innerX, y, header.innerW, 30, "Superior responsable", destinatarioLabel);
-      }
-      y += 36;
+      drawField(page, assets, header.innerX, y, responsableGradoWidth, 30, "Grado", destinatarioGrado);
+      drawField(page, assets, responsableNombreX, y, responsableNombreWidth, 30, "Nombre y apellido", destinatarioNombreApellido);
+      drawField(page, assets, responsableCiX, y, responsableCiWidth, 30, "Cédula de identidad", destinatarioCiDisplay);
+    } else {
+      const responsableNombreWidth = header.innerW - responsableGradoWidth - responsableGap;
+      const responsableNombreX = header.innerX + responsableGradoWidth + responsableGap;
+
+      drawField(page, assets, header.innerX, y, responsableGradoWidth, 30, "Grado", destinatarioGrado);
+      drawField(page, assets, responsableNombreX, y, responsableNombreWidth, 30, "Nombre y apellido", destinatarioNombreApellido);
     }
+    y += 36;
 
     y = drawFieldMultiline(page, assets, header.innerX, y, header.innerW, "Comentarios", registro.observaciones ?? "-");
     y = drawSectionTitle(
@@ -414,17 +453,17 @@ export async function GET(request: Request, context: { params: Promise<{ registr
         : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION
           ? "Recibe devolución"
           : "Registra asignación",
-    leftSignatureName: usuarioEntregaLabel,
+    leftSignatureName: [normalizeReceiptValue(usuarioEntregaGrado), usuarioEntregaNombreApellido],
     rightSignatureTitle: isRecinto ? "Superior responsable" : isExternalAssignment ? "Recibe asignación" : "Recibe",
     rightSignatureName: isExternalAssignment ? [
-      "Grado y Nombre: _______________________________",
-      "Firma: _________________________________________   CI: ________________",
-    ] : isExterno ? [
-      `${registro.destinatarioExterno?.personaExterna?.grado ?? ""} ${registro.destinatarioExterno?.personaExterna?.nombre ?? ""} ${registro.destinatarioExterno?.personaExterna?.apellido ?? ""}`.trim(),
-      registro.destinatarioExterno?.personaExterna?.ci && !registro.destinatarioExterno.personaExterna.ci.startsWith("SD-")
-        ? `CI: ${formatUruguayanCi(registro.destinatarioExterno.personaExterna.ci)}`
-        : ""
-    ].filter(Boolean) : destinatarioLabel,
+      "Grado: _______________________________",
+      "Nombre y apellido: ____________________",
+      "Firma: _____________________   CI: ________________",
+    ] : [
+      destinatarioGrado,
+      destinatarioNombreApellido,
+      destinatarioCiDisplay ? `CI: ${destinatarioCiDisplay}` : "",
+    ].filter(Boolean),
     footerNote: `Generado: ${formatDateUy(now)} ${formatTimeUy(now)}`,
     sectionTitle: "Constancia",
   });
