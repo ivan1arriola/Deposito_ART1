@@ -52,6 +52,15 @@ export const metadata: Metadata = {
     title: "Sistema de Depósito General - Artilleria 1",
     description: "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
   },
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
 };
 
 export const viewport: Viewport = {
