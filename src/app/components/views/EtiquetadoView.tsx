@@ -167,7 +167,7 @@ export function EtiquetadoView({
     () =>
       selectedCajaItems.map((equipo) => ({
         equipoId: equipo.equipoId,
-        itemNombre: equipo.nombre,
+        equipoNombre: equipo.nombre,
         codigos: codigosSIEDisponibles.filter((codigo) => codigo.equipoId === equipo.equipoId),
       })),
     [selectedCajaItems, codigosSIEDisponibles],
@@ -657,7 +657,7 @@ export function EtiquetadoView({
                               ))}
                             </select>
                           ) : (
-                            codigo.itemNombre
+                            codigo.equipoNombre
                           )}
                         </td>
                         <td className="border-b border-stone-100 px-3 py-2 text-right">
@@ -965,7 +965,7 @@ export function EtiquetadoView({
                     <div>
                       <p className="text-sm font-semibold text-stone-900">Caja {caja.codigoDepositoGeneral}</p>
                       <p className="text-xs text-stone-600">
-                        {caja.itemNombres.length > 0 ? caja.itemNombres.join(", ") : "Sin equipos asociados por código SIE"}
+                        {caja.equipoNombres.length > 0 ? caja.equipoNombres.join(", ") : "Sin equipos asociados por código SIE"}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {renderTag(`Cantidad ${caja.cantidad}`, "accent")}
@@ -1009,12 +1009,12 @@ export function EtiquetadoView({
                         : caja.equipos
                             .map((equipo) => {
                               if (equipo.sinCodigo || equipo.codigosSIE.length === 0) {
-                                return `${equipo.itemNombre} x${equipo.cantidad}: S/Codigo`;
+                                return `${equipo.equipoNombre} x${equipo.cantidad}: S/Codigo`;
                               }
                               const codigosEquipo = equipo.codigosSIE
                                 .map((codigo) => `${codigo.codigo}${codigo.talla !== "-" ? ` (${codigo.talla})` : ""}`)
                                 .join(", ");
-                              return `${equipo.itemNombre} x${equipo.cantidad}: ${codigosEquipo}`;
+                              return `${equipo.equipoNombre} x${equipo.cantidad}: ${codigosEquipo}`;
                             })
                             .join(" | ")}
                     </p>

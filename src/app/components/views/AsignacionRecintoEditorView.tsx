@@ -134,7 +134,7 @@ export function AsignacionRecintoEditorView({
     setDraft((prev) => ({ ...prev, equipos: [...prev.equipos, { equipoId: "", cantidad: 1, comentario: "" }] }));
   };
 
-  const onRemoveItem = (index: number) => {
+  const onRemoveEquipo = (index: number) => {
     setDraft((prev) => {
       const next = [...prev.equipos];
       next.splice(index, 1);
@@ -391,7 +391,7 @@ export function AsignacionRecintoEditorView({
                   />
                   <button
                     type="button"
-                    onClick={() => onRemoveItem(index)}
+                    onClick={() => onRemoveEquipo(index)}
                     disabled={saving || draft.equipos.length <= 1}
                     className="w-full sm:w-auto rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-800 hover:bg-rose-200 disabled:opacity-50 transition-colors"
                   >

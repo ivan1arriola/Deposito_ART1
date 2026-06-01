@@ -292,7 +292,7 @@ export async function POST(request: Request) {
   }
 
   const equipoIds = Array.from(dedupedItems.keys()).map((equipoId) => BigInt(equipoId));
-  const [itemsFound, destinatarioPersonal, actorRango, actuanteFound] = await Promise.all([
+  const [equiposFound, destinatarioPersonal, actorRango, actuanteFound] = await Promise.all([
     prisma.equipo.findMany({
       where: { equipoId: { in: equipoIds } },
       select: { equipoId: true, nombre: true },
@@ -339,7 +339,7 @@ export async function POST(request: Request) {
     }),
   ]);
 
-  if (itemsFound.length !== equipoIds.length) {
+  if (equiposFound.length !== equipoIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
 
@@ -386,7 +386,7 @@ export async function POST(request: Request) {
 
   const comentarios = body.comentarios?.trim() || null;
   const fechaEstimadaDevolucionTexto = body.fechaEstimadaDevolucionTexto?.trim() || null;
-  const itemNombrePorId = new Map(itemsFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
+  const itemNombrePorId = new Map(equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
 
   try {
     const created = await prisma.$transaction(async (tx) => {

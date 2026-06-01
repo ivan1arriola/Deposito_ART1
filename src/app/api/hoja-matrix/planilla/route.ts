@@ -127,8 +127,8 @@ export async function GET(request: Request) {
   };
 
   const firstItemCol = 4; // D
-  const itemCount = data.equipos.length;
-  const equipmentColumnCount = Math.max(itemCount, 1);
+  const equipoCount = data.equipos.length;
+  const equipmentColumnCount = Math.max(equipoCount, 1);
   const lastCol = firstItemCol + equipmentColumnCount - 1;
   const topStartRow = 1;
   const topEndRow = 8;
@@ -189,7 +189,7 @@ export async function GET(request: Request) {
     fgColor: { argb: "FFD9D9D9" },
   };
 
-  for (let index = 0; index < itemCount; index += 1) {
+  for (let index = 0; index < equipoCount; index += 1) {
     const col = firstItemCol + index;
     worksheet.mergeCells(topStartRow, col, topEndRow, col);
     const headerCell = worksheet.getCell(topStartRow, col);
@@ -230,7 +230,7 @@ export async function GET(request: Request) {
   nameCell.alignment = { horizontal: "center", vertical: "middle" };
   nameCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } };
 
-  if (itemCount > 0) {
+  if (equipoCount > 0) {
     worksheet.mergeCells(labelRow, firstItemCol, labelRow, lastCol);
   }
   const equipCell = worksheet.getCell(labelRow, firstItemCol);

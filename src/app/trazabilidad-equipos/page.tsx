@@ -281,7 +281,7 @@ export default async function TrazabilidadEquiposPage({
       <main className="sheet">
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <h1 className="title">{`Trazabilidad de ${columnLabel}`}</h1>
-        <p className="subtitle">{traceData.itemNombre}</p>
+        <p className="subtitle">{traceData.equipoNombre}</p>
         <p className="meta">{`Generado: ${generatedAt} | Columna: ${columnLabel}`}</p>
 
         <section className="summary">

@@ -1,11 +1,11 @@
 import type { StockOperacionTipo } from "./StockOperacionTipo";
-import type { StockOperacionDraftItem } from "./StockOperacionDraftItem";
+import type { StockOperacionDraftEquipo } from "./StockOperacionDraftEquipo";
 
 export type StockOperacionDraft = {
   tipo: StockOperacionTipo;
   fecha: string;
   comentarios: string;
-  equipos: StockOperacionDraftItem[];
+  equipos: StockOperacionDraftEquipo[];
 };
 
 export const EMPTY_STOCK_OPERACION_DRAFT: StockOperacionDraft = {

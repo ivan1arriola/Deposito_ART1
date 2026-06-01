@@ -391,23 +391,23 @@ export async function POST(req: Request) {
     });
   }
 
-  const itemNombres = new Map<string, string>();
+  const equipoNombres = new Map<string, string>();
   if (movimientoItemIds.size > 0) {
     const equipoIds = Array.from(movimientoItemIds.values()).map((equipoId) => BigInt(equipoId));
-    const itemsFound = await prisma.equipo.findMany({
+    const equiposFound = await prisma.equipo.findMany({
       where: { equipoId: { in: equipoIds } },
       select: { equipoId: true, nombre: true },
     });
 
-    if (itemsFound.length !== equipoIds.length) {
+    if (equiposFound.length !== equipoIds.length) {
       return NextResponse.json(
         { error: "Uno o mas equipos de los movimientos iniciales no existen." },
         { status: 400 },
       );
     }
 
-    for (const equipo of itemsFound) {
-      itemNombres.set(equipo.equipoId.toString(), equipo.nombre);
+    for (const equipo of equiposFound) {
+      equipoNombres.set(equipo.equipoId.toString(), equipo.nombre);
     }
   }
 
@@ -508,7 +508,7 @@ export async function POST(req: Request) {
       for (const [index, movimiento] of movimientosParsed.entries()) {
         const itemsDetallados = movimiento.equipos.map((equipo) => ({
           equipoId: equipo.equipoId.toString(),
-          nombre: itemNombres.get(equipo.equipoId.toString()) ?? "Equipo sin nombre",
+          nombre: equipoNombres.get(equipo.equipoId.toString()) ?? "Equipo sin nombre",
           cantidad: equipo.cantidad,
         }));
 

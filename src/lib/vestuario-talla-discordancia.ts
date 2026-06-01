@@ -40,7 +40,7 @@ function inferDeclaredTalla(nombreItem: string, key: TallaKey): string | null {
 }
 
 export type VestuarioTallaDiscordancia = {
-  itemNombre: string;
+  equipoNombre: string;
   tallaKey: TallaKey;
   talleVestuario: string;
   tallePersonal: string | null;
@@ -63,7 +63,7 @@ export function findVestuarioTallaDiscordancias(
     if (tallePersonal === talleVestuario) continue;
 
     discordancias.push({
-      itemNombre: equipo.nombre,
+      equipoNombre: equipo.nombre,
       tallaKey,
       talleVestuario,
       tallePersonal,
@@ -77,5 +77,5 @@ export function buildVestuarioTallaDiscordanciaMessage(
   movimientoIndex: number,
   discordancia: VestuarioTallaDiscordancia,
 ) {
-  return `Movimiento #${movimientoIndex + 1}: discordancia de talle en "${discordancia.itemNombre}" (${TALLA_LABELS[discordancia.tallaKey]}). Vestuario: ${discordancia.talleVestuario}. Personal: ${discordancia.tallePersonal ?? "Sin dato"}.`;
+  return `Movimiento #${movimientoIndex + 1}: discordancia de talle en "${discordancia.equipoNombre}" (${TALLA_LABELS[discordancia.tallaKey]}). Vestuario: ${discordancia.talleVestuario}. Personal: ${discordancia.tallePersonal ?? "Sin dato"}.`;
 }

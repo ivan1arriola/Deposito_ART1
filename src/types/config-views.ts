@@ -18,7 +18,6 @@ export type { EquipoConfigCallbacks } from "./config-views/EquipoConfigCallbacks
 export type { EquipoConfigState } from "./config-views/EquipoConfigState";
 export type { FirmaConfigCallbacks } from "./config-views/FirmaConfigCallbacks";
 export type { FirmaConfigState } from "./config-views/FirmaConfigState";
-export type { ItemConfig } from "./config-views/ItemConfig";
 export type { RangoConfig } from "./config-views/RangoConfig";
 export type { RangoConfigCallbacks } from "./config-views/RangoConfigCallbacks";
 export type { RangoConfigState } from "./config-views/RangoConfigState";

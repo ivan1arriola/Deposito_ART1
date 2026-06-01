@@ -1,6 +1,6 @@
 export type StockEquipoTraceData = {
   equipoId: string;
-  itemNombre: string;
+  equipoNombre: string;
   totals: {
     subalternos: number;
     prestamo: number;

@@ -38,9 +38,9 @@ type PersonalCreateViewProps = {
   onEditMovimiento: (index: number) => void;
   onRemoveMovimiento: (index: number) => void;
   onMovimientoDraftChange: (field: keyof Omit<PersonalAltaMovimientoForm, "equipos">, value: string) => void;
-  onMovimientoDraftItemChange: (itemIndex: number, field: "equipoId" | "cantidad", value: string) => void;
+  onMovimientoDraftItemChange: (equipoIndex: number, field: "equipoId" | "cantidad", value: string) => void;
   onAddMovimientoDraftItem: () => void;
-  onRemoveMovimientoDraftItem: (itemIndex: number) => void;
+  onRemoveMovimientoDraftItem: (equipoIndex: number) => void;
 };
 
 export function PersonalCreateView({
@@ -359,10 +359,10 @@ export function PersonalCreateView({
                         </div>
 
                         <ul className="mt-2 space-y-1 text-xs text-stone-700">
-                          {movimiento.equipos.map((equipoMovimiento, itemIndex) => {
+                          {movimiento.equipos.map((equipoMovimiento, equipoIndex) => {
                             const equipoSeleccionado = equiposActivos.find((candidate) => candidate.equipoId === equipoMovimiento.equipoId);
                             return (
-                              <li key={`movimiento-${movimientoIndex}-resumen-equipo-${itemIndex}`}>
+                              <li key={`movimiento-${movimientoIndex}-resumen-equipo-${equipoIndex}`}>
                                 {`${equipoSeleccionado?.nombre ?? "Equipo sin definir"} x ${equipoMovimiento.cantidad}`}
                               </li>
                             );
@@ -478,11 +478,11 @@ export function PersonalCreateView({
 
             <section className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-stone-600">Equipos</p>
-              {movimientoDraft.equipos.map((equipo, itemIndex) => (
-                <div key={`nuevo-personal-movimiento-equipo-${itemIndex}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
+              {movimientoDraft.equipos.map((equipo, equipoIndex) => (
+                <div key={`nuevo-personal-movimiento-equipo-${equipoIndex}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
                   <select
                     value={equipo.equipoId}
-                    onChange={(event) => onMovimientoDraftItemChange(itemIndex, "equipoId", event.target.value)}
+                    onChange={(event) => onMovimientoDraftItemChange(equipoIndex, "equipoId", event.target.value)}
                     className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
                   >
                     <option value="">Seleccionar equipo</option>
@@ -490,7 +490,7 @@ export function PersonalCreateView({
                       .filter((equipoOption) => {
                         if (equipoOption.equipoId === equipo.equipoId) return true;
                         return !movimientoDraft.equipos.some(
-                          (selectedItem, selectedIndex) => selectedIndex !== itemIndex && selectedItem.equipoId === equipoOption.equipoId,
+                          (selectedItem, selectedIndex) => selectedIndex !== equipoIndex && selectedItem.equipoId === equipoOption.equipoId,
                         );
                       })
                       .map((equipoOption) => (
@@ -504,13 +504,13 @@ export function PersonalCreateView({
                     type="number"
                     min={1}
                     value={equipo.cantidad}
-                    onChange={(event) => onMovimientoDraftItemChange(itemIndex, "cantidad", event.target.value)}
+                    onChange={(event) => onMovimientoDraftItemChange(equipoIndex, "cantidad", event.target.value)}
                     className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
                   />
 
                   <button
                     type="button"
-                    onClick={() => onRemoveMovimientoDraftItem(itemIndex)}
+                    onClick={() => onRemoveMovimientoDraftItem(equipoIndex)}
                     disabled={movimientoDraft.equipos.length <= 1}
                     className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >

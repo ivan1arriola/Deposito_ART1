@@ -1,5 +1,5 @@
 import type { Equipo, OficialSuboficial, Personal } from "@/types/entities";
-import type { PrestamoDraft, PrestamoDraftItem, PrestamoEstadoEquipo } from "@/types/forms";
+import type { PrestamoDraft, PrestamoDraftEquipo, PrestamoEstadoEquipo } from "@/types/forms";
 import type { StockDashboardData } from "@/types/views";
 
 export type PrestamosTab = "registrar" | "vigentes" | "historial";
@@ -61,7 +61,7 @@ export type FormulariosPrestamosViewProps = {
       | "comentarios",
     value: string,
   ) => void;
-  onPrestamoItemChange: (index: number, field: keyof PrestamoDraftItem, value: string) => void;
+  onPrestamoItemChange: (index: number, field: keyof PrestamoDraftEquipo, value: string) => void;
   onAddPrestamoItem: () => void;
   onRemovePrestamoItem: (index: number) => void;
   onSubmitPrestamo: () => void;

@@ -25,7 +25,6 @@ type EquipoExistenciaSiePayload = {
 
 type EquipoMergePayload = {
   targetEquipoId?: string | number;
-  targetItemId?: string | number;
 };
 
 type TipoEquipoLookupClient = Pick<Prisma.TransactionClient, "tipoEquipoCatalogo">;
@@ -440,7 +439,7 @@ export async function POST(request: Request, context: { params: Promise<{ equipo
   }
 
   const body = (await request.json()) as EquipoMergePayload;
-  const targetEquipoIdRaw = body?.targetEquipoId ?? body?.targetItemId;
+  const targetEquipoIdRaw = body?.targetEquipoId ?? body?.targetEquipoId;
   if (typeof targetEquipoIdRaw !== "string" && typeof targetEquipoIdRaw !== "number") {
     return NextResponse.json({ error: "Payload invalido. targetEquipoId es obligatorio." }, { status: 400 });
   }
@@ -962,11 +961,11 @@ export async function DELETE(request: Request, context: { params: Promise<{ equi
         where: { equipoId },
       });
 
-      const itemCodigosSIE = await tx.equipoCodigoSIE.findMany({
+      const equipoCodigosSIE = await tx.equipoCodigoSIE.findMany({
         where: { equipoId },
       });
 
-      const equipoCodigoSIEIds = itemCodigosSIE.map((codigo) => codigo.equipoCodigoSIEId);
+      const equipoCodigoSIEIds = equipoCodigosSIE.map((codigo) => codigo.equipoCodigoSIEId);
       const cajaItemCodigosSIE =
         equipoCodigoSIEIds.length > 0
           ? await tx.cajaEquipoCodigoSIE.findMany({
@@ -1061,7 +1060,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ equi
           {
             equipo: existing,
             cajaEquipos,
-            itemCodigosSIE,
+            equipoCodigosSIE,
             cajaItemCodigosSIE,
             movimientoEquipos,
             stockOperacionEquipos,

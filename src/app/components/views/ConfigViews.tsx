@@ -44,7 +44,7 @@ type TrashDetails = {
   equipo?: { activo?: boolean | null } | null;
   articulo?: { tipo?: string | null } | null;
   cajaEquipos?: unknown[];
-  itemCodigosSIE?: unknown[];
+  equipoCodigosSIE?: unknown[];
   cajaItemCodigosSIE?: unknown[];
   movimientoEquipos?: unknown[];
   deletedMovimientos?: unknown[];
@@ -2113,13 +2113,13 @@ export function ConfigViews(props: ConfigViewsProps) {
                         </div>
                       )}
 
-                      {(trashDetails.itemCodigosSIE?.length ?? 0) > 0 && (
+                      {(trashDetails.equipoCodigosSIE?.length ?? 0) > 0 && (
                         <div className="flex equipos-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex equipos-center gap-1.5">
                             <SearchOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Códigos de Barra de Inventario (SIE):
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.itemCodigosSIE?.length ?? 0} códigos</span>
+                          <span className="font-bold text-stone-900">{trashDetails.equipoCodigosSIE?.length ?? 0} códigos</span>
                         </div>
                       )}
 

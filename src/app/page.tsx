@@ -42,7 +42,7 @@ import { EquiposUnificarView } from "./components/views/EquiposUnificarView";
 import { ActionMenu, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
 import { useLoginState } from "./hooks/useLoginState";
-import { useStockPrestamoDraftItems } from "./hooks/useStockPrestamoDraftItems";
+import { useStockPrestamoDraftEquipos } from "./hooks/useStockPrestamoDraftEquipos";
 import { useHomeNavigation } from "./hooks/home/useHomeNavigation";
 import { getEtiquetadoSection, useEtiquetado } from "./hooks/home/useEtiquetado";
 import { useHomePermissions } from "./hooks/home/useHomePermissions";
@@ -583,7 +583,7 @@ export default function Home() {
     updatePrestamoDraftItem,
     addPrestamoDraftItem,
     removePrestamoDraftItem,
-  } = useStockPrestamoDraftItems({
+  } = useStockPrestamoDraftEquipos({
     setStockDraft,
     setPrestamoDraft,
     onStatusChange: setStatus,
@@ -2474,20 +2474,20 @@ export default function Home() {
     [],
   );
 
-  const updateNewPersonalMovimientoDraftItem = useCallback((itemIndex: number, field: "equipoId" | "cantidad", value: string) => {
+  const updateNewPersonalMovimientoDraftItem = useCallback((equipoIndex: number, field: "equipoId" | "cantidad", value: string) => {
     setNewPersonalMovimientoDraft((prev) => {
       if (!prev) return prev;
       if (
         field === "equipoId" &&
         value !== "" &&
-        prev.equipos.some((equipo, currentItemIndex) => currentItemIndex !== itemIndex && equipo.equipoId === value)
+        prev.equipos.some((equipo, currentItemIndex) => currentItemIndex !== equipoIndex && equipo.equipoId === value)
       ) {
         setStatus("Ese equipo ya fue seleccionado en este movimiento.");
         return prev;
       }
       return {
         ...prev,
-        equipos: prev.equipos.map((equipo, currentItemIndex) => (currentItemIndex === itemIndex ? { ...equipo, [field]: value } : equipo)),
+        equipos: prev.equipos.map((equipo, currentItemIndex) => (currentItemIndex === equipoIndex ? { ...equipo, [field]: value } : equipo)),
       };
     });
   }, []);
@@ -2503,13 +2503,13 @@ export default function Home() {
     );
   }, []);
 
-  const removeNewPersonalMovimientoDraftItem = useCallback((itemIndex: number) => {
+  const removeNewPersonalMovimientoDraftItem = useCallback((equipoIndex: number) => {
     setNewPersonalMovimientoDraft((prev) => {
       if (!prev) return prev;
       if (prev.equipos.length <= 1) return prev;
       return {
         ...prev,
-        equipos: prev.equipos.filter((_, currentItemIndex) => currentItemIndex !== itemIndex),
+        equipos: prev.equipos.filter((_, currentItemIndex) => currentItemIndex !== equipoIndex),
       };
     });
   }, []);
@@ -3648,11 +3648,11 @@ export default function Home() {
   function updateRegistroItem(index: number, field: keyof RegistroDraftEquipo, value: string) {
     setRegistroDraft((prev) => {
       if (!prev) return prev;
-      if (field === "equipoId" && value !== "" && prev.equipos.some((equipo, itemIndex) => itemIndex !== index && equipo.equipoId === value)) {
+      if (field === "equipoId" && value !== "" && prev.equipos.some((equipo, equipoIndex) => equipoIndex !== index && equipo.equipoId === value)) {
         setStatus("Ese equipo ya fue seleccionado en este movimiento.");
         return prev;
       }
-      const equipos = prev.equipos.map((equipo, itemIndex) => (itemIndex === index ? { ...equipo, [field]: value } : equipo));
+      const equipos = prev.equipos.map((equipo, equipoIndex) => (equipoIndex === index ? { ...equipo, [field]: value } : equipo));
       return { ...prev, equipos };
     });
   }
@@ -3668,7 +3668,7 @@ export default function Home() {
     setRegistroDraft((prev) => {
       if (!prev) return prev;
       if (prev.equipos.length <= 1) return prev;
-      return { ...prev, equipos: prev.equipos.filter((_, itemIndex) => itemIndex !== index) };
+      return { ...prev, equipos: prev.equipos.filter((_, equipoIndex) => equipoIndex !== index) };
     });
   }
 

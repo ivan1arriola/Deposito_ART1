@@ -137,7 +137,7 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           onDraftChange={(field, value) => setStockDraft((prev: StockOperacionDraft) => ({ ...prev, [field]: value }))}
           onDraftItemChange={updateStockDraftItem}
           onAddItem={addStockDraftItem}
-          onRemoveItem={removeStockDraftItem}
+          onRemoveEquipo={removeStockDraftItem}
           onSubmit={() => void saveStockOperation()}
           personal={personal}
           oficialesSuboficiales={oficialesSuboficiales}

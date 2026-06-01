@@ -10,7 +10,6 @@ export type { ConfigViewsProps } from "./ConfigViewsProps";
 export type { EquipoConfig } from "./EquipoConfig";
 export type { EquipoConfigCallbacks } from "./EquipoConfigCallbacks";
 export type { EquipoConfigState } from "./EquipoConfigState";
-export type { ItemConfig } from "./ItemConfig";
 export type { RangoConfig } from "./RangoConfig";
 export type { RangoConfigCallbacks } from "./RangoConfigCallbacks";
 export type { RangoConfigState } from "./RangoConfigState";

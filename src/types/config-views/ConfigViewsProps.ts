@@ -21,7 +21,7 @@ export interface ConfigViewsProps {
   bateria: BateriaConfigState;
   bateriaCallbacks: BateriaConfigCallbacks;
   equipos: EquipoConfigState;
-  itemCallbacks: EquipoConfigCallbacks;
+  equipoCallbacks: EquipoConfigCallbacks;
   usuario: UsuarioConfigState;
   usuarioCallbacks: UsuarioConfigCallbacks;
   firmaConfig: FirmaConfigState;

@@ -124,7 +124,7 @@ export async function GET(request: Request) {
       codigo: codigoSIE.codigo,
       talla: normalizeTalla(codigoSIE.talla),
       equipoId: codigoSIE.equipoId.toString(),
-      itemNombre: codigoSIE.equipo.nombre,
+      equipoNombre: codigoSIE.equipo.nombre,
     })),
     cajas: cajas.map((caja) => {
       const codigosConEquipo = caja.codigosSIE
@@ -133,7 +133,7 @@ export async function GET(request: Request) {
           codigo: codigo.equipoCodigoSIE.codigo,
           talla: normalizeTalla(codigo.equipoCodigoSIE.talla),
           equipoId: codigo.equipoCodigoSIE.equipo.equipoId.toString(),
-          itemNombre: codigo.equipoCodigoSIE.equipo.nombre,
+          equipoNombre: codigo.equipoCodigoSIE.equipo.nombre,
         }))
         .sort((a, b) => {
           const byCodigo = a.codigo.localeCompare(b.codigo, "es", { sensitivity: "base" });
@@ -162,22 +162,22 @@ export async function GET(request: Request) {
           ? caja.equipos
               .map((entry) => ({
                 equipoId: entry.equipo.equipoId.toString(),
-                itemNombre: entry.equipo.nombre,
+                equipoNombre: entry.equipo.nombre,
                 cantidad: entry.cantidad,
               }))
-              .sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }))
+              .sort((a, b) => a.equipoNombre.localeCompare(b.equipoNombre, "es", { sensitivity: "base" }))
           : Array.from(
               new Map(
                 codigosConEquipo.map((codigo) => [
                   codigo.equipoId,
                   {
                     equipoId: codigo.equipoId,
-                    itemNombre: codigo.itemNombre,
+                    equipoNombre: codigo.equipoNombre,
                     cantidad: codigosConEquipo.filter((entry) => entry.equipoId === codigo.equipoId).length || 1,
                   },
                 ]),
               ).values(),
-            ).sort((a, b) => a.itemNombre.localeCompare(b.itemNombre, "es", { sensitivity: "base" }));
+            ).sort((a, b) => a.equipoNombre.localeCompare(b.equipoNombre, "es", { sensitivity: "base" }));
 
       const equipos = equiposBase.map((equipo) => {
         const codigosSIEEquipo = codigosConEquipo
@@ -190,14 +190,14 @@ export async function GET(request: Request) {
 
         return {
           equipoId: equipo.equipoId,
-          itemNombre: equipo.itemNombre,
+          equipoNombre: equipo.equipoNombre,
           cantidad: equipo.cantidad,
           codigosSIE: codigosSIEEquipo,
           sinCodigo: codigosSIEEquipo.length === 0,
         };
       });
 
-      const itemNombres = equipos.map((equipo) => equipo.itemNombre);
+      const equipoNombres = equipos.map((equipo) => equipo.equipoNombre);
       const cantidadTotal = equipos.reduce((sum, equipo) => sum + equipo.cantidad, 0);
 
       return {
@@ -206,7 +206,7 @@ export async function GET(request: Request) {
         piso: caja.piso,
         cantidad: cantidadTotal > 0 ? cantidadTotal : codigosConEquipo.length,
         equipos,
-        itemNombres,
+        equipoNombres,
         codigosSIE: codigos,
         tallas,
       };

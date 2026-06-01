@@ -40,7 +40,7 @@ export function StockView({
   onDraftChange,
   onDraftItemChange,
   onAddItem,
-  onRemoveItem,
+  onRemoveEquipo,
   onSubmit,
   personal,
   oficialesSuboficiales,
@@ -81,13 +81,13 @@ export function StockView({
     prestamo: StockDashboardData["prestamos"][number];
     fechaDevolucion: string;
   } | null>(null);
-  const [equipoTraceDialog, setItemTraceDialog] = useState<{
+  const [equipoTraceDialog, setEquipoTraceDialog] = useState<{
     equipo: StockDashboardData["resumen"][number];
     column: "SUBALTERNOS" | "PRESTAMO" | "RECINTO";
   } | null>(null);
   const [equipoTraceData, setEquipoTraceData] = useState<StockEquipoTraceData | null>(null);
-  const [equipoTraceLoading, setItemTraceLoading] = useState(false);
-  const [equipoTraceError, setItemTraceError] = useState<string | null>(null);
+  const [equipoTraceLoading, setEquipoTraceLoading] = useState(false);
+  const [equipoTraceError, setEquipoTraceError] = useState<string | null>(null);
   const equipoTraceRequestIdRef = useRef(0);
   const normalizedPrestamoIdFilter = prestamoIdFilter.trim();
   const prestamosFiltrados =
@@ -109,29 +109,29 @@ export function StockView({
 
   function closeItemTraceDialog() {
     equipoTraceRequestIdRef.current += 1;
-    setItemTraceDialog(null);
+    setEquipoTraceDialog(null);
     setEquipoTraceData(null);
-    setItemTraceLoading(false);
-    setItemTraceError(null);
+    setEquipoTraceLoading(false);
+    setEquipoTraceError(null);
   }
 
   async function openItemTraceDialog(equipo: StockDashboardData["resumen"][number], column: "SUBALTERNOS" | "PRESTAMO" | "RECINTO") {
     const requestId = equipoTraceRequestIdRef.current + 1;
     equipoTraceRequestIdRef.current = requestId;
-    setItemTraceDialog({ equipo, column });
+    setEquipoTraceDialog({ equipo, column });
     setEquipoTraceData(null);
-    setItemTraceError(null);
-    setItemTraceLoading(true);
+    setEquipoTraceError(null);
+    setEquipoTraceLoading(true);
     try {
       const trace = await api<StockEquipoTraceData>(`/api/stock/equipo-trace?equipoId=${encodeURIComponent(equipo.equipoId)}`);
       if (equipoTraceRequestIdRef.current !== requestId) return;
       setEquipoTraceData(trace);
     } catch (traceError: unknown) {
       if (equipoTraceRequestIdRef.current !== requestId) return;
-      setItemTraceError(traceError instanceof Error ? traceError.message : "No se pudo cargar el detalle del equipo.");
+      setEquipoTraceError(traceError instanceof Error ? traceError.message : "No se pudo cargar el detalle del equipo.");
     } finally {
       if (equipoTraceRequestIdRef.current !== requestId) return;
-      setItemTraceLoading(false);
+      setEquipoTraceLoading(false);
     }
   }
 
@@ -435,7 +435,7 @@ export function StockView({
                 />
                 <button
                   type="button"
-                  onClick={() => onRemoveItem(index)}
+                  onClick={() => onRemoveEquipo(index)}
                   disabled={saving || draft.equipos.length <= 1}
                   className="rounded bg-rose-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                 >

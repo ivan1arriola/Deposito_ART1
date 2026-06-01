@@ -147,10 +147,10 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
         codigoDespues: updated.codigo,
         tallaAntes: existing.talla,
         tallaDespues: updated.talla,
-        itemIdAntes: existing.equipo.equipoId.toString(),
-        itemIdDespues: updated.equipo.equipoId.toString(),
-        itemNombreAntes: existing.equipo.nombre,
-        itemNombreDespues: updated.equipo.nombre,
+        equipoIdAntes: existing.equipo.equipoId.toString(),
+        equipoIdDespues: updated.equipo.equipoId.toString(),
+        equipoNombreAntes: existing.equipo.nombre,
+        equipoNombreDespues: updated.equipo.nombre,
         cajasVinculadas,
       },
     });
@@ -160,7 +160,7 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
       codigo: updated.codigo,
       talla: updated.talla,
       equipoId: updated.equipo.equipoId.toString(),
-      itemNombre: updated.equipo.nombre,
+      equipoNombre: updated.equipo.nombre,
     });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
@@ -232,7 +232,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
         codigo: existing.codigo,
         talla: existing.talla,
         equipoId: existing.equipo.equipoId.toString(),
-        itemNombre: existing.equipo.nombre,
+        equipoNombre: existing.equipo.nombre,
         cajasVinculadasEliminadas: cajasVinculadas,
       },
     });

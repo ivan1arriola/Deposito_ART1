@@ -1,4 +1,4 @@
-export type StockOperacionDraftItem = {
+export type StockOperacionDraftEquipo = {
   equipoId: string;
   cantidad: string;
 };

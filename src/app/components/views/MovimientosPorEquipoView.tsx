@@ -81,7 +81,7 @@ type MovimientosPorEquipoViewProps = {
 export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: MovimientosPorEquipoViewProps = {}) {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [equipos, setItems] = useState<EquipoMovimientoCatalogEquipo[]>([]);
+  const [equipos, setEquipos] = useState<EquipoMovimientoCatalogEquipo[]>([]);
   const [selectedItemId, setSelectedItemId] = useState("");
   const [catalogSearch, setCatalogSearch] = useState("");
   const [catalogHojaFilter, setCatalogHojaFilter] = useState<CatalogHojaFilter>("TODOS");
@@ -113,7 +113,7 @@ export function MovimientosPorEquipoView({ onOpenPersonaProfileByCi }: Movimient
       }
 
       const data = payload as MovimientosEquipoResponse;
-      setItems(data.equipos);
+      setEquipos(data.equipos);
     } catch (nextError: unknown) {
       setCatalogError(nextError instanceof Error ? nextError.message : "No se pudo cargar el menú de equipos.");
     } finally {

@@ -266,7 +266,7 @@ export function HomeDialogsLayer({
         onClearDestinatarios={onClearRegistroDestinatarios}
         onItemChange={onRegistroItemChange}
         onAddItem={onAddRegistroItem}
-        onRemoveItem={onRemoveRegistroItem}
+        onRemoveEquipo={onRemoveRegistroItem}
         onSubmit={onSubmitRegistro}
         onSubmitAndPrint={onSubmitRegistroAndPrint}
       />

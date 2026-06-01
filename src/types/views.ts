@@ -11,7 +11,6 @@ export type { EquipoResumenEquipo } from "./views/EquipoResumenEquipo";
 export type { EquipoResumenRow } from "./views/EquipoResumenRow";
 export type { HojaMatrixData } from "./views/HojaMatrixData";
 export type { HojaMatrixEquipo } from "./views/HojaMatrixEquipo";
-export type { HojaMatrixItem } from "./views/HojaMatrixItem";
 export type { HojaMatrixRow } from "./views/HojaMatrixRow";
 export type { MainView } from "./views/MainView";
 export type { MovimientoFueraHojaViewRow } from "./views/MovimientoFueraHojaViewRow";

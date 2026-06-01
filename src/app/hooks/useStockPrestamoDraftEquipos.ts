@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { PrestamoDraft, PrestamoDraftItem, StockOperacionDraft, StockOperacionDraftItem } from "@/types/forms";
+import type { PrestamoDraft, PrestamoDraftEquipo, StockOperacionDraft, StockOperacionDraftEquipo } from "@/types/forms";
 
 type UseStockPrestamoDraftItemsParams = {
   setStockDraft: Dispatch<SetStateAction<StockOperacionDraft>>;
@@ -10,21 +10,21 @@ type UseStockPrestamoDraftItemsParams = {
   onStatusChange: (status: string) => void;
 };
 
-export function useStockPrestamoDraftItems({
+export function useStockPrestamoDraftEquipos({
   setStockDraft,
   setPrestamoDraft,
   onStatusChange,
 }: UseStockPrestamoDraftItemsParams) {
   const updateStockDraftItem = useCallback(
-    (index: number, field: keyof StockOperacionDraftItem, value: string) => {
+    (index: number, field: keyof StockOperacionDraftEquipo, value: string) => {
       setStockDraft((prev) => {
-        if (field === "equipoId" && value !== "" && prev.equipos.some((equipo, itemIndex) => itemIndex !== index && equipo.equipoId === value)) {
+        if (field === "equipoId" && value !== "" && prev.equipos.some((equipo, equipoIndex) => equipoIndex !== index && equipo.equipoId === value)) {
           onStatusChange("Ese equipo ya fue seleccionado en este movimiento de stock.");
           return prev;
         }
         return {
           ...prev,
-          equipos: prev.equipos.map((equipo, itemIndex) => (itemIndex === index ? { ...equipo, [field]: value } : equipo)),
+          equipos: prev.equipos.map((equipo, equipoIndex) => (equipoIndex === index ? { ...equipo, [field]: value } : equipo)),
         };
       });
     },
@@ -39,22 +39,22 @@ export function useStockPrestamoDraftItems({
     (index: number) => {
       setStockDraft((prev) => {
         if (prev.equipos.length <= 1) return prev;
-        return { ...prev, equipos: prev.equipos.filter((_, itemIndex) => itemIndex !== index) };
+        return { ...prev, equipos: prev.equipos.filter((_, equipoIndex) => equipoIndex !== index) };
       });
     },
     [setStockDraft],
   );
 
   const updatePrestamoDraftItem = useCallback(
-    (index: number, field: keyof PrestamoDraftItem, value: string) => {
+    (index: number, field: keyof PrestamoDraftEquipo, value: string) => {
       setPrestamoDraft((prev) => {
-        if (field === "equipoId" && value !== "" && prev.equipos.some((equipo, itemIndex) => itemIndex !== index && equipo.equipoId === value)) {
+        if (field === "equipoId" && value !== "" && prev.equipos.some((equipo, equipoIndex) => equipoIndex !== index && equipo.equipoId === value)) {
           onStatusChange("Ese equipo ya fue seleccionado en este préstamo.");
           return prev;
         }
         return {
           ...prev,
-          equipos: prev.equipos.map((equipo, itemIndex) => (itemIndex === index ? { ...equipo, [field]: value } : equipo)),
+          equipos: prev.equipos.map((equipo, equipoIndex) => (equipoIndex === index ? { ...equipo, [field]: value } : equipo)),
         };
       });
     },
@@ -69,7 +69,7 @@ export function useStockPrestamoDraftItems({
     (index: number) => {
       setPrestamoDraft((prev) => {
         if (prev.equipos.length <= 1) return prev;
-        return { ...prev, equipos: prev.equipos.filter((_, itemIndex) => itemIndex !== index) };
+        return { ...prev, equipos: prev.equipos.filter((_, equipoIndex) => equipoIndex !== index) };
       });
     },
     [setPrestamoDraft],

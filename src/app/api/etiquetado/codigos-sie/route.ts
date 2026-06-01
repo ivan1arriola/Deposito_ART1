@@ -140,7 +140,7 @@ export async function POST(request: Request) {
         codigo: created.codigo,
         talla: created.talla,
         equipoId: created.equipo.equipoId.toString(),
-        itemNombre: created.equipo.nombre,
+        equipoNombre: created.equipo.nombre,
       },
     });
 
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
         codigo: created.codigo,
         talla: created.talla,
         equipoId: created.equipo.equipoId.toString(),
-        itemNombre: created.equipo.nombre,
+        equipoNombre: created.equipo.nombre,
       },
       { status: 201 },
     );

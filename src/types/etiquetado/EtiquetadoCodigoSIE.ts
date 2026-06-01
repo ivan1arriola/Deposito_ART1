@@ -3,5 +3,5 @@ export type EtiquetadoCodigoSIE = {
   codigo: string;
   talla: string;
   equipoId: string;
-  itemNombre: string;
+  equipoNombre: string;
 };

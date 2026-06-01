@@ -8,7 +8,7 @@ import type {
   PersonalAltaMovimientoForm,
   PersonalForm,
   PrestamoDraft,
-  PrestamoDraftItem,
+  PrestamoDraftEquipo,
   StockOperacionDraft,
 } from "@/types/forms";
 import { EtiquetadoDashboardData } from "@/types/etiquetado";
@@ -43,9 +43,9 @@ export type CreationViewsProps = {
   editNewPersonalMovimiento: (index: number) => void;
   removeNewPersonalMovimiento: (index: number) => void;
   updateNewPersonalMovimientoDraft: (field: "tipo" | "fecha" | "comentarios", value: string) => void;
-  updateNewPersonalMovimientoDraftItem: (itemIndex: number, field: "equipoId" | "cantidad", value: string) => void;
+  updateNewPersonalMovimientoDraftItem: (equipoIndex: number, field: "equipoId" | "cantidad", value: string) => void;
   addNewPersonalMovimientoDraftItem: () => void;
-  removeNewPersonalMovimientoDraftItem: (itemIndex: number) => void;
+  removeNewPersonalMovimientoDraftItem: (equipoIndex: number) => void;
   editingOficialSuboficialCi: string | null;
   newOficialSuboficial: {
     ci: string;
@@ -240,7 +240,7 @@ export type StockPrestamoViewsProps = {
   prestamoSaving: boolean;
   returningPrestamoId: string | null;
   setPrestamoDraft: (updater: (prev: PrestamoDraft) => PrestamoDraft) => void;
-  updatePrestamoDraftItem: (index: number, field: keyof PrestamoDraftItem, value: string) => void;
+  updatePrestamoDraftItem: (index: number, field: keyof PrestamoDraftEquipo, value: string) => void;
   addPrestamoDraftItem: () => void;
   removePrestamoDraftItem: (index: number) => void;
   savePrestamo: (printAfterSave?: boolean) => Promise<void>;

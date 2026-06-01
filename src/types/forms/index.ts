@@ -1,5 +1,4 @@
 export { EMPTY_EQUIPO_FORM } from "./EquipoForm";
-export { EMPTY_ITEM_FORM } from "./ItemForm";
 export { EMPTY_OFICIAL_SUBOFICIAL_FORM } from "./OficialSuboficialForm";
 export { EMPTY_PERSONAL_ALTA_MOVIMIENTO_FORM } from "./PersonalAltaMovimientoForm";
 export { EMPTY_PERSONAL_FORM } from "./PersonalForm";
@@ -7,19 +6,16 @@ export { EMPTY_PRESTAMO_DRAFT } from "./PrestamoDraft";
 export { EMPTY_STOCK_OPERACION_DRAFT } from "./StockOperacionDraft";
 
 export type { EquipoForm } from "./EquipoForm";
-export type { ItemForm } from "./ItemForm";
 export type { OficialSuboficialForm } from "./OficialSuboficialForm";
 export type { PersonalAltaMovimientoForm } from "./PersonalAltaMovimientoForm";
-export type { PersonalAltaMovimientoItemForm } from "./PersonalAltaMovimientoItemForm";
 export type { PersonalForm } from "./PersonalForm";
 export type { PrestamoClase } from "./PrestamoClase";
 export type { PrestamoDestinatarioTipo } from "./PrestamoDestinatarioTipo";
 export type { PrestamoDraft } from "./PrestamoDraft";
-export type { PrestamoDraftItem } from "./PrestamoDraftItem";
+export type { PrestamoDraftEquipo } from "./PrestamoDraftEquipo";
 export type { PrestamoEstadoEquipo } from "./PrestamoEstadoEquipo";
 export type { RegistroDraft, RegistroDestinatarioTipo, RegistroRecintoClase } from "./RegistroDraft";
 export type { RegistroDraftEquipo } from "./RegistroDraftEquipo";
-export type { RegistroDraftItem } from "./RegistroDraftItem";
 export type { StockOperacionDraft } from "./StockOperacionDraft";
-export type { StockOperacionDraftItem } from "./StockOperacionDraftItem";
+export type { StockOperacionDraftEquipo } from "./StockOperacionDraftEquipo";
 export type { StockOperacionTipo } from "./StockOperacionTipo";

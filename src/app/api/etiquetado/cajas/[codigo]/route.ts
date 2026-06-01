@@ -73,7 +73,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
       where: { codigoDepositoGeneral },
     });
 
-    const itemNombres =
+    const equipoNombres =
       existing.equipos.length > 0
         ? existing.equipos
             .map((entry) => entry.equipo.nombre)
@@ -93,7 +93,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
       detalle: {
         codigoDepositoGeneral: existing.codigoDepositoGeneral,
         equipoIds: existing.equipos.map((entry) => entry.equipo.equipoId.toString()),
-        itemNombres,
+        equipoNombres,
         cantidad,
         estanteria: existing.estanteria,
         piso: existing.piso,

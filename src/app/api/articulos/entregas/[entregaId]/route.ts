@@ -69,7 +69,7 @@ export async function DELETE(
 
     // 3. Log audit trail
     const pNombre = `${existing.personal.apellido1}, ${existing.personal.nombre1}`;
-    const itemsSummary = existing.movimientosStock
+    const equiposSummary = existing.movimientosStock
       .map((m) => `${m.articulo.nombre} (x${m.cantidad})`)
       .join(", ");
 
@@ -83,7 +83,7 @@ export async function DELETE(
         personalCi: existing.personalCi,
         personalNombre: pNombre,
         comentarioOriginal: existing.comentario,
-        equipos: itemsSummary,
+        equipos: equiposSummary,
       },
     });
 

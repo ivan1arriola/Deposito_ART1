@@ -84,7 +84,7 @@ describe("route parser helpers", () => {
       expect(Object.keys(changes)).toEqual(["fechaDevolucion", "comentarios"]);
     });
 
-    it("buildItemChanges detecta diferencias por equipo", () => {
+    it("buildEquipoChanges detecta diferencias por equipo", () => {
       const before = {
         equipos: [
           {
@@ -112,7 +112,7 @@ describe("route parser helpers", () => {
         ],
       };
 
-      const changes = prestamoByIdRouteTestables.buildItemChanges(before as never, after as never);
+      const changes = prestamoByIdRouteTestables.buildEquipoChanges(before as never, after as never);
       expect(changes).toHaveLength(1);
       expect(Object.keys(changes[0].changes)).toEqual([
         "cantidad",

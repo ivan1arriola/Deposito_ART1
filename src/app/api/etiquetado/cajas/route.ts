@@ -161,7 +161,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const [estanteriaRegistrada, itemsFound] = await Promise.all([
+  const [estanteriaRegistrada, equiposFound] = await Promise.all([
     prisma.estanteria.findUnique({
       where: {
         codigo_piso: {
@@ -180,19 +180,19 @@ export async function POST(request: Request) {
   if (!estanteriaRegistrada) {
     return NextResponse.json({ error: "La estanteria en ese piso no existe. Registrala primero." }, { status: 400 });
   }
-  if (itemsFound.length !== equipoIds.length) {
+  if (equiposFound.length !== equipoIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos seleccionados no existen." }, { status: 400 });
   }
 
-  const itemIdSet = new Set(equipoIds.map((equipoId) => equipoId.toString()));
-  const itemNameById = new Map(itemsFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
-  const itemNombres = Array.from(itemNameById.values()).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  const equipoIdSet = new Set(equipoIds.map((equipoId) => equipoId.toString()));
+  const equipoNameById = new Map(equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
+  const equipoNombres = Array.from(equipoNameById.values()).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
   let codigosSIEDetalle: Array<{
     codigoSIEId: string;
     codigo: string;
     talla: string;
     equipoId: string;
-    itemNombre: string;
+    equipoNombre: string;
   }> = [];
 
   if (codigosSIEIds.length > 0) {
@@ -229,14 +229,14 @@ export async function POST(request: Request) {
         codigo: entry.codigo,
         talla: entry.talla,
         equipoId: entry.equipo.equipoId.toString(),
-        itemNombre: entry.equipo.nombre,
+        equipoNombre: entry.equipo.nombre,
       }));
 
     const codigosFueraDeEquipos = Array.from(
       new Set(
         codigosSIEDetalle
-          .filter((entry) => !itemIdSet.has(entry.equipoId))
-          .map((entry) => `${entry.codigo} (${entry.itemNombre}, talla ${entry.talla})`),
+          .filter((entry) => !equipoIdSet.has(entry.equipoId))
+          .map((entry) => `${entry.codigo} (${entry.equipoNombre}, talla ${entry.talla})`),
       ),
     );
     if (codigosFueraDeEquipos.length > 0) {
@@ -294,7 +294,7 @@ export async function POST(request: Request) {
             equipoId: entry.equipoId.toString(),
             cantidad: entry.cantidad,
           })),
-          itemNombres,
+          equipoNombres,
           cantidad: cantidadTotal,
           estanteria,
           piso,

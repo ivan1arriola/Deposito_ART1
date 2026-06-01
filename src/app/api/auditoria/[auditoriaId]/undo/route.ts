@@ -242,7 +242,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
               });
             }
 
-            for (const sie of payload.itemCodigosSIE || []) {
+            for (const sie of payload.equipoCodigosSIE || []) {
               await tx.equipoCodigoSIE.create({
                 data: {
                   equipoCodigoSIEId: BigInt(sie.equipoCodigoSIEId),

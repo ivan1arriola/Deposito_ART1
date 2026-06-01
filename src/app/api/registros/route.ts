@@ -527,7 +527,7 @@ export async function POST(req: Request) {
   }
 
   const equipoIds = Array.from(dedupedEquipos.keys()).map((equipoId) => BigInt(equipoId));
-  const [personalRecords, itemsFound] = await Promise.all([
+  const [personalRecords, equiposFound] = await Promise.all([
     destinatarioPayload.destinatarioTipo === "PERSONAL"
       ? prisma.personal.findMany({
           where: {
@@ -569,13 +569,13 @@ export async function POST(req: Request) {
     }
   }
 
-  if (itemsFound.length !== equipoIds.length) {
+  if (equiposFound.length !== equipoIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
 
   const comentarios = body.comentarios?.trim() || null;
   const afectaStock = true;
-  const itemNombrePorId = new Map(itemsFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
+  const itemNombrePorId = new Map(equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
   const itemsDetallados = Array.from(dedupedEquipos.entries()).map(([equipoId, { cantidad, comentario }]) => ({
     equipoId,
     nombre: itemNombrePorId.get(equipoId) ?? "Equipo sin nombre",

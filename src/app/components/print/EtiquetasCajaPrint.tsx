@@ -154,7 +154,7 @@ function toCajaModel(caja: EtiquetaCajaPrintData): Caja {
     estante: normalizeValue(caja.estanteria, "-"),
     destino: DESTINO_CAJA,
     equipos: caja.equipos.map((equipo) => ({
-      nombre: toPrintUppercase(equipo.itemNombre),
+      nombre: toPrintUppercase(equipo.equipoNombre),
       cantidad: equipo.cantidad,
       codigos: equipo.codigosSIE.map((codigo) => ({
         codigo: normalizeValue(codigo.codigo, "Sin código"),

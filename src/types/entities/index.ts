@@ -18,7 +18,7 @@ export type { OficialSuboficial } from "./OficialSuboficial";
 export type { Personal } from "./Personal";
 export type { PersonalObservacion } from "./PersonalObservacion";
 export type { PrestamoDestinatarioTipo } from "./PrestamoDestinatarioTipo";
-export type { PrestamoItem } from "./PrestamoItem";
+export type { PrestamoEquipo } from "./PrestamoEquipo";
 export type { PrestamoRecord } from "./PrestamoRecord";
 export type { Rango } from "./Rango";
 export type { RecordatorioConfig } from "./RecordatorioConfig";

@@ -38,7 +38,7 @@ type RegistroEditorModalProps = {
   onClearDestinatarios: () => void;
   onItemChange: (index: number, field: "equipoId" | "cantidad", value: string) => void;
   onAddItem: () => void;
-  onRemoveItem: (index: number) => void;
+  onRemoveEquipo: (index: number) => void;
   onSubmit: () => void;
   onSubmitAndPrint: () => void;
 };
@@ -72,7 +72,7 @@ export function RegistroEditorModal({
   onClearDestinatarios,
   onItemChange,
   onAddItem,
-  onRemoveItem,
+  onRemoveEquipo,
   onSubmit,
   onSubmitAndPrint,
 }: RegistroEditorModalProps) {
@@ -430,7 +430,7 @@ export function RegistroEditorModal({
             />
             <button
               type="button"
-              onClick={() => onRemoveItem(index)}
+              onClick={() => onRemoveEquipo(index)}
               disabled={saving || draft.equipos.length <= 1}
               className="rounded bg-rose-700 px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
             >

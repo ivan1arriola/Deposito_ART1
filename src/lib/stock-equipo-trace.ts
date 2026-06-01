@@ -359,7 +359,7 @@ export async function buildStockEquipoTraceData(equipoId: bigint, client: Prisma
 
   const payload: StockEquipoTraceData = {
     equipoId: equipo.equipoId.toString(),
-    itemNombre: equipo.nombre,
+    equipoNombre: equipo.nombre,
     totals: {
       subalternos: subalternos.reduce((total, entry) => total + entry.cantidadNeta, 0),
       prestamo: prestamos.reduce((total, entry) => total + entry.cantidad, 0),

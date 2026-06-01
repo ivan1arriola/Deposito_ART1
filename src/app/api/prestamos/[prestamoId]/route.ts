@@ -210,7 +210,7 @@ function buildGeneralChanges(before: PrestamoAuditSnapshot, after: PrestamoAudit
   return cambios;
 }
 
-function buildItemChanges(before: PrestamoAuditSnapshot, after: PrestamoAuditSnapshot) {
+function buildEquipoChanges(before: PrestamoAuditSnapshot, after: PrestamoAuditSnapshot) {
   const beforeByItemId = new Map(before.equipos.map((equipo) => [equipo.equipoId, equipo]));
 
   return after.equipos
@@ -264,7 +264,7 @@ export const prestamoByIdRouteTestables = {
   parsePrestamoClase,
   parseDestinatarioTipo,
   buildGeneralChanges,
-  buildItemChanges,
+  buildEquipoChanges,
 };
 
 export async function GET(request: Request, context: { params: Promise<{ prestamoId: string }> }) {
@@ -430,8 +430,8 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     }
   }
 
-  const existingItemsById = new Map(existing.equipos.map((equipo) => [equipo.equipo.equipoId.toString(), equipo]));
-  const itemUpdates = Array.isArray(body.equipos)
+  const existingEquiposById = new Map(existing.equipos.map((equipo) => [equipo.equipo.equipoId.toString(), equipo]));
+  const equipoUpdates = Array.isArray(body.equipos)
     ? body.equipos
     : existing.equipos.map((equipo) => ({
         equipoId: equipo.equipo.equipoId.toString(),
@@ -442,7 +442,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         comentarioDevolucion: equipo.comentarioDevolucion ?? "",
       }));
 
-  if (itemUpdates.length === 0) {
+  if (equipoUpdates.length === 0) {
     return NextResponse.json({ error: "Debes incluir al menos un equipo para editar el préstamo." }, { status: 400 });
   }
 
@@ -455,32 +455,32 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     comentarioDevolucion: string | null;
   }> = [];
 
-  const seenItemIds = new Set<string>();
-  for (const equipo of itemUpdates) {
+  const seenEquipoIds = new Set<string>();
+  for (const equipo of equipoUpdates) {
     const equipoId = parseBigIntId(equipo.equipoId);
     if (!equipoId) {
       return NextResponse.json({ error: "equipos: equipoId inválido." }, { status: 400 });
     }
 
-    const itemIdKey = equipoId.toString();
-    if (seenItemIds.has(itemIdKey)) {
+    const equipoIdKey = equipoId.toString();
+    if (seenEquipoIds.has(equipoIdKey)) {
       return NextResponse.json({ error: "No puedes repetir equipos en la edición del préstamo." }, { status: 400 });
     }
-    seenItemIds.add(itemIdKey);
+    seenEquipoIds.add(equipoIdKey);
 
-    const existingItem = existingItemsById.get(itemIdKey);
-    if (!existingItem) {
+    const existingEquipo = existingEquiposById.get(equipoIdKey);
+    if (!existingEquipo) {
       return NextResponse.json({ error: "Solo puedes editar equipos ya incluidos en el préstamo." }, { status: 400 });
     }
 
-    const cantidad = parseCantidad(equipo.cantidad ?? existingItem.cantidad);
+    const cantidad = parseCantidad(equipo.cantidad ?? existingEquipo.cantidad);
     if (cantidad === null) {
       return NextResponse.json({ error: "equipos: cantidad inválida." }, { status: 400 });
     }
 
     const parsedEstadoEntrega =
       equipo.estadoEntrega === undefined
-        ? existingItem.estadoEntrega
+        ? existingEquipo.estadoEntrega
         : parseEstadoEquipoPrestamo(equipo.estadoEntrega);
     if (!parsedEstadoEntrega) {
       return NextResponse.json({ error: "equipos: estadoEntrega inválido." }, { status: 400 });
@@ -488,7 +488,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
 
     const comentarioEntrega =
       equipo.comentarioEntrega === undefined
-        ? existingItem.comentarioEntrega
+        ? existingEquipo.comentarioEntrega
         : String(equipo.comentarioEntrega ?? "").trim() || null;
 
     if (!existing.prestamoHistorial) {
@@ -505,7 +505,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
 
     const parsedEstadoDevolucion =
       equipo.estadoDevolucion === undefined
-        ? existingItem.estadoDevolucion ?? existingItem.estadoEntrega
+        ? existingEquipo.estadoDevolucion ?? existingEquipo.estadoEntrega
         : parseEstadoEquipoPrestamo(equipo.estadoDevolucion);
     if (!parsedEstadoDevolucion) {
       return NextResponse.json({ error: "equipos: estadoDevolucion inválido." }, { status: 400 });
@@ -513,7 +513,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
 
     const comentarioDevolucion =
       equipo.comentarioDevolucion === undefined
-        ? existingItem.comentarioDevolucion
+        ? existingEquipo.comentarioDevolucion
         : String(equipo.comentarioDevolucion ?? "").trim() || null;
 
     parsedItemUpdates.push({
@@ -660,7 +660,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     const beforeSnapshot = buildPrestamoAuditSnapshot(existing);
     const afterSnapshot = buildPrestamoAuditSnapshot(updated);
     const generalChanges = buildGeneralChanges(beforeSnapshot, afterSnapshot);
-    const itemChanges = buildItemChanges(beforeSnapshot, afterSnapshot);
+    const equipoChanges = buildEquipoChanges(beforeSnapshot, afterSnapshot);
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -672,11 +672,11 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         motivo,
         resumenCambios: {
           camposGeneralesModificados: Object.keys(generalChanges).length,
-          itemsModificados: itemChanges.length,
+          equiposModificados: equipoChanges.length,
         },
         cambios: {
           generales: generalChanges,
-          equipos: itemChanges,
+          equipos: equipoChanges,
         },
         antes: beforeSnapshot,
         despues: afterSnapshot,

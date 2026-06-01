@@ -7,7 +7,7 @@ export type EtiquetadoCaja = {
   piso: number;
   cantidad: number;
   equipos: EtiquetadoCajaEquipo[];
-  itemNombres: string[];
+  equipoNombres: string[];
   codigosSIE: EtiquetadoCajaCodigoSIE[];
   tallas: string[];
 };

@@ -2,7 +2,7 @@ import type {
   EtiquetadoCaja,
   EtiquetadoCodigoSIE,
   EtiquetadoEstanteria,
-  EtiquetadoItem,
+  EtiquetadoEquipo,
 } from "@/types/etiquetado";
 import type { EtiquetadoSection } from "./types";
 
@@ -43,7 +43,7 @@ export function buildEstanteriaKey(codigo: string, piso: number) {
   return `${piso}:${codigo.trim().toUpperCase()}`;
 }
 
-export function sortEtiquetadoItems(equipos: EtiquetadoItem[]) {
+export function sortEtiquetadoItems(equipos: EtiquetadoEquipo[]) {
   return [...equipos].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
 }
 
@@ -87,7 +87,7 @@ export function filterCajas(cajas: EtiquetadoCaja[], filtro: string) {
   return cajas.filter((caja) => {
     const texto = [
       String(caja.codigoDepositoGeneral),
-      caja.itemNombres.join(" "),
+      caja.equipoNombres.join(" "),
       caja.estanteria,
       String(caja.piso),
       buildEstanteriaKey(caja.estanteria, caja.piso),

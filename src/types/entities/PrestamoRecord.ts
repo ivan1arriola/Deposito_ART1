@@ -1,5 +1,5 @@
 import type { PrestamoDestinatarioTipo } from "./PrestamoDestinatarioTipo";
-import type { PrestamoItem } from "./PrestamoItem";
+import type { PrestamoEquipo } from "./PrestamoEquipo";
 
 export type PrestamoRecord = {
   prestamoId: string;
@@ -22,5 +22,5 @@ export type PrestamoRecord = {
   usuarioRecibeDevolucionNombre: string | null;
   comentarios: string | null;
   estado: "PENDIENTE" | "DEVUELTO";
-  equipos: PrestamoItem[];
+  equipos: PrestamoEquipo[];
 };

@@ -98,7 +98,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     return NextResponse.json({ error: "La fecha de devolución no puede ser anterior a la fecha del préstamo." }, { status: 400 });
   }
 
-  const devolucionInputByItemId = new Map<string, { estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion: string }>();
+  const devolucionInputByEquipoId = new Map<string, { estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion: string }>();
   if (Array.isArray(body.equipos)) {
     for (const equipo of body.equipos) {
       const equipoId = parseBigIntId(equipo.equipoId);
@@ -108,29 +108,29 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         return NextResponse.json({ error: "equipos: equipoId inválido." }, { status: 400 });
       }
       const key = equipoId.toString();
-      devolucionInputByItemId.set(key, { estadoDevolucion, comentarioDevolucion });
+      devolucionInputByEquipoId.set(key, { estadoDevolucion, comentarioDevolucion });
     }
   }
 
   try {
     await prisma.$transaction(async (tx) => {
-      const itemUpdates = existing.equipos.map((equipo) => {
+      const equipoUpdates = existing.equipos.map((equipo) => {
         const equipoId = equipo.equipoId.toString();
-        const itemUpdate = devolucionInputByItemId.get(equipoId) ?? {
+        const equipoUpdate = devolucionInputByEquipoId.get(equipoId) ?? {
           estadoDevolucion: equipo.estadoEntrega,
           comentarioDevolucion: "",
         };
         return {
           movimientoId: existing.movimientoId,
           equipoId: equipo.equipoId,
-          estadoDevolucion: itemUpdate.estadoDevolucion,
-          comentarioDevolucion: itemUpdate.comentarioDevolucion || null,
+          estadoDevolucion: equipoUpdate.estadoDevolucion,
+          comentarioDevolucion: equipoUpdate.comentarioDevolucion || null,
         };
       });
 
-      if (itemUpdates.length > 0) {
+      if (equipoUpdates.length > 0) {
         const values = Prisma.join(
-          itemUpdates.map(
+          equipoUpdates.map(
             (entry) =>
               Prisma.sql`(
                 CAST(${entry.movimientoId} AS bigint),

@@ -575,7 +575,7 @@ model ConfigFirma {
 
 model PapeleraRegistro {
   papeleraId   String   @id @default(cuid()) @map("papelera_id")
-  tipo         String   @map("tipo") // "ITEM" o "ARTICULO"
+  tipo         String   @map("tipo") // "EQUIPO" o "ARTICULO"
   nombre       String   @map("nombre")
   originalId   String   @map("original_id")
   payload      Json     @map("payload") @db.JsonB

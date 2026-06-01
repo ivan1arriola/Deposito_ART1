@@ -1,6 +1,6 @@
 import type { PrestamoEstadoEquipo } from "./PrestamoEstadoEquipo";
 
-export type PrestamoDraftItem = {
+export type PrestamoDraftEquipo = {
   equipoId: string;
   cantidad: string;
   estadoEntrega: PrestamoEstadoEquipo;

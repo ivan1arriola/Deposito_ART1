@@ -1,6 +1,6 @@
 import type { PrestamoClase } from "./PrestamoClase";
 import type { PrestamoDestinatarioTipo } from "./PrestamoDestinatarioTipo";
-import type { PrestamoDraftItem } from "./PrestamoDraftItem";
+import type { PrestamoDraftEquipo } from "./PrestamoDraftEquipo";
 
 export type PrestamoDraft = {
   clasePrestamo: PrestamoClase;
@@ -15,7 +15,7 @@ export type PrestamoDraft = {
   fechaPrestamo: string;
   fechaEstimadaDevolucionTexto: string;
   comentarios: string;
-  equipos: PrestamoDraftItem[];
+  equipos: PrestamoDraftEquipo[];
 };
 
 export const EMPTY_PRESTAMO_DRAFT: PrestamoDraft = {

@@ -179,22 +179,22 @@ CREATE TABLE "talla_tipo" (
 );
 
 -- CreateTable
-CREATE TABLE "item" (
-    "item_id" BIGSERIAL NOT NULL,
+CREATE TABLE "equipo" (
+    "equipo_id" BIGSERIAL NOT NULL,
     "nombre" TEXT NOT NULL,
     "activo" BOOLEAN NOT NULL DEFAULT true,
     "orden_pdf" INTEGER NOT NULL,
     "existencia_sie" INTEGER NOT NULL DEFAULT 0,
 
-    CONSTRAINT "item_pkey" PRIMARY KEY ("item_id")
+    CONSTRAINT "item_pkey" PRIMARY KEY ("equipo_id")
 );
 
 -- CreateTable
-CREATE TABLE "item_codigo_sie" (
+CREATE TABLE "equipo_codigo_sie" (
     "item_codigo_sie_id" BIGSERIAL NOT NULL,
     "codigo" TEXT NOT NULL,
     "talla" TEXT NOT NULL DEFAULT '-',
-    "item_id" BIGINT NOT NULL,
+    "equipo_id" BIGINT NOT NULL,
 
     CONSTRAINT "item_codigo_sie_pkey" PRIMARY KEY ("item_codigo_sie_id")
 );
@@ -209,16 +209,16 @@ CREATE TABLE "caja" (
 );
 
 -- CreateTable
-CREATE TABLE "caja_item" (
+CREATE TABLE "caja_equipo" (
     "codigo_deposito_general" INTEGER NOT NULL,
-    "item_id" BIGINT NOT NULL,
+    "equipo_id" BIGINT NOT NULL,
     "cantidad" INTEGER NOT NULL DEFAULT 1,
 
-    CONSTRAINT "caja_item_pkey" PRIMARY KEY ("codigo_deposito_general","item_id")
+    CONSTRAINT "caja_item_pkey" PRIMARY KEY ("codigo_deposito_general","equipo_id")
 );
 
 -- CreateTable
-CREATE TABLE "caja_item_codigo_sie" (
+CREATE TABLE "caja_equipo_codigo_sie" (
     "codigo_deposito_general" INTEGER NOT NULL,
     "item_codigo_sie_id" BIGINT NOT NULL,
 
@@ -256,16 +256,16 @@ CREATE TABLE "movimiento" (
 );
 
 -- CreateTable
-CREATE TABLE "movimiento_item" (
+CREATE TABLE "movimiento_equipo" (
     "movimiento_id" BIGINT NOT NULL,
-    "item_id" BIGINT NOT NULL,
+    "equipo_id" BIGINT NOT NULL,
     "cantidad" INTEGER NOT NULL,
     "estado_entrega" "estado_equipo_prestamo" NOT NULL DEFAULT 'BUENO',
     "comentario_entrega" TEXT,
     "estado_devolucion" "estado_equipo_prestamo",
     "comentario_devolucion" TEXT,
 
-    CONSTRAINT "movimiento_item_pkey" PRIMARY KEY ("movimiento_id","item_id")
+    CONSTRAINT "movimiento_item_pkey" PRIMARY KEY ("movimiento_id","equipo_id")
 );
 
 -- CreateTable
@@ -359,12 +359,12 @@ CREATE TABLE "stock_operacion" (
 );
 
 -- CreateTable
-CREATE TABLE "stock_operacion_item" (
+CREATE TABLE "stock_operacion_equipo" (
     "stock_operacion_id" BIGINT NOT NULL,
-    "item_id" BIGINT NOT NULL,
+    "equipo_id" BIGINT NOT NULL,
     "cantidad" INTEGER NOT NULL,
 
-    CONSTRAINT "stock_operacion_item_pkey" PRIMARY KEY ("stock_operacion_id","item_id")
+    CONSTRAINT "stock_operacion_item_pkey" PRIMARY KEY ("stock_operacion_id","equipo_id")
 );
 
 -- CreateTable
@@ -461,25 +461,25 @@ CREATE INDEX "articulo_stock_movimiento_articulo_entrega_personal_id_crea_idx" O
 CREATE UNIQUE INDEX "talla_tipo_nombre_key" ON "talla_tipo"("nombre");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "item_nombre_key" ON "item"("nombre");
+CREATE UNIQUE INDEX "item_nombre_key" ON "equipo"("nombre");
 
 -- CreateIndex
-CREATE INDEX "item_codigo_sie_item_id_idx" ON "item_codigo_sie"("item_id");
+CREATE INDEX "item_codigo_sie_item_id_idx" ON "equipo_codigo_sie"("equipo_id");
 
 -- CreateIndex
-CREATE INDEX "item_codigo_sie_codigo_idx" ON "item_codigo_sie"("codigo");
+CREATE INDEX "item_codigo_sie_codigo_idx" ON "equipo_codigo_sie"("codigo");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "item_codigo_sie_codigo_talla_item_id_key" ON "item_codigo_sie"("codigo", "talla", "item_id");
+CREATE UNIQUE INDEX "item_codigo_sie_codigo_talla_item_id_key" ON "equipo_codigo_sie"("codigo", "talla", "equipo_id");
 
 -- CreateIndex
 CREATE INDEX "caja_estanteria_piso_idx" ON "caja"("estanteria", "piso");
 
 -- CreateIndex
-CREATE INDEX "caja_item_item_id_idx" ON "caja_item"("item_id");
+CREATE INDEX "caja_item_item_id_idx" ON "caja_equipo"("equipo_id");
 
 -- CreateIndex
-CREATE INDEX "caja_item_codigo_sie_item_codigo_sie_id_idx" ON "caja_item_codigo_sie"("item_codigo_sie_id");
+CREATE INDEX "caja_item_codigo_sie_item_codigo_sie_id_idx" ON "caja_equipo_codigo_sie"("item_codigo_sie_id");
 
 -- CreateIndex
 CREATE INDEX "personal_grado_id_idx" ON "personal"("grado_id");
@@ -494,7 +494,7 @@ CREATE INDEX "movimiento_tipo_fecha_idx" ON "movimiento"("tipo", "fecha" DESC);
 CREATE INDEX "movimiento_usuario_entrega_id_fecha_idx" ON "movimiento"("usuario_entrega_id", "fecha" DESC);
 
 -- CreateIndex
-CREATE INDEX "movimiento_item_item_id_idx" ON "movimiento_item"("item_id");
+CREATE INDEX "movimiento_item_item_id_idx" ON "movimiento_equipo"("equipo_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "prestamo_activo_recibo_numero_key" ON "prestamo_activo"("recibo_numero");
@@ -524,7 +524,7 @@ CREATE INDEX "observacion_ci_fecha_idx" ON "observacion"("ci", "fecha" DESC);
 CREATE INDEX "stock_operacion_fecha_idx" ON "stock_operacion"("fecha" DESC);
 
 -- CreateIndex
-CREATE INDEX "stock_operacion_item_item_id_idx" ON "stock_operacion_item"("item_id");
+CREATE INDEX "stock_operacion_item_item_id_idx" ON "stock_operacion_equipo"("equipo_id");
 
 -- AddForeignKey
 ALTER TABLE "usuario" ADD CONSTRAINT "usuario_grado_id_fkey" FOREIGN KEY ("grado_id") REFERENCES "grado"("grado_id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -560,22 +560,22 @@ ALTER TABLE "articulo_stock_movimiento" ADD CONSTRAINT "articulo_stock_movimient
 ALTER TABLE "articulo_stock_movimiento" ADD CONSTRAINT "articulo_stock_movimiento_articulo_entrega_personal_id_fkey" FOREIGN KEY ("articulo_entrega_personal_id") REFERENCES "articulo_entrega_personal"("articulo_entrega_personal_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "item_codigo_sie" ADD CONSTRAINT "item_codigo_sie_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "item"("item_id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "equipo_codigo_sie" ADD CONSTRAINT "item_codigo_sie_item_id_fkey" FOREIGN KEY ("equipo_id") REFERENCES "equipo"("equipo_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "caja" ADD CONSTRAINT "caja_estanteria_piso_fkey" FOREIGN KEY ("estanteria", "piso") REFERENCES "estanteria"("codigo", "piso") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "caja_item" ADD CONSTRAINT "caja_item_codigo_deposito_general_fkey" FOREIGN KEY ("codigo_deposito_general") REFERENCES "caja"("codigo_deposito_general") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "caja_equipo" ADD CONSTRAINT "caja_item_codigo_deposito_general_fkey" FOREIGN KEY ("codigo_deposito_general") REFERENCES "caja"("codigo_deposito_general") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "caja_item" ADD CONSTRAINT "caja_item_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "item"("item_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "caja_equipo" ADD CONSTRAINT "caja_item_item_id_fkey" FOREIGN KEY ("equipo_id") REFERENCES "equipo"("equipo_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "caja_item_codigo_sie" ADD CONSTRAINT "caja_item_codigo_sie_codigo_deposito_general_fkey" FOREIGN KEY ("codigo_deposito_general") REFERENCES "caja"("codigo_deposito_general") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "caja_equipo_codigo_sie" ADD CONSTRAINT "caja_item_codigo_sie_codigo_deposito_general_fkey" FOREIGN KEY ("codigo_deposito_general") REFERENCES "caja"("codigo_deposito_general") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "caja_item_codigo_sie" ADD CONSTRAINT "caja_item_codigo_sie_item_codigo_sie_id_fkey" FOREIGN KEY ("item_codigo_sie_id") REFERENCES "item_codigo_sie"("item_codigo_sie_id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "caja_equipo_codigo_sie" ADD CONSTRAINT "caja_item_codigo_sie_item_codigo_sie_id_fkey" FOREIGN KEY ("item_codigo_sie_id") REFERENCES "equipo_codigo_sie"("item_codigo_sie_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "personal" ADD CONSTRAINT "personal_grado_id_fkey" FOREIGN KEY ("grado_id") REFERENCES "grado"("grado_id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -587,10 +587,10 @@ ALTER TABLE "movimiento" ADD CONSTRAINT "movimiento_personal_ci_fkey" FOREIGN KE
 ALTER TABLE "movimiento" ADD CONSTRAINT "movimiento_usuario_entrega_id_fkey" FOREIGN KEY ("usuario_entrega_id") REFERENCES "usuario"("usuario_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "movimiento_item" ADD CONSTRAINT "movimiento_item_movimiento_id_fkey" FOREIGN KEY ("movimiento_id") REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movimiento_equipo" ADD CONSTRAINT "movimiento_item_movimiento_id_fkey" FOREIGN KEY ("movimiento_id") REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "movimiento_item" ADD CONSTRAINT "movimiento_item_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "item"("item_id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movimiento_equipo" ADD CONSTRAINT "movimiento_item_item_id_fkey" FOREIGN KEY ("equipo_id") REFERENCES "equipo"("equipo_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "prestamo_activo" ADD CONSTRAINT "prestamo_activo_movimiento_id_fkey" FOREIGN KEY ("movimiento_id") REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -623,7 +623,7 @@ ALTER TABLE "personal_talla" ADD CONSTRAINT "personal_talla_talla_tipo_id_fkey" 
 ALTER TABLE "observacion" ADD CONSTRAINT "observacion_ci_fkey" FOREIGN KEY ("ci") REFERENCES "personal"("ci") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "stock_operacion_item" ADD CONSTRAINT "stock_operacion_item_stock_operacion_id_fkey" FOREIGN KEY ("stock_operacion_id") REFERENCES "stock_operacion"("stock_operacion_id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "stock_operacion_equipo" ADD CONSTRAINT "stock_operacion_item_stock_operacion_id_fkey" FOREIGN KEY ("stock_operacion_id") REFERENCES "stock_operacion"("stock_operacion_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "stock_operacion_item" ADD CONSTRAINT "stock_operacion_item_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "item"("item_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "stock_operacion_equipo" ADD CONSTRAINT "stock_operacion_item_item_id_fkey" FOREIGN KEY ("equipo_id") REFERENCES "equipo"("equipo_id") ON DELETE RESTRICT ON UPDATE CASCADE;

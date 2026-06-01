@@ -24,7 +24,7 @@ type TrashEquipoPayload = {
     equipoId: string;
     cantidad: number;
   }>;
-  itemCodigosSIE?: Array<{
+  equipoCodigosSIE?: Array<{
     equipoCodigoSIEId: string;
     codigo: string;
     talla: string;
@@ -179,7 +179,7 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
         }
 
         // 4. Restore EquipoCodigoSIE
-        for (const sie of payload.itemCodigosSIE || []) {
+        for (const sie of payload.equipoCodigosSIE || []) {
           await tx.equipoCodigoSIE.create({
             data: {
               equipoCodigoSIEId: BigInt(sie.equipoCodigoSIEId),

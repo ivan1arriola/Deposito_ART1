@@ -145,8 +145,8 @@ function buildSections(rows: HojaMatrixRow[], selectedBattery: string | null) {
   ] satisfies PrintableSection[];
 }
 
-function buildGrandTotals(rows: HojaMatrixRow[], itemCount: number) {
-  const totals = Array.from({ length: itemCount }, () => 0);
+function buildGrandTotals(rows: HojaMatrixRow[], equipoCount: number) {
+  const totals = Array.from({ length: equipoCount }, () => 0);
   for (const row of rows) {
     row.totales.forEach((value, index) => {
       totals[index] += value;
@@ -180,7 +180,7 @@ export default async function HojaMatrizPage({
   const data = await getHojaMatrixData({ bateria: selectedBattery });
   const sections = buildSections(data.rows, selectedBattery);
   const grandTotals = buildGrandTotals(data.rows, data.equipos.length);
-  const itemColumnWidth = `calc((100% - ${LEFT_COLUMNS_WIDTH_MM}mm) / ${Math.max(data.equipos.length, 1)})`;
+  const equipoColumnWidth = `calc((100% - ${LEFT_COLUMNS_WIDTH_MM}mm) / ${Math.max(data.equipos.length, 1)})`;
   const institutionalPrintDate = formatInstitutionalPrintDate(new Date());
 
   return (
@@ -457,7 +457,7 @@ export default async function HojaMatrizPage({
                   <col className="col-grade" />
                   <col className="col-name" />
                   {data.equipos.map((equipo) => (
-                    <col key={equipo.equipoId} style={{ width: itemColumnWidth }} />
+                    <col key={equipo.equipoId} style={{ width: equipoColumnWidth }} />
                   ))}
                 </colgroup>
                 <thead>
