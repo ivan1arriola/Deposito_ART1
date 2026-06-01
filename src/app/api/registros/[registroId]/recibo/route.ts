@@ -312,25 +312,24 @@ export async function GET(request: Request, context: { params: Promise<{ registr
   const destinatarioCiDisplay =
     destinatarioCi && !destinatarioCi.startsWith("SD-") ? formatUruguayanCi(destinatarioCi) : null;
 
-  let destinoFull = "No definido";
+  let destinoLugar = "No definido";
+  let destinoClase = "No definido";
   if (isRecinto) {
-    const clase = registro.destinatarioRecinto?.clase === "EXTERNO" ? "Fuera de la Unidad" : "Dentro de la Unidad";
-    destinoFull = `${registro.destinatarioRecinto?.nombre ?? "Recinto no definido"} - ${clase}`;
+    destinoClase = registro.destinatarioRecinto?.clase === "EXTERNO" ? "Fuera de la Unidad" : "Dentro de la Unidad";
+    destinoLugar = registro.destinatarioRecinto?.nombre ?? "Recinto no definido";
   } else if (isExterno) {
     const unidad = registro.destinatarioExterno?.personaExterna?.unidadDestino || "";
     const isInterno = unidad.startsWith("Interno a la Unidad");
-    const name = unidad.replace("Externo a la Unidad - ", "").replace("Interno a la Unidad - ", "").trim();
-    destinoFull = `${name} - ${isInterno ? "Dentro de la Unidad" : "Fuera de la Unidad"}`;
+    destinoClase = isInterno ? "Dentro de la Unidad" : "Fuera de la Unidad";
+    destinoLugar = unidad.replace("Externo a la Unidad - ", "").replace("Interno a la Unidad - ", "").trim() || "No definido";
   } else if (isPersonal) {
     const bat = registro.destinatarioPersonal?.personal?.bateria?.nombre;
-    destinoFull = bat ? `Batería ${bat} - Dentro de la Unidad` : "Dentro de la Unidad";
+    destinoLugar = bat ? `Batería ${bat}` : "No definido";
+    destinoClase = "Dentro de la Unidad";
   }
 
   const tableRows = registro.equipos.map((equipo) => {
-    let observaciones = equipo.comentarioEntrega?.trim() || "";
-    if (registro.observaciones && registro.observaciones.trim() !== "") {
-      observaciones = observaciones ? `${observaciones} | ${registro.observaciones}` : registro.observaciones;
-    }
+    const observaciones = equipo.comentarioEntrega?.trim() || "";
     
     return {
       cantidad: String(equipo.cantidad),
@@ -376,15 +375,14 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     drawField(page, assets, nombreX, y, nombreWidth, 30, "Nombre y apellido", usuarioEntregaNombreApellido);
     y += 36;
 
-    y = drawFieldMultiline(
-      page,
-      assets,
-      header.innerX,
-      y,
-      header.innerW,
-      "Destino",
-      destinoFull,
-    );
+    const destinoClaseWidth = 140;
+    const destinoGap = 6;
+    const destinoLugarWidth = header.innerW - destinoClaseWidth - destinoGap;
+    const destinoClaseX = header.innerX + destinoLugarWidth + destinoGap;
+
+    drawField(page, assets, header.innerX, y, destinoLugarWidth, 30, "Destino", destinoLugar);
+    drawField(page, assets, destinoClaseX, y, destinoClaseWidth, 30, "Alcance", destinoClase);
+    y += 36;
 
     const responsableGap = 6;
     const responsableGradoWidth = 110;
@@ -451,10 +449,14 @@ export async function GET(request: Request, context: { params: Promise<{ registr
           : "Registra asignación",
     leftSignatureName: [normalizeReceiptValue(usuarioEntregaGrado), usuarioEntregaNombreApellido],
     rightSignatureTitle: isRecinto ? "Superior responsable" : isExternalAssignment ? "Recibe asignación" : "Recibe",
-    rightSignatureName: isExternalAssignment ? [
+    rightSignatureName: isExternalAssignment && !destinatarioNombreApellido ? [
       "Grado: _______________________________",
       "Nombre y apellido: ____________________",
       "Firma: _____________________   CI: ________________",
+    ] : isExternalAssignment ? [
+      `Grado: ${destinatarioGrado || "_______________________________"}`,
+      `Nombre y apellido: ${destinatarioNombreApellido}`,
+      `Firma: ________________________   CI: ${destinatarioCiDisplay || "________________"}`,
     ] : [
       destinatarioGrado,
       destinatarioNombreApellido,

@@ -1,7 +1,7 @@
 "use client";
 
 import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded";
-import ApartmentRoundedIcon from "@mui/icons-material/ApartmentRounded";
+
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import ForwardToInboxOutlinedIcon from "@mui/icons-material/ForwardToInboxOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
@@ -348,17 +348,7 @@ export function PersonalSection({
               disabled={loading || personalFiltrado.length === 0}
             />
           ) : null}
-          {canWrite ? (
-            <QuickActionButton
-              eyebrow="Recintos"
-              title="Entrega a recinto"
-              description="Registra una entrega a un recinto dentro o fuera de la unidad."
-              icon={<ApartmentRoundedIcon fontSize="small" />}
-              tone="slate"
-              onClick={onOpenRecintoEntrega}
-              disabled={loading}
-            />
-          ) : null}
+
 
           <QuickActionButton
             eyebrow="PDF"
