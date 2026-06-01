@@ -29,6 +29,7 @@ import {
   formatDateUy,
   formatLongDateUy,
   formatTimeUy,
+  militaryShortLabel,
   normalizeReceiptValue,
   wrapText,
 } from "@/lib/server/receipt-pdf-layout";
@@ -292,6 +293,16 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     : isExterno
       ? registro.destinatarioExterno?.personaExterna?.grado ?? ""
       : registro.destinatarioPersonal?.personal?.rango.abreviacion ?? "";
+  const destinatarioApellidoRaw = isRecinto
+    ? registro.destinatarioRecinto?.responsableApellido ?? ""
+    : isExterno
+      ? registro.destinatarioExterno?.personaExterna?.apellido ?? ""
+      : registro.destinatarioPersonal?.personal?.apellido1 ?? "";
+  const destinatarioNombreRaw = isRecinto
+    ? registro.destinatarioRecinto?.responsableNombre ?? ""
+    : isExterno
+      ? registro.destinatarioExterno?.personaExterna?.nombre ?? ""
+      : registro.destinatarioPersonal?.personal?.nombre1 ?? "";
   const destinatarioNombreApellidoRaw = isRecinto
     ? formatApellidoNombre(registro.destinatarioRecinto?.responsableApellido, registro.destinatarioRecinto?.responsableNombre)
     : isExterno
@@ -447,20 +458,20 @@ export async function GET(request: Request, context: { params: Promise<{ registr
         : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION
           ? "Recibe devolución"
           : "Registra asignación",
-    leftSignatureName: [normalizeReceiptValue(usuarioEntregaGrado), usuarioEntregaNombreApellido],
+    leftSignatureName: [
+      militaryShortLabel(
+        usuarioEntregaGrado,
+        registro.usuarioEntrega.apellido ?? "",
+        registro.usuarioEntrega.nombre ?? registro.usuarioEntrega.username,
+      ),
+    ],
     rightSignatureTitle: isRecinto ? "Superior responsable" : isExternalAssignment ? "Recibe asignación" : "Recibe",
     rightSignatureName: isExternalAssignment && !destinatarioNombreApellido ? [
       "Grado: _______________________________",
       "Nombre y apellido: ____________________",
       "Firma: _____________________   CI: ________________",
-    ] : isExternalAssignment ? [
-      `Grado: ${destinatarioGrado || "_______________________________"}`,
-      `Nombre y apellido: ${destinatarioNombreApellido}`,
-      `Firma: ________________________   CI: ${destinatarioCiDisplay || "________________"}`,
     ] : [
-      destinatarioGrado,
-      destinatarioNombreApellido,
-      destinatarioCiDisplay ? `CI: ${destinatarioCiDisplay}` : "",
+      militaryShortLabel(destinatarioGradoRaw, destinatarioApellidoRaw, destinatarioNombreRaw) || destinatarioNombreApellido,
     ].filter(Boolean),
     footerNote: `Generado: ${formatDateUy(now)} ${formatTimeUy(now)}`,
     sectionTitle: "Constancia",
