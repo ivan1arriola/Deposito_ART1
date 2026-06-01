@@ -7,12 +7,13 @@ import { getPersonalSessionIdentity, parsePersonalUsuarioId } from "@/lib/person
 import { prisma } from "@/lib/prisma";
 import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
 import { hasPermission, type Permission } from "@/lib/permissions";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 
 export type AuthAccountType = "SISTEMA" | "PERSONAL";
 
 export type AuthUser = {
   usuarioId: string;
-  rangoId: number;
+  rangoId: number | null;
   grado: string;
   nombre: string;
   apellido: string;
@@ -136,7 +137,7 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
           const authUser: AuthUser = {
             usuarioId: usuario.usuarioId,
             rangoId: usuario.rangoId,
-            grado: usuario.rango.abreviacion,
+            grado: rangoAbreviacionLabel(usuario.rango),
             nombre: usuario.nombre,
             apellido: usuario.apellido,
             username: usuario.username,

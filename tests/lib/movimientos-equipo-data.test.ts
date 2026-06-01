@@ -81,7 +81,6 @@ describe("getMovimientosEquipoData", () => {
 
     expect(data.selectedItem).toEqual({
       equipoId: "113",
-      equipoId: "113",
       nombre: "Notebook tactica",
       activo: true,
     });

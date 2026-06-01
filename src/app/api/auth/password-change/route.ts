@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest, hashPassword, verifyPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { hasPermission } from "@/lib/permissions";
 import { changePersonalPassword } from "@/lib/personal-auth";
 
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
       entidadId: usuario.usuarioId,
       detalle: {
         username: usuario.username,
-        grado: usuario.rango.abreviacion,
+        grado: rangoAbreviacionLabel(usuario.rango),
         nombre: usuario.nombre,
         apellido: usuario.apellido,
         mailReferencia: usuario.mailReferencia,

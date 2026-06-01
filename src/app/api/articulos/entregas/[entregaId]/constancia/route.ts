@@ -5,6 +5,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { prisma } from "@/lib/prisma";
 import {
   A4_HEIGHT,
@@ -198,12 +199,12 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
     entrega.ordenante.nombre1,
     entrega.ordenante.nombre2,
   )}`.replace(/\s+/g, " ").trim();
-  const usuarioEntregaLabel = `${entrega.usuarioEntrega.rango.abreviacion} ${entrega.usuarioEntrega.apellido}, ${entrega.usuarioEntrega.nombre}`.replace(
+  const usuarioEntregaLabel = `${rangoAbreviacionLabel(entrega.usuarioEntrega.rango, "")} ${entrega.usuarioEntrega.apellido}, ${entrega.usuarioEntrega.nombre}`.replace(
     /\s+/g,
     " ",
   ).trim();
   const entregaFirmaLabel = militaryShortLabel(
-    entrega.usuarioEntrega.rango.abreviacion,
+    rangoAbreviacionLabel(entrega.usuarioEntrega.rango, ""),
     entrega.usuarioEntrega.apellido,
     entrega.usuarioEntrega.nombre,
   );

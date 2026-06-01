@@ -1,7 +1,133 @@
 import { NextResponse } from "next/server";
+import type {
+  EstadoEquipoPrestamo,
+  EstadoPrestamoMovimiento,
+  TipoArticulo,
+  TipoArticuloStockMovimiento,
+  TipoMovimiento,
+  TipoStockOperacion,
+} from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+
+type TrashEquipoPayload = {
+  equipo: {
+    equipoId: string;
+    nombre: string;
+    activo: boolean;
+    ordenPdf: number;
+    existenciaSie: number;
+  };
+  cajaEquipos?: Array<{
+    codigoDepositoGeneral: number | string;
+    equipoId: string;
+    cantidad: number;
+  }>;
+  itemCodigosSIE?: Array<{
+    equipoCodigoSIEId: string;
+    codigo: string;
+    talla: string;
+    equipoId: string;
+  }>;
+  cajaItemCodigosSIE?: Array<{
+    codigoDepositoGeneral: number | string;
+    equipoCodigoSIEId: string;
+  }>;
+  deletedMovimientos?: Array<{
+    movimientoId: string;
+    tipo: TipoMovimiento;
+    fecha: string;
+    usuarioEntregaId: string;
+    afectaStock: boolean;
+    observaciones: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  deletedMovimientoDestinatariosPersonal?: Array<{
+    movimientoId: string;
+    ci: string;
+  }>;
+  deletedMovimientoDestinatariosExterno?: Array<{
+    movimientoId: string;
+    personaExternaCi: string;
+  }>;
+  deletedMovimientoDestinatariosRecinto?: Array<{
+    movimientoId: string;
+    clase: string;
+    nombre: string;
+    responsableGrado: string | null;
+    responsableNombre: string | null;
+    responsableApellido: string | null;
+    responsableCi: string | null;
+  }>;
+  deletedPrestamosActivos?: Array<{
+    movimientoId: string;
+    reciboNumero: string;
+    estado: EstadoPrestamoMovimiento;
+    fechaEstimadaDevolucionTexto: string | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+  }>;
+  deletedPrestamosHistoriales?: Array<{
+    movimientoId: string;
+    reciboNumero: string;
+    estado: EstadoPrestamoMovimiento;
+    fechaDevolucion: string;
+    fechaEstimadaDevolucionTexto: string | null;
+    usuarioRecibeDevolucionId: string | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+  }>;
+  deletedStockOperaciones?: Array<{
+    stockOperacionId: string;
+    tipo: TipoStockOperacion;
+    fecha: string;
+    comentarios: string | null;
+    createdAt: string;
+  }>;
+  movimientoEquipos?: Array<{
+    movimientoId: string;
+    equipoId: string;
+    cantidad: number;
+    estadoEntrega: EstadoEquipoPrestamo;
+    comentarioEntrega: string | null;
+    estadoDevolucion: EstadoEquipoPrestamo | null;
+    comentarioDevolucion: string | null;
+  }>;
+  stockOperacionEquipos?: Array<{
+    stockOperacionId: string;
+    equipoId: string;
+    cantidad: number;
+  }>;
+};
+
+type TrashArticuloPayload = {
+  articulo: {
+    articuloId: number | string;
+    nombre: string;
+    tipo: TipoArticulo;
+  };
+  emptyEntregas?: Array<{
+    articuloEntregaPersonalId: string;
+    personalCi: string;
+    usuarioEntregaId: string;
+    ordenanteCi: string;
+    fecha: string;
+    comentario: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  stockMovimientos?: Array<{
+    articuloStockMovimientoId: string;
+    articuloId: number | string;
+    tipo: TipoArticuloStockMovimiento;
+    cantidad: number;
+    comentario: string | null;
+    articuloEntregaPersonalId: string | null;
+    createdAt: string;
+  }>;
+};
 
 export async function POST(req: Request, context: { params: Promise<{ papeleraId: string }> }) {
   const auth = await authorizeRequest(req, "delete_data");
@@ -19,9 +145,9 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
         throw new Error("P2025");
       }
 
-      const payload = registro.payload as any;
-
       if (registro.tipo === "EQUIPO") {
+        const payload = registro.payload as unknown as TrashEquipoPayload;
+
         // 1. Check duplicate name
         const duplicate = await tx.equipo.findUnique({
           where: { nombre: payload.equipo.nombre },
@@ -125,7 +251,27 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
           }
         }
 
-        // 9. Restore PrestamoActivo
+        // 9. Restore MovimientoDestinatarioRecinto
+        for (const dr of payload.deletedMovimientoDestinatariosRecinto || []) {
+          const existingDr = await tx.movimientoDestinatarioRecinto.findUnique({
+            where: { movimientoId: BigInt(dr.movimientoId) },
+          });
+          if (!existingDr) {
+            await tx.movimientoDestinatarioRecinto.create({
+              data: {
+                movimientoId: BigInt(dr.movimientoId),
+                clase: dr.clase,
+                nombre: dr.nombre,
+                responsableGrado: dr.responsableGrado,
+                responsableNombre: dr.responsableNombre,
+                responsableApellido: dr.responsableApellido,
+                responsableCi: dr.responsableCi,
+              },
+            });
+          }
+        }
+
+        // 10. Restore PrestamoActivo
         for (const pa of payload.deletedPrestamosActivos || []) {
           const existingPa = await tx.prestamoActivo.findUnique({
             where: { movimientoId: BigInt(pa.movimientoId) },
@@ -144,7 +290,7 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
           }
         }
 
-        // 10. Restore PrestamoHistorial
+        // 11. Restore PrestamoHistorial
         for (const ph of payload.deletedPrestamosHistoriales || []) {
           const existingPh = await tx.prestamoHistorial.findUnique({
             where: { movimientoId: BigInt(ph.movimientoId) },
@@ -165,7 +311,7 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
           }
         }
 
-        // 11. Restore empty StockOperacion records
+        // 12. Restore empty StockOperacion records
         for (const so of payload.deletedStockOperaciones || []) {
           const existingSo = await tx.stockOperacion.findUnique({
             where: { stockOperacionId: BigInt(so.stockOperacionId) },
@@ -183,7 +329,7 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
           }
         }
 
-        // 12. Restore MovimientoEquipo
+        // 13. Restore MovimientoEquipo
         for (const mi of payload.movimientoEquipos || []) {
           await tx.movimientoEquipo.create({
             data: {
@@ -198,7 +344,7 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
           });
         }
 
-        // 13. Restore StockOperacionEquipo
+        // 14. Restore StockOperacionEquipo
         for (const soi of payload.stockOperacionEquipos || []) {
           await tx.stockOperacionEquipo.create({
             data: {
@@ -210,6 +356,8 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
         }
 
       } else if (registro.tipo === "ARTICULO") {
+        const payload = registro.payload as unknown as TrashArticuloPayload;
+
         // 1. Check duplicate name
         const duplicate = await tx.articulo.findFirst({
           where: { nombre: payload.articulo.nombre },

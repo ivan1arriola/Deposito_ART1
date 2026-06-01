@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { consumeMagicLinkToken } from "@/lib/password-reset";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { normalizeEmailAddress } from "@/lib/email-address";
 
 type ResetConfirmPayload = {
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
       entidadId: usuario.usuarioId,
       detalle: {
         username: usuario.username,
-        grado: usuario.rango.abreviacion,
+        grado: rangoAbreviacionLabel(usuario.rango),
         nombre: usuario.nombre,
         apellido: usuario.apellido,
         mailReferencia: usuario.mailReferencia,

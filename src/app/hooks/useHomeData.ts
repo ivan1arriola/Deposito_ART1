@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { checkDbInitHandler, initializeDatabaseHandler } from "@/lib/handlers-auth";
+import { isAdminRole } from "@/lib/user-role";
 import type {
   Articulo,
   AuditoriaRecord,
@@ -255,7 +256,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
   );
 
   const loadAdminData = useCallback(async () => {
-    if (currentUser?.accountType !== "SISTEMA" || currentUser.rol !== "ADMIN") {
+    if (currentUser?.accountType !== "SISTEMA" || !isAdminRole(currentUser.rol)) {
       resetAdminData();
       return;
     }

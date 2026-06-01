@@ -22,6 +22,7 @@ import { buildUnidadHojasEntregaFileName } from "@/lib/server/pdf-filename";
 import { renderHojasEntregaPdf } from "@/lib/server/render-hoja-entrega-react-pdf";
 import { renderMovimientosFueraHojaPdf } from "@/lib/server/render-movimientos-fuera-hoja-react-pdf";
 import type { HojasEntregaEmailJobMetrics } from "@/lib/hojas-entrega-email-job";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { ParseSpeeds, PDFDocument } from "pdf-lib";
 
 export const runtime = "nodejs";
@@ -259,7 +260,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const requesterLabel = [usuario.rango.abreviacion, usuario.nombre, usuario.apellido].filter(Boolean).join(" ").trim();
+    const requesterLabel = [rangoAbreviacionLabel(usuario.rango, ""), usuario.nombre, usuario.apellido].filter(Boolean).join(" ").trim();
     const job = await createHojasEntregaEmailJob({
       userId: usuario.usuarioId,
       to: recipient,

@@ -359,11 +359,11 @@ export function PersonalCreateView({
                         </div>
 
                         <ul className="mt-2 space-y-1 text-xs text-stone-700">
-                          {movimiento.equipos.map((equipo, itemIndex) => {
-                            const equipo = equiposActivos.find((candidate) => candidate.equipoId === equipo.equipoId);
+                          {movimiento.equipos.map((equipoMovimiento, itemIndex) => {
+                            const equipoSeleccionado = equiposActivos.find((candidate) => candidate.equipoId === equipoMovimiento.equipoId);
                             return (
                               <li key={`movimiento-${movimientoIndex}-resumen-equipo-${itemIndex}`}>
-                                {`${equipo?.nombre ?? "Equipo sin definir"} x ${equipo.cantidad}`}
+                                {`${equipoSeleccionado?.nombre ?? "Equipo sin definir"} x ${equipoMovimiento.cantidad}`}
                               </li>
                             );
                           })}
@@ -487,15 +487,15 @@ export function PersonalCreateView({
                   >
                     <option value="">Seleccionar equipo</option>
                     {equiposActivos
-                      .filter((equipo) => {
-                        if (equipo.equipoId === equipo.equipoId) return true;
+                      .filter((equipoOption) => {
+                        if (equipoOption.equipoId === equipo.equipoId) return true;
                         return !movimientoDraft.equipos.some(
-                          (selectedItem, selectedIndex) => selectedIndex !== itemIndex && selectedItem.equipoId === equipo.equipoId,
+                          (selectedItem, selectedIndex) => selectedIndex !== itemIndex && selectedItem.equipoId === equipoOption.equipoId,
                         );
                       })
-                      .map((equipo) => (
-                        <option key={equipo.equipoId} value={equipo.equipoId}>
-                          {equipo.nombre}
+                      .map((equipoOption) => (
+                        <option key={equipoOption.equipoId} value={equipoOption.equipoId}>
+                          {equipoOption.nombre}
                         </option>
                       ))}
                   </select>

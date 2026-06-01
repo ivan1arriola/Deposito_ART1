@@ -217,7 +217,7 @@ export function StockView({
     setSieSavingItemId(equipo.equipoId);
     setSieError(null);
     try {
-      await api<{ equipoId: string; equipoId: string; existenciaSie: number }>(
+      await api<{ equipoId: string; existenciaSie: number }>(
         `/api/equipos/${encodeURIComponent(equipo.equipoId)}`,
         {
           method: "PATCH",

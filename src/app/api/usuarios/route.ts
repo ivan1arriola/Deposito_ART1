@@ -6,11 +6,12 @@ import { logAudit } from "@/lib/audit";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
 import { sendEmailVerificationMagicLinkEmail } from "@/lib/auth-email";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { ensurePasswordResetCompatibility } from "@/lib/password-reset";
 import { listPersonalAdminUsers } from "@/lib/personal-auth";
 
 type UsuarioPayload = {
-  rangoId: number | string;
+  rangoId?: number | string | null;
   nombre: string;
   apellido: string;
   usuario: string;
@@ -20,16 +21,18 @@ type UsuarioPayload = {
   activo?: boolean;
 };
 
-function parseRangoId(value: unknown) {
+function parseOptionalRangoId(value: unknown) {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string" && value.trim() === "") return null;
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  if (!Number.isInteger(parsed) || parsed <= 0) return undefined;
   return parsed;
 }
 
 function isValidPayload(body: unknown): body is UsuarioPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  if (parseRangoId(candidate.rangoId) === null) return false;
+  if (candidate.rangoId !== undefined && parseOptionalRangoId(candidate.rangoId) === undefined) return false;
   if (typeof candidate.nombre !== "string" || candidate.nombre.trim() === "") return false;
   if (typeof candidate.apellido !== "string" || candidate.apellido.trim() === "") return false;
   if (typeof candidate.usuario !== "string" || candidate.usuario.trim() === "") return false;
@@ -40,7 +43,7 @@ function isValidPayload(body: unknown): body is UsuarioPayload {
 }
 
 function roleFromValue(value: unknown): UserRole {
-  if (value === "ADMIN" || value === "EDITOR" || value === "READ_ONLY") return value;
+  if (value === "ADMIN" || value === "DESARROLLADOR" || value === "EDITOR" || value === "READ_ONLY") return value;
   return "EDITOR";
 }
 
@@ -74,7 +77,7 @@ function serializeUsuario(usuario: UsuarioRecord) {
     usuarioId: usuario.usuarioId,
     rangoId: usuario.rangoId,
     rango: usuario.rango,
-    grado: usuario.rango.abreviacion,
+    grado: rangoAbreviacionLabel(usuario.rango),
     nombre: usuario.nombre,
     apellido: usuario.apellido,
     username: usuario.username,
@@ -124,22 +127,24 @@ export async function POST(request: Request) {
   const body = await request.json();
   if (!isValidPayload(body)) {
     return NextResponse.json(
-      { error: "Payload inválido. Grado, nombre, apellido, usuario y contraseña (mín. 8 caracteres) son obligatorios." },
+      { error: "Payload inválido. Nombre, apellido, usuario y contraseña (mín. 8 caracteres) son obligatorios." },
       { status: 400 },
     );
   }
 
-  const rangoId = parseRangoId(body.rangoId);
-  if (rangoId === null) {
+  const rangoId = parseOptionalRangoId(body.rangoId);
+  if (rangoId === undefined) {
     return NextResponse.json({ error: "Grado invalido." }, { status: 400 });
   }
 
-  const rango = await prisma.rango.findUnique({
-    where: { rangoId },
-    select: { rangoId: true, abreviacion: true },
-  });
-  if (!rango) {
-    return NextResponse.json({ error: "Grado invalido." }, { status: 400 });
+  if (rangoId !== null) {
+    const rango = await prisma.rango.findUnique({
+      where: { rangoId },
+      select: { rangoId: true },
+    });
+    if (!rango) {
+      return NextResponse.json({ error: "Grado invalido." }, { status: 400 });
+    }
   }
 
   const passwordHash = await hashPassword(body.password);
@@ -185,7 +190,7 @@ export async function POST(request: Request) {
       entidad: "USUARIO",
       entidadId: created.usuarioId,
       detalle: {
-        grado: created.rango.abreviacion,
+        grado: created.rango?.abreviacion ?? null,
         nombre: created.nombre,
         apellido: created.apellido,
         username: created.username,

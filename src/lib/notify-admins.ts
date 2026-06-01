@@ -1,4 +1,5 @@
 import type { UserRole } from "@/generated/prisma/client";
+import { isAdminRole } from "@/lib/user-role";
 import { sendPushToAdmins } from "@/lib/web-push";
 
 type Actor = {
@@ -14,7 +15,7 @@ function actorLabel(actor: Actor) {
 }
 
 export async function notifyAdminOnLogin(actor: Actor) {
-  if (actor.rol === "ADMIN") return;
+  if (isAdminRole(actor.rol)) return;
   await sendPushToAdmins({
     kind: "LOGIN",
     title: "Nuevo inicio de sesión",
@@ -25,7 +26,7 @@ export async function notifyAdminOnLogin(actor: Actor) {
 }
 
 export async function notifyAdminOnMovement(actor: Actor, detail: string, url = "/") {
-  if (actor.rol === "ADMIN") return;
+  if (isAdminRole(actor.rol)) return;
   await sendPushToAdmins({
     kind: "MOVIMIENTO",
     title: "Movimiento registrado",
@@ -34,4 +35,3 @@ export async function notifyAdminOnMovement(actor: Actor, detail: string, url = 
     createdAt: new Date().toISOString(),
   });
 }
-

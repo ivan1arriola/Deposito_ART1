@@ -1,4 +1,13 @@
-import type { Equipo } from "./Equipo";
+import type { TipoEquipo } from "./TipoEquipo";
 
-/** @deprecated Usar `Equipo`. */
-export type Equipo = Equipo;
+export type Equipo = {
+  equipoId: string;
+  nombre: string;
+  tipo: TipoEquipo;
+  tipoEquipoId?: number | null;
+  tipoLabel?: string;
+  tipoOrden?: number;
+  activo: boolean;
+  ordenPdf: number;
+  existenciaSie: number;
+};

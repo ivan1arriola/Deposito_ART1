@@ -214,11 +214,11 @@ function buildStyles() {
 export default async function TrazabilidadEquiposPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ autoprint?: string; equipoId?: string; equipoId?: string; column?: string }>;
+  searchParams?: Promise<{ autoprint?: string; equipoId?: string; column?: string }>;
 }) {
   const params = searchParams ? await searchParams : undefined;
   const shouldAutoPrint = params?.autoprint === "1";
-  const equipoId = parseStockTraceItemId(params?.equipoId ?? params?.equipoId);
+  const equipoId = parseStockTraceItemId(params?.equipoId);
   const column = parseStockTraceColumn(params?.column);
   const printedAt = new Date();
   const generatedAt = formatDateTimeForDisplay(printedAt);

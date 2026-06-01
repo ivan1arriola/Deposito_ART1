@@ -24,13 +24,13 @@ export function UsernameModal({ dialog, saving, rangoOptions, onChange, onClose,
 
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Grado</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Grado (opcional)</span>
           <select
             value={dialog.rangoId}
             onChange={(event) => onChange("rangoId", event.target.value)}
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
           >
-            <option value="">Seleccionar grado</option>
+            <option value="">Sin grado</option>
             {rangoOptions.map((rango) => (
               <option key={`username-modal-rango-${rango.rangoId}`} value={String(rango.rangoId)}>
                 {`${rango.abreviacion} - ${rango.nombreCompleto}`}
@@ -73,7 +73,7 @@ export function UsernameModal({ dialog, saving, rangoOptions, onChange, onClose,
         <button
           type="button"
           onClick={onSubmit}
-          disabled={saving || dialog.rangoId.trim() === "" || dialog.nombre.trim() === "" || dialog.apellido.trim() === "" || dialog.username.trim() === ""}
+          disabled={saving || dialog.nombre.trim() === "" || dialog.apellido.trim() === "" || dialog.username.trim() === ""}
           className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
         >
           {saving ? (

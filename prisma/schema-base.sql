@@ -4,7 +4,7 @@ GRANT ALL ON SCHEMA public TO CURRENT_USER;
 GRANT USAGE ON SCHEMA public TO PUBLIC;
 
 CREATE TYPE "tipo_stock_operacion" AS ENUM ('INGRESO', 'EGRESO');
-CREATE TYPE "user_role" AS ENUM ('ADMIN', 'EDITOR', 'READ_ONLY');
+CREATE TYPE "user_role" AS ENUM ('ADMIN', 'DESARROLLADOR', 'EDITOR', 'READ_ONLY');
 CREATE TYPE "tipo_personal" AS ENUM ('SUBALTERNO', 'OFICIAL', 'SUBOFICIAL');
 CREATE TYPE "tipo_articulo" AS ENUM ('OFICINA', 'LIMPIEZA');
 CREATE TYPE "tipo_articulo_stock_movimiento" AS ENUM ('INGRESO', 'EGRESO');
@@ -76,8 +76,7 @@ INSERT INTO "grado" ("tipo", "abreviacion", "nombre_completo", "orden") VALUES
 ('SUBALTERNO', U&'Cabo 2\00B0', 'Cabo de Segunda', 3),
 ('SUBALTERNO', U&'Sdo. 1\00B0', 'Soldado de Primera', 4),
 ('SUBALTERNO', U&'Sdo. 1\00B0 C/ CIRR', 'Soldado de Primera Cursando CIRR', 5),
-('SUBALTERNO', U&'Sdo. 1\00B0 S/ CIRR', 'Soldado de Primera Sin CIRR', 6),
-('SUBALTERNO', 'Desarrollo', 'Desarrollo', 7);
+('SUBALTERNO', U&'Sdo. 1\00B0 S/ CIRR', 'Soldado de Primera Sin CIRR', 6);
 
 CREATE TABLE "bateria" (
   "bateria_id" SMALLSERIAL PRIMARY KEY,
@@ -306,7 +305,7 @@ CREATE INDEX "personal_auth_activo_idx" ON "personal_auth"("activo");
 
 CREATE TABLE "usuario" (
   "usuario_id" TEXT PRIMARY KEY,
-  "grado_id" SMALLINT NOT NULL REFERENCES "grado"("grado_id"),
+  "grado_id" SMALLINT REFERENCES "grado"("grado_id"),
   "nombre" TEXT NOT NULL,
   "apellido" TEXT NOT NULL,
   "usuario" TEXT NOT NULL UNIQUE,

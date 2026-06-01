@@ -3,7 +3,7 @@ import type { Role } from "./Role";
 
 export type CurrentUser = {
   usuarioId: string;
-  rangoId: number;
+  rangoId: number | null;
   grado: string;
   nombre: string;
   apellido: string;

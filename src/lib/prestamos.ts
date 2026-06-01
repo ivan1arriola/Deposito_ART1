@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import type { PrestamoStockEntry } from "@/types/views";
 
@@ -113,12 +114,12 @@ type PrestamoDestinatarioResumen = {
 };
 
 function formatUserLabel(user: {
-  rango: { abreviacion: string };
+  rango: { abreviacion: string } | null;
   apellido: string;
   nombre: string;
   username: string;
 }) {
-  return `${user.rango.abreviacion} ${user.apellido}, ${user.nombre}`.replace(/\s+/g, " ").trim() || user.username;
+  return `${rangoAbreviacionLabel(user.rango, "")} ${user.apellido}, ${user.nombre}`.replace(/\s+/g, " ").trim() || user.username;
 }
 
 export function formatPrestamoDestinatario(

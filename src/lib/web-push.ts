@@ -141,7 +141,7 @@ async function listAdminSubscriptions() {
       SELECT s.subscription_id, s.endpoint, s.p256dh, s.auth
       FROM web_push_subscription s
       JOIN usuario u ON u.usuario_id = s.usuario_id
-      WHERE s.enabled = true AND u.activo = true AND u.rol = 'ADMIN'
+      WHERE s.enabled = true AND u.activo = true AND u.rol IN ('ADMIN', 'DESARROLLADOR')
     `,
   );
   return rows;

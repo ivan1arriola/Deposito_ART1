@@ -6,6 +6,7 @@ import {
   type ArticuloEntregaHistorialEntry,
   type ArticuloEntregaHistorialItem,
 } from "@/lib/articulo-entregas-history";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { prisma } from "@/lib/prisma";
 
 const articuloEntregaHistorialInclude = {
@@ -78,9 +79,9 @@ function buildMilitaryLabel(personal: {
 function buildUsuarioEntregaLabel(usuario: {
   apellido: string;
   nombre: string;
-  rango: { abreviacion: string };
+  rango: { abreviacion: string } | null;
 }) {
-  return `${usuario.rango.abreviacion} ${usuario.apellido}, ${usuario.nombre}`.replace(/\s+/g, " ").trim();
+  return `${rangoAbreviacionLabel(usuario.rango, "")} ${usuario.apellido}, ${usuario.nombre}`.replace(/\s+/g, " ").trim();
 }
 
 function compareItemsByName(left: ArticuloEntregaHistorialItem, right: ArticuloEntregaHistorialItem) {

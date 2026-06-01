@@ -1,5 +1,6 @@
 import { UserRole } from "@/generated/prisma/client";
 import type { AuthAccountType } from "@/lib/auth";
+import { canWriteRole, isAdminRole } from "@/lib/user-role";
 
 export type Permission =
   | "read_data"
@@ -12,6 +13,15 @@ export type Permission =
 
 const permissionMatrix: Record<UserRole, Record<Permission, boolean>> = {
   ADMIN: {
+    read_data: true,
+    write_data: true,
+    delete_data: true,
+    manage_users: true,
+    view_audit: true,
+    read_own_data: true,
+    change_own_password: true,
+  },
+  DESARROLLADOR: {
     read_data: true,
     write_data: true,
     delete_data: true,
@@ -59,4 +69,12 @@ export function hasPermission(
     return personalPermissionMatrix[permission];
   }
   return permissionMatrix[role][permission];
+}
+
+export function isAdministrativeAccountRole(role: UserRole | null | undefined) {
+  return isAdminRole(role);
+}
+
+export function canWriteAccountRole(role: UserRole | null | undefined) {
+  return canWriteRole(role);
 }

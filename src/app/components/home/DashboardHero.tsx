@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, type RefObject } from "react";
-import { Box, Button, Chip, Collapse, Divider, Drawer, Grid, IconButton, Paper, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, Divider, Drawer, Grid, IconButton, Paper, Stack, Typography } from "@mui/material";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import type { CurrentUser } from "@/types/entities";
@@ -547,7 +547,7 @@ export function DashboardHero({
         </Grid>
       ) : null}
 
-      {currentUser.rol === "ADMIN" ? (
+      {isAdmin ? (
         <Box sx={{ position: "relative", mt: 2 }}>
           <AdminPushNotifications />
         </Box>

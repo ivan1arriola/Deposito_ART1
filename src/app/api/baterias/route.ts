@@ -4,6 +4,7 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { LEGACY_CIRR_BATTERY_NAMES } from "@/lib/cirr-classification";
 import { moveCatalogId } from "@/lib/catalog-order";
+import { isAdminRole } from "@/lib/user-role";
 
 function parseOptionalOrden(value: unknown) {
   if (value === undefined || value === null || value === "") return undefined;
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
 export async function POST(req: Request) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo admin puede registrar baterias." }, { status: 403 });
   }
 

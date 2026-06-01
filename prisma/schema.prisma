@@ -18,6 +18,7 @@ enum TipoStockOperacion {
 
 enum UserRole {
   ADMIN
+  DESARROLLADOR
   EDITOR
   READ_ONLY
 
@@ -80,7 +81,7 @@ enum PrioridadRecordatorio {
 
 model Usuario {
   usuarioId                       String              @id @default(cuid()) @map("usuario_id")
-  rangoId                         Int                 @map("grado_id") @db.SmallInt
+  rangoId                         Int?                @map("grado_id") @db.SmallInt
   nombre                          String
   apellido                        String
   username                        String              @unique @map("usuario")
@@ -94,7 +95,7 @@ model Usuario {
   sesiones                        Sesion[]
   auditorias                      Auditoria[]
   resetCodes                      PasswordResetCode[]
-  rango                           Rango               @relation(fields: [rangoId], references: [rangoId])
+  rango                           Rango?              @relation(fields: [rangoId], references: [rangoId])
   movimientosEntregados           Movimiento[]        @relation("movimiento_usuario_entrega")
   articuloEntregasRealizadas      ArticuloEntregaPersonal[] @relation("articulo_entrega_usuario")
   devolucionesPrestamoRegistradas PrestamoHistorial[] @relation("prestamo_historial_usuario_recepcion")

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { calcularStockTodos } from "@/lib/stock-calc";
+import { isAdminRole } from "@/lib/user-role";
 
 function parseTipoArticulo(value: unknown) {
   if (typeof value !== "string") return undefined;
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
 export async function POST(req: Request) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo admin puede registrar artículos." }, { status: 403 });
   }
 

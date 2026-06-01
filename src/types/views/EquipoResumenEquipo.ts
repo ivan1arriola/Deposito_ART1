@@ -1,6 +1,4 @@
 export type EquipoResumenEquipo = {
   equipoId: string;
-  /** @deprecated Usar `equipoId`. */
-  equipoId: string;
   nombre: string;
 };

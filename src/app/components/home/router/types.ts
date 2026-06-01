@@ -1,7 +1,7 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import type { PrestamoEditPayload } from "@/app/components/views/FormulariosPrestamosView";
 import type { MainView } from "@/types/views";
-import type { Articulo, Equipo, EquipoTipo, OficialSuboficial, Personal, TipoArticulo } from "@/types/entities";
+import type { Articulo, Equipo, EquipoTipo, OficialSuboficial, Personal, Role, TipoArticulo } from "@/types/entities";
 import type {
   EquipoForm,
   OficialSuboficialForm,
@@ -132,7 +132,7 @@ export type CreationViewsProps = {
   newPassword: string;
   newPasswordConfirm: string;
   newMailReferencia: string;
-  newRole: "ADMIN" | "EDITOR" | "READ_ONLY";
+  newRole: Role;
   createUsuario: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   setNewUserRangoId: (value: string) => void;
   setNewNombre: (value: string) => void;
@@ -141,10 +141,10 @@ export type CreationViewsProps = {
   setNewPassword: (value: string) => void;
   setNewPasswordConfirm: (value: string) => void;
   setNewMailReferencia: (value: string) => void;
-  setNewRole: (role: "ADMIN" | "EDITOR" | "READ_ONLY") => void;
-  roleLabel: (role: "ADMIN" | "EDITOR" | "READ_ONLY" | null | undefined) => string;
-  roleDescription: (role: "ADMIN" | "EDITOR" | "READ_ONLY" | null | undefined) => string;
-  roleScope: (role: "ADMIN" | "EDITOR" | "READ_ONLY" | null | undefined) => string;
+  setNewRole: (role: Role) => void;
+  roleLabel: (role: Role | null | undefined) => string;
+  roleDescription: (role: Role | null | undefined) => string;
+  roleScope: (role: Role | null | undefined) => string;
 };
 
 export type PersonnelAndSummaryViewsProps = {

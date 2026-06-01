@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
 import { sendEmailVerificationMagicLinkEmail, sendPasswordResetMagicLinkEmail } from "@/lib/auth-email";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { ensurePasswordResetCompatibility } from "@/lib/password-reset";
 
 type ResetRequestPayload = {
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
         entidadId: usuario.usuarioId,
         detalle: {
           username: usuario.username,
-          grado: usuario.rango.abreviacion,
+          grado: rangoAbreviacionLabel(usuario.rango),
           nombre: usuario.nombre,
           apellido: usuario.apellido,
           mailReferencia: normalizedMail,
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
       entidadId: usuario.usuarioId,
       detalle: {
         username: usuario.username,
-        grado: usuario.rango.abreviacion,
+        grado: rangoAbreviacionLabel(usuario.rango),
         nombre: usuario.nombre,
         apellido: usuario.apellido,
         mailReferencia: normalizedMail,

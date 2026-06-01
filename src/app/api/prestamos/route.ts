@@ -320,10 +320,12 @@ export async function POST(request: Request) {
           },
         })
       : Promise.resolve(null),
-    prisma.rango.findUnique({
-      where: { rangoId: auth.user.rangoId },
-      select: { orden: true },
-    }),
+    auth.user.rangoId
+      ? prisma.rango.findUnique({
+          where: { rangoId: auth.user.rangoId },
+          select: { orden: true },
+        })
+      : Promise.resolve(null),
     prisma.personal.findFirst({
       where: { ci: actuanteCi },
       select: {
@@ -353,7 +355,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (actorRango?.orden == null) {
+  if (auth.user.rangoId !== null && actorRango?.orden == null) {
     return NextResponse.json({ error: "No se pudo determinar el orden del usuario autenticado." }, { status: 400 });
   }
 
@@ -375,7 +377,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (actuanteData.rango.orden >= actorRango.orden) {
+  if (actorRango && actuanteData.rango.orden >= actorRango.orden) {
     return NextResponse.json(
       { error: "El registro por orden de debe ser de rango superior al usuario autenticado." },
       { status: 400 },

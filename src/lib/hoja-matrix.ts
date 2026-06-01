@@ -143,7 +143,6 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
     generatedAt: formatDateTimeForDisplay(new Date()),
     equipos: equipos.map((equipo) => ({
       equipoId: equipo.equipoId.toString(),
-      equipoId: equipo.equipoId.toString(),
       nombre: equipo.nombre,
     })),
     rows,

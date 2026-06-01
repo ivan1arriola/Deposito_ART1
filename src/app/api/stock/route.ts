@@ -13,6 +13,7 @@ import {
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
 import { serializeEquipoTipoData, tipoEquipoRelationSelect } from "@/lib/equipo-tipos-data";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { prisma } from "@/lib/prisma";
 import {
   buildStockSummaryMaps,
@@ -296,7 +297,7 @@ export async function GET(req: Request) {
       const key = `${audit.entidad}:${audit.entidadId}`;
       if (auditUserByEntity.has(key)) continue;
       const userLabel = audit.usuario
-        ? `${audit.usuario.rango.abreviacion} ${audit.usuario.apellido}, ${audit.usuario.nombre}`.replace(/\s+/g, " ").trim()
+        ? `${rangoAbreviacionLabel(audit.usuario.rango, "")} ${audit.usuario.apellido}, ${audit.usuario.nombre}`.replace(/\s+/g, " ").trim()
         : audit.usuarioId
           ? "Usuario eliminado"
           : null;
@@ -314,7 +315,6 @@ export async function GET(req: Request) {
     const tipo = serializeEquipoTipoData(equipo);
 
     return {
-      equipoId: key,
       equipoId: key,
       nombre: equipo.nombre,
       ...tipo,
@@ -395,11 +395,11 @@ export async function GET(req: Request) {
     const historialPrestamos: StockHistorialInternalEntry[] = prestamos.flatMap((prestamo) => {
       const destinatario = formatPrestamoDestinatario(prestamo);
       const totalUnidades = prestamo.equipos.reduce((acumulado, equipo) => acumulado + equipo.cantidad, 0);
-      const usuarioEntregaLabel = `${prestamo.usuarioEntrega.rango.abreviacion} ${prestamo.usuarioEntrega.apellido}, ${prestamo.usuarioEntrega.nombre}`
+      const usuarioEntregaLabel = `${rangoAbreviacionLabel(prestamo.usuarioEntrega.rango, "")} ${prestamo.usuarioEntrega.apellido}, ${prestamo.usuarioEntrega.nombre}`
         .replace(/\s+/g, " ")
         .trim();
       const usuarioRecibeLabel = prestamo.prestamoHistorial?.usuarioRecibeDevolucion
-        ? `${prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango.abreviacion} ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.apellido}, ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre}`
+        ? `${rangoAbreviacionLabel(prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango, "")} ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.apellido}, ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre}`
             .replace(/\s+/g, " ")
             .trim()
         : null;

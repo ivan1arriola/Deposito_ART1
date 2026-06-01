@@ -292,11 +292,9 @@ export type EquipoMergeResult = {
   ok: boolean;
   sourceEquipo: {
     equipoId: string;
-    equipoId: string;
     nombre: string;
   };
   targetEquipo: {
-    equipoId: string;
     equipoId: string;
     nombre: string;
   };
@@ -330,7 +328,6 @@ export async function mergeEquipoHandler(sourceEquipoId: string, targetEquipoId:
 
 export type EquipoDeleteImpact = {
   equipo: {
-    equipoId: string;
     equipoId: string;
     nombre: string;
   };

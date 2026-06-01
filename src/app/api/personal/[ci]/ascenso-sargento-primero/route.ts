@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { prisma } from "@/lib/prisma";
 import { normalizeSearchTerm } from "@/lib/search";
+import { isAdminRole } from "@/lib/user-role";
 
 const ASCENSO_COMENTARIO_PRESTAMO = "Por ascenso a Sargento Primero";
 const ASCENSO_FECHA_ESTIMADA = "Indefinido";
@@ -51,7 +52,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
   const auth = await authorizeRequest(request, "delete_data");
   if (!auth.ok) return auth.response;
 
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo el administrador puede ejecutar este ascenso." }, { status: 403 });
   }
 

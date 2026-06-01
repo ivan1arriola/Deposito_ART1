@@ -5,9 +5,10 @@ import { formatAuditEntityId, resolveAuditEntityName, type AuditCiReferences } f
 import { formatUruguayanCi, normalizeCi } from "@/lib/ci";
 import { formatDateTimeForDisplay, formatDateTimeExact } from "@/lib/date-helpers";
 import { compareEquiposByTipoAndName } from "@/lib/equipo-sort";
+import { systemUserLabel } from "@/lib/formatters";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MainView } from "@/types/views";
-import type { Articulo, AuditoriaRecord, Equipo, EquipoTipo, FirmaConfig, Rango, Role, TipoArticulo, TipoEquipo, UsuarioAdmin } from "@/types/entities";
+import { ROLE_OPTIONS, type Articulo, type AuditoriaRecord, type Equipo, type EquipoTipo, type FirmaConfig, type Rango, type Role, type TipoArticulo, type TipoEquipo, type UsuarioAdmin } from "@/types/entities";
 import type { PapeleraRecord } from "@/app/types/home";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 import { ModalFrame } from "../modals/ModalFrame";
@@ -217,7 +218,6 @@ interface ConfigViewsProps {
   reloadCurrentViewData?: (showSpinner?: boolean) => Promise<void>;
 }
 
-const ROLE_OPTIONS: Role[] = ["ADMIN", "EDITOR", "READ_ONLY"];
 const USER_ACCOUNT_TYPE_TABS: Array<{ value: UserAccountType; label: string }> = [
   { value: "SISTEMA", label: "Usuarios de sistema" },
   { value: "PERSONAL", label: "Usuarios de personal" },
@@ -1619,7 +1619,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                 <div key={usuario.usuarioId} className="rounded-lg bg-stone-100/80 p-2">
                   <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-medium text-stone-900">{`${usuario.grado} ${usuario.apellido}, ${usuario.nombre}`}</p>
+                      <p className="text-sm font-medium text-stone-900">{systemUserLabel(usuario)}</p>
                       <p className="mt-1 text-xs text-stone-600">
                         {`Usuario: ${usuario.username}${isPersonalAccount ? " (acceso por cédula)" : ""}`}
                       </p>

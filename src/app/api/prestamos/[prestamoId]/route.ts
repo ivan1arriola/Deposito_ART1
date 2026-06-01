@@ -14,6 +14,7 @@ import { formatPrestamoDestinatario, prestamoInclude, serializePrestamoWithActua
 import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
 import { prisma } from "@/lib/prisma";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
+import { isAdminRole } from "@/lib/user-role";
 
 type PrestamoClase = "INTERNO" | "EXTERNO" | "PENDIENTE";
 type PrestamoDestinatarioTipo = "PERSONAL" | "OFICIAL" | "SUBOFICIAL";
@@ -295,7 +296,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   if (!auth.ok) return auth.response;
   await ensurePrestamoActuanteCompatibility();
 
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo el administrador puede editar préstamos." }, { status: 403 });
   }
 
@@ -715,7 +716,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
   const auth = await authorizeRequest(request, "delete_data");
   if (!auth.ok) return auth.response;
 
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo el administrador puede eliminar préstamos." }, { status: 403 });
   }
 

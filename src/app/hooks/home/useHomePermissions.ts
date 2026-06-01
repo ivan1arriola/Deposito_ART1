@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { canWriteRole, isAdminRole } from "@/lib/user-role";
 import type { CurrentUser } from "@/types/entities";
 
 export type HomePermissions = {
@@ -15,8 +16,8 @@ export function useHomePermissions(currentUser: CurrentUser | null | undefined):
   return useMemo(() => {
     const isPersonalAccount = currentUser?.accountType === "PERSONAL";
     const isSystemAccount = currentUser?.accountType === "SISTEMA";
-    const isAdmin = isSystemAccount && currentUser?.rol === "ADMIN";
-    const canWrite = isSystemAccount && (currentUser?.rol === "ADMIN" || currentUser?.rol === "EDITOR");
+    const isAdmin = isSystemAccount && isAdminRole(currentUser?.rol);
+    const canWrite = isSystemAccount && canWriteRole(currentUser?.rol);
 
     return {
       isPersonalAccount,

@@ -7,6 +7,7 @@ import { isValidUruguayanCi } from "@/lib/ci";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
+import { isAdminRole } from "@/lib/user-role";
 import {
   MOVIMIENTO_TIPO_ASIGNACION,
   MOVIMIENTO_TIPO_DEVOLUCION,
@@ -846,7 +847,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 export async function DELETE(req: Request, context: { params: Promise<{ registroId: string }> }) {
   const auth = await authorizeRequest(req, "delete_data");
   if (!auth.ok) return auth.response;
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo el administrador puede eliminar registros." }, { status: 403 });
   }
 

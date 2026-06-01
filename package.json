@@ -1,6 +1,6 @@
 {
   "name": "deposito-art1",
-  "version": "6.7.2",
+  "version": "6.7.3",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
@@ -31,6 +31,7 @@
     "db:patch:add-item-tipo": "prisma db execute --file prisma/patches/20260524_add_item_tipo.sql && prisma generate",
     "db:patch:refactor-tipo-equipo": "prisma db execute --file prisma/patches/20260531_refactor_tipo_equipo.sql && prisma generate",
     "db:patch:rename-item-to-equipos-table": "prisma db execute --file prisma/patches/20260531_rename_item_table_to_equipos.sql && prisma generate",
+    "db:patch:usuario-sin-grado-desarrollador": "prisma db execute --file prisma/patches/20260531_usuario_sin_grado_desarrollador.sql && prisma generate",
     "db:patch:add-articulos": "prisma db execute --file prisma/patches/20260520_add_articulos.sql && prisma generate",
     "db:patch:add-articulos-stock-actual": "prisma db execute --file prisma/patches/20260520_add_articulos_stock_actual.sql && prisma generate",
     "db:patch:add-articulo-stock-movimiento": "prisma db execute --file prisma/patches/20260520_add_articulo_stock_movimiento.sql && prisma generate",

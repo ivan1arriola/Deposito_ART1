@@ -56,7 +56,6 @@ export function UserCreateView({
 }: UserCreateViewProps) {
   const canSubmit =
     isAdmin &&
-    rangoId.trim() !== "" &&
     nombre.trim() !== "" &&
     apellido.trim() !== "" &&
     username.trim() !== "" &&
@@ -94,7 +93,7 @@ export function UserCreateView({
                 className="rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                 disabled={!isAdmin}
               >
-                <option value="">Grado *</option>
+                <option value="">Grado (opcional)</option>
                 {rangoOptions.map((rango) => (
                   <option key={`user-rango-${rango.rangoId}`} value={String(rango.rangoId)}>
                     {`${rango.abreviacion} - ${rango.nombreCompleto}`}

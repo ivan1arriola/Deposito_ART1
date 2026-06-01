@@ -3,6 +3,7 @@ import { TipoArticulo } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { isAdminRole } from "@/lib/user-role";
 
 function parseArticuloId(raw: string) {
   const value = Number(raw);
@@ -74,7 +75,7 @@ export async function GET(req: Request, context: { params: Promise<{ articuloId:
       articulo,
       movimientos,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "No se pudieron obtener los detalles del artículo." }, { status: 500 });
   }
 }
@@ -82,7 +83,7 @@ export async function GET(req: Request, context: { params: Promise<{ articuloId:
 export async function PUT(req: Request, context: { params: Promise<{ articuloId: string }> }) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo admin puede editar artículos." }, { status: 403 });
   }
 
@@ -142,7 +143,7 @@ export async function PUT(req: Request, context: { params: Promise<{ articuloId:
 export async function DELETE(req: Request, context: { params: Promise<{ articuloId: string }> }) {
   const auth = await authorizeRequest(req, "delete_data");
   if (!auth.ok) return auth.response;
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo admin puede eliminar artículos." }, { status: 403 });
   }
 

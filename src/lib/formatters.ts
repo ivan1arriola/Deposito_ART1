@@ -7,6 +7,7 @@ import { TALLA_KEYS, TALLA_LABELS } from "./tallas";
 
 const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Administrador",
+  DESARROLLADOR: "Desarrollador",
   EDITOR: "Editor",
   READ_ONLY: "Solo Lectura",
 };
@@ -15,6 +16,10 @@ export const ROLE_DETAILS: Record<Role, { description: string; scope: string }> 
   ADMIN: {
     description: "Gestiona usuarios, firmas, auditoría y toda la operación del sistema.",
     scope: "Acceso total de configuración y administración.",
+  },
+  DESARROLLADOR: {
+    description: "Administra el sistema y además puede operar como cuenta técnica sin grado militar.",
+    scope: "Acceso total técnico y administrativo.",
   },
   EDITOR: {
     description: "Opera personal, movimientos y catálogos operativos, sin administración de usuarios.",
@@ -47,6 +52,32 @@ export function roleDescription(role: Role | null | undefined): string {
 export function roleScope(role: Role | null | undefined): string {
   if (!role) return "";
   return ROLE_DETAILS[role]?.scope ?? "";
+}
+
+export function rangoAbreviacionLabel(
+  rango: { abreviacion?: string | null } | null | undefined,
+  fallback = "Sin grado",
+) {
+  const value = rango?.abreviacion?.trim();
+  return value ? value : fallback;
+}
+
+export function systemUserLabel(user: {
+  rango?: { abreviacion?: string | null } | null;
+  apellido?: string | null;
+  nombre?: string | null;
+  username?: string | null;
+}) {
+  const rango = user.rango?.abreviacion?.trim() ?? "";
+  const apellido = user.apellido?.trim() ?? "";
+  const nombre = user.nombre?.trim() ?? "";
+  const name = [apellido, nombre].filter(Boolean).join(", ").trim();
+
+  if (rango && name) {
+    return `${rango} ${name}`.replace(/\s+/g, " ").trim();
+  }
+
+  return name || user.username?.trim() || "Usuario sin nombre";
 }
 
 export function rangoLabel(rango: Rango): string {

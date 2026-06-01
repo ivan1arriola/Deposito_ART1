@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { getWebPushConfigStatus } from "@/lib/web-push";
+import { isAdminRole } from "@/lib/user-role";
 
 export async function GET(request: Request) {
   const auth = await authorizeRequest(request, "manage_users");
   if (!auth.ok) return auth.response;
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo el administrador puede configurar notificaciones." }, { status: 403 });
   }
 

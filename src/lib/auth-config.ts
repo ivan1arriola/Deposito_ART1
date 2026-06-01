@@ -62,7 +62,7 @@ export const authOptions = {
             entidadId: user.usuarioId,
             detalle: {
               username: user.username,
-              grado: user.rango.abreviacion,
+              grado: user.rango?.abreviacion ?? null,
               nombre: user.nombre,
               apellido: user.apellido,
               rol: user.rol,

@@ -315,13 +315,11 @@ export function AsignacionRecintoEditorView({
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white"
                 >
                   <option value="">Seleccionar grado</option>
-                  {rangos
-                    .filter((r) => r.nombreCompleto !== "Desarrollo" && r.abreviacion !== "Desarrollo")
-                    .map((r) => (
-                      <option key={r.rangoId} value={r.abreviacion}>
-                        {r.abreviacion} - {r.nombreCompleto}
-                      </option>
-                    ))}
+                  {rangos.map((r) => (
+                    <option key={r.rangoId} value={r.abreviacion}>
+                      {r.abreviacion} - {r.nombreCompleto}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="text-sm font-medium text-stone-700">

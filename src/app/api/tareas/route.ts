@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
-import { UserRole } from "@/generated/prisma/client";
+import { isAdminRole } from "@/lib/user-role";
 
 type CreateTaskPayload = {
   titulo?: unknown;
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
   let targetUsuarioId = user.usuarioId;
 
   if (requestedUsuarioId !== "" && requestedUsuarioId !== user.usuarioId) {
-    if (user.rol !== UserRole.ADMIN) {
+    if (!isAdminRole(user.rol)) {
       return NextResponse.json({ error: "Solo administradores pueden consultar tareas de otros usuarios." }, { status: 403 });
     }
     const target = await prisma.usuario.findUnique({
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
   const requestedUsuarioId = typeof body.usuarioId === "string" ? body.usuarioId.trim() : "";
   let targetUsuarioId = user.usuarioId;
   if (requestedUsuarioId !== "" && requestedUsuarioId !== user.usuarioId) {
-    if (user.rol !== UserRole.ADMIN) {
+    if (!isAdminRole(user.rol)) {
       return NextResponse.json({ error: "Solo administradores pueden asignar tareas a otros usuarios." }, { status: 403 });
     }
     const target = await prisma.usuario.findUnique({

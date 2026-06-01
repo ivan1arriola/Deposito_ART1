@@ -4,6 +4,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { buildPersonaExternaNombre, buildPersonalDestinatarioNombre } from "@/lib/movimiento-destinatario";
 import { prisma } from "@/lib/prisma";
 import {
@@ -247,7 +248,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
   const observaciones = prestamo.observaciones?.trim() || "-";
 
   const entregaLabel = militaryShortLabel(
-    prestamo.usuarioEntrega.rango.abreviacion,
+    rangoAbreviacionLabel(prestamo.usuarioEntrega.rango, ""),
     prestamo.usuarioEntrega.apellido,
     prestamo.usuarioEntrega.nombre,
   );
@@ -262,7 +263,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       : "";
   const recibeLabel = prestamo.prestamoHistorial?.usuarioRecibeDevolucion
     ? militaryShortLabel(
-        prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango.abreviacion,
+        rangoAbreviacionLabel(prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango, ""),
         prestamo.prestamoHistorial.usuarioRecibeDevolucion.apellido,
         prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre,
       )

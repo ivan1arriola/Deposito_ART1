@@ -6,6 +6,7 @@ import { logAudit } from "@/lib/audit";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
 import { sendEmailVerificationMagicLinkEmail } from "@/lib/auth-email";
+import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { ensurePasswordResetCompatibility } from "@/lib/password-reset";
 import {
   adminSetPersonalPassword,
@@ -13,9 +14,10 @@ import {
   parsePersonalUsuarioId,
   updatePersonalAccountActive,
 } from "@/lib/personal-auth";
+import { isAdminRole, isReadOnlyRole } from "@/lib/user-role";
 
 type UsuarioUpdatePayload = {
-  rangoId?: number | string;
+  rangoId?: number | string | null;
   nombre?: string;
   apellido?: string;
   usuario?: string;
@@ -27,13 +29,15 @@ type UsuarioUpdatePayload = {
 };
 
 function roleFromValue(value: unknown): UserRole | null {
-  if (value === "ADMIN" || value === "EDITOR" || value === "READ_ONLY") return value;
+  if (value === "ADMIN" || value === "DESARROLLADOR" || value === "EDITOR" || value === "READ_ONLY") return value;
   return null;
 }
 
-function parseRangoId(value: unknown) {
+function parseOptionalRangoId(value: unknown) {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string" && value.trim() === "") return null;
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  if (!Number.isInteger(parsed) || parsed <= 0) return undefined;
   return parsed;
 }
 
@@ -67,7 +71,7 @@ function serializeUsuario(usuario: UsuarioRecord) {
     usuarioId: usuario.usuarioId,
     rangoId: usuario.rangoId,
     rango: usuario.rango,
-    grado: usuario.rango.abreviacion,
+    grado: rangoAbreviacionLabel(usuario.rango),
     nombre: usuario.nombre,
     apellido: usuario.apellido,
     username: usuario.username,
@@ -92,7 +96,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
 
   const personalCi = parsePersonalUsuarioId(usuarioId);
   if (personalCi) {
-    const isAdmin = actor.accountType === "SISTEMA" && actor.rol === "ADMIN";
+    const isAdmin = actor.accountType === "SISTEMA" && isAdminRole(actor.rol);
     if (!isAdmin) {
       return NextResponse.json({ error: "No autorizado para esta acción." }, { status: 403 });
     }
@@ -162,8 +166,8 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
   }
 
   const isSelfUpdate = actor.usuarioId === usuarioId;
-  const isAdmin = actor.accountType === "SISTEMA" && actor.rol === "ADMIN";
-  const isReadOnly = actor.rol === "READ_ONLY";
+  const isAdmin = actor.accountType === "SISTEMA" && isAdminRole(actor.rol);
+  const isReadOnly = isReadOnlyRole(actor.rol);
   if (!isAdmin && !isSelfUpdate) {
     return NextResponse.json({ error: "No autorizado para esta acción." }, { status: 403 });
   }
@@ -199,7 +203,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
   }
 
   const data: {
-    rangoId?: number;
+    rangoId?: number | null;
     nombre?: string;
     apellido?: string;
     username?: string;
@@ -212,16 +216,18 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
   let shouldSendVerification = false;
 
   if (body.rangoId !== undefined) {
-    const rangoId = parseRangoId(body.rangoId);
-    if (!rangoId) {
+    const rangoId = parseOptionalRangoId(body.rangoId);
+    if (rangoId === undefined) {
       return NextResponse.json({ error: "Grado invalido." }, { status: 400 });
     }
-    const rango = await prisma.rango.findUnique({
-      where: { rangoId },
-      select: { rangoId: true },
-    });
-    if (!rango) {
-      return NextResponse.json({ error: "Grado invalido." }, { status: 400 });
+    if (rangoId !== null) {
+      const rango = await prisma.rango.findUnique({
+        where: { rangoId },
+        select: { rangoId: true },
+      });
+      if (!rango) {
+        return NextResponse.json({ error: "Grado invalido." }, { status: 400 });
+      }
     }
     data.rangoId = rangoId;
   }
@@ -303,11 +309,21 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
 
   const nextRole = data.rol ?? existing.rol;
   const nextActive = data.activo ?? existing.activo;
+  const existingIsAdministrative = isAdminRole(existing.rol) && existing.activo;
+  const nextIsAdministrative = isAdminRole(nextRole) && nextActive;
 
-  if (existing.rol === "ADMIN" && nextRole !== "ADMIN") {
-    const adminCount = await prisma.usuario.count({ where: { rol: "ADMIN" } });
+  if (existingIsAdministrative && !nextIsAdministrative) {
+    const adminCount = await prisma.usuario.count({
+      where: {
+        activo: true,
+        rol: { in: [UserRole.ADMIN, UserRole.DESARROLLADOR] },
+      },
+    });
     if (adminCount <= 1) {
-      return NextResponse.json({ error: "Debe existir al menos un usuario administrador." }, { status: 409 });
+      return NextResponse.json(
+        { error: "Debe existir al menos un usuario con privilegios administrativos activo." },
+        { status: 409 },
+      );
     }
   }
 
@@ -346,7 +362,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       entidad: "USUARIO",
       entidadId: updated.usuarioId,
       detalle: {
-        grado: updated.rango.abreviacion,
+        grado: updated.rango?.abreviacion ?? null,
         nombre: updated.nombre,
         apellido: updated.apellido,
         username: updated.username,
@@ -405,10 +421,18 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
     return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });
   }
 
-  if (target.rol === "ADMIN") {
-    const admins = await prisma.usuario.count({ where: { rol: "ADMIN" } });
+  if (target.activo && isAdminRole(target.rol)) {
+    const admins = await prisma.usuario.count({
+      where: {
+        activo: true,
+        rol: { in: [UserRole.ADMIN, UserRole.DESARROLLADOR] },
+      },
+    });
     if (admins <= 1) {
-      return NextResponse.json({ error: "Debe existir al menos un usuario administrador." }, { status: 409 });
+      return NextResponse.json(
+        { error: "Debe existir al menos un usuario con privilegios administrativos activo." },
+        { status: 409 },
+      );
     }
   }
 
@@ -428,7 +452,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
       entidad: "USUARIO",
       entidadId: target.usuarioId,
       detalle: {
-        grado: target.rango.abreviacion,
+        grado: target.rango?.abreviacion ?? null,
         nombre: target.nombre,
         apellido: target.apellido,
         username: target.username,

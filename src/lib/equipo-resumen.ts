@@ -104,7 +104,6 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
     generatedAt: formatDateTimeForDisplay(new Date()),
     equipos: equipos.map((equipo) => ({
       equipoId: equipo.equipoId.toString(),
-      equipoId: equipo.equipoId.toString(),
       nombre: equipo.nombre,
     })),
     unidad,

@@ -11,7 +11,7 @@ interface CallbackProps {
 }
 
 export type UsuarioProfileInput = {
-  rangoId: number;
+  rangoId?: number | null;
   nombre: string;
   apellido: string;
   usuario: string;
@@ -27,7 +27,7 @@ export async function createUsuarioHandler(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        rangoId: input.rangoId,
+        rangoId: input.rangoId ?? null,
         nombre: input.nombre,
         apellido: input.apellido,
         usuario: input.usuario,

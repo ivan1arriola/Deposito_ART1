@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { disableAdminPushSubscription, upsertAdminPushSubscription } from "@/lib/web-push";
+import { isAdminRole } from "@/lib/user-role";
 
 type SubscribeBody = {
   endpoint?: string;
@@ -36,7 +37,7 @@ function parseUnsubscribeBody(body: unknown) {
 export async function POST(request: Request) {
   const auth = await authorizeRequest(request, "manage_users");
   if (!auth.ok) return auth.response;
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo el administrador puede suscribirse a notificaciones." }, { status: 403 });
   }
 
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const auth = await authorizeRequest(request, "manage_users");
   if (!auth.ok) return auth.response;
-  if (auth.user.rol !== "ADMIN") {
+  if (!isAdminRole(auth.user.rol)) {
     return NextResponse.json({ error: "Solo el administrador puede desuscribirse." }, { status: 403 });
   }
 

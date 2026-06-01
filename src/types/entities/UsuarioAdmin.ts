@@ -4,8 +4,8 @@ import type { Role } from "./Role";
 
 export type UsuarioAdmin = {
   usuarioId: string;
-  rangoId: number;
-  rango: Rango;
+  rangoId: number | null;
+  rango: Rango | null;
   grado: string;
   nombre: string;
   apellido: string;

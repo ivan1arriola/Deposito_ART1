@@ -18,11 +18,9 @@ import {
   isAllowedTallaValue,
   normalizeTallaValue,
 } from "@/lib/tallas";
-import { DashboardHero } from "./components/home/DashboardHero";
 import { GlobalSearchModal } from "./components/home/GlobalSearchModal";
 import { MainNavigation } from "./components/home/MainNavigation";
-import { Box, Typography, Divider, Stack, Button, IconButton, Drawer } from "@mui/material";
-import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import { Box, Typography, Divider, Stack, Button, Drawer } from "@mui/material";
 import { AdminPushNotifications } from "./components/home/AdminPushNotifications";
 import Image from "next/image";
 import { HomeOverlaysLayer } from "./components/home/overlays/HomeOverlaysLayer";
@@ -41,7 +39,7 @@ import { ConfigViews } from "./components/views/ConfigViews";
 import type { PrestamoEditPayload } from "./components/views/FormulariosPrestamosView";
 import { RecordatoriosConfigView } from "./components/views/RecordatoriosConfigView";
 import { EquiposUnificarView } from "./components/views/EquiposUnificarView";
-import { SmallActionButton, ActionMenu, toast } from "./components/shared";
+import { ActionMenu, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
 import { useLoginState } from "./hooks/useLoginState";
 import { useStockPrestamoDraftItems } from "./hooks/useStockPrestamoDraftItems";
@@ -116,6 +114,7 @@ import {
 import { compareEquiposByTipoAndOrder } from "@/lib/equipo-sort";
 import { GENERAL_TIPO_EQUIPO_CLAVE } from "@/lib/equipo-tipos";
 import { normalizeSearchTerm } from "@/lib/search";
+import { isAdminRole } from "@/lib/user-role";
 import { moveIdInOrder, compareTallaOptions } from "@/lib/array-utils";
 import { isValidUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import { isValidEmailAddress } from "@/lib/email-address";
@@ -1134,7 +1133,7 @@ export default function Home() {
   }, [inAdminConfigView, isAdmin, setActiveView]);
 
   useEffect(() => {
-    if (!currentUser || currentUser.rol !== "ADMIN") return;
+    if (!currentUser || !isAdminRole(currentUser.rol)) return;
     if (!(inAdminConfigView || activeView === "usuario_nuevo" || inReminderConfigView)) return;
     void loadAdminData();
   }, [activeView, currentUser, inAdminConfigView, inReminderConfigView, loadAdminData]);
@@ -1435,11 +1434,9 @@ export default function Home() {
         return;
       }
 
-      if (inAdminConfigView || activeView === "usuario_nuevo") {
-        if (currentUser.rol === "ADMIN") {
-          await reloadAdminData(showSpinner);
-          return;
-        }
+      if ((inAdminConfigView || activeView === "usuario_nuevo") && isAdminRole(currentUser.rol)) {
+        await reloadAdminData(showSpinner);
+        return;
       }
 
       await loadData(showSpinner);
@@ -4466,12 +4463,13 @@ export default function Home() {
       }
 
       const parsedRangoId = Number(newUserRangoId);
+      const nextRangoId = Number.isInteger(parsedRangoId) && parsedRangoId > 0 ? parsedRangoId : null;
       const trimmedNombre = newNombre.trim();
       const trimmedApellido = newApellido.trim();
       const trimmedUsername = newUsername.trim();
       const trimmedMailReferencia = newMailReferencia.trim();
-      if (!Number.isInteger(parsedRangoId) || parsedRangoId <= 0 || !trimmedNombre || !trimmedApellido || !trimmedUsername) {
-        setStatus("Grado, nombre, apellido y usuario son obligatorios.");
+      if (!trimmedNombre || !trimmedApellido || !trimmedUsername) {
+        setStatus("Nombre, apellido y usuario son obligatorios.");
         return;
       }
 
@@ -4487,7 +4485,7 @@ export default function Home() {
 
       try {
         await createUsuarioHandler({
-          rangoId: parsedRangoId,
+          rangoId: nextRangoId,
           nombre: trimmedNombre,
           apellido: trimmedApellido,
           usuario: trimmedUsername,
@@ -4566,7 +4564,7 @@ export default function Home() {
     (
       usuario: {
         usuarioId: string;
-        rangoId?: number;
+        rangoId?: number | null;
         nombre?: string;
         apellido?: string;
         username: string;
@@ -4606,23 +4604,6 @@ export default function Home() {
     },
     [isAdmin, openUsernameDialog],
   );
-
-  const changeOwnUsername = useCallback(() => {
-    if (!currentUser) return;
-    if (currentUser.accountType !== "SISTEMA") {
-      setStatus("Las cuentas de personal no permiten editar datos de acceso.");
-      return;
-    }
-    if (!canManageOwnAccount) {
-      setStatus("El rol Solo Lectura no puede cambiar credenciales ni datos.");
-      return;
-    }
-
-    openUsernameDialog(currentUser, {
-      title: "Editar mi usuario",
-      description: "Actualiza tus datos principales de acceso.",
-    });
-  }, [canManageOwnAccount, currentUser, openUsernameDialog]);
 
   const closeUsernameDialog = useCallback(() => {
     if (usernameSaving) return;
@@ -4694,13 +4675,14 @@ export default function Home() {
       return;
     }
 
-    const nextRangoId = Number(usernameDialog.rangoId);
+    const parsedRangoId = Number(usernameDialog.rangoId);
+    const nextRangoId = Number.isInteger(parsedRangoId) && parsedRangoId > 0 ? parsedRangoId : null;
     const nextNombre = usernameDialog.nombre.trim();
     const nextApellido = usernameDialog.apellido.trim();
     const nextUsername = usernameDialog.username.trim();
     const nextMailReferencia = usernameDialog.mailReferencia.trim();
-    if (!Number.isInteger(nextRangoId) || nextRangoId <= 0 || !nextNombre || !nextApellido || !nextUsername) {
-      setStatus("Grado, nombre, apellido y usuario son obligatorios.");
+    if (!nextNombre || !nextApellido || !nextUsername) {
+      setStatus("Nombre, apellido y usuario son obligatorios.");
       return;
     }
 
@@ -6220,7 +6202,7 @@ export default function Home() {
             </div>
           </header>
 
-        {currentUser?.rol === "ADMIN" && (
+        {currentUser && isAdminRole(currentUser.rol) && (
           <Box sx={{ position: "relative", px: activeView === "dashboard" ? 3 : 0, mt: activeView === "dashboard" ? 3 : 0 }}>
             <AdminPushNotifications />
           </Box>

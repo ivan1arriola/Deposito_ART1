@@ -61,7 +61,6 @@ export async function getMovimientosEquipoData(equipoId: bigint | null = null): 
 
   const equipos: EquipoMovimientoCatalogEquipo[] = catalog.map((equipo) => ({
     equipoId: equipo.equipoId.toString(),
-    equipoId: equipo.equipoId.toString(),
     nombre: equipo.nombre,
     activo: equipo.activo,
   }));
@@ -187,7 +186,6 @@ export async function getMovimientosEquipoData(equipoId: bigint | null = null): 
   return {
     equipos,
     selectedItem: {
-      equipoId: selectedRecord.equipoId.toString(),
       equipoId: selectedRecord.equipoId.toString(),
       nombre: selectedRecord.nombre,
       activo: selectedRecord.activo,

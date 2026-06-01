@@ -641,16 +641,16 @@ export function FormulariosPrestamosView({
                       >
                         <option value="">Seleccionar equipo</option>
                         {equiposOrdenados
-                          .filter((equipo) => {
-                            if (equipo.equipoId === equipo.equipoId) return true;
+                          .filter((equipoOption) => {
+                            if (equipoOption.equipoId === equipo.equipoId) return true;
                             return !prestamoDraft.equipos.some(
                               (selectedItem, selectedIndex) =>
-                                selectedIndex !== index && selectedItem.equipoId === equipo.equipoId,
+                                selectedIndex !== index && selectedItem.equipoId === equipoOption.equipoId,
                             );
                           })
-                          .map((equipo) => (
-                            <option key={equipo.equipoId} value={equipo.equipoId}>
-                              {equipo.nombre}
+                          .map((equipoOption) => (
+                            <option key={equipoOption.equipoId} value={equipoOption.equipoId}>
+                              {equipoOption.nombre}
                             </option>
                           ))}
                       </select>
