@@ -5,6 +5,7 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidUruguayanCi } from "@/lib/ci";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
+import { buildSubalternoPersonalData } from "@/lib/personal-subalterno-data";
 import {
   dateInputToDate,
   formatDateOnlyForDisplay,
@@ -255,8 +256,14 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
           apellido2: normalizeNullableText(body.apellido2),
           nombre1: body.nombre1.trim(),
           nombre2: normalizeNullableText(body.nombre2),
-          telefonoContacto,
-          rangoId: Number(body.rangoId),
+          ...buildSubalternoPersonalData({
+            telefonoContacto,
+            rangoId: Number(body.rangoId),
+            esReingreso,
+            fechaIngreso,
+            fechaIngresoOriginal,
+            bateriaId,
+          }),
         },
       });
 

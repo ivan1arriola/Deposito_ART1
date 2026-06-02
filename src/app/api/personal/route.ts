@@ -14,6 +14,7 @@ import {
 } from "@/lib/date-helpers";
 import { TALLA_KEYS, type TallaKey, validateAndNormalizeTallas } from "@/lib/tallas";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
+import { buildSubalternoPersonalData } from "@/lib/personal-subalterno-data";
 import { normalizeOptionalUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import { getPrismaErrorCode, hasConstraintName } from "@/lib/prisma-errors";
 import { getRangoCountByTipo, getTallaTipoIdMap } from "@/lib/reference-data-cache";
@@ -420,8 +421,14 @@ export async function POST(req: Request) {
           apellido2: normalizeNullableText(body.apellido2),
           nombre1: body.nombre1.trim(),
           nombre2: normalizeNullableText(body.nombre2),
-          telefonoContacto,
-          tipo: TipoPersonal.SUBALTERNO, rangoId: Number(body.rangoId),
+          ...buildSubalternoPersonalData({
+            telefonoContacto,
+            rangoId: Number(body.rangoId),
+            esReingreso,
+            fechaIngreso,
+            fechaIngresoOriginal,
+            bateriaId,
+          }),
         },
       });
 

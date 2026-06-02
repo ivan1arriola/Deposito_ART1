@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { buildSubalternoPersonalData } from "@/lib/personal-subalterno-data";
 import { invalidateRangoTipoCountCache, getTallaTipoIdMap } from "@/lib/reference-data-cache";
 import { TipoPersonal, TipoArticulo, TipoMovimiento } from "@/generated/prisma/client";
 import type { TallaKey } from "@/lib/tallas";
@@ -473,8 +474,14 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
                 apellido2: historyRecord.apellido2,
                 nombre1: historyRecord.nombre1,
                 nombre2: historyRecord.nombre2,
-                telefonoContacto: historyRecord.telefonoContacto,
-                tipo: TipoPersonal.SUBALTERNO, rangoId: historyRecord.rangoId,
+                ...buildSubalternoPersonalData({
+                  telefonoContacto: historyRecord.telefonoContacto,
+                  rangoId: historyRecord.rangoId,
+                  esReingreso: historyRecord.esReingreso,
+                  fechaIngreso: historyRecord.fechaIngreso,
+                  fechaIngresoOriginal: historyRecord.fechaIngresoOriginal,
+                  bateriaId: historyRecord.bateriaId,
+                }),
                 createdAt: historyRecord.createdAt,
                 baja: false,
               },

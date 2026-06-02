@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { TipoPersonal } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isValidUruguayanCi } from "@/lib/ci";
+import { buildSubalternoPersonalData } from "@/lib/personal-subalterno-data";
 import { getTallaTipoIdMap } from "@/lib/reference-data-cache";
 import type { TallaKey } from "@/lib/tallas";
 
@@ -47,8 +47,14 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
           apellido2: historyRecord.apellido2,
           nombre1: historyRecord.nombre1,
           nombre2: historyRecord.nombre2,
-          telefonoContacto: historyRecord.telefonoContacto,
-          tipo: TipoPersonal.SUBALTERNO, rangoId: historyRecord.rangoId,
+          ...buildSubalternoPersonalData({
+            telefonoContacto: historyRecord.telefonoContacto,
+            rangoId: historyRecord.rangoId,
+            esReingreso: historyRecord.esReingreso,
+            fechaIngreso: historyRecord.fechaIngreso,
+            fechaIngresoOriginal: historyRecord.fechaIngresoOriginal,
+            bateriaId: historyRecord.bateriaId,
+          }),
           createdAt: historyRecord.createdAt,
           baja: false, // Ensure they are fully active now!
         },
