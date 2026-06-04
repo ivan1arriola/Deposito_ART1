@@ -6675,7 +6675,7 @@ export default function Home() {
             setRegistroViewer={setRegistroViewer}
             registroDraft={registroDraft}
             personaRegistro={personaRegistro}
-            personalFiltrado={personalFiltrado}
+            personalFiltrado={personalOrdenado}
             oficialesSuboficiales={oficialesSuboficiales}
             equiposOrdenados={equiposOrdenados}
             maxFechaIngreso={maxFechaIngreso}
