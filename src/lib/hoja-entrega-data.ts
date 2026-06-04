@@ -127,7 +127,13 @@ function aggregateItems(records: MovimientoWithItems[]) {
 }
 
 function toSixColumns(records: MovimientoWithItems[]): MatrixColumn[] {
-  const sorted = records;
+  const sorted = records
+    .map((record) => ({
+      ...record,
+      equipos: record.equipos.filter((detail) => detail.equipo.activo),
+    }))
+    .filter((record) => record.equipos.length > 0);
+
   const columns: MatrixColumn[] = [];
 
   if (sorted.length > 5) {
