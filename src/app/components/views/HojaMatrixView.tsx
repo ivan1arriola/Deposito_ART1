@@ -13,6 +13,8 @@ import CorporateFareRoundedIcon from "@mui/icons-material/CorporateFareRounded";
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
 import { Box, Button, Stack, Typography, useTheme, alpha } from "@mui/material";
 
+const SIN_BATERIA_LABEL = "Sin batería";
+
 export interface HojaMatrixViewProps {
   data: HojaMatrixData | null;
   loading: boolean;
@@ -37,7 +39,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
     if (!data) return [] as string[];
     const labels = new Map<string, number | null>();
     for (const row of data.rows) {
-      const label = row.bateria ?? "Sin bateria";
+      const label = row.bateria ?? SIN_BATERIA_LABEL;
       const current = labels.get(label);
       if (current === undefined || compareOptionalOrder(row.bateriaOrden, current) < 0) {
         labels.set(label, row.bateriaOrden);

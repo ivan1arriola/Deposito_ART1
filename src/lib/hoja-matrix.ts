@@ -22,6 +22,10 @@ function normalizeBatteryFilter(value: string | null | undefined) {
   return trimmed;
 }
 
+function isWithoutBatteryFilter(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es") === "sin bateria";
+}
+
 function compareMatrixRows(a: HojaMatrixRow, b: HojaMatrixRow) {
   const byGrado = compareRanks(
     { abreviacion: a.gradoAbreviacion, orden: a.gradoOrden },
@@ -69,9 +73,9 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
     rango: { tipo: TipoPersonal.SUBALTERNO },
     ...(bateria === null
       ? {}
-      : bateria === SIN_BATERIA_LABEL
-        ? { }
-        : { }),
+      : isWithoutBatteryFilter(bateria)
+        ? { bateriaId: null }
+        : { bateria: { is: { nombre: bateria } } }),
   };
 
   const personal = await prisma.personal.findMany({
