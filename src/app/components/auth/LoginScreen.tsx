@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import type { ClipboardEvent, FormEvent, KeyboardEvent } from "react";
-import { AppInstallCard } from "@/app/components/pwa/AppInstallCard";
 import { LoadingOverlay } from "@/app/components/shared";
 
 type LoginMode = "USUARIO" | "PERSONAL";
@@ -187,9 +186,7 @@ export function LoginScreen({
                 required
                 className="login-input"
               />
-              {isPersonal ? (
-                <p className="login-field-help">Escríbela sin puntos ni guiones.</p>
-              ) : null}
+              {isPersonal ? <p className="login-field-help">Escríbela sin puntos ni guiones.</p> : null}
             </div>
 
             <div className="login-field-group">
@@ -262,10 +259,6 @@ export function LoginScreen({
           ) : (
             <p className="login-support-note">Si no puedes ingresar, solicita ayuda a un administrador del sistema.</p>
           )}
-
-          <div className="login-install">
-            <AppInstallCard compact />
-          </div>
         </div>
       </section>
 
