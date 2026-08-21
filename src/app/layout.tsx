@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./ux.css";
 import "./mobile.css";
+import "./mobile-navigation.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { AppToaster } from "@/components/AppToaster";
 import { MaterialThemeProvider } from "@/components/MaterialThemeProvider";
