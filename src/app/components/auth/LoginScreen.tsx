@@ -183,7 +183,6 @@ export function LoginScreen({
                 autoComplete="username"
                 autoCapitalize="none"
                 spellCheck={false}
-                required
                 className="login-input"
               />
               {isPersonal ? <p className="login-field-help">Escríbela sin puntos ni guiones.</p> : null}
@@ -200,7 +199,6 @@ export function LoginScreen({
                   placeholder="Ingresa tu contraseña"
                   type={showLoginPassword ? "text" : "password"}
                   autoComplete="current-password"
-                  required
                   className="login-input login-password-input"
                 />
                 <button
@@ -245,7 +243,6 @@ export function LoginScreen({
                       autoComplete="username"
                       autoCapitalize="none"
                       spellCheck={false}
-                      required
                       className="login-input"
                     />
                   </div>
