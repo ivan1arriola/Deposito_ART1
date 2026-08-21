@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import type { ClipboardEvent, FormEvent, KeyboardEvent } from "react";
-import { AppInstallCard } from "@/app/components/pwa/AppInstallCard";
 import { LoadingOverlay } from "@/app/components/shared";
 
 type LoginMode = "USUARIO" | "PERSONAL";
@@ -78,207 +77,188 @@ export function LoginScreen({
   onResetUsernameChange,
   onResetRequestSubmit,
 }: LoginScreenProps) {
+  const isPersonal = loginMode === "PERSONAL";
+  const isBusy = loading || loginLoading;
+
   return (
-    <main className="relative mx-auto flex min-h-dvh w-full max-w-7xl equipos-center justify-center px-3 py-4 sm:px-6 sm:py-6">
-      <section className="ej-login-shell lg:grid-cols-[1fr_minmax(360px,440px)]">
-        <div className="ej-login-aside relative hidden p-8 lg:flex lg:equipos-center lg:justify-center xl:p-10">
-          <Image
-            src="/assets/logo-deposito.png"
-            alt="Logo Depósito"
-            width={420}
-            height={420}
-            priority
-            className="h-auto w-full max-w-[clamp(300px,34vw,460px)] object-contain"
-          />
-        </div>
-
-        <div className="relative overflow-y-auto p-5 sm:p-8 lg:flex lg:equipos-center lg:p-10">
-          <div className="w-full lg:mx-auto lg:max-w-[460px]">
-            <div className="mb-4 flex justify-center lg:hidden">
-              <Image
-                src="/assets/logo-deposito.png"
-                alt="Logo Depósito"
-                width={220}
-                height={220}
-                priority
-                className="h-auto w-36 object-contain sm:w-44"
-              />
+    <main className="login-page">
+      <section className="login-panel" aria-labelledby="login-title">
+        <aside className="login-brand" aria-label="Identidad institucional">
+          <div className="login-brand-inner">
+            <Image
+              src="/assets/logo-deposito.png"
+              alt="Escudo del Depósito General"
+              width={240}
+              height={280}
+              priority
+              className="login-logo"
+            />
+            <div>
+              <p className="login-brand-kicker">Grupo de Artillería 105 mm N.º 1</p>
+              <p className="login-brand-title">Depósito General</p>
+              <p className="login-brand-subtitle">Sistema de gestión interna</p>
             </div>
-            <div className="ej-login-card p-4 sm:p-5">
-              <h1 className="ej-login-title mt-1 text-3xl font-black tracking-tight sm:text-4xl">Iniciar sesión</h1>
-              <p className="ej-login-status mt-2 text-sm" suppressHydrationWarning>
-                {status}
-              </p>
+          </div>
+        </aside>
 
-              <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-1">
+        <div className="login-content">
+          <div className="login-mobile-brand">
+            <Image
+              src="/assets/logo-deposito.png"
+              alt="Escudo del Depósito General"
+              width={96}
+              height={112}
+              priority
+              className="login-mobile-logo"
+            />
+            <div>
+              <p className="login-mobile-title">Depósito General</p>
+              <p className="login-mobile-subtitle">Acceso al sistema</p>
+            </div>
+          </div>
+
+          <div className="login-heading">
+            <p className="login-eyebrow">Acceso seguro</p>
+            <h1 id="login-title" className="login-title">Iniciar sesión</h1>
+            <p className="login-intro">Selecciona el tipo de acceso e ingresa tus datos.</p>
+          </div>
+
+          <div className="login-mode" role="group" aria-label="Tipo de acceso">
+            <button
+              type="button"
+              aria-pressed={isPersonal}
+              onClick={onSelectPersonalLogin}
+              className={`login-mode-button ${isPersonal ? "is-active" : ""}`}
+            >
+              <span className="login-mode-title">Personal</span>
+              <span className="login-mode-description">Ingresar con cédula</span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={!isPersonal}
+              onClick={onSelectSystemLogin}
+              className={`login-mode-button ${!isPersonal ? "is-active" : ""}`}
+            >
+              <span className="login-mode-title">Usuario del sistema</span>
+              <span className="login-mode-description">Ingresar con usuario</span>
+            </button>
+          </div>
+
+          {initMessage && showInitCredentials && initCredentials ? (
+            <div className={`login-notice ${initMessage.type === "success" ? "is-success" : "is-info"}`} role="status">
+              <p className="login-notice-title">{initMessage.text}</p>
+              <dl className="login-credentials">
+                <div>
+                  <dt>Usuario</dt>
+                  <dd><code>{initCredentials.username}</code></dd>
+                </div>
+                <div>
+                  <dt>Contraseña</dt>
+                  <dd><code>{initCredentials.password}</code></dd>
+                </div>
+              </dl>
+              <p className="login-notice-help">Guarda estas credenciales en un lugar seguro.</p>
+              <button type="button" onClick={onHideInitCredentials} className="login-secondary-button">
+                Entendido
+              </button>
+            </div>
+          ) : null}
+
+          <form onSubmit={onLoginSubmit} className="login-form">
+            <div className="login-field-group">
+              <label htmlFor="login-username" className="login-label">
+                {isPersonal ? "Cédula de identidad" : "Usuario"}
+              </label>
+              <input
+                id="login-username"
+                name="username"
+                value={loginUsername}
+                onChange={(event) => onLoginUsernameChange(event.target.value)}
+                onPaste={onLoginUsernamePaste}
+                onKeyDown={onLoginUsernameKeyDown}
+                placeholder={isPersonal ? "Ej.: 12345678" : "Ingresa tu usuario"}
+                inputMode={isPersonal ? "numeric" : undefined}
+                pattern={isPersonal ? "[0-9]*" : undefined}
+                maxLength={isPersonal ? 8 : undefined}
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                className="login-input"
+              />
+              {isPersonal ? <p className="login-field-help">Escríbela sin puntos ni guiones.</p> : null}
+            </div>
+
+            <div className="login-field-group">
+              <label htmlFor="login-password" className="login-label">Contraseña</label>
+              <div className="login-password-wrap">
+                <input
+                  id="login-password"
+                  name="password"
+                  value={loginPassword}
+                  onChange={(event) => onLoginPasswordChange(event.target.value)}
+                  placeholder="Ingresa tu contraseña"
+                  type={showLoginPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="login-input login-password-input"
+                />
                 <button
                   type="button"
-                  onClick={onSelectPersonalLogin}
-                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                    loginMode === "PERSONAL"
-                      ? "bg-[var(--color-ejercito-blue)] text-white"
-                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-base)] hover:text-[var(--color-text-primary)]"
-                  }`}
+                  onClick={onToggleLoginPasswordVisibility}
+                  aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  aria-pressed={showLoginPassword}
+                  className="login-password-toggle"
                 >
-                  Personal por cédula
-                </button>
-                <button
-                  type="button"
-                  onClick={onSelectSystemLogin}
-                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                    loginMode === "USUARIO"
-                      ? "bg-[var(--color-ejercito-blue)] text-white"
-                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-base)] hover:text-[var(--color-text-primary)]"
-                  }`}
-                >
-                  Usuario del sistema
+                  {showLoginPassword ? "Ocultar" : "Mostrar"}
                 </button>
               </div>
-
-              {loginMode === "PERSONAL" ? (
-                <div className="mt-2 space-y-2">
-                  <p className="text-xs text-[var(--color-text-secondary)]">Ingresa con tu cédula (solo números, sin puntos ni guiones) y contraseña.</p>
-                  <p className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-900">
-                    <span className="font-semibold">Nota:</span> La contraseña inicial es tu misma cédula.
-                  </p>
-                </div>
+              {isPersonal ? (
+                <p className="login-field-help">En el primer ingreso, la contraseña inicial es tu cédula.</p>
               ) : null}
-
-              {initMessage && showInitCredentials && initCredentials ? (
-                <div
-                  className={`mt-4 rounded-2xl border px-3 py-2 text-sm ${
-                    initMessage.type === "success"
-                      ? "border-[rgb(31,103,40,0.45)] bg-[rgb(31,103,40,0.1)] text-[var(--color-text-primary)]"
-                      : "border-[rgb(27,117,170,0.45)] bg-[rgb(27,117,170,0.1)] text-[var(--color-text-primary)]"
-                  }`}
-                >
-                  <p className="font-semibold">{initMessage.text}</p>
-                  <div className="mt-3 space-y-1 rounded border border-current/20 bg-[var(--color-surface-base)] p-2 text-xs">
-                    <p>
-                      <strong>Usuario:</strong> <code className="font-mono">{initCredentials.username}</code>
-                    </p>
-                    <p>
-                      <strong>Contraseña:</strong> <code className="font-mono">{initCredentials.password}</code>
-                    </p>
-                  </div>
-                  <p className="mt-2 text-xs italic">Guarda estas credenciales en un lugar seguro.</p>
-                  <button
-                    type="button"
-                    onClick={onHideInitCredentials}
-                    className="mt-2 w-full rounded px-2 py-1 text-xs font-semibold hover:bg-current/10"
-                  >
-                    Entendido
-                  </button>
-                </div>
-              ) : null}
-
-              <form onSubmit={onLoginSubmit} className="mt-5 space-y-3">
-                <input
-                  value={loginUsername}
-                  onChange={(event) => onLoginUsernameChange(event.target.value)}
-                  onPaste={onLoginUsernamePaste}
-                  onKeyDown={onLoginUsernameKeyDown}
-                  placeholder={loginMode === "PERSONAL" ? "Cédula" : "Usuario"}
-                  inputMode={loginMode === "PERSONAL" ? "numeric" : undefined}
-                  pattern={loginMode === "PERSONAL" ? "[0-9]*" : undefined}
-                  maxLength={loginMode === "PERSONAL" ? 8 : undefined}
-                  className="ej-login-input px-3 py-2 text-sm"
-                />
-                <div className="relative">
-                  <input
-                    value={loginPassword}
-                    onChange={(event) => onLoginPasswordChange(event.target.value)}
-                    placeholder="Contraseña"
-                    type={showLoginPassword ? "text" : "password"}
-                    className="ej-login-input px-3 py-2 pr-20 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={onToggleLoginPasswordVisibility}
-                    aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    className="absolute inset-y-0 right-2 my-1 inline-flex w-8 equipos-center justify-center rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                  >
-                    {showLoginPassword ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.89 1 12c.92-2.6 2.68-4.8 4.94-6.06" />
-                        <path d="M9.9 4.24A11.24 11.24 0 0 1 12 4c5 0 9.27 3.11 11 8a11.8 11.8 0 0 1-1.67 3.01" />
-                        <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-                <button type="submit" disabled={loading || loginLoading} className="ej-login-submit px-3 py-2.5 text-sm disabled:opacity-60">
-                  {loading || loginLoading ? "Ingresando..." : "Entrar"}
-                </button>
-              </form>
-
-              {loginMode === "USUARIO" ? (
-                <>
-                  <div className="mt-3">
-                    <button
-                      type="button"
-                      onClick={onToggleResetRequest}
-                      className="ej-login-link text-xs font-semibold underline underline-offset-2"
-                    >
-                      {showResetRequest ? "Ocultar recuperación de contraseña" : "Olvidé mi contraseña"}
-                    </button>
-                  </div>
-
-                  {showResetRequest ? (
-                    <form onSubmit={onResetRequestSubmit} className="ej-login-reset mt-3 space-y-2 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Recuperar acceso</p>
-                      <input
-                        value={resetUsername}
-                        onChange={(event) => onResetUsernameChange(event.target.value)}
-                        placeholder="Usuario"
-                        className="ej-login-input px-3 py-2 text-sm"
-                      />
-                      <button
-                        type="submit"
-                        disabled={resetRequestLoading}
-                        className="w-full rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-base)] px-3 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:opacity-60"
-                      >
-                        {resetRequestLoading ? "Enviando..." : "Enviar enlace mágico"}
-                      </button>
-                      {resetRequestMessage ? <p className="text-xs text-[var(--color-text-secondary)]">{resetRequestMessage}</p> : null}
-                    </form>
-                  ) : null}
-                </>
-              ) : (
-                <p className="mt-3 text-xs text-[var(--color-text-secondary)]">Si olvidaste la contraseña, solicita el restablecimiento a un administrador.</p>
-              )}
             </div>
 
-            <AppInstallCard compact />
-          </div>
+            <button type="submit" disabled={isBusy} className="login-submit">
+              {isBusy ? "Ingresando…" : "Ingresar"}
+            </button>
+          </form>
+
+          <p className="login-status" role="status" aria-live="polite" suppressHydrationWarning>
+            {status}
+          </p>
+
+          {!isPersonal ? (
+            <div className="login-recovery-section">
+              <button type="button" onClick={onToggleResetRequest} className="login-recovery-link" aria-expanded={showResetRequest}>
+                {showResetRequest ? "Cancelar recuperación" : "¿Olvidaste tu contraseña?"}
+              </button>
+
+              {showResetRequest ? (
+                <form onSubmit={onResetRequestSubmit} className="login-recovery-form">
+                  <div className="login-field-group">
+                    <label htmlFor="reset-username" className="login-label">Usuario</label>
+                    <input
+                      id="reset-username"
+                      value={resetUsername}
+                      onChange={(event) => onResetUsernameChange(event.target.value)}
+                      placeholder="Ingresa tu usuario"
+                      autoComplete="username"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      className="login-input"
+                    />
+                  </div>
+                  <button type="submit" disabled={resetRequestLoading} className="login-secondary-button">
+                    {resetRequestLoading ? "Enviando…" : "Enviar enlace de acceso"}
+                  </button>
+                  {resetRequestMessage ? <p className="login-recovery-message" role="status">{resetRequestMessage}</p> : null}
+                </form>
+              ) : null}
+            </div>
+          ) : (
+            <p className="login-support-note">Si no puedes ingresar, solicita ayuda a un administrador del sistema.</p>
+          )}
         </div>
       </section>
+
       <LoadingOverlay visible={isLoginGlobalBusy} label={loginBusyLabel} />
     </main>
   );
