@@ -1,0 +1,27 @@
+/* Contraste y coherencia del menú móvil del dashboard. */
+
+@media (max-width: 900px) {
+  .MuiDrawer-paperAnchorRight {
+    background: linear-gradient(180deg, #18291f 0%, #101a14 100%) !important;
+    color: #f4f5f1 !important;
+    border-left: 1px solid rgb(255 255 255 / 10%) !important;
+  }
+
+  .MuiDrawer-paperAnchorRight .MuiTypography-root {
+    color: rgb(244 245 241 / 90%) !important;
+  }
+
+  .MuiDrawer-paperAnchorRight .MuiIconButton-root {
+    color: #f4f5f1 !important;
+  }
+
+  .MuiDrawer-paperAnchorRight .MuiChip-root {
+    border-color: rgb(255 204 0 / 25%) !important;
+    background: rgb(255 255 255 / 7%) !important;
+    color: #f4f5f1 !important;
+  }
+
+  .MuiDrawer-paperAnchorRight .MuiDivider-root {
+    border-color: rgb(255 255 255 / 10%) !important;
+  }
+}
