@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type JSX, type MouseEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useState, type JSX, type MouseEvent, type ReactNode, type RefObject } from "react";
 import {
   Box,
   Button,
@@ -15,6 +15,7 @@ import {
   Stack,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
@@ -215,8 +216,8 @@ function navButtonSx(active: boolean, collapsed: boolean) {
     borderRadius: "12px",
     border: "1px solid",
     borderColor: active ? "rgba(255, 204, 0, 0.4)" : "rgba(255, 255, 255, 0.12)",
-    background: active 
-      ? "linear-gradient(135deg, rgba(255, 204, 0, 0.25) 0%, rgba(255, 204, 0, 0.1) 100%)" 
+    background: active
+      ? "linear-gradient(135deg, rgba(255, 204, 0, 0.25) 0%, rgba(255, 204, 0, 0.1) 100%)"
       : "rgba(255, 255, 255, 0.04)",
     backdropFilter: "blur(12px)",
     color: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.85)",
@@ -232,8 +233,8 @@ function navButtonSx(active: boolean, collapsed: boolean) {
     },
     "&:hover": {
       borderColor: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.3)",
-      background: active 
-        ? "linear-gradient(135deg, rgba(255, 204, 0, 0.35) 0%, rgba(255, 204, 0, 0.15) 100%)" 
+      background: active
+        ? "linear-gradient(135deg, rgba(255, 204, 0, 0.35) 0%, rgba(255, 204, 0, 0.15) 100%)"
         : "rgba(255, 255, 255, 0.08)",
       transform: "translateY(-1px)",
       boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
@@ -382,13 +383,13 @@ function ExpandedMenuGroup({
         }}
         startIcon={icon}
         endIcon={
-          <ExpandMoreRoundedIcon 
-            sx={{ 
-              fontSize: "1rem", 
-              ml: "auto", 
+          <ExpandMoreRoundedIcon
+            sx={{
+              fontSize: "1rem",
+              ml: "auto",
               transform: isOpen ? "rotate(180deg)" : "none",
-              transition: "transform 0.2s" 
-            }} 
+              transition: "transform 0.2s",
+            }}
           />
         }
       >
@@ -424,6 +425,13 @@ export function MainNavigation({
   onToggleCollapsed,
 }: MainNavigationProps) {
   const [menuAnchors, setMenuAnchors] = useState<Partial<Record<MenuKey, HTMLElement | null>>>({});
+  const isMobileViewport = useMediaQuery("(max-width:899.95px)", { noSsr: true });
+
+  useEffect(() => {
+    if (isMobileViewport && collapsed && onToggleCollapsed) {
+      onToggleCollapsed();
+    }
+  }, [collapsed, isMobileViewport, onToggleCollapsed]);
 
   const isDashboardView = activeView === "dashboard";
   const isPersonalView =
@@ -483,7 +491,7 @@ export function MainNavigation({
         fontFamily: 'var(--fuentePrincipal, "Helvetica Neue", Helvetica, Arial, sans-serif)',
       }}
     >
-      {onToggleCollapsed && (
+      {onToggleCollapsed && !isMobileViewport && (
         <Box sx={{ display: "flex", justifyContent: collapsed ? "center" : "flex-end", mb: 1 }}>
           <Tooltip title={collapsed ? "Expandir menú" : "Colapsar menú"} placement="right">
             <IconButton
@@ -491,7 +499,7 @@ export function MainNavigation({
               sx={{
                 color: "rgba(255, 255, 255, 0.4)",
                 "&:hover": { color: "var(--color-ejercito-gold)", bgcolor: "rgba(255, 255, 255, 0.05)" },
-                transition: "all 0.2s"
+                transition: "all 0.2s",
               }}
             >
               {collapsed ? <ChevronRightRoundedIcon /> : <ChevronLeftRoundedIcon />}
@@ -515,7 +523,7 @@ export function MainNavigation({
               "&:hover": {
                 bgcolor: "rgba(255, 255, 255, 0.08)",
                 borderColor: "rgba(255, 255, 255, 0.2)",
-              }
+              },
             }}
           >
             {!collapsed && "Buscar personal"}
@@ -610,7 +618,7 @@ export function MainNavigation({
       </ExpandedMenuGroup>
 
       {canWrite ? (
-        <ExpandedMenuGroup title="Altas de Personal" icon={icons.altas} compact={false}>
+        <ExpandedMenuGroup title="Altas de Personal" icon={icons.altas} compact={false} collapsed={collapsed}>
           {filteredCreateViews.map((equipo) => (
             <Button
               key={equipo.view}
@@ -619,7 +627,7 @@ export function MainNavigation({
               onClick={() => handleSelectView(equipo.view)}
               sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
             >
-              {equipo.label}
+              {!collapsed && equipo.label}
             </Button>
           ))}
         </ExpandedMenuGroup>
