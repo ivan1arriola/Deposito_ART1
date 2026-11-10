@@ -40,7 +40,7 @@ export default async function TallesSubalternosPage({
 
   const [personal, firmas] = await Promise.all([
     prisma.personal.findMany({
-      where: { rango: { tipo: TipoPersonal.SUBALTERNO } },
+      where: { rango: { tipo: TipoPersonal.SUBALTERNO }, baja: false },
       select: {
         ci: true,
         apellido1: true,

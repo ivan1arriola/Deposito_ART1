@@ -75,6 +75,7 @@ function tipoFilterConfig(filter: PrintTipoFilter) {
   }
   return {
     where: {
+      baja: false,
       rango: {
         tipo: {
           in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL],
@@ -112,7 +113,7 @@ export default async function ResumenTallasOficialesSuboficialesPage({
   const filterConfig = tipoFilterConfig(tipoFilter);
 
   const personal = await prisma.personal.findMany({
-    where: filterConfig.where,
+    where: { ...filterConfig.where, baja: false },
     select: {
       ci: true,
       tallas: {
