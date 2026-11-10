@@ -1,4 +1,5 @@
-const fs = require('fs');
+/* eslint-disable @typescript-eslint/no-require-imports -- legacy CommonJS migration scripts */
+const fs = require('node:fs');
 let content = fs.readFileSync('prisma/schema-base.sql', 'utf8');
 
 // 1. Update personal table columns

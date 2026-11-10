@@ -88,7 +88,7 @@ export async function DELETE(
     });
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "No se pudo eliminar el registro de entrega de artículos." },
       { status: 500 }

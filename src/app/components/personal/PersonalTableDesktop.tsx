@@ -1,13 +1,12 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
-import { apellidosLabel, nombresLabel, tallasEntries } from "@/lib/formatters";
+import { apellidosLabel, nombresLabel } from "@/lib/formatters";
 import { tallasMap } from "@/lib/form-mappers";
 import { formatUruguayanMobileNumber } from "@/lib/uruguayan-phone";
 import type { Personal } from "@/types/entities";
 import { PersonalActions } from "./PersonalActions";
-import { PersonalTallasPanel } from "./PersonalTallasPanel";
 
 type PersonalTableDesktopProps = {
   personas: Personal[];
@@ -28,7 +27,6 @@ type PersonalTableDesktopProps = {
 export function PersonalTableDesktop({
   personas,
   canWrite,
-  expandedTallasByCi,
   editPersonalCi,
   onToggleEdit,
   onDelete,
@@ -40,7 +38,6 @@ export function PersonalTableDesktop({
   onOpenProfile,
   onOpenSheet,
 }: PersonalTableDesktopProps) {
-  const [expandedPhoneByCi, setExpandedPhoneByCi] = useState<Record<string, boolean>>({});
 
   return (
     <div className="mt-3 hidden overflow-hidden rounded-[26px] border border-[rgba(95,86,61,0.18)] bg-[linear-gradient(180deg,rgba(247,244,234,0.94)_0%,rgba(233,228,214,0.92)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] md:block">
@@ -64,8 +61,6 @@ export function PersonalTableDesktop({
           {personas.map((persona, index) => {
             const tallas = tallasMap(persona.tallas);
             const ciValida = isValidUruguayanCi(persona.ci);
-            const phoneOpen = expandedPhoneByCi[persona.ci] === true;
-            const tallasOpen = expandedTallasByCi[persona.ci] === true;
             const editing = editPersonalCi === persona.ci;
             const isEven = index % 2 === 0;
 

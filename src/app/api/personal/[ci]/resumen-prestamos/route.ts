@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { TipoMovimiento, type Prisma } from "@/generated/prisma/client";
 import { readFile } from "fs/promises";
 import path from "path";
-import { PDFDocument, StandardFonts, rgb, type PDFImage, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
@@ -28,8 +28,6 @@ const CONTENT_BOTTOM = A4_HEIGHT - PAGE_MARGIN_Y - RECEIPT_PADDING;
 
 const TABLE_HEADER_HEIGHT = 16;
 const TABLE_MIN_ROW_HEIGHT = 14;
-const TABLE_CELL_TEXT_SIZE = 9;
-const TABLE_CELL_LINE_HEIGHT = 9;
 const TABLE_CELL_TOP_PADDING = 3;
 const TABLE_CELL_BOTTOM_PADDING = 2;
 

@@ -1,5 +1,6 @@
-const fs = require('fs');
-const path = require('path');
+/* eslint-disable @typescript-eslint/no-require-imports -- legacy CommonJS migration scripts */
+const fs = require('node:fs');
+const path = require('node:path');
 
 const walk = (dir, callback) => {
   if (dir.includes('node_modules') || dir.includes('.next') || dir.includes('.git') || dir.includes('generated')) return;
@@ -16,7 +17,7 @@ const walk = (dir, callback) => {
 
 walk(path.join(__dirname, '../src'), (filepath) => {
   let text = fs.readFileSync(filepath, 'utf8');
-  let original = text;
+  const original = text;
   
   // 1. Prisma nested selects
   text = text.replace(/subalterno:\s*\{\s*select:\s*\{\s*bateria:\s*\{\s*select:\s*\{\s*nombre:\s*true\s*\}\s*\}\s*\}\s*\},?/g, 'bateria: { select: { nombre: true } },');

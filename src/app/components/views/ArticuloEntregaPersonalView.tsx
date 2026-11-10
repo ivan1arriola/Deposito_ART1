@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import type { Articulo, Personal, OficialSuboficial } from "@/types/entities";
 import { DestinatarioSearchSelect } from "@/app/components/shared/DestinatarioSearchSelect";
 import { DateTextInput } from "@/app/components/shared/DateTextInput";
@@ -59,14 +58,14 @@ export function ArticuloEntregaPersonalView({
   onRemoveEquipo,
 }: ArticuloEntregaPersonalViewProps) {
   // Sort articles by type then by name
-  const articulosOrdenados = useMemo(() => {
+  const articulosOrdenados = (() => {
     return [...articulos].sort(
       (a, b) => a.tipo.localeCompare(b.tipo) || a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
     );
-  }, [articulos]);
+  })();
 
   // Recipient options (combines subalternos and officers/subofficers)
-  const recipientOptions = useMemo(() => {
+  const recipientOptions = (() => {
     const list = [];
     // Subalterns
     for (const p of personal) {
@@ -83,23 +82,23 @@ export function ArticuloEntregaPersonalView({
       });
     }
     return list.sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
-  }, [personal, oficialesSuboficiales]);
+  })();
 
   // Authorizer / Ordered By options (Officers, Subofficers, and Sargentos)
-  const actuanteOptions = useMemo(() => {
+  const actuanteOptions = (() => {
     return buildActuanteOptions(oficialesSuboficiales, personal);
-  }, [oficialesSuboficiales, personal]);
+  })();
 
-  const selectedRecipient = useMemo(() => {
+  const selectedRecipient = (() => {
     return recipientOptions.find((opt) => opt.ci === personalCi) ?? null;
-  }, [recipientOptions, personalCi]);
+  })();
 
-  const selectedOrdenante = useMemo(() => {
+  const selectedOrdenante = (() => {
     return actuanteOptions.find((opt) => opt.ci === ordenanteCi) ?? null;
-  }, [actuanteOptions, ordenanteCi]);
+  })();
 
   // Validation checking
-  const validation = useMemo(() => {
+  const validation = (() => {
     if (!personalCi.trim()) {
       return { isValid: false, message: "Selecciona un personal destinatario." };
     }
@@ -147,7 +146,7 @@ export function ArticuloEntregaPersonalView({
     }
 
     return { isValid: true, message: null, totalQuantity };
-  }, [personalCi, ordenanteCi, equipos, articulos]);
+  })();
 
   return (
     <section className="mt-6 space-y-4">

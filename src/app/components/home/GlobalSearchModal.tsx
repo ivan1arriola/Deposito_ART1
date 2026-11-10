@@ -13,7 +13,7 @@ import BadgeRoundedIcon from "@mui/icons-material/BadgeRounded";
 import KeyboardArrowRightRoundedIcon from "@mui/icons-material/KeyboardArrowRightRounded";
 
 const Transition = React.forwardRef(function Transition(
-  props: TransitionProps & { children: React.ReactElement<any, any> },
+  props: TransitionProps & { children: React.ReactElement },
   ref: React.Ref<unknown>,
 ) {
   return <Slide direction="down" ref={ref} {...props} />;
@@ -47,10 +47,11 @@ export function GlobalSearchModal({
   // Focus input when opened
   useEffect(() => {
     if (open) {
-      setQuery("");
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        setQuery("");
         inputRef.current?.focus();
       }, 100);
+      return () => clearTimeout(timer);
     }
   }, [open]);
 
@@ -165,7 +166,7 @@ export function GlobalSearchModal({
         <Box sx={{ maxHeight: "60vh", overflowY: "auto", p: 1.5 }}>
           {query.length > 0 && results.length === 0 ? (
             <Box sx={{ py: 6, textAlign: "center", color: "stone.400" }}>
-              <p className="text-sm font-medium">No se encontraron resultados para "{query}"</p>
+              <p className="text-sm font-medium">No se encontraron resultados para &quot;{query}&quot;</p>
             </Box>
           ) : results.length > 0 ? (
             <Box component="ul" sx={{ display: "flex", flexDirection: "column", gap: 0.5, listStyle: "none", m: 0, p: 0 }}>

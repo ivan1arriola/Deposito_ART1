@@ -108,7 +108,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
           <div className="space-y-3 md:hidden">
             {rows.length === 0 ? (
               <p className="px-3 py-8 text-center text-sm text-stone-500 italic">
-                No se encontraron equipos que coincidan con "{searchTerm}".
+                No se encontraron equipos que coincidan con &quot;{searchTerm}&quot;.
               </p>
             ) : null}
             {rows.map((row) => (
@@ -152,7 +152,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
                 {rows.length === 0 ? (
                   <tr>
                     <td colSpan={data.baterias.length + 2} className="px-3 py-8 text-center text-sm text-stone-500 italic">
-                      No se encontraron equipos que coincidan con "{searchTerm}".
+                      No se encontraron equipos que coincidan con &quot;{searchTerm}&quot;.
                     </td>
                   </tr>
                 ) : null}

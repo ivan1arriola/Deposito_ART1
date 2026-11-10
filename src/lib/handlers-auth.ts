@@ -48,7 +48,7 @@ export async function loginHandler(
 export async function logoutHandler(callbacks: CallbackProps) {
   try {
     await signOut({ redirect: false });
-  } catch (error) {
+  } catch {
     
   } finally {
     callbacks.onSuccess?.();

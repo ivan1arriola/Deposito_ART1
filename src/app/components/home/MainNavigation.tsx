@@ -1,20 +1,13 @@
 "use client";
 
-import { useEffect, useState, type JSX, type MouseEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useState, type JSX, type ReactNode, type RefObject } from "react";
 import {
   Box,
   Button,
   Collapse,
-  Divider,
-  ListItemIcon,
-  ListItemText,
   IconButton,
-  Menu,
-  MenuItem,
-  Paper,
   Stack,
   Tooltip,
-  Typography,
   useMediaQuery,
 } from "@mui/material";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";

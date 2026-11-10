@@ -9,7 +9,6 @@ import type { PrestamoStockEntry, RegistroView } from "@/types/views";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import BadgeRoundedIcon from "@mui/icons-material/BadgeRounded";
 import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
-import MailRoundedIcon from "@mui/icons-material/MailRounded";
 import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
 import MilitaryTechRoundedIcon from "@mui/icons-material/MilitaryTechRounded";
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";

@@ -12,7 +12,7 @@ const files = project.getSourceFiles();
 
 for (const file of files) {
   let text = file.getFullText();
-  let original = text;
+  const original = text;
   
   // Fix types where subalterno is defined
   text = text.replace(/subalterno:\s*\{\s*bateria:\s*\{\s*nombre:\s*string;?\s*\}\s*\|\s*null;?\s*\}\s*\|\s*null;?/g, "bateria: { nombre: string } | null;");

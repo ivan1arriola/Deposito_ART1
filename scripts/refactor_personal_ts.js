@@ -1,5 +1,6 @@
-const fs = require('fs');
-const path = require('path');
+/* eslint-disable @typescript-eslint/no-require-imports -- legacy CommonJS migration scripts */
+const fs = require('node:fs');
+const path = require('node:path');
 
 const walk = (dir, callback) => {
   if (dir.includes('node_modules') || dir.includes('.next') || dir.includes('.git') || dir.includes('generated')) return;
@@ -70,7 +71,7 @@ const replacements = [
 let changed = 0;
 walk(path.join(__dirname, '../src'), (filepath) => {
   let content = fs.readFileSync(filepath, 'utf8');
-  let originalContent = content;
+  const originalContent = content;
   
   replacements.forEach(r => {
     content = content.replace(r.regex, r.repl);

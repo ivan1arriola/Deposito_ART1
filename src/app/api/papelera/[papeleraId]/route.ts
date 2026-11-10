@@ -19,7 +19,7 @@ export async function GET(req: Request, context: { params: Promise<{ papeleraId:
     }
 
     return NextResponse.json(registro);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "No se pudo obtener el registro de la papelera." }, { status: 500 });
   }
 }
@@ -55,7 +55,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ papelera
     });
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "No se pudo eliminar permanentemente el registro." }, { status: 500 });
   }
 }
