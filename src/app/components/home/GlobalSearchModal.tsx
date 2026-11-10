@@ -47,10 +47,11 @@ export function GlobalSearchModal({
   // Focus input when opened
   useEffect(() => {
     if (open) {
-      setQuery("");
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        setQuery("");
         inputRef.current?.focus();
       }, 100);
+      return () => clearTimeout(timer);
     }
   }, [open]);
 
