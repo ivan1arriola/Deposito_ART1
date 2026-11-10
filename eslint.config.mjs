@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "warn",
       "prefer-const": "warn",
       "react/no-unescaped-entities": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
     },
   },
   // Override default ignores of eslint-config-next.
