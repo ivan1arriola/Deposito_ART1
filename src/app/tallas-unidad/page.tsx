@@ -41,6 +41,7 @@ export default async function TallasUnidadPage({
 
   const personal = await prisma.personal.findMany({
     where: {
+      baja: false,
       rango: { tipo: TipoPersonal.SUBALTERNO },
     },
     include: {
