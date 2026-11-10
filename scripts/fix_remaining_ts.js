@@ -61,7 +61,7 @@ const replacements = [
 
 walk(path.join(__dirname, '../src'), (filepath) => {
   let content = fs.readFileSync(filepath, 'utf8');
-  let originalContent = content;
+  const originalContent = content;
   
   replacements.forEach(r => {
     content = content.replace(r.regex, r.repl);
