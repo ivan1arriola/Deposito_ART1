@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { isValidUruguayanCi, normalizeCi } from "@/lib/ci";
-import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 
 type JsonObject = Record<string, unknown>;
