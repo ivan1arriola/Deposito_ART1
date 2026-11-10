@@ -81,7 +81,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
     console.log("[api] ejecutando fetch...");
     response = await fetch(url, fetchOptions);
     console.log("[api] fetch completado");
-  } catch {
+  } catch (error) {
     if (isAbortError(error)) {
       console.log("[api] fetch abortado");
     }
@@ -104,7 +104,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
     rawBody = await response.text();
     console.log("[api] rawBody recibido:", rawBody);
     console.log("[api] rawBody length:", rawBody.length);
-  } catch {
+  } catch (error) {
     if (isAbortError(error)) {
       console.log("[api] lectura de body abortada");
     }
