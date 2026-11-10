@@ -19,7 +19,7 @@ const walk = (dir, callback) => {
 
 walk(path.join(__dirname, '../src'), (filepath) => {
   let content = fs.readFileSync(filepath, 'utf8');
-  let originalContent = content;
+  const originalContent = content;
   
   // 1. Prisma include/select blocks
   content = content.replace(/subalterno:\s*\{\s*include:\s*\{\s*bateria:\s*true\s*\}\s*\},?/g, 'bateria: true,');
