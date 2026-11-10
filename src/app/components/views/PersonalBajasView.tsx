@@ -2,7 +2,6 @@
 
 import { useEffect, useState, Fragment } from "react";
 import { formatUruguayanCi } from "@/lib/ci";
-import { SmallActionButton } from "../shared";
 
 type OutstandingItem = {
   nombre: string;
