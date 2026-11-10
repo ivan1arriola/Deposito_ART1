@@ -309,7 +309,7 @@ function renderRoles() {
   const rowHeight = 22;
   const colWidths = [tableWidth * 0.38, tableWidth * 0.155, tableWidth * 0.155, tableWidth * 0.155, tableWidth * 0.155];
   const headers = ["Permiso", "ADMIN", "EDITOR", "READ_ONLY", "PERSONAL"];
-  let tableY = doc.y;
+  const tableY = doc.y;
 
   doc.save();
   headers.forEach((header, index) => {
