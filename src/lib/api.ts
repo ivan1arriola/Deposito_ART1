@@ -81,7 +81,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
     console.log("[api] ejecutando fetch...");
     response = await fetch(url, fetchOptions);
     console.log("[api] fetch completado");
-  } catch (error) {
+  } catch {
     if (isAbortError(error)) {
       console.log("[api] fetch abortado");
     }
@@ -104,7 +104,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
     rawBody = await response.text();
     console.log("[api] rawBody recibido:", rawBody);
     console.log("[api] rawBody length:", rawBody.length);
-  } catch (error) {
+  } catch {
     if (isAbortError(error)) {
       console.log("[api] lectura de body abortada");
     }
@@ -119,7 +119,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
       console.log("[api] intentando parsear JSON...");
       data = JSON.parse(rawBody);
       console.log("[api] JSON parseado correctamente:", data);
-    } catch (error) {
+    } catch {
       console.groupEnd();
       throw new Error("El servidor devolvió una respuesta inválida.");
     }
