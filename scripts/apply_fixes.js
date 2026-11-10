@@ -16,7 +16,7 @@ const walk = (dir, callback) => {
 
 walk(path.join(__dirname, '../src'), (filepath) => {
   let text = fs.readFileSync(filepath, 'utf8');
-  let original = text;
+  const original = text;
   
   // 1. Prisma nested selects
   text = text.replace(/subalterno:\s*\{\s*select:\s*\{\s*bateria:\s*\{\s*select:\s*\{\s*nombre:\s*true\s*\}\s*\}\s*\}\s*\},?/g, 'bateria: { select: { nombre: true } },');
