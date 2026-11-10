@@ -50,6 +50,7 @@ export default async function ListaPersonalPage({
 
   const personal = await prisma.personal.findMany({
     where: {
+      baja: false,
       rango: { tipo: TipoPersonal.SUBALTERNO },
     },
     select: {
