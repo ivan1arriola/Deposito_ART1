@@ -27,7 +27,6 @@ type PersonalTableDesktopProps = {
 export function PersonalTableDesktop({
   personas,
   canWrite,
-  expandedTallasByCi,
   editPersonalCi,
   onToggleEdit,
   onDelete,
