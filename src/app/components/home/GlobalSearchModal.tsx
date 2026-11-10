@@ -166,7 +166,7 @@ export function GlobalSearchModal({
         <Box sx={{ maxHeight: "60vh", overflowY: "auto", p: 1.5 }}>
           {query.length > 0 && results.length === 0 ? (
             <Box sx={{ py: 6, textAlign: "center", color: "stone.400" }}>
-              <p className="text-sm font-medium">No se encontraron resultados para "{query}"</p>
+              <p className="text-sm font-medium">No se encontraron resultados para &quot;{query}&quot;</p>
             </Box>
           ) : results.length > 0 ? (
             <Box component="ul" sx={{ display: "flex", flexDirection: "column", gap: 0.5, listStyle: "none", m: 0, p: 0 }}>
