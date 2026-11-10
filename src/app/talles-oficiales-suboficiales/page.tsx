@@ -51,7 +51,7 @@ function tipoFilterConfig(filter: PrintTipoFilter) {
     };
   }
   return {
-    where: { rango: { tipo: { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] } } },
+    where: { rango: { tipo: { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] } }, baja: false },
     title: "Talles de oficiales y suboficiales",
     subtitle: "Listado nominal de talles, uno por uno, para oficiales y suboficiales.",
     metaLabel: "Total registros",
@@ -84,7 +84,7 @@ export default async function TallesOficialesSuboficialesPage({
 
   const [registros, firmas] = await Promise.all([
     prisma.personal.findMany({
-      where: filterConfig.where,
+      where: { ...filterConfig.where, baja: false },
       select: {
         ci: true,
         apellido1: true,
