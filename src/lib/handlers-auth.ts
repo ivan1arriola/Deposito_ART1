@@ -39,7 +39,7 @@ export async function loginHandler(
     }
 
     callbacks.onError?.("No se pudo iniciar sesión.");
-  } catch (error) {
+  } catch {
     const message = error instanceof Error ? error.message : "No se pudo iniciar sesión.";
     callbacks.onError?.(message);
   }
@@ -48,7 +48,7 @@ export async function loginHandler(
 export async function logoutHandler(callbacks: CallbackProps) {
   try {
     await signOut({ redirect: false });
-  } catch (error) {
+  } catch {
     
   } finally {
     callbacks.onSuccess?.();
@@ -67,7 +67,7 @@ export async function requestPasswordResetHandler(
     });
     callbacks.onSuccess?.(result);
     return result;
-  } catch (error) {
+  } catch {
     const message = error instanceof Error ? error.message : "No se pudo enviar el enlace.";
     callbacks.onError?.(message);
     throw error;
@@ -85,7 +85,7 @@ export async function changePasswordHandler(
       body: JSON.stringify(payload),
     });
     callbacks.onSuccess?.();
-  } catch (error) {
+  } catch {
     const message = error instanceof Error ? error.message : "No se pudo cambiar la contraseña.";
     callbacks.onError?.(message);
     throw error;
@@ -111,7 +111,7 @@ export async function initializeDatabaseHandler(callbacks: CallbackProps) {
       credentials?: { username: string; password: string };
     }>("/api/db-init", { method: "POST" });
     callbacks.onSuccess?.(result);
-  } catch (error) {
+  } catch {
     const message = error instanceof Error ? error.message : "No se pudo inicializar la base de datos.";
     callbacks.onError?.(message);
     throw error;
