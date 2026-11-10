@@ -1,4 +1,5 @@
-const fs = require('fs');
+/* eslint-disable @typescript-eslint/no-require-imports -- legacy CommonJS migration scripts */
+const fs = require('node:fs');
 const filepath = 'prisma/schema.prisma';
 let content = fs.readFileSync(filepath, 'utf8');
 
