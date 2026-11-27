@@ -276,6 +276,21 @@ const registroReciboInclude = {
       },
     },
   },
+  articulos: {
+    include: {
+      articulo: {
+        select: {
+          nombre: true,
+          tipo: true,
+        },
+      },
+    },
+    orderBy: {
+      articulo: {
+        nombre: "asc",
+      },
+    },
+  },
 } satisfies Prisma.MovimientoInclude;
 
 export async function GET(request: Request, context: { params: Promise<{ registroId: string }> }) {
@@ -321,7 +336,7 @@ export async function GET(request: Request, context: { params: Promise<{ registr
       : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION
         ? "Devolución"
         : "Asignación";
-  const subtitle = `${tipoLabel} ${isRecinto ? "a recinto" : isExterno ? "a externo" : "a personal"}`;
+  const subtitle = `${tipoLabel} ${isRecinto ? "a recinto" : isExterno ? "a externo" : "a personal"}${registro.anulado ? " (ANULADA)" : ""}`;
   const fechaMovimiento = formatDateOnlyFromDate(registro.fecha) ?? "-";
   const usuarioEntregaGrado = registro.usuarioEntrega.rango?.abreviacion?.trim() ?? "";
   const usuarioEntregaNombreApellidoRaw =
@@ -404,15 +419,22 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     destinoClase = "Dentro de la Unidad";
   }
 
-  const tableRows = registro.equipos.map((equipo) => {
-    const observaciones = equipo.comentarioEntrega?.trim() || "";
+  const tableRows = [
+    ...registro.equipos.map((equipo) => {
+      const observaciones = equipo.comentarioEntrega?.trim() || "";
 
-    return {
-      cantidad: String(equipo.cantidad),
-      efecto: equipo.equipo.nombre,
-      observaciones: observaciones || "-",
-    };
-  });
+      return {
+        cantidad: String(equipo.cantidad),
+        efecto: equipo.equipo.nombre,
+        observaciones: observaciones || "-",
+      };
+    }),
+    ...(registro.articulos ?? []).map((articulo) => ({
+      cantidad: String(articulo.cantidad),
+      efecto: `${articulo.articulo.nombre} (Art. ${articulo.articulo.tipo})`,
+      observaciones: "-",
+    })),
+  ];
 
   const pdfDoc = await PDFDocument.create();
   const assets = await createReceiptPdfAssets(pdfDoc);

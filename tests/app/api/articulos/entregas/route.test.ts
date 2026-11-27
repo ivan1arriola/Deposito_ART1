@@ -15,6 +15,7 @@ vi.mock("@/lib/audit", () => ({
 
 vi.mock("@/lib/stock-calc", () => ({
   calcularStockArticulo: vi.fn(),
+  lockArticulosForUpdate: vi.fn(),
 }));
 
 const mockTx = {

@@ -84,6 +84,7 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
       INNER JOIN movimiento_destinatario_personal mdp
         ON mdp.movimiento_id = m.movimiento_id
       WHERE m.tipo IN ('ENTREGA', 'DEVOLUCION')
+        AND COALESCE(m.anulado, FALSE) = FALSE
       GROUP BY mi.equipo_id
     `,
     prisma.$queryRaw<AggregateRow[]>`
@@ -94,6 +95,7 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
       INNER JOIN movimiento m
         ON m.movimiento_id = mi.movimiento_id
       WHERE m.tipo = 'ASIGNACION'
+        AND COALESCE(m.anulado, FALSE) = FALSE
       GROUP BY mi.equipo_id
     `,
     prisma.$queryRaw<AggregateRow[]>`
