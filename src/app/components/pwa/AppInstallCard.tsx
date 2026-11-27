@@ -139,39 +139,51 @@ export function AppInstallCard({ compact = false }: AppInstallCardProps) {
 
   return (
     <section
-      className={`ej-card mt-4 rounded-2xl border border-stone-300/70 bg-white/85 ${compact ? "p-3 sm:p-4" : "p-4 sm:p-5"}`}
+      className={
+        compact
+          ? "rounded-xl border border-stone-200 bg-white px-3 py-2 xl:flex-1"
+          : "ej-card mt-4 rounded-2xl border border-stone-300/70 bg-white/85 p-4 sm:p-5"
+      }
       aria-live="polite"
     >
       <div
-        className={`flex flex-col gap-3 ${compact ? "" : "sm:flex-row sm:items-center sm:justify-between"}`}
+        className={
+          compact
+            ? "flex h-full flex-wrap items-center justify-between gap-2"
+            : "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        }
       >
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
-            Aplicación instalable
-          </p>
+        <div className={compact ? "min-w-0 flex-1 basis-36" : "min-w-0"}>
+          {compact ? null : (
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+              Aplicación instalable
+            </p>
+          )}
           <h2
-            className={`${compact ? "text-sm sm:text-base" : "text-base sm:text-lg"} font-bold text-stone-900`}
+            className={`${compact ? "text-sm font-semibold" : "text-base font-bold sm:text-lg"} text-stone-900`}
           >
-            Instala el Sistema de Depósito General - Artillería 1 en Chrome
+            {compact
+              ? "Instalar la aplicación"
+              : "Instala el Sistema de Depósito General - Artillería 1 en Chrome"}
           </h2>
-          <p className={`${compact ? "text-xs" : "text-sm"} mt-1 text-stone-700`}>{summaryText}</p>
+          <p className={`${compact ? "text-xs" : "mt-1 text-sm"} text-stone-700`}>{summaryText}</p>
         </div>
 
-        <div className={`gap-2 ${compact ? "grid grid-cols-2" : "flex sm:shrink-0"}`}>
+        <div className={compact ? "flex shrink-0 items-center gap-1.5" : "flex gap-2 sm:shrink-0"}>
           <button
             type="button"
             onClick={() => void install()}
             disabled={installing}
-            className={`ej-button rounded-xl ${compact ? "px-3 py-2 text-xs sm:text-sm" : "px-4 py-2 text-sm"} font-semibold disabled:opacity-60`}
+            className={`${compact ? "min-h-11 rounded-lg border border-stone-300 px-2.5 text-xs text-[var(--color-ejercito-blue)] hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800" : "ej-button rounded-xl px-4 py-2 text-sm"} font-semibold disabled:opacity-60`}
           >
             {primaryLabel}
           </button>
           <button
             type="button"
             onClick={dismiss}
-            className={`rounded-xl border border-stone-300 bg-white ${compact ? "px-3 py-2 text-xs sm:text-sm" : "px-4 py-2 text-sm"} font-semibold text-stone-700 transition hover:bg-stone-100`}
+            className={`${compact ? "min-h-11 rounded-lg px-2 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800" : "rounded-xl border border-stone-300 px-4 py-2 text-sm"} bg-white font-semibold text-stone-700 transition hover:bg-stone-100`}
           >
-            {compact ? "Cerrar" : "Ocultar"}
+            Ocultar
           </button>
         </div>
       </div>

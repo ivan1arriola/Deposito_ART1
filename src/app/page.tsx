@@ -6951,10 +6951,16 @@ export default function Home() {
               />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-sm font-black tracking-tight text-[var(--color-ejercito-gold)] drop-shadow-sm">
+              <h1
+                className={
+                  activeView === "personal"
+                    ? "whitespace-nowrap text-sm font-bold text-[var(--color-ejercito-blue)]"
+                    : "text-sm font-black tracking-tight text-[var(--color-ejercito-gold)] drop-shadow-sm"
+                }
+              >
                 DEPÓSITO GENERAL
               </h1>
-              <div className="flex items-center gap-1.5">
+              <div className={activeView === "personal" ? "hidden" : "flex items-center gap-1.5"}>
                 <span className="text-[11px] font-black uppercase tracking-wider text-stone-700">
                   Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1
                 </span>
@@ -7005,17 +7011,29 @@ export default function Home() {
           </div>
         </header>
 
-        {currentUser && isAdminRole(currentUser.rol) && (
-          <Box
-            sx={{
-              position: "relative",
-              px: activeView === "dashboard" ? 3 : 0,
-              mt: activeView === "dashboard" ? 3 : 0,
-            }}
-          >
-            <AdminPushNotifications />
-          </Box>
-        )}
+        <div
+          className={
+            activeView === "personal"
+              ? "mb-3 flex flex-col gap-2 empty:hidden xl:flex-row"
+              : undefined
+          }
+        >
+          {currentUser && isAdminRole(currentUser.rol) ? (
+            <Box
+              className={activeView === "personal" ? "empty:hidden xl:flex-1" : undefined}
+              sx={{
+                position: "relative",
+                px: activeView === "dashboard" ? 3 : 0,
+                mt: activeView === "dashboard" ? 3 : 0,
+              }}
+            >
+              <AdminPushNotifications compact={activeView === "personal"} />
+            </Box>
+          ) : null}
+          {activeView !== "dashboard" ? (
+            <AppInstallCard compact={activeView === "personal"} />
+          ) : null}
+        </div>
 
         <div>
           {activeView === "dashboard" ? (
@@ -7027,9 +7045,7 @@ export default function Home() {
               onOpenAsignacion={() => handleSelectMainView("asignacion_recinto_nueva")}
               onOpenPrestamo={() => handleSelectMainView("prestamos_registrar")}
             />
-          ) : (
-            <AppInstallCard />
-          )}
+          ) : null}
 
           {inReminderConfigView ? (
             <RecordatoriosConfigView

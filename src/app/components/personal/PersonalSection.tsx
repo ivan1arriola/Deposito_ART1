@@ -1,14 +1,14 @@
 "use client";
 
-import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded";
-
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import ForwardToInboxOutlinedIcon from "@mui/icons-material/ForwardToInboxOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
-import { useState, useMemo, type ReactNode } from "react";
-import { LoadingInline, PaginationControls } from "@/app/components/shared";
+import { Pagination } from "@mui/material";
+import { useState, useMemo } from "react";
+import { LoadingInline } from "@/app/components/shared";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import type { TallaKey } from "@/lib/tallas";
 import type { Bateria, Personal, Rango } from "@/types/entities";
@@ -78,110 +78,6 @@ type AscensoSargentoPanelProps = {
   onContinue: (ci: string, adminPassword: string) => void;
   onPrintDeliverySheet: (ci: string) => boolean;
 };
-
-type QuickActionTone = "emerald" | "indigo" | "slate" | "sky" | "blue";
-
-type QuickActionButtonProps = {
-  eyebrow: string;
-  title: string;
-  description: string;
-  icon: ReactNode;
-  tone: QuickActionTone;
-  disabled?: boolean;
-  tooltip?: string | null;
-  onClick: () => void;
-};
-
-const quickActionToneStyles: Record<QuickActionTone, { rail: string }> = {
-  emerald: {
-    rail: "linear-gradient(180deg, #e3c777 0%, #7f935a 100%)",
-  },
-  indigo: {
-    rail: "linear-gradient(180deg, #e3c777 0%, #516a94 100%)",
-  },
-  slate: {
-    rail: "linear-gradient(180deg, #e3c777 0%, #6f5b42 100%)",
-  },
-  sky: {
-    rail: "linear-gradient(180deg, #e3c777 0%, #5f8693 100%)",
-  },
-  blue: {
-    rail: "linear-gradient(180deg, #e3c777 0%, #31568a 100%)",
-  },
-};
-
-function QuickActionButton({
-  eyebrow,
-  title,
-  description,
-  icon,
-  tone,
-  disabled = false,
-  tooltip = null,
-  onClick,
-}: QuickActionButtonProps) {
-  const toneStyles = quickActionToneStyles[tone];
-  const button = (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="group relative isolate flex min-h-[116px] w-full flex-col justify-between overflow-hidden rounded-[22px] border border-[rgba(20,20,18,0.72)] px-4 py-3 text-left text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),var(--shadow-sm)] transition duration-150 hover:-translate-y-0.5 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),var(--shadow-md)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(255,204,0,0.28)] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
-      style={{
-        backgroundColor: "#5f6c46",
-        backgroundImage:
-          "linear-gradient(90deg, rgba(24,27,21,0.58) 0%, rgba(255,255,255,0.04) 38%, rgba(24,27,21,0.48) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 2px, rgba(0,0,0,0) 2px 7px)",
-      }}
-    >
-      <span
-        aria-hidden
-        className="absolute inset-y-3 left-0 w-[4px] rounded-r-full"
-        style={{ backgroundImage: toneStyles.rail }}
-      />
-      <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-white/10" />
-      <span aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-black/25" />
-      <div className="flex items-start justify-between gap-3">
-        <span
-          className="inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.24em]"
-          style={{
-            borderColor: "rgba(245, 214, 135, 0.26)",
-            backgroundColor: "rgba(19, 23, 17, 0.42)",
-            color: "rgba(255, 226, 152, 0.94)",
-          }}
-        >
-          {eyebrow}
-        </span>
-        <span
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border"
-          style={{
-            borderColor: "rgba(214, 197, 150, 0.34)",
-            background: "linear-gradient(145deg, rgba(18,22,16,0.92) 0%, rgba(58,68,47,0.86) 100%)",
-            color: "#f2dfad",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
-          }}
-        >
-          {icon}
-        </span>
-      </div>
-      <div className="mt-4">
-        <div className="text-[15px] font-semibold leading-snug tracking-[0.01em] text-white">
-          {title}
-        </div>
-        <p className="mt-1.5 text-[12px] leading-5 text-[rgba(243,245,237,0.84)]">{description}</p>
-      </div>
-    </button>
-  );
-
-  if (tooltip) {
-    return (
-      <div className="w-full" title={tooltip}>
-        {button}
-      </div>
-    );
-  }
-
-  return button;
-}
 
 function AscensoSargentoPanel({
   ci,
@@ -281,7 +177,6 @@ export function PersonalSection({
   onBateriaFilterChange,
   onClearFilters,
   onPersonalPageChange,
-  onPersonalPageSizeChange,
   onPrintAllDeliverySheets,
   onEmailAllDeliverySheets,
   onCancelEmailAllDeliverySheets,
@@ -321,10 +216,6 @@ export function PersonalSection({
     isAdmin && editingPersona && canPromoteEditPersonalToSuboficial
   );
 
-  const actionGridClass = canWrite
-    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7"
-    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4";
-
   const personalConErrorReingreso = useMemo(() => {
     return personal.filter(
       (persona) =>
@@ -332,137 +223,110 @@ export function PersonalSection({
     );
   }, [personal]);
 
+  const total = personalFiltrado.length;
+  const pages = Math.max(1, Math.ceil(total / personalPageSize));
+  const page = Math.min(Math.max(1, personalPage), pages);
+  const from = (page - 1) * personalPageSize + 1;
+  const to = Math.min(page * personalPageSize, total);
+  const documentsDisabled = loading || personal.length === 0;
+  const emailDisabledReason = emailAllDeliverySheetsBusy
+    ? null
+    : emailAllDeliverySheetsDisabledReason;
+  const operations = [
+    ...(canWrite
+      ? [
+          {
+            id: "mass-delivery",
+            label: "Registrar entrega masiva",
+            icon: <FactCheckOutlinedIcon fontSize="small" />,
+            onClick: onOpenMassEntrega,
+            disabled: loading || total === 0,
+          },
+        ]
+      : []),
+    {
+      id: "print-sheets",
+      label: "Imprimir hojas de entrega",
+      icon: <PrintOutlinedIcon fontSize="small" />,
+      onClick: onPrintAllDeliverySheets,
+      disabled: documentsDisabled,
+    },
+    {
+      id: "email-sheets",
+      label: emailAllDeliverySheetsBusy ? "Cancelar envío de hojas" : "Enviar hojas por correo",
+      icon: <ForwardToInboxOutlinedIcon fontSize="small" />,
+      onClick: emailAllDeliverySheetsBusy
+        ? onCancelEmailAllDeliverySheets
+        : onEmailAllDeliverySheets,
+      disabled: documentsDisabled || Boolean(emailDisabledReason),
+    },
+    {
+      id: "print-list",
+      label: "Imprimir lista por batería",
+      icon: <ViewAgendaOutlinedIcon fontSize="small" />,
+      onClick: onPrintPersonnelByBattery,
+      disabled: documentsDisabled,
+    },
+    ...(canWrite
+      ? [
+          {
+            id: "register",
+            label: "Registrar subalterno",
+            icon: <AddRoundedIcon fontSize="small" />,
+            onClick: onOpenCreate,
+            disabled: false,
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <section className="mt-6 space-y-4">
-      <section className="ej-card overflow-hidden rounded-[28px] p-3 sm:p-4">
-        <div className="min-w-0">
-          <h2 className="text-base font-semibold text-stone-900">Personal subalterno</h2>
-          <p className="mt-1 text-xs text-stone-600">
-            Orden: grado del personal subalterno, apellidos y nombres.
+    <section
+      aria-labelledby="personal-directory-title"
+      className="@container min-w-0 overflow-hidden rounded-2xl border border-stone-200 bg-white text-stone-900"
+    >
+      <header className="px-4 pb-3 pt-4">
+        <div>
+          <h2 id="personal-directory-title" className="text-2xl font-bold tracking-tight">
+            Personal subalterno
+          </h2>
+          <p role="status" className="mt-0.5 text-sm text-stone-600">
+            {total} resultado{total === 1 ? "" : "s"}
+            {hasPersonalFilters ? " de " + personal.length : ""}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-full border border-[rgba(39,47,33,0.82)] bg-[linear-gradient(180deg,rgba(61,71,49,0.98)_0%,rgba(40,49,33,0.98)_100%)] px-3 py-1 text-xs font-bold text-[rgba(244,220,151,0.95)]">
-              {personalFiltrado.length} resultado{personalFiltrado.length === 1 ? "" : "s"}
-            </div>
-            {loading ? (
-              <LoadingInline
-                label="Actualizando datos..."
-                size="xs"
-                textClassName="text-xs font-semibold text-stone-600"
-              />
-            ) : null}
-          </div>
         </div>
-        <div className={`mt-4 grid w-full gap-3 ${actionGridClass}`}>
-          {canWrite ? (
-            <QuickActionButton
-              eyebrow="Masivo"
-              title="Registrar entrega masiva"
-              description="Carga un mismo movimiento para varios subalternos."
-              icon={<FactCheckOutlinedIcon fontSize="small" />}
-              tone="emerald"
-              onClick={onOpenMassEntrega}
-              disabled={loading || personalFiltrado.length === 0}
-            />
-          ) : null}
-
-          <QuickActionButton
-            eyebrow="PDF"
-            title="Imprimir hojas de entrega"
-            description="Abre el PDF consolidado de toda la unidad."
-            icon={<PrintOutlinedIcon fontSize="small" />}
-            tone="indigo"
-            onClick={onPrintAllDeliverySheets}
-            disabled={loading || personal.length === 0}
-          />
-          <QuickActionButton
-            eyebrow={emailAllDeliverySheetsBusy ? "En curso" : "Correo"}
-            title={
-              emailAllDeliverySheetsBusy
-                ? "Cancelar envío de hojas de entrega en segundo plano"
-                : "Enviar hojas de entrega al correo de referencia"
-            }
-            description={
-              emailAllDeliverySheetsBusy
-                ? "Detiene el seguimiento actual y solicita cancelar el envío en el servidor."
-                : "Genera el PDF consolidado de hojas de entrega y lo envia a tu correo configurado."
-            }
-            icon={<ForwardToInboxOutlinedIcon fontSize="small" />}
-            tone="slate"
-            onClick={
-              emailAllDeliverySheetsBusy ? onCancelEmailAllDeliverySheets : onEmailAllDeliverySheets
-            }
-            disabled={
-              loading ||
-              personal.length === 0 ||
-              (!emailAllDeliverySheetsBusy && Boolean(emailAllDeliverySheetsDisabledReason))
-            }
-            tooltip={emailAllDeliverySheetsBusy ? null : emailAllDeliverySheetsDisabledReason}
-          />
-          <QuickActionButton
-            eyebrow="Listado"
-            title="Imprimir lista por bateria"
-            description="Genera el listado ordenado de subalternos por bateria."
-            icon={<ViewAgendaOutlinedIcon fontSize="small" />}
-            tone="sky"
-            onClick={onPrintPersonnelByBattery}
-            disabled={loading || personal.length === 0}
-          />
-          <QuickActionButton
-            eyebrow="Alta"
-            title="Registrar subalterno"
-            description="Crea una nueva ficha y la deja disponible de inmediato."
-            icon={<AddCircleOutlineRoundedIcon fontSize="small" />}
-            tone="blue"
-            onClick={onOpenCreate}
-            disabled={!canWrite}
-          />
+        <div
+          role="group"
+          aria-label="Operaciones de personal"
+          className="mt-3 grid grid-cols-2 gap-2 @min-[38rem]:flex @min-[38rem]:flex-wrap"
+        >
+          {operations.map(({ id, label, icon, onClick, disabled }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={onClick}
+              disabled={disabled}
+              aria-describedby={
+                id === "email-sheets" && emailDisabledReason ? "personal-email-reason" : undefined
+              }
+              className={
+                "inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800 " +
+                (id === "register"
+                  ? "bg-[var(--color-ejercito-blue)] text-white hover:bg-blue-950"
+                  : "border border-stone-300 bg-white text-stone-800 hover:bg-stone-100 disabled:bg-stone-100 disabled:text-stone-600")
+              }
+            >
+              {icon}
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
-      </section>
-
-      {personalConErrorReingreso.length > 0 ? (
-        <section className="rounded-2xl border border-rose-300/80 bg-gradient-to-r from-rose-50/90 to-amber-50/80 p-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-xs">
-              <WarningAmberRoundedIcon />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-rose-950">
-                Atención: Fichas de reingreso incompletas (Fecha Re-ingreso obligatoria)
-              </h3>
-              <p className="mt-0.5 text-xs text-rose-800 font-medium">
-                Se detectó personal marcado como reingreso sin la fecha correspondiente registrada.
-                Selecciona &quot;Corregir&quot; para ingresar el dato faltante.
-              </p>
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {personalConErrorReingreso.map((persona) => (
-                  <div
-                    key={persona.ci}
-                    className="flex items-center justify-between rounded-xl bg-white p-3 border border-rose-200 shadow-xs hover:border-rose-300 transition"
-                  >
-                    <div className="min-w-0 pr-2">
-                      <p className="text-xs font-bold text-stone-900 truncate">
-                        {persona.rango.nombreCompleto}
-                      </p>
-                      <p className="text-xs text-stone-700 truncate">
-                        {persona.apellido1} {persona.nombre1}
-                      </p>
-                      <p className="text-[10px] text-stone-500 font-mono">CI {persona.ci}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleEdit(persona)}
-                      className="shrink-0 rounded-lg bg-rose-700 hover:bg-rose-800 transition px-3 py-1.5 text-xs font-semibold text-white shadow-xs"
-                    >
-                      Corregir
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : null}
+        {emailDisabledReason ? (
+          <p id="personal-email-reason" className="mt-2 text-xs text-stone-600">
+            {emailDisabledReason}
+          </p>
+        ) : null}
+      </header>
 
       <PersonalFilters
         searchCedula={searchCedula}
@@ -478,73 +342,104 @@ export function PersonalSection({
         onClear={onClearFilters}
       />
 
-      <section className="rounded-[28px] border border-[rgba(88,80,58,0.18)] bg-[linear-gradient(180deg,rgba(247,244,234,0.96)_0%,rgba(232,228,213,0.94)_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] sm:p-4">
-        <div className="hidden md:block">
-          <PaginationControls
-            page={personalPage}
-            pageSize={personalPageSize}
-            totalItems={personalFiltrado.length}
-            itemLabel="subalternos"
-            onPageChange={onPersonalPageChange}
-            onPageSizeChange={onPersonalPageSizeChange}
-          />
+      {personalConErrorReingreso.length > 0 ? (
+        <details className="mx-4 mb-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-950">
+          <summary className="cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800">
+            <WarningAmberRoundedIcon fontSize="small" className="mx-1" />
+            Fichas de reingreso sin fecha ({personalConErrorReingreso.length})
+          </summary>
+          <ul className="divide-y divide-amber-200 px-3">
+            {personalConErrorReingreso.map((persona) => (
+              <li
+                key={persona.ci}
+                className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"
+              >
+                <span>
+                  {persona.apellido1} {persona.nombre1} · CI {persona.ci}
+                </span>
+                {canWrite ? (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleEdit(persona)}
+                    className="min-h-11 rounded-lg px-2 font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800"
+                  >
+                    Corregir
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+
+      {loading ? (
+        <div className="border-t border-stone-200 px-4 py-3">
+          <LoadingInline label="Actualizando datos…" size="xs" />
         </div>
+      ) : null}
 
-        <PersonalCardsMobile
-          personas={personalFiltradoPaginado}
-          canWrite={canWrite}
-          expandedTallasByCi={expandedTallasByCi}
-          editPersonalCi={editPersonalCi}
-          onToggleEdit={handleToggleEdit}
-          onDelete={onDeletePersonal}
-          onToggleTallas={onToggleTallas}
-          onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
-          onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
-          onObservacion={onOpenPersonalObservacion}
-          onViewMoves={onOpenRegistroViewer}
-          onOpenProfile={onOpenProfile}
-          onOpenSheet={onOpenDeliverySheet}
-        />
-
-        <div className="mt-3 md:hidden">
-          <PaginationControls
-            page={personalPage}
-            pageSize={personalPageSize}
-            totalItems={personalFiltrado.length}
-            itemLabel="subalternos"
-            onPageChange={onPersonalPageChange}
-            onPageSizeChange={onPersonalPageSizeChange}
-            className="mt-1"
+      {personalFiltradoPaginado.length > 0 ? (
+        <>
+          <PersonalCardsMobile
+            personas={personalFiltradoPaginado}
+            canWrite={canWrite}
+            expandedTallasByCi={expandedTallasByCi}
+            editPersonalCi={editPersonalCi}
+            onToggleEdit={handleToggleEdit}
+            onDelete={onDeletePersonal}
+            onToggleTallas={onToggleTallas}
+            onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
+            onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
+            onObservacion={onOpenPersonalObservacion}
+            onViewMoves={onOpenRegistroViewer}
+            onOpenProfile={onOpenProfile}
+            onOpenSheet={onOpenDeliverySheet}
           />
-        </div>
-
-        <PersonalTableDesktop
-          personas={personalFiltradoPaginado}
-          canWrite={canWrite}
-          expandedTallasByCi={expandedTallasByCi}
-          editPersonalCi={editPersonalCi}
-          onToggleEdit={handleToggleEdit}
-          onDelete={onDeletePersonal}
-          onToggleTallas={onToggleTallas}
-          onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
-          onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
-          onObservacion={onOpenPersonalObservacion}
-          onViewMoves={onOpenRegistroViewer}
-          onOpenProfile={onOpenProfile}
-          onOpenSheet={onOpenDeliverySheet}
-        />
-
-        <div className="mt-4 hidden md:block">
-          <PaginationControls
-            page={personalPage}
-            pageSize={personalPageSize}
-            totalItems={personalFiltrado.length}
-            itemLabel="subalternos"
-            onPageChange={onPersonalPageChange}
-            onPageSizeChange={onPersonalPageSizeChange}
+          <PersonalTableDesktop
+            personas={personalFiltradoPaginado}
+            canWrite={canWrite}
+            editPersonalCi={editPersonalCi}
+            onToggleEdit={handleToggleEdit}
+            onDelete={onDeletePersonal}
+            onEntrega={(ci) => onOpenRegistro(ci, "ENTREGA")}
+            onDevolucion={(ci) => onOpenRegistro(ci, "DEVOLUCION")}
+            onObservacion={onOpenPersonalObservacion}
+            onViewMoves={onOpenRegistroViewer}
+            onOpenProfile={onOpenProfile}
+            onOpenSheet={onOpenDeliverySheet}
           />
-        </div>
-      </section>
+          {pages > 1 ? (
+            <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-stone-200 px-4 py-3">
+              <p className="text-sm text-stone-600">
+                Mostrando {from} a {to} de {total} subalternos
+              </p>
+              <Pagination
+                aria-label="Páginas de personal subalterno"
+                count={pages}
+                page={page}
+                onChange={(_, nextPage) => onPersonalPageChange(nextPage)}
+                color="primary"
+                shape="rounded"
+                size="small"
+                siblingCount={0}
+                getItemAriaLabel={(type, itemPage, selected) => {
+                  if (type === "page") return "Página " + itemPage + (selected ? ", actual" : "");
+                  if (type === "previous") return "Página anterior";
+                  if (type === "next") return "Página siguiente";
+                  return type === "first" ? "Primera página" : "Última página";
+                }}
+                sx={{ "& .MuiPaginationItem-root": { minWidth: 36, height: 36 } }}
+              />
+            </footer>
+          ) : null}
+        </>
+      ) : loading ? null : (
+        <p className="border-t border-stone-200 px-4 py-8 text-center text-sm text-stone-600">
+          {hasPersonalFilters
+            ? "Sin resultados con los filtros actuales."
+            : "No hay subalternos registrados."}
+        </p>
+      )}
 
       {editPersonalCi ? (
         <ModalFrame onClose={onCancelEditPersonal} size="xl" closeOnBackdrop={false}>
