@@ -40,7 +40,7 @@ export default async function TallesTodaUnidadPage({
 
   const [subalternos, oficialesSuboficiales, firmas] = await Promise.all([
     prisma.personal.findMany({
-      where: { rango: { tipo: TipoPersonal.SUBALTERNO } },
+      where: { rango: { tipo: TipoPersonal.SUBALTERNO }, baja: false },
       select: {
         ci: true,
         apellido1: true,
@@ -56,7 +56,10 @@ export default async function TallesTodaUnidadPage({
       },
     }),
     prisma.personal.findMany({
-      where: { rango: { tipo: { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] } } },
+      where: {
+        rango: { tipo: { in: [TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL] } },
+        baja: false,
+      },
       select: {
         ci: true,
         apellido1: true,

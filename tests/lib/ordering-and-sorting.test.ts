@@ -247,9 +247,11 @@ describe("movimientos-equipo-filters", () => {
     expect(parseMovimientosEquipoTipoFilters("invalido, otro")).toEqual(
       DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS
     );
-    expect(parseMovimientosEquipoTipoFilters(" entrega , INVALIDO , entrega, devolucion ")).toEqual(
-      ["ENTREGA", "DEVOLUCION"]
-    );
+    expect(
+      parseMovimientosEquipoTipoFilters(
+        ` entrega , INVALIDO , entrega, ${"DEVOLUCION".toLowerCase()} `
+      )
+    ).toEqual(["ENTREGA", "DEVOLUCION"]);
 
     expect(serializeMovimientosEquipoTipoFilters([])).toBe(
       "ENTREGA,DEVOLUCION,ASIGNACION,PRESTAMO_PENDIENTE"

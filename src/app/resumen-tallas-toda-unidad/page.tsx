@@ -64,6 +64,7 @@ export default async function ResumenTallasTodaUnidadPage({
 
   const personal = await prisma.personal.findMany({
     where: {
+      baja: false,
       rango: {
         tipo: {
           in: [TipoPersonal.SUBALTERNO, TipoPersonal.OFICIAL, TipoPersonal.SUBOFICIAL],
