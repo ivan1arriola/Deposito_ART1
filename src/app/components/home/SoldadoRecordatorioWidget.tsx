@@ -175,19 +175,44 @@ export function SoldadoRecordatorioWidget({
     [isMobile]
   );
 
-  const widgetPositionStyle = useMemo(() => {
-    const sideOffset = isMobile ? 10 : 24;
-    const verticalOffset = isMobile ? 14 : 24;
-    const leftBoundary = resolveLeftBoundary(sideOffset);
-    return {
+  const sideOffset = isMobile ? 10 : 24;
+  const verticalOffset = isMobile ? 14 : 24;
+  const [leftBoundary, setLeftBoundary] = useState(sideOffset);
+
+  useEffect(() => {
+    const syncLeftBoundary = () => {
+      setLeftBoundary(resolveLeftBoundary(sideOffset));
+    };
+
+    syncLeftBoundary();
+    window.addEventListener("resize", syncLeftBoundary);
+
+    const sidebar = document.querySelector<HTMLElement>('[data-home-sidebar="true"]');
+    const observer =
+      typeof ResizeObserver !== "undefined" && sidebar
+        ? new ResizeObserver(syncLeftBoundary)
+        : null;
+    if (observer && sidebar) {
+      observer.observe(sidebar);
+    }
+
+    return () => {
+      window.removeEventListener("resize", syncLeftBoundary);
+      observer?.disconnect();
+    };
+  }, [sideOffset, resolveLeftBoundary]);
+
+  const widgetPositionStyle = useMemo(
+    () => ({
       ...(corner === "TOP_LEFT" || corner === "TOP_RIGHT"
         ? { top: verticalOffset }
         : { bottom: verticalOffset }),
       ...(corner === "TOP_LEFT" || corner === "BOTTOM_LEFT"
         ? { left: leftBoundary }
         : { right: sideOffset }),
-    };
-  }, [corner, isMobile, resolveLeftBoundary]);
+    }),
+    [corner, leftBoundary, sideOffset, verticalOffset]
+  );
 
   const widgetRuntimePositionStyle = dragPreview
     ? {

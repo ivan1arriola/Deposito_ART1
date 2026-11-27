@@ -70,8 +70,7 @@ describe("EquiposUnificarView Component", () => {
       />
     );
 
-    // Los select se abren y seleccionan opciones. Dado que usamos MUI Select,
-    // podemos interactuar mediante clics o testeando el cambio de valor.
+    // Los select nativos permiten elegir equipo origen y equipo destino.
     const selects = screen.getAllByRole("combobox");
     expect(selects.length).toBe(2);
   });

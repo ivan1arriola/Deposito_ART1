@@ -30,32 +30,8 @@ a:focus-visible,
   outline-offset: 2px;
 }
 
-.MuiButton-root .MuiButton-startIcon,
-.MuiButton-root .MuiButton-endIcon,
-.MuiIconButton-root svg {
-  flex-shrink: 0;
-}
-
-.MuiTableContainer-root {
-  -webkit-overflow-scrolling: touch;
-  scrollbar-gutter: stable;
-}
-
-.MuiTableCell-root {
-  vertical-align: middle;
-}
-
-.MuiDialogActions-root {
-  flex-wrap: wrap;
-}
-
-.MuiSnackbar-root,
 [data-sonner-toaster] {
   padding-bottom: max(8px, env(safe-area-inset-bottom));
-}
-
-.MuiDrawer-paper {
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Login: sobrio, institucional y fácil de recorrer. */
@@ -540,43 +516,10 @@ a:focus-visible,
 }
 
 @media (max-width: 600px) {
-  .MuiDialog-paper {
-    width: calc(100% - 24px);
-    max-width: calc(100% - 24px);
-    max-height: calc(100dvh - 24px);
-    margin: 12px;
-  }
-
-  .MuiDialogTitle-root {
-    padding-inline: 16px;
-  }
-
-  .MuiDialogContent-root {
-    padding-inline: 16px;
-  }
-
-  .MuiDialogActions-root {
-    padding: 12px 16px 16px;
-  }
-
-  .MuiDialogActions-root > .MuiButton-root {
-    flex: 1 1 140px;
-  }
-
-  .MuiInputBase-input,
-  .MuiSelect-select,
   input,
   select,
   textarea {
     font-size: 16px;
-  }
-
-  .MuiTableCell-root {
-    padding-inline: 10px;
-  }
-
-  .MuiMenu-paper {
-    max-width: calc(100vw - 24px);
   }
 }
 

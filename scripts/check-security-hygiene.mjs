@@ -19,10 +19,6 @@ const RULES = [
   {
     id: "no-dangerously-set-inner-html",
     pattern: /dangerouslySetInnerHTML/,
-    validate: (_line, lines, index) => {
-      const windowText = lines.slice(Math.max(0, index - 2), index + 1).join(" ");
-      return !(windowText.includes("<style") && windowText.includes("data-emotion="));
-    },
     message: "Prohibido usar dangerouslySetInnerHTML sin sanitización auditada.",
   },
   {
