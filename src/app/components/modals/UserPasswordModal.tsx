@@ -27,7 +27,9 @@ export function UserPasswordModal({
     <ModalFrame onClose={onClose}>
       <h3 className="text-base font-semibold text-stone-900">Cambiar contraseña de usuario</h3>
       <p className="mt-1 text-sm text-stone-600">{`Usuario: ${dialog.username}`}</p>
-      <p className="mt-1 text-xs text-stone-500">Define una nueva contraseña para la cuenta seleccionada.</p>
+      <p className="mt-1 text-xs text-stone-500">
+        Define una nueva contraseña para la cuenta seleccionada.
+      </p>
 
       <div className="mt-4 space-y-2">
         <input
@@ -58,7 +60,9 @@ export function UserPasswordModal({
         <button
           type="button"
           onClick={onSubmit}
-          disabled={saving || dialog.newPassword.trim() === "" || dialog.confirmPassword.trim() === ""}
+          disabled={
+            saving || dialog.newPassword.trim() === "" || dialog.confirmPassword.trim() === ""
+          }
           className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
         >
           {saving ? (
@@ -76,4 +80,3 @@ export function UserPasswordModal({
     </ModalFrame>
   );
 }
-

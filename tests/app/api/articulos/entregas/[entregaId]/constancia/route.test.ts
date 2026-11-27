@@ -72,22 +72,22 @@ describe("GET /api/articulos/entregas/[entregaId]/constancia", () => {
         nombre1: "Luis",
         nombre2: null,
         rango: { abreviacion: "Sdo." },
-          bateria: true
-    },
+        bateria: true,
+      },
       ordenante: {
         apellido1: "Lopez",
         apellido2: null,
         nombre1: "Mario",
         nombre2: null,
         rango: { abreviacion: "Cap." },
-          bateria: true
-    },
+        bateria: true,
+      },
       usuarioEntrega: {
         nombre: "Ana",
         apellido: "Perez",
         rango: { abreviacion: "Tte." },
-          bateria: true
-    },
+        bateria: true,
+      },
       movimientosStock: [
         {
           cantidad: 5,

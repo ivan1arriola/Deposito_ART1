@@ -18,7 +18,12 @@ import type {
   Rango,
   UsuarioAdmin,
 } from "@/types/entities";
-import type { EquipoResumenData, HojaMatrixData, MainView, StockDashboardData } from "@/types/views";
+import type {
+  EquipoResumenData,
+  HojaMatrixData,
+  MainView,
+  StockDashboardData,
+} from "@/types/views";
 
 type UseHomeDataOptions = {
   onStatusChange: (message: string) => void;
@@ -34,7 +39,14 @@ type LoadStockDataOptions = {
 type RequestKey = "core" | "admin" | "hojaMatrix" | "equipoResumen" | "stock";
 
 const REQUEST_KEYS: RequestKey[] = ["core", "admin", "hojaMatrix", "equipoResumen", "stock"];
-const ADMIN_VIEWS = new Set<MainView>(["firmas", "usuarios", "auditoria", "usuario_nuevo", "recordatorios", "papelera"]);
+const ADMIN_VIEWS = new Set<MainView>([
+  "firmas",
+  "usuarios",
+  "auditoria",
+  "usuario_nuevo",
+  "recordatorios",
+  "papelera",
+]);
 const STOCK_VIEWS = new Set<MainView>([
   "stock",
   "stock_total",
@@ -64,9 +76,14 @@ function isAbortError(error: unknown): boolean {
 
 export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) {
   const [loading, setLoading] = useState(true);
-  const [initMessage, setInitMessage] = useState<{ type: "info" | "success"; text: string } | null>(null);
+  const [initMessage, setInitMessage] = useState<{ type: "info" | "success"; text: string } | null>(
+    null
+  );
   const [showInitCredentials, setShowInitCredentials] = useState(false);
-  const [initCredentials, setInitCredentials] = useState<{ username: string; password: string } | null>(null);
+  const [initCredentials, setInitCredentials] = useState<{
+    username: string;
+    password: string;
+  } | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [rangos, setRangos] = useState<Rango[]>([]);
   const [rangosOficiales, setRangosOficiales] = useState<Rango[]>([]);
@@ -133,7 +150,12 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
     setUsuarios([]);
     setAuditoria([]);
     setFirmaConfig(null);
-    setFirmaConfigDraft({ encargadoRango: "", encargadoNombre: "", oficialRango: "", oficialNombre: "" });
+    setFirmaConfigDraft({
+      encargadoRango: "",
+      encargadoNombre: "",
+      oficialRango: "",
+      oficialNombre: "",
+    });
     setFirmaConfigLoading(false);
     setFirmaConfigSaving(false);
     setFirmaConfigError(null);
@@ -204,7 +226,9 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
           api<Equipo[]>("/api/equipos", requestInit),
           api<Personal[]>("/api/personal", requestInit),
           api<OficialSuboficial[]>("/api/oficiales-suboficiales", requestInit),
-          api<{ total: number }>("/api/registros?summary=1", requestInit).catch(() => ({ total: 0 })),
+          api<{ total: number }>("/api/registros?summary=1", requestInit).catch(() => ({
+            total: 0,
+          })),
         ]);
 
         if (!isCurrentRequest("core", requestId)) return;
@@ -233,7 +257,8 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
         onStatusChange("Datos actualizados.");
       } catch (error: unknown) {
         if (isAbortError(error)) return;
-        const message = error instanceof Error ? error.message : "No se pudo cargar la información.";
+        const message =
+          error instanceof Error ? error.message : "No se pudo cargar la información.";
         if (message === "No autenticado.") {
           setCurrentUser(null);
           clearLoadedData();
@@ -252,7 +277,7 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
         }
       }
     },
-    [activeView, beginRequest, clearLoadedData, isCurrentRequest, onStatusChange, resetAdminData],
+    [activeView, beginRequest, clearLoadedData, isCurrentRequest, onStatusChange, resetAdminData]
   );
 
   const loadAdminData = useCallback(async () => {
@@ -274,7 +299,10 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
           .then((config) => ({ config, error: null as string | null }))
           .catch((error: unknown) => ({
             config: null,
-            error: error instanceof Error ? error.message : "No se pudo cargar la configuración de firmas.",
+            error:
+              error instanceof Error
+                ? error.message
+                : "No se pudo cargar la configuración de firmas.",
           })),
       ]);
 
@@ -292,7 +320,8 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
       setFirmaConfigError(firmaConfigResult.error);
     } catch (error: unknown) {
       if (isAbortError(error)) return;
-      const message = error instanceof Error ? error.message : "No se pudieron cargar los datos administrativos.";
+      const message =
+        error instanceof Error ? error.message : "No se pudieron cargar los datos administrativos.";
       setFirmaConfigError(message);
     } finally {
       if (isCurrentRequest("admin", requestId)) {
@@ -314,7 +343,9 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
     } catch (error: unknown) {
       if (isAbortError(error)) return;
       if (!isCurrentRequest("hojaMatrix", requestId)) return;
-      setHojaMatrixError(error instanceof Error ? error.message : "No se pudo cargar la Hoja Matriz.");
+      setHojaMatrixError(
+        error instanceof Error ? error.message : "No se pudo cargar la Hoja Matriz."
+      );
     } finally {
       if (isCurrentRequest("hojaMatrix", requestId)) {
         setHojaMatrixLoading(false);
@@ -335,7 +366,9 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
     } catch (error: unknown) {
       if (isAbortError(error)) return;
       if (!isCurrentRequest("equipoResumen", requestId)) return;
-      setEquipoResumenError(error instanceof Error ? error.message : "No se pudo cargar el resumen de equipo.");
+      setEquipoResumenError(
+        error instanceof Error ? error.message : "No se pudo cargar el resumen de equipo."
+      );
     } finally {
       if (isCurrentRequest("equipoResumen", requestId)) {
         setEquipoResumenLoading(false);
@@ -343,45 +376,52 @@ export function useHomeData({ onStatusChange, activeView }: UseHomeDataOptions) 
     }
   }, [beginRequest, isCurrentRequest]);
 
-  const loadStockData = useCallback(async (options: LoadStockDataOptions = {}) => {
-    setStockLoading(true);
-    setStockError(null);
-    const { requestId, signal } = beginRequest("stock");
-    const requestInit: RequestInit = { signal };
+  const loadStockData = useCallback(
+    async (options: LoadStockDataOptions = {}) => {
+      setStockLoading(true);
+      setStockError(null);
+      const { requestId, signal } = beginRequest("stock");
+      const requestInit: RequestInit = { signal };
 
-    try {
-      const params = new URLSearchParams();
-      if (options.includeHistorial === false) params.set("includeHistorial", "0");
-      if (options.includePrestamos === false) params.set("includePrestamos", "0");
+      try {
+        const params = new URLSearchParams();
+        if (options.includeHistorial === false) params.set("includeHistorial", "0");
+        if (options.includePrestamos === false) params.set("includePrestamos", "0");
 
-      const fallbackLimit =
-        typeof options.limit === "number"
-          ? options.limit
-          : options.includeHistorial
-            ? 300
-            : options.includePrestamos
-              ? 250
-              : undefined;
+        const fallbackLimit =
+          typeof options.limit === "number"
+            ? options.limit
+            : options.includeHistorial
+              ? 300
+              : options.includePrestamos
+                ? 250
+                : undefined;
 
-      if (typeof fallbackLimit === "number" && Number.isInteger(fallbackLimit) && fallbackLimit > 0) {
-        params.set("limit", String(fallbackLimit));
+        if (
+          typeof fallbackLimit === "number" &&
+          Number.isInteger(fallbackLimit) &&
+          fallbackLimit > 0
+        ) {
+          params.set("limit", String(fallbackLimit));
+        }
+
+        const query = params.toString();
+        const url = query ? `/api/stock?${query}` : "/api/stock";
+        const data = await api<StockDashboardData>(url, requestInit);
+        if (!isCurrentRequest("stock", requestId)) return;
+        setStockData(data);
+      } catch (error: unknown) {
+        if (isAbortError(error)) return;
+        if (!isCurrentRequest("stock", requestId)) return;
+        setStockError(error instanceof Error ? error.message : "No se pudo cargar el stock.");
+      } finally {
+        if (isCurrentRequest("stock", requestId)) {
+          setStockLoading(false);
+        }
       }
-
-      const query = params.toString();
-      const url = query ? `/api/stock?${query}` : "/api/stock";
-      const data = await api<StockDashboardData>(url, requestInit);
-      if (!isCurrentRequest("stock", requestId)) return;
-      setStockData(data);
-    } catch (error: unknown) {
-      if (isAbortError(error)) return;
-      if (!isCurrentRequest("stock", requestId)) return;
-      setStockError(error instanceof Error ? error.message : "No se pudo cargar el stock.");
-    } finally {
-      if (isCurrentRequest("stock", requestId)) {
-        setStockLoading(false);
-      }
-    }
-  }, [beginRequest, isCurrentRequest]);
+    },
+    [beginRequest, isCurrentRequest]
+  );
 
   useEffect(() => {
     const initDb = async () => {

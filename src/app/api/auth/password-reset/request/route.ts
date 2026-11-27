@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
-import { sendEmailVerificationMagicLinkEmail, sendPasswordResetMagicLinkEmail } from "@/lib/auth-email";
+import {
+  sendEmailVerificationMagicLinkEmail,
+  sendPasswordResetMagicLinkEmail,
+} from "@/lib/auth-email";
 import { rangoAbreviacionLabel } from "@/lib/formatters";
 import { ensurePasswordResetCompatibility } from "@/lib/password-reset";
 

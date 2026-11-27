@@ -43,7 +43,7 @@ function isValidPayload(body: unknown): body is PersonalUpdatePayload {
   const candidate = body as Record<string, unknown>;
   const requiredStringFields = ["apellido1", "nombre1"];
   const hasRequiredStrings = requiredStringFields.every(
-    (field) => typeof candidate[field] === "string" && candidate[field].toString().trim() !== "",
+    (field) => typeof candidate[field] === "string" && candidate[field].toString().trim() !== ""
   );
 
   if (!hasRequiredStrings) return false;
@@ -52,11 +52,19 @@ function isValidPayload(body: unknown): body is PersonalUpdatePayload {
   if (!Number.isInteger(rangoId) || rangoId <= 0) return false;
 
   const bateriaRaw = candidate.bateriaId;
-  if (candidate.telefonoContacto !== undefined && typeof candidate.telefonoContacto !== "string") return false;
-  if (candidate.esReingreso !== undefined && typeof candidate.esReingreso !== "boolean") return false;
-  if (candidate.fechaIngreso !== undefined && typeof candidate.fechaIngreso !== "string") return false;
-  if (candidate.fechaIngresoOriginal !== undefined && typeof candidate.fechaIngresoOriginal !== "string") return false;
-  if (bateriaRaw === undefined || bateriaRaw === null || String(bateriaRaw).trim() === "") return true;
+  if (candidate.telefonoContacto !== undefined && typeof candidate.telefonoContacto !== "string")
+    return false;
+  if (candidate.esReingreso !== undefined && typeof candidate.esReingreso !== "boolean")
+    return false;
+  if (candidate.fechaIngreso !== undefined && typeof candidate.fechaIngreso !== "string")
+    return false;
+  if (
+    candidate.fechaIngresoOriginal !== undefined &&
+    typeof candidate.fechaIngresoOriginal !== "string"
+  )
+    return false;
+  if (bateriaRaw === undefined || bateriaRaw === null || String(bateriaRaw).trim() === "")
+    return true;
   const bateriaId = Number(bateriaRaw);
   return Number.isInteger(bateriaId) && bateriaId > 0;
 }
@@ -157,19 +165,23 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
   const { ci } = await context.params;
   const ciDecoded = decodeURIComponent(ci).trim();
   if (!ciDecoded) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
-  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded))
+    return NextResponse.json({ error: "CI invalida." }, { status: 400 });
 
   const body = await req.json();
   if (!isValidPayload(body)) {
     return NextResponse.json(
       { error: "Payload invalido. Revisa apellido1, nombre1 y rangoId." },
-      { status: 400 },
+      { status: 400 }
     );
   }
   const bateriaId = parseOptionalBateriaId(body.bateriaId);
   const telefonoContacto = normalizeOptionalUruguayanMobileNumber(body.telefonoContacto);
   if ((body.telefonoContacto?.trim() ?? "") !== "" && !telefonoContacto) {
-    return NextResponse.json({ error: "telefonoContacto debe ser un celular uruguayo valido." }, { status: 400 });
+    return NextResponse.json(
+      { error: "telefonoContacto debe ser un celular uruguayo valido." },
+      { status: 400 }
+    );
   }
   const esReingreso = body.esReingreso === true;
 
@@ -179,22 +191,42 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
     return NextResponse.json({ error: "fechaIngreso debe ser una fecha valida." }, { status: 400 });
   }
   if (fechaIngresoRaw && isDateInputAfterToday(fechaIngresoRaw)) {
-    return NextResponse.json({ error: "fechaIngreso debe ser antes o igual a hoy." }, { status: 400 });
+    return NextResponse.json(
+      { error: "fechaIngreso debe ser antes o igual a hoy." },
+      { status: 400 }
+    );
   }
   if (esReingreso && !fechaIngresoRaw) {
-    return NextResponse.json({ error: "fechaIngreso es obligatoria para registrar un reingreso." }, { status: 400 });
+    return NextResponse.json(
+      { error: "fechaIngreso es obligatoria para registrar un reingreso." },
+      { status: 400 }
+    );
   }
 
   const fechaIngresoOriginalRaw = body.fechaIngresoOriginal?.trim();
-  const fechaIngresoOriginal = esReingreso && fechaIngresoOriginalRaw ? dateInputToDate(fechaIngresoOriginalRaw) : null;
+  const fechaIngresoOriginal =
+    esReingreso && fechaIngresoOriginalRaw ? dateInputToDate(fechaIngresoOriginalRaw) : null;
   if (fechaIngresoOriginalRaw && !fechaIngresoOriginal) {
-    return NextResponse.json({ error: "fechaIngresoOriginal debe ser una fecha valida." }, { status: 400 });
+    return NextResponse.json(
+      { error: "fechaIngresoOriginal debe ser una fecha valida." },
+      { status: 400 }
+    );
   }
   if (fechaIngresoOriginalRaw && isDateInputAfterToday(fechaIngresoOriginalRaw)) {
-    return NextResponse.json({ error: "fechaIngresoOriginal debe ser antes o igual a hoy." }, { status: 400 });
+    return NextResponse.json(
+      { error: "fechaIngresoOriginal debe ser antes o igual a hoy." },
+      { status: 400 }
+    );
   }
-  if (fechaIngresoRaw && fechaIngresoOriginalRaw && isDateInputAfter(fechaIngresoOriginalRaw, fechaIngresoRaw)) {
-    return NextResponse.json({ error: "fechaIngresoOriginal no puede ser posterior a la fecha de reingreso." }, { status: 400 });
+  if (
+    fechaIngresoRaw &&
+    fechaIngresoOriginalRaw &&
+    isDateInputAfter(fechaIngresoOriginalRaw, fechaIngresoRaw)
+  ) {
+    return NextResponse.json(
+      { error: "fechaIngresoOriginal no puede ser posterior a la fecha de reingreso." },
+      { status: 400 }
+    );
   }
 
   const tallasPayload = extractTallas(body);
@@ -223,7 +255,7 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         where: { ci: ciDecoded },
         include: {
           rango: true,
-          
+
           tallas: {
             include: { tallaTipo: true },
             orderBy: { tallaTipoId: "asc" },
@@ -243,10 +275,14 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         telefonoContacto: existing.telefonoContacto,
         rangoId: existing.rangoId,
         esReingreso: existing.esReingreso ?? false,
-        fechaIngreso: existing.fechaIngreso ? existing.fechaIngreso.toISOString().split("T")[0] : null,
-        fechaIngresoOriginal: existing.fechaIngresoOriginal ? existing.fechaIngresoOriginal.toISOString().split("T")[0] : null,
+        fechaIngreso: existing.fechaIngreso
+          ? existing.fechaIngreso.toISOString().split("T")[0]
+          : null,
+        fechaIngresoOriginal: existing.fechaIngresoOriginal
+          ? existing.fechaIngresoOriginal.toISOString().split("T")[0]
+          : null,
         bateriaId: existing.bateriaId ?? null,
-        tallas: existing.tallas.map(t => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
+        tallas: existing.tallas.map((t) => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
       };
 
       await tx.personal.update({
@@ -266,8 +302,6 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
           }),
         },
       });
-
-      
 
       await tx.personalTalla.deleteMany({
         where: { ci: ciDecoded },
@@ -323,15 +357,24 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
           telefonoContacto: updatedRecord.telefonoContacto,
           rangoId: updatedRecord.rangoId,
           esReingreso: updatedRecord.esReingreso ?? false,
-          fechaIngreso: updatedRecord.fechaIngreso ? updatedRecord.fechaIngreso.toISOString().split("T")[0] : null,
-          fechaIngresoOriginal: updatedRecord.fechaIngresoOriginal ? updatedRecord.fechaIngresoOriginal.toISOString().split("T")[0] : null,
+          fechaIngreso: updatedRecord.fechaIngreso
+            ? updatedRecord.fechaIngreso.toISOString().split("T")[0]
+            : null,
+          fechaIngresoOriginal: updatedRecord.fechaIngresoOriginal
+            ? updatedRecord.fechaIngresoOriginal.toISOString().split("T")[0]
+            : null,
           bateriaId: updatedRecord.bateriaId ?? null,
-          tallas: updatedRecord.tallas.map(t => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
+          tallas: updatedRecord.tallas.map((t) => ({
+            tipo: t.tallaTipo.nombre,
+            valor: t.tallaValor,
+          })),
         },
       },
     });
 
-    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
+      .replace(/\s+/g, " ")
+      .trim();
     await Promise.allSettled([
       sendPersonalMovementEmailNotification({
         request: req,
@@ -340,11 +383,15 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
         headline: "Se actualizaron datos de tu ficha personal.",
         detailLines: [
           `Rango actualizado: ${updatedRecord.rango.abreviacion} - ${updatedRecord.rango.nombreCompleto}`,
-          bateriaId ? `Bateria: ${updatedRecord.bateria?.nombre ?? `ID ${bateriaId}`}` : "Bateria: sin asignar",
+          bateriaId
+            ? `Bateria: ${updatedRecord.bateria?.nombre ?? `ID ${bateriaId}`}`
+            : "Bateria: sin asignar",
           telefonoContacto ? `Celular: ${telefonoContacto}` : "Celular: sin registrar",
           `Reingreso: ${esReingreso ? "Si" : "No"}`,
           fechaIngresoRaw ? `Fecha ingreso: ${formatDateOnlyForDisplay(fechaIngresoRaw)}` : "",
-          esReingreso && fechaIngresoOriginalRaw ? `Ingreso original: ${formatDateOnlyForDisplay(fechaIngresoOriginalRaw)}` : "",
+          esReingreso && fechaIngresoOriginalRaw
+            ? `Ingreso original: ${formatDateOnlyForDisplay(fechaIngresoOriginalRaw)}`
+            : "",
         ],
         actorLabel,
         portalPath: "/",
@@ -355,14 +402,19 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string 
   } catch (error: unknown) {
     if (hasConstraintName(error, "personal_talla_valor_permitido_chk")) {
       return NextResponse.json(
-        { error: "Talles invalidos. Parka/Camisaco/Pantalon: XS a XXXL; Kepi: 54 a 63; Calzado: 34 a 47." },
-        { status: 400 },
+        {
+          error:
+            "Talles invalidos. Parka/Camisaco/Pantalon: XS a XXXL; Kepi: 54 a 63; Calzado: 34 a 47.",
+        },
+        { status: 400 }
       );
     }
 
     const code = getPrismaErrorCode(error);
-    if (code === "P2025") return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
-    if (code === "P2003") return NextResponse.json({ error: "rangoId o bateriaId invalido." }, { status: 400 });
+    if (code === "P2025")
+      return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
+    if (code === "P2003")
+      return NextResponse.json({ error: "rangoId o bateriaId invalido." }, { status: 400 });
     return NextResponse.json({ error: "No se pudo actualizar el registro." }, { status: 500 });
   }
 }
@@ -374,7 +426,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
   const { ci } = await context.params;
   const ciDecoded = decodeURIComponent(ci).trim();
   if (!ciDecoded) return NextResponse.json({ error: "CI inválida." }, { status: 400 });
-  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI inválida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded))
+    return NextResponse.json({ error: "CI inválida." }, { status: 400 });
 
   try {
     const personalRecord = await prisma.personal.findUnique({
@@ -471,11 +524,12 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
 
     // No outstanding equipos, move directly to history!
     await prisma.$transaction(async (tx) => {
-      const tipo = personalRecord.rango.tipo === TipoPersonal.SUBALTERNO
-        ? "SUBALTERNO"
-        : personalRecord.rango.tipo === TipoPersonal.OFICIAL
-          ? "OFICIAL"
-          : "SUBOFICIAL";
+      const tipo =
+        personalRecord.rango.tipo === TipoPersonal.SUBALTERNO
+          ? "SUBALTERNO"
+          : personalRecord.rango.tipo === TipoPersonal.OFICIAL
+            ? "OFICIAL"
+            : "SUBOFICIAL";
 
       await tx.personalHistorial.create({
         data: {
@@ -492,8 +546,14 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
           fechaIngreso: personalRecord.fechaIngreso ?? null,
           fechaIngresoOriginal: personalRecord.fechaIngresoOriginal ?? null,
           bateriaId: personalRecord.bateriaId ?? null,
-          tallas: personalRecord.tallas.map((t) => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
-          observaciones: personalRecord.observaciones.map((o) => ({ texto: o.texto, fecha: o.fecha })),
+          tallas: personalRecord.tallas.map((t) => ({
+            tipo: t.tallaTipo.nombre,
+            valor: t.tallaValor,
+          })),
+          observaciones: personalRecord.observaciones.map((o) => ({
+            texto: o.texto,
+            fecha: o.fecha,
+          })),
         },
       });
 
@@ -505,9 +565,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
       await tx.movimiento.deleteMany({
         where: { destinatarioPersonal: { is: { ci: ciDecoded } } },
       });
-      
-      
-      
+
       await tx.personal.delete({ where: { ci: ciDecoded } });
     });
 
@@ -527,6 +585,9 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
     return NextResponse.json({ status: "HISTORIAL", ci: ciDecoded });
   } catch (error) {
     console.log("Error al procesar baja de personal:", error);
-    return NextResponse.json({ error: "No se pudo procesar la baja del personal." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo procesar la baja del personal." },
+      { status: 500 }
+    );
   }
 }

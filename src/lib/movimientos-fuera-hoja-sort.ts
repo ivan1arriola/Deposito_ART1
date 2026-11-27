@@ -28,7 +28,10 @@ type MovimientosFueraHojaSortableRow = {
   equipo: string;
 };
 
-function compareDate(left: MovimientosFueraHojaSortableRow, right: MovimientosFueraHojaSortableRow) {
+function compareDate(
+  left: MovimientosFueraHojaSortableRow,
+  right: MovimientosFueraHojaSortableRow
+) {
   const leftKey = parseDateInput(left.fecha).sortKey ?? "";
   const rightKey = parseDateInput(right.fecha).sortKey ?? "";
   const byDate = leftKey.localeCompare(rightKey);
@@ -40,7 +43,10 @@ function compareDate(left: MovimientosFueraHojaSortableRow, right: MovimientosFu
   return collator.compare(left.equipo, right.equipo);
 }
 
-function compareEquipo(left: MovimientosFueraHojaSortableRow, right: MovimientosFueraHojaSortableRow) {
+function compareEquipo(
+  left: MovimientosFueraHojaSortableRow,
+  right: MovimientosFueraHojaSortableRow
+) {
   const byItem = collator.compare(left.equipo, right.equipo);
   if (byItem !== 0) return byItem;
 
@@ -50,7 +56,10 @@ function compareEquipo(left: MovimientosFueraHojaSortableRow, right: Movimientos
   return compareDate(left, right);
 }
 
-function compareGrado(left: MovimientosFueraHojaSortableRow, right: MovimientosFueraHojaSortableRow) {
+function compareGrado(
+  left: MovimientosFueraHojaSortableRow,
+  right: MovimientosFueraHojaSortableRow
+) {
   const byOrder = compareOptionalOrder(left.gradoOrden, right.gradoOrden);
   if (byOrder !== 0) return byOrder;
 
@@ -66,7 +75,7 @@ function compareGrado(left: MovimientosFueraHojaSortableRow, right: MovimientosF
 function compareByField(
   left: MovimientosFueraHojaSortableRow,
   right: MovimientosFueraHojaSortableRow,
-  field: MovimientosFueraHojaSortField,
+  field: MovimientosFueraHojaSortField
 ) {
   if (field === "equipo") return compareEquipo(left, right);
   if (field === "grado") return compareGrado(left, right);
@@ -75,7 +84,7 @@ function compareByField(
 
 export function sortMovimientosFueraHojaRows<T extends MovimientosFueraHojaSortableRow>(
   rows: T[],
-  sort: MovimientosFueraHojaSort,
+  sort: MovimientosFueraHojaSort
 ): T[] {
   const factor = sort.direction === "asc" ? 1 : -1;
   return [...rows].sort((left, right) => factor * compareByField(left, right, sort.field));
@@ -83,7 +92,7 @@ export function sortMovimientosFueraHojaRows<T extends MovimientosFueraHojaSorta
 
 export function parseMovimientosFueraHojaSort(
   sortByRaw: string | null | undefined,
-  sortDirectionRaw: string | null | undefined,
+  sortDirectionRaw: string | null | undefined
 ): MovimientosFueraHojaSort {
   const field =
     sortByRaw === "equipo" || sortByRaw === "grado" || sortByRaw === "fecha"

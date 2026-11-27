@@ -28,7 +28,11 @@ export type ArticuloEntregaPersonalViewProps = {
   onOrdenanteCiChange: (value: string) => void;
   onFechaChange: (value: string) => void;
   onComentariosChange: (value: string) => void;
-  onItemChange: (index: number, field: keyof ArticuloEntregaPersonalDraftItem, value: string) => void;
+  onItemChange: (
+    index: number,
+    field: keyof ArticuloEntregaPersonalDraftItem,
+    value: string
+  ) => void;
   onAddItem: () => void;
   onRemoveEquipo: (index: number) => void;
 };
@@ -42,7 +46,7 @@ function validateEntregaPersonal(
   personalCi: string,
   ordenanteCi: string,
   equipos: ArticuloEntregaPersonalDraftItem[],
-  articulos: Articulo[],
+  articulos: Articulo[]
 ): { isValid: boolean; message: string | null; totalQuantity?: number } {
   if (!personalCi.trim()) {
     return { isValid: false, message: "Selecciona un personal destinatario." };
@@ -51,7 +55,10 @@ function validateEntregaPersonal(
     return { isValid: false, message: "Indica quién autoriza u ordena la entrega." };
   }
   if (personalCi === ordenanteCi) {
-    return { isValid: false, message: "El destinatario no puede ser el mismo que ordena la entrega." };
+    return {
+      isValid: false,
+      message: "El destinatario no puede ser el mismo que ordena la entrega.",
+    };
   }
 
   let totalQuantity = 0;
@@ -69,7 +76,10 @@ function validateEntregaPersonal(
 
     const qty = Number(equipo.cantidad);
     if (!Number.isInteger(qty) || qty <= 0) {
-      return { isValid: false, message: `La cantidad en la fila ${i + 1} debe ser un número entero mayor a 0.` };
+      return {
+        isValid: false,
+        message: `La cantidad en la fila ${i + 1} debe ser un número entero mayor a 0.`,
+      };
     }
 
     const originalArticulo = articulos.find((a) => String(a.articuloId) === equipo.articuloId);
@@ -116,7 +126,9 @@ export function ArticuloEntregaPersonalView({
   // Sort articles by type then by name
   const articulosOrdenados = useMemo(() => {
     return [...articulos].sort(
-      (a, b) => a.tipo.localeCompare(b.tipo) || a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
+      (a, b) =>
+        a.tipo.localeCompare(b.tipo) ||
+        a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })
     );
   }, [articulos]);
 
@@ -156,7 +168,7 @@ export function ArticuloEntregaPersonalView({
   // Validation checking
   const validation = useMemo(
     () => validateEntregaPersonal(personalCi, ordenanteCi, equipos, articulos),
-    [personalCi, ordenanteCi, equipos, articulos],
+    [personalCi, ordenanteCi, equipos, articulos]
   );
 
   return (
@@ -165,10 +177,15 @@ export function ArticuloEntregaPersonalView({
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva entrega</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Entrega de artículos a personal</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">
+                Nueva entrega
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">
+                Entrega de artículos a personal
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
-                Registra la entrega de materiales de oficina o limpieza a personal militar. Afecta directamente el stock de artículos.
+                Registra la entrega de materiales de oficina o limpieza a personal militar. Afecta
+                directamente el stock de artículos.
               </p>
             </div>
             <button
@@ -247,7 +264,9 @@ export function ArticuloEntregaPersonalView({
             {/* Listado de Artículos */}
             <div className="space-y-3">
               <div className="flex equipos-center justify-between">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">Artículos a entregar</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">
+                  Artículos a entregar
+                </h3>
                 <button
                   type="button"
                   onClick={onAddItem}
@@ -259,8 +278,10 @@ export function ArticuloEntregaPersonalView({
               </div>
 
               {equipos.map((equipo, index) => {
-                const selectedArt = articulos.find((a) => String(a.articuloId) === equipo.articuloId) ?? null;
-                const isOverStock = selectedArt && Number(equipo.cantidad) > selectedArt.stockActual;
+                const selectedArt =
+                  articulos.find((a) => String(a.articuloId) === equipo.articuloId) ?? null;
+                const isOverStock =
+                  selectedArt && Number(equipo.cantidad) > selectedArt.stockActual;
 
                 return (
                   <div
@@ -270,7 +291,9 @@ export function ArticuloEntregaPersonalView({
                     }`}
                   >
                     <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1">Artículo</label>
+                      <label className="block text-xs font-medium text-stone-600 mb-1">
+                        Artículo
+                      </label>
                       <select
                         value={equipo.articuloId}
                         disabled={saving}
@@ -287,7 +310,9 @@ export function ArticuloEntregaPersonalView({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1">Cantidad</label>
+                      <label className="block text-xs font-medium text-stone-600 mb-1">
+                        Cantidad
+                      </label>
                       <input
                         type="number"
                         min={1}
@@ -311,7 +336,8 @@ export function ArticuloEntregaPersonalView({
 
                     {isOverStock && (
                       <p className="col-span-full text-xs font-semibold text-amber-700 mt-1 flex equipos-center gap-1">
-                        ⚠️ Cantidad excede el stock disponible ({selectedArt.stockActual} unidades en depósito).
+                        ⚠️ Cantidad excede el stock disponible ({selectedArt.stockActual} unidades
+                        en depósito).
                       </p>
                     )}
                   </div>

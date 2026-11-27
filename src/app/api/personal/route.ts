@@ -74,7 +74,9 @@ function parseCantidad(value: unknown) {
 }
 
 function parseTipoMovimiento(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "ENTREGA") return TipoMovimiento.ENTREGA;
   if (raw === "DEVOLUCION") return TipoMovimiento.DEVOLUCION;
   return null;
@@ -92,7 +94,7 @@ function isValidPayload(body: unknown): body is PersonalPayload {
   const candidate = body as Record<string, unknown>;
   const requiredStringFields = ["ci", "apellido1", "nombre1"];
   const hasRequiredStrings = requiredStringFields.every(
-    (field) => typeof candidate[field] === "string" && candidate[field].toString().trim() !== "",
+    (field) => typeof candidate[field] === "string" && candidate[field].toString().trim() !== ""
   );
 
   if (!hasRequiredStrings) return false;
@@ -100,10 +102,17 @@ function isValidPayload(body: unknown): body is PersonalPayload {
 
   const rangoId = Number(candidate.rangoId);
   if (!Number.isInteger(rangoId) || rangoId <= 0) return false;
-  if (candidate.telefonoContacto !== undefined && typeof candidate.telefonoContacto !== "string") return false;
-  if (candidate.esReingreso !== undefined && typeof candidate.esReingreso !== "boolean") return false;
-  if (candidate.fechaIngreso !== undefined && typeof candidate.fechaIngreso !== "string") return false;
-  if (candidate.fechaIngresoOriginal !== undefined && typeof candidate.fechaIngresoOriginal !== "string") return false;
+  if (candidate.telefonoContacto !== undefined && typeof candidate.telefonoContacto !== "string")
+    return false;
+  if (candidate.esReingreso !== undefined && typeof candidate.esReingreso !== "boolean")
+    return false;
+  if (candidate.fechaIngreso !== undefined && typeof candidate.fechaIngreso !== "string")
+    return false;
+  if (
+    candidate.fechaIngresoOriginal !== undefined &&
+    typeof candidate.fechaIngresoOriginal !== "string"
+  )
+    return false;
 
   const bateriaRaw = candidate.bateriaId;
   if (!(bateriaRaw === undefined || bateriaRaw === null || String(bateriaRaw).trim() === "")) {
@@ -118,14 +127,23 @@ function isValidPayload(body: unknown): body is PersonalPayload {
       if (!movimiento || typeof movimiento !== "object") return false;
       const candidateMovimiento = movimiento as Record<string, unknown>;
       if (!parseTipoMovimiento(candidateMovimiento.tipo)) return false;
-      if (candidateMovimiento.fecha !== undefined && typeof candidateMovimiento.fecha !== "string") return false;
-      if (candidateMovimiento.comentarios !== undefined && typeof candidateMovimiento.comentarios !== "string") return false;
-      if (!Array.isArray(candidateMovimiento.equipos) || candidateMovimiento.equipos.length === 0) return false;
+      if (candidateMovimiento.fecha !== undefined && typeof candidateMovimiento.fecha !== "string")
+        return false;
+      if (
+        candidateMovimiento.comentarios !== undefined &&
+        typeof candidateMovimiento.comentarios !== "string"
+      )
+        return false;
+      if (!Array.isArray(candidateMovimiento.equipos) || candidateMovimiento.equipos.length === 0)
+        return false;
 
       const hasAtLeastOneItem = candidateMovimiento.equipos.some((equipo) => {
         if (!equipo || typeof equipo !== "object") return false;
         const candidateItem = equipo as Record<string, unknown>;
-        return parseBigIntId(candidateItem.equipoId) !== null && parseCantidad(candidateItem.cantidad) !== null;
+        return (
+          parseBigIntId(candidateItem.equipoId) !== null &&
+          parseCantidad(candidateItem.cantidad) !== null
+        );
       });
       if (!hasAtLeastOneItem) return false;
     }
@@ -150,7 +168,9 @@ function buildPersonalAuditDetail(personal: {
 }) {
   return {
     ci: personal.ci,
-    nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
+    nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2]
+      .filter(Boolean)
+      .join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
     bateria: personal.bateria?.nombre ?? null,
@@ -262,7 +282,9 @@ export async function GET(request: Request) {
 
   personal.sort(comparePersonalByHierarchy);
 
-  return NextResponse.json(personal.map((persona) => serializePersonal(persona as PersonalWithRelations)));
+  return NextResponse.json(
+    personal.map((persona) => serializePersonal(persona as PersonalWithRelations))
+  );
 }
 
 export async function POST(req: Request) {
@@ -273,7 +295,7 @@ export async function POST(req: Request) {
   if (totalGrados === 0) {
     return NextResponse.json(
       { error: "No se puede registrar personal sin registrar Grados previamente." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -281,14 +303,20 @@ export async function POST(req: Request) {
 
   if (!isValidPayload(body)) {
     return NextResponse.json(
-      { error: "Payload invalido. Revisa CI uruguaya valida, apellido1, nombre1 y rangoId (grado del personal)." },
-      { status: 400 },
+      {
+        error:
+          "Payload invalido. Revisa CI uruguaya valida, apellido1, nombre1 y rangoId (grado del personal).",
+      },
+      { status: 400 }
     );
   }
   const bateriaId = parseOptionalBateriaId(body.bateriaId);
   const telefonoContacto = normalizeOptionalUruguayanMobileNumber(body.telefonoContacto);
   if ((body.telefonoContacto?.trim() ?? "") !== "" && !telefonoContacto) {
-    return NextResponse.json({ error: "telefonoContacto debe ser un celular uruguayo valido." }, { status: 400 });
+    return NextResponse.json(
+      { error: "telefonoContacto debe ser un celular uruguayo valido." },
+      { status: 400 }
+    );
   }
   const esReingreso = body.esReingreso === true;
 
@@ -298,22 +326,42 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "fechaIngreso debe ser una fecha valida." }, { status: 400 });
   }
   if (fechaIngresoRaw && isDateInputAfterToday(fechaIngresoRaw)) {
-    return NextResponse.json({ error: "fechaIngreso debe ser antes o igual a hoy." }, { status: 400 });
+    return NextResponse.json(
+      { error: "fechaIngreso debe ser antes o igual a hoy." },
+      { status: 400 }
+    );
   }
   if (esReingreso && !fechaIngresoRaw) {
-    return NextResponse.json({ error: "fechaIngreso es obligatoria para registrar un reingreso." }, { status: 400 });
+    return NextResponse.json(
+      { error: "fechaIngreso es obligatoria para registrar un reingreso." },
+      { status: 400 }
+    );
   }
 
   const fechaIngresoOriginalRaw = body.fechaIngresoOriginal?.trim();
-  const fechaIngresoOriginal = esReingreso && fechaIngresoOriginalRaw ? dateInputToDate(fechaIngresoOriginalRaw) : null;
+  const fechaIngresoOriginal =
+    esReingreso && fechaIngresoOriginalRaw ? dateInputToDate(fechaIngresoOriginalRaw) : null;
   if (fechaIngresoOriginalRaw && !fechaIngresoOriginal) {
-    return NextResponse.json({ error: "fechaIngresoOriginal debe ser una fecha valida." }, { status: 400 });
+    return NextResponse.json(
+      { error: "fechaIngresoOriginal debe ser una fecha valida." },
+      { status: 400 }
+    );
   }
   if (fechaIngresoOriginalRaw && isDateInputAfterToday(fechaIngresoOriginalRaw)) {
-    return NextResponse.json({ error: "fechaIngresoOriginal debe ser antes o igual a hoy." }, { status: 400 });
+    return NextResponse.json(
+      { error: "fechaIngresoOriginal debe ser antes o igual a hoy." },
+      { status: 400 }
+    );
   }
-  if (fechaIngresoRaw && fechaIngresoOriginalRaw && isDateInputAfter(fechaIngresoOriginalRaw, fechaIngresoRaw)) {
-    return NextResponse.json({ error: "fechaIngresoOriginal no puede ser posterior a la fecha de reingreso." }, { status: 400 });
+  if (
+    fechaIngresoRaw &&
+    fechaIngresoOriginalRaw &&
+    isDateInputAfter(fechaIngresoOriginalRaw, fechaIngresoRaw)
+  ) {
+    return NextResponse.json(
+      { error: "fechaIngresoOriginal no puede ser posterior a la fecha de reingreso." },
+      { status: 400 }
+    );
   }
 
   const tallasPayload = extractTallas(body);
@@ -349,13 +397,13 @@ export async function POST(req: Request) {
     if (!tipo || !fecha) {
       return NextResponse.json(
         { error: `Movimiento #${movimientoIndex + 1}: tipo o fecha invalidos.` },
-        { status: 400 },
+        { status: 400 }
       );
     }
     if (movimientoRaw.fecha && isDateInputAfterToday(movimientoRaw.fecha)) {
       return NextResponse.json(
         { error: `Movimiento #${movimientoIndex + 1}: la fecha no puede ser futura.` },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -364,12 +412,15 @@ export async function POST(req: Request) {
         equipoId: parseBigIntId(equipo.equipoId),
         cantidad: parseCantidad(equipo.cantidad),
       }))
-      .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{ equipoId: bigint; cantidad: number }>;
+      .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{
+      equipoId: bigint;
+      cantidad: number;
+    }>;
 
     if (parsedItems.length === 0) {
       return NextResponse.json(
         { error: `Movimiento #${movimientoIndex + 1}: debes enviar al menos un equipo valido.` },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -403,7 +454,7 @@ export async function POST(req: Request) {
     if (equiposFound.length !== equipoIds.length) {
       return NextResponse.json(
         { error: "Uno o mas equipos de los movimientos iniciales no existen." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -431,8 +482,6 @@ export async function POST(req: Request) {
           }),
         },
       });
-
-      
 
       if (tallasToCreate.length > 0) {
         await tx.personalTalla.createMany({
@@ -507,7 +556,10 @@ export async function POST(req: Request) {
         telefonoContacto,
         esReingreso,
         fechaIngreso: fechaIngresoRaw ? formatDateOnlyForDisplay(fechaIngresoRaw) : null,
-        fechaIngresoOriginal: esReingreso && fechaIngresoOriginalRaw ? formatDateOnlyForDisplay(fechaIngresoOriginalRaw) : null,
+        fechaIngresoOriginal:
+          esReingreso && fechaIngresoOriginalRaw
+            ? formatDateOnlyForDisplay(fechaIngresoOriginalRaw)
+            : null,
       },
     });
 
@@ -533,7 +585,10 @@ export async function POST(req: Request) {
             fechaMovimiento: formatDateOnlyForDisplay(movimiento.fechaInput),
             comentarios: movimiento.comentarios,
             totalEquipos: itemsDetallados.length,
-            totalUnidades: itemsDetallados.reduce((acumulado, equipo) => acumulado + equipo.cantidad, 0),
+            totalUnidades: itemsDetallados.reduce(
+              (acumulado, equipo) => acumulado + equipo.cantidad,
+              0
+            ),
             equipos: itemsDetallados,
           },
         });
@@ -547,13 +602,16 @@ export async function POST(req: Request) {
             movimientosCreados: result.movimientoIds.length,
           }
         : created,
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error: unknown) {
     if (hasConstraintName(error, "personal_talla_valor_permitido_chk")) {
       return NextResponse.json(
-        { error: "Talles invalidos. Parka/Camisaco/Pantalon: XS a XXXL; Kepi: 54 a 63; Calzado: 34 a 47." },
-        { status: 400 },
+        {
+          error:
+            "Talles invalidos. Parka/Camisaco/Pantalon: XS a XXXL; Kepi: 54 a 63; Calzado: 34 a 47.",
+        },
+        { status: 400 }
       );
     }
     if (hasConstraintName(error, "personal_ci_uruguaya_valida_chk")) {
@@ -561,9 +619,13 @@ export async function POST(req: Request) {
     }
 
     const code = getPrismaErrorCode(error);
-    if (code === "P2002") return NextResponse.json({ error: "La cedula ya existe." }, { status: 409 });
+    if (code === "P2002")
+      return NextResponse.json({ error: "La cedula ya existe." }, { status: 409 });
     if (code === "P2003") {
-      return NextResponse.json({ error: "rangoId (grado del personal) o bateriaId invalido." }, { status: 400 });
+      return NextResponse.json(
+        { error: "rangoId (grado del personal) o bateriaId invalido." },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({ error: "No se pudo crear el registro." }, { status: 500 });

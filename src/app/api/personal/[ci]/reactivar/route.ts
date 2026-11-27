@@ -14,7 +14,8 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
   const { ci } = await context.params;
   const ciDecoded = decodeURIComponent(ci).trim();
   if (!ciDecoded) return NextResponse.json({ error: "CI inválida." }, { status: 400 });
-  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI inválida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded))
+    return NextResponse.json({ error: "CI inválida." }, { status: 400 });
 
   try {
     const historyRecord = await prisma.personalHistorial.findUnique({
@@ -22,7 +23,10 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
     });
 
     if (!historyRecord) {
-      return NextResponse.json({ error: "No se encontró registro en historial para reactivar." }, { status: 404 });
+      return NextResponse.json(
+        { error: "No se encontró registro en historial para reactivar." },
+        { status: 404 }
+      );
     }
 
     const existingActive = await prisma.personal.findUnique({
@@ -30,11 +34,15 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
     });
 
     if (existingActive) {
-      return NextResponse.json({ error: "El personal ya se encuentra activo en el sistema." }, { status: 409 });
+      return NextResponse.json(
+        { error: "El personal ya se encuentra activo en el sistema." },
+        { status: 409 }
+      );
     }
 
     const tallas = (historyRecord.tallas as Array<{ tipo: string; valor: string }>) || [];
-    const observaciones = (historyRecord.observaciones as Array<{ texto: string; fecha: string }>) || [];
+    const observaciones =
+      (historyRecord.observaciones as Array<{ texto: string; fecha: string }>) || [];
 
     const tallaTipoMap = await getTallaTipoIdMap();
 
@@ -62,11 +70,8 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
 
       // 2. Recreate Category specifics
       if (historyRecord.tipo === "SUBALTERNO") {
-        
       } else if (historyRecord.tipo === "OFICIAL") {
-        
       } else {
-        
       }
 
       // 3. Recreate Tallas
@@ -81,7 +86,10 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
               tallaValor: t.valor,
             };
           })
-          .filter((equipo): equipo is { ci: string; tallaTipoId: number; tallaValor: string } => equipo !== null);
+          .filter(
+            (equipo): equipo is { ci: string; tallaTipoId: number; tallaValor: string } =>
+              equipo !== null
+          );
 
         if (tallasToCreate.length > 0) {
           await tx.personalTalla.createMany({
@@ -123,6 +131,9 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.log("Error al reactivar personal:", error);
-    return NextResponse.json({ error: "No se pudo reactivar el personal desde el historial." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo reactivar el personal desde el historial." },
+      { status: 500 }
+    );
   }
 }

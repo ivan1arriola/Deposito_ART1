@@ -93,7 +93,10 @@ export const authOptions = {
 
         const candidateCi = normalizeCi(usernameInput);
         if (isValidUruguayanCi(candidateCi)) {
-          const personalAccount = await verifyOrProvisionPersonalCredentials(candidateCi, passwordInput);
+          const personalAccount = await verifyOrProvisionPersonalCredentials(
+            candidateCi,
+            passwordInput
+          );
           if (personalAccount) {
             const personalUserId = `personal:${candidateCi}`;
 

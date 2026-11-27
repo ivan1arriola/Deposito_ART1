@@ -80,16 +80,24 @@ export default async function TallesTodaUnidadPage({
     if (byRank !== 0) return byRank;
     const byApellido1 = a.apellido1.localeCompare(b.apellido1, "es", { sensitivity: "base" });
     if (byApellido1 !== 0) return byApellido1;
-    const byApellido2 = (a.apellido2 ?? "").localeCompare(b.apellido2 ?? "", "es", { sensitivity: "base" });
+    const byApellido2 = (a.apellido2 ?? "").localeCompare(b.apellido2 ?? "", "es", {
+      sensitivity: "base",
+    });
     if (byApellido2 !== 0) return byApellido2;
     const byNombre1 = a.nombre1.localeCompare(b.nombre1, "es", { sensitivity: "base" });
     if (byNombre1 !== 0) return byNombre1;
-    const byNombre2 = (a.nombre2 ?? "").localeCompare(b.nombre2 ?? "", "es", { sensitivity: "base" });
+    const byNombre2 = (a.nombre2 ?? "").localeCompare(b.nombre2 ?? "", "es", {
+      sensitivity: "base",
+    });
     if (byNombre2 !== 0) return byNombre2;
     return a.ci.localeCompare(b.ci, "es", { sensitivity: "base" });
   });
-  const oficiales = oficialesSuboficiales.filter((registro) => registro.rango.tipo === TipoPersonal.OFICIAL);
-  const suboficiales = oficialesSuboficiales.filter((registro) => registro.rango.tipo === TipoPersonal.SUBOFICIAL);
+  const oficiales = oficialesSuboficiales.filter(
+    (registro) => registro.rango.tipo === TipoPersonal.OFICIAL
+  );
+  const suboficiales = oficialesSuboficiales.filter(
+    (registro) => registro.rango.tipo === TipoPersonal.SUBOFICIAL
+  );
   const oficialesRows = oficiales.map((registro) => ({
     ...registro,
     talles: tallasMap(registro.tallas),
@@ -104,15 +112,15 @@ export default async function TallesTodaUnidadPage({
   }));
   const oficialesTallaColumnWidths = buildDynamicTallaColumnWidths(
     44,
-    oficialesRows.map((registro) => registro.talles),
+    oficialesRows.map((registro) => registro.talles)
   );
   const suboficialesTallaColumnWidths = buildDynamicTallaColumnWidths(
     44,
-    suboficialesRows.map((registro) => registro.talles),
+    suboficialesRows.map((registro) => registro.talles)
   );
   const subalternosTallaColumnWidths = buildDynamicTallaColumnWidths(
     41,
-    subalternosRows.map((persona) => persona.talles),
+    subalternosRows.map((persona) => persona.talles)
   );
 
   const printedAt = new Date();
@@ -328,7 +336,10 @@ export default async function TallesTodaUnidadPage({
                       <td className="col-nombre">{buildNombres(registro)}</td>
                       <td className="col-apellido">{buildApellidos(registro)}</td>
                       {TALLA_KEYS.map((key) => (
-                        <td key={`of-${registro.rango.tipo}-${registro.ci}-${key}`} className="talla-value">
+                        <td
+                          key={`of-${registro.rango.tipo}-${registro.ci}-${key}`}
+                          className="talla-value"
+                        >
                           {registro.talles[key] !== "-" ? registro.talles[key] : "Sin dato"}
                         </td>
                       ))}
@@ -359,7 +370,10 @@ export default async function TallesTodaUnidadPage({
                 <col style={{ width: "21%" }} />
                 <col style={{ width: "21%" }} />
                 {TALLA_KEYS.map((key) => (
-                  <col key={`sof-col-${key}`} style={{ width: suboficialesTallaColumnWidths[key] }} />
+                  <col
+                    key={`sof-col-${key}`}
+                    style={{ width: suboficialesTallaColumnWidths[key] }}
+                  />
                 ))}
               </colgroup>
               <thead>
@@ -382,7 +396,10 @@ export default async function TallesTodaUnidadPage({
                       <td className="col-nombre">{buildNombres(registro)}</td>
                       <td className="col-apellido">{buildApellidos(registro)}</td>
                       {TALLA_KEYS.map((key) => (
-                        <td key={`sof-${registro.rango.tipo}-${registro.ci}-${key}`} className="talla-value">
+                        <td
+                          key={`sof-${registro.rango.tipo}-${registro.ci}-${key}`}
+                          className="talla-value"
+                        >
                           {registro.talles[key] !== "-" ? registro.talles[key] : "Sin dato"}
                         </td>
                       ))}
@@ -414,7 +431,10 @@ export default async function TallesTodaUnidadPage({
                 <col style={{ width: "19%" }} />
                 <col style={{ width: "9%" }} />
                 {TALLA_KEYS.map((key) => (
-                  <col key={`sub-col-${key}`} style={{ width: subalternosTallaColumnWidths[key] }} />
+                  <col
+                    key={`sub-col-${key}`}
+                    style={{ width: subalternosTallaColumnWidths[key] }}
+                  />
                 ))}
               </colgroup>
               <thead>

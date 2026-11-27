@@ -1,8 +1,4 @@
-import {
-  generateRandomNumber,
-  generateValidationDigit,
-  validateIdentificationNumber,
-} from "ciuy";
+import { generateRandomNumber, generateValidationDigit, validateIdentificationNumber } from "ciuy";
 
 export function normalizeCi(input: string) {
   return input.replace(/\D/g, "");

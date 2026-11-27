@@ -47,7 +47,10 @@ export async function sendPasswordResetMagicLinkEmail(request: Request, user: Au
 }
 
 export async function sendEmailVerificationMagicLinkEmail(request: Request, user: AuthMailUser) {
-  const { token, expiresAt } = await createEmailVerificationToken(user.usuarioId, user.mailReferencia);
+  const { token, expiresAt } = await createEmailVerificationToken(
+    user.usuarioId,
+    user.mailReferencia
+  );
   const baseUrl = getAppBaseUrl(request);
   const link = buildLink(baseUrl, "/auth/verify-email", token);
   const expiresLabel = expiresAt.toLocaleString("es-UY");

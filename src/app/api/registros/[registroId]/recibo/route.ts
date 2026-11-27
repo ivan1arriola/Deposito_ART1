@@ -4,7 +4,10 @@ import type { Prisma } from "@/generated/prisma/client";
 import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
-import { buildPersonaExternaEtiqueta, buildPersonalDestinatarioNombre } from "@/lib/movimiento-destinatario";
+import {
+  buildPersonaExternaEtiqueta,
+  buildPersonalDestinatarioNombre,
+} from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import { prisma } from "@/lib/prisma";
 import {
@@ -81,19 +84,42 @@ function joinNonEmpty(...values: Array<string | null | undefined>) {
     .trim();
 }
 
-function formatApellidoNombre(apellido: string | null | undefined, nombre: string | null | undefined) {
+function formatApellidoNombre(
+  apellido: string | null | undefined,
+  nombre: string | null | undefined
+) {
   return joinNonEmpty(apellido ? `${apellido},` : "", nombre);
 }
 
 function layoutTableRow(row: TableRow, font: PDFFont): TableRowLayout {
-  const cantidadLines = wrapText(normalizeReceiptValue(row.cantidad), TABLE_COL_QTY - 10, font, TABLE_CELL_TEXT_SIZE);
-  const efectoLines = wrapText(normalizeReceiptValue(row.efecto), TABLE_COL_EFECTO - 10, font, TABLE_CELL_TEXT_SIZE);
-  const observacionesLines = wrapText(normalizeReceiptValue(row.observaciones), TABLE_COL_OBS - 10, font, TABLE_CELL_TEXT_SIZE);
+  const cantidadLines = wrapText(
+    normalizeReceiptValue(row.cantidad),
+    TABLE_COL_QTY - 10,
+    font,
+    TABLE_CELL_TEXT_SIZE
+  );
+  const efectoLines = wrapText(
+    normalizeReceiptValue(row.efecto),
+    TABLE_COL_EFECTO - 10,
+    font,
+    TABLE_CELL_TEXT_SIZE
+  );
+  const observacionesLines = wrapText(
+    normalizeReceiptValue(row.observaciones),
+    TABLE_COL_OBS - 10,
+    font,
+    TABLE_CELL_TEXT_SIZE
+  );
 
-  const lineCount = Math.max(cantidadLines.length, efectoLines.length, observacionesLines.length, 1);
+  const lineCount = Math.max(
+    cantidadLines.length,
+    efectoLines.length,
+    observacionesLines.length,
+    1
+  );
   const height = Math.max(
     TABLE_MIN_ROW_HEIGHT,
-    TABLE_CELL_TOP_PADDING + TABLE_CELL_BOTTOM_PADDING + lineCount * TABLE_CELL_LINE_HEIGHT,
+    TABLE_CELL_TOP_PADDING + TABLE_CELL_BOTTOM_PADDING + lineCount * TABLE_CELL_LINE_HEIGHT
   );
 
   return {
@@ -104,11 +130,24 @@ function layoutTableRow(row: TableRow, font: PDFFont): TableRowLayout {
   };
 }
 
-function drawTableHeader(page: PDFPage, assets: Awaited<ReturnType<typeof createReceiptPdfAssets>>, x: number, top: number, width: number) {
+function drawTableHeader(
+  page: PDFPage,
+  assets: Awaited<ReturnType<typeof createReceiptPdfAssets>>,
+  x: number,
+  top: number,
+  width: number
+) {
   drawRectTop(page, x, top, width, TABLE_HEADER_HEIGHT);
   drawTextAt(page, assets.bold, "CANT.", x + 6, top + 5, 8);
   drawTextAt(page, assets.bold, "EFECTO", x + TABLE_COL_QTY + 6, top + 5, 8);
-  drawTextAt(page, assets.bold, "OBSERVACIONES", x + TABLE_COL_QTY + TABLE_COL_EFECTO + 6, top + 5, 8);
+  drawTextAt(
+    page,
+    assets.bold,
+    "OBSERVACIONES",
+    x + TABLE_COL_QTY + TABLE_COL_EFECTO + 6,
+    top + 5,
+    8
+  );
   return top + TABLE_HEADER_HEIGHT;
 }
 
@@ -118,7 +157,7 @@ function drawTableRow(
   x: number,
   top: number,
   row: TableRow,
-  layout: TableRowLayout,
+  layout: TableRowLayout
 ) {
   drawRectTop(page, x, top, INNER_WIDTH, layout.height);
   page.drawLine({
@@ -135,7 +174,14 @@ function drawTableRow(
   });
 
   layout.cantidadLines.forEach((line, index) => {
-    drawTextAt(page, assets.regular, line, x + 6, top + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT, TABLE_CELL_TEXT_SIZE);
+    drawTextAt(
+      page,
+      assets.regular,
+      line,
+      x + 6,
+      top + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
+      TABLE_CELL_TEXT_SIZE
+    );
   });
   layout.efectoLines.forEach((line, index) => {
     drawTextAt(
@@ -144,7 +190,7 @@ function drawTableRow(
       line,
       x + TABLE_COL_QTY + 6,
       top + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
-      TABLE_CELL_TEXT_SIZE,
+      TABLE_CELL_TEXT_SIZE
     );
   });
   layout.observacionesLines.forEach((line, index) => {
@@ -154,7 +200,7 @@ function drawTableRow(
       line,
       x + TABLE_COL_QTY + TABLE_COL_EFECTO + 6,
       top + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
-      TABLE_CELL_TEXT_SIZE,
+      TABLE_CELL_TEXT_SIZE
     );
   });
 
@@ -184,10 +230,10 @@ const registroReciboInclude = {
             },
           },
           bateria: {
-                            select: {
-                              nombre: true,
-                            },
-                          },
+            select: {
+              nombre: true,
+            },
+          },
         },
       },
     },
@@ -263,61 +309,75 @@ export async function GET(request: Request, context: { params: Promise<{ registr
   const isPersonal = Boolean(registro.destinatarioPersonal);
   const now = new Date();
   const documentPrefix =
-    registro.tipo === MOVIMIENTO_TIPO_ENTREGA ? "ER" : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION ? "DR" : "AR";
+    registro.tipo === MOVIMIENTO_TIPO_ENTREGA
+      ? "ER"
+      : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION
+        ? "DR"
+        : "AR";
   const documentNumber = `${documentPrefix}-${registro.movimientoId.toString().padStart(8, "0")}`;
   const tipoLabel =
-    registro.tipo === MOVIMIENTO_TIPO_ENTREGA ? "Entrega" : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION ? "Devolución" : "Asignación";
+    registro.tipo === MOVIMIENTO_TIPO_ENTREGA
+      ? "Entrega"
+      : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION
+        ? "Devolución"
+        : "Asignación";
   const subtitle = `${tipoLabel} ${isRecinto ? "a recinto" : isExterno ? "a externo" : "a personal"}`;
   const fechaMovimiento = formatDateOnlyFromDate(registro.fecha) ?? "-";
   const usuarioEntregaGrado = registro.usuarioEntrega.rango?.abreviacion?.trim() ?? "";
   const usuarioEntregaNombreApellidoRaw =
-    formatApellidoNombre(registro.usuarioEntrega.apellido, registro.usuarioEntrega.nombre) || registro.usuarioEntrega.username;
+    formatApellidoNombre(registro.usuarioEntrega.apellido, registro.usuarioEntrega.nombre) ||
+    registro.usuarioEntrega.username;
   const usuarioEntregaNombreApellido = normalizeReceiptValue(usuarioEntregaNombreApellidoRaw);
 
-  const isExternalAssignment = isExterno && !registro.destinatarioExterno?.personaExterna?.unidadDestino?.startsWith("Interno");
+  const isExternalAssignment =
+    isExterno &&
+    !registro.destinatarioExterno?.personaExterna?.unidadDestino?.startsWith("Interno");
 
   const destinatarioLabel = isRecinto
-    ? registro.destinatarioRecinto?.nombre ?? "Recinto no definido"
+    ? (registro.destinatarioRecinto?.nombre ?? "Recinto no definido")
     : isExterno
       ? registro.destinatarioExterno?.personaExterna
         ? buildPersonaExternaEtiqueta(registro.destinatarioExterno.personaExterna)
         : "Destinatario externo no definido"
-    : registro.destinatarioPersonal?.personal
-      ? `${registro.destinatarioPersonal.personal.rango.abreviacion} ${buildPersonalDestinatarioNombre(registro.destinatarioPersonal.personal)}`
-          .replace(/\s+/g, " ")
-          .trim()
-      : "Destinatario no definido";
+      : registro.destinatarioPersonal?.personal
+        ? `${registro.destinatarioPersonal.personal.rango.abreviacion} ${buildPersonalDestinatarioNombre(registro.destinatarioPersonal.personal)}`
+            .replace(/\s+/g, " ")
+            .trim()
+        : "Destinatario no definido";
 
   const destinatarioGradoRaw = isRecinto
-    ? registro.destinatarioRecinto?.responsableGrado ?? ""
+    ? (registro.destinatarioRecinto?.responsableGrado ?? "")
     : isExterno
-      ? registro.destinatarioExterno?.personaExterna?.grado ?? ""
-      : registro.destinatarioPersonal?.personal?.rango.abreviacion ?? "";
+      ? (registro.destinatarioExterno?.personaExterna?.grado ?? "")
+      : (registro.destinatarioPersonal?.personal?.rango.abreviacion ?? "");
   const destinatarioApellidoRaw = isRecinto
-    ? registro.destinatarioRecinto?.responsableApellido ?? ""
+    ? (registro.destinatarioRecinto?.responsableApellido ?? "")
     : isExterno
-      ? registro.destinatarioExterno?.personaExterna?.apellido ?? ""
-      : registro.destinatarioPersonal?.personal?.apellido1 ?? "";
+      ? (registro.destinatarioExterno?.personaExterna?.apellido ?? "")
+      : (registro.destinatarioPersonal?.personal?.apellido1 ?? "");
   const destinatarioNombreRaw = isRecinto
-    ? registro.destinatarioRecinto?.responsableNombre ?? ""
+    ? (registro.destinatarioRecinto?.responsableNombre ?? "")
     : isExterno
-      ? registro.destinatarioExterno?.personaExterna?.nombre ?? ""
-      : registro.destinatarioPersonal?.personal?.nombre1 ?? "";
+      ? (registro.destinatarioExterno?.personaExterna?.nombre ?? "")
+      : (registro.destinatarioPersonal?.personal?.nombre1 ?? "");
   const destinatarioNombreApellidoRaw = isRecinto
-    ? formatApellidoNombre(registro.destinatarioRecinto?.responsableApellido, registro.destinatarioRecinto?.responsableNombre)
+    ? formatApellidoNombre(
+        registro.destinatarioRecinto?.responsableApellido,
+        registro.destinatarioRecinto?.responsableNombre
+      )
     : isExterno
       ? formatApellidoNombre(
           registro.destinatarioExterno?.personaExterna?.apellido,
-          registro.destinatarioExterno?.personaExterna?.nombre,
+          registro.destinatarioExterno?.personaExterna?.nombre
         )
       : registro.destinatarioPersonal?.personal
         ? buildPersonalDestinatarioNombre(registro.destinatarioPersonal.personal)
         : "";
   const destinatarioCi = isRecinto
-    ? registro.destinatarioRecinto?.responsableCi ?? ""
+    ? (registro.destinatarioRecinto?.responsableCi ?? "")
     : isExterno
-      ? registro.destinatarioExterno?.personaExterna?.ci ?? ""
-      : registro.destinatarioPersonal?.personal?.ci ?? "";
+      ? (registro.destinatarioExterno?.personaExterna?.ci ?? "")
+      : (registro.destinatarioPersonal?.personal?.ci ?? "");
   const destinatarioGrado = normalizeReceiptValue(destinatarioGradoRaw);
   const destinatarioNombreApellido = normalizeReceiptValue(destinatarioNombreApellidoRaw);
   const destinatarioCiDisplay =
@@ -326,13 +386,18 @@ export async function GET(request: Request, context: { params: Promise<{ registr
   let destinoLugar = "No definido";
   let destinoClase = "No definido";
   if (isRecinto) {
-    destinoClase = registro.destinatarioRecinto?.clase === "EXTERNO" ? "Fuera de la Unidad" : "Dentro de la Unidad";
+    destinoClase =
+      registro.destinatarioRecinto?.clase === "EXTERNO"
+        ? "Fuera de la Unidad"
+        : "Dentro de la Unidad";
     destinoLugar = registro.destinatarioRecinto?.nombre ?? "Recinto no definido";
   } else if (isExterno) {
     const unidad = registro.destinatarioExterno?.personaExterna?.unidadDestino || "";
     const isInterno = unidad.startsWith("Interno a la Unidad");
     destinoClase = isInterno ? "Dentro de la Unidad" : "Fuera de la Unidad";
-    destinoLugar = unidad.replace("Externo a la Unidad - ", "").replace("Interno a la Unidad - ", "").trim() || "No definido";
+    destinoLugar =
+      unidad.replace("Externo a la Unidad - ", "").replace("Interno a la Unidad - ", "").trim() ||
+      "No definido";
   } else if (isPersonal) {
     const bat = registro.destinatarioPersonal?.personal?.bateria?.nombre;
     destinoLugar = bat ? `Batería ${bat}` : "No definido";
@@ -341,7 +406,7 @@ export async function GET(request: Request, context: { params: Promise<{ registr
 
   const tableRows = registro.equipos.map((equipo) => {
     const observaciones = equipo.comentarioEntrega?.trim() || "";
-    
+
     return {
       cantidad: String(equipo.cantidad),
       efecto: equipo.equipo.nombre,
@@ -367,7 +432,7 @@ export async function GET(request: Request, context: { params: Promise<{ registr
         createdTime: formatTimeUy(now),
         headerDateLabel: `Montevideo, ${formatLongDateUy(now)}`,
       },
-      PAGE_MARGIN_Y + 10,
+      PAGE_MARGIN_Y + 10
     );
 
     let y = header.nextY;
@@ -382,8 +447,26 @@ export async function GET(request: Request, context: { params: Promise<{ registr
 
     drawField(page, assets, header.innerX, y, tipoWidth, 30, "Tipo", tipoLabel);
     drawField(page, assets, fechaX, y, fechaWidth, 30, "Fecha del movimiento", fechaMovimiento);
-    drawField(page, assets, gradoX, y, gradoWidth, 30, "Grado", normalizeReceiptValue(usuarioEntregaGrado));
-    drawField(page, assets, nombreX, y, nombreWidth, 30, "Nombre y apellido", usuarioEntregaNombreApellido);
+    drawField(
+      page,
+      assets,
+      gradoX,
+      y,
+      gradoWidth,
+      30,
+      "Grado",
+      normalizeReceiptValue(usuarioEntregaGrado)
+    );
+    drawField(
+      page,
+      assets,
+      nombreX,
+      y,
+      nombreWidth,
+      30,
+      "Nombre y apellido",
+      usuarioEntregaNombreApellido
+    );
     y += 36;
 
     const destinoClaseWidth = 140;
@@ -399,30 +482,84 @@ export async function GET(request: Request, context: { params: Promise<{ registr
     const responsableGradoWidth = 110;
     if (destinatarioCiDisplay) {
       const responsableCiWidth = 150;
-      const responsableNombreWidth = header.innerW - responsableGradoWidth - responsableCiWidth - responsableGap * 2;
+      const responsableNombreWidth =
+        header.innerW - responsableGradoWidth - responsableCiWidth - responsableGap * 2;
       const responsableNombreX = header.innerX + responsableGradoWidth + responsableGap;
       const responsableCiX = responsableNombreX + responsableNombreWidth + responsableGap;
 
-      drawField(page, assets, header.innerX, y, responsableGradoWidth, 30, "Grado", destinatarioGrado);
-      drawField(page, assets, responsableNombreX, y, responsableNombreWidth, 30, "Nombre y apellido", destinatarioNombreApellido);
-      drawField(page, assets, responsableCiX, y, responsableCiWidth, 30, "Cédula de identidad", destinatarioCiDisplay);
+      drawField(
+        page,
+        assets,
+        header.innerX,
+        y,
+        responsableGradoWidth,
+        30,
+        "Grado",
+        destinatarioGrado
+      );
+      drawField(
+        page,
+        assets,
+        responsableNombreX,
+        y,
+        responsableNombreWidth,
+        30,
+        "Nombre y apellido",
+        destinatarioNombreApellido
+      );
+      drawField(
+        page,
+        assets,
+        responsableCiX,
+        y,
+        responsableCiWidth,
+        30,
+        "Cédula de identidad",
+        destinatarioCiDisplay
+      );
     } else {
       const responsableNombreWidth = header.innerW - responsableGradoWidth - responsableGap;
       const responsableNombreX = header.innerX + responsableGradoWidth + responsableGap;
 
-      drawField(page, assets, header.innerX, y, responsableGradoWidth, 30, "Grado", destinatarioGrado);
-      drawField(page, assets, responsableNombreX, y, responsableNombreWidth, 30, "Nombre y apellido", destinatarioNombreApellido);
+      drawField(
+        page,
+        assets,
+        header.innerX,
+        y,
+        responsableGradoWidth,
+        30,
+        "Grado",
+        destinatarioGrado
+      );
+      drawField(
+        page,
+        assets,
+        responsableNombreX,
+        y,
+        responsableNombreWidth,
+        30,
+        "Nombre y apellido",
+        destinatarioNombreApellido
+      );
     }
     y += 36;
 
-    y = drawFieldMultiline(page, assets, header.innerX, y, header.innerW, "Comentarios", registro.observaciones ?? "-");
+    y = drawFieldMultiline(
+      page,
+      assets,
+      header.innerX,
+      y,
+      header.innerW,
+      "Comentarios",
+      registro.observaciones ?? "-"
+    );
     y = drawSectionTitle(
       page,
       assets,
       header.innerX,
       y,
       header.innerW,
-      registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION ? "Equipos devueltos" : "Equipos entregados",
+      registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION ? "Equipos devueltos" : "Equipos entregados"
     );
     y = drawTableHeader(page, assets, header.innerX, y, header.innerW);
 
@@ -450,32 +587,48 @@ export async function GET(request: Request, context: { params: Promise<{ registr
         ? `Se deja constancia que el Depósito General recibe la devolución de los efectos detallados desde ${destinatarioLabel}, según lo asentado en el presente recibo.`
         : `Se deja constancia que el Depósito General registra la asignación de los efectos detallados a ${destinatarioLabel}, según lo asentado en el presente recibo.`;
 
-  drawAcknowledgementFooter(current.page, assets, Math.max(current.y + 12, CONTENT_BOTTOM - FOOTER_RESERVE + 12), {
-    body: footerBody,
-    leftSignatureTitle:
-      registro.tipo === MOVIMIENTO_TIPO_ENTREGA
-        ? "Entrega"
-        : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION
-          ? "Recibe devolución"
-          : "Registra asignación",
-    leftSignatureName: [
-      militaryShortLabel(
-        usuarioEntregaGrado,
-        registro.usuarioEntrega.apellido ?? "",
-        registro.usuarioEntrega.nombre ?? registro.usuarioEntrega.username,
-      ),
-    ],
-    rightSignatureTitle: isRecinto ? "Superior responsable" : isExternalAssignment ? "Recibe asignación" : "Recibe",
-    rightSignatureName: isExternalAssignment && !destinatarioNombreApellido ? [
-      "Grado: _______________________________",
-      "Nombre y apellido: ____________________",
-      "Firma: _____________________   CI: ________________",
-    ] : [
-      militaryShortLabel(destinatarioGradoRaw, destinatarioApellidoRaw, destinatarioNombreRaw) || destinatarioNombreApellido,
-    ].filter(Boolean),
-    footerNote: `Generado: ${formatDateUy(now)} ${formatTimeUy(now)}`,
-    sectionTitle: "Constancia",
-  });
+  drawAcknowledgementFooter(
+    current.page,
+    assets,
+    Math.max(current.y + 12, CONTENT_BOTTOM - FOOTER_RESERVE + 12),
+    {
+      body: footerBody,
+      leftSignatureTitle:
+        registro.tipo === MOVIMIENTO_TIPO_ENTREGA
+          ? "Entrega"
+          : registro.tipo === MOVIMIENTO_TIPO_DEVOLUCION
+            ? "Recibe devolución"
+            : "Registra asignación",
+      leftSignatureName: [
+        militaryShortLabel(
+          usuarioEntregaGrado,
+          registro.usuarioEntrega.apellido ?? "",
+          registro.usuarioEntrega.nombre ?? registro.usuarioEntrega.username
+        ),
+      ],
+      rightSignatureTitle: isRecinto
+        ? "Superior responsable"
+        : isExternalAssignment
+          ? "Recibe asignación"
+          : "Recibe",
+      rightSignatureName:
+        isExternalAssignment && !destinatarioNombreApellido
+          ? [
+              "Grado: _______________________________",
+              "Nombre y apellido: ____________________",
+              "Firma: _____________________   CI: ________________",
+            ]
+          : [
+              militaryShortLabel(
+                destinatarioGradoRaw,
+                destinatarioApellidoRaw,
+                destinatarioNombreRaw
+              ) || destinatarioNombreApellido,
+            ].filter(Boolean),
+      footerNote: `Generado: ${formatDateUy(now)} ${formatTimeUy(now)}`,
+      sectionTitle: "Constancia",
+    }
+  );
 
   pages.forEach((page, index) => {
     drawReceiptPageNumber(page, assets, index + 1, pages.length);

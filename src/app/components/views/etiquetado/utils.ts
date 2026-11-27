@@ -28,7 +28,10 @@ export function normalizeCode(value: string) {
 }
 
 export function normalizeEstanteriaName(value: string) {
-  return value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
+  return value
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .slice(0, 1);
 }
 
 export function isValidEstanteriaName(value: string) {
@@ -44,7 +47,9 @@ export function buildEstanteriaKey(codigo: string, piso: number) {
 }
 
 export function sortEtiquetadoItems(equipos: EtiquetadoEquipo[]) {
-  return [...equipos].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
+  return [...equipos].sort((a, b) =>
+    a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })
+  );
 }
 
 export function buildEstanteriaOptions(estanterias: EtiquetadoEstanteria[]) {
@@ -66,7 +71,7 @@ export function buildEstanteriaLabelByKey(estanterias: EtiquetadoEstanteria[]) {
   for (const estanteria of estanterias) {
     map.set(
       buildEstanteriaKey(estanteria.codigo, estanteria.piso),
-      estanteria.etiqueta || formatEstanteriaLabel(estanteria.piso, estanteria.codigo),
+      estanteria.etiqueta || formatEstanteriaLabel(estanteria.piso, estanteria.codigo)
     );
   }
   return map;

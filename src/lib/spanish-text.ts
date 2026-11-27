@@ -12,11 +12,7 @@ export function stripDiacritics(value: string): string {
  * Normaliza texto para filtros/busquedas.
  */
 export function normalizeSearchText(value: string): string {
-  return stripDiacritics(value)
-    .replace(/[."']/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+  return stripDiacritics(value).replace(/[."']/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 /**

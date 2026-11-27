@@ -12,7 +12,9 @@ export function normalizeUruguayanMobileNumber(value: string): string | null {
   return null;
 }
 
-export function normalizeOptionalUruguayanMobileNumber(value: string | null | undefined): string | null {
+export function normalizeOptionalUruguayanMobileNumber(
+  value: string | null | undefined
+): string | null {
   const trimmed = value?.trim() ?? "";
   if (trimmed === "") return null;
   return normalizeUruguayanMobileNumber(trimmed);

@@ -77,7 +77,10 @@ function buildPersonalDisplayName(personal: {
   apellido2: string | null;
   rango: { abreviacion: string } | null;
 }) {
-  const fullName = [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" ").trim();
+  const fullName = [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
   return [personal.rango?.abreviacion ?? "", fullName].filter(Boolean).join(" ").trim();
 }
 
@@ -101,8 +104,8 @@ export async function GET(request: Request) {
           nombre: true,
           apellido: true,
           rango: {
-            select: { abreviacion: true }
-          }
+            select: { abreviacion: true },
+          },
         },
       },
     },
@@ -154,7 +157,7 @@ export async function GET(request: Request) {
             return recordCiSet.has(ci);
           })
           .map((ci) => [ci, personalByCi.get(ci) || embeddedReferences[ci] || ""])
-          .filter(([, value]) => Boolean(value)),
+          .filter(([, value]) => Boolean(value))
       );
 
       return {
@@ -177,6 +180,6 @@ export async function GET(request: Request) {
         ciReferencias,
         createdAt: record.createdAt.toISOString(),
       };
-    }),
+    })
   );
 }

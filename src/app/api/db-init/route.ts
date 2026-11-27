@@ -13,7 +13,10 @@ export async function POST() {
     const userCount = await withPrismaReadRetry(() => prisma.usuario.count());
 
     if (userCount > 0) {
-      return Response.json({ initialized: false, message: "Ya existe usuario en el sistema." }, { status: 200 });
+      return Response.json(
+        { initialized: false, message: "Ya existe usuario en el sistema." },
+        { status: 200 }
+      );
     }
 
     const defaultPassword = "Admin@123456";
@@ -63,13 +66,16 @@ export async function POST() {
           password: defaultPassword,
         },
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error: unknown) {
     if (isPrismaDatabaseUnavailable(error)) {
       return Response.json(
-        { initialized: false, error: "Base de datos no disponible temporalmente. Intenta nuevamente." },
-        { status: 503 },
+        {
+          initialized: false,
+          error: "Base de datos no disponible temporalmente. Intenta nuevamente.",
+        },
+        { status: 503 }
       );
     }
     const message = error instanceof Error ? error.message : "Error desconocido";
@@ -86,7 +92,10 @@ export async function GET() {
     return Response.json({ needsInit: userCount === 0, userCount }, { status: 200 });
   } catch (error: unknown) {
     if (isPrismaDatabaseUnavailable(error)) {
-      return Response.json({ error: "Base de datos no disponible temporalmente. Intenta nuevamente." }, { status: 503 });
+      return Response.json(
+        { error: "Base de datos no disponible temporalmente. Intenta nuevamente." },
+        { status: 503 }
+      );
     }
     const message = error instanceof Error ? error.message : "Error desconocido";
     return Response.json({ error: message }, { status: 500 });

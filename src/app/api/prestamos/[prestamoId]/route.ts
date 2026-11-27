@@ -10,8 +10,17 @@ import {
   isDateInputAfter,
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
-import { formatPrestamoDestinatario, prestamoInclude, serializePrestamoWithActuante, totalUnidadesPrestamo, type PrestamoWithRelations } from "@/lib/prestamos";
-import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
+import {
+  formatPrestamoDestinatario,
+  prestamoInclude,
+  serializePrestamoWithActuante,
+  totalUnidadesPrestamo,
+  type PrestamoWithRelations,
+} from "@/lib/prestamos";
+import {
+  ensurePrestamoActuanteCompatibility,
+  fetchPrestamoActuanteByMovimientoIds,
+} from "@/lib/prestamo-actuante";
 import { prisma } from "@/lib/prisma";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { isAdminRole } from "@/lib/user-role";
@@ -89,7 +98,9 @@ function parseCantidad(value: unknown) {
 }
 
 function parseEstadoEquipoPrestamo(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "NUEVO") return "NUEVO";
   if (raw === "BUENO") return "BUENO";
   if (raw === "REGULAR") return "REGULAR";
@@ -98,7 +109,9 @@ function parseEstadoEquipoPrestamo(value: unknown) {
 }
 
 function parsePrestamoClase(value: unknown): PrestamoClase | null {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "INTERNO") return "INTERNO";
   if (raw === "EXTERNO") return "EXTERNO";
   if (raw === "PENDIENTE") return "PENDIENTE";
@@ -106,7 +119,9 @@ function parsePrestamoClase(value: unknown): PrestamoClase | null {
 }
 
 function parseDestinatarioTipo(value: unknown): PrestamoDestinatarioTipo | null {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "PERSONAL") return "PERSONAL";
   if (raw === "OFICIAL") return "OFICIAL";
   if (raw === "SUBOFICIAL") return "SUBOFICIAL";
@@ -137,7 +152,13 @@ function inferPrestamoClaseForEdit(body: EditPrestamoPayload): PrestamoClase {
   if (explicit) return explicit;
 
   const external = sanitizeExternalPayload(body.destinatarioExterno);
-  if (external.ci || external.grado || external.nombre || external.apellido || external.unidadDestino) {
+  if (
+    external.ci ||
+    external.grado ||
+    external.nombre ||
+    external.apellido ||
+    external.unidadDestino
+  ) {
     return "EXTERNO";
   }
 
@@ -165,7 +186,9 @@ function buildPrestamoAuditSnapshot(prestamo: PrestamoWithRelations): PrestamoAu
     estado: prestamo.prestamoHistorial ? "DEVUELTO" : "PENDIENTE",
     destinatario: formatPrestamoDestinatario(prestamo),
     fechaPrestamo: formatDateOnlyFromDate(prestamo.fecha),
-    fechaDevolucion: prestamo.prestamoHistorial ? formatDateOnlyFromDate(prestamo.prestamoHistorial.fechaDevolucion) : null,
+    fechaDevolucion: prestamo.prestamoHistorial
+      ? formatDateOnlyFromDate(prestamo.prestamoHistorial.fechaDevolucion)
+      : null,
     fechaEstimadaDevolucionTexto:
       prestamo.prestamoHistorial?.fechaEstimadaDevolucionTexto ??
       prestamo.prestamoActivo?.fechaEstimadaDevolucionTexto ??
@@ -226,10 +249,16 @@ function buildEquipoChanges(before: PrestamoAuditSnapshot, after: PrestamoAuditS
         changes.estadoEntrega = { antes: previous.estadoEntrega, despues: equipo.estadoEntrega };
       }
       if (previous.comentarioEntrega !== equipo.comentarioEntrega) {
-        changes.comentarioEntrega = { antes: previous.comentarioEntrega, despues: equipo.comentarioEntrega };
+        changes.comentarioEntrega = {
+          antes: previous.comentarioEntrega,
+          despues: equipo.comentarioEntrega,
+        };
       }
       if (previous.estadoDevolucion !== equipo.estadoDevolucion) {
-        changes.estadoDevolucion = { antes: previous.estadoDevolucion, despues: equipo.estadoDevolucion };
+        changes.estadoDevolucion = {
+          antes: previous.estadoDevolucion,
+          despues: equipo.estadoDevolucion,
+        };
       }
       if (previous.comentarioDevolucion !== equipo.comentarioDevolucion) {
         changes.comentarioDevolucion = {
@@ -247,12 +276,12 @@ function buildEquipoChanges(before: PrestamoAuditSnapshot, after: PrestamoAuditS
     })
     .filter(
       (
-        entry,
+        entry
       ): entry is {
         equipoId: string;
         nombre: string;
         changes: Record<string, { antes: unknown; despues: unknown }>;
-      } => entry !== null,
+      } => entry !== null
     );
 }
 
@@ -287,7 +316,9 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     return NextResponse.json({ error: "Préstamo no encontrado." }, { status: 404 });
   }
 
-  const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([prestamo.movimientoId]);
+  const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([
+    prestamo.movimientoId,
+  ]);
   return NextResponse.json(serializePrestamoWithActuante(prestamo, actuanteByMovimientoId));
 }
 
@@ -297,7 +328,10 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   await ensurePrestamoActuanteCompatibility();
 
   if (!isAdminRole(auth.user.rol)) {
-    return NextResponse.json({ error: "Solo el administrador puede editar préstamos." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Solo el administrador puede editar préstamos." },
+      { status: 403 }
+    );
   }
 
   const { prestamoId: prestamoIdParam } = await context.params;
@@ -331,11 +365,14 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     return NextResponse.json({ error: "fechaPrestamo inválida." }, { status: 400 });
   }
   if (isDateInputAfterToday(fechaPrestamoInput)) {
-    return NextResponse.json({ error: "La fecha del préstamo no puede ser futura." }, { status: 400 });
+    return NextResponse.json(
+      { error: "La fecha del préstamo no puede ser futura." },
+      { status: 400 }
+    );
   }
 
   const fechaDevolucionActualInput = existing.prestamoHistorial
-    ? formatDateOnlyFromDate(existing.prestamoHistorial.fechaDevolucion) ?? getTodayDateInput()
+    ? (formatDateOnlyFromDate(existing.prestamoHistorial.fechaDevolucion) ?? getTodayDateInput())
     : null;
   let fechaDevolucionInput = fechaDevolucionActualInput;
   let fechaDevolucion = existing.prestamoHistorial?.fechaDevolucion ?? null;
@@ -351,7 +388,10 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         return NextResponse.json({ error: "fechaDevolucion inválida." }, { status: 400 });
       }
       if (isDateInputAfterToday(rawFechaDevolucion)) {
-        return NextResponse.json({ error: "La fecha de devolución no puede ser futura." }, { status: 400 });
+        return NextResponse.json(
+          { error: "La fecha de devolución no puede ser futura." },
+          { status: 400 }
+        );
       }
       fechaDevolucionInput = rawFechaDevolucion;
       fechaDevolucion = parsedFechaDevolucion;
@@ -359,13 +399,13 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     if (fechaDevolucionInput && isDateInputAfter(fechaPrestamoInput, fechaDevolucionInput)) {
       return NextResponse.json(
         { error: "La fecha de devolución no puede ser anterior a la fecha del préstamo." },
-        { status: 400 },
+        { status: 400 }
       );
     }
   } else if (body.fechaDevolucion !== undefined) {
     return NextResponse.json(
       { error: "Solo se puede editar la fecha de devolución en préstamos ya devueltos." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -378,7 +418,9 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       ? fechaEstimadaActual
       : String(body.fechaEstimadaDevolucionTexto ?? "").trim() || null;
   const comentarios =
-    body.comentarios === undefined ? existing.observaciones ?? null : String(body.comentarios ?? "").trim() || null;
+    body.comentarios === undefined
+      ? (existing.observaciones ?? null)
+      : String(body.comentarios ?? "").trim() || null;
 
   let clasePrestamo = formatPrestamoDestinatario(existing).clase;
   let destinatarioTipo = existing.destinatarioPersonal?.personal.rango.tipo
@@ -409,7 +451,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       if (!destinatarioTipo || !isValidUruguayanCi(destinatarioCi)) {
         return NextResponse.json(
           { error: "Debes indicar un destinatario interno válido para completar el préstamo." },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -423,14 +465,19 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
         !destinatarioExterno.unidadDestino
       ) {
         return NextResponse.json(
-          { error: "Debes completar grado, nombre, apellido, CI y unidad de destino del destinatario externo." },
-          { status: 400 },
+          {
+            error:
+              "Debes completar grado, nombre, apellido, CI y unidad de destino del destinatario externo.",
+          },
+          { status: 400 }
         );
       }
     }
   }
 
-  const existingEquiposById = new Map(existing.equipos.map((equipo) => [equipo.equipo.equipoId.toString(), equipo]));
+  const existingEquiposById = new Map(
+    existing.equipos.map((equipo) => [equipo.equipo.equipoId.toString(), equipo])
+  );
   const equipoUpdates = Array.isArray(body.equipos)
     ? body.equipos
     : existing.equipos.map((equipo) => ({
@@ -443,7 +490,10 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       }));
 
   if (equipoUpdates.length === 0) {
-    return NextResponse.json({ error: "Debes incluir al menos un equipo para editar el préstamo." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Debes incluir al menos un equipo para editar el préstamo." },
+      { status: 400 }
+    );
   }
 
   const parsedItemUpdates: Array<{
@@ -464,13 +514,19 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
 
     const equipoIdKey = equipoId.toString();
     if (seenEquipoIds.has(equipoIdKey)) {
-      return NextResponse.json({ error: "No puedes repetir equipos en la edición del préstamo." }, { status: 400 });
+      return NextResponse.json(
+        { error: "No puedes repetir equipos en la edición del préstamo." },
+        { status: 400 }
+      );
     }
     seenEquipoIds.add(equipoIdKey);
 
     const existingEquipo = existingEquiposById.get(equipoIdKey);
     if (!existingEquipo) {
-      return NextResponse.json({ error: "Solo puedes editar equipos ya incluidos en el préstamo." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Solo puedes editar equipos ya incluidos en el préstamo." },
+        { status: 400 }
+      );
     }
 
     const cantidad = parseCantidad(equipo.cantidad ?? existingEquipo.cantidad);
@@ -505,7 +561,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
 
     const parsedEstadoDevolucion =
       equipo.estadoDevolucion === undefined
-        ? existingEquipo.estadoDevolucion ?? existingEquipo.estadoEntrega
+        ? (existingEquipo.estadoDevolucion ?? existingEquipo.estadoEntrega)
         : parseEstadoEquipoPrestamo(equipo.estadoDevolucion);
     if (!parsedEstadoDevolucion) {
       return NextResponse.json({ error: "equipos: estadoDevolucion inválido." }, { status: 400 });
@@ -529,7 +585,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   if (parsedItemUpdates.length !== existing.equipos.length) {
     return NextResponse.json(
       { error: "Debes incluir todos los equipos del préstamo para poder editarlo." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -556,7 +612,7 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
             ? "No existe personal subalterno para la CI indicada."
             : "No existe oficial/suboficial para la CI indicada.",
       },
-      { status: 404 },
+      { status: 404 }
     );
   }
 
@@ -683,7 +739,9 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       },
     });
 
-    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
+      .replace(/\s+/g, " ")
+      .trim();
     const destinatarioPersonalCi = updated.destinatarioPersonal?.personal.ci ?? null;
     if (destinatarioPersonalCi) {
       await Promise.allSettled([
@@ -696,7 +754,9 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
             `Recibo: ${afterSnapshot.reciboNumero}`,
             `Estado: ${afterSnapshot.estado}`,
             `Fecha préstamo: ${afterSnapshot.fechaPrestamo ?? "-"}`,
-            afterSnapshot.fechaDevolucion ? `Fecha devolución: ${afterSnapshot.fechaDevolucion}` : "",
+            afterSnapshot.fechaDevolucion
+              ? `Fecha devolución: ${afterSnapshot.fechaDevolucion}`
+              : "",
             `Motivo: ${motivo}`,
           ],
           actorLabel,
@@ -705,19 +765,27 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       ]);
     }
 
-    const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([updated.movimientoId]);
+    const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([
+      updated.movimientoId,
+    ]);
     return NextResponse.json(serializePrestamoWithActuante(updated, actuanteByMovimientoId));
   } catch {
     return NextResponse.json({ error: "No se pudo editar el préstamo." }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, context: { params: Promise<{ prestamoId: string }> }) {
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ prestamoId: string }> }
+) {
   const auth = await authorizeRequest(request, "delete_data");
   if (!auth.ok) return auth.response;
 
   if (!isAdminRole(auth.user.rol)) {
-    return NextResponse.json({ error: "Solo el administrador puede eliminar préstamos." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Solo el administrador puede eliminar préstamos." },
+      { status: 403 }
+    );
   }
 
   const { prestamoId: prestamoIdParam } = await context.params;
@@ -764,13 +832,17 @@ export async function DELETE(request: Request, context: { params: Promise<{ pres
           unidadDestino: destinatario.unidadDestino,
         },
         fechaPrestamo: formatDateOnlyFromDate(existing.fecha),
-        fechaDevolucion: existing.prestamoHistorial ? formatDateOnlyFromDate(existing.prestamoHistorial.fechaDevolucion) : null,
+        fechaDevolucion: existing.prestamoHistorial
+          ? formatDateOnlyFromDate(existing.prestamoHistorial.fechaDevolucion)
+          : null,
         totalEquipos: existing.equipos.length,
         totalUnidades: totalUnidadesPrestamo(existing),
       },
     });
 
-    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
+      .replace(/\s+/g, " ")
+      .trim();
     const destinatarioPersonalCi = existing.destinatarioPersonal?.personal.ci ?? null;
     if (destinatarioPersonalCi) {
       await Promise.allSettled([

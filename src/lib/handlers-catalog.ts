@@ -67,7 +67,11 @@ export async function deleteRangoHandler(rangoId: number, callbacks: CallbackPro
 
 // ==================== BATERIAS ====================
 
-export async function createBateriaHandler(nombre: string, orden: number | undefined, callbacks: CallbackProps) {
+export async function createBateriaHandler(
+  nombre: string,
+  orden: number | undefined,
+  callbacks: CallbackProps
+) {
   try {
     await api("/api/baterias", {
       method: "POST",
@@ -115,7 +119,11 @@ export async function deleteBateriaHandler(bateriaId: number, callbacks: Callbac
 
 // ==================== TIPOS DE EQUIPO ====================
 
-export async function createEquipoTipoHandler(nombre: string, orden: number | undefined, callbacks: CallbackProps) {
+export async function createEquipoTipoHandler(
+  nombre: string,
+  orden: number | undefined,
+  callbacks: CallbackProps
+) {
   try {
     const data = await api("/api/equipos/tipos", {
       method: "POST",
@@ -144,7 +152,8 @@ export async function updateEquipoTipoHandler(
     });
     callbacks.onSuccess(data);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar el tipo de equipo.";
+    const message =
+      error instanceof Error ? error.message : "No se pudo actualizar el tipo de equipo.";
     callbacks.onError(message);
     throw error;
   }
@@ -155,7 +164,8 @@ export async function deleteEquipoTipoHandler(tipoEquipoId: number, callbacks: C
     const data = await api(`/api/equipos/tipos/${tipoEquipoId}`, { method: "DELETE" });
     callbacks.onSuccess(data);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo eliminar el tipo de equipo.";
+    const message =
+      error instanceof Error ? error.message : "No se pudo eliminar el tipo de equipo.";
     callbacks.onError(message);
     throw error;
   }
@@ -163,7 +173,11 @@ export async function deleteEquipoTipoHandler(tipoEquipoId: number, callbacks: C
 
 // ==================== ARTICULOS ====================
 
-export async function createArticuloHandler(nombre: string, tipo: TipoArticulo, callbacks: CallbackProps) {
+export async function createArticuloHandler(
+  nombre: string,
+  tipo: TipoArticulo,
+  callbacks: CallbackProps
+) {
   try {
     await api("/api/articulos", {
       method: "POST",
@@ -223,7 +237,10 @@ export async function ingresarStockArticuloHandler(
     });
     callbacks.onSuccess();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo registrar el ingreso de stock del artículo.";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "No se pudo registrar el ingreso de stock del artículo.";
     callbacks.onError(message);
     throw error;
   }
@@ -306,7 +323,11 @@ export type EquipoMergeResult = {
   };
 };
 
-export async function mergeEquipoHandler(sourceEquipoId: string, targetEquipoId: string, callbacks: CallbackProps) {
+export async function mergeEquipoHandler(
+  sourceEquipoId: string,
+  targetEquipoId: string,
+  callbacks: CallbackProps
+) {
   try {
     const result = await api<EquipoMergeResult>(`/api/equipos/${sourceEquipoId}`, {
       method: "POST",
@@ -376,7 +397,10 @@ export async function loadEquipoDeleteImpactHandler(equipoId: string, callbacks:
     callbacks.onSuccess(result);
     return result;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo calcular el impacto de borrado del equipo.";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "No se pudo calcular el impacto de borrado del equipo.";
     callbacks.onError(message);
     throw error;
   }
@@ -385,7 +409,7 @@ export async function loadEquipoDeleteImpactHandler(equipoId: string, callbacks:
 export async function updateMultipleEquipoOrdersHandler(
   orderedEquipoIds: string[],
   callbacks: CallbackProps,
-  activo = true,
+  activo = true
 ) {
   try {
     await api("/api/equipos", {
@@ -395,7 +419,8 @@ export async function updateMultipleEquipoOrdersHandler(
     });
     callbacks.onSuccess();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar el orden de PDF.";
+    const message =
+      error instanceof Error ? error.message : "No se pudo actualizar el orden de PDF.";
     callbacks.onError(message);
     throw error;
   }
@@ -407,7 +432,7 @@ export async function entregarArticulosPersonalHandler(
   fecha: string,
   comentario: string | undefined,
   equipos: Array<{ articuloId: number; cantidad: number }>,
-  callbacks: CallbackProps,
+  callbacks: CallbackProps
 ) {
   try {
     const result = await api("/api/articulos/entregas", {
@@ -418,7 +443,10 @@ export async function entregarArticulosPersonalHandler(
     callbacks.onSuccess(result);
     return result;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo registrar la entrega de artículos a personal.";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "No se pudo registrar la entrega de artículos a personal.";
     callbacks.onError(message);
     throw error;
   }

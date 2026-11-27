@@ -13,7 +13,10 @@ export async function GET() {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
   if (user.accountType !== "SISTEMA") {
-    return NextResponse.json({ error: "Las cuentas de personal no tienen acceso a recordatorios." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Las cuentas de personal no tienen acceso a recordatorios." },
+      { status: 403 }
+    );
   }
 
   const config = await prisma.usuarioRecordatorioConfig.findUnique({
@@ -32,7 +35,10 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
   if (user.accountType !== "SISTEMA") {
-    return NextResponse.json({ error: "Las cuentas de personal no tienen acceso a recordatorios." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Las cuentas de personal no tienen acceso a recordatorios." },
+      { status: 403 }
+    );
   }
 
   const body = (await request.json().catch(() => null)) as TaskConfigPayload | null;

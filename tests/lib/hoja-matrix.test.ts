@@ -32,7 +32,7 @@ describe("getHojaMatrixData", () => {
           rango: { tipo: TipoPersonal.SUBALTERNO },
           bateria: { is: { nombre: "Batería A" } },
         },
-      }),
+      })
     );
   });
 
@@ -45,7 +45,7 @@ describe("getHojaMatrixData", () => {
           rango: { tipo: TipoPersonal.SUBALTERNO },
           bateriaId: null,
         },
-      }),
+      })
     );
   });
 
@@ -57,7 +57,7 @@ describe("getHojaMatrixData", () => {
         where: {
           rango: { tipo: TipoPersonal.SUBALTERNO },
         },
-      }),
+      })
     );
   });
 });

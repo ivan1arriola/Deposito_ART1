@@ -7,8 +7,18 @@ import type { StockSection } from "./types";
 
 export const ESTADO_OPTIONS: PrestamoEstadoEquipo[] = ["NUEVO", "BUENO", "REGULAR", "MALO"];
 
-export function historyBadgeClass(tipo: "INGRESO" | "EGRESO" | "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO") {
-  if (tipo === "INGRESO" || tipo === "DEVOLUCION" || tipo === "DEVOLUCION_PRESTAMO") return "bg-emerald-100 text-emerald-800";
+export function historyBadgeClass(
+  tipo:
+    | "INGRESO"
+    | "EGRESO"
+    | "ENTREGA"
+    | "DEVOLUCION"
+    | "ASIGNACION"
+    | "PRESTAMO"
+    | "DEVOLUCION_PRESTAMO"
+) {
+  if (tipo === "INGRESO" || tipo === "DEVOLUCION" || tipo === "DEVOLUCION_PRESTAMO")
+    return "bg-emerald-100 text-emerald-800";
   if (tipo === "ASIGNACION") return "bg-indigo-100 text-indigo-800";
   if (tipo === "PRESTAMO") return "bg-amber-100 text-amber-800";
   return "bg-rose-100 text-rose-800";
@@ -30,14 +40,18 @@ function isSargentoRank(abreviacion: string) {
 export function buildDestinatarioOptions(
   destinatarioTipo: PrestamoDraft["destinatarioTipo"],
   personal: Personal[],
-  oficialesSuboficiales: OficialSuboficial[],
+  oficialesSuboficiales: OficialSuboficial[]
 ) {
   if (destinatarioTipo === "PERSONAL") {
     return [...personal]
       .sort((a, b) =>
-        `${apellidosLabel(a)} ${nombresLabel(a)}`.localeCompare(`${apellidosLabel(b)} ${nombresLabel(b)}`, "es", {
-          sensitivity: "base",
-        }),
+        `${apellidosLabel(a)} ${nombresLabel(a)}`.localeCompare(
+          `${apellidosLabel(b)} ${nombresLabel(b)}`,
+          "es",
+          {
+            sensitivity: "base",
+          }
+        )
       )
       .map((persona) => ({
         ci: persona.ci,
@@ -46,9 +60,15 @@ export function buildDestinatarioOptions(
   }
 
   return oficialesSuboficiales
-    .filter((registro) => (destinatarioTipo === "OFICIAL" ? registro.tipo === "OFICIAL" : registro.tipo === "SUBOFICIAL"))
+    .filter((registro) =>
+      destinatarioTipo === "OFICIAL" ? registro.tipo === "OFICIAL" : registro.tipo === "SUBOFICIAL"
+    )
     .slice()
-    .sort((a, b) => `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`, "es", { sensitivity: "base" }))
+    .sort((a, b) =>
+      `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`, "es", {
+        sensitivity: "base",
+      })
+    )
     .map((registro) => ({
       ci: registro.ci,
       label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`,
@@ -61,17 +81,24 @@ export function prestamoClaseLabel(value: PrestamoClase) {
   return "Préstamo interno";
 }
 
-export function buildActuanteOptions(oficialesSuboficiales: OficialSuboficial[], personal: Personal[]) {
+export function buildActuanteOptions(
+  oficialesSuboficiales: OficialSuboficial[],
+  personal: Personal[]
+) {
   const oficialesYSuboficiales = oficialesSuboficiales.map((registro) => ({
     ci: registro.ci,
-    label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`.replace(/\s+/g, " ").trim(),
+    label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`
+      .replace(/\s+/g, " ")
+      .trim(),
   }));
 
   const sargentos = personal
     .filter((persona) => isSargentoRank(persona.rango.abreviacion))
     .map((persona) => ({
       ci: persona.ci,
-      label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`.replace(/\s+/g, " ").trim(),
+      label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`
+        .replace(/\s+/g, " ")
+        .trim(),
     }));
 
   const optionsByCi = new Map<string, { ci: string; label: string }>();
@@ -81,7 +108,9 @@ export function buildActuanteOptions(oficialesSuboficiales: OficialSuboficial[],
     }
   }
 
-  return Array.from(optionsByCi.values()).sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+  return Array.from(optionsByCi.values()).sort((a, b) =>
+    a.label.localeCompare(b.label, "es", { sensitivity: "base" })
+  );
 }
 
 export function getStockSummaryMetrics(resumen: StockDashboardData["resumen"]) {

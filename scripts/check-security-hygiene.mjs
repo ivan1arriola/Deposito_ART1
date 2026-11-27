@@ -19,7 +19,10 @@ const RULES = [
   {
     id: "no-dangerously-set-inner-html",
     pattern: /dangerouslySetInnerHTML/,
-    validate: (line) => !line.includes("data-emotion="),
+    validate: (_line, lines, index) => {
+      const windowText = lines.slice(Math.max(0, index - 2), index + 1).join(" ");
+      return !(windowText.includes("<style") && windowText.includes("data-emotion="));
+    },
     message: "Prohibido usar dangerouslySetInnerHTML sin sanitización auditada.",
   },
   {
@@ -41,7 +44,11 @@ function walk(dir) {
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === ".next" || full.includes(`src${path.sep}generated`)) {
+      if (
+        entry.name === "node_modules" ||
+        entry.name === ".next" ||
+        full.includes(`src${path.sep}generated`)
+      ) {
         continue;
       }
       files.push(...walk(full));
@@ -61,7 +68,7 @@ for (const dir of TARGET_DIRS) {
     const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
     lines.forEach((line, index) => {
       for (const rule of RULES) {
-        if (rule.pattern.test(line) && (!rule.validate || rule.validate(line))) {
+        if (rule.pattern.test(line) && (!rule.validate || rule.validate(line, lines, index))) {
           violations.push(`${rel}:${index + 1} [${rule.id}] ${rule.message}`);
         }
       }

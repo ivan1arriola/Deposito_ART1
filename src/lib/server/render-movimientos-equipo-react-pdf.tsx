@@ -2,7 +2,10 @@ import "server-only";
 
 import React from "react";
 import type { EquipoMovimientoCatalogEquipo, EquipoMovimientoViewRow } from "@/types/views";
-import { buildFirmasInstitucionalesLineas, type FirmasInstitucionalesInput } from "@/lib/firma-lineas";
+import {
+  buildFirmasInstitucionalesLineas,
+  type FirmasInstitucionalesInput,
+} from "@/lib/firma-lineas";
 
 type RenderMovimientosEquipoPdfOptions = {
   pageNumberLabel?: string;
@@ -25,14 +28,16 @@ export async function renderMovimientosEquipoPdf(
   selectedItem: EquipoMovimientoCatalogEquipo,
   rows: EquipoMovimientoViewRow[],
   fechaImpresion: string,
-  options: RenderMovimientosEquipoPdfOptions = {},
+  options: RenderMovimientosEquipoPdfOptions = {}
 ): Promise<Uint8Array> {
   const ReactPdf = await import("@react-pdf/renderer");
   const { Document, Page, Text, View, StyleSheet, pdf } = ReactPdf;
 
   const pageNumberLabel = options.pageNumberLabel ?? "Movimientos equipo";
   const rowsPerPage =
-    typeof options.rowsPerPage === "number" && Number.isFinite(options.rowsPerPage) && options.rowsPerPage > 0
+    typeof options.rowsPerPage === "number" &&
+    Number.isFinite(options.rowsPerPage) &&
+    options.rowsPerPage > 0
       ? Math.floor(options.rowsPerPage)
       : DEFAULT_ROWS_PER_PAGE;
 
@@ -159,7 +164,9 @@ export async function renderMovimientosEquipoPdf(
     observaciones: "22%",
   } as const;
 
-  const equipoEstado = selectedItem.activo ? "Visible en hoja de entrega" : "Fuera de hoja de entrega";
+  const equipoEstado = selectedItem.activo
+    ? "Visible en hoja de entrega"
+    : "Fuera de hoja de entrega";
 
   const DocumentNode = () => (
     <Document title="Movimientos por equipo" author="Sistema de Depósito General - Artilleria 1">
@@ -169,7 +176,9 @@ export async function renderMovimientosEquipoPdf(
             <Text style={styles.title}>Trazabilidad de movimientos por equipo</Text>
           </View>
           <Text style={styles.subtitle}>{`Equipo: ${selectedItem.nombre}`}</Text>
-          <Text style={styles.subtitleMuted}>{`${equipoEstado} | Fecha de impresión: ${fechaImpresion}`}</Text>
+          <Text
+            style={styles.subtitleMuted}
+          >{`${equipoEstado} | Fecha de impresión: ${fechaImpresion}`}</Text>
 
           <View style={styles.table}>
             <View style={styles.row}>
@@ -194,7 +203,9 @@ export async function renderMovimientosEquipoPdf(
               <View style={[styles.headerCell, { width: widths.cantidad }]}>
                 <Text>Cant.</Text>
               </View>
-              <View style={[styles.headerCell, styles.noRightBorder, { width: widths.observaciones }]}>
+              <View
+                style={[styles.headerCell, styles.noRightBorder, { width: widths.observaciones }]}
+              >
                 <Text>Obs.</Text>
               </View>
             </View>
@@ -225,7 +236,9 @@ export async function renderMovimientosEquipoPdf(
                   <View style={[styles.cell, { width: widths.cantidad }]}>
                     <Text style={styles.center}>{String(row.cantidad)}</Text>
                   </View>
-                  <View style={[styles.cell, styles.noRightBorder, { width: widths.observaciones }]}>
+                  <View
+                    style={[styles.cell, styles.noRightBorder, { width: widths.observaciones }]}
+                  >
                     <Text style={styles.left}>{row.observaciones ?? ""}</Text>
                   </View>
                 </View>
@@ -242,11 +255,17 @@ export async function renderMovimientosEquipoPdf(
                     styles.firmaLineRow,
                     {
                       paddingLeft: (linea.indentLevel || 0) * 40,
-                      marginTop: linea.key.endsWith("-nombre") ? 8 : linea.key.endsWith("-texto") ? 25 : 0,
+                      marginTop: linea.key.endsWith("-nombre")
+                        ? 8
+                        : linea.key.endsWith("-texto")
+                          ? 25
+                          : 0,
                     },
                   ]}
                 >
-                  <Text style={[styles.firmaLine, linea.isBold ? styles.firmaLineStrong : {}]}>{linea.text}</Text>
+                  <Text style={[styles.firmaLine, linea.isBold ? styles.firmaLineStrong : {}]}>
+                    {linea.text}
+                  </Text>
                 </View>
               ))}
             </View>

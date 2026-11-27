@@ -1,7 +1,17 @@
 import { authorizeRequest } from "@/lib/auth";
-import { getMovimientosEquipoData, parseEquipoMovimientoItemId } from "@/lib/movimientos-equipo-data";
-import { parseMovimientosEquipoTipoFilters, applyMovimientosEquipoTipoFilters } from "@/lib/movimientos-equipo-filters";
-import { sortMovimientosEquipoRows, type MovimientosEquipoSortDirection, type MovimientosEquipoSortField } from "@/lib/movimientos-equipo-sort";
+import {
+  getMovimientosEquipoData,
+  parseEquipoMovimientoItemId,
+} from "@/lib/movimientos-equipo-data";
+import {
+  parseMovimientosEquipoTipoFilters,
+  applyMovimientosEquipoTipoFilters,
+} from "@/lib/movimientos-equipo-filters";
+import {
+  sortMovimientosEquipoRows,
+  type MovimientosEquipoSortDirection,
+  type MovimientosEquipoSortField,
+} from "@/lib/movimientos-equipo-sort";
 import { renderMovimientosEquipoPdf } from "@/lib/server/render-movimientos-equipo-react-pdf";
 import { getFirmaConfig, TEXTO_ENCARGADO, TEXTO_OFICIAL } from "@/lib/firma-config";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
@@ -20,7 +30,8 @@ export async function GET(request: Request) {
     }
 
     const sortBy = (searchParams.get("sortBy") as MovimientosEquipoSortField) || "fecha";
-    const sortDirection = (searchParams.get("sortDirection") as MovimientosEquipoSortDirection) || "desc";
+    const sortDirection =
+      (searchParams.get("sortDirection") as MovimientosEquipoSortDirection) || "desc";
     const tiposParam = searchParams.get("tipos");
     const tipos = parseMovimientosEquipoTipoFilters(tiposParam);
 
@@ -31,7 +42,10 @@ export async function GET(request: Request) {
     }
 
     const filteredRows = applyMovimientosEquipoTipoFilters(data.rows, tipos);
-    const sortedRows = sortMovimientosEquipoRows(filteredRows, { field: sortBy, direction: sortDirection });
+    const sortedRows = sortMovimientosEquipoRows(filteredRows, {
+      field: sortBy,
+      direction: sortDirection,
+    });
 
     const configFirma = await getFirmaConfig();
     const fechaImpresion = formatDateOnlyFromDate(new Date()) ?? "";

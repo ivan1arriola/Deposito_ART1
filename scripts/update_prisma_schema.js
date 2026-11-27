@@ -1,6 +1,6 @@
-const fs = require('fs');
-const filepath = 'prisma/schema.prisma';
-let content = fs.readFileSync(filepath, 'utf8');
+const fs = require("fs");
+const filepath = "prisma/schema.prisma";
+let content = fs.readFileSync(filepath, "utf8");
 
 // Replace Personal model
 const personalNew = `model Personal {
@@ -36,8 +36,8 @@ const personalNew = `model Personal {
 content = content.replace(/model Personal \{[\s\S]*?@@map\("personal"\)\n\}/, personalNew);
 
 // Remove Subalterno, Oficial, Suboficial models
-content = content.replace(/model Subalterno \{[\s\S]*?@@map\("subalterno"\)\n\}\n\n?/, '');
-content = content.replace(/model Oficial \{[\s\S]*?@@map\("oficial"\)\n\}\n\n?/, '');
-content = content.replace(/model Suboficial \{[\s\S]*?@@map\("suboficial"\)\n\}\n\n?/, '');
+content = content.replace(/model Subalterno \{[\s\S]*?@@map\("subalterno"\)\n\}\n\n?/, "");
+content = content.replace(/model Oficial \{[\s\S]*?@@map\("oficial"\)\n\}\n\n?/, "");
+content = content.replace(/model Suboficial \{[\s\S]*?@@map\("suboficial"\)\n\}\n\n?/, "");
 
 fs.writeFileSync(filepath, content);

@@ -48,7 +48,8 @@ export function SmallActionButton(props: {
       border: "1px solid rgba(95,86,61,0.34)",
       background: "linear-gradient(180deg, rgba(246,243,233,0.96) 0%, rgba(231,226,210,0.94) 100%)",
       "&:hover": {
-        background: "linear-gradient(180deg, rgba(237,233,219,0.96) 0%, rgba(223,217,198,0.94) 100%)",
+        background:
+          "linear-gradient(180deg, rgba(237,233,219,0.96) 0%, rgba(223,217,198,0.94) 100%)",
       },
     },
   } as const;
@@ -96,7 +97,8 @@ export function SmallActionButton(props: {
         "&.Mui-disabled": {
           color: "rgba(23,33,43,0.56)",
           borderColor: "rgba(95,86,61,0.18)",
-          background: "linear-gradient(180deg, rgba(234,230,216,0.7) 0%, rgba(219,214,198,0.76) 100%)",
+          background:
+            "linear-gradient(180deg, rgba(234,230,216,0.7) 0%, rgba(219,214,198,0.76) 100%)",
         },
       }}
     >
@@ -129,14 +131,19 @@ export function PaginationControls(props: {
       sx={{
         border: "1px solid rgba(95,86,61,0.2)",
         bgcolor: "transparent",
-        background: "linear-gradient(180deg, rgba(247,244,234,0.84) 0%, rgba(230,226,211,0.92) 100%)",
+        background:
+          "linear-gradient(180deg, rgba(247,244,234,0.84) 0%, rgba(230,226,211,0.92) 100%)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.36)",
         borderRadius: 2.5,
         p: 1.5,
       }}
       className={props.className}
     >
-      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, color: "var(--color-text-secondary)" }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ lineHeight: 1.5, color: "var(--color-text-secondary)" }}
+      >
         Mostrando {from} a {to} de {props.totalItems} {props.itemLabel}
         {props.totalItems !== 1 ? "s" : ""}
       </Typography>
@@ -153,7 +160,8 @@ export function PaginationControls(props: {
               minWidth: 120,
               "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
-                background: "linear-gradient(180deg, rgba(250,248,240,0.96) 0%, rgba(237,233,220,0.94) 100%)",
+                background:
+                  "linear-gradient(180deg, rgba(250,248,240,0.96) 0%, rgba(237,233,220,0.94) 100%)",
               },
             }}
           >
@@ -190,11 +198,13 @@ export function PaginationControls(props: {
             "& .MuiPaginationItem-root.Mui-selected": {
               color: "var(--color-ejercito-black)",
               borderColor: "rgba(145,111,26,0.78)",
-              background: "linear-gradient(180deg, rgba(255,210,74,0.98) 0%, rgba(214,170,38,0.98) 100%)",
+              background:
+                "linear-gradient(180deg, rgba(255,210,74,0.98) 0%, rgba(214,170,38,0.98) 100%)",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.38)",
             },
             "& .MuiPaginationItem-root.Mui-selected:hover": {
-              background: "linear-gradient(180deg, rgba(242,198,62,0.98) 0%, rgba(196,154,28,0.98) 100%)",
+              background:
+                "linear-gradient(180deg, rgba(242,198,62,0.98) 0%, rgba(196,154,28,0.98) 100%)",
             },
           }}
         />

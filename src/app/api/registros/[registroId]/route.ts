@@ -102,7 +102,9 @@ function parseCantidad(value: unknown) {
 }
 
 function parseTipoMovimiento(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "ENTREGA") return MOVIMIENTO_TIPO_ENTREGA;
   if (raw === "DEVOLUCION") return MOVIMIENTO_TIPO_DEVOLUCION;
   if (raw === "ASIGNACION") return MOVIMIENTO_TIPO_ASIGNACION;
@@ -134,7 +136,9 @@ function parseTargetCiList(ciValue: unknown, ciListValue: unknown) {
 }
 
 function parseDestinatarioTipo(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "" || raw === "PERSONAL") return "PERSONAL" as const;
   if (raw === "RECINTO") return "RECINTO" as const;
   if (raw === "EXTERNO") return "EXTERNO" as const;
@@ -142,7 +146,9 @@ function parseDestinatarioTipo(value: unknown) {
 }
 
 function parseRecintoClase(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "" || raw === "INTERNO") return "INTERNO" as const;
   if (raw === "EXTERNO") return "EXTERNO" as const;
   return null;
@@ -154,36 +160,50 @@ function parseRecintoNombre(value: unknown) {
   return trimmed === "" ? null : trimmed;
 }
 
-function sanitizeExternalPayload(value: UpdateMovimientoPayload["destinatarioExterno"] | undefined) {
+function sanitizeExternalPayload(
+  value: UpdateMovimientoPayload["destinatarioExterno"] | undefined
+) {
   return {
     grado: String(value?.grado ?? "").trim(),
     nombre: String(value?.nombre ?? "").trim(),
     apellido: String(value?.apellido ?? "").trim(),
-    ci: String(value?.ci ?? "").trim().replace(/\D/g, ""),
+    ci: String(value?.ci ?? "")
+      .trim()
+      .replace(/\D/g, ""),
     unidadDestino: String(value?.unidadDestino ?? "").trim(),
   };
 }
 
 function parseDestinatarioPayload(
   candidate: Record<string, unknown>,
-  fallback: ParsedDestinatarioPayload | null = null,
+  fallback: ParsedDestinatarioPayload | null = null
 ): ParsedDestinatarioPayload | null {
   const destinatarioTipo = parseDestinatarioTipo(candidate.destinatarioTipo);
   if (!destinatarioTipo) return fallback;
 
   if (destinatarioTipo === "RECINTO") {
     const fallbackRecinto = fallback?.destinatarioTipo === "RECINTO" ? fallback : null;
-    const recintoClase = parseRecintoClase(candidate.recintoClase) ?? fallbackRecinto?.recintoClase ?? null;
-    const recintoNombre = parseRecintoNombre(candidate.recintoNombre) ?? fallbackRecinto?.recintoNombre ?? null;
+    const recintoClase =
+      parseRecintoClase(candidate.recintoClase) ?? fallbackRecinto?.recintoClase ?? null;
+    const recintoNombre =
+      parseRecintoNombre(candidate.recintoNombre) ?? fallbackRecinto?.recintoNombre ?? null;
     if (!recintoClase || !recintoNombre) return null;
-    
-    const rawDestinatarioRecinto = candidate.destinatarioRecinto as Record<string, string> | undefined;
-    const recintoResponsable = rawDestinatarioRecinto && (rawDestinatarioRecinto.grado || rawDestinatarioRecinto.nombre || rawDestinatarioRecinto.apellido || rawDestinatarioRecinto.ci) ? {
-      grado: String(rawDestinatarioRecinto.grado ?? "").trim(),
-      nombre: String(rawDestinatarioRecinto.nombre ?? "").trim(),
-      apellido: String(rawDestinatarioRecinto.apellido ?? "").trim(),
-      ci: String(rawDestinatarioRecinto.ci ?? "").trim(),
-    } : null;
+
+    const rawDestinatarioRecinto = candidate.destinatarioRecinto as
+      Record<string, string> | undefined;
+    const recintoResponsable =
+      rawDestinatarioRecinto &&
+      (rawDestinatarioRecinto.grado ||
+        rawDestinatarioRecinto.nombre ||
+        rawDestinatarioRecinto.apellido ||
+        rawDestinatarioRecinto.ci)
+        ? {
+            grado: String(rawDestinatarioRecinto.grado ?? "").trim(),
+            nombre: String(rawDestinatarioRecinto.nombre ?? "").trim(),
+            apellido: String(rawDestinatarioRecinto.apellido ?? "").trim(),
+            ci: String(rawDestinatarioRecinto.ci ?? "").trim(),
+          }
+        : null;
 
     return {
       destinatarioTipo,
@@ -195,7 +215,9 @@ function parseDestinatarioPayload(
 
   if (destinatarioTipo === "EXTERNO") {
     const fallbackExterno = fallback?.destinatarioTipo === "EXTERNO" ? fallback : null;
-    const externoBase = sanitizeExternalPayload(candidate.destinatarioExterno as UpdateMovimientoPayload["destinatarioExterno"]);
+    const externoBase = sanitizeExternalPayload(
+      candidate.destinatarioExterno as UpdateMovimientoPayload["destinatarioExterno"]
+    );
     const externo = {
       grado: externoBase.grado || fallbackExterno?.externo.grado || "",
       nombre: externoBase.nombre || fallbackExterno?.externo.nombre || "",
@@ -203,14 +225,23 @@ function parseDestinatarioPayload(
       ci: externoBase.ci || fallbackExterno?.externo.ci || "",
       unidadDestino: externoBase.unidadDestino || fallbackExterno?.externo.unidadDestino || "",
     };
-    if (!externo.grado || !externo.nombre || !externo.apellido || !externo.unidadDestino || !isValidUruguayanCi(externo.ci)) return null;
+    if (
+      !externo.grado ||
+      !externo.nombre ||
+      !externo.apellido ||
+      !externo.unidadDestino ||
+      !isValidUruguayanCi(externo.ci)
+    )
+      return null;
     return {
       destinatarioTipo,
       externo,
     };
   }
 
-  const targetCis = parseTargetCiList(candidate.ci, candidate.ciList) ?? (fallback?.destinatarioTipo === "PERSONAL" ? fallback.targetCis : null);
+  const targetCis =
+    parseTargetCiList(candidate.ci, candidate.ciList) ??
+    (fallback?.destinatarioTipo === "PERSONAL" ? fallback.targetCis : null);
   if (!targetCis || targetCis.length === 0) return null;
   return {
     destinatarioTipo,
@@ -220,7 +251,7 @@ function parseDestinatarioPayload(
 
 function validateDestinatarioTipoForMovimiento(
   tipo: TipoMovimiento,
-  destinatarioPayload: ParsedDestinatarioPayload,
+  destinatarioPayload: ParsedDestinatarioPayload
 ) {
   if (tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION) {
     return destinatarioPayload.destinatarioTipo === "PERSONAL";
@@ -237,7 +268,10 @@ function isValidPayload(body: unknown): body is UpdateMovimientoPayload {
   const tipo = parseTipoMovimiento(candidate.tipo);
   if (!tipo) return false;
   const destinatarioPayload = parseDestinatarioPayload(candidate);
-  if (candidate.destinatarioTipo !== undefined && (!destinatarioPayload || !validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload))) {
+  if (
+    candidate.destinatarioTipo !== undefined &&
+    (!destinatarioPayload || !validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload))
+  ) {
     return false;
   }
   if (!Array.isArray(candidate.equipos) || candidate.equipos.length === 0) return false;
@@ -258,7 +292,9 @@ function formatUsuarioMovimientoLabel(usuario: {
   nombre: string;
   username: string;
 }) {
-  const label = `${usuario.rango?.abreviacion ?? ""} ${usuario.apellido}, ${usuario.nombre}`.replace(/\s+/g, " ").trim();
+  const label = `${usuario.rango?.abreviacion ?? ""} ${usuario.apellido}, ${usuario.nombre}`
+    .replace(/\s+/g, " ")
+    .trim();
   return label || usuario.username;
 }
 
@@ -273,14 +309,23 @@ function buildPersonalAuditDetail(personal: {
 }) {
   return {
     ci: personal.ci,
-    nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
+    nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2]
+      .filter(Boolean)
+      .join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
     bateria: personal.bateria?.nombre ?? null,
   };
 }
 
-function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombre: string; responsable?: Extract<ParsedDestinatarioPayload, { destinatarioTipo: "RECINTO" }>["recintoResponsable"] }) {
+function buildRecintoAuditDetail(recinto: {
+  clase: MovimientoRecintoClase;
+  nombre: string;
+  responsable?: Extract<
+    ParsedDestinatarioPayload,
+    { destinatarioTipo: "RECINTO" }
+  >["recintoResponsable"];
+}) {
   return {
     clase: recinto.clase,
     nombre: recinto.nombre,
@@ -289,7 +334,9 @@ function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombr
   };
 }
 
-function buildExternoAuditDetail(externo: ParsedDestinatarioPayload & { destinatarioTipo: "EXTERNO" }) {
+function buildExternoAuditDetail(
+  externo: ParsedDestinatarioPayload & { destinatarioTipo: "EXTERNO" }
+) {
   return {
     ci: externo.externo.ci,
     grado: externo.externo.grado,
@@ -330,10 +377,10 @@ const registroInclude = {
             },
           },
           bateria: {
-                          select: {
-                            nombre: true,
-                          },
-                        },
+            select: {
+              nombre: true,
+            },
+          },
         },
       },
     },
@@ -379,14 +426,17 @@ type RegistroWithRelations = Prisma.MovimientoGetPayload<{
   include: typeof registroInclude;
 }>;
 
-function buildExistingDestinatarioPayload(existing: RegistroWithRelations): ParsedDestinatarioPayload | null {
+function buildExistingDestinatarioPayload(
+  existing: RegistroWithRelations
+): ParsedDestinatarioPayload | null {
   if (existing.destinatarioRecinto) {
     return {
       destinatarioTipo: "RECINTO",
       recintoClase: existing.destinatarioRecinto.clase === "EXTERNO" ? "EXTERNO" : "INTERNO",
       recintoNombre: existing.destinatarioRecinto.nombre,
       recintoResponsable:
-        existing.destinatarioRecinto.responsableGrado || existing.destinatarioRecinto.responsableNombre
+        existing.destinatarioRecinto.responsableGrado ||
+        existing.destinatarioRecinto.responsableNombre
           ? {
               grado: existing.destinatarioRecinto.responsableGrado ?? "",
               nombre: existing.destinatarioRecinto.responsableNombre ?? "",
@@ -486,7 +536,10 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
 
   const destinatario = resolveDestinatarioMovimiento(movimiento);
   if (!destinatario) {
-    return NextResponse.json({ error: "El registro no tiene destinatario asociado." }, { status: 409 });
+    return NextResponse.json(
+      { error: "El registro no tiene destinatario asociado." },
+      { status: 409 }
+    );
   }
 
   return NextResponse.json({
@@ -494,7 +547,11 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
     fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
     tipo: movimiento.tipo,
     comentarios: movimiento.observaciones,
-    destinatarioTipo: movimiento.destinatarioRecinto ? "RECINTO" : movimiento.destinatarioExterno ? "EXTERNO" : "PERSONAL",
+    destinatarioTipo: movimiento.destinatarioRecinto
+      ? "RECINTO"
+      : movimiento.destinatarioExterno
+        ? "EXTERNO"
+        : "PERSONAL",
     recintoClase: movimiento.destinatarioRecinto?.clase ?? null,
     recintoNombre: movimiento.destinatarioRecinto?.nombre ?? null,
     ci: destinatario.ci,
@@ -525,7 +582,10 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
   const body = await req.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. Revisa tipo, fecha y equipos." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Payload invalido. Revisa tipo, fecha y equipos." },
+      { status: 400 }
+    );
   }
 
   const tipo = parseTipoMovimiento(body.tipo);
@@ -535,8 +595,14 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   }
   if (body.destinatarioTipo !== undefined) {
     const explicitDestinatario = parseDestinatarioPayload(body as Record<string, unknown>);
-    if (!explicitDestinatario || !validateDestinatarioTipoForMovimiento(tipo, explicitDestinatario)) {
-      return NextResponse.json({ error: "El tipo de destinatario no es valido para este movimiento." }, { status: 400 });
+    if (
+      !explicitDestinatario ||
+      !validateDestinatarioTipoForMovimiento(tipo, explicitDestinatario)
+    ) {
+      return NextResponse.json(
+        { error: "El tipo de destinatario no es valido para este movimiento." },
+        { status: 400 }
+      );
     }
   }
 
@@ -549,7 +615,10 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       equipoId: parseBigIntId(equipo.equipoId),
       cantidad: parseCantidad(equipo.cantidad),
     }))
-    .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{ equipoId: bigint; cantidad: number }>;
+    .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{
+    equipoId: bigint;
+    cantidad: number;
+  }>;
 
   if (parsedEquipos.length === 0) {
     return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
@@ -577,15 +646,24 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
   const currentDestinatarioPayload = buildExistingDestinatarioPayload(existing);
   if (!currentDestinatarioPayload) {
-    return NextResponse.json({ error: "El registro no tiene destinatario asociado." }, { status: 409 });
+    return NextResponse.json(
+      { error: "El registro no tiene destinatario asociado." },
+      { status: 409 }
+    );
   }
 
-  const nextDestinatarioPayload = parseDestinatarioPayload(body as Record<string, unknown>, currentDestinatarioPayload);
+  const nextDestinatarioPayload = parseDestinatarioPayload(
+    body as Record<string, unknown>,
+    currentDestinatarioPayload
+  );
   if (!nextDestinatarioPayload) {
     return NextResponse.json({ error: "Destinatario invalido." }, { status: 400 });
   }
   if (!validateDestinatarioTipoForMovimiento(tipo, nextDestinatarioPayload)) {
-    return NextResponse.json({ error: "El tipo de destinatario no es valido para este movimiento." }, { status: 400 });
+    return NextResponse.json(
+      { error: "El tipo de destinatario no es valido para este movimiento." },
+      { status: 400 }
+    );
   }
 
   const equipoIds = Array.from(dedupedEquipos.keys()).map((equipoId) => BigInt(equipoId));
@@ -599,7 +677,9 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
 
   const comentarios = body.comentarios?.trim() || null;
   const afectaStock = true;
-  const itemNombrePorId = new Map(equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
+  const itemNombrePorId = new Map(
+    equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre])
+  );
   const itemsNuevos = Array.from(dedupedEquipos.entries()).map(([equipoId, cantidad]) => ({
     equipoId,
     nombre: itemNombrePorId.get(equipoId) ?? "Equipo sin nombre",
@@ -614,17 +694,15 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   const totalUnidadesNuevo = itemsNuevos.reduce((acc, equipo) => acc + equipo.cantidad, 0);
   const requestMeta = readRequestMeta(req);
 
-  let nextPersonalRecord:
-    | {
-        ci: string;
-        apellido1: string;
-        apellido2: string | null;
-        nombre1: string;
-        nombre2: string | null;
-        rango: { nombreCompleto: string; abreviacion: string };
-        bateria: { nombre: string } | null;
-      }
-    | null = null;
+  let nextPersonalRecord: {
+    ci: string;
+    apellido1: string;
+    apellido2: string | null;
+    nombre1: string;
+    nombre2: string | null;
+    rango: { nombreCompleto: string; abreviacion: string };
+    bateria: { nombre: string } | null;
+  } | null = null;
 
   if (nextDestinatarioPayload.destinatarioTipo === "PERSONAL") {
     const personal = await prisma.personal.findUnique({
@@ -639,12 +717,16 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
           select: { nombreCompleto: true, abreviacion: true, tipo: true },
         },
         bateria: {
-                      select: { nombre: true },
-                    },
+          select: { nombre: true },
+        },
       },
     });
 
-    if (!personal || ((tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION) && personal.rango.tipo !== "SUBALTERNO")) {
+    if (
+      !personal ||
+      ((tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION) &&
+        personal.rango.tipo !== "SUBALTERNO")
+    ) {
       return NextResponse.json(
         {
           error:
@@ -652,7 +734,7 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
               ? "El destinatario interno debe ser un subalterno valido."
               : "El destinatario interno debe existir en personal.",
         },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -771,11 +853,11 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
                 destinatarioTipo: "EXTERNO",
                 externo: buildExternoAuditDetail(nextDestinatarioPayload),
               }
-          : {
-              destinatarioTipo: "PERSONAL",
-              ci: nextDestinatarioPayload.targetCis[0],
-              personal: nextPersonalRecord ? buildPersonalAuditDetail(nextPersonalRecord) : null,
-            },
+            : {
+                destinatarioTipo: "PERSONAL",
+                ci: nextDestinatarioPayload.targetCis[0],
+                personal: nextPersonalRecord ? buildPersonalAuditDetail(nextPersonalRecord) : null,
+              },
       tipoAnterior: existing.tipo,
       tipoNuevo: tipo,
       afectaStockAnterior: existing.afectaStock,
@@ -803,7 +885,9 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     });
 
     const existingPersonal = existing.destinatarioPersonal?.personal ?? null;
-    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
+      .replace(/\s+/g, " ")
+      .trim();
     if (
       nextDestinatarioPayload.destinatarioTipo === "PERSONAL" &&
       nextPersonalRecord &&
@@ -836,7 +920,10 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       ok: true,
       registroId: existing.movimientoId.toString(),
       destinatarioTipo: nextDestinatarioPayload.destinatarioTipo,
-      ci: nextDestinatarioPayload.destinatarioTipo === "PERSONAL" ? nextDestinatarioPayload.targetCis[0] : "",
+      ci:
+        nextDestinatarioPayload.destinatarioTipo === "PERSONAL"
+          ? nextDestinatarioPayload.targetCis[0]
+          : "",
       fecha: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
     });
   } catch {
@@ -848,7 +935,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
   const auth = await authorizeRequest(req, "delete_data");
   if (!auth.ok) return auth.response;
   if (!isAdminRole(auth.user.rol)) {
-    return NextResponse.json({ error: "Solo el administrador puede eliminar registros." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Solo el administrador puede eliminar registros." },
+      { status: 403 }
+    );
   }
 
   const { registroId: movimientoIdParam } = await context.params;
@@ -877,7 +967,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
   const existingExterno = existing.destinatarioExterno?.personaExterna ?? null;
   const existingRecinto = existing.destinatarioRecinto ?? null;
   if (!existingPersonal && !existingRecinto && !existingExterno) {
-    return NextResponse.json({ error: "El registro no tiene destinatario asociado." }, { status: 409 });
+    return NextResponse.json(
+      { error: "El registro no tiene destinatario asociado." },
+      { status: 409 }
+    );
   }
 
   const itemsEliminados = existing.equipos.map((detail) => ({
@@ -899,7 +992,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
       entidad: "REGISTRO",
       entidadId: existing.movimientoId.toString(),
       detalle: {
-        evento: existing.tipo === MOVIMIENTO_TIPO_ASIGNACION ? "MOVIMIENTO_ASIGNACION_ELIMINADO" : "MOVIMIENTO_VESTUARIO_ELIMINADO",
+        evento:
+          existing.tipo === MOVIMIENTO_TIPO_ASIGNACION
+            ? "MOVIMIENTO_ASIGNACION_ELIMINADO"
+            : "MOVIMIENTO_VESTUARIO_ELIMINADO",
         destinatario: buildExistingDestinatarioAuditDetail(existing),
         ci: existingPersonal?.ci ?? null,
         personal: existingPersonal ? buildPersonalAuditDetail(existingPersonal) : null,
@@ -916,7 +1012,9 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
     });
 
     if (existingPersonal) {
-      const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+      const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
+        .replace(/\s+/g, " ")
+        .trim();
       await Promise.allSettled([
         sendPersonalMovementEmailNotification({
           request: req,

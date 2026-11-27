@@ -18,7 +18,7 @@ export function buildSubalternoPersonalData(input: BuildSubalternoPersonalDataIn
     rangoId: input.rangoId,
     esReingreso,
     fechaIngreso: input.fechaIngreso ?? null,
-    fechaIngresoOriginal: esReingreso ? input.fechaIngresoOriginal ?? null : null,
+    fechaIngresoOriginal: esReingreso ? (input.fechaIngresoOriginal ?? null) : null,
     bateriaId: input.bateriaId ?? null,
   };
 }

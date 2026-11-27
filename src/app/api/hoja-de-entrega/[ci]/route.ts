@@ -8,7 +8,8 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
   const { ci } = await context.params;
   const ciValue = decodeURIComponent(ci).trim();
   if (!ciValue) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
-  if (!isValidUruguayanCi(ciValue)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciValue))
+    return NextResponse.json({ error: "CI invalida." }, { status: 400 });
 
   const user = await getUserFromRequest();
   if (!user) {

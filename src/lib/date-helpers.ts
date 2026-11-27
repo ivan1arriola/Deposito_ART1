@@ -127,7 +127,11 @@ export function parseDateInput(value: string): ParsedDateInput {
     day,
     valid: parts !== null,
     complete,
-    displayValue: parts ? formatParts(parts) : displayMatch ? normalizedInput : normalizeDateInput(trimmed),
+    displayValue: parts
+      ? formatParts(parts)
+      : displayMatch
+        ? normalizedInput
+        : normalizeDateInput(trimmed),
     isoValue: parts ? formatIsoParts(parts) : null,
     sortKey: parts ? formatIsoParts(parts).replace(/-/g, "") : null,
     date: parts ? buildUtcDate(parts) : null,
@@ -141,7 +145,8 @@ export function dateInputToDate(value: string) {
 export function compareDateInputValues(left: string, right: string) {
   const leftParsed = parseDateInput(left);
   const rightParsed = parseDateInput(right);
-  if (!leftParsed.valid || !rightParsed.valid || !leftParsed.sortKey || !rightParsed.sortKey) return null;
+  if (!leftParsed.valid || !rightParsed.valid || !leftParsed.sortKey || !rightParsed.sortKey)
+    return null;
   return leftParsed.sortKey.localeCompare(rightParsed.sortKey);
 }
 
@@ -188,7 +193,10 @@ export function formatDateOnlyFromDate(value: Date | null | undefined) {
   return formatParts(utcDateParts(value));
 }
 
-export function formatDateOnlyForDisplay(value: string | Date | null | undefined, fallback = ""): string {
+export function formatDateOnlyForDisplay(
+  value: string | Date | null | undefined,
+  fallback = ""
+): string {
   const parts = extractDateParts(value);
   if (!parts) {
     return typeof value === "string" ? value.trim() || fallback : fallback;
@@ -196,7 +204,10 @@ export function formatDateOnlyForDisplay(value: string | Date | null | undefined
   return formatParts(parts);
 }
 
-export function formatDateTimeForDisplay(value: string | Date | null | undefined, fallback = ""): string {
+export function formatDateTimeForDisplay(
+  value: string | Date | null | undefined,
+  fallback = ""
+): string {
   if (!value) return fallback;
 
   if (typeof value === "string") {

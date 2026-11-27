@@ -39,7 +39,10 @@ export function buildResumenUnidad(personal: Personal[]): ResumenBateria {
   };
 }
 
-export function buildResumenTallasPorBateria(baterias: Bateria[], personal: Personal[]): ResumenBateria[] {
+export function buildResumenTallasPorBateria(
+  baterias: Bateria[],
+  personal: Personal[]
+): ResumenBateria[] {
   const bateriasConEtiqueta = [
     ...baterias
       .map((bateria) => ({ key: String(bateria.bateriaId), nombre: bateria.nombre }))
@@ -53,7 +56,10 @@ export function buildResumenTallasPorBateria(baterias: Bateria[], personal: Pers
   }
 
   for (const persona of personal) {
-    const key = persona.bateriaId === null || persona.bateriaId === undefined ? "NONE" : String(persona.bateriaId);
+    const key =
+      persona.bateriaId === null || persona.bateriaId === undefined
+        ? "NONE"
+        : String(persona.bateriaId);
     const bucket = personalPorBateria.get(key);
     if (bucket) {
       bucket.push(persona);
@@ -85,7 +91,9 @@ export function buildResumenOficialesSuboficiales(oficialesSuboficiales: Oficial
       counter.set(value, (counter.get(value) ?? 0) + 1);
     }
 
-    const tallas = Array.from(new Set([...oficialesCounter.keys(), ...suboficialesCounter.keys()])).sort((a, b) => {
+    const tallas = Array.from(
+      new Set([...oficialesCounter.keys(), ...suboficialesCounter.keys()])
+    ).sort((a, b) => {
       if (a === "Sin dato") return 1;
       if (b === "Sin dato") return -1;
       return a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
@@ -109,7 +117,9 @@ export function findSubalternosConTallesIncompletos(personal: Personal[]): Missi
       const talles = tallasMap(persona.tallas);
       const missing = TALLA_KEYS.filter((key) => !talles[key] || talles[key] === "-");
       if (missing.length === 0) return null;
-      const apellidos = `${persona.apellido1} ${persona.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
+      const apellidos = `${persona.apellido1} ${persona.apellido2 ?? ""}`
+        .replace(/\s+/g, " ")
+        .trim();
       const nombres = `${persona.nombre1} ${persona.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
       const label = `${persona.rango.abreviacion} ${apellidos}, ${nombres}`.trim();
       return {
@@ -121,13 +131,17 @@ export function findSubalternosConTallesIncompletos(personal: Personal[]): Missi
     .filter((entry): entry is MissingTallasEntry => entry !== null);
 }
 
-export function findOficialesSuboficialesConTallesIncompletos(oficialesSuboficiales: OficialSuboficial[]): MissingTallasEntry[] {
+export function findOficialesSuboficialesConTallesIncompletos(
+  oficialesSuboficiales: OficialSuboficial[]
+): MissingTallasEntry[] {
   return oficialesSuboficiales
     .map((registro) => {
       const talles = tallasMap(registro.tallas);
       const missing = TALLA_KEYS.filter((key) => !talles[key] || talles[key] === "-");
       if (missing.length === 0) return null;
-      const apellidos = `${registro.apellido1} ${registro.apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
+      const apellidos = `${registro.apellido1} ${registro.apellido2 ?? ""}`
+        .replace(/\s+/g, " ")
+        .trim();
       const nombres = `${registro.nombre1} ${registro.nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
       const label = `${registro.gradoMando.abreviacion} ${apellidos}, ${nombres}`.trim();
       return {

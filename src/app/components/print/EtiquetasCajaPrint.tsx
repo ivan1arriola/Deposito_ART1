@@ -172,7 +172,10 @@ function getLayoutClass(totalEquipos: number): string {
   return "grid-cols-3";
 }
 
-function getCajaIdentifierSizeClass(identificador: string, orientacion: EtiquetaOrientacion): string {
+function getCajaIdentifierSizeClass(
+  identificador: string,
+  orientacion: EtiquetaOrientacion
+): string {
   const length = identificador.trim().length;
 
   if (orientacion === "vertical") {
@@ -210,7 +213,7 @@ function getMetricValueSizeClass(value: number): string {
 function getNameSizeClass(
   totalEquipos: number,
   totalCodigos: number,
-  orientacion: EtiquetaOrientacion,
+  orientacion: EtiquetaOrientacion
 ): string {
   if (totalEquipos === 1) {
     if (orientacion === "vertical") {
@@ -238,7 +241,7 @@ function getNameSizeClass(
 function getQtySizeClass(
   totalEquipos: number,
   totalCodigos: number,
-  orientacion: EtiquetaOrientacion,
+  orientacion: EtiquetaOrientacion
 ): string {
   if (totalEquipos === 1) {
     if (orientacion === "vertical") {
@@ -261,7 +264,11 @@ function getQtySizeClass(
   return "text-[32px]";
 }
 
-function getCodigoLayout(totalCodigos: number, orientacion: EtiquetaOrientacion, totalEquipos: number): CodigoLayout {
+function getCodigoLayout(
+  totalCodigos: number,
+  orientacion: EtiquetaOrientacion,
+  totalEquipos: number
+): CodigoLayout {
   if (totalEquipos === 1) {
     if (orientacion === "vertical") {
       if (totalCodigos <= 4) {
@@ -499,7 +506,8 @@ function EquipoCard({
   totalEquipos: number;
   orientacion: EtiquetaOrientacion;
 }) {
-  const codigos = equipo.codigos.length > 0 ? equipo.codigos : [{ codigo: "Sin código", talle: "-" }];
+  const codigos =
+    equipo.codigos.length > 0 ? equipo.codigos : [{ codigo: "Sin código", talle: "-" }];
   const codigoLayout = getCodigoLayout(codigos.length, orientacion, totalEquipos);
   const codigoColumns = buildCodigoColumns(codigos, codigoLayout.columns);
   const visibleCodigoColumns = codigoColumns.length;
@@ -523,7 +531,7 @@ function EquipoCard({
           className={`font-black uppercase tracking-tight break-words ${getNameSizeClass(
             totalEquipos,
             codigos.length,
-            orientacion,
+            orientacion
           )}`}
         >
           {equipo.nombre}
@@ -537,7 +545,9 @@ function EquipoCard({
       </div>
 
       <div className="min-h-0 grid grid-rows-[auto_minmax(0,1fr)]">
-        <div className={`bg-neutral-200 ${codigoHeaderPaddingClass} border-t border-b border-neutral-300`}>
+        <div
+          className={`bg-neutral-200 ${codigoHeaderPaddingClass} border-t border-b border-neutral-300`}
+        >
           <div
             className="grid gap-x-3"
             style={{ gridTemplateColumns: `repeat(${visibleCodigoColumns}, minmax(0,1fr))` }}
@@ -550,9 +560,15 @@ function EquipoCard({
                   gridTemplateColumns: `minmax(0,1fr) ${codigoLayout.separatorWidth} ${codigoLayout.talleColumnWidth}`,
                 }}
               >
-                <div className={`${codigoHeaderClass} font-extrabold uppercase tracking-tight`}>Código:</div>
+                <div className={`${codigoHeaderClass} font-extrabold uppercase tracking-tight`}>
+                  Código:
+                </div>
                 <div className="h-full w-px bg-black/40 justify-self-center" aria-hidden="true" />
-                <div className={`${codigoHeaderClass} font-extrabold uppercase tracking-tight text-right`}>Talle:</div>
+                <div
+                  className={`${codigoHeaderClass} font-extrabold uppercase tracking-tight text-right`}
+                >
+                  Talle:
+                </div>
               </div>
             ))}
           </div>
@@ -563,12 +579,17 @@ function EquipoCard({
           style={{ gridTemplateColumns: `repeat(${visibleCodigoColumns}, minmax(0,1fr))` }}
         >
           {codigoColumns.map((column, columnIndex) => (
-            <div key={`${equipo.nombre}-col-${columnIndex}`} className={`${codigoLayout.rowGapClass}`}>
+            <div
+              key={`${equipo.nombre}-col-${columnIndex}`}
+              className={`${codigoLayout.rowGapClass}`}
+            >
               {column.map((codigo, index) => (
                 <div
                   key={`${equipo.nombre}-${codigo.codigo}-${codigo.talle}-${columnIndex}-${index}`}
                   className={`grid gap-2 equipos-end ${
-                    index < column.length - 1 ? `border-b border-black/15 ${codigoLayout.rowPaddingClass}` : ""
+                    index < column.length - 1
+                      ? `border-b border-black/15 ${codigoLayout.rowPaddingClass}`
+                      : ""
                   }`}
                   style={{
                     gridTemplateColumns: `minmax(0,1fr) ${codigoLayout.separatorWidth} ${codigoLayout.talleColumnWidth}`,
@@ -629,7 +650,9 @@ export function EtiquetaCajaPrintSheet({
           <InstitutionalPrintHeader printedAt={institutionalPrintDate} compact />
           <div className="grid grid-cols-[1fr_1fr] gap-3 shrink-0">
             <div className="rounded-[14px] border-[2px] border-black px-4 py-3 flex flex-col justify-center min-w-0">
-              <div className="text-[13px] font-extrabold uppercase tracking-tight">Etiqueta de caja</div>
+              <div className="text-[13px] font-extrabold uppercase tracking-tight">
+                Etiqueta de caja
+              </div>
               <div
                 className={`${getCajaIdentifierSizeClass(cajaModel.identificador, orientacion)} font-black uppercase leading-[1.02] tracking-tight break-words pt-[2px] pb-[1px]`}
                 style={PRINT_SAFE_NUMERIC_STYLE}
@@ -653,7 +676,9 @@ export function EtiquetaCajaPrintSheet({
             <div className="rounded-[14px] border-[2px] border-black">
               <div className="grid grid-cols-2 divide-x-[2px] divide-black h-full">
                 <div className="px-4 py-2">
-                  <div className="text-[11px] font-extrabold uppercase tracking-tight">Equipos distintos</div>
+                  <div className="text-[11px] font-extrabold uppercase tracking-tight">
+                    Equipos distintos
+                  </div>
                   <div
                     className={`${getMetricValueSizeClass(totalEquipos)} font-black leading-[1.05] pt-[1px]`}
                     style={PRINT_SAFE_NUMERIC_STYLE}
@@ -662,7 +687,9 @@ export function EtiquetaCajaPrintSheet({
                   </div>
                 </div>
                 <div className="px-4 py-2">
-                  <div className="text-[11px] font-extrabold uppercase tracking-tight">Unidades totales</div>
+                  <div className="text-[11px] font-extrabold uppercase tracking-tight">
+                    Unidades totales
+                  </div>
                   <div
                     className={`${getMetricValueSizeClass(totalUnidades)} font-black leading-[1.05] pt-[1px]`}
                     style={PRINT_SAFE_NUMERIC_STYLE}
@@ -675,7 +702,9 @@ export function EtiquetaCajaPrintSheet({
 
             <div className="rounded-[14px] border-[2px] border-black px-4 py-2 flex equipos-center min-w-0">
               <div className="min-w-0">
-                <div className="text-[11px] font-extrabold uppercase tracking-tight">Códigos registrados</div>
+                <div className="text-[11px] font-extrabold uppercase tracking-tight">
+                  Códigos registrados
+                </div>
                 <div
                   className={`${getMetricValueSizeClass(totalCodigos)} font-black leading-[1.05] pt-[1px]`}
                   style={PRINT_SAFE_NUMERIC_STYLE}
@@ -687,13 +716,17 @@ export function EtiquetaCajaPrintSheet({
           </div>
 
           <div className="shrink-0">
-            <div className="text-[12px] font-extrabold uppercase tracking-tight">Contenido de la caja</div>
+            <div className="text-[12px] font-extrabold uppercase tracking-tight">
+              Contenido de la caja
+            </div>
           </div>
 
           <div className={`grid ${getLayoutClass(totalEquipos)} gap-3 flex-1 min-h-0 auto-rows-fr`}>
             {cajaModel.equipos.length === 0 ? (
               <div className="rounded-[14px] border-[2px] border-dashed border-black px-4 py-3 flex equipos-center justify-center col-span-full">
-                <span className="text-[24px] font-black uppercase tracking-tight">Sin equipos registrados</span>
+                <span className="text-[24px] font-black uppercase tracking-tight">
+                  Sin equipos registrados
+                </span>
               </div>
             ) : (
               cajaModel.equipos.map((equipo, index) => (

@@ -4,16 +4,8 @@
     "src/app/**/{page,layout,loading,error,not-found,route,global-error,template,default}.{ts,tsx}",
     "scripts/*.{ts,mjs}"
   ],
-  "project": [
-    "src/**/*.{ts,tsx,css,prisma}",
-    "tests/**/*.{ts,tsx}",
-    "scripts/**/*.{ts,mjs}"
-  ],
-  "ignore": [
-    "src/lib/server-only-mock.ts"
-  ],
-  "ignoreDependencies": [
-    "@prisma/client"
-  ],
+  "project": ["src/**/*.{ts,tsx,css,prisma}", "tests/**/*.{ts,tsx}", "scripts/**/*.{ts,mjs}"],
+  "ignore": ["src/lib/server-only-mock.ts"],
+  "ignoreDependencies": ["@prisma/client"],
   "ignoreExportsUsedInFile": true
 }

@@ -59,7 +59,7 @@ export type FormulariosPrestamosViewProps = {
       | "fechaPrestamo"
       | "fechaEstimadaDevolucionTexto"
       | "comentarios",
-    value: string,
+    value: string
   ) => void;
   onPrestamoItemChange: (index: number, field: keyof PrestamoDraftEquipo, value: string) => void;
   onAddPrestamoItem: () => void;
@@ -69,7 +69,11 @@ export type FormulariosPrestamosViewProps = {
   onReturnPrestamo: (
     prestamoId: string,
     fechaDevolucion: string,
-    equipos?: Array<{ equipoId: string; estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion?: string }>,
+    equipos?: Array<{
+      equipoId: string;
+      estadoDevolucion: PrestamoEstadoEquipo;
+      comentarioDevolucion?: string;
+    }>
   ) => void;
   onEditPrestamo: (prestamoId: string, payload: PrestamoEditPayload) => Promise<void>;
   onDeletePrestamo: (prestamoId: string) => void;

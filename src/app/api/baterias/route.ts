@@ -48,12 +48,15 @@ export async function POST(req: Request) {
   if (!nombre || orden === null) {
     return NextResponse.json(
       { error: "Payload invalido. 'nombre' es obligatorio; 'orden' debe ser entero positivo." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   if (isLegacyBatteryName(nombre)) {
-    return NextResponse.json({ error: "Esa categoria corresponde a un grado, no a una bateria." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Esa categoria corresponde a un grado, no a una bateria." },
+      { status: 400 }
+    );
   }
 
   try {
@@ -68,14 +71,14 @@ export async function POST(req: Request) {
           orden: existing.length + 1,
         },
       });
-      const visibleIds = existing.filter((entry) => !isLegacyBatteryName(entry.nombre)).map((entry) => entry.bateriaId);
-      const legacyIds = existing.filter((entry) => isLegacyBatteryName(entry.nombre)).map((entry) => entry.bateriaId);
+      const visibleIds = existing
+        .filter((entry) => !isLegacyBatteryName(entry.nombre))
+        .map((entry) => entry.bateriaId);
+      const legacyIds = existing
+        .filter((entry) => isLegacyBatteryName(entry.nombre))
+        .map((entry) => entry.bateriaId);
       const orderedIds = [
-        ...moveCatalogId(
-        visibleIds,
-        createdBateria.bateriaId,
-        orden ?? existing.length + 1,
-        ),
+        ...moveCatalogId(visibleIds, createdBateria.bateriaId, orden ?? existing.length + 1),
         ...legacyIds,
       ];
 
@@ -99,7 +102,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json(created, { status: 201 });
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
       return NextResponse.json({ error: "La bateria ya existe." }, { status: 409 });
     }
 

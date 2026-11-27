@@ -78,7 +78,7 @@ function mockReferenceData() {
       ["PANTALON", 3],
       ["KEPI", 4],
       ["CALZADO", 5],
-    ]) as never,
+    ]) as never
   );
 }
 
@@ -118,7 +118,9 @@ describe("POST /api/personal", () => {
     vi.clearAllMocks();
     mockAuthorizedUser();
     mockReferenceData();
-    vi.mocked(prisma.equipo.findMany).mockResolvedValue([{ equipoId: BigInt(101), nombre: "Casco balistico" }] as never);
+    vi.mocked(prisma.equipo.findMany).mockResolvedValue([
+      { equipoId: BigInt(101), nombre: "Casco balistico" },
+    ] as never);
     mockTx.personal.create.mockResolvedValue({ ci: "51067524" });
     mockTx.personal.findUnique.mockResolvedValue({
       ci: "51067524",
@@ -258,7 +260,7 @@ describe("POST /api/personal", () => {
           fechaIngreso: "20/05/2024",
           fechaIngresoOriginal: "10/03/2021",
         }),
-      }),
+      })
     );
     expect(logAudit).toHaveBeenNthCalledWith(
       2,
@@ -275,7 +277,7 @@ describe("POST /api/personal", () => {
           totalUnidades: 2,
           equipos: [{ equipoId: "101", nombre: "Casco balistico", cantidad: 2 }],
         }),
-      }),
+      })
     );
   });
 
@@ -306,7 +308,8 @@ describe("POST /api/personal", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: "Payload invalido. Revisa CI uruguaya valida, apellido1, nombre1 y rangoId (grado del personal).",
+      error:
+        "Payload invalido. Revisa CI uruguaya valida, apellido1, nombre1 y rangoId (grado del personal).",
     });
   });
 
@@ -315,7 +318,7 @@ describe("POST /api/personal", () => {
       createRequest({
         ...createValidPayload(),
         telefonoContacto: "12345",
-      }),
+      })
     );
 
     expect(response.status).toBe(400);
@@ -329,7 +332,7 @@ describe("POST /api/personal", () => {
       createRequest({
         ...createValidPayload(),
         fechaIngreso: "",
-      }),
+      })
     );
 
     expect(response.status).toBe(400);
@@ -344,7 +347,7 @@ describe("POST /api/personal", () => {
         ...createValidPayload(),
         fechaIngreso: "10/03/2021",
         fechaIngresoOriginal: "20/05/2024",
-      }),
+      })
     );
 
     expect(response.status).toBe(400);
@@ -361,7 +364,7 @@ describe("POST /api/personal", () => {
           ...createValidPayload().tallas,
           KEPI: "99",
         },
-      }),
+      })
     );
 
     expect(response.status).toBe(400);

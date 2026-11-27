@@ -33,7 +33,9 @@ export function ChangePasswordModal({
   return (
     <ModalFrame onClose={onClose}>
       <h3 className="text-base font-semibold text-stone-900">Cambiar contraseña</h3>
-      <p className="mt-1 text-xs text-stone-600">Ingresa tu contraseña actual y la nueva contraseña.</p>
+      <p className="mt-1 text-xs text-stone-600">
+        Ingresa tu contraseña actual y la nueva contraseña.
+      </p>
 
       <div className="mt-3 space-y-2">
         <input

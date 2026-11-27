@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
   try {
     const rows = await prisma.$queryRawUnsafe<DbRow[]>(
-      "select current_database() as db, current_user as db_user;",
+      "select current_database() as db, current_user as db_user;"
     );
     const row = rows[0] ?? null;
 

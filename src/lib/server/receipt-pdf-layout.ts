@@ -2,7 +2,14 @@ import "server-only";
 
 import { readFile } from "fs/promises";
 import path from "path";
-import { PDFDocument, StandardFonts, rgb, type PDFImage, type PDFFont, type PDFPage } from "pdf-lib";
+import {
+  PDFDocument,
+  StandardFonts,
+  rgb,
+  type PDFImage,
+  type PDFFont,
+  type PDFPage,
+} from "pdf-lib";
 
 import { normalizeOutputText } from "@/lib/spanish-text";
 
@@ -96,7 +103,12 @@ export function formatLongDateUy(value: Date) {
   }).format(value);
 }
 
-export function fullName(apellido1: string, apellido2: string | null, nombre1: string, nombre2: string | null) {
+export function fullName(
+  apellido1: string,
+  apellido2: string | null,
+  nombre1: string,
+  nombre2: string | null
+) {
   const apellidos = `${apellido1} ${apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
   const nombres = `${nombre1} ${nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
   return `${apellidos}, ${nombres}`.replace(/\s+/g, " ").trim();
@@ -107,7 +119,9 @@ function firstWord(value: string) {
 }
 
 export function militaryShortLabel(gradoAbreviacion: string, apellido: string, nombre: string) {
-  return `${gradoAbreviacion} ${firstWord(apellido)} ${firstWord(nombre)}`.replace(/\s+/g, " ").trim();
+  return `${gradoAbreviacion} ${firstWord(apellido)} ${firstWord(nombre)}`
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function drawTextAt(
@@ -117,7 +131,7 @@ export function drawTextAt(
   x: number,
   top: number,
   size: number,
-  color = rgb(0, 0, 0),
+  color = rgb(0, 0, 0)
 ) {
   page.drawText(sanitizeForPdf(text), { x, y: yForTop(top, size), size, font, color });
 }
@@ -129,7 +143,7 @@ export function drawTextRight(
   rightX: number,
   top: number,
   size: number,
-  color = rgb(0, 0, 0),
+  color = rgb(0, 0, 0)
 ) {
   const safe = sanitizeForPdf(text);
   const width = font.widthOfTextAtSize(safe, size);
@@ -144,7 +158,7 @@ export function drawCenteredText(
   width: number,
   top: number,
   size: number,
-  color = rgb(0, 0, 0),
+  color = rgb(0, 0, 0)
 ) {
   const safe = sanitizeForPdf(text);
   const textWidth = font.widthOfTextAtSize(safe, size);
@@ -152,7 +166,14 @@ export function drawCenteredText(
   page.drawText(safe, { x: drawX, y: yForTop(top, size), size, font, color });
 }
 
-export function drawRectTop(page: PDFPage, x: number, top: number, width: number, height: number, border = rgb(0, 0, 0)) {
+export function drawRectTop(
+  page: PDFPage,
+  x: number,
+  top: number,
+  width: number,
+  height: number,
+  border = rgb(0, 0, 0)
+) {
   page.drawRectangle({
     x,
     y: A4_HEIGHT - top - height,
@@ -163,7 +184,13 @@ export function drawRectTop(page: PDFPage, x: number, top: number, width: number
   });
 }
 
-export function drawHorizontalLine(page: PDFPage, x: number, yTop: number, width: number, thickness = 1) {
+export function drawHorizontalLine(
+  page: PDFPage,
+  x: number,
+  yTop: number,
+  width: number,
+  thickness = 1
+) {
   page.drawLine({
     start: { x, y: A4_HEIGHT - yTop },
     end: { x: x + width, y: A4_HEIGHT - yTop },
@@ -237,7 +264,7 @@ function drawWatermark(page: PDFPage, assets: ReceiptPdfAssets, innerX: number, 
   const native = assets.watermarkImage.scale(1);
   const scale = Math.min(
     (innerW * WATERMARK_MAX_WIDTH_RATIO) / native.width,
-    (frameH * WATERMARK_MAX_HEIGHT_RATIO) / native.height,
+    (frameH * WATERMARK_MAX_HEIGHT_RATIO) / native.height
   );
 
   const width = native.width * scale;
@@ -260,9 +287,15 @@ export function drawReceiptHeaderAndFrame(
   config: ReceiptHeaderConfig,
   yStart: number,
   innerX = PAGE_MARGIN_X + RECEIPT_PADDING,
-  innerW = INNER_WIDTH,
+  innerW = INNER_WIDTH
 ) {
-  drawRectTop(page, PAGE_MARGIN_X, PAGE_MARGIN_Y, A4_WIDTH - PAGE_MARGIN_X * 2, A4_HEIGHT - PAGE_MARGIN_Y * 2);
+  drawRectTop(
+    page,
+    PAGE_MARGIN_X,
+    PAGE_MARGIN_Y,
+    A4_WIDTH - PAGE_MARGIN_X * 2,
+    A4_HEIGHT - PAGE_MARGIN_Y * 2
+  );
   drawWatermark(page, assets, innerX, innerW);
 
   const topUnit = config.topUnit ?? DEFAULT_TOP_UNIT;
@@ -284,9 +317,24 @@ export function drawReceiptHeaderAndFrame(
   drawTextAt(page, assets.bold, topUnit, titleAreaX, topUnitTop, topUnitSize);
   drawTextRight(page, assets.bold, config.headerDateLabel, metaRightX, topUnitTop, topUnitSize);
   drawCenteredText(page, assets.bold, title, titleAreaX, titleAreaW, titleTop, titleSize);
-  drawCenteredText(page, assets.regular, subtitle, titleAreaX, titleAreaW, subtitleTop, subtitleSize);
+  drawCenteredText(
+    page,
+    assets.regular,
+    subtitle,
+    titleAreaX,
+    titleAreaW,
+    subtitleTop,
+    subtitleSize
+  );
 
-  drawTextRight(page, assets.bold, `${config.documentLabel}: ${config.documentNumber}`, metaRightX, titleTop + 3, 9);
+  drawTextRight(
+    page,
+    assets.bold,
+    `${config.documentLabel}: ${config.documentNumber}`,
+    metaRightX,
+    titleTop + 3,
+    9
+  );
   drawTextRight(page, assets.bold, `Hora: ${config.createdTime}`, metaRightX, titleTop + 14, 9);
 
   const dividerY = yStart + 47;
@@ -303,11 +351,18 @@ export function drawField(
   width: number,
   height: number,
   label: string,
-  value: string,
+  value: string
 ) {
   drawRectTop(page, x, top, width, height);
   drawTextAt(page, assets.bold, label.toUpperCase(), x + 6, top + 4, 7);
-  drawTextAt(page, assets.regular, fitOneLine(value, width - 12, assets.regular, 10), x + 6, top + 16, 10);
+  drawTextAt(
+    page,
+    assets.regular,
+    fitOneLine(value, width - 12, assets.regular, 10),
+    x + 6,
+    top + 16,
+    10
+  );
 }
 
 export function drawSectionTitle(
@@ -316,7 +371,7 @@ export function drawSectionTitle(
   x: number,
   top: number,
   width: number,
-  text: string,
+  text: string
 ) {
   drawRectTop(page, x, top, width, 16);
   drawTextAt(page, assets.bold, text.toUpperCase(), x + 6, top + 4, 8);
@@ -330,7 +385,7 @@ export function drawFieldMultiline(
   top: number,
   width: number,
   label: string,
-  value: string,
+  value: string
 ) {
   const lines = wrapText(normalizeReceiptValue(value), width - 12, assets.regular, 10);
   const lineHeight = 10;
@@ -351,7 +406,7 @@ export function drawAcknowledgementFooter(
   startY: number,
   config: ReceiptAcknowledgementConfig,
   innerX = PAGE_MARGIN_X + RECEIPT_PADDING,
-  innerW = INNER_WIDTH,
+  innerW = INNER_WIDTH
 ) {
   let y = startY + 8;
   y = drawSectionTitle(page, assets, innerX, y, innerW, config.sectionTitle ?? "Constancia");
@@ -370,7 +425,15 @@ export function drawAcknowledgementFooter(
   drawHorizontalLine(page, innerX, lineY, signW, 1);
   drawHorizontalLine(page, innerX + signW + signGap, lineY, signW, 1);
   drawCenteredText(page, assets.bold, config.leftSignatureTitle, innerX, signW, lineY + 4, 9);
-  drawCenteredText(page, assets.bold, config.rightSignatureTitle, innerX + signW + signGap, signW, lineY + 4, 9);
+  drawCenteredText(
+    page,
+    assets.bold,
+    config.rightSignatureTitle,
+    innerX + signW + signGap,
+    signW,
+    lineY + 4,
+    9
+  );
 
   let leftEndY = lineY + 34;
   if (Array.isArray(config.leftSignatureName)) {
@@ -385,11 +448,27 @@ export function drawAcknowledgementFooter(
   let rightEndY = lineY + 34;
   if (Array.isArray(config.rightSignatureName)) {
     config.rightSignatureName.forEach((nameLine, idx) => {
-      drawCenteredText(page, assets.regular, nameLine, innerX + signW + signGap, signW, lineY + 16 + (idx * 12), 8);
+      drawCenteredText(
+        page,
+        assets.regular,
+        nameLine,
+        innerX + signW + signGap,
+        signW,
+        lineY + 16 + idx * 12,
+        8
+      );
     });
     rightEndY = lineY + 34 + (config.rightSignatureName.length - 1) * 12;
   } else {
-    drawCenteredText(page, assets.regular, config.rightSignatureName, innerX + signW + signGap, signW, lineY + 16, 8);
+    drawCenteredText(
+      page,
+      assets.regular,
+      config.rightSignatureName,
+      innerX + signW + signGap,
+      signW,
+      lineY + 16,
+      8
+    );
   }
 
   y = Math.max(leftEndY, rightEndY);
@@ -405,7 +484,15 @@ export function drawAcknowledgementFooter(
     }
 
     if (config.rightStampTitle) {
-      drawCenteredText(page, assets.bold, config.rightStampTitle, innerX + stampW + stampGap, stampW, y + 2, 8);
+      drawCenteredText(
+        page,
+        assets.bold,
+        config.rightStampTitle,
+        innerX + stampW + stampGap,
+        stampW,
+        y + 2,
+        8
+      );
       drawRectTop(page, innerX + stampW + stampGap, y + 12, stampW, stampH);
     }
 
@@ -414,11 +501,24 @@ export function drawAcknowledgementFooter(
     y += 10;
   }
 
-  drawTextRight(page, assets.regular, config.footerNote, innerX + innerW - 2, y, 7, rgb(0.35, 0.35, 0.35));
+  drawTextRight(
+    page,
+    assets.regular,
+    config.footerNote,
+    innerX + innerW - 2,
+    y,
+    7,
+    rgb(0.35, 0.35, 0.35)
+  );
   return y + 12;
 }
 
-export function drawReceiptPageNumber(page: PDFPage, assets: ReceiptPdfAssets, pageNumber: number, totalPages: number) {
+export function drawReceiptPageNumber(
+  page: PDFPage,
+  assets: ReceiptPdfAssets,
+  pageNumber: number,
+  totalPages: number
+) {
   const label = `Hoja ${pageNumber}/${totalPages}`;
   const size = 8;
   const textWidth = assets.bold.widthOfTextAtSize(sanitizeForPdf(label), size);

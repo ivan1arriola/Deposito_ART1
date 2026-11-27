@@ -15,12 +15,18 @@ export async function GET(req: Request, context: { params: Promise<{ papeleraId:
     });
 
     if (!registro) {
-      return NextResponse.json({ error: "Registro no encontrado en la papelera." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Registro no encontrado en la papelera." },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(registro);
   } catch (_error) {
-    return NextResponse.json({ error: "No se pudo obtener el registro de la papelera." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo obtener el registro de la papelera." },
+      { status: 500 }
+    );
   }
 }
 
@@ -36,7 +42,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ papelera
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Registro no encontrado en la papelera." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Registro no encontrado en la papelera." },
+        { status: 404 }
+      );
     }
 
     await prisma.papeleraRegistro.delete({
@@ -56,6 +65,9 @@ export async function DELETE(req: Request, context: { params: Promise<{ papelera
 
     return NextResponse.json({ ok: true });
   } catch (_error) {
-    return NextResponse.json({ error: "No se pudo eliminar permanentemente el registro." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo eliminar permanentemente el registro." },
+      { status: 500 }
+    );
   }
 }

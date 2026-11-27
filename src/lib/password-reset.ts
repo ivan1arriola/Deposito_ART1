@@ -30,16 +30,16 @@ async function ensureMagicLinkSchema() {
 
   ensureSchemaPromise = (async () => {
     await prisma.$executeRawUnsafe(
-      'ALTER TABLE "usuario" ADD COLUMN IF NOT EXISTS "mail_verificada_at" TIMESTAMPTZ(6);',
+      'ALTER TABLE "usuario" ADD COLUMN IF NOT EXISTS "mail_verificada_at" TIMESTAMPTZ(6);'
     );
     await prisma.$executeRawUnsafe(
-      'ALTER TABLE "password_reset" ADD COLUMN IF NOT EXISTS "token_type" TEXT NOT NULL DEFAULT \'PASSWORD_RESET\';',
+      'ALTER TABLE "password_reset" ADD COLUMN IF NOT EXISTS "token_type" TEXT NOT NULL DEFAULT \'PASSWORD_RESET\';'
     );
     await prisma.$executeRawUnsafe(
-      'ALTER TABLE "password_reset" ADD COLUMN IF NOT EXISTS "mail_snapshot" TEXT;',
+      'ALTER TABLE "password_reset" ADD COLUMN IF NOT EXISTS "mail_snapshot" TEXT;'
     );
     await prisma.$executeRawUnsafe(
-      'CREATE INDEX IF NOT EXISTS "password_reset_token_type_expires_at_idx" ON "password_reset"("token_type", "expires_at");',
+      'CREATE INDEX IF NOT EXISTS "password_reset_token_type_expires_at_idx" ON "password_reset"("token_type", "expires_at");'
     );
   })().catch((error) => {
     ensureSchemaPromise = null;
@@ -71,9 +71,7 @@ export async function createMagicLinkToken(input: {
       usuarioId: input.usuarioId,
       codeHash: hashToken(token),
       tokenType: normalizePurpose(input.purpose),
-      mailSnapshot: input.mailSnapshot
-        ? normalizeEmailAddress(input.mailSnapshot)
-        : null,
+      mailSnapshot: input.mailSnapshot ? normalizeEmailAddress(input.mailSnapshot) : null,
       expiresAt,
     },
   });

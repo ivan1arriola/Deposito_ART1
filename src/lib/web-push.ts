@@ -93,7 +93,11 @@ async function ensureWebPushSchema() {
   return webPushSchemaReady;
 }
 
-export async function upsertAdminPushSubscription(usuarioId: string, subscription: PushSubscriptionInput, userAgent: string | null) {
+export async function upsertAdminPushSubscription(
+  usuarioId: string,
+  subscription: PushSubscriptionInput,
+  userAgent: string | null
+) {
   await ensureWebPushSchema();
 
   await prisma.$executeRaw(
@@ -108,7 +112,7 @@ export async function upsertAdminPushSubscription(usuarioId: string, subscriptio
         user_agent = EXCLUDED.user_agent,
         enabled = true,
         updated_at = now()
-    `,
+    `
   );
 }
 
@@ -120,7 +124,7 @@ export async function disableAdminPushSubscription(usuarioId: string, endpoint: 
       UPDATE web_push_subscription
       SET enabled = false, updated_at = now()
       WHERE usuario_id = ${usuarioId} AND endpoint = ${endpoint}
-    `,
+    `
   );
 }
 
@@ -138,7 +142,7 @@ async function listAdminSubscriptions() {
       FROM web_push_subscription s
       JOIN usuario u ON u.usuario_id = s.usuario_id
       WHERE s.enabled = true AND u.activo = true AND u.rol IN ('ADMIN', 'DESARROLLADOR')
-    `,
+    `
   );
   return rows;
 }
@@ -157,14 +161,14 @@ export async function sendPushToAdmins(payload: PushPayload) {
             endpoint: row.endpoint,
             keys: { p256dh: row.p256dh, auth: row.auth },
           },
-          JSON.stringify(payload),
+          JSON.stringify(payload)
         );
       } catch (error) {
         if (!isGoneSubscriptionError(error)) return;
         await prisma.$executeRaw(
-          Prisma.sql`UPDATE web_push_subscription SET enabled = false, updated_at = now() WHERE subscription_id = ${row.subscription_id}`,
+          Prisma.sql`UPDATE web_push_subscription SET enabled = false, updated_at = now() WHERE subscription_id = ${row.subscription_id}`
         );
       }
-    }),
+    })
   );
 }

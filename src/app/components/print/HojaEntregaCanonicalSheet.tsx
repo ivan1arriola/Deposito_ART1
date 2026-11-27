@@ -1,10 +1,7 @@
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { FirmaLineasHtml } from "@/app/components/shared/FirmaLineasHtml";
 import { buildFirmasHojaEntregaLineas } from "@/lib/firma-lineas";
-import {
-  getHojaEntregaDatePart,
-  type HojaEntregaSheetData,
-} from "@/lib/hoja-entrega-sheet";
+import { getHojaEntregaDatePart, type HojaEntregaSheetData } from "@/lib/hoja-entrega-sheet";
 import styles from "@/app/components/views/hoja-de-entrega.module.css";
 
 type HojaEntregaCanonicalSheetProps = {
@@ -29,7 +26,7 @@ function isFueraDeHojaObservation(observacion: HojaObservacionLine) {
 
 function selectVisibleObservaciones(
   observaciones: HojaObservacionLine[],
-  maxObservaciones: number,
+  maxObservaciones: number
 ): HojaObservacionLine[] {
   if (observaciones.length <= maxObservaciones) {
     return observaciones;
@@ -41,9 +38,12 @@ function selectVisibleObservaciones(
     .map((obs, offset) => ({ obs, index: visibleStart + offset }));
 
   const hidden = observaciones.slice(0, visibleStart);
-  const latestHiddenFueraIndex = hidden.map((_, index) => index).reverse().find((index) => {
-    return isFueraDeHojaObservation(hidden[index]);
-  });
+  const latestHiddenFueraIndex = hidden
+    .map((_, index) => index)
+    .reverse()
+    .find((index) => {
+      return isFueraDeHojaObservation(hidden[index]);
+    });
 
   if (latestHiddenFueraIndex === undefined) {
     return visibles.map((entry) => entry.obs);
@@ -59,12 +59,13 @@ function selectVisibleObservaciones(
     index: latestHiddenFueraIndex,
   };
 
-  return visibles
-    .sort((left, right) => left.index - right.index)
-    .map((entry) => entry.obs);
+  return visibles.sort((left, right) => left.index - right.index).map((entry) => entry.obs);
 }
 
-export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaCanonicalSheetProps) {
+export function HojaEntregaCanonicalSheet({
+  data,
+  fechaImpresion,
+}: HojaEntregaCanonicalSheetProps) {
   const density = getSheetDensity(data);
   const densityClassName =
     density === "tight" ? styles.sheetTight : density === "compact" ? styles.sheetCompact : "";
@@ -73,7 +74,10 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
 
   const nombreCompleto = `${data.persona.apellido1} ${data.persona.apellido2 || ""}`.trim();
   const nombresCompleto = `${data.persona.nombre1} ${data.persona.nombre2 || ""}`.trim();
-  const firmaAlistadoNombre = [data.persona.nombre1, data.persona.apellido1].filter(Boolean).join(" ").trim();
+  const firmaAlistadoNombre = [data.persona.nombre1, data.persona.apellido1]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
   const firmaLineas = buildFirmasHojaEntregaLineas({
     alistadoRango: data.persona.rangoAbreviacion,
     alistadoNombre: firmaAlistadoNombre,
@@ -89,8 +93,9 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
   const ciWarningPrefix = ciValida ? "" : "\u26a0 ";
   const entregaCols = Array.from({ length: 6 }, (_, idx) => data.entregas[idx]?.fecha ?? null);
   const devolCols = Array.from({ length: 6 }, (_, idx) => data.devoluciones[idx]?.fecha ?? null);
-  const bottomInfoGridClassName =
-    data.persona.esReingreso ? `${styles.infoGrid} ${styles.infoGrid5}` : `${styles.infoGrid} ${styles.infoGrid4}`;
+  const bottomInfoGridClassName = data.persona.esReingreso
+    ? `${styles.infoGrid} ${styles.infoGrid5}`
+    : `${styles.infoGrid} ${styles.infoGrid4}`;
 
   return (
     <div className={`${styles.sheet}${densityClassName ? ` ${densityClassName}` : ""}`}>
@@ -169,10 +174,14 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
                 </div>
                 <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
                   <span className={styles.headerInfoLabel}>{"Batería:"}</span>
-                  <span className={styles.headerInfoValue}>{data.persona.bateria || "Cdo. y Serv."}</span>
+                  <span className={styles.headerInfoValue}>
+                    {data.persona.bateria || "Cdo. y Serv."}
+                  </span>
                 </div>
                 <div className={`${styles.infoGridItem} ${styles.infoGridItemCompact}`}>
-                  <span className={styles.headerInfoLabel}>{data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:"}</span>
+                  <span className={styles.headerInfoLabel}>
+                    {data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:"}
+                  </span>
                   <span className={styles.headerInfoValue}>
                     {data.persona.fechaIngreso
                       ? `${getHojaEntregaDatePart(data.persona.fechaIngreso, "day")}/${getHojaEntregaDatePart(data.persona.fechaIngreso, "month")}/${getHojaEntregaDatePart(data.persona.fechaIngreso, "year")}`
@@ -199,10 +208,18 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
 
           <tr>
             <td className={`${styles.center} ${styles.bold}`}>EQUIPO</td>
-            <td colSpan={6} className={`${styles.center} ${styles.bold}`}>ENTREGAS</td>
-            <td className={`${styles.center} ${styles.bold}`} rowSpan={4}>T</td>
-            <td colSpan={6} className={`${styles.center} ${styles.bold}`}>DEVOLUCIONES</td>
-            <td className={`${styles.center} ${styles.bold}`} rowSpan={4}>T</td>
+            <td colSpan={6} className={`${styles.center} ${styles.bold}`}>
+              ENTREGAS
+            </td>
+            <td className={`${styles.center} ${styles.bold}`} rowSpan={4}>
+              T
+            </td>
+            <td colSpan={6} className={`${styles.center} ${styles.bold}`}>
+              DEVOLUCIONES
+            </td>
+            <td className={`${styles.center} ${styles.bold}`} rowSpan={4}>
+              T
+            </td>
           </tr>
           <tr className={styles.dateRow}>
             <td className={styles.dateLabel}>{"DÍA"}</td>
@@ -264,7 +281,9 @@ export function HojaEntregaCanonicalSheet({ data, fechaImpresion }: HojaEntregaC
               {observacionesVisibles.length === 0 ? <div> </div> : null}
               {observacionesVisibles.map((obs, idx) => (
                 <div key={`${data.persona.ci}-${obs.fecha}-${idx}`}>
-                  {getHojaEntregaDatePart(obs.fecha, "day")}/{getHojaEntregaDatePart(obs.fecha, "month")}/{getHojaEntregaDatePart(obs.fecha, "year")} - {obs.texto}
+                  {getHojaEntregaDatePart(obs.fecha, "day")}/
+                  {getHojaEntregaDatePart(obs.fecha, "month")}/
+                  {getHojaEntregaDatePart(obs.fecha, "year")} - {obs.texto}
                 </div>
               ))}
             </td>

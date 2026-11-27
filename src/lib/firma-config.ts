@@ -17,8 +17,10 @@ export const DEFAULT_FIRMA_CONFIG: FirmaConfig = {
   updatedAt: null,
 };
 
-export const TEXTO_ENCARGADO = 'El Encargado del Depósito General del Grp. "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1.';
-export const TEXTO_OFICIAL = 'El Oficial de Administración del Grp. "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1.';
+export const TEXTO_ENCARGADO =
+  'El Encargado del Depósito General del Grp. "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1.';
+export const TEXTO_OFICIAL =
+  'El Oficial de Administración del Grp. "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1.';
 
 export async function getFirmaConfig(): Promise<FirmaConfig> {
   const config = await prisma.configFirma.findUnique({

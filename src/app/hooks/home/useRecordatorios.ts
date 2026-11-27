@@ -50,7 +50,7 @@ function getTodayKey() {
   const now = new Date();
 
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
-    now.getDate(),
+    now.getDate()
   ).padStart(2, "0")}`;
 }
 
@@ -147,7 +147,7 @@ export function useRecordatorios(currentUser: CurrentUser | null | undefined) {
         setSaving(false);
       }
     },
-    [load],
+    [load]
   );
 
   const update = useCallback(
@@ -173,7 +173,7 @@ export function useRecordatorios(currentUser: CurrentUser | null | undefined) {
         setSaving(false);
       }
     },
-    [load],
+    [load]
   );
 
   const remove = useCallback(
@@ -197,7 +197,7 @@ export function useRecordatorios(currentUser: CurrentUser | null | undefined) {
         setSaving(false);
       }
     },
-    [load],
+    [load]
   );
 
   const updateConfig = useCallback(async (mostrarMuneco: boolean) => {
@@ -235,7 +235,7 @@ export function useRecordatorios(currentUser: CurrentUser | null | undefined) {
     const todayKey = getTodayKey();
 
     return pendingTasks.filter(
-      (task) => task.prioridad === "URGENTE" || (task.fechaLimite && task.fechaLimite <= todayKey),
+      (task) => task.prioridad === "URGENTE" || (task.fechaLimite && task.fechaLimite <= todayKey)
     ).length;
   }, [pendingTasks]);
 

@@ -68,8 +68,12 @@ export function UserCreateView({
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Alta de usuario</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">
+                Nueva vista
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">
+                Alta de usuario
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
                 Crea una cuenta nueva para acceso al sistema y define su nivel de permisos.
               </p>
@@ -84,7 +88,10 @@ export function UserCreateView({
           </div>
         </div>
 
-        <form onSubmit={onSubmit} className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <form
+          onSubmit={onSubmit}
+          className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 xl:grid-cols-[minmax(0,1fr)_320px]"
+        >
           <div className="space-y-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-4">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <select
@@ -166,8 +173,14 @@ export function UserCreateView({
                     }`}
                   >
                     <p className="text-sm font-semibold">{roleLabel(option)}</p>
-                    <p className={`mt-1 text-xs ${selected ? "text-white/80" : "text-[var(--color-text-secondary)]"}`}>{roleDescription(option)}</p>
-                    <p className={`mt-2 text-[11px] font-medium uppercase tracking-wide ${selected ? "text-white/70" : "text-[var(--color-neutral-600)]"}`}>
+                    <p
+                      className={`mt-1 text-xs ${selected ? "text-white/80" : "text-[var(--color-text-secondary)]"}`}
+                    >
+                      {roleDescription(option)}
+                    </p>
+                    <p
+                      className={`mt-2 text-[11px] font-medium uppercase tracking-wide ${selected ? "text-white/70" : "text-[var(--color-neutral-600)]"}`}
+                    >
                       {roleScope(option)}
                     </p>
                   </button>
@@ -177,7 +190,9 @@ export function UserCreateView({
           </div>
 
           <aside className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-ejercito-blue)] p-4 text-white shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">Seguridad</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">
+              Seguridad
+            </p>
             <p className="mt-3 text-sm leading-6 text-white/80">
               El nuevo usuario podrá iniciar sesión de inmediato con el rol seleccionado.
             </p>

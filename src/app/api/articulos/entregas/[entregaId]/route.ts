@@ -11,10 +11,7 @@ function parseEntregaId(raw: string) {
   }
 }
 
-export async function DELETE(
-  req: Request,
-  context: { params: Promise<{ entregaId: string }> }
-) {
+export async function DELETE(req: Request, context: { params: Promise<{ entregaId: string }> }) {
   const auth = await authorizeRequest(req, "delete_data");
   if (!auth.ok) return auth.response;
 

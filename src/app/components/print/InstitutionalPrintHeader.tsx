@@ -76,13 +76,21 @@ export function InstitutionalPrintHeader({
   printedAt: string;
   compact?: boolean;
 }) {
-  const className = compact ? "institutional-print-header institutional-print-header--compact" : "institutional-print-header";
+  const className = compact
+    ? "institutional-print-header institutional-print-header--compact"
+    : "institutional-print-header";
 
   return (
     <header className={className}>
-      <div className="institutional-print-header-row institutional-print-header-left">{INSTITUTION_LABEL}</div>
-      <div className="institutional-print-header-row institutional-print-header-right">{printedAt}</div>
-      <div className="institutional-print-header-row institutional-print-header-center">{APP_LABEL}</div>
+      <div className="institutional-print-header-row institutional-print-header-left">
+        {INSTITUTION_LABEL}
+      </div>
+      <div className="institutional-print-header-row institutional-print-header-right">
+        {printedAt}
+      </div>
+      <div className="institutional-print-header-row institutional-print-header-center">
+        {APP_LABEL}
+      </div>
     </header>
   );
 }

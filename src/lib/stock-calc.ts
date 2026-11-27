@@ -1,6 +1,9 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 
-type PrismaTransaction = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+type PrismaTransaction = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
 
 /**
  * Calcula el stock actual de un artículo sumando INGRESOS y restando EGRESOS
@@ -8,7 +11,7 @@ type PrismaTransaction = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" |
  */
 export async function calcularStockArticulo(
   articuloId: number,
-  tx: PrismaTransaction | PrismaClient,
+  tx: PrismaTransaction | PrismaClient
 ): Promise<number> {
   const [ingresos, egresos] = await Promise.all([
     (tx as PrismaClient).articuloStockMovimiento.aggregate({
@@ -29,7 +32,7 @@ export async function calcularStockArticulo(
  * Retorna un Map<articuloId, stockActual>.
  */
 export async function calcularStockTodos(
-  tx: PrismaTransaction | PrismaClient,
+  tx: PrismaTransaction | PrismaClient
 ): Promise<Map<number, number>> {
   const movimientos = await (tx as PrismaClient).articuloStockMovimiento.groupBy({
     by: ["articuloId", "tipo"],
@@ -40,9 +43,7 @@ export async function calcularStockTodos(
 
   for (const mov of movimientos) {
     const current = stockMap.get(mov.articuloId) ?? 0;
-    const delta = mov.tipo === "INGRESO"
-      ? (mov._sum.cantidad ?? 0)
-      : -(mov._sum.cantidad ?? 0);
+    const delta = mov.tipo === "INGRESO" ? (mov._sum.cantidad ?? 0) : -(mov._sum.cantidad ?? 0);
     stockMap.set(mov.articuloId, current + delta);
   }
 

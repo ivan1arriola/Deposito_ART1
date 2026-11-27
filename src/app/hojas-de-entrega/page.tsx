@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
 import { HojaEntregaCanonicalSheet } from "@/app/components/print/HojaEntregaCanonicalSheet";
-import {
-  getCurrentHojaEntregaPrintDate,
-} from "@/app/components/print/HojaEntregaPrint";
+import { getCurrentHojaEntregaPrintDate } from "@/app/components/print/HojaEntregaPrint";
 import styles from "@/app/components/views/hoja-de-entrega.module.css";
 import { getAllHojasEntregaData } from "@/lib/hoja-entrega-data";
 

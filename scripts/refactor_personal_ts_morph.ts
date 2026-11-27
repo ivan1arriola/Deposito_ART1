@@ -16,14 +16,24 @@ const files = project.getSourceFiles();
 for (const file of files) {
   let changed = false;
 
-  file.forEachDescendant(node => {
+  file.forEachDescendant((node) => {
     // Remove `tx.deleteMany`, `create`, `upsert`
     if (node.isKind(SyntaxKind.ExpressionStatement)) {
       const text = node.getText();
-      if (text.includes("tx.deleteMany") || text.includes("tx.deleteMany") || text.includes("tx.deleteMany") ||
-          text.includes("tx.create") || text.includes("tx.create") || text.includes("tx.create") ||
-          text.includes("tx.upsert") || text.includes("tx.upsert") || text.includes("tx.upsert") ||
-          text.includes("tx.update") || text.includes("tx.update") || text.includes("tx.update")) {
+      if (
+        text.includes("tx.deleteMany") ||
+        text.includes("tx.deleteMany") ||
+        text.includes("tx.deleteMany") ||
+        text.includes("tx.create") ||
+        text.includes("tx.create") ||
+        text.includes("tx.create") ||
+        text.includes("tx.upsert") ||
+        text.includes("tx.upsert") ||
+        text.includes("tx.upsert") ||
+        text.includes("tx.update") ||
+        text.includes("tx.update") ||
+        text.includes("tx.update")
+      ) {
         node.remove();
         changed = true;
       }
@@ -33,20 +43,25 @@ for (const file of files) {
       const name = node.getName();
       if (name === "subalterno" || name === "oficial" || name === "suboficial") {
         const initializer = node.getInitializer();
-        if (initializer && (initializer.isKind(SyntaxKind.ObjectLiteralExpression) || initializer.isKind(SyntaxKind.TrueKeyword) || initializer.isKind(SyntaxKind.FalseKeyword))) {
-           // We might need to keep bateria if it's nested, but since bateria is now flat on personal, we can just drop subalterno, except if we are inside a select that needs bateria!
-           // If it's ``, we should add `bateria: ...` to the parent object.
-           const parent = node.getParent();
-           if (parent.isKind(SyntaxKind.ObjectLiteralExpression)) {
-             if (initializer.isKind(SyntaxKind.ObjectLiteralExpression)) {
-               const text = initializer.getText();
-               if (text.includes("bateria")) {
-                  parent.addPropertyAssignment({ name: "bateria", initializer: "true" });
-               }
-             }
-             node.remove();
-             changed = true;
-           }
+        if (
+          initializer &&
+          (initializer.isKind(SyntaxKind.ObjectLiteralExpression) ||
+            initializer.isKind(SyntaxKind.TrueKeyword) ||
+            initializer.isKind(SyntaxKind.FalseKeyword))
+        ) {
+          // We might need to keep bateria if it's nested, but since bateria is now flat on personal, we can just drop subalterno, except if we are inside a select that needs bateria!
+          // If it's ``, we should add `bateria: ...` to the parent object.
+          const parent = node.getParent();
+          if (parent.isKind(SyntaxKind.ObjectLiteralExpression)) {
+            if (initializer.isKind(SyntaxKind.ObjectLiteralExpression)) {
+              const text = initializer.getText();
+              if (text.includes("bateria")) {
+                parent.addPropertyAssignment({ name: "bateria", initializer: "true" });
+              }
+            }
+            node.remove();
+            changed = true;
+          }
         }
       }
     }
@@ -64,13 +79,13 @@ for (const file of files) {
   });
 
   // Second pass for PersonalUncheckedCreateInput missing `tipo`
-  file.forEachDescendant(node => {
-     if (node.isKind(SyntaxKind.CallExpression)) {
-        const expr = node.getExpression();
-        if (expr.getText().endsWith(".create") || expr.getText().endsWith(".upsert")) {
-          // just a heuristic for prisma create
-        }
-     }
+  file.forEachDescendant((node) => {
+    if (node.isKind(SyntaxKind.CallExpression)) {
+      const expr = node.getExpression();
+      if (expr.getText().endsWith(".create") || expr.getText().endsWith(".upsert")) {
+        // just a heuristic for prisma create
+      }
+    }
   });
 
   if (changed) {

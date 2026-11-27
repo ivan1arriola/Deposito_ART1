@@ -107,11 +107,15 @@ export default async function TallesOficialesSuboficialesPage({
     if (byRank !== 0) return byRank;
     const byApellido1 = a.apellido1.localeCompare(b.apellido1, "es", { sensitivity: "base" });
     if (byApellido1 !== 0) return byApellido1;
-    const byApellido2 = (a.apellido2 ?? "").localeCompare(b.apellido2 ?? "", "es", { sensitivity: "base" });
+    const byApellido2 = (a.apellido2 ?? "").localeCompare(b.apellido2 ?? "", "es", {
+      sensitivity: "base",
+    });
     if (byApellido2 !== 0) return byApellido2;
     const byNombre1 = a.nombre1.localeCompare(b.nombre1, "es", { sensitivity: "base" });
     if (byNombre1 !== 0) return byNombre1;
-    const byNombre2 = (a.nombre2 ?? "").localeCompare(b.nombre2 ?? "", "es", { sensitivity: "base" });
+    const byNombre2 = (a.nombre2 ?? "").localeCompare(b.nombre2 ?? "", "es", {
+      sensitivity: "base",
+    });
     if (byNombre2 !== 0) return byNombre2;
     return a.ci.localeCompare(b.ci, "es", { sensitivity: "base" });
   });
@@ -121,7 +125,7 @@ export default async function TallesOficialesSuboficialesPage({
   }));
   const tallaColumnWidths = buildDynamicTallaColumnWidths(
     38,
-    registrosRows.map((registro) => registro.talles),
+    registrosRows.map((registro) => registro.talles)
   );
 
   const printedAt = new Date();
@@ -318,7 +322,8 @@ export default async function TallesOficialesSuboficialesPage({
             </thead>
             <tbody>
               {registrosRows.map((registro, index) => {
-                const typeLabel = registro.rango.tipo === TipoPersonal.OFICIAL ? "Oficial" : "Suboficial";
+                const typeLabel =
+                  registro.rango.tipo === TipoPersonal.OFICIAL ? "Oficial" : "Suboficial";
                 return (
                   <tr key={`${registro.rango.tipo}-${registro.ci}`}>
                     <td className="col-index">{index + 1}</td>

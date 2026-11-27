@@ -97,7 +97,9 @@ describe("POST /api/registros", () => {
     vi.clearAllMocks();
     mockAuthorizedUser();
     vi.mocked(prisma.movimiento.count).mockResolvedValue(7 as never);
-    vi.mocked(prisma.equipo.findMany).mockResolvedValue([{ equipoId: BigInt(1), nombre: "Notebook táctica" }] as never);
+    vi.mocked(prisma.equipo.findMany).mockResolvedValue([
+      { equipoId: BigInt(1), nombre: "Notebook táctica" },
+    ] as never);
   });
 
   it("incluye ASIGNACION en summary sin inyectar undefined al filtro", async () => {
@@ -123,7 +125,7 @@ describe("POST /api/registros", () => {
         tipo: "ENTREGA",
         fecha: "26/05/2026",
         equipos: [{ equipoId: "1", cantidad: 1 }],
-      }),
+      })
     );
 
     expect(response.status).toBe(400);
@@ -143,7 +145,7 @@ describe("POST /api/registros", () => {
         tipo: "ENTREGA",
         fecha: "26/05/2026",
         equipos: [{ equipoId: "1", cantidad: 1 }],
-      }),
+      })
     );
 
     expect(prisma.personal.findMany).toHaveBeenCalledWith(
@@ -152,7 +154,7 @@ describe("POST /api/registros", () => {
           ci: { in: ["5.106.752-4"] },
           rango: { tipo: "SUBALTERNO" },
         }),
-      }),
+      })
     );
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toMatchObject({
@@ -175,7 +177,7 @@ describe("POST /api/registros", () => {
         fecha: "26/05/2026",
         comentarios: "Asignación permanente",
         equipos: [{ equipoId: "1", cantidad: 2 }],
-      }),
+      })
     );
 
     expect(response.status).toBe(201);

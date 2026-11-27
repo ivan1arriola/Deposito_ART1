@@ -7,7 +7,7 @@ import {
 
 function getContiguousRowSpans(
   rows: CajaListadoPrintData[],
-  valueSelector: (row: CajaListadoPrintData) => string | number,
+  valueSelector: (row: CajaListadoPrintData) => string | number
 ) {
   const spans = Array.from({ length: rows.length }, () => 0);
   let startIndex = 0;
@@ -239,7 +239,7 @@ export function ListadoCajasPrintTable({
   const estanteRowSpans = getContiguousRowSpans(cajas, (row) => `${row.piso}::${row.estanteria}`);
   const cajaRowSpans = getContiguousRowSpans(
     cajas,
-    (row) => `${row.piso}::${row.estanteria}::${String(row.codigoDepositoGeneral)}`,
+    (row) => `${row.piso}::${row.estanteria}::${String(row.codigoDepositoGeneral)}`
   );
 
   return (

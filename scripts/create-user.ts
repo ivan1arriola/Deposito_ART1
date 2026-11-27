@@ -9,7 +9,9 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const adapter = new PrismaPg({ connectionString: normalizePgConnectionStringSecurity(connectionString) });
+const adapter = new PrismaPg({
+  connectionString: normalizePgConnectionStringSecurity(connectionString),
+});
 const prisma = new PrismaClient({ adapter });
 
 function getArg(name: string, fallback = "") {
@@ -48,7 +50,10 @@ async function main() {
       });
     }
 
-    let rangoId = Number.isInteger(Number(rangoIdArgRaw)) && Number(rangoIdArgRaw) > 0 ? Number(rangoIdArgRaw) : null;
+    let rangoId =
+      Number.isInteger(Number(rangoIdArgRaw)) && Number(rangoIdArgRaw) > 0
+        ? Number(rangoIdArgRaw)
+        : null;
 
     if (rangoId === null && gradoArg !== "") {
       const foundByLabel = await prisma.rango.findFirst({

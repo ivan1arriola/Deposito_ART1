@@ -33,9 +33,16 @@ describe("route parser helpers", () => {
     });
 
     it("isValidPayload exige tipo valido y al menos un equipo", () => {
-      expect(stockRouteTestables.isValidPayload({ tipo: "INGRESO", equipos: [{ equipoId: "1", cantidad: 1 }] })).toBe(true);
+      expect(
+        stockRouteTestables.isValidPayload({
+          tipo: "INGRESO",
+          equipos: [{ equipoId: "1", cantidad: 1 }],
+        })
+      ).toBe(true);
       expect(stockRouteTestables.isValidPayload({ tipo: "INGRESO", equipos: [] })).toBe(false);
-      expect(stockRouteTestables.isValidPayload({ tipo: "X", equipos: [{ equipoId: "1", cantidad: 1 }] })).toBe(false);
+      expect(
+        stockRouteTestables.isValidPayload({ tipo: "X", equipos: [{ equipoId: "1", cantidad: 1 }] })
+      ).toBe(false);
       expect(stockRouteTestables.isValidPayload(null)).toBe(false);
     });
 
@@ -80,7 +87,10 @@ describe("route parser helpers", () => {
         comentarios: "B",
       };
 
-      const changes = prestamoByIdRouteTestables.buildGeneralChanges(before as never, after as never);
+      const changes = prestamoByIdRouteTestables.buildGeneralChanges(
+        before as never,
+        after as never
+      );
       expect(Object.keys(changes)).toEqual(["fechaDevolucion", "comentarios"]);
     });
 
@@ -112,7 +122,10 @@ describe("route parser helpers", () => {
         ],
       };
 
-      const changes = prestamoByIdRouteTestables.buildEquipoChanges(before as never, after as never);
+      const changes = prestamoByIdRouteTestables.buildEquipoChanges(
+        before as never,
+        after as never
+      );
       expect(changes).toHaveLength(1);
       expect(Object.keys(changes[0].changes)).toEqual([
         "cantidad",

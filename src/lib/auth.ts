@@ -67,88 +67,90 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
   const accountType: AuthAccountType = isPersonalAccount ? "PERSONAL" : "SISTEMA";
   const fallbackPersonalCi = parsePersonalUsuarioId(session.user.id);
   const sessionPersonalCi = session.user.personalCi ?? fallbackPersonalCi;
-  const cacheKey = accountType === "PERSONAL" ? `personal:${sessionPersonalCi ?? "unknown"}` : session.user.id;
+  const cacheKey =
+    accountType === "PERSONAL" ? `personal:${sessionPersonalCi ?? "unknown"}` : session.user.id;
 
   const cached = getCachedAuthUser(cacheKey);
   if (cached !== undefined) return cached;
 
   if (!authUserInflight.has(cacheKey)) {
-    const resolver = accountType === "PERSONAL"
-      ? withPrismaReadRetry(async () => {
-          if (!sessionPersonalCi) {
-            setCachedAuthUser(cacheKey, null);
-            return null;
-          }
+    const resolver =
+      accountType === "PERSONAL"
+        ? withPrismaReadRetry(async () => {
+            if (!sessionPersonalCi) {
+              setCachedAuthUser(cacheKey, null);
+              return null;
+            }
 
-          const identity = await getPersonalSessionIdentity(sessionPersonalCi);
-          if (!identity) {
-            setCachedAuthUser(cacheKey, null);
-            return null;
-          }
+            const identity = await getPersonalSessionIdentity(sessionPersonalCi);
+            if (!identity) {
+              setCachedAuthUser(cacheKey, null);
+              return null;
+            }
 
-          const authUser: AuthUser = {
-            usuarioId: session.user.id,
-            rangoId: identity.rangoId,
-            grado: identity.gradoAbreviacion,
-            nombre: identity.nombre,
-            apellido: identity.apellido,
-            username: identity.ci,
-            mailReferencia: identity.mailReferencia,
-            rol: "READ_ONLY",
-            activo: true,
-            accountType: "PERSONAL",
-            personalCi: identity.ci,
-          };
-          setCachedAuthUser(cacheKey, authUser);
-          return authUser;
-        })
-      : withPrismaReadRetry(() =>
-          prisma.usuario.findUnique({
-            where: { usuarioId: session.user.id },
-            select: {
-              usuarioId: true,
-              rangoId: true,
-              nombre: true,
-              apellido: true,
-              username: true,
-              mailReferencia: true,
-              rol: true,
+            const authUser: AuthUser = {
+              usuarioId: session.user.id,
+              rangoId: identity.rangoId,
+              grado: identity.gradoAbreviacion,
+              nombre: identity.nombre,
+              apellido: identity.apellido,
+              username: identity.ci,
+              mailReferencia: identity.mailReferencia,
+              rol: "READ_ONLY",
               activo: true,
-              rango: {
-                select: {
-                  abreviacion: true,
+              accountType: "PERSONAL",
+              personalCi: identity.ci,
+            };
+            setCachedAuthUser(cacheKey, authUser);
+            return authUser;
+          })
+        : withPrismaReadRetry(() =>
+            prisma.usuario.findUnique({
+              where: { usuarioId: session.user.id },
+              select: {
+                usuarioId: true,
+                rangoId: true,
+                nombre: true,
+                apellido: true,
+                username: true,
+                mailReferencia: true,
+                rol: true,
+                activo: true,
+                rango: {
+                  select: {
+                    abreviacion: true,
+                  },
                 },
               },
-            },
-          }),
-        ).then((usuario) => {
-          if (!usuario || !usuario.activo) {
-            setCachedAuthUser(cacheKey, null);
-            return null;
-          }
+            })
+          ).then((usuario) => {
+            if (!usuario || !usuario.activo) {
+              setCachedAuthUser(cacheKey, null);
+              return null;
+            }
 
-          const authUser: AuthUser = {
-            usuarioId: usuario.usuarioId,
-            rangoId: usuario.rangoId,
-            grado: rangoAbreviacionLabel(usuario.rango),
-            nombre: usuario.nombre,
-            apellido: usuario.apellido,
-            username: usuario.username,
-            mailReferencia: usuario.mailReferencia,
-            rol: usuario.rol,
-            activo: usuario.activo,
-            accountType: "SISTEMA",
-            personalCi: null,
-          };
-          setCachedAuthUser(cacheKey, authUser);
-          return authUser;
-        });
+            const authUser: AuthUser = {
+              usuarioId: usuario.usuarioId,
+              rangoId: usuario.rangoId,
+              grado: rangoAbreviacionLabel(usuario.rango),
+              nombre: usuario.nombre,
+              apellido: usuario.apellido,
+              username: usuario.username,
+              mailReferencia: usuario.mailReferencia,
+              rol: usuario.rol,
+              activo: usuario.activo,
+              accountType: "SISTEMA",
+              personalCi: null,
+            };
+            setCachedAuthUser(cacheKey, authUser);
+            return authUser;
+          });
 
     authUserInflight.set(
       cacheKey,
       resolver.finally(() => {
         authUserInflight.delete(cacheKey);
-      }),
+      })
     );
   }
 
@@ -157,7 +159,7 @@ export async function getUserFromRequest(): Promise<AuthUser | null> {
 
 export async function authorizeRequest(
   request: Request,
-  permission: Permission,
+  permission: Permission
 ): Promise<{ ok: true; user: AuthUser } | { ok: false; response: NextResponse }> {
   let user: AuthUser | null = null;
   try {
@@ -166,7 +168,10 @@ export async function authorizeRequest(
     if (isPrismaDatabaseUnavailable(error)) {
       return {
         ok: false,
-        response: NextResponse.json({ error: "Base de datos no disponible temporalmente. Intenta nuevamente." }, { status: 503 }),
+        response: NextResponse.json(
+          { error: "Base de datos no disponible temporalmente. Intenta nuevamente." },
+          { status: 503 }
+        ),
       };
     }
     return {

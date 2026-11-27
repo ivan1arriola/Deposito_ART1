@@ -30,7 +30,7 @@ function isWithoutBatteryFilter(value: string) {
 function compareMatrixRows(a: HojaMatrixRow, b: HojaMatrixRow) {
   const byGrado = compareRanks(
     { abreviacion: a.gradoAbreviacion, orden: a.gradoOrden },
-    { abreviacion: b.gradoAbreviacion, orden: b.gradoOrden },
+    { abreviacion: b.gradoAbreviacion, orden: b.gradoOrden }
   );
   if (byGrado !== 0) return byGrado;
 
@@ -46,7 +46,9 @@ function compareMatrixRows(a: HojaMatrixRow, b: HojaMatrixRow) {
   const byApellido1 = a.apellido1.localeCompare(b.apellido1, "es", { sensitivity: "base" });
   if (byApellido1 !== 0) return byApellido1;
 
-  const byApellido2 = (a.apellido2 ?? "").localeCompare(b.apellido2 ?? "", "es", { sensitivity: "base" });
+  const byApellido2 = (a.apellido2 ?? "").localeCompare(b.apellido2 ?? "", "es", {
+    sensitivity: "base",
+  });
   if (byApellido2 !== 0) return byApellido2;
 
   const byNombre1 = a.nombre1.localeCompare(b.nombre1, "es", { sensitivity: "base" });
@@ -58,7 +60,9 @@ function compareMatrixRows(a: HojaMatrixRow, b: HojaMatrixRow) {
   return a.ci.localeCompare(b.ci, "es", { sensitivity: "base" });
 }
 
-export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Promise<HojaMatrixData> {
+export async function getHojaMatrixData(
+  options: GetHojaMatrixOptions = {}
+): Promise<HojaMatrixData> {
   const bateria = normalizeBatteryFilter(options.bateria);
 
   const equipos = await prisma.equipo.findMany({
@@ -86,8 +90,8 @@ export async function getHojaMatrixData(options: GetHojaMatrixOptions = {}): Pro
         select: { abreviacion: true, nombreCompleto: true, orden: true },
       },
       bateria: {
-                    select: { nombre: true, orden: true },
-                  },
+        select: { nombre: true, orden: true },
+      },
       movimientosDestinatario: {
         where: {
           movimiento: {

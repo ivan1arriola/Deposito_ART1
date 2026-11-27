@@ -83,7 +83,10 @@ export async function PUT(request: Request, context: { params: Promise<{ tareaId
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
   if (user.accountType !== "SISTEMA") {
-    return NextResponse.json({ error: "Las cuentas de personal no tienen acceso a recordatorios." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Las cuentas de personal no tienen acceso a recordatorios." },
+      { status: 403 }
+    );
   }
 
   const { tareaId: tareaIdRaw } = await context.params;
@@ -118,7 +121,10 @@ export async function PUT(request: Request, context: { params: Promise<{ tareaId
     }
     const titulo = body.titulo.trim();
     if (titulo.length < 2 || titulo.length > 140) {
-      return NextResponse.json({ error: "El titulo debe tener entre 2 y 140 caracteres." }, { status: 400 });
+      return NextResponse.json(
+        { error: "El titulo debe tener entre 2 y 140 caracteres." },
+        { status: 400 }
+      );
     }
     data.titulo = titulo;
   }
@@ -129,7 +135,10 @@ export async function PUT(request: Request, context: { params: Promise<{ tareaId
     }
     const nota = body.nota.trim();
     if (nota.length > 2500) {
-      return NextResponse.json({ error: "La nota no puede superar 2500 caracteres." }, { status: 400 });
+      return NextResponse.json(
+        { error: "La nota no puede superar 2500 caracteres." },
+        { status: 400 }
+      );
     }
     data.nota = nota === "" ? null : nota;
   }
@@ -194,7 +203,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ tare
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
   if (user.accountType !== "SISTEMA") {
-    return NextResponse.json({ error: "Las cuentas de personal no tienen acceso a recordatorios." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Las cuentas de personal no tienen acceso a recordatorios." },
+      { status: 403 }
+    );
   }
 
   const { tareaId: tareaIdRaw } = await context.params;

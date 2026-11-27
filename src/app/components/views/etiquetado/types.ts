@@ -1,9 +1,6 @@
 import type { EtiquetadoDashboardData } from "@/types/etiquetado";
 
-export type EtiquetadoSection =
-  | "codigos_sie"
-  | "listado_cajas"
-  | "imprimir_todas";
+export type EtiquetadoSection = "codigos_sie" | "listado_cajas" | "imprimir_todas";
 
 export type EtiquetaOrientacion = "horizontal" | "vertical";
 
@@ -53,5 +50,7 @@ export type EtiquetadoViewProps = {
   onDeleteCaja: (codigoDepositoGeneral: number) => void;
   onPrintCaja: (codigoDepositoGeneral: number, orientacion: EtiquetaOrientacion) => void;
   onPrintListadoCajas: () => void;
-  onPrintTodas: (cajas: Array<{ codigoDepositoGeneral: number; orientacion: EtiquetaOrientacion }>) => void;
+  onPrintTodas: (
+    cajas: Array<{ codigoDepositoGeneral: number; orientacion: EtiquetaOrientacion }>
+  ) => void;
 };

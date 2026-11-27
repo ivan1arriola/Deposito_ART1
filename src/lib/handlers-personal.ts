@@ -9,10 +9,7 @@ interface CallbackProps {
   onError?: (message: string) => void;
 }
 
-export async function createPersonalHandler(
-  payload: unknown,
-  callbacks: CallbackProps
-) {
+export async function createPersonalHandler(payload: unknown, callbacks: CallbackProps) {
   try {
     await api("/api/personal", {
       method: "POST",
@@ -46,10 +43,7 @@ export async function updatePersonalHandler(
   }
 }
 
-export async function deletePersonalHandler(
-  ci: string,
-  callbacks: CallbackProps
-) {
+export async function deletePersonalHandler(ci: string, callbacks: CallbackProps) {
   try {
     await api(`/api/personal/${encodeURIComponent(ci)}`, { method: "DELETE" });
     callbacks.onSuccess?.();
@@ -80,10 +74,7 @@ export async function promoteSargentoToSuboficialHandler(
   }
 }
 
-export async function createOficialSuboficialHandler(
-  payload: unknown,
-  callbacks: CallbackProps
-) {
+export async function createOficialSuboficialHandler(payload: unknown, callbacks: CallbackProps) {
   try {
     await api("/api/oficiales-suboficiales", {
       method: "POST",
@@ -92,7 +83,8 @@ export async function createOficialSuboficialHandler(
     });
     callbacks.onSuccess?.();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo crear el personal oficial/suboficial.";
+    const message =
+      error instanceof Error ? error.message : "No se pudo crear el personal oficial/suboficial.";
     callbacks.onError?.(message);
     throw error;
   }
@@ -111,7 +103,10 @@ export async function updateOficialSuboficialHandler(
     });
     callbacks.onSuccess?.();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar el personal oficial/suboficial.";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "No se pudo actualizar el personal oficial/suboficial.";
     callbacks.onError?.(message);
     throw error;
   }
@@ -136,16 +131,14 @@ export async function createPersonalObservacionHandler(
   }
 }
 
-export async function loadPersonalObservacionesHandler(
-  ci: string,
-  callbacks: CallbackProps
-) {
+export async function loadPersonalObservacionesHandler(ci: string, callbacks: CallbackProps) {
   try {
     const data = await api(`/api/personal/${encodeURIComponent(ci)}/observaciones`);
     callbacks.onSuccess?.(data);
     return data;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudieron cargar las observaciones.";
+    const message =
+      error instanceof Error ? error.message : "No se pudieron cargar las observaciones.";
     callbacks.onError?.(message);
     throw error;
   }
@@ -158,15 +151,19 @@ export async function updatePersonalObservacionHandler(
   callbacks: CallbackProps
 ) {
   try {
-    const data = await api(`/api/personal/${encodeURIComponent(ci)}/observaciones/${encodeURIComponent(observacionId)}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const data = await api(
+      `/api/personal/${encodeURIComponent(ci)}/observaciones/${encodeURIComponent(observacionId)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
     callbacks.onSuccess?.(data);
     return data;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar la observación.";
+    const message =
+      error instanceof Error ? error.message : "No se pudo actualizar la observación.";
     callbacks.onError?.(message);
     throw error;
   }
@@ -178,9 +175,12 @@ export async function deletePersonalObservacionHandler(
   callbacks: CallbackProps
 ) {
   try {
-    const data = await api(`/api/personal/${encodeURIComponent(ci)}/observaciones/${encodeURIComponent(observacionId)}`, {
-      method: "DELETE",
-    });
+    const data = await api(
+      `/api/personal/${encodeURIComponent(ci)}/observaciones/${encodeURIComponent(observacionId)}`,
+      {
+        method: "DELETE",
+      }
+    );
     callbacks.onSuccess?.(data);
     return data;
   } catch (error) {

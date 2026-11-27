@@ -85,7 +85,9 @@ function buildPersonalAuditDetail(personal: {
 }) {
   return {
     ci: personal.ci,
-    nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
+    nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2]
+      .filter(Boolean)
+      .join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
     bateria: personal.bateria?.nombre ?? null,
@@ -101,7 +103,7 @@ export async function GET(req: Request) {
   } catch {
     return NextResponse.json(
       { error: "No se pudo obtener el historial de entregas de artículos." },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -123,7 +125,7 @@ export async function POST(req: Request) {
         error:
           "Payload inválido. 'personalCi' y 'ordenanteCi' deben ser CIs uruguayas válidas y 'fecha' debe ser válida.",
       },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -132,7 +134,10 @@ export async function POST(req: Request) {
   }
 
   if (!Array.isArray(candidate.equipos) || candidate.equipos.length === 0) {
-    return NextResponse.json({ error: "Debes enviar al menos un artículo válido." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Debes enviar al menos un artículo válido." },
+      { status: 400 }
+    );
   }
 
   const normalizedItems = new Map<number, number>();
@@ -142,7 +147,7 @@ export async function POST(req: Request) {
     if (articuloId === null || cantidad === null) {
       return NextResponse.json(
         { error: "Cada equipo debe incluir 'articuloId' y 'cantidad' con enteros positivos." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -169,8 +174,8 @@ export async function POST(req: Request) {
               select: { nombreCompleto: true, abreviacion: true },
             },
             bateria: {
-                              select: { nombre: true },
-                            },
+              select: { nombre: true },
+            },
           },
         }),
         tx.personal.findUnique({
@@ -286,7 +291,10 @@ export async function POST(req: Request) {
         usuarioEntrega: formatAuthUserLabel(auth.user),
         fechaMovimiento: formatDateOnlyFromDate(result.entrega.fecha) ?? "",
         comentarios: result.entrega.comentario,
-        totalUnidades: result.articulosActualizados.reduce((total, articulo) => total + articulo.cantidadEntregada, 0),
+        totalUnidades: result.articulosActualizados.reduce(
+          (total, articulo) => total + articulo.cantidadEntregada,
+          0
+        ),
         articulos: result.articulosActualizados.map((articulo) => ({
           nombre: articulo.nombre,
           cantidad: articulo.cantidadEntregada,
@@ -310,12 +318,15 @@ export async function POST(req: Request) {
           stockActual: articulo.stockActual,
         })),
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error: unknown) {
     if (error instanceof Error) {
       if (error.message === "PERSONAL_NOT_FOUND") {
-        return NextResponse.json({ error: "Personal destinatario no encontrado." }, { status: 404 });
+        return NextResponse.json(
+          { error: "Personal destinatario no encontrado." },
+          { status: 404 }
+        );
       }
 
       if (error.message === "ORDENANTE_NOT_FOUND") {
@@ -330,14 +341,14 @@ export async function POST(req: Request) {
         const articuloId = Number(error.message.split(":")[1]);
         return NextResponse.json(
           { error: `Stock insuficiente para registrar el egreso del artículo ${articuloId}.` },
-          { status: 409 },
+          { status: 409 }
         );
       }
     }
 
     return NextResponse.json(
       { error: "No se pudo registrar la entrega de artículos a personal." },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

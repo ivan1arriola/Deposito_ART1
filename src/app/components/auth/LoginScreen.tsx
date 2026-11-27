@@ -119,7 +119,9 @@ export function LoginScreen({
 
           <div className="login-heading">
             <p className="login-eyebrow">Acceso seguro</p>
-            <h1 id="login-title" className="login-title">Iniciar sesión</h1>
+            <h1 id="login-title" className="login-title">
+              Iniciar sesión
+            </h1>
             <p className="login-intro">Selecciona el tipo de acceso e ingresa tus datos.</p>
           </div>
 
@@ -145,20 +147,31 @@ export function LoginScreen({
           </div>
 
           {initMessage && showInitCredentials && initCredentials ? (
-            <div className={`login-notice ${initMessage.type === "success" ? "is-success" : "is-info"}`} role="status">
+            <div
+              className={`login-notice ${initMessage.type === "success" ? "is-success" : "is-info"}`}
+              role="status"
+            >
               <p className="login-notice-title">{initMessage.text}</p>
               <dl className="login-credentials">
                 <div>
                   <dt>Usuario</dt>
-                  <dd><code>{initCredentials.username}</code></dd>
+                  <dd>
+                    <code>{initCredentials.username}</code>
+                  </dd>
                 </div>
                 <div>
                   <dt>Contraseña</dt>
-                  <dd><code>{initCredentials.password}</code></dd>
+                  <dd>
+                    <code>{initCredentials.password}</code>
+                  </dd>
                 </div>
               </dl>
               <p className="login-notice-help">Guarda estas credenciales en un lugar seguro.</p>
-              <button type="button" onClick={onHideInitCredentials} className="login-secondary-button">
+              <button
+                type="button"
+                onClick={onHideInitCredentials}
+                className="login-secondary-button"
+              >
                 Entendido
               </button>
             </div>
@@ -185,11 +198,15 @@ export function LoginScreen({
                 spellCheck={false}
                 className="login-input"
               />
-              {isPersonal ? <p className="login-field-help">Escríbela sin puntos ni guiones.</p> : null}
+              {isPersonal ? (
+                <p className="login-field-help">Escríbela sin puntos ni guiones.</p>
+              ) : null}
             </div>
 
             <div className="login-field-group">
-              <label htmlFor="login-password" className="login-label">Contraseña</label>
+              <label htmlFor="login-password" className="login-label">
+                Contraseña
+              </label>
               <div className="login-password-wrap">
                 <input
                   id="login-password"
@@ -212,7 +229,9 @@ export function LoginScreen({
                 </button>
               </div>
               {isPersonal ? (
-                <p className="login-field-help">En el primer ingreso, la contraseña inicial es tu cédula.</p>
+                <p className="login-field-help">
+                  En el primer ingreso, la contraseña inicial es tu cédula.
+                </p>
               ) : null}
             </div>
 
@@ -227,14 +246,21 @@ export function LoginScreen({
 
           {!isPersonal ? (
             <div className="login-recovery-section">
-              <button type="button" onClick={onToggleResetRequest} className="login-recovery-link" aria-expanded={showResetRequest}>
+              <button
+                type="button"
+                onClick={onToggleResetRequest}
+                className="login-recovery-link"
+                aria-expanded={showResetRequest}
+              >
                 {showResetRequest ? "Cancelar recuperación" : "¿Olvidaste tu contraseña?"}
               </button>
 
               {showResetRequest ? (
                 <form onSubmit={onResetRequestSubmit} className="login-recovery-form">
                   <div className="login-field-group">
-                    <label htmlFor="reset-username" className="login-label">Usuario</label>
+                    <label htmlFor="reset-username" className="login-label">
+                      Usuario
+                    </label>
                     <input
                       id="reset-username"
                       value={resetUsername}
@@ -246,15 +272,25 @@ export function LoginScreen({
                       className="login-input"
                     />
                   </div>
-                  <button type="submit" disabled={resetRequestLoading} className="login-secondary-button">
+                  <button
+                    type="submit"
+                    disabled={resetRequestLoading}
+                    className="login-secondary-button"
+                  >
                     {resetRequestLoading ? "Enviando…" : "Enviar enlace de acceso"}
                   </button>
-                  {resetRequestMessage ? <p className="login-recovery-message" role="status">{resetRequestMessage}</p> : null}
+                  {resetRequestMessage ? (
+                    <p className="login-recovery-message" role="status">
+                      {resetRequestMessage}
+                    </p>
+                  ) : null}
                 </form>
               ) : null}
             </div>
           ) : (
-            <p className="login-support-note">Si no puedes ingresar, solicita ayuda a un administrador del sistema.</p>
+            <p className="login-support-note">
+              Si no puedes ingresar, solicita ayuda a un administrador del sistema.
+            </p>
           )}
         </div>
       </section>

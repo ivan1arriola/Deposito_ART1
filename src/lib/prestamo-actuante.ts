@@ -33,13 +33,21 @@ function normalizeRankText(value: string | null | undefined) {
     .toLowerCase();
 }
 
-function fullName(apellido1: string, apellido2: string | null, nombre1: string, nombre2: string | null) {
+function fullName(
+  apellido1: string,
+  apellido2: string | null,
+  nombre1: string,
+  nombre2: string | null
+) {
   const apellidos = [apellido1, apellido2].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
   const nombres = [nombre1, nombre2].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
   return `${apellidos}, ${nombres}`.replace(/\s+/g, " ").trim();
 }
 
-export function isSargentoRank(abreviacion: string | null | undefined, nombreCompleto: string | null | undefined) {
+export function isSargentoRank(
+  abreviacion: string | null | undefined,
+  nombreCompleto: string | null | undefined
+) {
   const normalized = normalizeRankText(`${abreviacion ?? ""} ${nombreCompleto ?? ""}`);
   return normalized.includes("sargento") || normalized.startsWith("sgto");
 }
@@ -133,7 +141,7 @@ export async function ensurePrestamoActuanteCompatibility() {
 export async function upsertPrestamoActuante(
   tx: Prisma.TransactionClient,
   movimientoId: bigint,
-  actuanteCi: string | null,
+  actuanteCi: string | null
 ) {
   if (!actuanteCi) {
     await tx.$executeRaw`DELETE FROM "prestamo_actuante" WHERE "movimiento_id" = ${movimientoId}`;

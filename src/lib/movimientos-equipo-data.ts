@@ -23,7 +23,7 @@ export function parseEquipoMovimientoItemId(value: unknown) {
 
 function buildPrestamoEstadoLabel(
   prestamoActivoEstado: "PENDIENTE" | "DEVUELTO" | null,
-  prestamoHistorialEstado: "PENDIENTE" | "DEVUELTO" | null,
+  prestamoHistorialEstado: "PENDIENTE" | "DEVUELTO" | null
 ) {
   if (prestamoActivoEstado === "PENDIENTE") return "PENDIENTE" as const;
   if (prestamoActivoEstado === "DEVUELTO") return "DEVUELTO" as const;
@@ -35,21 +35,27 @@ function buildPrestamoEstadoLabel(
 export function buildMovimientoTipoLabel(
   tipo: EquipoMovimientoViewRow["tipo"],
   prestamoEstado: EquipoMovimientoViewRow["prestamoEstado"],
-  clasePrestamo: EquipoMovimientoViewRow["clasePrestamo"],
+  clasePrestamo: EquipoMovimientoViewRow["clasePrestamo"]
 ) {
   if (tipo === "ENTREGA") return "Entrega";
   if (tipo === "DEVOLUCION") return "Devolución";
   if (tipo === "ASIGNACION") return "Asignación";
-  if (clasePrestamo === "EXTERNO" && prestamoEstado === "PENDIENTE") return "Préstamo externo (pendiente)";
-  if (clasePrestamo === "EXTERNO" && prestamoEstado === "DEVUELTO") return "Préstamo externo (devuelto)";
-  if (clasePrestamo === "INTERNO" && prestamoEstado === "PENDIENTE") return "Préstamo interno (pendiente)";
-  if (clasePrestamo === "INTERNO" && prestamoEstado === "DEVUELTO") return "Préstamo interno (devuelto)";
+  if (clasePrestamo === "EXTERNO" && prestamoEstado === "PENDIENTE")
+    return "Préstamo externo (pendiente)";
+  if (clasePrestamo === "EXTERNO" && prestamoEstado === "DEVUELTO")
+    return "Préstamo externo (devuelto)";
+  if (clasePrestamo === "INTERNO" && prestamoEstado === "PENDIENTE")
+    return "Préstamo interno (pendiente)";
+  if (clasePrestamo === "INTERNO" && prestamoEstado === "DEVUELTO")
+    return "Préstamo interno (devuelto)";
   if (prestamoEstado === "PENDIENTE") return "Préstamo pendiente";
   if (prestamoEstado === "DEVUELTO") return "Préstamo devuelto";
   return "Préstamo";
 }
 
-export async function getMovimientosEquipoData(equipoId: bigint | null = null): Promise<MovimientosEquipoData> {
+export async function getMovimientosEquipoData(
+  equipoId: bigint | null = null
+): Promise<MovimientosEquipoData> {
   const catalog = await prisma.equipo.findMany({
     orderBy: [{ nombre: "asc" }, { equipoId: "asc" }],
     select: {
@@ -160,17 +166,24 @@ export async function getMovimientosEquipoData(equipoId: bigint | null = null): 
       movimientoEquipo.movimiento.tipo === TipoMovimiento.PRESTAMO
         ? buildPrestamoEstadoLabel(
             movimientoEquipo.movimiento.prestamoActivo?.estado ?? null,
-            movimientoEquipo.movimiento.prestamoHistorial?.estado ?? null,
+            movimientoEquipo.movimiento.prestamoHistorial?.estado ?? null
           )
         : null;
     const destinatario = resolveDestinatarioMovimiento(movimientoEquipo.movimiento);
-    const clasePrestamo = movimientoEquipo.movimiento.tipo === TipoMovimiento.PRESTAMO ? destinatario?.clase ?? "PENDIENTE" : null;
+    const clasePrestamo =
+      movimientoEquipo.movimiento.tipo === TipoMovimiento.PRESTAMO
+        ? (destinatario?.clase ?? "PENDIENTE")
+        : null;
 
     return {
       movimientoId: movimientoEquipo.movimiento.movimientoId.toString(),
       fecha: formatDateOnlyFromDate(movimientoEquipo.movimiento.fecha) ?? "",
       tipo: movimientoEquipo.movimiento.tipo,
-      tipoLabel: buildMovimientoTipoLabel(movimientoEquipo.movimiento.tipo, prestamoEstado, clasePrestamo),
+      tipoLabel: buildMovimientoTipoLabel(
+        movimientoEquipo.movimiento.tipo,
+        prestamoEstado,
+        clasePrestamo
+      ),
       prestamoEstado,
       clasePrestamo,
       ci: destinatario?.ci ?? null,

@@ -33,7 +33,7 @@ export function DestinatarioSearchSelect({
 
   const selectedOption = useMemo(
     () => options.find((option) => option.ci === value) ?? null,
-    [options, value],
+    [options, value]
   );
 
   const searchIndex = useMemo(
@@ -42,7 +42,7 @@ export function DestinatarioSearchSelect({
         text: (option) => option.label,
         digits: (option) => option.ci,
       }),
-    [options],
+    [options]
   );
 
   const filteredOptions = useMemo(() => {
@@ -67,7 +67,8 @@ export function DestinatarioSearchSelect({
           className="relative block w-full rounded-lg border px-3 py-2 pr-10 text-left transition-colors disabled:opacity-50"
           style={{
             borderColor: "var(--color-border-subtle)",
-            background: "linear-gradient(180deg, rgb(250 248 241 / 96%) 0%, rgb(239 235 223 / 98%) 100%)",
+            background:
+              "linear-gradient(180deg, rgb(250 248 241 / 96%) 0%, rgb(239 235 223 / 98%) 100%)",
           }}
           aria-label="Cambiar destinatario"
         >
@@ -75,7 +76,9 @@ export function DestinatarioSearchSelect({
             {selectedOption.label}
           </p>
           <p className="mt-0.5 text-sm text-stone-500">CI {formatUruguayanCi(selectedOption.ci)}</p>
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-base text-stone-600">▾</span>
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-base text-stone-600">
+            ▾
+          </span>
         </button>
       ) : (
         <input
@@ -115,9 +118,13 @@ export function DestinatarioSearchSelect({
                   key={option.ci}
                   type="button"
                   onMouseEnter={() => setHoveredOptionCi(option.ci)}
-                  onMouseLeave={() => setHoveredOptionCi((current) => (current === option.ci ? null : current))}
+                  onMouseLeave={() =>
+                    setHoveredOptionCi((current) => (current === option.ci ? null : current))
+                  }
                   onFocus={() => setHoveredOptionCi(option.ci)}
-                  onBlur={() => setHoveredOptionCi((current) => (current === option.ci ? null : current))}
+                  onBlur={() =>
+                    setHoveredOptionCi((current) => (current === option.ci ? null : current))
+                  }
                   onMouseDown={(event) => {
                     event.preventDefault();
                     onChange(option.ci);
@@ -133,7 +140,9 @@ export function DestinatarioSearchSelect({
                   }`}
                 >
                   <span className="block font-medium">{option.label}</span>
-                  <span className={`block text-xs ${active ? "text-stone-200" : "text-stone-500"}`}>CI {formatUruguayanCi(option.ci)}</span>
+                  <span className={`block text-xs ${active ? "text-stone-200" : "text-stone-500"}`}>
+                    CI {formatUruguayanCi(option.ci)}
+                  </span>
                 </button>
               );
             })

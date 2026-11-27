@@ -1,15 +1,13 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { formatUruguayanCi, generatePlaceholderUruguayanCi, isValidUruguayanCi, normalizeCi } from "@/lib/ci";
+  formatUruguayanCi,
+  generatePlaceholderUruguayanCi,
+  isValidUruguayanCi,
+  normalizeCi,
+} from "@/lib/ci";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
 import {
   TALLA_KEYS,
@@ -92,12 +90,24 @@ import {
   EMPTY_STOCK_OPERACION_DRAFT,
   EMPTY_PRESTAMO_DRAFT,
 } from "@/types/forms";
-import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDialogState, UserRoleDialogState } from "./types/home";
+import type {
+  PersonalObservacionDraft,
+  UserPasswordDialogState,
+  UserProfileDialogState,
+  UserRoleDialogState,
+} from "./types/home";
 import type { PersonalCurrentUser } from "./types/home";
 
 // Importar utilidades desde archivos organizados
 import { api } from "@/lib/api";
-import { apellidosLabel, nombresLabel, roleDescription, roleLabel, roleScope, rangoLabel } from "@/lib/formatters";
+import {
+  apellidosLabel,
+  nombresLabel,
+  roleDescription,
+  roleLabel,
+  roleScope,
+  rangoLabel,
+} from "@/lib/formatters";
 import {
   getTodayDateInput,
   oficialSuboficialPayload,
@@ -238,7 +248,7 @@ const MAX_BULK_DELIVERY_PDF_LOG_ENTRIES = 12;
 const DISPLAY_BULK_DELIVERY_PDF_LOG_ENTRIES = 4;
 
 function isActiveHojasEntregaEmailJob(
-  job: HojasEntregaEmailJobSnapshot | null | undefined,
+  job: HojasEntregaEmailJobSnapshot | null | undefined
 ): job is HojasEntregaEmailJobSnapshot & { status: "queued" | "running" } {
   return job?.status === "queued" || job?.status === "running";
 }
@@ -256,7 +266,9 @@ function normalizeDurationMs(value: unknown): number | null {
   return Math.round(value);
 }
 
-function parseHojasEntregaPdfMetricsHeader(value: string | null): HojasEntregaPdfServerMetrics | null {
+function parseHojasEntregaPdfMetricsHeader(
+  value: string | null
+): HojasEntregaPdfServerMetrics | null {
   if (!value) return null;
   try {
     const parsed = JSON.parse(value) as Partial<HojasEntregaPdfServerMetrics>;
@@ -264,7 +276,10 @@ function parseHojasEntregaPdfMetricsHeader(value: string | null): HojasEntregaPd
       loadingMs: normalizeDurationMs(parsed.loadingMs),
       renderingMs: normalizeDurationMs(parsed.renderingMs),
       totalMs: normalizeDurationMs(parsed.totalMs),
-      hojas: typeof parsed.hojas === "number" && Number.isFinite(parsed.hojas) ? Math.max(0, Math.trunc(parsed.hojas)) : null,
+      hojas:
+        typeof parsed.hojas === "number" && Number.isFinite(parsed.hojas)
+          ? Math.max(0, Math.trunc(parsed.hojas))
+          : null,
     };
   } catch {
     return null;
@@ -300,7 +315,7 @@ function formatClockTime(value: Date) {
 
 function syncBulkDeliveryEmailToast(
   job: HojasEntregaEmailJobSnapshot,
-  onCancel?: (jobId: string) => void,
+  onCancel?: (jobId: string) => void
 ) {
   const description = describeHojasEntregaEmailJob(job);
 
@@ -344,7 +359,9 @@ function syncBulkDeliveryEmailToast(
   });
 }
 
-function rangoLooksLikeSargento(rango: { abreviacion: string; nombreCompleto: string } | null | undefined) {
+function rangoLooksLikeSargento(
+  rango: { abreviacion: string; nombreCompleto: string } | null | undefined
+) {
   if (!rango) return false;
   const normalized = normalizeSearchTerm(`${rango.abreviacion} ${rango.nombreCompleto}`);
   const hasSargento = normalized.includes("sargento") || normalized.includes("sgto");
@@ -471,12 +488,13 @@ export default function Home() {
   const [personalContactSaving, setPersonalContactSaving] = useState(false);
   const [userRoleDialog, setUserRoleDialog] = useState<UserRoleDialogState | null>(null);
   const [userRoleSaving, setUserRoleSaving] = useState(false);
-  const [userPasswordDialog, setUserPasswordDialog] = useState<UserPasswordDialogState | null>(null);
+  const [userPasswordDialog, setUserPasswordDialog] = useState<UserPasswordDialogState | null>(
+    null
+  );
   const [userPasswordSaving, setUserPasswordSaving] = useState(false);
   const [usernameDialog, setUsernameDialog] = useState<UserProfileDialogState | null>(null);
   const [usernameSaving, setUsernameSaving] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
-
 
   const [newUserRangoId, setNewUserRangoId] = useState("");
   const [newNombre, setNewNombre] = useState("");
@@ -512,20 +530,24 @@ export default function Home() {
 
   const [articuloEntregaPersonalCi, setArticuloEntregaPersonalCi] = useState("");
   const [articuloEntregaPersonalOrdenanteCi, setArticuloEntregaPersonalOrdenanteCi] = useState("");
-  const [articuloEntregaPersonalFecha, setArticuloEntregaPersonalFecha] = useState(getTodayDateInput());
+  const [articuloEntregaPersonalFecha, setArticuloEntregaPersonalFecha] =
+    useState(getTodayDateInput());
   const [articuloEntregaPersonalComentarios, setArticuloEntregaPersonalComentarios] = useState("");
-  const [articuloEntregaPersonalItems, setArticuloEntregaPersonalItems] = useState<import("@/app/components/views/ArticuloEntregaPersonalView").ArticuloEntregaPersonalDraftItem[]>([
-    { articuloId: "", cantidad: "1" },
-  ]);
+  const [articuloEntregaPersonalItems, setArticuloEntregaPersonalItems] = useState<
+    import("@/app/components/views/ArticuloEntregaPersonalView").ArticuloEntregaPersonalDraftItem[]
+  >([{ articuloId: "", cantidad: "1" }]);
   const [articuloEntregaPersonalSaving, setArticuloEntregaPersonalSaving] = useState(false);
 
-  const updateArticuloEntregaPersonalItem = useCallback((index: number, field: "articuloId" | "cantidad", value: string) => {
-    setArticuloEntregaPersonalItems((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: value };
-      return copy;
-    });
-  }, []);
+  const updateArticuloEntregaPersonalItem = useCallback(
+    (index: number, field: "articuloId" | "cantidad", value: string) => {
+      setArticuloEntregaPersonalItems((prev) => {
+        const copy = [...prev];
+        copy[index] = { ...copy[index], [field]: value };
+        return copy;
+      });
+    },
+    []
+  );
 
   const addArticuloEntregaPersonalItem = useCallback(() => {
     setArticuloEntregaPersonalItems((prev) => [...prev, { articuloId: "", cantidad: "1" }]);
@@ -550,18 +572,30 @@ export default function Home() {
   const [editTipoEquipoNombre, setEditTipoEquipoNombre] = useState("");
   const [editTipoEquipoOrden, setEditTipoEquipoOrden] = useState("");
   const [equipoOrderDraftIds, setEquipoOrderDraftIds] = useState<string[] | null>(null);
-  const [equipoInactivoOrderDraftIds, setEquipoInactivoOrderDraftIds] = useState<string[] | null>(null);
+  const [equipoInactivoOrderDraftIds, setEquipoInactivoOrderDraftIds] = useState<string[] | null>(
+    null
+  );
   const [mergeEquipoOrigenId, setMergeEquipoOrigenId] = useState("");
   const [mergeEquipoDestinoId, setMergeEquipoDestinoId] = useState("");
-  const [mergeEquipoDialog, setMergeEquipoDialog] = useState<{ sourceItemId: string; targetEquipoId: string } | null>(null);
+  const [mergeEquipoDialog, setMergeEquipoDialog] = useState<{
+    sourceItemId: string;
+    targetEquipoId: string;
+  } | null>(null);
   const [mergeEquipoSaving, setMergeEquipoSaving] = useState(false);
 
   const [newPersonal, setNewPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
-  const [newOficialSuboficial, setNewOficialSuboficial] = useState<OficialSuboficialForm>(EMPTY_OFICIAL_SUBOFICIAL_FORM);
+  const [newOficialSuboficial, setNewOficialSuboficial] = useState<OficialSuboficialForm>(
+    EMPTY_OFICIAL_SUBOFICIAL_FORM
+  );
   const [editingOficialSuboficialCi, setEditingOficialSuboficialCi] = useState<string | null>(null);
-  const [newPersonalMovimientos, setNewPersonalMovimientos] = useState<PersonalAltaMovimientoForm[]>([]);
-  const [newPersonalMovimientoDraft, setNewPersonalMovimientoDraft] = useState<PersonalAltaMovimientoForm | null>(null);
-  const [newPersonalMovimientoEditIndex, setNewPersonalMovimientoEditIndex] = useState<number | null>(null);
+  const [newPersonalMovimientos, setNewPersonalMovimientos] = useState<
+    PersonalAltaMovimientoForm[]
+  >([]);
+  const [newPersonalMovimientoDraft, setNewPersonalMovimientoDraft] =
+    useState<PersonalAltaMovimientoForm | null>(null);
+  const [newPersonalMovimientoEditIndex, setNewPersonalMovimientoEditIndex] = useState<
+    number | null
+  >(null);
   const [editPersonalCi, setEditPersonalCi] = useState<string | null>(null);
   const [editPersonal, setEditPersonal] = useState<PersonalForm>(EMPTY_PERSONAL_FORM);
   const [promotingSubalternoCi, setPromotingSubalternoCi] = useState<string | null>(null);
@@ -572,9 +606,15 @@ export default function Home() {
   const [expandedTallasByCi, setExpandedTallasByCi] = useState<Record<string, boolean>>({});
   const [registroDraft, setRegistroDraft] = useState<RegistroDraft | null>(null);
   const [registroSaving, setRegistroSaving] = useState(false);
-  const [stockDraft, setStockDraft] = useState<StockOperacionDraft>({ ...EMPTY_STOCK_OPERACION_DRAFT, fecha: getTodayDateInput() });
+  const [stockDraft, setStockDraft] = useState<StockOperacionDraft>({
+    ...EMPTY_STOCK_OPERACION_DRAFT,
+    fecha: getTodayDateInput(),
+  });
   const [stockSaving, setStockSaving] = useState(false);
-  const [prestamoDraft, setPrestamoDraft] = useState<PrestamoDraft>({ ...EMPTY_PRESTAMO_DRAFT, fechaPrestamo: getTodayDateInput() });
+  const [prestamoDraft, setPrestamoDraft] = useState<PrestamoDraft>({
+    ...EMPTY_PRESTAMO_DRAFT,
+    fechaPrestamo: getTodayDateInput(),
+  });
   const [prestamoSaving, setPrestamoSaving] = useState(false);
   const {
     updateStockDraftItem,
@@ -590,17 +630,22 @@ export default function Home() {
   });
   const [returningPrestamoId, setReturningPrestamoId] = useState<string | null>(null);
   const [editingPrestamoId, setEditingPrestamoId] = useState<string | null>(null);
-  const [personalObservacionDraft, setPersonalObservacionDraft] = useState<PersonalObservacionDraft | null>(null);
+  const [personalObservacionDraft, setPersonalObservacionDraft] =
+    useState<PersonalObservacionDraft | null>(null);
   const [personalObservacionSaving, setPersonalObservacionSaving] = useState(false);
   const [registroViewer, setRegistroViewer] = useState<RegistroViewerState | null>(null);
   const [registroViewerPage, setRegistroViewerPage] = useState(1);
   const [registroViewerPageSize, setRegistroViewerPageSize] = useState(20);
   const [personaProfile, setPersonaProfile] = useState<PersonaProfileState | null>(null);
   const [personalSelfProfile, setPersonalSelfProfile] = useState<PersonaProfileState | null>(null);
-  const [personaProfileReturnView, setPersonaProfileReturnView] = useState<PersonaProfileReturnView>("personal");
+  const [personaProfileReturnView, setPersonaProfileReturnView] =
+    useState<PersonaProfileReturnView>("personal");
   const [fichaViewingCi, setFichaViewingCi] = useState<string | null>(null);
   const [showConfigViews, setShowConfigViews] = useState(false);
-  const personaProfileRequestRef = useRef<{ id: number; controller: AbortController | null }>({ id: 0, controller: null });
+  const personaProfileRequestRef = useRef<{ id: number; controller: AbortController | null }>({
+    id: 0,
+    controller: null,
+  });
   const configMenuRef = useRef<HTMLDivElement | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const [confirmDialogBusy, setConfirmDialogBusy] = useState(false);
@@ -617,15 +662,23 @@ export default function Home() {
   const [bulkDeliveryPdfStartedAtMs, setBulkDeliveryPdfStartedAtMs] = useState<number | null>(null);
   const [bulkDeliveryPdfElapsedMs, setBulkDeliveryPdfElapsedMs] = useState(0);
   const [bulkDeliveryPdfMsPerHojaEstimate, setBulkDeliveryPdfMsPerHojaEstimate] = useState(
-    DEFAULT_BULK_DELIVERY_PDF_MS_PER_HOJA_ESTIMATE,
+    DEFAULT_BULK_DELIVERY_PDF_MS_PER_HOJA_ESTIMATE
   );
   const [bulkDeliveryPdfLogEntries, setBulkDeliveryPdfLogEntries] = useState<string[]>([]);
-  const [bulkDeliveryEmailJob, setBulkDeliveryEmailJob] = useState<HojasEntregaEmailJobSnapshot | null>(null);
+  const [bulkDeliveryEmailJob, setBulkDeliveryEmailJob] =
+    useState<HojasEntregaEmailJobSnapshot | null>(null);
   const bulkDeliveryEmailPollTimeoutRef = useRef<number | null>(null);
   const bulkDeliveryPdfLastLoggedPhaseRef = useRef<BulkDeliveryPdfPhase | null>(null);
 
   const permissions = useHomePermissions(currentUser);
-  const { isPersonalAccount, isAdmin, canWrite, canManageOwnAccount, canDelete, canDeleteRegistros } = permissions;
+  const {
+    isPersonalAccount,
+    isAdmin,
+    canWrite,
+    canManageOwnAccount,
+    canDelete,
+    canDeleteRegistros,
+  } = permissions;
   const {
     activeSection: activeEtiquetadoSection,
     data: etiquetadoData,
@@ -656,7 +709,8 @@ export default function Home() {
     enabled: Boolean(currentUser),
     ignoredStatuses: IGNORED_HOME_STATUS_TOASTS,
   });
-  const sessionReferenceEmail = typeof session?.user?.email === "string" ? session.user.email.trim() : "";
+  const sessionReferenceEmail =
+    typeof session?.user?.email === "string" ? session.user.email.trim() : "";
   const currentUserReferenceEmail =
     typeof currentUser?.mailReferencia === "string" && currentUser.mailReferencia.trim() !== ""
       ? currentUser.mailReferencia.trim()
@@ -670,7 +724,7 @@ export default function Home() {
   const canRegisterPersonal = canWrite && rangos.length > 0;
   const rangosOficialSuboficialDisponibles = useMemo(
     () => (newOficialSuboficial.tipo === "OFICIAL" ? rangosOficiales : rangosSuboficiales),
-    [newOficialSuboficial.tipo, rangosOficiales, rangosSuboficiales],
+    [newOficialSuboficial.tipo, rangosOficiales, rangosSuboficiales]
   );
   const canRegisterOficialSuboficial = canWrite && rangosOficialSuboficialDisponibles.length > 0;
   const inCatalogView =
@@ -680,7 +734,11 @@ export default function Home() {
     activeView === "equipos" ||
     activeView === "tipos_equipo";
   const inReminderConfigView = activeView === "recordatorios";
-  const inAdminConfigView = activeView === "firmas" || activeView === "usuarios" || activeView === "auditoria" || activeView === "papelera";
+  const inAdminConfigView =
+    activeView === "firmas" ||
+    activeView === "usuarios" ||
+    activeView === "auditoria" ||
+    activeView === "papelera";
   const inEtiquetadoView = activeEtiquetadoSection !== null;
   const ciPlaceholder = useMemo(() => generatePlaceholderUruguayanCi(), []);
   const normalizedNewCi = normalizeCi(newPersonal.ci.trim());
@@ -691,19 +749,23 @@ export default function Home() {
   const ciAlreadyExists = duplicatePersonal !== null;
   const ciLooksValid = newPersonal.ci.trim() === "" || isValidUruguayanCi(newPersonal.ci);
   const newPersonalPhoneLooksValid =
-    newPersonal.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(newPersonal.telefonoContacto);
+    newPersonal.telefonoContacto.trim() === "" ||
+    isValidUruguayanMobileNumber(newPersonal.telefonoContacto);
   const newPersonalFechaIngresoLooksValid =
     newPersonal.fechaIngreso.trim() === "" ||
-    (parseDateInput(newPersonal.fechaIngreso).valid && !isDateInputAfterToday(newPersonal.fechaIngreso));
+    (parseDateInput(newPersonal.fechaIngreso).valid &&
+      !isDateInputAfterToday(newPersonal.fechaIngreso));
   const newPersonalFechaIngresoOriginalLooksValid =
     newPersonal.fechaIngresoOriginal.trim() === "" ||
-    (parseDateInput(newPersonal.fechaIngresoOriginal).valid && !isDateInputAfterToday(newPersonal.fechaIngresoOriginal));
+    (parseDateInput(newPersonal.fechaIngresoOriginal).valid &&
+      !isDateInputAfterToday(newPersonal.fechaIngresoOriginal));
   const newPersonalReentryDatesLookValid =
     !newPersonal.esReingreso ||
     (newPersonal.fechaIngreso.trim() !== "" &&
       parseDateInput(newPersonal.fechaIngreso).valid &&
       newPersonalFechaIngresoOriginalLooksValid &&
-      (newPersonal.fechaIngresoOriginal.trim() === "" || !isDateInputAfter(newPersonal.fechaIngresoOriginal, newPersonal.fechaIngreso)));
+      (newPersonal.fechaIngresoOriginal.trim() === "" ||
+        !isDateInputAfter(newPersonal.fechaIngresoOriginal, newPersonal.fechaIngreso)));
   const ciHasError = !ciLooksValid || ciAlreadyExists;
   const requiredPersonalFields = [
     newPersonal.ci.trim() !== "" && isValidUruguayanCi(newPersonal.ci) && !ciAlreadyExists,
@@ -725,22 +787,33 @@ export default function Home() {
   const normalizedEditingOficialSuboficialCi = normalizeCi(editingOficialSuboficialCi ?? "");
   const duplicateOficialSuboficialLabel = useMemo(() => {
     if (normalizedNewOficialSuboficialCi === "") return null;
-    if (normalizedEditingOficialSuboficialCi !== "" && normalizedNewOficialSuboficialCi === normalizedEditingOficialSuboficialCi) return null;
+    if (
+      normalizedEditingOficialSuboficialCi !== "" &&
+      normalizedNewOficialSuboficialCi === normalizedEditingOficialSuboficialCi
+    )
+      return null;
 
-    const duplicateSubalterno = personal.find((persona) => normalizeCi(persona.ci) === normalizedNewOficialSuboficialCi);
+    const duplicateSubalterno = personal.find(
+      (persona) => normalizeCi(persona.ci) === normalizedNewOficialSuboficialCi
+    );
     if (duplicateSubalterno) {
       return `${apellidosLabel(duplicateSubalterno)}, ${nombresLabel(duplicateSubalterno)}`;
     }
 
     const duplicateOficialSuboficial = oficialesSuboficiales.find(
-      (registro) => normalizeCi(registro.ci) === normalizedNewOficialSuboficialCi,
+      (registro) => normalizeCi(registro.ci) === normalizedNewOficialSuboficialCi
     );
     if (duplicateOficialSuboficial) {
       return `${duplicateOficialSuboficial.apellido}, ${duplicateOficialSuboficial.nombre}`;
     }
 
     return null;
-  }, [normalizedNewOficialSuboficialCi, normalizedEditingOficialSuboficialCi, personal, oficialesSuboficiales]);
+  }, [
+    normalizedNewOficialSuboficialCi,
+    normalizedEditingOficialSuboficialCi,
+    personal,
+    oficialesSuboficiales,
+  ]);
   const oficialSuboficialCiAlreadyExists = duplicateOficialSuboficialLabel !== null;
   const oficialSuboficialCiLooksValid =
     newOficialSuboficial.ci.trim() === "" || isValidUruguayanCi(newOficialSuboficial.ci);
@@ -774,47 +847,44 @@ export default function Home() {
         if (a.orden !== b.orden) return a.orden - b.orden;
         return a.rangoId - b.rangoId;
       }),
-    [rangos, rangosOficiales, rangosSuboficiales],
+    [rangos, rangosOficiales, rangosSuboficiales]
   );
 
   const maxFechaIngreso = getTodayDateInput();
-  const tiposEquipoOptions = useMemo<EquipoTipo[]>(
-    () => {
-      const baseTipos =
-        tiposEquipo.length > 0
-          ? tiposEquipo
-          : [
-              {
-                tipoEquipoId: null,
-                clave: GENERAL_TIPO_EQUIPO_CLAVE,
-                nombre: "General",
-                orden: 0,
-                esGeneral: true,
-              },
-            ];
+  const tiposEquipoOptions = useMemo<EquipoTipo[]>(() => {
+    const baseTipos =
+      tiposEquipo.length > 0
+        ? tiposEquipo
+        : [
+            {
+              tipoEquipoId: null,
+              clave: GENERAL_TIPO_EQUIPO_CLAVE,
+              nombre: "General",
+              orden: 0,
+              esGeneral: true,
+            },
+          ];
 
-      const byKey = new Map(baseTipos.map((tipo) => [tipo.clave, tipo]));
-      for (const equipo of equipos) {
-        if (byKey.has(equipo.tipo)) continue;
-        byKey.set(equipo.tipo, {
-          tipoEquipoId: equipo.tipoEquipoId ?? null,
-          clave: equipo.tipo,
-          nombre: equipo.tipoLabel ?? equipo.tipo,
-          orden: typeof equipo.tipoOrden === "number" ? equipo.tipoOrden : byKey.size,
-          esGeneral: equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE,
-        });
-      }
-
-      return Array.from(byKey.values()).sort((left, right) => {
-        if (left.orden !== right.orden) return left.orden - right.orden;
-        return left.nombre.localeCompare(right.nombre, "es", { sensitivity: "base" });
+    const byKey = new Map(baseTipos.map((tipo) => [tipo.clave, tipo]));
+    for (const equipo of equipos) {
+      if (byKey.has(equipo.tipo)) continue;
+      byKey.set(equipo.tipo, {
+        tipoEquipoId: equipo.tipoEquipoId ?? null,
+        clave: equipo.tipo,
+        nombre: equipo.tipoLabel ?? equipo.tipo,
+        orden: typeof equipo.tipoOrden === "number" ? equipo.tipoOrden : byKey.size,
+        esGeneral: equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE,
       });
-    },
-    [equipos, tiposEquipo],
-  );
+    }
+
+    return Array.from(byKey.values()).sort((left, right) => {
+      if (left.orden !== right.orden) return left.orden - right.orden;
+      return left.nombre.localeCompare(right.nombre, "es", { sensitivity: "base" });
+    });
+  }, [equipos, tiposEquipo]);
   const tipoEquipoByClave = useMemo(
     () => new Map(tiposEquipoOptions.map((tipo) => [tipo.clave, tipo])),
-    [tiposEquipoOptions],
+    [tiposEquipoOptions]
   );
   const equiposRelacionadosCountByTipoEquipoId = useMemo(() => {
     const next = new Map<number, number>();
@@ -827,29 +897,39 @@ export default function Home() {
     return next;
   }, [equipos]);
   useEffect(() => {
-    setNewEquipo((previous) => (
+    setNewEquipo((previous) =>
       tipoEquipoByClave.has(previous.tipo)
         ? previous
         : { ...previous, tipo: GENERAL_TIPO_EQUIPO_CLAVE }
-    ));
-    setEditEquipo((previous) => (
+    );
+    setEditEquipo((previous) =>
       tipoEquipoByClave.has(previous.tipo)
         ? previous
         : { ...previous, tipo: GENERAL_TIPO_EQUIPO_CLAVE }
-    ));
+    );
   }, [tipoEquipoByClave]);
   const equiposOrdenados = useMemo(
     () => [...equipos].sort(compareEquiposByTipoAndOrder),
-    [equipos],
+    [equipos]
   );
-  const equiposActivos = useMemo(() => equiposOrdenados.filter((equipo) => equipo.activo), [equiposOrdenados]);
-  const equiposInactivos = useMemo(() => equiposOrdenados.filter((equipo) => !equipo.activo), [equiposOrdenados]);
+  const equiposActivos = useMemo(
+    () => equiposOrdenados.filter((equipo) => equipo.activo),
+    [equiposOrdenados]
+  );
+  const equiposInactivos = useMemo(
+    () => equiposOrdenados.filter((equipo) => !equipo.activo),
+    [equiposOrdenados]
+  );
   const equiposActivosIdsByTipo = useMemo(() => {
     const next = new Map<string, Set<string>>();
     for (const tipo of tiposEquipoOptions) {
       next.set(
         tipo.clave,
-        new Set(equiposActivos.filter((equipo) => equipo.tipo === tipo.clave).map((equipo) => equipo.equipoId)),
+        new Set(
+          equiposActivos
+            .filter((equipo) => equipo.tipo === tipo.clave)
+            .map((equipo) => equipo.equipoId)
+        )
       );
     }
     return next;
@@ -859,7 +939,11 @@ export default function Home() {
     for (const tipo of tiposEquipoOptions) {
       next.set(
         tipo.clave,
-        new Set(equiposInactivos.filter((equipo) => equipo.tipo === tipo.clave).map((equipo) => equipo.equipoId)),
+        new Set(
+          equiposInactivos
+            .filter((equipo) => equipo.tipo === tipo.clave)
+            .map((equipo) => equipo.equipoId)
+        )
       );
     }
     return next;
@@ -890,7 +974,8 @@ export default function Home() {
       const newOficialSuboficialValue = normalizeTallaValue(key, newOficialSuboficial[key]);
       const editValue = normalizeTallaValue(key, editPersonal[key]);
       if (newValue && isAllowedTallaValue(key, newValue)) values.add(newValue);
-      if (newOficialSuboficialValue && isAllowedTallaValue(key, newOficialSuboficialValue)) values.add(newOficialSuboficialValue);
+      if (newOficialSuboficialValue && isAllowedTallaValue(key, newOficialSuboficialValue))
+        values.add(newOficialSuboficialValue);
       if (editValue && isAllowedTallaValue(key, editValue)) values.add(editValue);
 
       dynamic[key] = Array.from(values).sort((a, b) => compareTallaOptions(key, a, b));
@@ -949,11 +1034,7 @@ export default function Home() {
             const ci = String(det.ci || det.username || log.entidadId || "").toLowerCase();
             const detName = `${det.nombre || ""} ${det.apellido || ""}`.toLowerCase();
             const detGrado = String(det.grado || det.gradoAbreviacion || "").toLowerCase();
-            if (
-              ci.includes(query) ||
-              detName.includes(query) ||
-              detGrado.includes(query)
-            ) {
+            if (ci.includes(query) || detName.includes(query) || detGrado.includes(query)) {
               return true;
             }
           }
@@ -1004,11 +1085,15 @@ export default function Home() {
     if (!equipoInactivoOrderDraftIds) return false;
     const currentInactivoIds = equiposInactivos.map((equipo) => equipo.equipoId);
     if (equipoInactivoOrderDraftIds.length !== currentInactivoIds.length) return true;
-    return equipoInactivoOrderDraftIds.some((equipoId, index) => equipoId !== currentInactivoIds[index]);
+    return equipoInactivoOrderDraftIds.some(
+      (equipoId, index) => equipoId !== currentInactivoIds[index]
+    );
   }, [equiposInactivos, equipoInactivoOrderDraftIds]);
   const mergeEquipoSource = useMemo(() => {
     if (!mergeEquipoDialog) return null;
-    return equiposOrdenados.find((equipo) => equipo.equipoId === mergeEquipoDialog.sourceItemId) ?? null;
+    return (
+      equiposOrdenados.find((equipo) => equipo.equipoId === mergeEquipoDialog.sourceItemId) ?? null
+    );
   }, [equiposOrdenados, mergeEquipoDialog]);
   const mergeEquipoTargetOptions = useMemo(() => {
     if (!mergeEquipoDialog) return [] as Equipo[];
@@ -1016,7 +1101,11 @@ export default function Home() {
   }, [equiposOrdenados, mergeEquipoDialog]);
   const mergeEquipoDialogTargetId = useMemo(() => {
     if (!mergeEquipoDialog) return "";
-    if (mergeEquipoTargetOptions.some((equipo) => equipo.equipoId === mergeEquipoDialog.targetEquipoId)) {
+    if (
+      mergeEquipoTargetOptions.some(
+        (equipo) => equipo.equipoId === mergeEquipoDialog.targetEquipoId
+      )
+    ) {
       return mergeEquipoDialog.targetEquipoId;
     }
     return mergeEquipoTargetOptions[0]?.equipoId ?? "";
@@ -1027,7 +1116,10 @@ export default function Home() {
     setMergeEquipoOrigenId((current) => (current !== "" && ids.has(current) ? current : ""));
     setMergeEquipoDestinoId((current) => (current !== "" && ids.has(current) ? current : ""));
   }, [equipos]);
-  const personalOrdenado = useMemo(() => [...personal].sort(comparePersonalByHierarchy), [personal]);
+  const personalOrdenado = useMemo(
+    () => [...personal].sort(comparePersonalByHierarchy),
+    [personal]
+  );
   const personalSearchIndex = useMemo(() => {
     type PersonalSearchEntry = {
       persona: Personal;
@@ -1049,7 +1141,10 @@ export default function Home() {
       };
       allEntries.push(entry);
 
-      const batteryKey = persona.bateriaId === null || persona.bateriaId === undefined ? "NONE" : String(persona.bateriaId);
+      const batteryKey =
+        persona.bateriaId === null || persona.bateriaId === undefined
+          ? "NONE"
+          : String(persona.bateriaId);
       const batteryEntries = byBatteryFilter.get(batteryKey);
       if (batteryEntries) {
         batteryEntries.push(entry);
@@ -1064,7 +1159,10 @@ export default function Home() {
   const searchNombresText = normalizeSearchTerm(searchNombres);
   const searchApellidosText = normalizeSearchTerm(searchApellidos);
   const hasPersonalFilters =
-    searchCedula.trim() !== "" || searchNombres.trim() !== "" || searchApellidos.trim() !== "" || bateriaFilter !== "ALL";
+    searchCedula.trim() !== "" ||
+    searchNombres.trim() !== "" ||
+    searchApellidos.trim() !== "" ||
+    bateriaFilter !== "ALL";
   const personalFiltrado = useMemo(() => {
     const baseEntries = personalSearchIndex.byBatteryFilter.get(bateriaFilter) ?? [];
     return baseEntries
@@ -1084,7 +1182,13 @@ export default function Home() {
         return true;
       })
       .map((entry) => entry.persona);
-  }, [personalSearchIndex, bateriaFilter, searchCedulaDigits, searchNombresText, searchApellidosText]);
+  }, [
+    personalSearchIndex,
+    bateriaFilter,
+    searchCedulaDigits,
+    searchNombresText,
+    searchApellidosText,
+  ]);
   const personalTotalPages = Math.max(1, Math.ceil(personalFiltrado.length / personalPageSize));
   const personalPageSafe = Math.min(personalPage, personalTotalPages);
   const personalFiltradoPaginado = useMemo(() => {
@@ -1120,7 +1224,10 @@ export default function Home() {
     return rangoLooksLikeSargento(rangoEnEdicion);
   }, [editPersonalCi, isAdmin, rangoEnEdicion]);
   const registroViewerRows = useMemo(() => registroViewer?.registros ?? [], [registroViewer]);
-  const registroViewerTotalPages = Math.max(1, Math.ceil(registroViewerRows.length / registroViewerPageSize));
+  const registroViewerTotalPages = Math.max(
+    1,
+    Math.ceil(registroViewerRows.length / registroViewerPageSize)
+  );
   const registroViewerPageSafe = Math.min(registroViewerPage, registroViewerTotalPages);
   const registroViewerRowsPaginados = useMemo(() => {
     const start = (registroViewerPageSafe - 1) * registroViewerPageSize;
@@ -1146,7 +1253,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if ((activeView === "personal_nuevo" || activeView === "oficial_nuevo" || activeView === "suboficial_nuevo") && !canWrite) {
+    if (
+      (activeView === "personal_nuevo" ||
+        activeView === "oficial_nuevo" ||
+        activeView === "suboficial_nuevo") &&
+      !canWrite
+    ) {
       setActiveView("personal");
     }
   }, [activeView, canWrite, setActiveView]);
@@ -1200,7 +1312,9 @@ export default function Home() {
       return;
     }
 
-    const selectedExists = articulos.some((articulo) => String(articulo.articuloId) === articuloStockIngresoId);
+    const selectedExists = articulos.some(
+      (articulo) => String(articulo.articuloId) === articuloStockIngresoId
+    );
     if (!selectedExists) {
       setArticuloStockIngresoId(String(articulos[0].articuloId));
     }
@@ -1232,7 +1346,6 @@ export default function Home() {
     setRegistroViewerPage(registroViewerTotalPages);
   }, [registroViewerPage, registroViewerTotalPages]);
 
-
   useEffect(() => {
     setAuditPage(1);
   }, [auditFilter, auditPageSize, auditUserFilter]);
@@ -1246,7 +1359,8 @@ export default function Home() {
     if (!equipoOrderDraftIds) return;
     const currentActiveIds = new Set(equiposActivos.map((equipo) => equipo.equipoId));
     const draftIsValid =
-      equipoOrderDraftIds.length === equiposActivos.length && equipoOrderDraftIds.every((equipoId) => currentActiveIds.has(equipoId));
+      equipoOrderDraftIds.length === equiposActivos.length &&
+      equipoOrderDraftIds.every((equipoId) => currentActiveIds.has(equipoId));
     if (draftIsValid) return;
     setEquipoOrderDraftIds(null);
   }, [equipoOrderDraftIds, equiposActivos]);
@@ -1346,7 +1460,13 @@ export default function Home() {
         options: { includeHistorial: false, includePrestamos: true },
       };
     }
-    if (view === "stock" || view === "stock_total" || view === "stock_actual" || view === "stock_alta" || view === "stock_baja") {
+    if (
+      view === "stock" ||
+      view === "stock_total" ||
+      view === "stock_actual" ||
+      view === "stock_alta" ||
+      view === "stock_baja"
+    ) {
       return {
         key: "summary",
         options: { includeHistorial: false, includePrestamos: false },
@@ -1355,16 +1475,22 @@ export default function Home() {
     return null;
   }, []);
 
-  const activeStockLoadProfile = useMemo(() => getStockLoadProfile(activeView), [activeView, getStockLoadProfile]);
+  const activeStockLoadProfile = useMemo(
+    () => getStockLoadProfile(activeView),
+    [activeView, getStockLoadProfile]
+  );
 
   const reloadActiveStockData = useCallback(async () => {
     if (!activeStockLoadProfile) return;
     await loadStockData(activeStockLoadProfile.options);
   }, [activeStockLoadProfile, loadStockData]);
 
-  const reloadAdminData = useCallback(async (showSpinner = false) => {
-    await Promise.all([loadData(showSpinner), loadAdminData()]);
-  }, [loadAdminData, loadData]);
+  const reloadAdminData = useCallback(
+    async (showSpinner = false) => {
+      await Promise.all([loadData(showSpinner), loadAdminData()]);
+    },
+    [loadAdminData, loadData]
+  );
 
   useEffect(() => {
     if (!activeStockLoadProfile) return;
@@ -1400,7 +1526,14 @@ export default function Home() {
       }
       setActiveView(view);
     },
-    [activeView, clearEtiquetadoError, getStockLoadProfile, setActiveView, setStockData, setStockError],
+    [
+      activeView,
+      clearEtiquetadoError,
+      getStockLoadProfile,
+      setActiveView,
+      setStockData,
+      setStockError,
+    ]
   );
 
   const reloadCurrentViewData = useCallback(
@@ -1455,7 +1588,7 @@ export default function Home() {
       reloadActiveStockData,
       reloadAdminData,
       reloadEtiquetadoData,
-    ],
+    ]
   );
 
   const createRango = useCallback(async () => {
@@ -1477,7 +1610,7 @@ export default function Home() {
             await loadData();
           },
           onError: (message) => setStatus(message),
-        },
+        }
       );
     } catch {
       // Error manejado en el handler
@@ -1506,13 +1639,13 @@ export default function Home() {
               await loadData();
             },
             onError: (message) => setStatus(message),
-          },
+          }
         );
       } catch {
         // Error manejado en el handler
       }
     },
-    [isAdmin, editRangoAbreviacion, editRangoNombreCompleto, editRangoOrden, loadData],
+    [isAdmin, editRangoAbreviacion, editRangoNombreCompleto, editRangoOrden, loadData]
   );
 
   const deleteRango = useCallback(
@@ -1542,7 +1675,7 @@ export default function Home() {
         },
       });
     },
-    [isAdmin, rangosConfigView, loadData],
+    [isAdmin, rangosConfigView, loadData]
   );
 
   const createBateria = useCallback(async () => {
@@ -1551,15 +1684,19 @@ export default function Home() {
       return;
     }
     try {
-      await createBateriaHandler(newBateria, newBateriaOrden.trim() === "" ? undefined : Number(newBateriaOrden), {
-        onSuccess: async () => {
-          setNewBateria("");
-          setNewBateriaOrden("");
-          setStatus("Batería creada.");
-          await loadData();
-        },
-        onError: (message) => setStatus(message),
-      });
+      await createBateriaHandler(
+        newBateria,
+        newBateriaOrden.trim() === "" ? undefined : Number(newBateriaOrden),
+        {
+          onSuccess: async () => {
+            setNewBateria("");
+            setNewBateriaOrden("");
+            setStatus("Batería creada.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        }
+      );
     } catch {
       // Error manejado en el handler
     }
@@ -1585,13 +1722,13 @@ export default function Home() {
               await loadData();
             },
             onError: (message) => setStatus(message),
-          },
+          }
         );
       } catch {
         // Error manejado en el handler
       }
     },
-    [canWrite, editBateriaNombre, editBateriaOrden, loadData],
+    [canWrite, editBateriaNombre, editBateriaOrden, loadData]
   );
 
   const deleteBateria = useCallback(
@@ -1621,7 +1758,7 @@ export default function Home() {
         },
       });
     },
-    [canDelete, baterias, loadData],
+    [canDelete, baterias, loadData]
   );
 
   const createArticulo = useCallback(async () => {
@@ -1669,7 +1806,7 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [isAdmin, editArticuloNombre, editArticuloTipo, loadData],
+    [isAdmin, editArticuloNombre, editArticuloTipo, loadData]
   );
 
   const deleteArticulo = useCallback(
@@ -1690,13 +1827,17 @@ export default function Home() {
         const dialogMessage = (
           <div className="space-y-4">
             <p className="text-stone-750 leading-normal">
-              ¿Estás seguro de que deseas eliminar el artículo <strong className="text-stone-900 font-extrabold">{articulo?.nombre}</strong>?
+              ¿Estás seguro de que deseas eliminar el artículo{" "}
+              <strong className="text-stone-900 font-extrabold">{articulo?.nombre}</strong>?
             </p>
 
             {movimientosList.length > 0 ? (
               <div className="mt-3 space-y-2">
                 <div className="rounded-xl border border-amber-200 bg-amber-55/70 p-3 text-xs text-amber-900">
-                  ⚠️ <strong className="font-extrabold">Atención:</strong> Este artículo está vinculado a <strong className="font-black">{movimientosList.length}</strong> movimiento(s) de stock. Al confirmarse la eliminación, todos estos movimientos y sus comprobantes de entrega se transferirán automáticamente a la papelera.
+                  ⚠️ <strong className="font-extrabold">Atención:</strong> Este artículo está
+                  vinculado a <strong className="font-black">{movimientosList.length}</strong>{" "}
+                  movimiento(s) de stock. Al confirmarse la eliminación, todos estos movimientos y
+                  sus comprobantes de entrega se transferirán automáticamente a la papelera.
                 </div>
 
                 <div className="rounded-xl border border-stone-200 bg-stone-50 p-2.5">
@@ -1705,37 +1846,53 @@ export default function Home() {
                   </span>
 
                   <div className="max-h-[160px] overflow-y-auto space-y-1.5 pr-1">
-                    {(movimientosList as Array<{
-                      articuloStockMovimientoId: number;
-                      tipo: string;
-                      fechaEntrega?: string | null;
-                      createdAt: string;
-                      destinatario?: string | null;
-                      comentario?: string | null;
-                      cantidad: number;
-                    }>).map((m) => (
-                      <div key={m.articuloStockMovimientoId} className="flex justify-between equipos-center rounded-lg border border-stone-150 bg-white p-2 text-xs">
+                    {(
+                      movimientosList as Array<{
+                        articuloStockMovimientoId: number;
+                        tipo: string;
+                        fechaEntrega?: string | null;
+                        createdAt: string;
+                        destinatario?: string | null;
+                        comentario?: string | null;
+                        cantidad: number;
+                      }>
+                    ).map((m) => (
+                      <div
+                        key={m.articuloStockMovimientoId}
+                        className="flex justify-between equipos-center rounded-lg border border-stone-150 bg-white p-2 text-xs"
+                      >
                         <div>
                           <div className="flex equipos-center gap-1.5">
-                            <span className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
-                              m.tipo === "INGRESO" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-rose-50 text-rose-800 border border-rose-200"
-                            }`}>
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
+                                m.tipo === "INGRESO"
+                                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                  : "bg-rose-50 text-rose-800 border border-rose-200"
+                              }`}
+                            >
                               {m.tipo}
                             </span>
-                            <span className="font-mono text-stone-600 text-[10px]">{m.fechaEntrega || m.createdAt.split("T")[0]}</span>
+                            <span className="font-mono text-stone-600 text-[10px]">
+                              {m.fechaEntrega || m.createdAt.split("T")[0]}
+                            </span>
                           </div>
                           {m.destinatario && (
                             <p className="mt-1 text-stone-900 font-semibold">{m.destinatario}</p>
                           )}
                           {m.comentario && (
-                            <p className="mt-0.5 text-[10px] text-stone-500 italic">“{m.comentario}”</p>
+                            <p className="mt-0.5 text-[10px] text-stone-500 italic">
+                              “{m.comentario}”
+                            </p>
                           )}
                         </div>
                         <div className="text-right">
-                          <span className={`font-mono font-black text-xs ${
-                            m.tipo === "INGRESO" ? "text-emerald-700" : "text-rose-700"
-                          }`}>
-                            {m.tipo === "INGRESO" ? "+" : "-"}{m.cantidad}
+                          <span
+                            className={`font-mono font-black text-xs ${
+                              m.tipo === "INGRESO" ? "text-emerald-700" : "text-rose-700"
+                            }`}
+                          >
+                            {m.tipo === "INGRESO" ? "+" : "-"}
+                            {m.cantidad}
                           </span>
                         </div>
                       </div>
@@ -1771,10 +1928,12 @@ export default function Home() {
           },
         });
       } catch (err: unknown) {
-        setStatus(err instanceof Error ? err.message : "Error al cargar los movimientos del artículo.");
+        setStatus(
+          err instanceof Error ? err.message : "Error al cargar los movimientos del artículo."
+        );
       }
     },
-    [isAdmin, articulos, loadData],
+    [isAdmin, articulos, loadData]
   );
 
   const submitArticuloStockIngreso = useCallback(async () => {
@@ -1808,14 +1967,20 @@ export default function Home() {
             await loadData();
           },
           onError: (message) => setStatus(message),
-        },
+        }
       );
     } catch {
       // Error manejado en el handler
     } finally {
       setArticuloStockIngresoSaving(false);
     }
-  }, [canWrite, articuloStockIngresoId, articuloStockIngresoCantidad, articuloStockIngresoComentarios, loadData]);
+  }, [
+    canWrite,
+    articuloStockIngresoId,
+    articuloStockIngresoCantidad,
+    articuloStockIngresoComentarios,
+    loadData,
+  ]);
 
   const submitArticuloEntregaPersonal = useCallback(async () => {
     if (!canWrite) {
@@ -1873,7 +2038,7 @@ export default function Home() {
             await loadData();
           },
           onError: (message) => setStatus(message),
-        },
+        }
       );
     } catch {
       // Error manejado en el handler
@@ -1898,95 +2063,112 @@ export default function Home() {
     }
 
     try {
-      await createEquipoTipoHandler(newTipoEquipoNombre, newTipoEquipoOrden ? Number(newTipoEquipoOrden) : undefined, {
-        onSuccess: async () => {
-          setNewTipoEquipoNombre("");
-          setNewTipoEquipoOrden("");
-          setStatus("Tipo de equipo creado.");
-          await loadData();
-        },
-        onError: (message) => setStatus(message),
-      });
+      await createEquipoTipoHandler(
+        newTipoEquipoNombre,
+        newTipoEquipoOrden ? Number(newTipoEquipoOrden) : undefined,
+        {
+          onSuccess: async () => {
+            setNewTipoEquipoNombre("");
+            setNewTipoEquipoOrden("");
+            setStatus("Tipo de equipo creado.");
+            await loadData();
+          },
+          onError: (message) => setStatus(message),
+        }
+      );
     } catch {
       // Error manejado en el handler
     }
   }, [canWrite, loadData, newTipoEquipoNombre, newTipoEquipoOrden]);
 
-  const updateTipoEquipo = useCallback(async (tipoEquipoId: number) => {
-    if (!canWrite) {
-      setStatus("No tienes permisos para editar.");
-      return;
-    }
+  const updateTipoEquipo = useCallback(
+    async (tipoEquipoId: number) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para editar.");
+        return;
+      }
 
-    try {
-      await updateEquipoTipoHandler(
-        tipoEquipoId,
-        editTipoEquipoNombre,
-        editTipoEquipoOrden ? Number(editTipoEquipoOrden) : undefined,
-        {
-          onSuccess: async () => {
-            setEditTipoEquipoId(null);
-            setEditTipoEquipoNombre("");
-            setEditTipoEquipoOrden("");
-            setStatus("Tipo de equipo actualizado.");
+      try {
+        await updateEquipoTipoHandler(
+          tipoEquipoId,
+          editTipoEquipoNombre,
+          editTipoEquipoOrden ? Number(editTipoEquipoOrden) : undefined,
+          {
+            onSuccess: async () => {
+              setEditTipoEquipoId(null);
+              setEditTipoEquipoNombre("");
+              setEditTipoEquipoOrden("");
+              setStatus("Tipo de equipo actualizado.");
+              await loadData();
+            },
+            onError: (message) => setStatus(message),
+          }
+        );
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [canWrite, editTipoEquipoNombre, editTipoEquipoOrden, loadData]
+  );
+
+  const deleteTipoEquipo = useCallback(
+    async (tipoEquipoId: number) => {
+      if (!canWrite) {
+        setStatus("No tienes permisos para eliminar.");
+        return;
+      }
+
+      const tipo = tiposEquipoOptions.find((entry) => entry.tipoEquipoId === tipoEquipoId);
+      const cantidadRelacionados = equiposRelacionadosCountByTipoEquipoId.get(tipoEquipoId) ?? 0;
+      const nombreTipo = tipo?.nombre ?? "este tipo de equipo";
+      const confirmMessage =
+        cantidadRelacionados > 0
+          ? `Si eliminas "${nombreTipo}", ${cantidadRelacionados} equipo${cantidadRelacionados === 1 ? "" : "s"} pasar${cantidadRelacionados === 1 ? "á" : "án"} a General.`
+          : `Si eliminas "${nombreTipo}", el resto de categorías conservará su orden relativo.`;
+
+      if (!window.confirm(`${confirmMessage}\n\n¿Deseas continuar?`)) {
+        return;
+      }
+
+      try {
+        await deleteEquipoTipoHandler(tipoEquipoId, {
+          onSuccess: async (data) => {
+            const equiposReasignadosAGeneralRaw =
+              typeof data === "object" &&
+              data !== null &&
+              "equiposReasignadosAGeneral" in data &&
+              typeof (data as DeleteTipoEquipoResult).equiposReasignadosAGeneral === "number"
+                ? (data as DeleteTipoEquipoResult).equiposReasignadosAGeneral
+                : null;
+            const equiposReasignadosAGeneral =
+              equiposReasignadosAGeneralRaw ?? cantidadRelacionados;
+
+            if (editTipoEquipoId === tipoEquipoId) {
+              setEditTipoEquipoId(null);
+              setEditTipoEquipoNombre("");
+              setEditTipoEquipoOrden("");
+            }
+            setStatus(
+              equiposReasignadosAGeneral > 0
+                ? `Tipo de equipo eliminado. ${equiposReasignadosAGeneral} equipo${equiposReasignadosAGeneral === 1 ? "" : "s"} pas${equiposReasignadosAGeneral === 1 ? "ó" : "aron"} a General.`
+                : "Tipo de equipo eliminado."
+            );
             await loadData();
           },
           onError: (message) => setStatus(message),
-        },
-      );
-    } catch {
-      // Error manejado en el handler
-    }
-  }, [canWrite, editTipoEquipoNombre, editTipoEquipoOrden, loadData]);
-
-  const deleteTipoEquipo = useCallback(async (tipoEquipoId: number) => {
-    if (!canWrite) {
-      setStatus("No tienes permisos para eliminar.");
-      return;
-    }
-
-    const tipo = tiposEquipoOptions.find((entry) => entry.tipoEquipoId === tipoEquipoId);
-    const cantidadRelacionados = equiposRelacionadosCountByTipoEquipoId.get(tipoEquipoId) ?? 0;
-    const nombreTipo = tipo?.nombre ?? "este tipo de equipo";
-    const confirmMessage =
-      cantidadRelacionados > 0
-        ? `Si eliminas "${nombreTipo}", ${cantidadRelacionados} equipo${cantidadRelacionados === 1 ? "" : "s"} pasar${cantidadRelacionados === 1 ? "á" : "án"} a General.`
-        : `Si eliminas "${nombreTipo}", el resto de categorías conservará su orden relativo.`;
-
-    if (!window.confirm(`${confirmMessage}\n\n¿Deseas continuar?`)) {
-      return;
-    }
-
-    try {
-      await deleteEquipoTipoHandler(tipoEquipoId, {
-        onSuccess: async (data) => {
-          const equiposReasignadosAGeneralRaw =
-            typeof data === "object" &&
-            data !== null &&
-            "equiposReasignadosAGeneral" in data &&
-            typeof (data as DeleteTipoEquipoResult).equiposReasignadosAGeneral === "number"
-              ? (data as DeleteTipoEquipoResult).equiposReasignadosAGeneral
-              : null;
-          const equiposReasignadosAGeneral = equiposReasignadosAGeneralRaw ?? cantidadRelacionados;
-
-          if (editTipoEquipoId === tipoEquipoId) {
-            setEditTipoEquipoId(null);
-            setEditTipoEquipoNombre("");
-            setEditTipoEquipoOrden("");
-          }
-          setStatus(
-            equiposReasignadosAGeneral > 0
-              ? `Tipo de equipo eliminado. ${equiposReasignadosAGeneral} equipo${equiposReasignadosAGeneral === 1 ? "" : "s"} pas${equiposReasignadosAGeneral === 1 ? "ó" : "aron"} a General.`
-              : "Tipo de equipo eliminado.",
-          );
-          await loadData();
-        },
-        onError: (message) => setStatus(message),
-      });
-    } catch {
-      // Error manejado en el handler
-    }
-  }, [canWrite, editTipoEquipoId, equiposRelacionadosCountByTipoEquipoId, loadData, tiposEquipoOptions]);
+        });
+      } catch {
+        // Error manejado en el handler
+      }
+    },
+    [
+      canWrite,
+      editTipoEquipoId,
+      equiposRelacionadosCountByTipoEquipoId,
+      loadData,
+      tiposEquipoOptions,
+    ]
+  );
 
   const createEquipo = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -2012,7 +2194,7 @@ export default function Home() {
         setCreatingEquipo(false);
       }
     },
-    [canWrite, newEquipo, loadData],
+    [canWrite, newEquipo, loadData]
   );
 
   const updateEquipo = useCallback(
@@ -2022,20 +2204,27 @@ export default function Home() {
         return;
       }
       try {
-        await updateEquipoHandler(equipoId, editEquipo.nombre, editEquipo.tipo, editEquipo.activo, editEquipo.ordenPdf ?? 0, {
-          onSuccess: async () => {
-            setEditEquipoId(null);
-            setEditEquipo(EMPTY_EQUIPO_FORM);
-            setStatus("Equipo actualizado.");
-            await loadData();
-          },
-          onError: (message) => setStatus(message),
-        });
+        await updateEquipoHandler(
+          equipoId,
+          editEquipo.nombre,
+          editEquipo.tipo,
+          editEquipo.activo,
+          editEquipo.ordenPdf ?? 0,
+          {
+            onSuccess: async () => {
+              setEditEquipoId(null);
+              setEditEquipo(EMPTY_EQUIPO_FORM);
+              setStatus("Equipo actualizado.");
+              await loadData();
+            },
+            onError: (message) => setStatus(message),
+          }
+        );
       } catch {
         // Error manejado en el handler
       }
     },
-    [canWrite, editEquipo, loadData],
+    [canWrite, editEquipo, loadData]
   );
 
   const toggleEquipoActivo = useCallback(
@@ -2046,18 +2235,25 @@ export default function Home() {
       }
 
       try {
-        await updateEquipoHandler(equipo.equipoId, equipo.nombre, equipo.tipo, !equipo.activo, equipo.ordenPdf, {
-          onSuccess: async () => {
-            setStatus(`Equipo ${!equipo.activo ? "visible en hoja" : "oculto de hoja"}.`);
-            await loadData();
-          },
-          onError: (message) => setStatus(message),
-        });
+        await updateEquipoHandler(
+          equipo.equipoId,
+          equipo.nombre,
+          equipo.tipo,
+          !equipo.activo,
+          equipo.ordenPdf,
+          {
+            onSuccess: async () => {
+              setStatus(`Equipo ${!equipo.activo ? "visible en hoja" : "oculto de hoja"}.`);
+              await loadData();
+            },
+            onError: (message) => setStatus(message),
+          }
+        );
       } catch {
         // Error manejado en el handler
       }
     },
-    [canWrite, loadData],
+    [canWrite, loadData]
   );
 
   const saveActiveEquiposOrder = useCallback(
@@ -2087,7 +2283,7 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [canWrite, equiposActivos, loadData],
+    [canWrite, equiposActivos, loadData]
   );
   const updateEquipoOrderDraft = useCallback(
     (tipo: TipoEquipo, updater: (currentOrder: string[]) => string[]) => {
@@ -2105,7 +2301,7 @@ export default function Home() {
         });
       });
     },
-    [canWrite, equiposActivos, equiposActivosIdsByTipo, tiposEquipoOptions],
+    [canWrite, equiposActivos, equiposActivosIdsByTipo, tiposEquipoOptions]
   );
 
   const moveEquipoInDraft = useCallback(
@@ -2118,7 +2314,7 @@ export default function Home() {
         return moveIdInOrder(currentOrder, currentIndex, targetIndex);
       });
     },
-    [updateEquipoOrderDraft],
+    [updateEquipoOrderDraft]
   );
 
   const setEquipoDraftPosition = useCallback(
@@ -2126,13 +2322,18 @@ export default function Home() {
       updateEquipoOrderDraft(tipo, (currentOrder) => {
         const currentIndex = currentOrder.indexOf(equipoId);
         const targetIndex = nextPosition - 1;
-        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentOrder.length || currentIndex === targetIndex) {
+        if (
+          currentIndex < 0 ||
+          targetIndex < 0 ||
+          targetIndex >= currentOrder.length ||
+          currentIndex === targetIndex
+        ) {
           return currentOrder;
         }
         return moveIdInOrder(currentOrder, currentIndex, targetIndex);
       });
     },
-    [updateEquipoOrderDraft],
+    [updateEquipoOrderDraft]
   );
 
   const saveInactivoEquiposOrder = useCallback(
@@ -2160,13 +2361,13 @@ export default function Home() {
             },
             onError: (message) => setStatus(message),
           },
-          false,
+          false
         );
       } catch {
         // Error manejado en el handler
       }
     },
-    [canWrite, equiposInactivos, loadData],
+    [canWrite, equiposInactivos, loadData]
   );
 
   const updateEquipoInactivoOrderDraft = useCallback(
@@ -2185,7 +2386,7 @@ export default function Home() {
         });
       });
     },
-    [canWrite, equiposInactivos, equiposInactivosIdsByTipo, tiposEquipoOptions],
+    [canWrite, equiposInactivos, equiposInactivosIdsByTipo, tiposEquipoOptions]
   );
 
   const moveEquipoInactivoInDraft = useCallback(
@@ -2198,7 +2399,7 @@ export default function Home() {
         return moveIdInOrder(currentOrder, currentIndex, targetIndex);
       });
     },
-    [updateEquipoInactivoOrderDraft],
+    [updateEquipoInactivoOrderDraft]
   );
 
   const setEquipoInactivoDraftPosition = useCallback(
@@ -2206,13 +2407,18 @@ export default function Home() {
       updateEquipoInactivoOrderDraft(tipo, (currentOrder) => {
         const currentIndex = currentOrder.indexOf(equipoId);
         const targetIndex = nextPosition - 1;
-        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentOrder.length || currentIndex === targetIndex) {
+        if (
+          currentIndex < 0 ||
+          targetIndex < 0 ||
+          targetIndex >= currentOrder.length ||
+          currentIndex === targetIndex
+        ) {
           return currentOrder;
         }
         return moveIdInOrder(currentOrder, currentIndex, targetIndex);
       });
     },
-    [updateEquipoInactivoOrderDraft],
+    [updateEquipoInactivoOrderDraft]
   );
 
   const deleteEquipo = useCallback(
@@ -2222,9 +2428,7 @@ export default function Home() {
         return;
       }
       const equipo = equipos.find((entry) => entry.equipoId === equipoId);
-      let impacto:
-        | Awaited<ReturnType<typeof loadEquipoDeleteImpactHandler>>
-        | null = null;
+      let impacto: Awaited<ReturnType<typeof loadEquipoDeleteImpactHandler>> | null = null;
       try {
         impacto = await loadEquipoDeleteImpactHandler(equipoId, {
           onSuccess: () => {},
@@ -2235,12 +2439,16 @@ export default function Home() {
       }
 
       const registrosImpacto = impacto.registros.map((registro) => {
-        const accion = registro.seEliminaMovimiento ? "se elimina movimiento completo" : "solo se elimina este equipo del movimiento";
+        const accion = registro.seEliminaMovimiento
+          ? "se elimina movimiento completo"
+          : "solo se elimina este equipo del movimiento";
         const fecha = formatDateOnlyForDisplay(registro.fecha, registro.fecha);
         return `- Registro #${registro.movimientoId} | ${registro.tipo} | ${fecha} | CI ${registro.ci} | ${accion}`;
       });
       const stockImpacto = impacto.stock.map((stock) => {
-        const accion = stock.seEliminaMovimiento ? "se elimina movimiento completo" : "solo se elimina este equipo del movimiento";
+        const accion = stock.seEliminaMovimiento
+          ? "se elimina movimiento completo"
+          : "solo se elimina este equipo del movimiento";
         const fecha = formatDateOnlyForDisplay(stock.fecha, stock.fecha);
         return `- Stock #${stock.movimientoId} | ${stock.tipo} | ${fecha} | ${accion}`;
       });
@@ -2251,7 +2459,9 @@ export default function Home() {
       const cajasImpacto = impacto.cajas.map((caja) => {
         const detalles = [
           caja.tieneRelacionEquipoDirecta ? "incluye este equipo" : null,
-          caja.codigosSIERelacionados.length > 0 ? `códigos SIE: ${caja.codigosSIERelacionados.join(", ")}` : null,
+          caja.codigosSIERelacionados.length > 0
+            ? `códigos SIE: ${caja.codigosSIERelacionados.join(", ")}`
+            : null,
           caja.quedaSinEquipos ? "queda sin equipos seleccionados" : null,
         ]
           .filter((detail): detail is string => detail !== null)
@@ -2302,7 +2512,7 @@ export default function Home() {
         },
       });
     },
-    [canDelete, equipos, loadData],
+    [canDelete, equipos, loadData]
   );
 
   const openMergeEquipoDialog = useCallback(
@@ -2329,7 +2539,7 @@ export default function Home() {
         targetEquipoId: firstTarget.equipoId,
       });
     },
-    [canDelete, equiposOrdenados],
+    [canDelete, equiposOrdenados]
   );
 
   const closeMergeEquipoDialog = useCallback(() => {
@@ -2348,7 +2558,9 @@ export default function Home() {
       return;
     }
 
-    const source = equiposOrdenados.find((equipo) => equipo.equipoId === mergeEquipoDialog.sourceItemId);
+    const source = equiposOrdenados.find(
+      (equipo) => equipo.equipoId === mergeEquipoDialog.sourceItemId
+    );
     const targetEquipoId = mergeEquipoDialogTargetId;
     const target = equiposOrdenados.find((equipo) => equipo.equipoId === targetEquipoId);
 
@@ -2364,7 +2576,7 @@ export default function Home() {
         onError: (message) => setStatus(message),
       });
       setStatus(
-        `Equipo unificado: ${result.sourceEquipo.nombre} -> ${result.targetEquipo.nombre}. Movimientos afectados: ${result.resumen.totalMovimientosAfectados}.`,
+        `Equipo unificado: ${result.sourceEquipo.nombre} -> ${result.targetEquipo.nombre}. Movimientos afectados: ${result.resumen.totalMovimientosAfectados}.`
       );
       setMergeEquipoDialog(null);
       setMergeEquipoOrigenId("");
@@ -2375,7 +2587,14 @@ export default function Home() {
     } finally {
       setMergeEquipoSaving(false);
     }
-  }, [canDelete, equiposOrdenados, loadData, mergeEquipoDialog, mergeEquipoDialogTargetId, mergeEquipoSaving]);
+  }, [
+    canDelete,
+    equiposOrdenados,
+    loadData,
+    mergeEquipoDialog,
+    mergeEquipoDialogTargetId,
+    mergeEquipoSaving,
+  ]);
 
   const handleMergeEquipoOrigenChange = useCallback(
     (nextOrigenId: string) => {
@@ -2384,7 +2603,7 @@ export default function Home() {
         setMergeEquipoDestinoId("");
       }
     },
-    [mergeEquipoDestinoId],
+    [mergeEquipoDestinoId]
   );
 
   const handleMergeEquipoDestinoChange = useCallback((nextDestinoId: string) => {
@@ -2430,7 +2649,7 @@ export default function Home() {
               onError: (message) => setStatus(message),
             });
             setStatus(
-              `Equipo unificado: ${result.sourceEquipo.nombre} -> ${result.targetEquipo.nombre}. Movimientos afectados: ${result.resumen.totalMovimientosAfectados}.`,
+              `Equipo unificado: ${result.sourceEquipo.nombre} -> ${result.targetEquipo.nombre}. Movimientos afectados: ${result.resumen.totalMovimientosAfectados}.`
             );
             setMergeEquipoOrigenId("");
             setMergeEquipoDestinoId("");
@@ -2441,7 +2660,7 @@ export default function Home() {
         },
       });
     },
-    [canDelete, equipos, loadData],
+    [canDelete, equipos, loadData]
   );
 
   const createEmptyAltaMovimiento = useCallback((): PersonalAltaMovimientoForm => {
@@ -2457,15 +2676,18 @@ export default function Home() {
     setNewPersonalMovimientoDraft(createEmptyAltaMovimiento());
   }, [createEmptyAltaMovimiento]);
 
-  const editNewPersonalMovimiento = useCallback((movimientoIndex: number) => {
-    const target = newPersonalMovimientos[movimientoIndex];
-    if (!target) return;
-    setNewPersonalMovimientoEditIndex(movimientoIndex);
-    setNewPersonalMovimientoDraft({
-      ...target,
-      equipos: target.equipos.map((equipo) => ({ ...equipo })),
-    });
-  }, [newPersonalMovimientos]);
+  const editNewPersonalMovimiento = useCallback(
+    (movimientoIndex: number) => {
+      const target = newPersonalMovimientos[movimientoIndex];
+      if (!target) return;
+      setNewPersonalMovimientoEditIndex(movimientoIndex);
+      setNewPersonalMovimientoDraft({
+        ...target,
+        equipos: target.equipos.map((equipo) => ({ ...equipo })),
+      });
+    },
+    [newPersonalMovimientos]
+  );
 
   const closeNewPersonalMovimientoModal = useCallback(() => {
     setNewPersonalMovimientoDraft(null);
@@ -2478,28 +2700,38 @@ export default function Home() {
 
   const updateNewPersonalMovimientoDraft = useCallback(
     (field: keyof Omit<PersonalAltaMovimientoForm, "equipos">, value: string) => {
-      setNewPersonalMovimientoDraft((prev) => (prev ? ({ ...prev, [field]: value } as PersonalAltaMovimientoForm) : prev));
+      setNewPersonalMovimientoDraft((prev) =>
+        prev ? ({ ...prev, [field]: value } as PersonalAltaMovimientoForm) : prev
+      );
     },
-    [],
+    []
   );
 
-  const updateNewPersonalMovimientoDraftItem = useCallback((equipoIndex: number, field: "equipoId" | "cantidad", value: string) => {
-    setNewPersonalMovimientoDraft((prev) => {
-      if (!prev) return prev;
-      if (
-        field === "equipoId" &&
-        value !== "" &&
-        prev.equipos.some((equipo, currentItemIndex) => currentItemIndex !== equipoIndex && equipo.equipoId === value)
-      ) {
-        setStatus("Ese equipo ya fue seleccionado en este movimiento.");
-        return prev;
-      }
-      return {
-        ...prev,
-        equipos: prev.equipos.map((equipo, currentItemIndex) => (currentItemIndex === equipoIndex ? { ...equipo, [field]: value } : equipo)),
-      };
-    });
-  }, []);
+  const updateNewPersonalMovimientoDraftItem = useCallback(
+    (equipoIndex: number, field: "equipoId" | "cantidad", value: string) => {
+      setNewPersonalMovimientoDraft((prev) => {
+        if (!prev) return prev;
+        if (
+          field === "equipoId" &&
+          value !== "" &&
+          prev.equipos.some(
+            (equipo, currentItemIndex) =>
+              currentItemIndex !== equipoIndex && equipo.equipoId === value
+          )
+        ) {
+          setStatus("Ese equipo ya fue seleccionado en este movimiento.");
+          return prev;
+        }
+        return {
+          ...prev,
+          equipos: prev.equipos.map((equipo, currentItemIndex) =>
+            currentItemIndex === equipoIndex ? { ...equipo, [field]: value } : equipo
+          ),
+        };
+      });
+    },
+    []
+  );
 
   const addNewPersonalMovimientoDraftItem = useCallback(() => {
     setNewPersonalMovimientoDraft((prev) =>
@@ -2508,7 +2740,7 @@ export default function Home() {
             ...prev,
             equipos: [...prev.equipos, { equipoId: "", cantidad: "1" }],
           }
-        : prev,
+        : prev
     );
   }, []);
 
@@ -2536,7 +2768,10 @@ export default function Home() {
 
     const parsedItems = newPersonalMovimientoDraft.equipos
       .map((equipo) => ({ equipoId: equipo.equipoId.trim(), cantidad: Number(equipo.cantidad) }))
-      .filter((equipo) => equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0);
+      .filter(
+        (equipo) =>
+          equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0
+      );
 
     if (parsedItems.length === 0) {
       setStatus("Debes agregar al menos un equipo con cantidad válida.");
@@ -2552,12 +2787,17 @@ export default function Home() {
     const sanitizedDraft: PersonalAltaMovimientoForm = {
       ...newPersonalMovimientoDraft,
       comentarios: newPersonalMovimientoDraft.comentarios.trim(),
-      equipos: parsedItems.map((equipo) => ({ equipoId: equipo.equipoId, cantidad: String(equipo.cantidad) })),
+      equipos: parsedItems.map((equipo) => ({
+        equipoId: equipo.equipoId,
+        cantidad: String(equipo.cantidad),
+      })),
     };
 
     setNewPersonalMovimientos((prev) => {
       if (newPersonalMovimientoEditIndex === null) return [...prev, sanitizedDraft];
-      return prev.map((movimiento, index) => (index === newPersonalMovimientoEditIndex ? sanitizedDraft : movimiento));
+      return prev.map((movimiento, index) =>
+        index === newPersonalMovimientoEditIndex ? sanitizedDraft : movimiento
+      );
     });
     closeNewPersonalMovimientoModal();
   }, [newPersonalMovimientoDraft, newPersonalMovimientoEditIndex, closeNewPersonalMovimientoModal]);
@@ -2582,19 +2822,31 @@ export default function Home() {
         setStatus("El celular de contacto debe tener formato uruguayo válido.");
         return;
       }
-      if (newPersonal.fechaIngreso.trim() !== "" && !parseDateInput(newPersonal.fechaIngreso).valid) {
+      if (
+        newPersonal.fechaIngreso.trim() !== "" &&
+        !parseDateInput(newPersonal.fechaIngreso).valid
+      ) {
         setStatus("La fecha de ingreso debe estar en formato DD/MM/AAAA.");
         return;
       }
-      if (newPersonal.fechaIngreso.trim() !== "" && isDateInputAfterToday(newPersonal.fechaIngreso)) {
+      if (
+        newPersonal.fechaIngreso.trim() !== "" &&
+        isDateInputAfterToday(newPersonal.fechaIngreso)
+      ) {
         setStatus("La fecha de ingreso no puede ser futura.");
         return;
       }
-      if (newPersonal.fechaIngresoOriginal.trim() !== "" && !parseDateInput(newPersonal.fechaIngresoOriginal).valid) {
+      if (
+        newPersonal.fechaIngresoOriginal.trim() !== "" &&
+        !parseDateInput(newPersonal.fechaIngresoOriginal).valid
+      ) {
         setStatus("La fecha de ingreso debe estar en formato DD/MM/AAAA.");
         return;
       }
-      if (newPersonal.fechaIngresoOriginal.trim() !== "" && isDateInputAfterToday(newPersonal.fechaIngresoOriginal)) {
+      if (
+        newPersonal.fechaIngresoOriginal.trim() !== "" &&
+        isDateInputAfterToday(newPersonal.fechaIngresoOriginal)
+      ) {
         setStatus("La fecha de ingreso no puede ser futura.");
         return;
       }
@@ -2619,29 +2871,39 @@ export default function Home() {
       }>;
 
       for (const [movimientoIndex, movimiento] of newPersonalMovimientos.entries()) {
-          if (!parseDateInput(movimiento.fecha).valid) {
-            setStatus(`La fecha del movimiento #${movimientoIndex + 1} debe estar en formato DD/MM/AAAA.`);
-            return;
-          }
-          if (isDateInputAfterToday(movimiento.fecha)) {
-            setStatus(`La fecha del movimiento #${movimientoIndex + 1} no puede ser futura.`);
-            return;
-          }
+        if (!parseDateInput(movimiento.fecha).valid) {
+          setStatus(
+            `La fecha del movimiento #${movimientoIndex + 1} debe estar en formato DD/MM/AAAA.`
+          );
+          return;
+        }
+        if (isDateInputAfterToday(movimiento.fecha)) {
+          setStatus(`La fecha del movimiento #${movimientoIndex + 1} no puede ser futura.`);
+          return;
+        }
 
-          const parsedItems = movimiento.equipos
-            .map((equipo) => ({ equipoId: equipo.equipoId.trim(), cantidad: Number(equipo.cantidad) }))
-            .filter((equipo) => equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0);
+        const parsedItems = movimiento.equipos
+          .map((equipo) => ({
+            equipoId: equipo.equipoId.trim(),
+            cantidad: Number(equipo.cantidad),
+          }))
+          .filter(
+            (equipo) =>
+              equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0
+          );
 
-          if (parsedItems.length === 0) {
-            setStatus(`Debes agregar al menos un equipo con cantidad válida en el movimiento #${movimientoIndex + 1}.`);
-            return;
-          }
+        if (parsedItems.length === 0) {
+          setStatus(
+            `Debes agregar al menos un equipo con cantidad válida en el movimiento #${movimientoIndex + 1}.`
+          );
+          return;
+        }
 
-          const uniqueItemIds = new Set(parsedItems.map((equipo) => equipo.equipoId));
-          if (uniqueItemIds.size !== parsedItems.length) {
-            setStatus(`No puedes repetir equipos en el movimiento #${movimientoIndex + 1}.`);
-            return;
-          }
+        const uniqueItemIds = new Set(parsedItems.map((equipo) => equipo.equipoId));
+        if (uniqueItemIds.size !== parsedItems.length) {
+          setStatus(`No puedes repetir equipos en el movimiento #${movimientoIndex + 1}.`);
+          return;
+        }
 
         movimientosPayload.push({
           tipo: movimiento.tipo,
@@ -2660,7 +2922,9 @@ export default function Home() {
       try {
         await createPersonalHandler(payload, {
           onSuccess: async () => {
-            const nombreCompleto = `${newPersonal.apellido1.trim()}, ${newPersonal.nombre1.trim()}`.replace(/\s+/g, " ").trim();
+            const nombreCompleto = `${newPersonal.apellido1.trim()}, ${newPersonal.nombre1.trim()}`
+              .replace(/\s+/g, " ")
+              .trim();
             setNewPersonal(EMPTY_PERSONAL_FORM);
             setNewPersonalMovimientos([]);
             setNewPersonalMovimientoDraft(null);
@@ -2691,40 +2955,51 @@ export default function Home() {
       newPersonalMovimientos,
       loadData,
       setActiveView,
-    ],
+    ]
   );
 
-  const updateNewOficialSuboficialField = useCallback((field: keyof OficialSuboficialForm, value: string) => {
-    setNewOficialSuboficial((prev) => {
-      if (field === "tipo") {
-        return {
-          ...prev,
-          tipo: value === "SUBOFICIAL" ? "SUBOFICIAL" : "OFICIAL",
-          rangoId: "",
-        };
-      }
-      return { ...prev, [field]: value } as OficialSuboficialForm;
-    });
-  }, []);
+  const updateNewOficialSuboficialField = useCallback(
+    (field: keyof OficialSuboficialForm, value: string) => {
+      setNewOficialSuboficial((prev) => {
+        if (field === "tipo") {
+          return {
+            ...prev,
+            tipo: value === "SUBOFICIAL" ? "SUBOFICIAL" : "OFICIAL",
+            rangoId: "",
+          };
+        }
+        return { ...prev, [field]: value } as OficialSuboficialForm;
+      });
+    },
+    []
+  );
 
-  const openOficialSuboficialCreate = useCallback((tipo: "OFICIAL" | "SUBOFICIAL") => {
-    setEditingOficialSuboficialCi(null);
-    setNewOficialSuboficial({ ...EMPTY_OFICIAL_SUBOFICIAL_FORM, tipo, rangoId: "" });
-    setActiveView(tipo === "OFICIAL" ? "oficial_nuevo" : "suboficial_nuevo");
-  }, [setActiveView]);
+  const openOficialSuboficialCreate = useCallback(
+    (tipo: "OFICIAL" | "SUBOFICIAL") => {
+      setEditingOficialSuboficialCi(null);
+      setNewOficialSuboficial({ ...EMPTY_OFICIAL_SUBOFICIAL_FORM, tipo, rangoId: "" });
+      setActiveView(tipo === "OFICIAL" ? "oficial_nuevo" : "suboficial_nuevo");
+    },
+    [setActiveView]
+  );
 
-  const startEditOficialSuboficial = useCallback((registro: OficialSuboficial) => {
-    setEditingOficialSuboficialCi(registro.ci);
-    setNewOficialSuboficial(toEditableOficialSuboficial(registro));
-    setActiveView(registro.tipo === "OFICIAL" ? "oficial_nuevo" : "suboficial_nuevo");
-  }, [setActiveView]);
+  const startEditOficialSuboficial = useCallback(
+    (registro: OficialSuboficial) => {
+      setEditingOficialSuboficialCi(registro.ci);
+      setNewOficialSuboficial(toEditableOficialSuboficial(registro));
+      setActiveView(registro.tipo === "OFICIAL" ? "oficial_nuevo" : "suboficial_nuevo");
+    },
+    [setActiveView]
+  );
 
   const submitOficialSuboficial = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (creatingOficialSuboficial) return;
       if (!canRegisterOficialSuboficial) {
-        setStatus("No se puede registrar personal oficial/suboficial sin grados disponibles para el tipo elegido.");
+        setStatus(
+          "No se puede registrar personal oficial/suboficial sin grados disponibles para el tipo elegido."
+        );
         return;
       }
       if (oficialSuboficialCiAlreadyExists) {
@@ -2757,13 +3032,18 @@ export default function Home() {
             });
         await action;
 
-        const nombreCompleto = `${newOficialSuboficial.apellido1.trim()}, ${newOficialSuboficial.nombre1.trim()}`
-          .replace(/\s+/g, " ")
-          .trim();
-        const viewAfterSave = newOficialSuboficial.tipo === "OFICIAL" ? "oficiales" : "suboficiales";
+        const nombreCompleto =
+          `${newOficialSuboficial.apellido1.trim()}, ${newOficialSuboficial.nombre1.trim()}`
+            .replace(/\s+/g, " ")
+            .trim();
+        const viewAfterSave =
+          newOficialSuboficial.tipo === "OFICIAL" ? "oficiales" : "suboficiales";
 
         setEditingOficialSuboficialCi(null);
-        setNewOficialSuboficial({ ...EMPTY_OFICIAL_SUBOFICIAL_FORM, tipo: newOficialSuboficial.tipo });
+        setNewOficialSuboficial({
+          ...EMPTY_OFICIAL_SUBOFICIAL_FORM,
+          tipo: newOficialSuboficial.tipo,
+        });
         setActiveView(viewAfterSave);
 
         toast.success(
@@ -2775,7 +3055,7 @@ export default function Home() {
               ? `${nombreCompleto} fue actualizado en el listado.`
               : `${nombreCompleto} ya figura en el listado.`,
             duration: 5000,
-          },
+          }
         );
 
         await loadData();
@@ -2792,7 +3072,7 @@ export default function Home() {
       editingOficialSuboficialCi,
       loadData,
       setActiveView,
-    ],
+    ]
   );
 
   const cancelOficialSuboficialForm = useCallback(() => {
@@ -2806,18 +3086,21 @@ export default function Home() {
     async (event: FormEvent<HTMLFormElement>) => {
       await submitOficialSuboficial(event);
     },
-    [submitOficialSuboficial],
+    [submitOficialSuboficial]
   );
 
-  const updateNewPersonalField = useCallback((field: keyof PersonalForm, value: string | boolean) => {
-    setNewPersonal((prev) => {
-      const next = { ...prev, [field]: value } as PersonalForm;
-      if (field === "esReingreso" && value === false) {
-        next.fechaIngresoOriginal = "";
-      }
-      return next;
-    });
-  }, []);
+  const updateNewPersonalField = useCallback(
+    (field: keyof PersonalForm, value: string | boolean) => {
+      setNewPersonal((prev) => {
+        const next = { ...prev, [field]: value } as PersonalForm;
+        if (field === "esReingreso" && value === false) {
+          next.fechaIngresoOriginal = "";
+        }
+        return next;
+      });
+    },
+    []
+  );
 
   const updatePersonal = useCallback(
     async (ci: string) => {
@@ -2825,23 +3108,38 @@ export default function Home() {
         setStatus("No tienes permisos para editar.");
         return;
       }
-      if (editPersonal.telefonoContacto.trim() !== "" && !isValidUruguayanMobileNumber(editPersonal.telefonoContacto)) {
+      if (
+        editPersonal.telefonoContacto.trim() !== "" &&
+        !isValidUruguayanMobileNumber(editPersonal.telefonoContacto)
+      ) {
         setStatus("El celular de contacto debe tener formato uruguayo válido.");
         return;
       }
-      if (editPersonal.fechaIngreso.trim() !== "" && !parseDateInput(editPersonal.fechaIngreso).valid) {
+      if (
+        editPersonal.fechaIngreso.trim() !== "" &&
+        !parseDateInput(editPersonal.fechaIngreso).valid
+      ) {
         setStatus("La fecha de ingreso debe estar en formato DD/MM/AAAA.");
         return;
       }
-      if (editPersonal.fechaIngreso.trim() !== "" && isDateInputAfterToday(editPersonal.fechaIngreso)) {
+      if (
+        editPersonal.fechaIngreso.trim() !== "" &&
+        isDateInputAfterToday(editPersonal.fechaIngreso)
+      ) {
         setStatus("La fecha de ingreso no puede ser futura.");
         return;
       }
-      if (editPersonal.fechaIngresoOriginal.trim() !== "" && !parseDateInput(editPersonal.fechaIngresoOriginal).valid) {
+      if (
+        editPersonal.fechaIngresoOriginal.trim() !== "" &&
+        !parseDateInput(editPersonal.fechaIngresoOriginal).valid
+      ) {
         setStatus("La fecha de ingreso debe estar en formato DD/MM/AAAA.");
         return;
       }
-      if (editPersonal.fechaIngresoOriginal.trim() !== "" && isDateInputAfterToday(editPersonal.fechaIngresoOriginal)) {
+      if (
+        editPersonal.fechaIngresoOriginal.trim() !== "" &&
+        isDateInputAfterToday(editPersonal.fechaIngresoOriginal)
+      ) {
         setStatus("La fecha de ingreso no puede ser futura.");
         return;
       }
@@ -2871,7 +3169,7 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [canWrite, editPersonal, loadData],
+    [canWrite, editPersonal, loadData]
   );
 
   const promoteSargentoToSuboficial = useCallback(
@@ -2903,9 +3201,7 @@ export default function Home() {
         setEditPersonalCi(null);
         setEditPersonal(EMPTY_PERSONAL_FORM);
         setStatus(
-          recibo
-            ? `Ascenso completado. Se genero el recibo ${recibo}.`
-            : "Ascenso completado.",
+          recibo ? `Ascenso completado. Se genero el recibo ${recibo}.` : "Ascenso completado."
         );
         await loadData();
       } catch {
@@ -2914,7 +3210,7 @@ export default function Home() {
         setPromotingSubalternoCi(null);
       }
     },
-    [isAdmin, loadData, promotingSubalternoCi],
+    [isAdmin, loadData, promotingSubalternoCi]
   );
 
   const triggerPdfDownload = useCallback((url: string) => {
@@ -2927,18 +3223,24 @@ export default function Home() {
     document.body.removeChild(link);
   }, []);
 
-  const openAscensoDeliverySheet = useCallback((ci: string) => {
-    const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?ts=${Date.now()}`;
-    triggerPdfDownload(pdfUrl);
-    setStatus("Descargando hoja de entrega en PDF A4 (opcional antes del ascenso).");
-    return true;
-  }, [triggerPdfDownload]);
+  const openAscensoDeliverySheet = useCallback(
+    (ci: string) => {
+      const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?ts=${Date.now()}`;
+      triggerPdfDownload(pdfUrl);
+      setStatus("Descargando hoja de entrega en PDF A4 (opcional antes del ascenso).");
+      return true;
+    },
+    [triggerPdfDownload]
+  );
 
-  const printDeliverySheetFromProfile = useCallback((ci: string) => {
-    const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?ts=${Date.now()}`;
-    triggerPdfDownload(pdfUrl);
-    setStatus("Descargando hoja de entrega en PDF A4.");
-  }, [triggerPdfDownload]);
+  const printDeliverySheetFromProfile = useCallback(
+    (ci: string) => {
+      const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?ts=${Date.now()}`;
+      triggerPdfDownload(pdfUrl);
+      setStatus("Descargando hoja de entrega en PDF A4.");
+    },
+    [triggerPdfDownload]
+  );
 
   const printPrestamosFromProfile = useCallback((prestamoIds: string[]) => {
     const ids = Array.from(new Set(prestamoIds.map((id) => id.trim()).filter((id) => id !== "")));
@@ -2951,7 +3253,11 @@ export default function Home() {
     for (const prestamoId of ids) {
       // Normalizamos el ID quitando el prefijo 'prestamo-' si está presente (seguridad adicional)
       const normalizedId = prestamoId.replace(/^prestamo-/, "");
-      const popup = window.open(`/api/prestamos/${encodeURIComponent(normalizedId)}/recibo`, "_blank", "noopener,noreferrer");
+      const popup = window.open(
+        `/api/prestamos/${encodeURIComponent(normalizedId)}/recibo`,
+        "_blank",
+        "noopener,noreferrer"
+      );
       if (popup) {
         openedCount += 1;
       }
@@ -2963,7 +3269,9 @@ export default function Home() {
     }
 
     if (openedCount < ids.length) {
-      setStatus(`Se abrieron ${openedCount} de ${ids.length} recibos. Revisa el bloqueador de ventanas emergentes.`);
+      setStatus(
+        `Se abrieron ${openedCount} de ${ids.length} recibos. Revisa el bloqueador de ventanas emergentes.`
+      );
       return;
     }
 
@@ -2971,7 +3279,11 @@ export default function Home() {
   }, []);
 
   const printMovementsSummaryFromProfile = useCallback((ci: string) => {
-    window.open(`/api/personal/${encodeURIComponent(ci)}/resumen-prestamos`, "_blank", "noopener,noreferrer");
+    window.open(
+      `/api/personal/${encodeURIComponent(ci)}/resumen-prestamos`,
+      "_blank",
+      "noopener,noreferrer"
+    );
   }, []);
 
   const deletePersonal = useCallback(
@@ -3003,7 +3315,7 @@ export default function Home() {
         },
       });
     },
-    [canDelete, personal, loadData],
+    [canDelete, personal, loadData]
   );
 
   function startEditPersonal(persona: Personal) {
@@ -3028,7 +3340,9 @@ export default function Home() {
     });
 
     try {
-      const registros = await api<RegistroView[]>(`/api/registros?ci=${encodeURIComponent(ci)}&limit=200`);
+      const registros = await api<RegistroView[]>(
+        `/api/registros?ci=${encodeURIComponent(ci)}&limit=200`
+      );
       setRegistroViewer({
         ci,
         nombre,
@@ -3076,7 +3390,9 @@ export default function Home() {
     };
   }
 
-  function buildOficialSuboficialProfileIdentity(registro: OficialSuboficial): PersonaProfileIdentity {
+  function buildOficialSuboficialProfileIdentity(
+    registro: OficialSuboficial
+  ): PersonaProfileIdentity {
     return {
       ci: registro.ci,
       tipo: registro.tipo,
@@ -3094,7 +3410,9 @@ export default function Home() {
     };
   }
 
-  function buildEquipmentSummaryFromHoja(hojaSnapshot: HojaEntregaSnapshot | null): PersonaProfileEquipmentRow[] {
+  function buildEquipmentSummaryFromHoja(
+    hojaSnapshot: HojaEntregaSnapshot | null
+  ): PersonaProfileEquipmentRow[] {
     if (!hojaSnapshot) return [];
     return hojaSnapshot.matrix
       .map((row) => {
@@ -3110,10 +3428,14 @@ export default function Home() {
         };
       })
       .filter((row) => row.entregado > 0 || row.saldo > 0)
-      .sort((left, right) => left.equipo.localeCompare(right.equipo, "es", { sensitivity: "base" }));
+      .sort((left, right) =>
+        left.equipo.localeCompare(right.equipo, "es", { sensitivity: "base" })
+      );
   }
 
-  function buildEquipmentSummaryFromPrestamos(prestamos: PrestamoStockEntry[]): PersonaProfileEquipmentRow[] {
+  function buildEquipmentSummaryFromPrestamos(
+    prestamos: PrestamoStockEntry[]
+  ): PersonaProfileEquipmentRow[] {
     const prestadoMap = new Map<string, number>();
     const devueltoMap = new Map<string, number>();
     const saldoMap = new Map<string, number>();
@@ -3141,19 +3463,30 @@ export default function Home() {
       .filter((row) => row.entregado > 0 || row.saldo > 0);
   }
 
-  function buildPersonaProfileTimeline(registros: RegistroView[], prestamos: PrestamoStockEntry[]): PersonaProfileTimelineEntry[] {
+  function buildPersonaProfileTimeline(
+    registros: RegistroView[],
+    prestamos: PrestamoStockEntry[]
+  ): PersonaProfileTimelineEntry[] {
     const registrosTimeline = registros.map((registro) => ({
       id: `registro-${registro.registroId}`,
       dbId: registro.registroId,
       fecha: registro.fecha,
-      tipo: registro.tipo === "ENTREGA" ? "ENTREGA" : registro.tipo === "DEVOLUCION" ? "DEVOLUCION" : "ASIGNACION",
+      tipo:
+        registro.tipo === "ENTREGA"
+          ? "ENTREGA"
+          : registro.tipo === "DEVOLUCION"
+            ? "DEVOLUCION"
+            : "ASIGNACION",
       descripcion: `Registro ${registro.tipo.toLowerCase()} · ${registro.equipos.reduce((acc, equipo) => acc + equipo.cantidad, 0)} unidades`,
       responsable:
         registro.usuarioEntregaNombre?.trim() ||
         registro.auditoria?.usuario?.username ||
         (registro.usuarioEntregaId ? "Usuario eliminado" : null),
       estadoPrestamo: null,
-      equipos: registro.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
+      equipos: registro.equipos.map((equipo) => ({
+        nombre: equipo.nombre,
+        cantidad: equipo.cantidad,
+      })),
     })) satisfies PersonaProfileTimelineEntry[];
 
     const prestamosTimeline = prestamos.flatMap((prestamo) => {
@@ -3165,7 +3498,10 @@ export default function Home() {
         descripcion: `Préstamo ${prestamo.reciboNumero} · ${prestamo.estado.toLowerCase()}`,
         responsable: prestamo.usuarioEntregaNombre ?? null,
         estadoPrestamo: prestamo.estado,
-        equipos: prestamo.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
+        equipos: prestamo.equipos.map((equipo) => ({
+          nombre: equipo.nombre,
+          cantidad: equipo.cantidad,
+        })),
       };
 
       if (!prestamo.fechaDevolucion) return [prestamoEntry];
@@ -3176,9 +3512,13 @@ export default function Home() {
         fecha: prestamo.fechaDevolucion,
         tipo: "DEVOLUCION_PRESTAMO",
         descripcion: `Devolución de préstamo ${prestamo.reciboNumero}`,
-        responsable: prestamo.usuarioRecibeDevolucionNombre ?? prestamo.usuarioEntregaNombre ?? null,
+        responsable:
+          prestamo.usuarioRecibeDevolucionNombre ?? prestamo.usuarioEntregaNombre ?? null,
         estadoPrestamo: "DEVUELTO",
-        equipos: prestamo.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
+        equipos: prestamo.equipos.map((equipo) => ({
+          nombre: equipo.nombre,
+          cantidad: equipo.cantidad,
+        })),
       };
 
       return [prestamoEntry, devolucionEntry];
@@ -3207,19 +3547,27 @@ export default function Home() {
     const requestInit: RequestInit = { signal: controller.signal };
 
     try {
-      const registrosPromise = api<RegistroView[]>(`/api/registros?ci=${encodeURIComponent(identity.ci)}&limit=300`, requestInit).catch(
-        () => [],
-      );
-      const prestamosPromise = api<PrestamoStockEntry[]>(`/api/prestamos?ci=${encodeURIComponent(identity.ci)}&limit=300`, requestInit).catch(
-        () => [],
-      );
+      const registrosPromise = api<RegistroView[]>(
+        `/api/registros?ci=${encodeURIComponent(identity.ci)}&limit=300`,
+        requestInit
+      ).catch(() => []);
+      const prestamosPromise = api<PrestamoStockEntry[]>(
+        `/api/prestamos?ci=${encodeURIComponent(identity.ci)}&limit=300`,
+        requestInit
+      ).catch(() => []);
       const hojaPromise =
         identity.tipo === "SUBALTERNO"
-          ? api<HojaEntregaSnapshot>(`/api/hoja-de-entrega/${encodeURIComponent(identity.ci)}`, requestInit).catch(() => null)
+          ? api<HojaEntregaSnapshot>(
+              `/api/hoja-de-entrega/${encodeURIComponent(identity.ci)}`,
+              requestInit
+            ).catch(() => null)
           : Promise.resolve(null);
       const observacionesPromise =
         identity.tipo === "SUBALTERNO"
-          ? api<PersonalObservacion[]>(`/api/personal/${encodeURIComponent(identity.ci)}/observaciones`, requestInit).catch(() => [])
+          ? api<PersonalObservacion[]>(
+              `/api/personal/${encodeURIComponent(identity.ci)}/observaciones`,
+              requestInit
+            ).catch(() => [])
           : Promise.resolve([]);
 
       const [registros, prestamos, hojaSnapshot, observaciones] = await Promise.all([
@@ -3285,7 +3633,9 @@ export default function Home() {
       return true;
     }
 
-    const oficialSuboficial = oficialesSuboficiales.find((registro) => normalizeCi(registro.ci) === normalizedCi);
+    const oficialSuboficial = oficialesSuboficiales.find(
+      (registro) => normalizeCi(registro.ci) === normalizedCi
+    );
     if (oficialSuboficial) {
       await openPersonaProfileFromOficialSuboficial(oficialSuboficial);
       return true;
@@ -3310,22 +3660,21 @@ export default function Home() {
     if (!currentUser || currentUser.accountType !== "PERSONAL") return;
 
     setPersonalSelfProfile((previous) => ({
-      identity:
-        previous?.identity ?? {
-          ci: currentUser.personalCi ?? currentUser.username,
-          tipo: "SUBALTERNO",
-          apellido: currentUser.apellido,
-          nombre: currentUser.nombre,
-          gradoAbreviacion: currentUser.grado,
-          gradoNombre: currentUser.grado,
-          bateriaNombre: null,
-          telefonoContacto: null,
-          mailReferencia: currentUser.mailReferencia ?? null,
-          esReingreso: null,
-          fechaIngreso: null,
-          fechaIngresoOriginal: null,
-          tallas: [],
-        },
+      identity: previous?.identity ?? {
+        ci: currentUser.personalCi ?? currentUser.username,
+        tipo: "SUBALTERNO",
+        apellido: currentUser.apellido,
+        nombre: currentUser.nombre,
+        gradoAbreviacion: currentUser.grado,
+        gradoNombre: currentUser.grado,
+        bateriaNombre: null,
+        telefonoContacto: null,
+        mailReferencia: currentUser.mailReferencia ?? null,
+        esReingreso: null,
+        fechaIngreso: null,
+        fechaIngresoOriginal: null,
+        tallas: [],
+      },
       loading: true,
       error: null,
       registros: previous?.registros ?? [],
@@ -3343,7 +3692,8 @@ export default function Home() {
         error: null,
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo cargar tu ficha personal.";
+      const message =
+        error instanceof Error ? error.message : "No se pudo cargar tu ficha personal.";
       setPersonalSelfProfile((previous) =>
         previous
           ? {
@@ -3374,7 +3724,7 @@ export default function Home() {
               observaciones: [],
               equipmentSummary: [],
               timeline: [],
-            },
+            }
       );
     }
   }, [currentUser]);
@@ -3388,7 +3738,11 @@ export default function Home() {
     void loadPersonalSelfProfile();
   }, [currentUser, loadPersonalSelfProfile]);
 
-  function openRegistro(ci: string, tipo: RegistroTipo, options: { incluirFueraDeHoja?: boolean } = {}) {
+  function openRegistro(
+    ci: string,
+    tipo: RegistroTipo,
+    options: { incluirFueraDeHoja?: boolean } = {}
+  ) {
     if (!canWrite) {
       setStatus("No tienes permisos para registrar movimientos.");
       return;
@@ -3424,9 +3778,15 @@ export default function Home() {
       return;
     }
     const destinatariosDisponibles =
-      tipo === "ASIGNACION" ? personal.length + oficialesSuboficiales.length : personalFiltrado.length;
+      tipo === "ASIGNACION"
+        ? personal.length + oficialesSuboficiales.length
+        : personalFiltrado.length;
     if (destinatariosDisponibles === 0) {
-      setStatus(tipo === "ASIGNACION" ? "No hay personal disponible para registrar una asignación." : "No hay personal disponible para registrar una entrega masiva.");
+      setStatus(
+        tipo === "ASIGNACION"
+          ? "No hay personal disponible para registrar una asignación."
+          : "No hay personal disponible para registrar una entrega masiva."
+      );
       return;
     }
     setRegistroDraft({
@@ -3519,7 +3879,7 @@ export default function Home() {
               loading: false,
               error: null,
             }
-          : prev,
+          : prev
       );
     } catch (error: unknown) {
       setPersonalObservacionDraft((prev) =>
@@ -3528,9 +3888,10 @@ export default function Home() {
               ...prev,
               observaciones: [],
               loading: false,
-              error: error instanceof Error ? error.message : "No se pudieron cargar las observaciones.",
+              error:
+                error instanceof Error ? error.message : "No se pudieron cargar las observaciones.",
             }
-          : prev,
+          : prev
       );
     }
   }
@@ -3545,7 +3906,7 @@ export default function Home() {
             texto: "",
             error: null,
           }
-        : prev,
+        : prev
     );
   }
 
@@ -3559,7 +3920,7 @@ export default function Home() {
             texto: observacion.texto,
             error: null,
           }
-        : prev,
+        : prev
     );
   }
 
@@ -3596,7 +3957,10 @@ export default function Home() {
       comentarios: registro.comentarios ?? "",
       equipos:
         registro.equipos.length > 0
-          ? registro.equipos.map((equipo) => ({ equipoId: equipo.equipoId, cantidad: String(equipo.cantidad) }))
+          ? registro.equipos.map((equipo) => ({
+              equipoId: equipo.equipoId,
+              cantidad: String(equipo.cantidad),
+            }))
           : [{ equipoId: "", cantidad: "1" }],
     });
   }
@@ -3616,8 +3980,19 @@ export default function Home() {
         destinatarioTipo: "PERSONAL" | "RECINTO" | "EXTERNO";
         recintoClase: "INTERNO" | "EXTERNO" | null;
         recintoNombre: string | null;
-        recintoResponsableInfo: { grado: string; nombre: string; apellido: string; ci: string } | null;
-        destinatarioExternoInfo: { grado: string; nombre: string; apellido: string; ci: string; unidadDestino: string } | null;
+        recintoResponsableInfo: {
+          grado: string;
+          nombre: string;
+          apellido: string;
+          ci: string;
+        } | null;
+        destinatarioExternoInfo: {
+          grado: string;
+          nombre: string;
+          apellido: string;
+          ci: string;
+          unidadDestino: string;
+        } | null;
         ci: string;
         equipos: Array<{ equipoId: string; cantidad: number }>;
       }>(`/api/registros/${encodeURIComponent(registroId)}`);
@@ -3645,23 +4020,36 @@ export default function Home() {
         comentarios: response.comentarios ?? "",
         equipos:
           response.equipos.length > 0
-            ? response.equipos.map((equipo) => ({ equipoId: equipo.equipoId, cantidad: String(equipo.cantidad) }))
+            ? response.equipos.map((equipo) => ({
+                equipoId: equipo.equipoId,
+                cantidad: String(equipo.cantidad),
+              }))
             : [{ equipoId: "", cantidad: "1" }],
       });
       setStatus("");
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo cargar el movimiento para editar.");
+      setStatus(
+        error instanceof Error ? error.message : "No se pudo cargar el movimiento para editar."
+      );
     }
   }
 
   function updateRegistroItem(index: number, field: keyof RegistroDraftEquipo, value: string) {
     setRegistroDraft((prev) => {
       if (!prev) return prev;
-      if (field === "equipoId" && value !== "" && prev.equipos.some((equipo, equipoIndex) => equipoIndex !== index && equipo.equipoId === value)) {
+      if (
+        field === "equipoId" &&
+        value !== "" &&
+        prev.equipos.some(
+          (equipo, equipoIndex) => equipoIndex !== index && equipo.equipoId === value
+        )
+      ) {
         setStatus("Ese equipo ya fue seleccionado en este movimiento.");
         return prev;
       }
-      const equipos = prev.equipos.map((equipo, equipoIndex) => (equipoIndex === index ? { ...equipo, [field]: value } : equipo));
+      const equipos = prev.equipos.map((equipo, equipoIndex) =>
+        equipoIndex === index ? { ...equipo, [field]: value } : equipo
+      );
       return { ...prev, equipos };
     });
   }
@@ -3687,7 +4075,9 @@ export default function Home() {
       const targetCi = ci.trim();
       if (targetCi === "") return prev;
       const exists = prev.ciList.includes(targetCi);
-      const nextCiList = exists ? prev.ciList.filter((entry) => entry !== targetCi) : [...prev.ciList, targetCi];
+      const nextCiList = exists
+        ? prev.ciList.filter((entry) => entry !== targetCi)
+        : [...prev.ciList, targetCi];
       return {
         ...prev,
         ciList: nextCiList,
@@ -3701,10 +4091,13 @@ export default function Home() {
       if (!prev || prev.modo !== "crear" || prev.destinatarioTipo !== "PERSONAL") return prev;
       const ciList = Array.from(
         new Set(
-          (prev.tipo === "ASIGNACION"
-            ? [...personal.map((persona) => persona.ci), ...oficialesSuboficiales.map((registro) => registro.ci)]
-            : personalFiltrado.map((persona) => persona.ci)),
-        ),
+          prev.tipo === "ASIGNACION"
+            ? [
+                ...personal.map((persona) => persona.ci),
+                ...oficialesSuboficiales.map((registro) => registro.ci),
+              ]
+            : personalFiltrado.map((persona) => persona.ci)
+        )
       );
       return {
         ...prev,
@@ -3727,11 +4120,16 @@ export default function Home() {
 
   async function saveRegistro(printAfterSave = false) {
     if (!registroDraft || registroSaving) return;
-    const isRectificacion = registroDraft.modo === "rectificar" && registroDraft.registroId !== null;
+    const isRectificacion =
+      registroDraft.modo === "rectificar" && registroDraft.registroId !== null;
     const isRecinto = registroDraft.destinatarioTipo === "RECINTO";
     const isExterno = registroDraft.destinatarioTipo === "EXTERNO";
     const movementLabel =
-      registroDraft.tipo === "ENTREGA" ? "Entrega" : registroDraft.tipo === "DEVOLUCION" ? "Devolución" : "Asignación";
+      registroDraft.tipo === "ENTREGA"
+        ? "Entrega"
+        : registroDraft.tipo === "DEVOLUCION"
+          ? "Devolución"
+          : "Asignación";
     if (!parseDateInput(registroDraft.fecha).valid) {
       setStatus("La fecha del movimiento debe estar en formato DD/MM/AAAA.");
       return;
@@ -3749,7 +4147,10 @@ export default function Home() {
         equipoId: equipo.equipoId.trim(),
         cantidad: Number(equipo.cantidad),
       }))
-      .filter((equipo) => equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0);
+      .filter(
+        (equipo) =>
+          equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0
+      );
 
     if (payloadEquipos.length === 0) {
       setStatus("Debes agregar al menos un equipo con cantidad válida.");
@@ -3766,7 +4167,9 @@ export default function Home() {
         ? []
         : isRectificacion
           ? [registroDraft.ci]
-          : Array.from(new Set(registroDraft.ciList.map((ci) => ci.trim()).filter((ci) => ci !== "")));
+          : Array.from(
+              new Set(registroDraft.ciList.map((ci) => ci.trim()).filter((ci) => ci !== ""))
+            );
 
     if (isRecinto) {
       if (registroDraft.recintoNombre.trim() === "") {
@@ -3795,36 +4198,41 @@ export default function Home() {
     setRegistroSaving(true);
     setStatus(isRectificacion ? "Actualizando rectificación..." : "Guardando movimiento...");
     try {
-      const response = await api<{ registroId?: string }>(isRectificacion ? `/api/registros/${registroDraft.registroId}` : "/api/registros", {
-        method: isRectificacion ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ci: targetCis[0],
-          ciList: targetCis,
-          destinatarioTipo: registroDraft.destinatarioTipo,
-          recintoClase: isRecinto ? registroDraft.recintoClase : undefined,
-          recintoNombre: isRecinto ? registroDraft.recintoNombre.trim() : undefined,
-          destinatarioRecinto: isRecinto ? {
-            grado: registroDraft.recintoResponsableGrado.trim(),
-            nombre: registroDraft.recintoResponsableNombre.trim(),
-            apellido: registroDraft.recintoResponsableApellido.trim(),
-            ci: registroDraft.recintoResponsableCi.trim(),
-          } : undefined,
-          destinatarioExterno: isExterno
-            ? {
-                grado: registroDraft.destinatarioExternoGrado.trim(),
-                nombre: registroDraft.destinatarioExternoNombre.trim(),
-                apellido: registroDraft.destinatarioExternoApellido.trim(),
-                ci: registroDraft.destinatarioExternoCi.trim(),
-                unidadDestino: registroDraft.destinatarioExternoUnidadDestino.trim(),
-              }
-            : undefined,
-          tipo: registroDraft.tipo,
-          fecha: registroDraft.fecha,
-          comentarios: registroDraft.comentarios.trim() || undefined,
-          equipos: payloadEquipos,
-        }),
-      });
+      const response = await api<{ registroId?: string }>(
+        isRectificacion ? `/api/registros/${registroDraft.registroId}` : "/api/registros",
+        {
+          method: isRectificacion ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ci: targetCis[0],
+            ciList: targetCis,
+            destinatarioTipo: registroDraft.destinatarioTipo,
+            recintoClase: isRecinto ? registroDraft.recintoClase : undefined,
+            recintoNombre: isRecinto ? registroDraft.recintoNombre.trim() : undefined,
+            destinatarioRecinto: isRecinto
+              ? {
+                  grado: registroDraft.recintoResponsableGrado.trim(),
+                  nombre: registroDraft.recintoResponsableNombre.trim(),
+                  apellido: registroDraft.recintoResponsableApellido.trim(),
+                  ci: registroDraft.recintoResponsableCi.trim(),
+                }
+              : undefined,
+            destinatarioExterno: isExterno
+              ? {
+                  grado: registroDraft.destinatarioExternoGrado.trim(),
+                  nombre: registroDraft.destinatarioExternoNombre.trim(),
+                  apellido: registroDraft.destinatarioExternoApellido.trim(),
+                  ci: registroDraft.destinatarioExternoCi.trim(),
+                  unidadDestino: registroDraft.destinatarioExternoUnidadDestino.trim(),
+                }
+              : undefined,
+            tipo: registroDraft.tipo,
+            fecha: registroDraft.fecha,
+            comentarios: registroDraft.comentarios.trim() || undefined,
+            equipos: payloadEquipos,
+          }),
+        }
+      );
       setStatus(
         isRecinto
           ? isRectificacion
@@ -3834,14 +4242,18 @@ export default function Home() {
             ? isRectificacion
               ? `${movementLabel} rectificada para ${registroDraft.destinatarioExternoApellido.trim()}, ${registroDraft.destinatarioExternoNombre.trim()}.`
               : `${movementLabel} registrada para ${registroDraft.destinatarioExternoApellido.trim()}, ${registroDraft.destinatarioExternoNombre.trim()}.`
-          : isRectificacion
-            ? `${movementLabel} rectificada para ${formatUruguayanCi(registroDraft.ci)}.`
-            : targetCis.length === 1
-              ? `${movementLabel} registrada para ${formatUruguayanCi(targetCis[0])}.`
-              : `${movementLabel} masiva registrada para ${targetCis.length} personas.`,
+            : isRectificacion
+              ? `${movementLabel} rectificada para ${formatUruguayanCi(registroDraft.ci)}.`
+              : targetCis.length === 1
+                ? `${movementLabel} registrada para ${formatUruguayanCi(targetCis[0])}.`
+                : `${movementLabel} masiva registrada para ${targetCis.length} personas.`
       );
       if (printAfterSave && !isRectificacion && response.registroId) {
-        window.open(`/api/registros/${encodeURIComponent(response.registroId)}/recibo`, "_blank", "noopener,noreferrer");
+        window.open(
+          `/api/registros/${encodeURIComponent(response.registroId)}/recibo`,
+          "_blank",
+          "noopener,noreferrer"
+        );
       }
       setRegistroDraft(null);
       await loadData();
@@ -3849,7 +4261,13 @@ export default function Home() {
         await loadRegistroViewer(registroViewer.ci, registroViewer.nombre);
       }
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : isRectificacion ? "No se pudo rectificar el movimiento." : "No se pudo registrar el movimiento.");
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : isRectificacion
+            ? "No se pudo rectificar el movimiento."
+            : "No se pudo registrar el movimiento."
+      );
     } finally {
       setRegistroSaving(false);
     }
@@ -3866,7 +4284,12 @@ export default function Home() {
     }
 
     const fechaLabel = formatDateOnlyForDisplay(registro.fecha);
-    const tipoLabel = registro.tipo === "ENTREGA" ? "entrega" : registro.tipo === "DEVOLUCION" ? "devolución" : "asignación";
+    const tipoLabel =
+      registro.tipo === "ENTREGA"
+        ? "entrega"
+        : registro.tipo === "DEVOLUCION"
+          ? "devolución"
+          : "asignación";
 
     openConfirmDialog({
       title: "Eliminar movimiento",
@@ -3879,7 +4302,9 @@ export default function Home() {
           await api(`/api/registros/${registro.registroId}`, {
             method: "DELETE",
           });
-          setRegistroDraft((prev) => (prev && prev.registroId === registro.registroId ? null : prev));
+          setRegistroDraft((prev) =>
+            prev && prev.registroId === registro.registroId ? null : prev
+          );
           setStatus(`Movimiento eliminado para ${formatUruguayanCi(registro.ci)}.`);
           await loadData();
           if (registroViewer && registroViewer.ci === registro.ci) {
@@ -3892,7 +4317,12 @@ export default function Home() {
     });
   }
 
-  function deleteRecintoRegistro(registroId: string, fechaLabel: string, nombreLabel: string, onSuccess: () => void) {
+  function deleteRecintoRegistro(
+    registroId: string,
+    fechaLabel: string,
+    nombreLabel: string,
+    onSuccess: () => void
+  ) {
     if (!canDeleteRegistros) {
       setStatus("Solo un administrador puede eliminar movimientos.");
       return;
@@ -3935,7 +4365,10 @@ export default function Home() {
         equipoId: equipo.equipoId.trim(),
         cantidad: Number(equipo.cantidad),
       }))
-      .filter((equipo) => equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0);
+      .filter(
+        (equipo) =>
+          equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0
+      );
 
     if (payloadItems.length === 0) {
       setStatus("Debes agregar al menos un equipo con cantidad válida.");
@@ -3949,7 +4382,11 @@ export default function Home() {
     }
 
     setStockSaving(true);
-    setStatus(stockDraft.tipo === "INGRESO" ? "Registrando ingreso de stock..." : "Registrando egreso de stock...");
+    setStatus(
+      stockDraft.tipo === "INGRESO"
+        ? "Registrando ingreso de stock..."
+        : "Registrando egreso de stock..."
+    );
     try {
       await api("/api/stock", {
         method: "POST",
@@ -3962,10 +4399,16 @@ export default function Home() {
         }),
       });
       setStockDraft({ ...EMPTY_STOCK_OPERACION_DRAFT, fecha: getTodayDateInput() });
-      setStatus(stockDraft.tipo === "INGRESO" ? "Ingreso de stock registrado." : "Egreso de stock registrado.");
+      setStatus(
+        stockDraft.tipo === "INGRESO"
+          ? "Ingreso de stock registrado."
+          : "Egreso de stock registrado."
+      );
       await reloadActiveStockData();
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo registrar el movimiento de stock.");
+      setStatus(
+        error instanceof Error ? error.message : "No se pudo registrar el movimiento de stock."
+      );
     } finally {
       setStockSaving(false);
     }
@@ -3988,7 +4431,9 @@ export default function Home() {
         !prestamoDraft.destinatarioExternoApellido.trim() ||
         !prestamoDraft.destinatarioExternoUnidadDestino.trim()
       ) {
-        setStatus("Debes completar grado, nombre, apellido y unidad de destino del destinatario externo.");
+        setStatus(
+          "Debes completar grado, nombre, apellido y unidad de destino del destinatario externo."
+        );
         return;
       }
       if (!isValidUruguayanCi(prestamoDraft.destinatarioExternoCi.trim())) {
@@ -4012,7 +4457,10 @@ export default function Home() {
         estadoEntrega: equipo.estadoEntrega,
         comentarioEntrega: equipo.comentarioEntrega.trim() || undefined,
       }))
-      .filter((equipo) => equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0);
+      .filter(
+        (equipo) =>
+          equipo.equipoId !== "" && Number.isInteger(equipo.cantidad) && equipo.cantidad > 0
+      );
 
     if (payloadItems.length === 0) {
       setStatus("Debes agregar al menos un equipo con cantidad válida.");
@@ -4033,8 +4481,12 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           clasePrestamo: prestamoDraft.clasePrestamo,
-          destinatarioTipo: prestamoDraft.clasePrestamo === "INTERNO" ? prestamoDraft.destinatarioTipo : undefined,
-          destinatarioCi: prestamoDraft.clasePrestamo === "INTERNO" ? prestamoDraft.destinatarioCi.trim() : undefined,
+          destinatarioTipo:
+            prestamoDraft.clasePrestamo === "INTERNO" ? prestamoDraft.destinatarioTipo : undefined,
+          destinatarioCi:
+            prestamoDraft.clasePrestamo === "INTERNO"
+              ? prestamoDraft.destinatarioCi.trim()
+              : undefined,
           destinatarioExterno:
             prestamoDraft.clasePrestamo === "EXTERNO"
               ? {
@@ -4047,7 +4499,8 @@ export default function Home() {
               : undefined,
           actuanteCi: prestamoDraft.actuanteCi.trim(),
           fechaPrestamo: prestamoDraft.fechaPrestamo,
-          fechaEstimadaDevolucionTexto: prestamoDraft.fechaEstimadaDevolucionTexto.trim() || undefined,
+          fechaEstimadaDevolucionTexto:
+            prestamoDraft.fechaEstimadaDevolucionTexto.trim() || undefined,
           comentarios: prestamoDraft.comentarios.trim() || undefined,
           equipos: payloadItems,
         }),
@@ -4056,7 +4509,11 @@ export default function Home() {
       setStatus("Préstamo registrado.");
       await reloadActiveStockData();
       if (printAfterSave) {
-        window.open(`/api/prestamos/${encodeURIComponent(created.prestamoId)}/recibo`, "_blank", "noopener,noreferrer");
+        window.open(
+          `/api/prestamos/${encodeURIComponent(created.prestamoId)}/recibo`,
+          "_blank",
+          "noopener,noreferrer"
+        );
       }
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "No se pudo registrar el préstamo.");
@@ -4068,7 +4525,11 @@ export default function Home() {
   async function returnPrestamo(
     prestamoId: string,
     fechaDevolucion: string,
-    equipos?: Array<{ equipoId: string; estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion?: string }>,
+    equipos?: Array<{
+      equipoId: string;
+      estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO";
+      comentarioDevolucion?: string;
+    }>
   ) {
     if (returningPrestamoId) return;
     setReturningPrestamoId(prestamoId);
@@ -4085,7 +4546,9 @@ export default function Home() {
       setStatus("Devolución de préstamo registrada.");
       await reloadActiveStockData();
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "No se pudo registrar la devolución del préstamo.");
+      setStatus(
+        error instanceof Error ? error.message : "No se pudo registrar la devolución del préstamo."
+      );
     } finally {
       setReturningPrestamoId(null);
     }
@@ -4173,7 +4636,7 @@ export default function Home() {
           },
           {
             onError: (message) => setStatus(message),
-          },
+          }
         );
       } else {
         await createPersonalObservacionHandler(
@@ -4184,7 +4647,7 @@ export default function Home() {
           },
           {
             onError: (message) => setStatus(message),
-          },
+          }
         );
       }
 
@@ -4200,13 +4663,19 @@ export default function Home() {
               loading: false,
               error: null,
             }
-          : prev,
+          : prev
       );
       setStatus(
-        `${isEditing ? "Observación actualizada" : "Observación registrada"} para ${formatUruguayanCi(personalObservacionDraft.ci)}.`,
+        `${isEditing ? "Observación actualizada" : "Observación registrada"} para ${formatUruguayanCi(personalObservacionDraft.ci)}.`
       );
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : isEditing ? "No se pudo actualizar la observación." : "No se pudo registrar la observación.");
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : isEditing
+            ? "No se pudo actualizar la observación."
+            : "No se pudo registrar la observación."
+      );
     } finally {
       setPersonalObservacionSaving(false);
     }
@@ -4230,12 +4699,16 @@ export default function Home() {
               ? {
                   ...prev,
                   observaciones,
-                  observacionId: prev.observacionId === observacion.observacionId ? null : prev.observacionId,
-                  fecha: prev.observacionId === observacion.observacionId ? getTodayDateInput() : prev.fecha,
+                  observacionId:
+                    prev.observacionId === observacion.observacionId ? null : prev.observacionId,
+                  fecha:
+                    prev.observacionId === observacion.observacionId
+                      ? getTodayDateInput()
+                      : prev.fecha,
                   texto: prev.observacionId === observacion.observacionId ? "" : prev.texto,
                   error: null,
                 }
-              : prev,
+              : prev
           );
           setStatus(`Observación eliminada para ${formatUruguayanCi(observacion.ci)}.`);
         } catch {
@@ -4295,7 +4768,16 @@ export default function Home() {
         setLoginLoading(false);
       }
     },
-    [loginMode, loginUsername, loginPassword, loadData, setActiveView, setLoginLoading, setLoginPassword, setShowLoginPassword],
+    [
+      loginMode,
+      loginUsername,
+      loginPassword,
+      loadData,
+      setActiveView,
+      setLoginLoading,
+      setLoginPassword,
+      setShowLoginPassword,
+    ]
   );
 
   const requestPasswordReset = useCallback(
@@ -4303,7 +4785,9 @@ export default function Home() {
       event.preventDefault();
       if (resetRequestLoading) return;
       if (loginMode === "PERSONAL") {
-        setResetRequestMessage("Las cuentas de personal no usan enlace por mail. Solicita cambio al administrador.");
+        setResetRequestMessage(
+          "Las cuentas de personal no usan enlace por mail. Solicita cambio al administrador."
+        );
         return;
       }
 
@@ -4330,7 +4814,7 @@ export default function Home() {
         setResetRequestLoading(false);
       }
     },
-    [loginMode, resetRequestLoading, resetUsername, setResetRequestLoading, setResetRequestMessage],
+    [loginMode, resetRequestLoading, resetUsername, setResetRequestLoading, setResetRequestMessage]
   );
 
   const submitChangePassword = useCallback(async () => {
@@ -4360,7 +4844,7 @@ export default function Home() {
             setShowChangePassword(false);
           },
           onError: (message) => setStatus(message),
-        },
+        }
       );
     } finally {
       setChangeLoading(false);
@@ -4403,7 +4887,7 @@ export default function Home() {
                 mailReferencia: updated.mailReferencia,
               },
             }
-          : previous,
+          : previous
       );
 
       setShowPersonalContactModal(false);
@@ -4423,7 +4907,7 @@ export default function Home() {
     const popup = window.open(
       `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?inline=1&ts=${Date.now()}`,
       "_blank",
-      "noopener,noreferrer",
+      "noopener,noreferrer"
     );
 
     if (!popup) {
@@ -4472,7 +4956,8 @@ export default function Home() {
       }
 
       const parsedRangoId = Number(newUserRangoId);
-      const nextRangoId = Number.isInteger(parsedRangoId) && parsedRangoId > 0 ? parsedRangoId : null;
+      const nextRangoId =
+        Number.isInteger(parsedRangoId) && parsedRangoId > 0 ? parsedRangoId : null;
       const trimmedNombre = newNombre.trim();
       const trimmedApellido = newApellido.trim();
       const trimmedUsername = newUsername.trim();
@@ -4493,34 +4978,48 @@ export default function Home() {
       }
 
       try {
-        await createUsuarioHandler({
-          rangoId: nextRangoId,
-          nombre: trimmedNombre,
-          apellido: trimmedApellido,
-          usuario: trimmedUsername,
-          password: newPassword,
-          mailReferencia: trimmedMailReferencia,
-          rol: newRole,
-        }, {
-          onSuccess: async () => {
-            setNewUserRangoId("");
-            setNewNombre("");
-            setNewApellido("");
-            setNewUsername("");
-            setNewPassword("");
-            setNewPasswordConfirm("");
-            setNewMailReferencia("");
-            setNewRole("EDITOR");
-            setStatus("Usuario creado.");
-            await loadAdminData();
+        await createUsuarioHandler(
+          {
+            rangoId: nextRangoId,
+            nombre: trimmedNombre,
+            apellido: trimmedApellido,
+            usuario: trimmedUsername,
+            password: newPassword,
+            mailReferencia: trimmedMailReferencia,
+            rol: newRole,
           },
-          onError: (message) => setStatus(message),
-        });
+          {
+            onSuccess: async () => {
+              setNewUserRangoId("");
+              setNewNombre("");
+              setNewApellido("");
+              setNewUsername("");
+              setNewPassword("");
+              setNewPasswordConfirm("");
+              setNewMailReferencia("");
+              setNewRole("EDITOR");
+              setStatus("Usuario creado.");
+              await loadAdminData();
+            },
+            onError: (message) => setStatus(message),
+          }
+        );
       } catch {
         // Error manejado en el handler
       }
     },
-    [isAdmin, newUserRangoId, newNombre, newApellido, newUsername, newPassword, newPasswordConfirm, newMailReferencia, newRole, loadAdminData],
+    [
+      isAdmin,
+      newUserRangoId,
+      newNombre,
+      newApellido,
+      newUsername,
+      newPassword,
+      newPasswordConfirm,
+      newMailReferencia,
+      newRole,
+      loadAdminData,
+    ]
   );
 
   const changeUserRole = useCallback(
@@ -4540,7 +5039,7 @@ export default function Home() {
         nextRole: usuario.rol,
       });
     },
-    [isAdmin],
+    [isAdmin]
   );
 
   const closeUserRoleDialog = useCallback(() => {
@@ -4561,7 +5060,7 @@ export default function Home() {
         confirmPassword: "",
       });
     },
-    [isAdmin],
+    [isAdmin]
   );
 
   const closeUserPasswordDialog = useCallback(() => {
@@ -4579,7 +5078,7 @@ export default function Home() {
         username: string;
         mailReferencia?: string | null;
       },
-      options?: { title?: string; description?: string },
+      options?: { title?: string; description?: string }
     ) => {
       setUsernameDialog({
         usuarioId: usuario.usuarioId,
@@ -4589,10 +5088,11 @@ export default function Home() {
         username: usuario.username,
         mailReferencia: usuario.mailReferencia ?? "",
         title: options?.title ?? "Editar usuario",
-        description: options?.description ?? "Actualiza el nombre con el que esta cuenta inicia sesión.",
+        description:
+          options?.description ?? "Actualiza el nombre con el que esta cuenta inicia sesión.",
       });
     },
-    [],
+    []
   );
 
   const editUsuario = useCallback(
@@ -4611,7 +5111,7 @@ export default function Home() {
         description: `Actualiza los datos de ${usuario.username}.`,
       });
     },
-    [isAdmin, openUsernameDialog],
+    [isAdmin, openUsernameDialog]
   );
 
   const closeUsernameDialog = useCallback(() => {
@@ -4658,14 +5158,18 @@ export default function Home() {
 
     setUserPasswordSaving(true);
     try {
-      await changeUserPasswordHandler(userPasswordDialog.usuarioId, userPasswordDialog.newPassword, {
-        onSuccess: async () => {
-          setStatus("Contraseña de usuario actualizada.");
-          setUserPasswordDialog(null);
-          await loadAdminData();
-        },
-        onError: (message) => setStatus(message),
-      });
+      await changeUserPasswordHandler(
+        userPasswordDialog.usuarioId,
+        userPasswordDialog.newPassword,
+        {
+          onSuccess: async () => {
+            setStatus("Contraseña de usuario actualizada.");
+            setUserPasswordDialog(null);
+            await loadAdminData();
+          },
+          onError: (message) => setStatus(message),
+        }
+      );
     } catch {
       // Error manejado en el handler
     } finally {
@@ -4697,33 +5201,41 @@ export default function Home() {
 
     setUsernameSaving(true);
     try {
-      await updateUsuarioProfileHandler(usernameDialog.usuarioId, {
-        rangoId: nextRangoId,
-        nombre: nextNombre,
-        apellido: nextApellido,
-        usuario: nextUsername,
-        mailReferencia: nextMailReferencia,
-      }, {
-        onSuccess: async () => {
-          const isSelfUpdate = currentUser?.usuarioId === usernameDialog.usuarioId;
-          setStatus(isSelfUpdate ? `Tu usuario ahora es ${nextUsername}.` : `Usuario actualizado a ${nextUsername}.`);
-          setUsernameDialog(null);
-          if (isSelfUpdate && isAdmin) {
-            await Promise.all([loadData(true), loadAdminData()]);
-            return;
-          }
-          if (isSelfUpdate) {
-            await loadData(true);
-            return;
-          }
-          if (isAdmin) {
-            await loadAdminData();
-            return;
-          }
-          await loadData(false);
+      await updateUsuarioProfileHandler(
+        usernameDialog.usuarioId,
+        {
+          rangoId: nextRangoId,
+          nombre: nextNombre,
+          apellido: nextApellido,
+          usuario: nextUsername,
+          mailReferencia: nextMailReferencia,
         },
-        onError: (message) => setStatus(message),
-      });
+        {
+          onSuccess: async () => {
+            const isSelfUpdate = currentUser?.usuarioId === usernameDialog.usuarioId;
+            setStatus(
+              isSelfUpdate
+                ? `Tu usuario ahora es ${nextUsername}.`
+                : `Usuario actualizado a ${nextUsername}.`
+            );
+            setUsernameDialog(null);
+            if (isSelfUpdate && isAdmin) {
+              await Promise.all([loadData(true), loadAdminData()]);
+              return;
+            }
+            if (isSelfUpdate) {
+              await loadData(true);
+              return;
+            }
+            if (isAdmin) {
+              await loadAdminData();
+              return;
+            }
+            await loadData(false);
+          },
+          onError: (message) => setStatus(message),
+        }
+      );
     } catch {
       // Error manejado en el handler
     } finally {
@@ -4749,7 +5261,7 @@ export default function Home() {
         // Error manejado en el handler
       }
     },
-    [isAdmin, loadAdminData],
+    [isAdmin, loadAdminData]
   );
 
   const confirmUserEmail = useCallback(
@@ -4787,7 +5299,7 @@ export default function Home() {
         },
       });
     },
-    [isAdmin, loadAdminData],
+    [isAdmin, loadAdminData]
   );
 
   const deleteUsuario = useCallback(
@@ -4820,7 +5332,7 @@ export default function Home() {
         },
       });
     },
-    [isAdmin, loadAdminData],
+    [isAdmin, loadAdminData]
   );
 
   const saveFirmaConfig = useCallback(
@@ -4835,7 +5347,7 @@ export default function Home() {
       const encargadoNombre = firmaConfigDraft.encargadoNombre.trim();
       const oficialRango = firmaConfigDraft.oficialRango.trim();
       const oficialNombre = firmaConfigDraft.oficialNombre.trim();
-      
+
       if (!encargadoRango || !encargadoNombre || !oficialRango || !oficialNombre) {
         setFirmaConfigError("Todos los campos son obligatorios.");
         setStatus("Completa todos los campos de firma.");
@@ -4845,38 +5357,42 @@ export default function Home() {
       setFirmaConfigSaving(true);
       setFirmaConfigError(null);
       try {
-        await saveFirmaConfigHandler(
-          encargadoRango,
-          encargadoNombre,
-          oficialRango,
-          oficialNombre,
-          {
-            onSave: (updated) => {
-              const config = updated as FirmaConfig;
-              setFirmaConfig(config);
-              setFirmaConfigDraft({
-                encargadoRango: config.encargadoRango,
-                encargadoNombre: config.encargadoNombre,
-                oficialRango: config.oficialRango,
-                oficialNombre: config.oficialNombre,
-              });
-              setStatus("Firmas institucionales actualizadas.");
-            },
-            onSuccess: () => {},
-            onError: (message) => {
-              setFirmaConfigError(message);
-              setStatus(message);
-            },
-          }
-        );
+        await saveFirmaConfigHandler(encargadoRango, encargadoNombre, oficialRango, oficialNombre, {
+          onSave: (updated) => {
+            const config = updated as FirmaConfig;
+            setFirmaConfig(config);
+            setFirmaConfigDraft({
+              encargadoRango: config.encargadoRango,
+              encargadoNombre: config.encargadoNombre,
+              oficialRango: config.oficialRango,
+              oficialNombre: config.oficialNombre,
+            });
+            setStatus("Firmas institucionales actualizadas.");
+          },
+          onSuccess: () => {},
+          onError: (message) => {
+            setFirmaConfigError(message);
+            setStatus(message);
+          },
+        });
       } finally {
         setFirmaConfigSaving(false);
       }
     },
-    [isAdmin, firmaConfigDraft, setFirmaConfig, setFirmaConfigDraft, setFirmaConfigError, setFirmaConfigSaving],
+    [
+      isAdmin,
+      firmaConfigDraft,
+      setFirmaConfig,
+      setFirmaConfigDraft,
+      setFirmaConfigError,
+      setFirmaConfigSaving,
+    ]
   );
 
-  function openConfirmDialog(options: Omit<ConfirmDialogState, "cancelText" | "tone"> & Partial<Pick<ConfirmDialogState, "cancelText" | "tone">>) {
+  function openConfirmDialog(
+    options: Omit<ConfirmDialogState, "cancelText" | "tone"> &
+      Partial<Pick<ConfirmDialogState, "cancelText" | "tone">>
+  ) {
     setConfirmDialog({
       title: options.title,
       message: options.message,
@@ -4905,7 +5421,7 @@ export default function Home() {
 
       const buildLocalCancelledJob = (
         previous: HojasEntregaEmailJobSnapshot,
-        message: string,
+        message: string
       ): HojasEntregaEmailJobSnapshot => ({
         ...previous,
         status: "cancelled",
@@ -4917,16 +5433,27 @@ export default function Home() {
       });
 
       try {
-        const response = await fetch(`/api/hojas-de-entrega/pdf/email/${encodeURIComponent(jobId)}`, {
-          method: "DELETE",
-          cache: "no-store",
-        });
+        const response = await fetch(
+          `/api/hojas-de-entrega/pdf/email/${encodeURIComponent(jobId)}`,
+          {
+            method: "DELETE",
+            cache: "no-store",
+          }
+        );
 
         const rawBody = await response.text();
-        let payload: { error?: string; message?: string; job?: HojasEntregaEmailJobSnapshot } | null = null;
+        let payload: {
+          error?: string;
+          message?: string;
+          job?: HojasEntregaEmailJobSnapshot;
+        } | null = null;
         if (rawBody) {
           try {
-            payload = JSON.parse(rawBody) as { error?: string; message?: string; job?: HojasEntregaEmailJobSnapshot };
+            payload = JSON.parse(rawBody) as {
+              error?: string;
+              message?: string;
+              job?: HojasEntregaEmailJobSnapshot;
+            };
           } catch {
             payload = null;
           }
@@ -5000,14 +5527,14 @@ export default function Home() {
         setStatus(`Seguimiento cancelado localmente: ${message}`);
       }
     },
-    [clearBulkDeliveryEmailPolling],
+    [clearBulkDeliveryEmailPolling]
   );
 
   const onBulkDeliveryEmailToastCancel = useCallback(
     (jobId: string) => {
       void cancelBulkDeliveryEmailJobById(jobId);
     },
-    [cancelBulkDeliveryEmailJobById],
+    [cancelBulkDeliveryEmailJobById]
   );
 
   const cancelBulkDeliveryEmailJob = useCallback(() => {
@@ -5021,10 +5548,13 @@ export default function Home() {
   const pollBulkDeliveryEmailJob = useCallback(
     async (jobId: string) => {
       try {
-        const response = await fetch(`/api/hojas-de-entrega/pdf/email/${encodeURIComponent(jobId)}`, {
-          method: "GET",
-          cache: "no-store",
-        });
+        const response = await fetch(
+          `/api/hojas-de-entrega/pdf/email/${encodeURIComponent(jobId)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
 
         const rawBody = await response.text();
         let payload: { error?: string; job?: HojasEntregaEmailJobSnapshot } | null = null;
@@ -5056,7 +5586,9 @@ export default function Home() {
 
         if (nextJob.status === "completed") {
           clearBulkDeliveryEmailPolling();
-          setStatus(nextJob.to ? `PDF enviado por correo a ${nextJob.to}.` : "PDF enviado por correo.");
+          setStatus(
+            nextJob.to ? `PDF enviado por correo a ${nextJob.to}.` : "PDF enviado por correo."
+          );
           return;
         }
 
@@ -5077,10 +5609,12 @@ export default function Home() {
           void pollBulkDeliveryEmailJob(jobId);
         }, 1200);
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "No se pudo consultar el estado del envío.";
-        const statusCode = typeof (error as { status?: unknown })?.status === "number"
-          ? (error as { status: number }).status
-          : null;
+        const message =
+          error instanceof Error ? error.message : "No se pudo consultar el estado del envío.";
+        const statusCode =
+          typeof (error as { status?: unknown })?.status === "number"
+            ? (error as { status: number }).status
+            : null;
 
         if (statusCode === 404) {
           clearBulkDeliveryEmailPolling();
@@ -5123,20 +5657,22 @@ export default function Home() {
         }, 2500);
       }
     },
-    [clearBulkDeliveryEmailPolling, onBulkDeliveryEmailToastCancel],
+    [clearBulkDeliveryEmailPolling, onBulkDeliveryEmailToastCancel]
   );
 
   const appendBulkDeliveryPdfLog = useCallback(
     (message: string) => {
       const elapsedMs =
-        bulkDeliveryPdfStartedAtMs === null ? 0 : Math.max(0, Date.now() - bulkDeliveryPdfStartedAtMs);
+        bulkDeliveryPdfStartedAtMs === null
+          ? 0
+          : Math.max(0, Date.now() - bulkDeliveryPdfStartedAtMs);
       const elapsedLabel = formatElapsedTimer(elapsedMs) ?? "00:00";
       setBulkDeliveryPdfLogEntries((previous) => {
         const next = [...previous, `${elapsedLabel} | ${message}`];
         return next.slice(-MAX_BULK_DELIVERY_PDF_LOG_ENTRIES);
       });
     },
-    [bulkDeliveryPdfStartedAtMs],
+    [bulkDeliveryPdfStartedAtMs]
   );
 
   const printAllDeliverySheets = useCallback(async () => {
@@ -5156,7 +5692,9 @@ export default function Home() {
     setBulkDeliveryPdfElapsedMs(0);
     setBulkDeliveryPdfLoading(true);
     setBulkDeliveryPdfPhase("requesting");
-    setStatus(`Solicitando al servidor la generación del PDF A4 para ${personal.length} hoja(s)...`);
+    setStatus(
+      `Solicitando al servidor la generación del PDF A4 para ${personal.length} hoja(s)...`
+    );
     toast.info(`Generando PDF A4 de ${personal.length} hojas.`);
     try {
       setBulkDeliveryPdfPhase("rendering-server");
@@ -5180,7 +5718,9 @@ export default function Home() {
 
       setBulkDeliveryPdfPhase("downloading-response");
       setStatus("Servidor finalizó la generación. Descargando el archivo PDF...");
-      const serverMetrics = parseHojasEntregaPdfMetricsHeader(response.headers.get("X-Hoja-Entrega-Pdf-Metrics"));
+      const serverMetrics = parseHojasEntregaPdfMetricsHeader(
+        response.headers.get("X-Hoja-Entrega-Pdf-Metrics")
+      );
       if (
         serverMetrics?.totalMs !== null &&
         serverMetrics?.totalMs !== undefined &&
@@ -5191,7 +5731,7 @@ export default function Home() {
         const measuredMsPerHoja = serverMetrics.totalMs / serverMetrics.hojas;
         if (Number.isFinite(measuredMsPerHoja) && measuredMsPerHoja > 0) {
           setBulkDeliveryPdfMsPerHojaEstimate((previous) =>
-            Math.round(previous * 0.7 + measuredMsPerHoja * 0.3),
+            Math.round(previous * 0.7 + measuredMsPerHoja * 0.3)
           );
         }
       }
@@ -5234,7 +5774,8 @@ export default function Home() {
       appendBulkDeliveryPdfLog(`Descarga iniciada: ${fileName}.`);
       setStatus(`Descarga iniciada (${fileName}).${metricsLabel}`);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo generar el PDF de hojas de entrega.";
+      const message =
+        error instanceof Error ? error.message : "No se pudo generar el PDF de hojas de entrega.";
       appendBulkDeliveryPdfLog(`Error: ${message}`);
       setStatus(`Error al generar PDF de hojas de entrega: ${message}`);
     } finally {
@@ -5271,10 +5812,15 @@ export default function Home() {
       });
 
       const rawBody = await response.text();
-      let payload: { error?: string; message?: string; job?: HojasEntregaEmailJobSnapshot } | null = null;
+      let payload: { error?: string; message?: string; job?: HojasEntregaEmailJobSnapshot } | null =
+        null;
       if (rawBody) {
         try {
-          payload = JSON.parse(rawBody) as { error?: string; message?: string; job?: HojasEntregaEmailJobSnapshot };
+          payload = JSON.parse(rawBody) as {
+            error?: string;
+            message?: string;
+            job?: HojasEntregaEmailJobSnapshot;
+          };
         } catch {
           payload = null;
         }
@@ -5313,7 +5859,8 @@ export default function Home() {
       }, 250);
       setStatus(payload.message || "Envío de PDF iniciado en segundo plano.");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "No se pudo iniciar el envío del PDF por correo.";
+      const message =
+        error instanceof Error ? error.message : "No se pudo iniciar el envío del PDF por correo.";
       setStatus(`Error al iniciar envío de PDF por correo: ${message}`);
       toast.error("No se pudo iniciar el envío por correo.", { description: message });
     }
@@ -5365,7 +5912,7 @@ export default function Home() {
       orderIndex?: number;
       orderCount?: number;
       orderGroupType?: TipoEquipo;
-    },
+    }
   ) {
     const reorderableInActiveList = options?.reorderableInActiveList === true;
     const reorderableInInactiveList = options?.reorderableInInactiveList === true;
@@ -5373,7 +5920,12 @@ export default function Home() {
     const orderIndex = options?.orderIndex ?? -1;
     const orderCount = options?.orderCount ?? 0;
     const orderGroupType = options?.orderGroupType ?? equipo.tipo;
-    const currentOrderLabel = isReorderable && orderIndex >= 0 ? orderIndex + 1 : (equipo.ordenPdf > 10000 ? equipo.ordenPdf - 10000 : equipo.ordenPdf);
+    const currentOrderLabel =
+      isReorderable && orderIndex >= 0
+        ? orderIndex + 1
+        : equipo.ordenPdf > 10000
+          ? equipo.ordenPdf - 10000
+          : equipo.ordenPdf;
     const openEquipoEditForm = (focus: "general" | "tipo" = "general") => {
       setEditEquipoId(equipo.equipoId);
       setEditEquipo({
@@ -5387,7 +5939,7 @@ export default function Home() {
         setStatus(
           equipo.tipoEquipoId === null || equipo.tipoEquipoId === undefined
             ? `Selecciona el tipo para ${equipo.nombre} y guarda el cambio.`
-            : `Selecciona el nuevo tipo para ${equipo.nombre} y guarda el cambio.`,
+            : `Selecciona el nuevo tipo para ${equipo.nombre} y guarda el cambio.`
         );
       }
     };
@@ -5401,33 +5953,52 @@ export default function Home() {
           <div className="w-full flex-1 p-5">
             <div className="mb-4">
               <h3 className="text-lg font-bold text-stone-800">Editar Equipo</h3>
-              <p className="text-xs text-stone-500">Modifica los detalles directamente aquí y guarda los cambios.</p>
+              <p className="text-xs text-stone-500">
+                Modifica los detalles directamente aquí y guarda los cambios.
+              </p>
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-stone-500">Nombre del Equipo</label>
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                  Nombre del Equipo
+                </label>
                 <input
                   value={editEquipo.nombre}
-                  onChange={(event) => setEditEquipo((prev) => ({ ...prev, nombre: event.target.value }))}
+                  onChange={(event) =>
+                    setEditEquipo((prev) => ({ ...prev, nombre: event.target.value }))
+                  }
                   className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-800 shadow-sm transition-all focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200"
                 />
               </div>
               <div className="col-span-1">
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-stone-500">Orden (PDF)</label>
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                  Orden (PDF)
+                </label>
                 <input
                   type="number"
                   min={1}
                   step={1}
-                  value={editEquipo.ordenPdf > 10000 ? editEquipo.ordenPdf - 10000 : editEquipo.ordenPdf}
-                  onChange={(event) => setEditEquipo((prev) => ({ ...prev, ordenPdf: Math.max(1, Number(event.target.value) || 1) }))}
+                  value={
+                    editEquipo.ordenPdf > 10000 ? editEquipo.ordenPdf - 10000 : editEquipo.ordenPdf
+                  }
+                  onChange={(event) =>
+                    setEditEquipo((prev) => ({
+                      ...prev,
+                      ordenPdf: Math.max(1, Number(event.target.value) || 1),
+                    }))
+                  }
                   className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-800 shadow-sm transition-all focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200"
                 />
               </div>
               <div className="col-span-1 md:col-span-2 lg:col-span-1">
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-stone-500">Tipo</label>
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                  Tipo
+                </label>
                 <select
                   value={editEquipo.tipo}
-                  onChange={(event) => setEditEquipo((prev) => ({ ...prev, tipo: event.target.value as TipoEquipo }))}
+                  onChange={(event) =>
+                    setEditEquipo((prev) => ({ ...prev, tipo: event.target.value as TipoEquipo }))
+                  }
                   className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-800 shadow-sm transition-all focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200"
                 >
                   {tiposEquipoOptions.map((tipoOption) => (
@@ -5442,10 +6013,14 @@ export default function Home() {
                   <input
                     type="checkbox"
                     checked={editEquipo.activo}
-                    onChange={(event) => setEditEquipo((prev) => ({ ...prev, activo: event.target.checked }))}
+                    onChange={(event) =>
+                      setEditEquipo((prev) => ({ ...prev, activo: event.target.checked }))
+                    }
                     className="h-4 w-4 rounded border-stone-300 text-stone-800 focus:ring-stone-500"
                   />
-                  <span className="text-sm font-bold text-stone-700">Mostrar en Hoja de Entrega General</span>
+                  <span className="text-sm font-bold text-stone-700">
+                    Mostrar en Hoja de Entrega General
+                  </span>
                 </label>
               </div>
             </div>
@@ -5474,21 +6049,31 @@ export default function Home() {
             <div className="flex w-16 shrink-0 flex-col equipos-center justify-center border-r border-stone-100 bg-stone-50 p-2 text-stone-500">
               <span className="text-[10px] font-bold uppercase tracking-widest mb-1">Posición</span>
               <span className="text-lg font-black text-stone-700">
-                {isReorderable ? currentOrderLabel : (equipo.ordenPdf > 10000 ? equipo.ordenPdf - 10000 : equipo.ordenPdf)}
+                {isReorderable
+                  ? currentOrderLabel
+                  : equipo.ordenPdf > 10000
+                    ? equipo.ordenPdf - 10000
+                    : equipo.ordenPdf}
               </span>
             </div>
-            
+
             <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:equipos-center sm:justify-between">
               <div className="flex-1">
-                <h3 className="text-base font-bold text-stone-800 tracking-tight mb-1">{equipo.nombre}</h3>
+                <h3 className="text-base font-bold text-stone-800 tracking-tight mb-1">
+                  {equipo.nombre}
+                </h3>
                 <div className="flex flex-wrap equipos-center gap-3 text-[11px] font-semibold text-stone-500">
                   <span className="flex equipos-center gap-1.5 uppercase tracking-wider">
-                    <span className={`h-1.5 w-1.5 rounded-full ${equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? "bg-sky-500" : "bg-amber-500"}`}></span>
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? "bg-sky-500" : "bg-amber-500"}`}
+                    ></span>
                     {equipo.tipoLabel ?? equipo.tipo}
                   </span>
                   <span className="text-stone-300">•</span>
                   <span className="flex equipos-center gap-1.5 uppercase tracking-wider">
-                    <span className={`h-1.5 w-1.5 rounded-full ${equipo.activo ? "bg-emerald-500" : "bg-rose-500"}`}></span>
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${equipo.activo ? "bg-emerald-500" : "bg-rose-500"}`}
+                    ></span>
                     {equipo.activo ? "Visible en Hoja" : "Oculto de Hoja"}
                   </span>
                 </div>
@@ -5506,47 +6091,132 @@ export default function Home() {
                     }`}
                   >
                     {equipo.activo ? (
-                      <><svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg> Ocultar</>
+                      <>
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                          />
+                        </svg>{" "}
+                        Ocultar
+                      </>
                     ) : (
-                      <><svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> Mostrar</>
+                      <>
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>{" "}
+                        Mostrar
+                      </>
                     )}
                   </button>
                 ) : null}
-                
+
                 {isReorderable ? (
                   <div className="flex h-9 equipos-center gap-1.5 rounded-xl border border-stone-200/80 bg-stone-50/80 px-1.5 shadow-sm">
                     <div className="flex equipos-center gap-0.5 border-r border-stone-200 pr-1.5">
                       <button
                         type="button"
-                        onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.equipoId, "up", orderGroupType) : moveEquipoInactivoInDraft(equipo.equipoId, "up", orderGroupType)}
+                        onClick={() =>
+                          reorderableInActiveList
+                            ? moveEquipoInDraft(equipo.equipoId, "up", orderGroupType)
+                            : moveEquipoInactivoInDraft(equipo.equipoId, "up", orderGroupType)
+                        }
                         disabled={!canWrite || orderIndex <= 0}
                         className="flex h-6 w-6 equipos-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
                         title="Subir una posición"
                       >
-                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M5 15l7-7 7 7"
+                          />
+                        </svg>
                       </button>
                       <button
                         type="button"
-                        onClick={() => reorderableInActiveList ? moveEquipoInDraft(equipo.equipoId, "down", orderGroupType) : moveEquipoInactivoInDraft(equipo.equipoId, "down", orderGroupType)}
+                        onClick={() =>
+                          reorderableInActiveList
+                            ? moveEquipoInDraft(equipo.equipoId, "down", orderGroupType)
+                            : moveEquipoInactivoInDraft(equipo.equipoId, "down", orderGroupType)
+                        }
                         disabled={!canWrite || orderIndex < 0 || orderIndex >= orderCount - 1}
                         className="flex h-6 w-6 equipos-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
                         title="Bajar una posición"
                       >
-                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
                       </button>
                     </div>
                     <div className="flex equipos-center">
                       <select
                         value={currentOrderLabel}
-                        onChange={(event) => reorderableInActiveList ? setEquipoDraftPosition(equipo.equipoId, Number(event.target.value), orderGroupType) : setEquipoInactivoDraftPosition(equipo.equipoId, Number(event.target.value), orderGroupType)}
+                        onChange={(event) =>
+                          reorderableInActiveList
+                            ? setEquipoDraftPosition(
+                                equipo.equipoId,
+                                Number(event.target.value),
+                                orderGroupType
+                              )
+                            : setEquipoInactivoDraftPosition(
+                                equipo.equipoId,
+                                Number(event.target.value),
+                                orderGroupType
+                              )
+                        }
                         disabled={!canWrite}
                         className="h-6 cursor-pointer rounded-lg border-none bg-transparent py-0 pl-1.5 pr-6 text-xs font-bold text-stone-600 outline-none hover:bg-white focus:ring-0"
                       >
-                        {Array.from({ length: orderCount }, (_, index) => index + 1).map((position) => (
-                          <option key={`${equipo.equipoId}-position-${position}`} value={position}>
-                            Ir a {position}
-                          </option>
-                        ))}
+                        {Array.from({ length: orderCount }, (_, index) => index + 1).map(
+                          (position) => (
+                            <option
+                              key={`${equipo.equipoId}-position-${position}`}
+                              value={position}
+                            >
+                              Ir a {position}
+                            </option>
+                          )
+                        )}
                       </select>
                     </div>
                   </div>
@@ -5554,38 +6224,42 @@ export default function Home() {
 
                 {canWrite ? (
                   <>
-                    {isReorderable ? <div className="hidden h-6 w-px bg-stone-200/80 sm:block" /> : null}
+                    {isReorderable ? (
+                      <div className="hidden h-6 w-px bg-stone-200/80 sm:block" />
+                    ) : null}
                     <div>
                       <ActionMenu
                         buttonLabel="Acciones"
-                      actions={[
-                        {
-                          label: equipo.activo ? "Ocultar de hoja general" : "Mostrar en hoja general",
-                          icon: equipo.activo ? "x" : "check",
-                          tone: equipo.activo ? "danger" : "success",
-                          onClick: () => void toggleEquipoActivo(equipo),
-                        },
-                        {
-                          label: "Editar equipo",
-                          icon: "edit",
-                          tone: "primary",
-                          onClick: () => openEquipoEditForm("general"),
-                        },
-                        {
-                          label: "Unificar con otro equipo",
-                          icon: "drag",
-                          tone: "secondary",
-                          onClick: () => openMergeEquipoDialog(equipo.equipoId),
-                        },
-                        {
-                          label: "Eliminar definitivamente",
-                          icon: "trash",
-                          tone: "danger",
-                          onClick: () => void deleteEquipo(equipo.equipoId),
-                        },
-                      ]}
-                    />
-                  </div>
+                        actions={[
+                          {
+                            label: equipo.activo
+                              ? "Ocultar de hoja general"
+                              : "Mostrar en hoja general",
+                            icon: equipo.activo ? "x" : "check",
+                            tone: equipo.activo ? "danger" : "success",
+                            onClick: () => void toggleEquipoActivo(equipo),
+                          },
+                          {
+                            label: "Editar equipo",
+                            icon: "edit",
+                            tone: "primary",
+                            onClick: () => openEquipoEditForm("general"),
+                          },
+                          {
+                            label: "Unificar con otro equipo",
+                            icon: "drag",
+                            tone: "secondary",
+                            onClick: () => openMergeEquipoDialog(equipo.equipoId),
+                          },
+                          {
+                            label: "Eliminar definitivamente",
+                            icon: "trash",
+                            tone: "danger",
+                            onClick: () => void deleteEquipo(equipo.equipoId),
+                          },
+                        ]}
+                      />
+                    </div>
                   </>
                 ) : null}
               </div>
@@ -5600,8 +6274,7 @@ export default function Home() {
   const isPageBootLoading =
     !currentUser &&
     !loginLoading &&
-    (normalizedStatus.startsWith("verificando") ||
-      normalizedStatus.startsWith("iniciando"));
+    (normalizedStatus.startsWith("verificando") || normalizedStatus.startsWith("iniciando"));
   const isLoginGlobalBusy = !currentUser && (isPageBootLoading || loginLoading);
   const loginBusyLabel = loginLoading
     ? "Validando credenciales y preparando tu sesión..."
@@ -5616,7 +6289,7 @@ export default function Home() {
       "Consolidando movimientos, préstamos, devoluciones y stock...",
       "Aplicando permisos de usuario y preparando la interfaz...",
     ],
-    [],
+    []
   );
   const [primaryLoadStepIndex, setPrimaryLoadStepIndex] = useState(0);
 
@@ -5676,12 +6349,7 @@ export default function Home() {
     if (bulkDeliveryPdfPhase === "triggering-download") {
       appendBulkDeliveryPdfLog("Lanzando descarga en el navegador.");
     }
-  }, [
-    appendBulkDeliveryPdfLog,
-    bulkDeliveryPdfLoading,
-    bulkDeliveryPdfPhase,
-    personal.length,
-  ]);
+  }, [appendBulkDeliveryPdfLog, bulkDeliveryPdfLoading, bulkDeliveryPdfPhase, personal.length]);
 
   const bulkDeliveryPdfLabel = useMemo(() => {
     if (!bulkDeliveryPdfLoading) return "";
@@ -5778,8 +6446,7 @@ export default function Home() {
 
   const isAppGlobalBusy =
     !!currentUser &&
-    (
-      loading ||
+    (loading ||
       bulkDeliveryPdfLoading ||
       personaProfileLoading ||
       firmaConfigLoading ||
@@ -5804,16 +6471,17 @@ export default function Home() {
       userPasswordSaving ||
       usernameSaving ||
       promotingSubalternoCi !== null ||
-      confirmDialogBusy
-    );
+      confirmDialogBusy);
   const appBusyLabel = useMemo(() => {
     if (loading) return primaryLoadingLabel;
     if (bulkDeliveryPdfLoading) return bulkDeliveryPdfLabel;
-    if (personaProfileLoading) return "Cargando ficha completa y consolidando información de esta persona...";
+    if (personaProfileLoading)
+      return "Cargando ficha completa y consolidando información de esta persona...";
     if (firmaConfigLoading) return "Cargando configuración de firmas y auditoría...";
     if (firmaConfigSaving) return "Guardando configuración de firmas...";
     if (hojaMatrixLoading) return "Cargando datos y calculando hoja matriz de subalternos...";
-    if (equipoResumenLoading) return "Cargando datos y calculando resumen de equipos por bateria...";
+    if (equipoResumenLoading)
+      return "Cargando datos y calculando resumen de equipos por bateria...";
     if (stockLoading) {
       if (activeStockLoadProfile?.key === "historial") {
         return "Cargando historial y calculando impacto de movimientos en stock...";
@@ -5836,7 +6504,8 @@ export default function Home() {
     if (recordatorios.saving) return "Guardando cambios de recordatorios...";
     if (creatingPersonal) return "Guardando alta de personal y actualizando listados...";
     if (creatingOficialSuboficial) return "Guardando alta de oficiales/suboficiales...";
-    if (promotingSubalternoCi !== null) return "Procesando ascenso y actualizando datos del legajo...";
+    if (promotingSubalternoCi !== null)
+      return "Procesando ascenso y actualizando datos del legajo...";
     if (mergeEquipoSaving) return "Unificando equipo y sincronizando referencias...";
     if (stockSaving) {
       return stockDraft.tipo === "EGRESO"
@@ -5930,15 +6599,17 @@ export default function Home() {
 
     return (
       <PersonalPortalView
-        currentUser={{
-          accountType: "PERSONAL",
-          personalCi: normalizedPersonalCi,
-          username: currentUser.username,
-          apellido: currentUser.apellido,
-          nombre: currentUser.nombre,
-          grado: currentUser.grado,
-          mailReferencia: currentUser.mailReferencia,
-        } as PersonalCurrentUser}
+        currentUser={
+          {
+            accountType: "PERSONAL",
+            personalCi: normalizedPersonalCi,
+            username: currentUser.username,
+            apellido: currentUser.apellido,
+            nombre: currentUser.nombre,
+            grado: currentUser.grado,
+            mailReferencia: currentUser.mailReferencia,
+          } as PersonalCurrentUser
+        }
         personalSelfProfile={personalSelfProfile}
         loading={loading}
         changeLoading={changeLoading}
@@ -5969,32 +6640,82 @@ export default function Home() {
   const sidebarContent = (
     <>
       <Stack spacing={2} sx={{ mb: 4, mt: 1, px: 1, alignItems: "center", overflow: "hidden" }}>
-        <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, alignSelf: "flex-start", opacity: sidebarCollapsed ? 0 : 1, transition: "opacity 0.2s" }}>
+        <Typography
+          sx={{
+            color: "rgba(255,255,255,0.5)",
+            fontSize: 11,
+            fontWeight: 700,
+            alignSelf: "flex-start",
+            opacity: sidebarCollapsed ? 0 : 1,
+            transition: "opacity 0.2s",
+          }}
+        >
           Versión: {appVersion}
         </Typography>
 
-        <Box sx={{ width: sidebarCollapsed ? 45 : 100, height: "auto", my: 1, transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)" }}>
+        <Box
+          sx={{
+            width: sidebarCollapsed ? 45 : 100,
+            height: "auto",
+            my: 1,
+            transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        >
           <Image
             src="/assets/logo-deposito.png"
             alt="Logo Depósito"
             width={200}
             height={240}
-            style={{ width: "100%", height: "auto", filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))", transition: "all 0.3s ease" }}
+            style={{
+              width: "100%",
+              height: "auto",
+              filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))",
+              transition: "all 0.3s ease",
+            }}
           />
         </Box>
 
         <Box sx={{ textAlign: "center", display: sidebarCollapsed ? "none" : "block" }}>
-          <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontStyle: "italic", fontWeight: 800, lineHeight: 1.2, mb: 0.5 }}>
+          <Typography
+            sx={{
+              color: "rgba(255,255,255,0.9)",
+              fontSize: 13,
+              fontStyle: "italic",
+              fontWeight: 800,
+              lineHeight: 1.2,
+              mb: 0.5,
+            }}
+          >
             Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1
           </Typography>
-          <Typography sx={{ color: "var(--color-ejercito-gold)", fontWeight: 900, fontSize: 20, letterSpacing: "0.02em", textTransform: "uppercase" }}>
+          <Typography
+            sx={{
+              color: "var(--color-ejercito-gold)",
+              fontWeight: 900,
+              fontSize: 20,
+              letterSpacing: "0.02em",
+              textTransform: "uppercase",
+            }}
+          >
             Depósito General
           </Typography>
         </Box>
 
         <Divider sx={{ width: "100%", borderColor: "rgba(255,255,255,0.1)" }} />
 
-        <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", alignSelf: "flex-start", pl: 1, opacity: sidebarCollapsed ? 0 : 1, transition: "opacity 0.2s" }}>
+        <Typography
+          sx={{
+            color: "rgba(255,255,255,0.4)",
+            fontSize: 11,
+            fontWeight: 800,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            alignSelf: "flex-start",
+            pl: 1,
+            opacity: sidebarCollapsed ? 0 : 1,
+            transition: "opacity 0.2s",
+          }}
+        >
           {!sidebarCollapsed && "Menú Principal"}
         </Typography>
       </Stack>
@@ -6022,11 +6743,26 @@ export default function Home() {
 
       <Box sx={{ mt: 4, mb: 2 }}>
         <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", mb: 3 }} />
-        
+
         {/* User Info Section */}
         <Stack spacing={1.5} sx={{ px: 1, mb: 4 }}>
-          <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", mb: 0.5 }}>
+          <Box
+            sx={{
+              p: 1.5,
+              borderRadius: 2,
+              bgcolor: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <Typography
+              sx={{
+                color: "rgba(255,255,255,0.4)",
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                mb: 0.5,
+              }}
+            >
               Usuario Conectado
             </Typography>
             <Typography sx={{ color: "common.white", fontSize: 14, fontWeight: 700 }}>
@@ -6043,12 +6779,15 @@ export default function Home() {
               variant="outlined"
               size="small"
               onClick={() => reloadCurrentViewData(true)}
-              sx={{ 
-                borderColor: "rgba(255,255,255,0.2)", 
+              sx={{
+                borderColor: "rgba(255,255,255,0.2)",
                 color: "common.white",
                 fontSize: 11,
                 textTransform: "none",
-                "&:hover": { borderColor: "rgba(255,255,255,0.4)", bgcolor: "rgba(255,255,255,0.05)" }
+                "&:hover": {
+                  borderColor: "rgba(255,255,255,0.4)",
+                  bgcolor: "rgba(255,255,255,0.05)",
+                },
               }}
             >
               Recargar
@@ -6059,10 +6798,10 @@ export default function Home() {
               size="small"
               color="error"
               onClick={() => void logout()}
-              sx={{ 
+              sx={{
                 fontSize: 11,
                 textTransform: "none",
-                boxShadow: "0 4px 12px rgba(211, 47, 47, 0.2)"
+                boxShadow: "0 4px 12px rgba(211, 47, 47, 0.2)",
               }}
             >
               Cerrar sesión
@@ -6071,10 +6810,20 @@ export default function Home() {
         </Stack>
 
         {/* Metrics Section */}
-        <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", mb: 1.5, pl: 1 }}>
+        <Typography
+          sx={{
+            color: "rgba(255,255,255,0.4)",
+            fontSize: 11,
+            fontWeight: 800,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            mb: 1.5,
+            pl: 1,
+          }}
+        >
           Resumen del Sistema
         </Typography>
-        
+
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.25, px: 0.5 }}>
           {[
             { label: "Subalternos", value: personal.length },
@@ -6082,18 +6831,25 @@ export default function Home() {
             { label: "Equipos", value: equipos.length },
             { label: "Movimientos", value: movimientosTotal },
           ].map((metric) => (
-            <Box 
+            <Box
               key={metric.label}
-              sx={{ 
-                p: 1.5, 
-                borderRadius: 1.5, 
-                bgcolor: "rgba(0,0,0,0.2)", 
+              sx={{
+                p: 1.5,
+                borderRadius: 1.5,
+                bgcolor: "rgba(0,0,0,0.2)",
                 border: "1px solid rgba(255,255,255,0.05)",
                 display: "flex",
-                flexDirection: "column"
+                flexDirection: "column",
               }}
             >
-              <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>
+              <Typography
+                sx={{
+                  color: "rgba(255,255,255,0.5)",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                }}
+              >
                 {metric.label}
               </Typography>
               <Typography sx={{ color: "common.white", fontSize: 18, fontWeight: 900, mt: 0.2 }}>
@@ -6121,7 +6877,8 @@ export default function Home() {
           overflowY: "auto",
           p: 2,
           borderRight: "1px solid rgba(255, 255, 255, 0.1)",
-          background: "linear-gradient(180deg, rgba(22, 28, 22, 0.98) 0%, rgba(15, 20, 15, 0.99) 100%)",
+          background:
+            "linear-gradient(180deg, rgba(22, 28, 22, 0.98) 0%, rgba(15, 20, 15, 0.99) 100%)",
           backdropFilter: "blur(20px)",
           boxShadow: "4px 0 24px rgba(0,0,0,0.3)",
           zIndex: 1200,
@@ -6145,7 +6902,7 @@ export default function Home() {
             p: 2,
             borderRight: "1px solid rgba(255,255,255,0.1)",
             backgroundImage: "none",
-          }
+          },
         }}
       >
         {sidebarContent}
@@ -6162,9 +6919,10 @@ export default function Home() {
           position: "relative",
           p: activeView === "dashboard" ? 0 : { xs: 2, sm: 3, lg: 4 },
           backgroundColor: activeView === "dashboard" ? "#2f3a2a" : "#5f6c46",
-          backgroundImage: activeView === "dashboard"
-            ? "linear-gradient(110deg, rgba(12,16,11,0.78) 0%, rgba(20,27,18,0.56) 46%, rgba(9,12,10,0.76) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.04) 0 2px, rgba(0,0,0,0) 2px 7px), url('/assets/dashboard-foto.jpg')"
-            : "linear-gradient(90deg, rgba(24,27,21,0.5) 0%, rgba(255,255,255,0.04) 40%, rgba(24,27,21,0.45) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 2px, rgba(0,0,0,0) 2px 7px)",
+          backgroundImage:
+            activeView === "dashboard"
+              ? "linear-gradient(110deg, rgba(12,16,11,0.78) 0%, rgba(20,27,18,0.56) 46%, rgba(9,12,10,0.76) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.04) 0 2px, rgba(0,0,0,0) 2px 7px), url('/assets/dashboard-foto.jpg')"
+              : "linear-gradient(90deg, rgba(24,27,21,0.5) 0%, rgba(255,255,255,0.04) 40%, rgba(24,27,21,0.45) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 2px, rgba(0,0,0,0) 2px 7px)",
           backgroundSize: activeView === "dashboard" ? "cover" : "auto",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",
@@ -6172,47 +6930,77 @@ export default function Home() {
       >
         {/* Mobile Header */}
         <header className="sticky top-0 z-40 flex equipos-center justify-between border-b border-stone-300/80 bg-white px-4 py-3 shadow-md backdrop-blur-md min-[900px]:hidden -mx-2 sm:-mx-3 mb-4">
-            <div className="flex equipos-center gap-3">
-              <div className="flex h-10 w-10 equipos-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-inner">
-                <Image src="/assets/logo-deposito.png" alt="Escudo" width={32} height={32} className="h-8 w-8 object-contain drop-shadow-sm" />
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-sm font-black tracking-tight text-[var(--color-ejercito-gold)] drop-shadow-sm">
-                  DEPÓSITO GENERAL
-                </h1>
-                <div className="flex equipos-center gap-1.5">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-stone-700">Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1</span>
-                  <span className="h-1 w-1 rounded-full bg-stone-400"></span>
-                  <span className="text-[10px] font-bold text-stone-600">v{appVersion}</span>
-                </div>
+          <div className="flex equipos-center gap-3">
+            <div className="flex h-10 w-10 equipos-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-inner">
+              <Image
+                src="/assets/logo-deposito.png"
+                alt="Escudo"
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain drop-shadow-sm"
+              />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-sm font-black tracking-tight text-[var(--color-ejercito-gold)] drop-shadow-sm">
+                DEPÓSITO GENERAL
+              </h1>
+              <div className="flex equipos-center gap-1.5">
+                <span className="text-[11px] font-black uppercase tracking-wider text-stone-700">
+                  Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1
+                </span>
+                <span className="h-1 w-1 rounded-full bg-stone-400"></span>
+                <span className="text-[10px] font-bold text-stone-600">v{appVersion}</span>
               </div>
             </div>
-            <div className="flex equipos-center gap-1">
-              <button
-                type="button"
-                onClick={() => setGlobalSearchOpen(true)}
-                className="flex h-10 w-10 equipos-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+          </div>
+          <div className="flex equipos-center gap-1">
+            <button
+              type="button"
+              onClick={() => setGlobalSearchOpen(true)}
+              className="flex h-10 w-10 equipos-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+            >
+              <span className="sr-only">Buscar personal</span>
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
               >
-                <span className="sr-only">Buscar personal</span>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(true)}
-                className="flex h-10 w-10 equipos-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex h-10 w-10 equipos-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+            >
+              <span className="sr-only">Abrir menú</span>
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
               >
-                <span className="sr-only">Abrir menú</span>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-            </div>
-          </header>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+        </header>
 
         {currentUser && isAdminRole(currentUser.rol) && (
-          <Box sx={{ position: "relative", px: activeView === "dashboard" ? 3 : 0, mt: activeView === "dashboard" ? 3 : 0 }}>
+          <Box
+            sx={{
+              position: "relative",
+              px: activeView === "dashboard" ? 3 : 0,
+              mt: activeView === "dashboard" ? 3 : 0,
+            }}
+          >
             <AdminPushNotifications />
           </Box>
         )}
@@ -6253,164 +7041,183 @@ export default function Home() {
           ) : null}
 
           {inCatalogView || (isAdmin && inAdminConfigView) ? (
-          <ConfigViews
-            activeView={activeView as "grados" | "baterias" | "articulos" | "equipos" | "tipos_equipo" | "firmas" | "usuarios" | "auditoria" | "papelera"}
-            isAdmin={isAdmin}
-            canWrite={canWrite}
-            rangos={rangosConfigView}
-            newRangoAbreviacion={newRangoAbreviacion}
-            newRangoNombreCompleto={newRangoNombreCompleto}
-            newRangoOrden={newRangoOrden}
-            editRangoId={editRangoId}
-            editRangoAbreviacion={editRangoAbreviacion}
-            editRangoNombreCompleto={editRangoNombreCompleto}
-            editRangoOrden={editRangoOrden}
-            baterias={baterias}
-            newBateria={newBateria}
-            newBateriaOrden={newBateriaOrden}
-            editBateriaId={editBateriaId}
-            editBateriaNombre={editBateriaNombre}
-            editBateriaOrden={editBateriaOrden}
-            articulos={articulos}
-            editArticuloId={editArticuloId}
-            editArticuloNombre={editArticuloNombre}
-            editArticuloTipo={editArticuloTipo}
-            tiposEquipo={tiposEquipoOptions}
-            newTipoEquipoNombre={newTipoEquipoNombre}
-            newTipoEquipoOrden={newTipoEquipoOrden}
-            editTipoEquipoId={editTipoEquipoId}
-            editTipoEquipoNombre={editTipoEquipoNombre}
-            editTipoEquipoOrden={editTipoEquipoOrden}
-            equipos={equiposOrdenados}
-            newEquipo={newEquipo}
-            editEquipoId={editEquipoId}
-            editEquipo={editEquipo}
-            equiposInactivos={equiposInactivos}
-            equiposInactivosEnPantalla={equiposInactivosEnPantalla}
-            equiposActivosEnPantalla={equiposActivosEnPantalla}
-            hasEquipoOrderDraftChanges={hasEquipoOrderDraftChanges}
-            hasEquipoInactivoOrderDraftChanges={hasEquipoInactivoOrderDraftChanges}
-            mergeEquipoOrigenId={mergeEquipoOrigenId}
-            mergeEquipoDestinoId={mergeEquipoDestinoId}
-            usuarios={usuarios}
-            newUserRangoId={newUserRangoId}
-            userRangoOptions={rangosConfigView}
-            newNombre={newNombre}
-            newApellido={newApellido}
-            newUsername={newUsername}
-            newPassword={newPassword}
-            newPasswordConfirm={newPasswordConfirm}
-            newMailReferencia={newMailReferencia}
-            newRole={newRole}
-            firmaConfig={firmaConfig}
-            firmaConfigDraft={firmaConfigDraft}
-            firmaConfigLoading={firmaConfigLoading}
-            firmaConfigSaving={firmaConfigSaving}
-            firmaConfigError={firmaConfigError}
-            auditFilter={auditFilter}
-            auditUserFilter={auditUserFilter}
-            auditUserOptions={auditUserOptions}
-            auditPage={auditPage}
-            auditPageSize={auditPageSize}
-            auditoriaFiltradaPaginada={auditoriaFiltradaPaginada}
-            auditoriaFiltrada={auditoriaFiltrada}
-            onNewRangoAbreviacionChange={setNewRangoAbreviacion}
-            onNewRangoNombreCompletoChange={setNewRangoNombreCompleto}
-            onNewRangoOrdenChange={setNewRangoOrden}
-            onEditRangoIdChange={setEditRangoId}
-            onEditRangoAbreviacionChange={setEditRangoAbreviacion}
-            onEditRangoNombreCompletoChange={setEditRangoNombreCompleto}
-            onEditRangoOrdenChange={setEditRangoOrden}
-            onCreateRango={() => void createRango()}
-            onUpdateRango={(rangoId) => void updateRango(rangoId)}
-            onDeleteRango={(rangoId) => void deleteRango(rangoId)}
-            onNewBateriaChange={setNewBateria}
-            onNewBateriaOrdenChange={setNewBateriaOrden}
-            onEditBateriaIdChange={setEditBateriaId}
-            onEditBateriaNombreChange={setEditBateriaNombre}
-            onEditBateriaOrdenChange={setEditBateriaOrden}
-            onCreateBateria={() => void createBateria()}
-            onUpdateBateria={(bateriaId) => void updateBateria(bateriaId)}
-            onDeleteBateria={(bateriaId) => void deleteBateria(bateriaId)}
-            onEditArticuloIdChange={setEditArticuloId}
-            onEditArticuloNombreChange={setEditArticuloNombre}
-            onEditArticuloTipoChange={setEditArticuloTipo}
-            onUpdateArticulo={(articuloId) => void updateArticulo(articuloId)}
-            onDeleteArticulo={(articuloId) => void deleteArticulo(articuloId)}
-            onNewTipoEquipoNombreChange={setNewTipoEquipoNombre}
-            onNewTipoEquipoOrdenChange={setNewTipoEquipoOrden}
-            onEditTipoEquipoIdChange={setEditTipoEquipoId}
-            onEditTipoEquipoNombreChange={setEditTipoEquipoNombre}
-            onEditTipoEquipoOrdenChange={setEditTipoEquipoOrden}
-            onCreateTipoEquipo={() => void createTipoEquipo()}
-            onUpdateTipoEquipo={(tipoEquipoId) => void updateTipoEquipo(tipoEquipoId)}
-            onDeleteTipoEquipo={(tipoEquipoId) => void deleteTipoEquipo(tipoEquipoId)}
-            onSumarStock={(articuloId) => {
-              setArticuloStockIngresoId(String(articuloId));
-              setActiveView("articulo_stock_ingreso");
-            }}
-            onEntregarArticulo={(articuloId) => {
-              setArticuloEntregaPersonalItems([{ articuloId: String(articuloId), cantidad: "1" }]);
-              setActiveView("articulo_entrega_personal");
-            }}
-            onNewEquipoChange={(value, key) => setNewEquipo((prev) => ({ ...prev, [key]: value }))}
-            onEditEquipoIdChange={setEditEquipoId}
-            onEditEquipoChange={(value, key) => setEditEquipo((prev) => ({ ...prev, [key]: value }))}
-            onCreateEquipo={(event) => void createEquipo(event)}
-            onUpdateEquipo={(equipoId) => void updateEquipo(equipoId)}
-            onToggleEquipoActivo={(equipo) => void toggleEquipoActivo(equipo)}
-            onDeleteEquipo={(equipoId) => void deleteEquipo(equipoId)}
-            onMergeEquipoOrigenIdChange={handleMergeEquipoOrigenChange}
-            onMergeEquipoDestinoIdChange={handleMergeEquipoDestinoChange}
-            onMergeEquipos={mergeEquipos}
-            onSaveEquipoOrder={() => {
-              if (!equipoOrderDraftIds) return;
-              void saveActiveEquiposOrder(equipoOrderDraftIds);
-            }}
-            onResetEquipoOrderDraft={() => setEquipoOrderDraftIds(null)}
-            onSaveEquipoInactivoOrder={() => {
-              if (!equipoInactivoOrderDraftIds) return;
-              void saveInactivoEquiposOrder(equipoInactivoOrderDraftIds);
-            }}
-            onResetEquipoInactivoOrderDraft={() => setEquipoInactivoOrderDraftIds(null)}
-            renderEquipoCard={renderEquipoCard}
-            onNewUserRangoIdChange={setNewUserRangoId}
-            onNewNombreChange={setNewNombre}
-            onNewApellidoChange={setNewApellido}
-            onNewUsernameChange={setNewUsername}
-            onNewPasswordChange={setNewPassword}
-            onNewPasswordConfirmChange={setNewPasswordConfirm}
-            onNewMailReferenciaChange={setNewMailReferencia}
-            onNewRoleChange={setNewRole}
-            onCreateUsuario={(event) => void createUsuario(event)}
-            onEditUsuario={(usuario) => void editUsuario(usuario)}
-            onChangeUserRole={(usuario) => void changeUserRole(usuario)}
-            onChangeUserPassword={(usuario) => void changeUserPassword(usuario)}
-            onConfirmUserEmail={(usuario) => void confirmUserEmail(usuario)}
-            onToggleUserActive={(usuario) => void toggleUserActive(usuario)}
-            onDeleteUsuario={(usuario) => void deleteUsuario(usuario)}
-            onFirmaConfigDraftChange={(key, value) => setFirmaConfigDraft((prev) => ({ ...prev, [key]: value }))}
-            onSaveFirmaConfig={(event) => void saveFirmaConfig(event)}
-            onAuditFilterChange={setAuditFilter}
-            onAuditUserFilterChange={setAuditUserFilter}
-            onAuditPageChange={setAuditPage}
-            onAuditPageSizeChange={setAuditPageSize}
-            onNavigateView={(view) => setActiveView(view)}
-            roleLabel={roleLabel}
-            roleDescription={roleDescription}
-            roleScope={roleScope}
-            rangoLabel={rangoLabel}
-            auditActionLabel={auditActionLabel}
-            auditEntityLabel={auditEntityLabel}
-            renderAuditDetalle={renderAuditDetalle}
-            papelera={{
-              records: papeleraRecords,
-              loading: papeleraLoading,
-              restore: restorePapelera,
-              removePermanent: removePapeleraPermanent,
-            }}
-            reloadCurrentViewData={reloadCurrentViewData}
-          />
+            <ConfigViews
+              activeView={
+                activeView as
+                  | "grados"
+                  | "baterias"
+                  | "articulos"
+                  | "equipos"
+                  | "tipos_equipo"
+                  | "firmas"
+                  | "usuarios"
+                  | "auditoria"
+                  | "papelera"
+              }
+              isAdmin={isAdmin}
+              canWrite={canWrite}
+              rangos={rangosConfigView}
+              newRangoAbreviacion={newRangoAbreviacion}
+              newRangoNombreCompleto={newRangoNombreCompleto}
+              newRangoOrden={newRangoOrden}
+              editRangoId={editRangoId}
+              editRangoAbreviacion={editRangoAbreviacion}
+              editRangoNombreCompleto={editRangoNombreCompleto}
+              editRangoOrden={editRangoOrden}
+              baterias={baterias}
+              newBateria={newBateria}
+              newBateriaOrden={newBateriaOrden}
+              editBateriaId={editBateriaId}
+              editBateriaNombre={editBateriaNombre}
+              editBateriaOrden={editBateriaOrden}
+              articulos={articulos}
+              editArticuloId={editArticuloId}
+              editArticuloNombre={editArticuloNombre}
+              editArticuloTipo={editArticuloTipo}
+              tiposEquipo={tiposEquipoOptions}
+              newTipoEquipoNombre={newTipoEquipoNombre}
+              newTipoEquipoOrden={newTipoEquipoOrden}
+              editTipoEquipoId={editTipoEquipoId}
+              editTipoEquipoNombre={editTipoEquipoNombre}
+              editTipoEquipoOrden={editTipoEquipoOrden}
+              equipos={equiposOrdenados}
+              newEquipo={newEquipo}
+              editEquipoId={editEquipoId}
+              editEquipo={editEquipo}
+              equiposInactivos={equiposInactivos}
+              equiposInactivosEnPantalla={equiposInactivosEnPantalla}
+              equiposActivosEnPantalla={equiposActivosEnPantalla}
+              hasEquipoOrderDraftChanges={hasEquipoOrderDraftChanges}
+              hasEquipoInactivoOrderDraftChanges={hasEquipoInactivoOrderDraftChanges}
+              mergeEquipoOrigenId={mergeEquipoOrigenId}
+              mergeEquipoDestinoId={mergeEquipoDestinoId}
+              usuarios={usuarios}
+              newUserRangoId={newUserRangoId}
+              userRangoOptions={rangosConfigView}
+              newNombre={newNombre}
+              newApellido={newApellido}
+              newUsername={newUsername}
+              newPassword={newPassword}
+              newPasswordConfirm={newPasswordConfirm}
+              newMailReferencia={newMailReferencia}
+              newRole={newRole}
+              firmaConfig={firmaConfig}
+              firmaConfigDraft={firmaConfigDraft}
+              firmaConfigLoading={firmaConfigLoading}
+              firmaConfigSaving={firmaConfigSaving}
+              firmaConfigError={firmaConfigError}
+              auditFilter={auditFilter}
+              auditUserFilter={auditUserFilter}
+              auditUserOptions={auditUserOptions}
+              auditPage={auditPage}
+              auditPageSize={auditPageSize}
+              auditoriaFiltradaPaginada={auditoriaFiltradaPaginada}
+              auditoriaFiltrada={auditoriaFiltrada}
+              onNewRangoAbreviacionChange={setNewRangoAbreviacion}
+              onNewRangoNombreCompletoChange={setNewRangoNombreCompleto}
+              onNewRangoOrdenChange={setNewRangoOrden}
+              onEditRangoIdChange={setEditRangoId}
+              onEditRangoAbreviacionChange={setEditRangoAbreviacion}
+              onEditRangoNombreCompletoChange={setEditRangoNombreCompleto}
+              onEditRangoOrdenChange={setEditRangoOrden}
+              onCreateRango={() => void createRango()}
+              onUpdateRango={(rangoId) => void updateRango(rangoId)}
+              onDeleteRango={(rangoId) => void deleteRango(rangoId)}
+              onNewBateriaChange={setNewBateria}
+              onNewBateriaOrdenChange={setNewBateriaOrden}
+              onEditBateriaIdChange={setEditBateriaId}
+              onEditBateriaNombreChange={setEditBateriaNombre}
+              onEditBateriaOrdenChange={setEditBateriaOrden}
+              onCreateBateria={() => void createBateria()}
+              onUpdateBateria={(bateriaId) => void updateBateria(bateriaId)}
+              onDeleteBateria={(bateriaId) => void deleteBateria(bateriaId)}
+              onEditArticuloIdChange={setEditArticuloId}
+              onEditArticuloNombreChange={setEditArticuloNombre}
+              onEditArticuloTipoChange={setEditArticuloTipo}
+              onUpdateArticulo={(articuloId) => void updateArticulo(articuloId)}
+              onDeleteArticulo={(articuloId) => void deleteArticulo(articuloId)}
+              onNewTipoEquipoNombreChange={setNewTipoEquipoNombre}
+              onNewTipoEquipoOrdenChange={setNewTipoEquipoOrden}
+              onEditTipoEquipoIdChange={setEditTipoEquipoId}
+              onEditTipoEquipoNombreChange={setEditTipoEquipoNombre}
+              onEditTipoEquipoOrdenChange={setEditTipoEquipoOrden}
+              onCreateTipoEquipo={() => void createTipoEquipo()}
+              onUpdateTipoEquipo={(tipoEquipoId) => void updateTipoEquipo(tipoEquipoId)}
+              onDeleteTipoEquipo={(tipoEquipoId) => void deleteTipoEquipo(tipoEquipoId)}
+              onSumarStock={(articuloId) => {
+                setArticuloStockIngresoId(String(articuloId));
+                setActiveView("articulo_stock_ingreso");
+              }}
+              onEntregarArticulo={(articuloId) => {
+                setArticuloEntregaPersonalItems([
+                  { articuloId: String(articuloId), cantidad: "1" },
+                ]);
+                setActiveView("articulo_entrega_personal");
+              }}
+              onNewEquipoChange={(value, key) =>
+                setNewEquipo((prev) => ({ ...prev, [key]: value }))
+              }
+              onEditEquipoIdChange={setEditEquipoId}
+              onEditEquipoChange={(value, key) =>
+                setEditEquipo((prev) => ({ ...prev, [key]: value }))
+              }
+              onCreateEquipo={(event) => void createEquipo(event)}
+              onUpdateEquipo={(equipoId) => void updateEquipo(equipoId)}
+              onToggleEquipoActivo={(equipo) => void toggleEquipoActivo(equipo)}
+              onDeleteEquipo={(equipoId) => void deleteEquipo(equipoId)}
+              onMergeEquipoOrigenIdChange={handleMergeEquipoOrigenChange}
+              onMergeEquipoDestinoIdChange={handleMergeEquipoDestinoChange}
+              onMergeEquipos={mergeEquipos}
+              onSaveEquipoOrder={() => {
+                if (!equipoOrderDraftIds) return;
+                void saveActiveEquiposOrder(equipoOrderDraftIds);
+              }}
+              onResetEquipoOrderDraft={() => setEquipoOrderDraftIds(null)}
+              onSaveEquipoInactivoOrder={() => {
+                if (!equipoInactivoOrderDraftIds) return;
+                void saveInactivoEquiposOrder(equipoInactivoOrderDraftIds);
+              }}
+              onResetEquipoInactivoOrderDraft={() => setEquipoInactivoOrderDraftIds(null)}
+              renderEquipoCard={renderEquipoCard}
+              onNewUserRangoIdChange={setNewUserRangoId}
+              onNewNombreChange={setNewNombre}
+              onNewApellidoChange={setNewApellido}
+              onNewUsernameChange={setNewUsername}
+              onNewPasswordChange={setNewPassword}
+              onNewPasswordConfirmChange={setNewPasswordConfirm}
+              onNewMailReferenciaChange={setNewMailReferencia}
+              onNewRoleChange={setNewRole}
+              onCreateUsuario={(event) => void createUsuario(event)}
+              onEditUsuario={(usuario) => void editUsuario(usuario)}
+              onChangeUserRole={(usuario) => void changeUserRole(usuario)}
+              onChangeUserPassword={(usuario) => void changeUserPassword(usuario)}
+              onConfirmUserEmail={(usuario) => void confirmUserEmail(usuario)}
+              onToggleUserActive={(usuario) => void toggleUserActive(usuario)}
+              onDeleteUsuario={(usuario) => void deleteUsuario(usuario)}
+              onFirmaConfigDraftChange={(key, value) =>
+                setFirmaConfigDraft((prev) => ({ ...prev, [key]: value }))
+              }
+              onSaveFirmaConfig={(event) => void saveFirmaConfig(event)}
+              onAuditFilterChange={setAuditFilter}
+              onAuditUserFilterChange={setAuditUserFilter}
+              onAuditPageChange={setAuditPage}
+              onAuditPageSizeChange={setAuditPageSize}
+              onNavigateView={(view) => setActiveView(view)}
+              roleLabel={roleLabel}
+              roleDescription={roleDescription}
+              roleScope={roleScope}
+              rangoLabel={rangoLabel}
+              auditActionLabel={auditActionLabel}
+              auditEntityLabel={auditEntityLabel}
+              renderAuditDetalle={renderAuditDetalle}
+              papelera={{
+                records: papeleraRecords,
+                loading: papeleraLoading,
+                restore: restorePapelera,
+                removePermanent: removePapeleraPermanent,
+              }}
+              reloadCurrentViewData={reloadCurrentViewData}
+            />
           ) : null}
 
           <HomeViewRouter

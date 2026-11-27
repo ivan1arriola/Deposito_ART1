@@ -56,7 +56,8 @@ export async function GET(req: Request, context: { params: Promise<{ ci: string 
   const { ci } = await context.params;
   const ciDecoded = decodeURIComponent(ci).trim();
   if (!ciDecoded) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
-  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded))
+    return NextResponse.json({ error: "CI invalida." }, { status: 400 });
 
   const persona = await prisma.personal.findFirst({
     where: { ci: ciDecoded, rango: { tipo: TipoPersonal.SUBALTERNO } },
@@ -81,7 +82,8 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
   const { ci } = await context.params;
   const ciDecoded = decodeURIComponent(ci).trim();
   if (!ciDecoded) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
-  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded))
+    return NextResponse.json({ error: "CI invalida." }, { status: 400 });
 
   const body = await req.json();
   if (!isValidPayload(body)) {
@@ -93,7 +95,10 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
     return NextResponse.json({ error: "La fecha de la observación es invalida." }, { status: 400 });
   }
   if (isDateInputAfterToday(body.fecha)) {
-    return NextResponse.json({ error: "La fecha de la observación no puede ser futura." }, { status: 400 });
+    return NextResponse.json(
+      { error: "La fecha de la observación no puede ser futura." },
+      { status: 400 }
+    );
   }
 
   const texto = body.texto.trim();
@@ -127,10 +132,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
       },
     });
 
-    return NextResponse.json(
-      serializeObservacion(created),
-      { status: 201 },
-    );
+    return NextResponse.json(serializeObservacion(created), { status: 201 });
   } catch {
     return NextResponse.json({ error: "No se pudo registrar la observación." }, { status: 500 });
   }

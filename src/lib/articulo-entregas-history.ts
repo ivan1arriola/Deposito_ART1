@@ -26,7 +26,7 @@ export type ArticuloEntregaHistorialFilters = {
 
 export function filterArticuloEntregasHistorial(
   entregas: ArticuloEntregaHistorialEntry[],
-  filters: ArticuloEntregaHistorialFilters,
+  filters: ArticuloEntregaHistorialFilters
 ) {
   const normalizedSearchTerm = filters.searchTerm?.trim().toLowerCase() ?? "";
   const normalizedStartDate = filters.startDate?.trim() ?? "";
@@ -40,8 +40,11 @@ export function filterArticuloEntregasHistorial(
       const matchesOrdenante =
         entrega.ordenanteLabel.toLowerCase().includes(normalizedSearchTerm) ||
         entrega.ordenanteCi.includes(normalizedSearchTerm);
-      const matchesArticulo = entrega.equipos.some((equipo) => equipo.nombre.toLowerCase().includes(normalizedSearchTerm));
-      const matchesComentario = entrega.comentario?.toLowerCase().includes(normalizedSearchTerm) ?? false;
+      const matchesArticulo = entrega.equipos.some((equipo) =>
+        equipo.nombre.toLowerCase().includes(normalizedSearchTerm)
+      );
+      const matchesComentario =
+        entrega.comentario?.toLowerCase().includes(normalizedSearchTerm) ?? false;
 
       if (!matchesDestinatario && !matchesOrdenante && !matchesArticulo && !matchesComentario) {
         return false;

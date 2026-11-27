@@ -87,7 +87,7 @@ function drawTableCell(
   doc
     .font(font)
     .fontSize(fontSize)
-    
+
     .fillColor("#000000")
     .text(text, x + 2, y + 1, {
       width: width - 4,
@@ -134,17 +134,26 @@ export async function POST(request: NextRequest): Promise<Response> {
       const topbarY = currentY;
       const topbarPaddingX = 4 * MM_TO_PT;
 
-      doc.lineWidth(1).strokeColor(COLORS.border).rect(topbarX, topbarY, pageWidth, topbarHeight).stroke();
+      doc
+        .lineWidth(1)
+        .strokeColor(COLORS.border)
+        .rect(topbarX, topbarY, pageWidth, topbarHeight)
+        .stroke();
 
       doc
         .font(FONTS.bold)
         .fontSize(10)
         .fillColor("#000000")
-        .text('Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1', topbarX + topbarPaddingX, topbarY + 2 * MM_TO_PT, {
-          width: pageWidth * 0.62,
-          align: "left",
-          lineBreak: false,
-        });
+        .text(
+          'Grupo "Brig. Gral. Manuel Oribe" de Artillería 105mm No. 1',
+          topbarX + topbarPaddingX,
+          topbarY + 2 * MM_TO_PT,
+          {
+            width: pageWidth * 0.62,
+            align: "left",
+            lineBreak: false,
+          }
+        );
 
       doc
         .font(FONTS.bold)
@@ -170,11 +179,16 @@ export async function POST(request: NextRequest): Promise<Response> {
         .font(FONTS.bold)
         .fontSize(14)
         .fillColor("#000000")
-        .text("HOJA MATRIZ - DISTRIBUCION DE EQUIPO", topbarX + topbarPaddingX, topbarY + 18 * MM_TO_PT, {
-          width: pageWidth - topbarPaddingX * 2,
-          align: "center",
-          lineBreak: false,
-        });
+        .text(
+          "HOJA MATRIZ - DISTRIBUCION DE EQUIPO",
+          topbarX + topbarPaddingX,
+          topbarY + 18 * MM_TO_PT,
+          {
+            width: pageWidth - topbarPaddingX * 2,
+            align: "center",
+            lineBreak: false,
+          }
+        );
 
       currentY += topbarHeight + 3 * MM_TO_PT;
 
@@ -182,7 +196,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       const colPersonal = 120;
       const colBateria = 70;
       const colGrado = 50;
-      const colItemWidth = Math.floor((pageWidth - colPersonal - colBateria - colGrado) / (body.equipos.length + 1)) || 20;
+      const colItemWidth =
+        Math.floor((pageWidth - colPersonal - colBateria - colGrado) / (body.equipos.length + 1)) ||
+        20;
       const rowHeight = 6 * MM_TO_PT;
 
       let currentX = topbarX;
@@ -212,12 +228,20 @@ export async function POST(request: NextRequest): Promise<Response> {
 
       // Equipos
       body.equipos.forEach((equipo) => {
-        drawTableCell(doc, currentX, tableStartY, colItemWidth, rowHeight, equipo.nombre.substring(0, 10), {
-          bold: true,
-          bg: COLORS.bgSoft,
-          align: "center",
-          fontSize: 7,
-        });
+        drawTableCell(
+          doc,
+          currentX,
+          tableStartY,
+          colItemWidth,
+          rowHeight,
+          equipo.nombre.substring(0, 10),
+          {
+            bold: true,
+            bg: COLORS.bgSoft,
+            align: "center",
+            fontSize: 7,
+          }
+        );
         currentX += colItemWidth;
       });
 
@@ -279,7 +303,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         if (currentY > pageHeight - 20 * MM_TO_PT) {
           doc.addPage({ layout: "landscape", margin: 0 });
           currentY = MARGINS.top;
-          
+
           // Repetir encabezados en nueva página
           let repX = topbarX;
           drawTableCell(doc, repX, currentY, colPersonal, rowHeight, "Personal", {
@@ -301,12 +325,20 @@ export async function POST(request: NextRequest): Promise<Response> {
           repX += colGrado;
 
           body.equipos.forEach((equipo) => {
-            drawTableCell(doc, repX, currentY, colItemWidth, rowHeight, equipo.nombre.substring(0, 10), {
-              bold: true,
-              bg: COLORS.bgSoft,
-              align: "center",
-              fontSize: 7,
-            });
+            drawTableCell(
+              doc,
+              repX,
+              currentY,
+              colItemWidth,
+              rowHeight,
+              equipo.nombre.substring(0, 10),
+              {
+                bold: true,
+                bg: COLORS.bgSoft,
+                align: "center",
+                fontSize: 7,
+              }
+            );
             repX += colItemWidth;
           });
 
@@ -335,7 +367,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
       doc.on("end", () => {
         clearTimeout(timeout);
-          try {
+        try {
           const pdfBuffer = Buffer.concat(chunks);
 
           resolve(
@@ -358,11 +390,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       });
     });
   } catch (error) {
-    
     const message = error instanceof Error ? error.message : "Failed to generate PDF";
-    return NextResponse.json(
-      { error: `PDF generation failed: ${message}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: `PDF generation failed: ${message}` }, { status: 500 });
   }
 }

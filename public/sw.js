@@ -22,7 +22,7 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
-      .then(() => self.clients.claim()),
+      .then(() => self.clients.claim())
   );
 });
 
@@ -45,7 +45,7 @@ self.addEventListener("fetch", (event) => {
           statusText: "OK",
           headers: { "Content-Type": "text/html; charset=utf-8" },
         });
-      }),
+      })
     );
     return;
   }
@@ -79,7 +79,7 @@ self.addEventListener("push", (event) => {
       data: { url: payload.url },
       tag: "deposito-art1-admin",
       renotify: true,
-    }),
+    })
   );
 });
 
@@ -95,6 +95,6 @@ self.addEventListener("notificationclick", (event) => {
         return existing.focus();
       }
       return self.clients.openWindow(targetUrl);
-    }),
+    })
   );
 });

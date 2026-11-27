@@ -32,14 +32,12 @@ export async function POST(req: Request) {
         ? candidate.comentarios
         : null;
   const comentario =
-    typeof comentarioRaw === "string" && comentarioRaw.trim() !== ""
-      ? comentarioRaw.trim()
-      : null;
+    typeof comentarioRaw === "string" && comentarioRaw.trim() !== "" ? comentarioRaw.trim() : null;
 
   if (articuloId === null || cantidad === null) {
     return NextResponse.json(
       { error: "Payload inválido. 'articuloId' y 'cantidad' deben ser enteros positivos." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -101,6 +99,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
     }
 
-    return NextResponse.json({ error: "No se pudo registrar el ingreso de stock del artículo." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo registrar el ingreso de stock del artículo." },
+      { status: 500 }
+    );
   }
 }

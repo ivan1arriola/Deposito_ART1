@@ -62,7 +62,7 @@ describe("POST /api/articulos/entregas", () => {
         personalCi: "12345672",
         ordenanteCi: "12345688",
         equipos: [{ articuloId: 1, cantidad: 2 }],
-      }),
+      })
     );
 
     expect(res.status).toBe(403);
@@ -86,7 +86,7 @@ describe("POST /api/articulos/entregas", () => {
         personalCi: "12345672",
         ordenanteCi: "12345688",
         equipos: [{ articuloId: 1, cantidad: -1 }],
-      }),
+      })
     );
 
     expect(res.status).toBe(400);
@@ -113,7 +113,7 @@ describe("POST /api/articulos/entregas", () => {
       nombre1: "Mario",
       nombre2: null,
       rango: { nombreCompleto: "Capitán", abreviacion: "Cap." },
-        bateria: true
+      bateria: true,
     });
     mockTx.articulo.findMany.mockResolvedValue([
       {
@@ -128,7 +128,7 @@ describe("POST /api/articulos/entregas", () => {
         personalCi: "12345672",
         ordenanteCi: "12345688",
         equipos: [{ articuloId: 1, cantidad: 2 }],
-      }),
+      })
     );
 
     expect(res.status).toBe(404);
@@ -157,8 +157,8 @@ describe("POST /api/articulos/entregas", () => {
         nombre1: "Luis",
         nombre2: null,
         rango: { nombreCompleto: "Soldado", abreviacion: "Sdo." },
-          bateria: true
-    })
+        bateria: true,
+      })
       .mockResolvedValueOnce({
         ci: "12345688",
         apellido1: "Lopez",
@@ -166,8 +166,8 @@ describe("POST /api/articulos/entregas", () => {
         nombre1: "Mario",
         nombre2: null,
         rango: { nombreCompleto: "Capitán", abreviacion: "Cap." },
-          bateria: true
-    });
+        bateria: true,
+      });
     mockTx.articulo.findMany.mockResolvedValue([
       {
         articuloId: 1,
@@ -185,7 +185,7 @@ describe("POST /api/articulos/entregas", () => {
         fecha: "2026-05-20",
         comentario: "Entrega semanal",
         equipos: [{ articuloId: 1, cantidad: 3 }],
-      }),
+      })
     );
 
     expect(res.status).toBe(409);
@@ -214,8 +214,8 @@ describe("POST /api/articulos/entregas", () => {
         nombre1: "Luis",
         nombre2: null,
         rango: { nombreCompleto: "Soldado", abreviacion: "Sdo." },
-          bateria: true
-    })
+        bateria: true,
+      })
       .mockResolvedValueOnce({
         ci: "12345688",
         apellido1: "Lopez",
@@ -223,8 +223,8 @@ describe("POST /api/articulos/entregas", () => {
         nombre1: "Mario",
         nombre2: null,
         rango: { nombreCompleto: "Capitán", abreviacion: "Cap." },
-          bateria: true
-    });
+        bateria: true,
+      });
     mockTx.articulo.findMany.mockResolvedValue([
       {
         articuloId: 1,
@@ -265,7 +265,7 @@ describe("POST /api/articulos/entregas", () => {
           { articuloId: 1, cantidad: 5 },
           { articuloId: 2, cantidad: 2 },
         ],
-      }),
+      })
     );
 
     expect(res.status).toBe(201);

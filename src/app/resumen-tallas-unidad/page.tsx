@@ -236,7 +236,9 @@ export default async function ResumenTallasUnidadPage({
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <header className="header">
           <h1 className="title">Resumen de Talles de Subalternos</h1>
-          <p className="subtitle">Cantidades absolutas de cada talle en subalternos, agrupadas por vestimenta.</p>
+          <p className="subtitle">
+            Cantidades absolutas de cada talle en subalternos, agrupadas por vestimenta.
+          </p>
           <p className="meta">{`Generado: ${generatedAt} | Total subalternos: ${personal.length}`}</p>
         </header>
 
@@ -245,7 +247,9 @@ export default async function ResumenTallasUnidadPage({
             <article key={talla.key} className="section">
               <div className="section-header">
                 <h2 className="section-title">{talla.label}</h2>
-                <p className="section-subtitle">Conteo absoluto por talle registrado en toda la unidad.</p>
+                <p className="section-subtitle">
+                  Conteo absoluto por talle registrado en toda la unidad.
+                </p>
               </div>
               <table>
                 <thead>

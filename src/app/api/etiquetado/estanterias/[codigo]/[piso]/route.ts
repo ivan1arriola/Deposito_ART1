@@ -25,15 +25,17 @@ function parsePiso(value: string) {
 
 export async function DELETE(
   request: Request,
-  context: { params: Promise<{ codigo: string; piso: string }> },
+  context: { params: Promise<{ codigo: string; piso: string }> }
 ) {
   const auth = await authorizeRequest(request, "delete_data");
   if (!auth.ok) return auth.response;
 
   if (!hasEtiquetadoDelegates()) {
     return NextResponse.json(
-      { error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo." },
-      { status: 503 },
+      {
+        error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo.",
+      },
+      { status: 503 }
     );
   }
 
@@ -50,8 +52,11 @@ export async function DELETE(
   });
   if (cajasUsandoCodigo > 0) {
     return NextResponse.json(
-      { error: "No se puede eliminar la estanteria porque hay cajas registradas con ese nombre de estanteria." },
-      { status: 409 },
+      {
+        error:
+          "No se puede eliminar la estanteria porque hay cajas registradas con ese nombre de estanteria.",
+      },
+      { status: 409 }
     );
   }
 
@@ -83,7 +88,12 @@ export async function DELETE(
 
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2025") {
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2025"
+    ) {
       return NextResponse.json({ error: "Estanteria no encontrada." }, { status: 404 });
     }
 

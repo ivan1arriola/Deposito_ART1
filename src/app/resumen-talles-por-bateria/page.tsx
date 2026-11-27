@@ -73,10 +73,10 @@ export default async function ResumenTallesPorBateriaPage({
       select: {
         ci: true,
         bateria: {
-                        select: {
-                          bateriaId: true,
-                        },
-                      },
+          select: {
+            bateriaId: true,
+          },
+        },
         tallas: {
           include: { tallaTipo: true },
           orderBy: { tallaTipoId: "asc" },
@@ -85,12 +85,18 @@ export default async function ResumenTallesPorBateriaPage({
     }),
   ]);
 
-  const grupos = [...baterias.map((b) => ({ key: String(b.bateriaId), nombre: b.nombre })), { key: "NONE", nombre: "Sin bateria" }];
+  const grupos = [
+    ...baterias.map((b) => ({ key: String(b.bateriaId), nombre: b.nombre })),
+    { key: "NONE", nombre: "Sin bateria" },
+  ];
   const personalPorBateria = new Map<string, Array<(typeof personal)[number]>>();
   for (const grupo of grupos) personalPorBateria.set(grupo.key, []);
 
   for (const persona of personal) {
-    const key = persona.bateria?.bateriaId !== null && persona.bateria?.bateriaId !== undefined ? String(persona.bateria.bateriaId) : "NONE";
+    const key =
+      persona.bateria?.bateriaId !== null && persona.bateria?.bateriaId !== undefined
+        ? String(persona.bateria.bateriaId)
+        : "NONE";
     const bucket = personalPorBateria.get(key);
     if (bucket) {
       bucket.push(persona);
@@ -240,7 +246,9 @@ export default async function ResumenTallesPorBateriaPage({
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <header className="header">
           <h1 className="title">Resumen de talles por bateria</h1>
-          <p className="subtitle">Frecuencia absoluta de talles para subalternos, desagregada por bateria.</p>
+          <p className="subtitle">
+            Frecuencia absoluta de talles para subalternos, desagregada por bateria.
+          </p>
           <p className="meta">{`Generado: ${generatedAt} | Total subalternos: ${personal.length}`}</p>
         </header>
 
@@ -250,8 +258,8 @@ export default async function ResumenTallesPorBateriaPage({
               resumenPorBateria.flatMap((bateria) => {
                 const tallaData = bateria.tallas.find((t) => t.key === tallaKey);
                 return tallaData?.values.map((value) => value.talla) ?? [];
-              }),
-            ),
+              })
+            )
           ).sort((a, b) => {
             if (a === "Sin dato") return 1;
             if (b === "Sin dato") return -1;
@@ -277,13 +285,17 @@ export default async function ResumenTallesPorBateriaPage({
                 <tbody>
                   {resumenPorBateria.map((bateria) => {
                     const tallaData = bateria.tallas.find((t) => t.key === tallaKey);
-                    const tallaCounts = new Map(tallaData?.values.map((value) => [value.talla, value.cantidad]));
+                    const tallaCounts = new Map(
+                      tallaData?.values.map((value) => [value.talla, value.cantidad])
+                    );
                     return (
                       <tr key={`row-${bateria.key}-${tallaKey}`}>
                         <td className="row-label">{bateria.nombre}</td>
                         <td>{bateria.total}</td>
                         {columnLabels.map((label) => (
-                          <td key={`cell-${bateria.key}-${tallaKey}-${label}`}>{tallaCounts.get(label) ?? 0}</td>
+                          <td key={`cell-${bateria.key}-${tallaKey}-${label}`}>
+                            {tallaCounts.get(label) ?? 0}
+                          </td>
                         ))}
                       </tr>
                     );

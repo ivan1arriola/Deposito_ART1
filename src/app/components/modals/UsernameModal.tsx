@@ -9,12 +9,25 @@ type UsernameModalProps = {
   dialog: UserProfileDialogState | null;
   saving: boolean;
   rangoOptions: Rango[];
-  onChange: (field: keyof Pick<UserProfileDialogState, "rangoId" | "nombre" | "apellido" | "username" | "mailReferencia">, value: string) => void;
+  onChange: (
+    field: keyof Pick<
+      UserProfileDialogState,
+      "rangoId" | "nombre" | "apellido" | "username" | "mailReferencia"
+    >,
+    value: string
+  ) => void;
   onClose: () => void;
   onSubmit: () => void;
 };
 
-export function UsernameModal({ dialog, saving, rangoOptions, onChange, onClose, onSubmit }: UsernameModalProps) {
+export function UsernameModal({
+  dialog,
+  saving,
+  rangoOptions,
+  onChange,
+  onClose,
+  onSubmit,
+}: UsernameModalProps) {
   if (!dialog) return null;
 
   return (
@@ -24,7 +37,9 @@ export function UsernameModal({ dialog, saving, rangoOptions, onChange, onClose,
 
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Grado (opcional)</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+            Grado (opcional)
+          </span>
           <select
             value={dialog.rangoId}
             onChange={(event) => onChange("rangoId", event.target.value)}
@@ -39,19 +54,42 @@ export function UsernameModal({ dialog, saving, rangoOptions, onChange, onClose,
           </select>
         </label>
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre</span>
-          <input value={dialog.nombre} onChange={(event) => onChange("nombre", event.target.value)} placeholder="Nombre" className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+            Nombre
+          </span>
+          <input
+            value={dialog.nombre}
+            onChange={(event) => onChange("nombre", event.target.value)}
+            placeholder="Nombre"
+            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+          />
         </label>
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Apellido</span>
-          <input value={dialog.apellido} onChange={(event) => onChange("apellido", event.target.value)} placeholder="Apellido" className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+            Apellido
+          </span>
+          <input
+            value={dialog.apellido}
+            onChange={(event) => onChange("apellido", event.target.value)}
+            placeholder="Apellido"
+            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+          />
         </label>
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Usuario</span>
-          <input value={dialog.username} onChange={(event) => onChange("username", event.target.value)} placeholder="Nombre de usuario" className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+            Usuario
+          </span>
+          <input
+            value={dialog.username}
+            onChange={(event) => onChange("username", event.target.value)}
+            placeholder="Nombre de usuario"
+            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+          />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Mail de referencia</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+            Mail de referencia
+          </span>
           <input
             value={dialog.mailReferencia}
             onChange={(event) => onChange("mailReferencia", event.target.value)}
@@ -73,7 +111,12 @@ export function UsernameModal({ dialog, saving, rangoOptions, onChange, onClose,
         <button
           type="button"
           onClick={onSubmit}
-          disabled={saving || dialog.nombre.trim() === "" || dialog.apellido.trim() === "" || dialog.username.trim() === ""}
+          disabled={
+            saving ||
+            dialog.nombre.trim() === "" ||
+            dialog.apellido.trim() === "" ||
+            dialog.username.trim() === ""
+          }
           className="rounded bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
         >
           {saving ? (

@@ -299,7 +299,12 @@ function buildStyles() {
 export default async function ListadoEntregasArticulosPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ autoprint?: string; search?: string; startDate?: string; endDate?: string }>;
+  searchParams?: Promise<{
+    autoprint?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  }>;
 }) {
   const params = searchParams ? await searchParams : undefined;
   const shouldAutoPrint = params?.autoprint === "1";
@@ -307,7 +312,10 @@ export default async function ListadoEntregasArticulosPage({
   const normalizedStartDate = String(params?.startDate ?? "").trim();
   const normalizedEndDate = String(params?.endDate ?? "").trim();
 
-  const [entregasRaw, firmas] = await Promise.all([listArticuloEntregasHistorial(), getFirmaConfig()]);
+  const [entregasRaw, firmas] = await Promise.all([
+    listArticuloEntregasHistorial(),
+    getFirmaConfig(),
+  ]);
   const entregas = filterArticuloEntregasHistorial(entregasRaw, {
     searchTerm: normalizedSearchTerm,
     startDate: normalizedStartDate,
@@ -315,11 +323,14 @@ export default async function ListadoEntregasArticulosPage({
   });
 
   const totalUnidades = entregas.reduce(
-    (total, entrega) => total + entrega.equipos.reduce((subtotal, equipo) => subtotal + equipo.cantidad, 0),
-    0,
+    (total, entrega) =>
+      total + entrega.equipos.reduce((subtotal, equipo) => subtotal + equipo.cantidad, 0),
+    0
   );
   const totalPersonas = new Set(entregas.map((entrega) => entrega.personalCi)).size;
-  const totalArticulosDistintos = new Set(entregas.flatMap((entrega) => entrega.equipos.map((equipo) => equipo.articuloId))).size;
+  const totalArticulosDistintos = new Set(
+    entregas.flatMap((entrega) => entrega.equipos.map((equipo) => equipo.articuloId))
+  ).size;
 
   const now = new Date();
   const generatedAt = formatGeneratedAt(now);
@@ -340,16 +351,22 @@ export default async function ListadoEntregasArticulosPage({
       <main className="sheet">
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <h1 className="title">Listado de entregas de artículos</h1>
-        <p className="subtitle">Historial imprimible de entregas de artículos registradas en el sistema.</p>
+        <p className="subtitle">
+          Historial imprimible de entregas de artículos registradas en el sistema.
+        </p>
         <p className="meta">{`Generado: ${generatedAt}`}</p>
 
         {normalizedSearchTerm || normalizedStartDate || normalizedEndDate ? (
           <section className="filters">
-            {normalizedSearchTerm ? <p className="filter">{`Texto: ${normalizedSearchTerm}`}</p> : null}
+            {normalizedSearchTerm ? (
+              <p className="filter">{`Texto: ${normalizedSearchTerm}`}</p>
+            ) : null}
             {normalizedStartDate ? (
               <p className="filter">{`Desde: ${formatDateOnlyForDisplay(normalizedStartDate)}`}</p>
             ) : null}
-            {normalizedEndDate ? <p className="filter">{`Hasta: ${formatDateOnlyForDisplay(normalizedEndDate)}`}</p> : null}
+            {normalizedEndDate ? (
+              <p className="filter">{`Hasta: ${formatDateOnlyForDisplay(normalizedEndDate)}`}</p>
+            ) : null}
           </section>
         ) : null}
 
@@ -401,7 +418,10 @@ export default async function ListadoEntregasArticulosPage({
               </thead>
               <tbody>
                 {entregas.map((entrega) => {
-                  const totalUnidadesEntrega = entrega.equipos.reduce((total, equipo) => total + equipo.cantidad, 0);
+                  const totalUnidadesEntrega = entrega.equipos.reduce(
+                    (total, equipo) => total + equipo.cantidad,
+                    0
+                  );
                   return (
                     <tr key={`print-entrega-articulos-${entrega.articuloEntregaPersonalId}`}>
                       <td>
@@ -420,7 +440,8 @@ export default async function ListadoEntregasArticulosPage({
                             <span className="label">Ordenado por:</span> {entrega.ordenanteLabel}
                           </p>
                           <p>
-                            <span className="label">Registrado por:</span> {entrega.usuarioEntregaLabel}
+                            <span className="label">Registrado por:</span>{" "}
+                            {entrega.usuarioEntregaLabel}
                           </p>
                         </div>
                       </td>
@@ -441,7 +462,9 @@ export default async function ListadoEntregasArticulosPage({
                           </ul>
                         </div>
                       </td>
-                      <td className="comment-cell">{entrega.comentario?.trim() ? entrega.comentario : "Sin comentario"}</td>
+                      <td className="comment-cell">
+                        {entrega.comentario?.trim() ? entrega.comentario : "Sin comentario"}
+                      </td>
                       <td className="unidades">{totalUnidadesEntrega}</td>
                     </tr>
                   );

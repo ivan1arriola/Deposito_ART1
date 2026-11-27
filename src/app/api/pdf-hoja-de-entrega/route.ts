@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { formatDateOnlyForDisplay, formatDateTimeForDisplay } from "@/lib/date-helpers";
-import { buildFirmasHojaEntregaLineas, getFirmaLineBaseIndentPt, getFirmaLineInlineOffsetPt } from "@/lib/firma-lineas";
+import {
+  buildFirmasHojaEntregaLineas,
+  getFirmaLineBaseIndentPt,
+  getFirmaLineInlineOffsetPt,
+} from "@/lib/firma-lineas";
 import { normalizeOutputText } from "@/lib/spanish-text";
 
 interface MatrixRow {
@@ -73,7 +77,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     // Crear documento PDF con pdflib
     const pdfDoc = await PDFDocument.create();
-    
+
     // Registrar fontkit para soporte UTF-8 con fuentes estándar
     pdfDoc.registerFontkit(fontkit);
 
@@ -157,14 +161,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     const kvStartY = box1Y + gridItemHeight - 12 * MM_TO_PT;
     const kvLineHeight = 5.5 * MM_TO_PT;
     const apellidos = sanitizeForPDF(
-      [body.persona.apellido1, body.persona.apellido2]
-        .filter(Boolean)
-        .join(" ")
+      [body.persona.apellido1, body.persona.apellido2].filter(Boolean).join(" ")
     );
     const nombres = sanitizeForPDF(
-      [body.persona.nombre1, body.persona.nombre2]
-        .filter(Boolean)
-        .join(" ")
+      [body.persona.nombre1, body.persona.nombre2].filter(Boolean).join(" ")
     );
 
     const kvPairs = [
@@ -277,7 +277,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const firmaLineas = buildFirmasHojaEntregaLineas({
       alistadoRango: sanitizeForPDF(body.persona.gradoPersonal),
       alistadoNombre: sanitizeForPDF(
-        `${body.persona.nombre1 ?? ""} ${body.persona.apellido1 ?? ""}`.replace(/\s+/g, " ").trim(),
+        `${body.persona.nombre1 ?? ""} ${body.persona.apellido1 ?? ""}`.replace(/\s+/g, " ").trim()
       ),
       encargadoTexto: sanitizeForPDF(body.firmas.encargadoTexto),
       encargadoRango: sanitizeForPDF(body.firmas.encargadoRango),
@@ -321,9 +321,6 @@ export async function POST(request: NextRequest): Promise<Response> {
   } catch (error) {
     console.log("Error in PDF generation endpoint:", error);
     const message = error instanceof Error ? error.message : "Failed to generate PDF";
-    return NextResponse.json(
-      { error: `PDF generation failed: ${message}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: `PDF generation failed: ${message}` }, { status: 500 });
   }
 }

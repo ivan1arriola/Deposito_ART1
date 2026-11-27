@@ -18,15 +18,18 @@ export const ROLE_DETAILS: Record<Role, { description: string; scope: string }> 
     scope: "Acceso total de configuración y administración.",
   },
   DESARROLLADOR: {
-    description: "Administra el sistema y además puede operar como cuenta técnica sin grado militar.",
+    description:
+      "Administra el sistema y además puede operar como cuenta técnica sin grado militar.",
     scope: "Acceso total técnico y administrativo.",
   },
   EDITOR: {
-    description: "Opera personal, movimientos y catálogos operativos, sin administración de usuarios.",
+    description:
+      "Opera personal, movimientos y catálogos operativos, sin administración de usuarios.",
     scope: "Acceso operativo sin privilegios de seguridad.",
   },
   READ_ONLY: {
-    description: "Consulta datos e imprime documentos sin poder modificar registros ni configuraciones.",
+    description:
+      "Consulta datos e imprime documentos sin poder modificar registros ni configuraciones.",
     scope: "Acceso de visualización e impresión.",
   },
 };
@@ -56,7 +59,7 @@ export function roleScope(role: Role | null | undefined): string {
 
 export function rangoAbreviacionLabel(
   rango: { abreviacion?: string | null } | null | undefined,
-  fallback = "Sin grado",
+  fallback = "Sin grado"
 ) {
   const value = rango?.abreviacion?.trim();
   return value ? value : fallback;

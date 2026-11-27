@@ -36,13 +36,18 @@ export function AdminPushNotifications() {
 
   useEffect(() => {
     const check = async () => {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+      if (
+        !("serviceWorker" in navigator) ||
+        !("PushManager" in window) ||
+        !("Notification" in window)
+      ) {
         setState("unsupported");
         setMessage("Este navegador no soporta notificaciones push.");
         return;
       }
 
-      const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      const isLocalhost =
+        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
       if (!window.isSecureContext && !isLocalhost) {
         setState("blocked");
         setMessage("Notificaciones push requieren HTTPS.");
@@ -87,7 +92,10 @@ export function AdminPushNotifications() {
 
       const keyResponse = await fetch("/api/notifications/public-key", { cache: "no-store" });
       if (!keyResponse.ok) {
-        const details = await parseError(keyResponse, "No se pudo obtener clave publica de notificaciones.");
+        const details = await parseError(
+          keyResponse,
+          "No se pudo obtener clave publica de notificaciones."
+        );
         throw new Error(details);
       }
       const { publicKey } = (await keyResponse.json()) as { publicKey: string };
@@ -132,10 +140,12 @@ export function AdminPushNotifications() {
 
   return (
     <article className="rounded-[28px] border border-[rgba(214,198,150,0.26)] bg-[linear-gradient(180deg,rgba(244,241,229,0.95)_0%,rgba(227,223,207,0.93)_100%)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.46)]">
-      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--color-ejercito-blue)]">Notificaciones admin</p>
+      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--color-ejercito-blue)]">
+        Notificaciones admin
+      </p>
       <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{message}</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {(state === "ready" || state === "error" || state === "blocked") ? (
+        {state === "ready" || state === "error" || state === "blocked" ? (
           <button
             type="button"
             onClick={() => void activate()}

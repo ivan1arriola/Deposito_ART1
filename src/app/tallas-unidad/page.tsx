@@ -60,7 +60,7 @@ export default async function TallasUnidadPage({
   }));
   const tallaColumnWidths = buildDynamicTallaColumnWidths(
     40,
-    personalRows.map((persona) => persona.talles),
+    personalRows.map((persona) => persona.talles)
   );
 
   const printedAt = new Date();
@@ -201,7 +201,10 @@ export default async function TallasUnidadPage({
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <header className="header">
           <h1 className="title">Tabla de Talles de Subalternos</h1>
-          <p className="subtitle">Personal subalterno con talles registrados para parka, camisaco, pantalon, kepi y calzado.</p>
+          <p className="subtitle">
+            Personal subalterno con talles registrados para parka, camisaco, pantalon, kepi y
+            calzado.
+          </p>
           <p className="meta">{`Generado: ${generatedAt} | Total subalternos: ${personal.length}`}</p>
         </header>
 

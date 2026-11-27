@@ -40,7 +40,9 @@ function compareRowsByIdentity(a: HojaMatrixRow, b: HojaMatrixRow) {
   const byApellido1 = a.apellido1.localeCompare(b.apellido1, "es", { sensitivity: "base" });
   if (byApellido1 !== 0) return byApellido1;
 
-  const byApellido2 = (a.apellido2 ?? "").localeCompare(b.apellido2 ?? "", "es", { sensitivity: "base" });
+  const byApellido2 = (a.apellido2 ?? "").localeCompare(b.apellido2 ?? "", "es", {
+    sensitivity: "base",
+  });
   if (byApellido2 !== 0) return byApellido2;
 
   const byNombre1 = a.nombre1.localeCompare(b.nombre1, "es", { sensitivity: "base" });
@@ -55,7 +57,7 @@ function compareRowsByIdentity(a: HojaMatrixRow, b: HojaMatrixRow) {
 function compareRowsByGrade(a: HojaMatrixRow, b: HojaMatrixRow) {
   const byGrado = compareRanks(
     { abreviacion: a.gradoAbreviacion, orden: a.gradoOrden },
-    { abreviacion: b.gradoAbreviacion, orden: b.gradoOrden },
+    { abreviacion: b.gradoAbreviacion, orden: b.gradoOrden }
   );
   if (byGrado !== 0) return byGrado;
 
@@ -65,7 +67,7 @@ function compareRowsByGrade(a: HojaMatrixRow, b: HojaMatrixRow) {
 function compareRowsByGradeAndBattery(a: HojaMatrixRow, b: HojaMatrixRow) {
   const byGrado = compareRanks(
     { abreviacion: a.gradoAbreviacion, orden: a.gradoOrden },
-    { abreviacion: b.gradoAbreviacion, orden: b.gradoOrden },
+    { abreviacion: b.gradoAbreviacion, orden: b.gradoOrden }
   );
   if (byGrado !== 0) return byGrado;
 
@@ -75,9 +77,13 @@ function compareRowsByGradeAndBattery(a: HojaMatrixRow, b: HojaMatrixRow) {
   if (a.bateria && !b.bateria) return -1;
   if (!a.bateria && b.bateria) return 1;
 
-  const byBateria = (a.bateria ?? SIN_BATERIA_LABEL).localeCompare(b.bateria ?? SIN_BATERIA_LABEL, "es", {
-    sensitivity: "base",
-  });
+  const byBateria = (a.bateria ?? SIN_BATERIA_LABEL).localeCompare(
+    b.bateria ?? SIN_BATERIA_LABEL,
+    "es",
+    {
+      sensitivity: "base",
+    }
+  );
   if (byBateria !== 0) return byBateria;
 
   return compareRowsByIdentity(a, b);
@@ -88,7 +94,9 @@ function buildDisplayName(row: HojaMatrixRow) {
 }
 
 function buildPrintableRows(rows: HojaMatrixRow[], includeBatterySeparators: boolean) {
-  const sorted = [...rows].sort(includeBatterySeparators ? compareRowsByGradeAndBattery : compareRowsByGrade);
+  const sorted = [...rows].sort(
+    includeBatterySeparators ? compareRowsByGradeAndBattery : compareRowsByGrade
+  );
   const printableRows: PrintableRow[] = [];
   let currentGrade = "";
   let currentBattery = "";
@@ -493,15 +501,24 @@ export default async function HojaMatrizPage({
                 <tbody>
                   {section.rows.map((row, index) =>
                     row.kind === "grade" ? (
-                      <tr key={`${section.headingLabel}-grade-${row.label}-${index}`} className="grade-separator">
+                      <tr
+                        key={`${section.headingLabel}-grade-${row.label}-${index}`}
+                        className="grade-separator"
+                      >
                         <td colSpan={3 + data.equipos.length}>{row.label}</td>
                       </tr>
                     ) : row.kind === "battery" ? (
-                      <tr key={`${section.headingLabel}-battery-${row.label}-${index}`} className="battery-separator">
+                      <tr
+                        key={`${section.headingLabel}-battery-${row.label}-${index}`}
+                        className="battery-separator"
+                      >
                         <td colSpan={3 + data.equipos.length}>{row.label}</td>
                       </tr>
                     ) : (
-                      <tr key={`${section.headingLabel}-person-${row.number}`} className="person-row">
+                      <tr
+                        key={`${section.headingLabel}-person-${row.number}`}
+                        className="person-row"
+                      >
                         <td className="number-cell">{row.number}</td>
                         <td className="grade-cell">{row.grade}</td>
                         <td className="name-cell">{row.name}</td>
@@ -514,7 +531,7 @@ export default async function HojaMatrizPage({
                           </td>
                         ))}
                       </tr>
-                    ),
+                    )
                   )}
                   {sectionIndex === sections.length - 1 ? (
                     <tr className="total-row">
@@ -522,8 +539,15 @@ export default async function HojaMatrizPage({
                         TOTAL
                       </td>
                       {grandTotals.map((value, index) => (
-                        <td key={`grand-total-${index}`} className={value < 0 ? "negative" : undefined}>
-                          <span className={`total-value ${Math.abs(value) >= 100 ? "total-value-compact" : ""}`.trim()}>{value}</span>
+                        <td
+                          key={`grand-total-${index}`}
+                          className={value < 0 ? "negative" : undefined}
+                        >
+                          <span
+                            className={`total-value ${Math.abs(value) >= 100 ? "total-value-compact" : ""}`.trim()}
+                          >
+                            {value}
+                          </span>
                         </td>
                       ))}
                     </tr>

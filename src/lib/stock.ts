@@ -7,7 +7,9 @@ import {
 
 type PrismaRawLike = Pick<Prisma.TransactionClient, "$queryRaw">;
 
-export function movimientoStockDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO") {
+export function movimientoStockDeltaFactor(
+  tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO"
+) {
   switch (tipo) {
     case MOVIMIENTO_TIPO_ENTREGA:
     case "ENTREGA":

@@ -74,7 +74,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
   if (user.accountType !== "SISTEMA") {
-    return NextResponse.json({ error: "Las cuentas de personal no tienen acceso a recordatorios." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Las cuentas de personal no tienen acceso a recordatorios." },
+      { status: 403 }
+    );
   }
 
   const { searchParams } = new URL(request.url);
@@ -83,7 +86,10 @@ export async function GET(request: Request) {
 
   if (requestedUsuarioId !== "" && requestedUsuarioId !== user.usuarioId) {
     if (!isAdminRole(user.rol)) {
-      return NextResponse.json({ error: "Solo administradores pueden consultar tareas de otros usuarios." }, { status: 403 });
+      return NextResponse.json(
+        { error: "Solo administradores pueden consultar tareas de otros usuarios." },
+        { status: 403 }
+      );
     }
     const target = await prisma.usuario.findUnique({
       where: { usuarioId: requestedUsuarioId },
@@ -97,7 +103,12 @@ export async function GET(request: Request) {
 
   const tareas = await prisma.usuarioRecordatorioTarea.findMany({
     where: { usuarioId: targetUsuarioId },
-    orderBy: [{ completada: "asc" }, { prioridad: "desc" }, { fechaLimite: "asc" }, { createdAt: "desc" }],
+    orderBy: [
+      { completada: "asc" },
+      { prioridad: "desc" },
+      { fechaLimite: "asc" },
+      { createdAt: "desc" },
+    ],
   });
 
   return NextResponse.json(tareas.map(serializeTask));
@@ -109,7 +120,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
   if (user.accountType !== "SISTEMA") {
-    return NextResponse.json({ error: "Las cuentas de personal no tienen acceso a recordatorios." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Las cuentas de personal no tienen acceso a recordatorios." },
+      { status: 403 }
+    );
   }
 
   const body = (await request.json().catch(() => null)) as CreateTaskPayload | null;
@@ -119,15 +133,24 @@ export async function POST(request: Request) {
 
   const titulo = typeof body.titulo === "string" ? body.titulo.trim() : "";
   if (titulo.length < 2) {
-    return NextResponse.json({ error: "El titulo debe tener al menos 2 caracteres." }, { status: 400 });
+    return NextResponse.json(
+      { error: "El titulo debe tener al menos 2 caracteres." },
+      { status: 400 }
+    );
   }
   if (titulo.length > 140) {
-    return NextResponse.json({ error: "El titulo no puede superar 140 caracteres." }, { status: 400 });
+    return NextResponse.json(
+      { error: "El titulo no puede superar 140 caracteres." },
+      { status: 400 }
+    );
   }
 
   const notaRaw = typeof body.nota === "string" ? body.nota.trim() : "";
   if (notaRaw.length > 2500) {
-    return NextResponse.json({ error: "La nota no puede superar 2500 caracteres." }, { status: 400 });
+    return NextResponse.json(
+      { error: "La nota no puede superar 2500 caracteres." },
+      { status: 400 }
+    );
   }
   const nota = notaRaw === "" ? null : notaRaw;
 
@@ -150,7 +173,10 @@ export async function POST(request: Request) {
   let targetUsuarioId = user.usuarioId;
   if (requestedUsuarioId !== "" && requestedUsuarioId !== user.usuarioId) {
     if (!isAdminRole(user.rol)) {
-      return NextResponse.json({ error: "Solo administradores pueden asignar tareas a otros usuarios." }, { status: 403 });
+      return NextResponse.json(
+        { error: "Solo administradores pueden asignar tareas a otros usuarios." },
+        { status: 403 }
+      );
     }
     const target = await prisma.usuario.findUnique({
       where: { usuarioId: requestedUsuarioId },

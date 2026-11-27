@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { MainView } from "@/types/views";
 
 const DEFAULT_HOME_VIEW: MainView = "dashboard";
@@ -44,7 +51,9 @@ export function useHomeNavigation() {
 
   const setActiveView: Dispatch<SetStateAction<MainView>> = useCallback((value) => {
     const nextView =
-      typeof value === "function" ? (value as (prevState: MainView) => MainView)(activeViewRef.current) : value;
+      typeof value === "function"
+        ? (value as (prevState: MainView) => MainView)(activeViewRef.current)
+        : value;
 
     activeViewRef.current = nextView;
     setActiveViewState(nextView);

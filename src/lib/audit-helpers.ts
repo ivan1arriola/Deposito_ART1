@@ -30,7 +30,7 @@ function buildLine(key: string, label: string, value: string) {
     "p",
     { key, className: "text-xs text-stone-700" },
     createElement("span", { className: "font-semibold text-stone-900" }, `${label}: `),
-    value,
+    value
   );
 }
 
@@ -41,7 +41,8 @@ function resolveCiOwner(ci: string, ciReferences?: AuditCiReferences) {
 export function formatAuditCi(ci: string, ciReferences?: AuditCiReferences) {
   const owner = resolveCiOwner(ci, ciReferences);
   const normalized = normalizeCi(ci);
-  const formattedCi = normalized.length >= 7 && normalized.length <= 8 ? formatUruguayanCi(ci) : ci.trim();
+  const formattedCi =
+    normalized.length >= 7 && normalized.length <= 8 ? formatUruguayanCi(ci) : ci.trim();
   return owner ? `${formattedCi} - ${owner}` : formattedCi;
 }
 
@@ -65,7 +66,10 @@ function extractArticulos(value: unknown) {
   return extractNamedQuantities(value);
 }
 
-function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCiReferences): ReactNode {
+function renderMovimientoDetalle(
+  info: AuditDetailObject,
+  ciReferences?: AuditCiReferences
+): ReactNode {
   const lines: ReactNode[] = [];
   const personal = isObject(info.personal) ? info.personal : null;
   const ordenante = isObject(info.ordenante) ? info.ordenante : null;
@@ -75,9 +79,12 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
     const grado = asText(personal.grado);
     const bateria = asText(personal.bateria);
     const ci = asText(personal.ci);
-    const personalParts = [grado, nombre, ci ? `CI ${formatAuditCi(ci, ciReferences)}` : "", bateria ? `Batería ${bateria}` : ""].filter(
-      Boolean,
-    );
+    const personalParts = [
+      grado,
+      nombre,
+      ci ? `CI ${formatAuditCi(ci, ciReferences)}` : "",
+      bateria ? `Batería ${bateria}` : "",
+    ].filter(Boolean);
     if (personalParts.length > 0) {
       lines.push(buildLine("personal", "Personal", personalParts.join(" - ")));
     }
@@ -89,7 +96,11 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
     const nombre = asText(ordenante.nombre);
     const grado = asText(ordenante.grado);
     const ci = asText(ordenante.ci);
-    const ordenanteParts = [grado, nombre, ci ? `CI ${formatAuditCi(ci, ciReferences)}` : ""].filter(Boolean);
+    const ordenanteParts = [
+      grado,
+      nombre,
+      ci ? `CI ${formatAuditCi(ci, ciReferences)}` : "",
+    ].filter(Boolean);
     if (ordenanteParts.length > 0) {
       lines.push(buildLine("ordenante", "Ordenó", ordenanteParts.join(" - ")));
     }
@@ -104,7 +115,13 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
   const tipoNuevo = asText(info.tipoNuevo);
   const tipo = asText(info.tipo);
   if (tipoAnterior || tipoNuevo) {
-    lines.push(buildLine("tipo-cambio", "Tipo", `${tipoAnterior || "Sin dato"} -> ${tipoNuevo || "Sin dato"}`));
+    lines.push(
+      buildLine(
+        "tipo-cambio",
+        "Tipo",
+        `${tipoAnterior || "Sin dato"} -> ${tipoNuevo || "Sin dato"}`
+      )
+    );
   } else if (tipo) {
     lines.push(buildLine("tipo", "Tipo", tipo));
   }
@@ -113,7 +130,13 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
   const fechaNueva = formatDate(info.fechaNueva);
   const fechaMovimiento = formatDate(info.fechaMovimiento);
   if (fechaAnterior || fechaNueva) {
-    lines.push(buildLine("fecha-cambio", "Fecha", `${fechaAnterior || "Sin dato"} -> ${fechaNueva || "Sin dato"}`));
+    lines.push(
+      buildLine(
+        "fecha-cambio",
+        "Fecha",
+        `${fechaAnterior || "Sin dato"} -> ${fechaNueva || "Sin dato"}`
+      )
+    );
   } else if (fechaMovimiento) {
     lines.push(buildLine("fecha", "Fecha", fechaMovimiento));
   }
@@ -126,8 +149,8 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
       buildLine(
         "comentarios-cambio",
         "Comentarios",
-        `${comentariosAnterior || "Sin comentario"} -> ${comentariosNuevo || "Sin comentario"}`,
-      ),
+        `${comentariosAnterior || "Sin comentario"} -> ${comentariosNuevo || "Sin comentario"}`
+      )
     );
   } else if (comentarios) {
     lines.push(buildLine("comentarios", "Comentarios", comentarios));
@@ -151,15 +174,17 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
   }
 
   const afectaStock = typeof info.afectaStock === "boolean" ? info.afectaStock : null;
-  const afectaStockAnterior = typeof info.afectaStockAnterior === "boolean" ? info.afectaStockAnterior : null;
-  const afectaStockNuevo = typeof info.afectaStockNuevo === "boolean" ? info.afectaStockNuevo : null;
+  const afectaStockAnterior =
+    typeof info.afectaStockAnterior === "boolean" ? info.afectaStockAnterior : null;
+  const afectaStockNuevo =
+    typeof info.afectaStockNuevo === "boolean" ? info.afectaStockNuevo : null;
   if (afectaStockAnterior !== null || afectaStockNuevo !== null) {
     lines.push(
       buildLine(
         "afecta-stock-cambio",
         "Afecta stock",
-        `${afectaStockAnterior ? "Si" : "No"} -> ${afectaStockNuevo ? "Si" : "No"}`,
-      ),
+        `${afectaStockAnterior ? "Si" : "No"} -> ${afectaStockNuevo ? "Si" : "No"}`
+      )
     );
   } else if (afectaStock !== null) {
     lines.push(buildLine("afecta-stock", "Afecta stock", afectaStock ? "Si" : "No"));
@@ -173,8 +198,8 @@ function renderMovimientoDetalle(info: AuditDetailObject, ciReferences?: AuditCi
       buildLine(
         "unidades-cambio",
         "Total unidades",
-        `${totalUnidadesAnterior || "0"} -> ${totalUnidadesNuevo || "0"}`,
-      ),
+        `${totalUnidadesAnterior || "0"} -> ${totalUnidadesNuevo || "0"}`
+      )
     );
   } else if (totalUnidades) {
     lines.push(buildLine("unidades", "Total unidades", totalUnidades));
@@ -233,10 +258,18 @@ function formatValue(val: unknown): string {
   if (val === null || val === undefined) return "—";
   if (typeof val === "boolean") return val ? "Sí" : "No";
   if (Array.isArray(val)) {
-    if (val.every(equipo => equipo && typeof equipo === "object" && "tipo" in equipo && "valor" in equipo)) {
-      return val.map(t => `${t.tipo}: ${t.valor}`).join(", ");
+    if (
+      val.every(
+        (equipo) => equipo && typeof equipo === "object" && "tipo" in equipo && "valor" in equipo
+      )
+    ) {
+      return val.map((t) => `${t.tipo}: ${t.valor}`).join(", ");
     }
-    return val.map(equipo => equipo && typeof equipo === "object" ? JSON.stringify(equipo) : String(equipo)).join(", ");
+    return val
+      .map((equipo) =>
+        equipo && typeof equipo === "object" ? JSON.stringify(equipo) : String(equipo)
+      )
+      .join(", ");
   }
   if (typeof val === "object") return JSON.stringify(val);
   return String(val);
@@ -245,25 +278,50 @@ function formatValue(val: unknown): string {
 function buildDiffLine(key: string, label: string, prevStr: string, nextStr: string) {
   return createElement(
     "div",
-    { key, className: "text-[11px] text-stone-700 flex equipos-center gap-1.5 py-0.5 select-none w-full" },
-    createElement("span", { className: "font-semibold text-stone-900 w-24 shrink-0 truncate", title: label }, `${label}:`),
-    createElement("span", { className: "line-through text-red-700 bg-red-50 border border-red-200/50 px-1.5 py-0.25 rounded text-[10px] font-mono leading-none" }, prevStr),
+    {
+      key,
+      className: "text-[11px] text-stone-700 flex equipos-center gap-1.5 py-0.5 select-none w-full",
+    },
+    createElement(
+      "span",
+      { className: "font-semibold text-stone-900 w-24 shrink-0 truncate", title: label },
+      `${label}:`
+    ),
+    createElement(
+      "span",
+      {
+        className:
+          "line-through text-red-700 bg-red-50 border border-red-200/50 px-1.5 py-0.25 rounded text-[10px] font-mono leading-none",
+      },
+      prevStr
+    ),
     createElement("span", { className: "text-stone-400 font-bold text-[9px]" }, "→"),
-    createElement("span", { className: "text-green-700 bg-green-50 border border-green-200/50 px-1.5 py-0.25 rounded text-[10px] font-bold font-mono leading-none" }, nextStr),
+    createElement(
+      "span",
+      {
+        className:
+          "text-green-700 bg-green-50 border border-green-200/50 px-1.5 py-0.25 rounded text-[10px] font-bold font-mono leading-none",
+      },
+      nextStr
+    )
   );
 }
 
-export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiReferences, accion?: string): ReactNode {
+export function renderAuditDetalle(
+  detalle: unknown,
+  ciReferences?: AuditCiReferences,
+  accion?: string
+): ReactNode {
   if (!isObject(detalle)) return "";
 
   // Simply render authentication/session events as clean status messages
-  const isAuthEvent = 
-    accion === "LOGIN" || 
-    accion === "LOGOUT" || 
+  const isAuthEvent =
+    accion === "LOGIN" ||
+    accion === "LOGOUT" ||
     accion?.includes("PASSWORD") ||
     accion?.includes("CONTRASEÑA") ||
-    accion?.includes("SESION") || 
-    accion?.includes("SESSION") || 
+    accion?.includes("SESION") ||
+    accion?.includes("SESSION") ||
     accion?.includes("AUTENTICACION") ||
     accion?.includes("AUTENTICACIÓN");
 
@@ -291,7 +349,9 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
     }
     return createElement(
       "div",
-      { className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex equipos-center gap-2 select-none w-max ${bg}` },
+      {
+        className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex equipos-center gap-2 select-none w-max ${bg}`,
+      },
       createElement("span", { className: "text-sm" }, icon),
       msg
     );
@@ -306,7 +366,9 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
     const bg = "bg-amber-50 border-amber-200/40 text-amber-800 font-semibold";
     return createElement(
       "div",
-      { className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex equipos-center gap-2 select-none w-max ${bg}` },
+      {
+        className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex equipos-center gap-2 select-none w-max ${bg}`,
+      },
       createElement("span", { className: "text-sm" }, icon),
       msg
     );
@@ -325,7 +387,7 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
     "password",
     "contraseña",
     "hash",
-    "salt"
+    "salt",
   ]);
 
   const lines: ReactNode[] = [];
@@ -362,7 +424,9 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
     for (const k of flatKeys) {
       if (k.endsWith("Anterior")) {
         const base = k.slice(0, -8);
-        const nuevoKey = flatKeys.find((x) => x === `${base}Nuevo` || x === `${base}Nueva` || x === base);
+        const nuevoKey = flatKeys.find(
+          (x) => x === `${base}Nuevo` || x === `${base}Nueva` || x === base
+        );
         if (nuevoKey) {
           const prevStr = formatValue(detalle[k]);
           const nextStr = formatValue(detalle[nuevoKey]);
@@ -418,28 +482,45 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
     { className: "mt-2 bg-stone-50/70 p-3 rounded-lg border border-stone-200 w-full" },
     createElement(
       "p",
-      { className: "text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2 flex equipos-center gap-1.5 select-none" },
+      {
+        className:
+          "text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2 flex equipos-center gap-1.5 select-none",
+      },
       createElement("span", { className: "inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" }),
       "Transición de Estado (Antes → Ahora):"
     ),
     createElement(
       "div",
-      { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-1 w-full" },
+      {
+        className:
+          "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-1 w-full",
+      },
       ...lines
     )
   );
 }
 
-export function resolveAuditEntityName(entidad: string, detalle: unknown, ciReferences?: AuditCiReferences): string | null {
+export function resolveAuditEntityName(
+  entidad: string,
+  detalle: unknown,
+  ciReferences?: AuditCiReferences
+): string | null {
   if (!detalle || typeof detalle !== "object" || Array.isArray(detalle)) return null;
   const det = detalle as Record<string, unknown>;
 
   // Extract from state snapshots if present
-  const source = (isObject(det.nuevo) ? det.nuevo : isObject(det.previo) ? det.previo : det) as Record<string, unknown>;
+  const source = (
+    isObject(det.nuevo) ? det.nuevo : isObject(det.previo) ? det.previo : det
+  ) as Record<string, unknown>;
 
   if (entidad === "PERSONAL") {
     const p = source;
-    const nameParts = [asText(p.apellido1), asText(p.apellido2), asText(p.nombre1), asText(p.nombre2)].filter(Boolean);
+    const nameParts = [
+      asText(p.apellido1),
+      asText(p.apellido2),
+      asText(p.nombre1),
+      asText(p.nombre2),
+    ].filter(Boolean);
     if (nameParts.length > 0) return nameParts.join(" ");
     if (p.ci && ciReferences) {
       const owner = ciReferences[normalizeCi(asText(p.ci))];

@@ -285,13 +285,18 @@ export default async function ListadoAsignacionesPage({
                     <td>{row.clase}</td>
                     <td>
                       <strong>{row.nombre}</strong>
-                      {row.observaciones && <div style={{ fontSize: "8pt", marginTop: "2mm", color: "#444" }}>Obs: {row.observaciones}</div>}
+                      {row.observaciones && (
+                        <div style={{ fontSize: "8pt", marginTop: "2mm", color: "#444" }}>
+                          Obs: {row.observaciones}
+                        </div>
+                      )}
                     </td>
                     <td>
                       <ul className="equipos-list">
                         {row.equipos.map((equipo, idx) => (
                           <li key={idx} className="equipos-equipo">
-                            {equipo.cantidad > 0 ? `+${equipo.cantidad}` : equipo.cantidad} {equipo.equipo}
+                            {equipo.cantidad > 0 ? `+${equipo.cantidad}` : equipo.cantidad}{" "}
+                            {equipo.equipo}
                           </li>
                         ))}
                       </ul>

@@ -51,11 +51,11 @@ export function AsignacionRecintoEditorView({
       .then((res: unknown) => (res as Response).json())
       .then((data: string[]) => {
         const set = new Set<string>(data);
-        baterias.forEach(b => set.add(b.nombre));
+        baterias.forEach((b) => set.add(b.nombre));
         setEntidadesPrevias(Array.from(set).sort());
       })
       .catch(() => {
-        setEntidadesPrevias(baterias.map(b => b.nombre).sort());
+        setEntidadesPrevias(baterias.map((b) => b.nombre).sort());
       });
   }, [baterias]);
 
@@ -78,51 +78,60 @@ export function AsignacionRecintoEditorView({
       list.push({
         ci: p.ci,
         label: `${p.rango.abreviacion} ${apellidosLabel(p)}, ${nombresLabel(p)}`,
-        data: { grado: p.rango.abreviacion, nombre: nombresLabel(p), apellido: apellidosLabel(p), ci: p.ci }
+        data: {
+          grado: p.rango.abreviacion,
+          nombre: nombresLabel(p),
+          apellido: apellidosLabel(p),
+          ci: p.ci,
+        },
       });
     }
     for (const p of oficialesSuboficiales) {
       list.push({
         ci: p.ci,
         label: `${p.gradoMando.abreviacion} ${p.apellido}, ${p.nombre}`,
-        data: { grado: p.gradoMando.abreviacion, nombre: p.nombre, apellido: p.apellido, ci: p.ci }
+        data: { grado: p.gradoMando.abreviacion, nombre: p.nombre, apellido: p.apellido, ci: p.ci },
       });
     }
     return list.sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
   }, [personal, oficialesSuboficiales]);
 
   const onPersonalCiChange = (ci: string) => {
-    const selected = recipientOptions.find(opt => opt.ci === ci);
+    const selected = recipientOptions.find((opt) => opt.ci === ci);
     if (selected) {
-      setDraft(prev => ({
+      setDraft((prev) => ({
         ...prev,
         personalCi: ci,
         grado: selected.data.grado,
         nombre: selected.data.nombre,
         apellido: selected.data.apellido,
-        ci: selected.data.ci
+        ci: selected.data.ci,
       }));
     } else {
-      setDraft(prev => ({
+      setDraft((prev) => ({
         ...prev,
         personalCi: ci,
         grado: "",
         nombre: "",
         apellido: "",
-        ci: ""
+        ci: "",
       }));
     }
   };
 
   const equiposOrdenadosAlfabeticamente = [...equiposOrdenados].sort((a, b) =>
-    a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
+    a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })
   );
 
   const updateDraft = <K extends keyof Draft>(field: K, value: Draft[K]) => {
     setDraft((prev) => ({ ...prev, [field]: value }));
   };
 
-  const onItemChange = (index: number, field: "equipoId" | "cantidad" | "comentario", value: string | number) => {
+  const onItemChange = (
+    index: number,
+    field: "equipoId" | "cantidad" | "comentario",
+    value: string | number
+  ) => {
     setDraft((prev) => {
       const next = [...prev.equipos];
       next[index] = { ...next[index], [field]: value };
@@ -131,7 +140,10 @@ export function AsignacionRecintoEditorView({
   };
 
   const onAddItem = () => {
-    setDraft((prev) => ({ ...prev, equipos: [...prev.equipos, { equipoId: "", cantidad: 1, comentario: "" }] }));
+    setDraft((prev) => ({
+      ...prev,
+      equipos: [...prev.equipos, { equipoId: "", cantidad: 1, comentario: "" }],
+    }));
   };
 
   const onRemoveEquipo = (index: number) => {
@@ -180,9 +192,10 @@ export function AsignacionRecintoEditorView({
     }
 
     try {
-      const unidadDestino = draft.entidadBeneficiariaTipo === "INTERNO" 
-        ? `Interno a la Unidad - ${draft.entidadBeneficiariaDetalle}` 
-        : `Externo a la Unidad - ${draft.entidadBeneficiariaDetalle}`;
+      const unidadDestino =
+        draft.entidadBeneficiariaTipo === "INTERNO"
+          ? `Interno a la Unidad - ${draft.entidadBeneficiariaDetalle}`
+          : `Externo a la Unidad - ${draft.entidadBeneficiariaDetalle}`;
 
       const finalCi = draft.ci.trim() === "" ? `SD-${Date.now()}` : draft.ci;
 
@@ -220,7 +233,9 @@ export function AsignacionRecintoEditorView({
         <div className="flex equipos-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-stone-900">Registrar Asignación</h2>
-            <p className="mt-1 text-sm text-stone-600">Completa los datos para asignar equipo a un beneficiario.</p>
+            <p className="mt-1 text-sm text-stone-600">
+              Completa los datos para asignar equipo a un beneficiario.
+            </p>
           </div>
           <button
             type="button"
@@ -258,7 +273,9 @@ export function AsignacionRecintoEditorView({
               Tipo de Entidad
               <select
                 value={draft.entidadBeneficiariaTipo}
-                onChange={(e) => updateDraft("entidadBeneficiariaTipo", e.target.value as "INTERNO" | "EXTERNO")}
+                onChange={(e) =>
+                  updateDraft("entidadBeneficiariaTipo", e.target.value as "INTERNO" | "EXTERNO")
+                }
                 disabled={saving}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               >
@@ -267,13 +284,19 @@ export function AsignacionRecintoEditorView({
               </select>
             </label>
             <label className="text-sm font-medium text-stone-700">
-              {draft.entidadBeneficiariaTipo === "INTERNO" ? "Detalle de Entidad" : "Entidad receptora"}
+              {draft.entidadBeneficiariaTipo === "INTERNO"
+                ? "Detalle de Entidad"
+                : "Entidad receptora"}
               <input
                 list="entidades-previas"
                 value={draft.entidadBeneficiariaDetalle}
                 onChange={(e) => updateDraft("entidadBeneficiariaDetalle", e.target.value)}
                 disabled={saving}
-                placeholder={draft.entidadBeneficiariaTipo === "INTERNO" ? "Ej.: Batería Comando" : "Ej.: Brigada de Infantería No. 5"}
+                placeholder={
+                  draft.entidadBeneficiariaTipo === "INTERNO"
+                    ? "Ej.: Batería Comando"
+                    : "Ej.: Brigada de Infantería No. 5"
+                }
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
               <datalist id="entidades-previas">
@@ -361,7 +384,10 @@ export function AsignacionRecintoEditorView({
             Equipos Asignados
           </h3>
           {draft.equipos.map((equipo, index) => (
-            <div key={index} className="flex flex-col gap-3 bg-stone-50 p-4 rounded-lg border border-stone-200">
+            <div
+              key={index}
+              className="flex flex-col gap-3 bg-stone-50 p-4 rounded-lg border border-stone-200"
+            >
               <div className="flex flex-col sm:flex-row equipos-start sm:equipos-center gap-3">
                 <select
                   value={equipo.equipoId}
@@ -371,7 +397,9 @@ export function AsignacionRecintoEditorView({
                 >
                   <option value="">Seleccionar equipo</option>
                   {equiposOrdenadosAlfabeticamente.map((catalogItem) => {
-                    const isSelectedByOther = draft.equipos.some((i, idx) => idx !== index && i.equipoId === catalogItem.equipoId);
+                    const isSelectedByOther = draft.equipos.some(
+                      (i, idx) => idx !== index && i.equipoId === catalogItem.equipoId
+                    );
                     if (isSelectedByOther) return null;
                     return (
                       <option key={catalogItem.equipoId} value={catalogItem.equipoId}>
@@ -409,14 +437,16 @@ export function AsignacionRecintoEditorView({
               />
             </div>
           ))}
-          
+
           <button
             type="button"
             onClick={onAddItem}
             disabled={saving}
             className="mt-2 inline-flex equipos-center gap-2 rounded-lg border border-dashed border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-400 transition-colors"
           >
-            <span className="inline-flex h-5 w-5 equipos-center justify-center rounded-full bg-stone-200 text-stone-700">+</span>
+            <span className="inline-flex h-5 w-5 equipos-center justify-center rounded-full bg-stone-200 text-stone-700">
+              +
+            </span>
             Agregar otro equipo
           </button>
         </div>

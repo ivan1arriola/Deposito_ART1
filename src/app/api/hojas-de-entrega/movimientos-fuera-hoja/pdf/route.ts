@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { getMovimientosFueraHojaData } from "@/lib/hoja-entrega-data";
 import { renderMovimientosFueraHojaPdf } from "@/lib/server/render-movimientos-fuera-hoja-react-pdf";
-import { parseMovimientosFueraHojaSort, sortMovimientosFueraHojaRows } from "@/lib/movimientos-fuera-hoja-sort";
+import {
+  parseMovimientosFueraHojaSort,
+  sortMovimientosFueraHojaRows,
+} from "@/lib/movimientos-fuera-hoja-sort";
 import { getFirmaConfig, TEXTO_ENCARGADO, TEXTO_OFICIAL } from "@/lib/firma-config";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 
@@ -17,13 +20,10 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const sort = parseMovimientosFueraHojaSort(
       url.searchParams.get("sortBy"),
-      url.searchParams.get("sortDirection"),
+      url.searchParams.get("sortDirection")
     );
 
-    const [rows, config] = await Promise.all([
-      getMovimientosFueraHojaData(),
-      getFirmaConfig(),
-    ]);
+    const [rows, config] = await Promise.all([getMovimientosFueraHojaData(), getFirmaConfig()]);
 
     const orderedRows = sortMovimientosFueraHojaRows(rows, sort);
 

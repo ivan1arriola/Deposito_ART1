@@ -37,14 +37,18 @@ export function prestamoClaseLabel(value: PrestamoClase) {
 export function buildDestinatarioOptions(
   destinatarioTipo: PrestamoDraft["destinatarioTipo"],
   personal: Personal[],
-  oficialesSuboficiales: OficialSuboficial[],
+  oficialesSuboficiales: OficialSuboficial[]
 ) {
   if (destinatarioTipo === "PERSONAL") {
     return [...personal]
       .sort((a, b) =>
-        `${apellidosLabel(a)} ${nombresLabel(a)}`.localeCompare(`${apellidosLabel(b)} ${nombresLabel(b)}`, "es", {
-          sensitivity: "base",
-        }),
+        `${apellidosLabel(a)} ${nombresLabel(a)}`.localeCompare(
+          `${apellidosLabel(b)} ${nombresLabel(b)}`,
+          "es",
+          {
+            sensitivity: "base",
+          }
+        )
       )
       .map((persona) => ({
         ci: persona.ci,
@@ -53,26 +57,39 @@ export function buildDestinatarioOptions(
   }
 
   return oficialesSuboficiales
-    .filter((registro) => (destinatarioTipo === "OFICIAL" ? registro.tipo === "OFICIAL" : registro.tipo === "SUBOFICIAL"))
+    .filter((registro) =>
+      destinatarioTipo === "OFICIAL" ? registro.tipo === "OFICIAL" : registro.tipo === "SUBOFICIAL"
+    )
     .slice()
-    .sort((a, b) => `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`, "es", { sensitivity: "base" }))
+    .sort((a, b) =>
+      `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`, "es", {
+        sensitivity: "base",
+      })
+    )
     .map((registro) => ({
       ci: registro.ci,
       label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`,
     }));
 }
 
-export function buildActuanteOptions(oficialesSuboficiales: OficialSuboficial[], personal: Personal[]) {
+export function buildActuanteOptions(
+  oficialesSuboficiales: OficialSuboficial[],
+  personal: Personal[]
+) {
   const oficialesYSuboficiales = oficialesSuboficiales.map((registro) => ({
     ci: registro.ci,
-    label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`.replace(/\s+/g, " ").trim(),
+    label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`
+      .replace(/\s+/g, " ")
+      .trim(),
   }));
 
   const sargentos = personal
     .filter((persona) => isSargentoRank(persona.rango.abreviacion))
     .map((persona) => ({
       ci: persona.ci,
-      label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`.replace(/\s+/g, " ").trim(),
+      label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`
+        .replace(/\s+/g, " ")
+        .trim(),
     }));
 
   const optionsByCi = new Map<string, { ci: string; label: string }>();
@@ -82,5 +99,7 @@ export function buildActuanteOptions(oficialesSuboficiales: OficialSuboficial[],
     }
   }
 
-  return Array.from(optionsByCi.values()).sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+  return Array.from(optionsByCi.values()).sort((a, b) =>
+    a.label.localeCompare(b.label, "es", { sensitivity: "base" })
+  );
 }

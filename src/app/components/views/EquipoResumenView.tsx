@@ -46,9 +46,12 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
       <article className="ej-card rounded-2xl p-4">
         <div className="flex flex-wrap equipos-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-stone-900">Resumen de equipo en baterías</h2>
+            <h2 className="text-base font-semibold text-stone-900">
+              Resumen de equipo en baterías
+            </h2>
             <p className="mt-1 text-xs text-stone-600">
-              Muestra cómo está distribuido cada equipo entre las baterías. Filas por equipo y columnas por batería, con una última columna para el total de la unidad.
+              Muestra cómo está distribuido cada equipo entre las baterías. Filas por equipo y
+              columnas por batería, con una última columna para el total de la unidad.
             </p>
           </div>
           <button
@@ -72,9 +75,15 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
           </button>
         </div>
         {error ? (
-          <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p>
+          <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+            {error}
+          </p>
         ) : null}
-        {!data && !loading ? <p className="mt-3 text-xs text-stone-600">Presiona Cargar resumen para ver cantidades por batería y unidad.</p> : null}
+        {!data && !loading ? (
+          <p className="mt-3 text-xs text-stone-600">
+            Presiona Cargar resumen para ver cantidades por batería y unidad.
+          </p>
+        ) : null}
         {loading && !data ? (
           <LoadingInline
             label="Cargando resumen de equipo en baterías..."
@@ -88,9 +97,13 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
         <article className="ej-card rounded-2xl p-4">
           <div className="mb-4 flex flex-wrap equipos-end justify-between gap-2">
             <div className="flex-1 min-w-[280px]">
-              <h3 className="text-base font-semibold text-stone-900">Total de equipo en baterías según hojas de entrega</h3>
+              <h3 className="text-base font-semibold text-stone-900">
+                Total de equipo en baterías según hojas de entrega
+              </h3>
               <p className="mt-1 text-xs text-stone-600">
-                La primera columna muestra los nombres de los equipos. Cada fila representa un equipo, cada columna representa una batería y la columna final representa el total de las baterías.
+                La primera columna muestra los nombres de los equipos. Cada fila representa un
+                equipo, cada columna representa una batería y la columna final representa el total
+                de las baterías.
               </p>
             </div>
             <label className="w-full max-w-xs text-xs text-stone-700">
@@ -112,17 +125,25 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
               </p>
             ) : null}
             {rows.map((row) => (
-              <article key={`mobile-${row.equipoId}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+              <article
+                key={`mobile-${row.equipoId}`}
+                className="rounded-xl border border-stone-200 bg-stone-50 p-3"
+              >
                 <div className="flex equipos-center justify-between gap-2">
                   <h4 className="text-sm font-semibold text-stone-900">{row.nombre}</h4>
                   <span className="inline-flex min-w-[3rem] justify-center rounded-full bg-emerald-100 px-2.5 py-1 text-sm font-bold text-emerald-800">
                     {row.totalUnidad}
                   </span>
                 </div>
-                <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">Total unidad</p>
+                <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                  Total unidad
+                </p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {row.valoresPorBateria.map((bateria) => (
-                    <div key={`mobile-${row.equipoId}-${bateria.key}`} className="rounded-lg border border-stone-200 bg-white px-2 py-2">
+                    <div
+                      key={`mobile-${row.equipoId}-${bateria.key}`}
+                      className="rounded-lg border border-stone-200 bg-white px-2 py-2"
+                    >
                       <p className="text-[11px] font-semibold text-stone-500">{bateria.nombre}</p>
                       <p className="mt-1 text-sm font-bold text-stone-900">{bateria.total}</p>
                     </div>
@@ -136,7 +157,9 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
             <table className="w-full min-w-max border-collapse text-left text-xs">
               <thead>
                 <tr className="bg-stone-100">
-                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Equipo</th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                    Equipo
+                  </th>
                   {data.baterias.map((bateria) => (
                     <th
                       key={`header-${bateria.key}`}
@@ -145,20 +168,30 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
                       {bateria.nombre}
                     </th>
                   ))}
-                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Unidad</th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                    Unidad
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={data.baterias.length + 2} className="px-3 py-8 text-center text-sm text-stone-500 italic">
+                    <td
+                      colSpan={data.baterias.length + 2}
+                      className="px-3 py-8 text-center text-sm text-stone-500 italic"
+                    >
                       No se encontraron equipos que coincidan con &quot;{searchTerm}&quot;.
                     </td>
                   </tr>
                 ) : null}
                 {rows.map((row, rowIndex) => (
-                  <tr key={row.equipoId} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                    <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">{row.nombre}</td>
+                  <tr
+                    key={row.equipoId}
+                    className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}
+                  >
+                    <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">
+                      {row.nombre}
+                    </td>
                     {row.valoresPorBateria.map((bateria) => (
                       <td
                         key={`cell-${row.equipoId}-${bateria.key}`}
@@ -167,7 +200,9 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
                         {bateria.total}
                       </td>
                     ))}
-                    <td className="border-b border-emerald-200 bg-emerald-50 px-3 py-3 text-sm font-bold text-emerald-900">{row.totalUnidad}</td>
+                    <td className="border-b border-emerald-200 bg-emerald-50 px-3 py-3 text-sm font-bold text-emerald-900">
+                      {row.totalUnidad}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -180,4 +215,3 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
     </section>
   );
 }
-

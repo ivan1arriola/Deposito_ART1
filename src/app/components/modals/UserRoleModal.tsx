@@ -49,8 +49,12 @@ export function UserRoleModal({
               }`}
             >
               <p className="text-sm font-semibold">{roleLabel(role)}</p>
-              <p className={`mt-1 text-xs ${selected ? "text-stone-200" : "text-stone-500"}`}>{roleDescription(role)}</p>
-              <p className={`mt-2 text-[11px] font-medium uppercase tracking-wide ${selected ? "text-stone-300" : "text-stone-400"}`}>
+              <p className={`mt-1 text-xs ${selected ? "text-stone-200" : "text-stone-500"}`}>
+                {roleDescription(role)}
+              </p>
+              <p
+                className={`mt-2 text-[11px] font-medium uppercase tracking-wide ${selected ? "text-stone-300" : "text-stone-400"}`}
+              >
                 {roleScope(role)}
               </p>
             </button>

@@ -44,7 +44,10 @@ export function isPrismaDatabaseUnavailable(error: unknown) {
 export function hasPrismaMissingColumn(error: unknown, columnName: string) {
   const message = extractErrorMessage(error);
   if (!message) return false;
-  return message.includes(`${MISSING_COLUMN_PREFIX}${columnName}\``) && message.includes("does not exist");
+  return (
+    message.includes(`${MISSING_COLUMN_PREFIX}${columnName}\``) &&
+    message.includes("does not exist")
+  );
 }
 
 function delay(ms: number) {
@@ -58,7 +61,10 @@ type RetryOptions = {
   delayMs?: number;
 };
 
-export async function withPrismaReadRetry<T>(operation: () => Promise<T>, options: RetryOptions = {}) {
+export async function withPrismaReadRetry<T>(
+  operation: () => Promise<T>,
+  options: RetryOptions = {}
+) {
   const attempts = Math.max(1, options.attempts ?? 2);
   const delayMs = Math.max(0, options.delayMs ?? 250);
 

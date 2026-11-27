@@ -29,7 +29,9 @@ export function PersonalContactModal({
   return (
     <ModalFrame onClose={onClose}>
       <h3 className="text-base font-semibold text-stone-900">Actualizar contacto</h3>
-      <p className="mt-1 text-xs text-stone-600">Puedes registrar o actualizar tu celular y correo electrónico.</p>
+      <p className="mt-1 text-xs text-stone-600">
+        Puedes registrar o actualizar tu celular y correo electrónico.
+      </p>
 
       <div className="mt-3 space-y-2">
         <input

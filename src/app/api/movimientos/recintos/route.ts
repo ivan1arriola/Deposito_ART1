@@ -14,25 +14,22 @@ export async function GET(request: Request) {
   const movimientos = await prisma.movimiento.findMany({
     where: {
       tipo: TipoMovimiento.ASIGNACION,
-      OR: [
-        { destinatarioRecinto: { isNot: null } },
-        { destinatarioExterno: { isNot: null } }
-      ]
+      OR: [{ destinatarioRecinto: { isNot: null } }, { destinatarioExterno: { isNot: null } }],
     },
     orderBy: [{ fecha: "desc" }, { movimientoId: "desc" }],
     include: {
       destinatarioRecinto: true,
       destinatarioExterno: {
         include: {
-          personaExterna: true
-        }
+          personaExterna: true,
+        },
       },
       usuarioEntrega: {
         select: {
           nombre: true,
           apellido: true,
-          username: true
-        }
+          username: true,
+        },
       },
       equipos: {
         include: {
@@ -46,47 +43,56 @@ export async function GET(request: Request) {
     },
   });
 
-  const rows = movimientos.map((movimiento) => {
-    let clase: "INTERNO" | "EXTERNO" = "INTERNO";
-    let nombre = "";
-    let responsableInfo = undefined;
+  const rows = movimientos
+    .map((movimiento) => {
+      let clase: "INTERNO" | "EXTERNO" = "INTERNO";
+      let nombre = "";
+      let responsableInfo = undefined;
 
-    if (movimiento.destinatarioRecinto) {
-      clase = movimiento.destinatarioRecinto.clase === "EXTERNO" ? "EXTERNO" : "INTERNO";
-      nombre = movimiento.destinatarioRecinto.nombre;
-    } else if (movimiento.destinatarioExterno) {
-      const ext = movimiento.destinatarioExterno.personaExterna;
-      if (ext) {
-        const unidadDestino = ext.unidadDestino || "";
-        clase = unidadDestino.startsWith("Interno a la Unidad") ? "INTERNO" : "EXTERNO";
-        nombre = unidadDestino.replace("Interno a la Unidad - ", "").replace("Externo a la Unidad - ", "").trim() || "Persona Externa";
-        responsableInfo = {
-          ci: ext.ci,
-          grado: ext.grado,
-          nombre: ext.nombre,
-          apellido: ext.apellido,
-        };
-      } else {
-        clase = "EXTERNO";
-        nombre = "Persona Externa";
+      if (movimiento.destinatarioRecinto) {
+        clase = movimiento.destinatarioRecinto.clase === "EXTERNO" ? "EXTERNO" : "INTERNO";
+        nombre = movimiento.destinatarioRecinto.nombre;
+      } else if (movimiento.destinatarioExterno) {
+        const ext = movimiento.destinatarioExterno.personaExterna;
+        if (ext) {
+          const unidadDestino = ext.unidadDestino || "";
+          clase = unidadDestino.startsWith("Interno a la Unidad") ? "INTERNO" : "EXTERNO";
+          nombre =
+            unidadDestino
+              .replace("Interno a la Unidad - ", "")
+              .replace("Externo a la Unidad - ", "")
+              .trim() || "Persona Externa";
+          responsableInfo = {
+            ci: ext.ci,
+            grado: ext.grado,
+            nombre: ext.nombre,
+            apellido: ext.apellido,
+          };
+        } else {
+          clase = "EXTERNO";
+          nombre = "Persona Externa";
+        }
       }
-    }
 
-    return {
-      movimientoId: movimiento.movimientoId.toString(),
-      fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
-      tipo: movimiento.tipo,
-      clase,
-      nombre,
-      equipos: movimiento.equipos.map((detail) => ({
-        equipo: detail.equipo.nombre,
-        cantidad: detail.cantidad,
-      })),
-      observaciones: movimiento.observaciones,
-      usuarioEntrega: movimiento.usuarioEntrega ? `${movimiento.usuarioEntrega.apellido} ${movimiento.usuarioEntrega.nombre}`.trim() || movimiento.usuarioEntrega.username : null,
-      responsableInfo,
-    };
-  }).filter(row => row.nombre !== "");
+      return {
+        movimientoId: movimiento.movimientoId.toString(),
+        fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
+        tipo: movimiento.tipo,
+        clase,
+        nombre,
+        equipos: movimiento.equipos.map((detail) => ({
+          equipo: detail.equipo.nombre,
+          cantidad: detail.cantidad,
+        })),
+        observaciones: movimiento.observaciones,
+        usuarioEntrega: movimiento.usuarioEntrega
+          ? `${movimiento.usuarioEntrega.apellido} ${movimiento.usuarioEntrega.nombre}`.trim() ||
+            movimiento.usuarioEntrega.username
+          : null,
+        responsableInfo,
+      };
+    })
+    .filter((row) => row.nombre !== "");
 
   return NextResponse.json({
     generatedAt: new Date().toISOString(),

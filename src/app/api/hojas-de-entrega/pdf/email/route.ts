@@ -9,7 +9,11 @@ import {
 } from "@/lib/hoja-entrega-data";
 import { sendMail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
-import { hasConstraintName, isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
+import {
+  hasConstraintName,
+  isPrismaDatabaseUnavailable,
+  withPrismaReadRetry,
+} from "@/lib/prisma-errors";
 import {
   completeHojasEntregaEmailJob,
   createHojasEntregaEmailJob,
@@ -67,7 +71,10 @@ async function runHojasEntregaEmailJob(input: {
     });
 
     const loadingStartedAtMs = Date.now();
-    const [hojas, movimientosFueraHoja] = await Promise.all([getAllHojasEntregaData(), getMovimientosFueraHojaData()]);
+    const [hojas, movimientosFueraHoja] = await Promise.all([
+      getAllHojasEntregaData(),
+      getMovimientosFueraHojaData(),
+    ]);
     metrics.loadingMs = Math.max(0, Date.now() - loadingStartedAtMs);
     if (hojas.length === 0) {
       throw new Error("No hay personal para generar hojas de entrega.");
@@ -100,7 +107,9 @@ async function runHojasEntregaEmailJob(input: {
 
     const mergedPdf = await PDFDocument.create();
     const hojasPdf = await PDFDocument.load(hojasPdfBytes, { parseSpeed: ParseSpeeds.Fastest });
-    const fueraHojaPdf = await PDFDocument.load(fueraHojaPdfBytes, { parseSpeed: ParseSpeeds.Fastest });
+    const fueraHojaPdf = await PDFDocument.load(fueraHojaPdfBytes, {
+      parseSpeed: ParseSpeeds.Fastest,
+    });
 
     const hojasPages = await mergedPdf.copyPages(hojasPdf, hojasPdf.getPageIndices());
     for (const page of hojasPages) {
@@ -227,7 +236,7 @@ export async function POST(request: Request) {
             },
           },
         },
-      }),
+      })
     );
 
     if (!usuario || !usuario.activo) {
@@ -237,7 +246,7 @@ export async function POST(request: Request) {
     if (!usuario.mailReferencia) {
       return NextResponse.json(
         { error: "Tu usuario no tiene correo de referencia configurado." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -245,7 +254,7 @@ export async function POST(request: Request) {
     if (!isValidEmailAddress(recipient)) {
       return NextResponse.json(
         { error: "El correo de referencia del usuario no es valido." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -256,11 +265,18 @@ export async function POST(request: Request) {
           error: "Ya hay un envío de hojas de entrega en curso para este usuario.",
           job: existingJob,
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
-    const requesterLabel = [rangoAbreviacionLabel(usuario.rango, ""), usuario.nombre, usuario.apellido].filter(Boolean).join(" ").trim();
+    const requesterLabel = [
+      rangoAbreviacionLabel(usuario.rango, ""),
+      usuario.nombre,
+      usuario.apellido,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
     const job = await createHojasEntregaEmailJob({
       userId: usuario.usuarioId,
       to: recipient,
@@ -277,12 +293,15 @@ export async function POST(request: Request) {
       });
     });
 
-    return NextResponse.json({
-      ok: true,
-      accepted: true,
-      message: "Envío iniciado en segundo plano.",
-      job,
-    }, { status: 202 });
+    return NextResponse.json(
+      {
+        ok: true,
+        accepted: true,
+        message: "Envío iniciado en segundo plano.",
+        job,
+      },
+      { status: 202 }
+    );
   } catch (error: unknown) {
     if (hasConstraintName(error, "uq_hojas_entrega_email_job_user_active")) {
       let existingJob = null;
@@ -296,14 +315,14 @@ export async function POST(request: Request) {
           error: "Ya hay un envío de hojas de entrega en curso para este usuario.",
           job: existingJob,
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
     if (isPrismaDatabaseUnavailable(error)) {
       return NextResponse.json(
         { error: "Base de datos no disponible temporalmente. Intenta nuevamente." },
-        { status: 503 },
+        { status: 503 }
       );
     }
 
@@ -311,10 +330,13 @@ export async function POST(request: Request) {
     if (message.startsWith("Configuración SMTP incompleta")) {
       return NextResponse.json(
         { error: "El servicio de correo no esta configurado. Contacta al administrador." },
-        { status: 503 },
+        { status: 503 }
       );
     }
 
-    return NextResponse.json({ error: message || "No se pudo enviar el PDF por correo." }, { status: 500 });
+    return NextResponse.json(
+      { error: message || "No se pudo enviar el PDF por correo." },
+      { status: 500 }
+    );
   }
 }

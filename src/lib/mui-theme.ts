@@ -160,7 +160,8 @@ const baseTheme = createTheme({
           minHeight: 40,
           paddingInline: 16,
           boxShadow: "none",
-          transition: "background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 120ms ease",
+          transition:
+            "background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 120ms ease",
           "&:focus-visible": {
             outline: "none",
             boxShadow: focusRing,

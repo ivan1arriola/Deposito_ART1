@@ -91,7 +91,6 @@ npm run dev
 - `npm run user:create -- --username <u> --password <p> --role ADMIN|EDITOR`: crea o actualiza usuario
 - `npm run webpush:generate`: genera claves VAPID para notificaciones push
 
-
 ## Modelo de Datos (resumen)
 
 Tablas principales:

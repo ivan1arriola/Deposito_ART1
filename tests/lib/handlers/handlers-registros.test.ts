@@ -126,9 +126,7 @@ describe("Handlers de Registros", () => {
         // Error esperado
       }
 
-      expect(onError).toHaveBeenCalledWith(
-        "No puedes repetir equipos en un mismo movimiento."
-      );
+      expect(onError).toHaveBeenCalledWith("No puedes repetir equipos en un mismo movimiento.");
     });
 
     it("debería distinguir entre creación y actualización", async () => {

@@ -109,7 +109,12 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
         isOpen={mergeEquipoDialog !== null}
         sourceName={mergeEquipoSource?.nombre ?? ""}
         targetEquipoId={mergeEquipoDialogTargetId}
-        targetOptions={mergeEquipoTargetOptions.map((equipo: { equipoId: string; nombre: string }) => ({ equipoId: equipo.equipoId, nombre: equipo.nombre }))}
+        targetOptions={mergeEquipoTargetOptions.map(
+          (equipo: { equipoId: string; nombre: string }) => ({
+            equipoId: equipo.equipoId,
+            nombre: equipo.nombre,
+          })
+        )}
         saving={mergeEquipoSaving}
         onTargetChange={updateMergeEquipoDialogTarget}
         onClose={closeMergeEquipoDialog}
@@ -144,9 +149,10 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
         usernameDialog={usernameDialog}
         usernameSaving={usernameSaving}
         userRangoOptions={rangosConfigView}
-        onUsernameDialogChange={(field: "rangoId" | "nombre" | "apellido" | "username" | "mailReferencia", value: string) =>
-          setUsernameDialog((current) => (current ? { ...current, [field]: value } : current))
-        }
+        onUsernameDialogChange={(
+          field: "rangoId" | "nombre" | "apellido" | "username" | "mailReferencia",
+          value: string
+        ) => setUsernameDialog((current) => (current ? { ...current, [field]: value } : current))}
         onCloseUsernameDialog={closeUsernameDialog}
         onSubmitUsernameDialog={() => void submitUsernameChange()}
         confirmDialog={confirmDialog}
@@ -187,7 +193,7 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
             | "destinatarioExternoApellido"
             | "destinatarioExternoCi"
             | "destinatarioExternoUnidadDestino",
-          value: string,
+          value: string
         ) =>
           setRegistroDraft((prev) => {
             if (!prev) return prev;
@@ -199,18 +205,24 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
                 ciList: nextTipo === "PERSONAL" ? prev.ciList : [],
                 ci: nextTipo === "PERSONAL" ? prev.ci : "",
                 recintoNombre: nextTipo === "RECINTO" ? prev.recintoNombre : "",
-                destinatarioExternoGrado: nextTipo === "EXTERNO" ? prev.destinatarioExternoGrado : "",
-                destinatarioExternoNombre: nextTipo === "EXTERNO" ? prev.destinatarioExternoNombre : "",
-                destinatarioExternoApellido: nextTipo === "EXTERNO" ? prev.destinatarioExternoApellido : "",
+                destinatarioExternoGrado:
+                  nextTipo === "EXTERNO" ? prev.destinatarioExternoGrado : "",
+                destinatarioExternoNombre:
+                  nextTipo === "EXTERNO" ? prev.destinatarioExternoNombre : "",
+                destinatarioExternoApellido:
+                  nextTipo === "EXTERNO" ? prev.destinatarioExternoApellido : "",
                 destinatarioExternoCi: nextTipo === "EXTERNO" ? prev.destinatarioExternoCi : "",
-                destinatarioExternoUnidadDestino: nextTipo === "EXTERNO" ? prev.destinatarioExternoUnidadDestino : "",
+                destinatarioExternoUnidadDestino:
+                  nextTipo === "EXTERNO" ? prev.destinatarioExternoUnidadDestino : "",
               };
             }
             return { ...prev, [field]: value };
           })
         }
         onToggleRegistroIncluirFueraDeHoja={() =>
-          setRegistroDraft((prev) => (prev ? { ...prev, incluirFueraDeHoja: !prev.incluirFueraDeHoja } : prev))
+          setRegistroDraft((prev) =>
+            prev ? { ...prev, incluirFueraDeHoja: !prev.incluirFueraDeHoja } : prev
+          )
         }
         onToggleRegistroDestinatario={toggleRegistroDestinatario}
         onSelectAllRegistroDestinatarios={selectAllRegistroDestinatarios}
@@ -260,7 +272,8 @@ export function HomeOverlaysLayer(props: HomeOverlaysLayerProps) {
         displayName: (currentUser.nombre || currentUser.username).trim(),
         soldadoVariant: soldadoWidgetVariant,
         onCreateTask: createRecordatorioTask,
-        onToggleTask: (tareaId: string, completada: boolean) => updateRecordatorioTask(tareaId, { completada }),
+        onToggleTask: (tareaId: string, completada: boolean) =>
+          updateRecordatorioTask(tareaId, { completada }),
         onOpenConfig: () => setActiveView("recordatorios"),
       })}
 

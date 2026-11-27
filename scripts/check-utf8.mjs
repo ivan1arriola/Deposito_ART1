@@ -112,12 +112,7 @@ function listTrackedFiles() {
 }
 
 function hasUtf8Bom(buffer) {
-  return (
-    buffer.length >= 3 &&
-    buffer[0] === 0xef &&
-    buffer[1] === 0xbb &&
-    buffer[2] === 0xbf
-  );
+  return buffer.length >= 3 && buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf;
 }
 
 const findings = [];

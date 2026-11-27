@@ -22,8 +22,15 @@ import {
 } from "@/lib/stock";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
-import { formatPrestamoDestinatario, prestamoInclude, serializePrestamoWithActuante } from "@/lib/prestamos";
-import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
+import {
+  formatPrestamoDestinatario,
+  prestamoInclude,
+  serializePrestamoWithActuante,
+} from "@/lib/prestamos";
+import {
+  ensurePrestamoActuanteCompatibility,
+  fetchPrestamoActuanteByMovimientoIds,
+} from "@/lib/prestamo-actuante";
 import {
   MOVIMIENTO_TIPO_ASIGNACION,
   MOVIMIENTO_TIPO_DEVOLUCION,
@@ -122,7 +129,9 @@ function parseCantidad(value: unknown) {
 }
 
 function parseTipoStockOperacion(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "INGRESO") return TipoStockOperacion.INGRESO;
   if (raw === "EGRESO") return TipoStockOperacion.EGRESO;
   return null;
@@ -181,7 +190,10 @@ export async function GET(req: Request) {
   const auth = await authorizeRequest(req, "read_data");
   if (!auth.ok) return auth.response;
   if (!hasStockDelegates()) {
-    return NextResponse.json({ error: "El cliente Prisma de stock no esta listo. Reinicia el servidor de desarrollo." }, { status: 503 });
+    return NextResponse.json(
+      { error: "El cliente Prisma de stock no esta listo. Reinicia el servidor de desarrollo." },
+      { status: 503 }
+    );
   }
 
   await ensureMovimientoDestinatarioRecintoCompatibility();
@@ -263,7 +275,9 @@ export async function GET(req: Request) {
 
   const auditUserByEntity = new Map<string, string | null>();
   if (includeHistorial) {
-    const stockAuditKeys = stockOperaciones.map((operacion) => operacion.stockOperacionId.toString());
+    const stockAuditKeys = stockOperaciones.map((operacion) =>
+      operacion.stockOperacionId.toString()
+    );
     const registroAuditKeys = movimientos.map((movimiento) => movimiento.movimientoId.toString());
     const auditorias =
       stockAuditKeys.length === 0 && registroAuditKeys.length === 0
@@ -297,7 +311,9 @@ export async function GET(req: Request) {
       const key = `${audit.entidad}:${audit.entidadId}`;
       if (auditUserByEntity.has(key)) continue;
       const userLabel = audit.usuario
-        ? `${rangoAbreviacionLabel(audit.usuario.rango, "")} ${audit.usuario.apellido}, ${audit.usuario.nombre}`.replace(/\s+/g, " ").trim()
+        ? `${rangoAbreviacionLabel(audit.usuario.rango, "")} ${audit.usuario.apellido}, ${audit.usuario.nombre}`
+            .replace(/\s+/g, " ")
+            .trim()
         : audit.usuarioId
           ? "Usuario eliminado"
           : null;
@@ -346,7 +362,8 @@ export async function GET(req: Request) {
       totalUnidades: operacion.equipos.reduce((total, equipo) => total + equipo.cantidad, 0),
       ci: null,
       persona: null,
-      registradoPor: auditUserByEntity.get(`STOCK:${operacion.stockOperacionId.toString()}`) ?? null,
+      registradoPor:
+        auditUserByEntity.get(`STOCK:${operacion.stockOperacionId.toString()}`) ?? null,
       equipos: operacion.equipos.map((equipo) => ({
         equipoId: equipo.equipo.equipoId.toString(),
         nombre: equipo.equipo.nombre,
@@ -372,14 +389,19 @@ export async function GET(req: Request) {
           id: `personal-${movimiento.movimientoId.toString()}`,
           fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
           createdAt: formatDateTimeForDisplay(movimiento.createdAt),
-          origen: movimiento.destinatarioRecinto ? ("RECINTO" as const) : movimiento.destinatarioExterno ? ("EXTERNO" as const) : ("PERSONAL" as const),
+          origen: movimiento.destinatarioRecinto
+            ? ("RECINTO" as const)
+            : movimiento.destinatarioExterno
+              ? ("EXTERNO" as const)
+              : ("PERSONAL" as const),
           tipo: movimiento.tipo,
           afectaStock: true,
           comentarios: movimiento.observaciones,
           totalUnidades: movimiento.equipos.reduce((total, equipo) => total + equipo.cantidad, 0),
           ci: destinatario.ci,
           persona: destinatario.etiqueta,
-          registradoPor: auditUserByEntity.get(`REGISTRO:${movimiento.movimientoId.toString()}`) ?? null,
+          registradoPor:
+            auditUserByEntity.get(`REGISTRO:${movimiento.movimientoId.toString()}`) ?? null,
           equipos: movimiento.equipos.map((equipo) => ({
             equipoId: equipo.equipo.equipoId.toString(),
             nombre: equipo.equipo.nombre,
@@ -394,10 +416,14 @@ export async function GET(req: Request) {
 
     const historialPrestamos: StockHistorialInternalEntry[] = prestamos.flatMap((prestamo) => {
       const destinatario = formatPrestamoDestinatario(prestamo);
-      const totalUnidades = prestamo.equipos.reduce((acumulado, equipo) => acumulado + equipo.cantidad, 0);
-      const usuarioEntregaLabel = `${rangoAbreviacionLabel(prestamo.usuarioEntrega.rango, "")} ${prestamo.usuarioEntrega.apellido}, ${prestamo.usuarioEntrega.nombre}`
-        .replace(/\s+/g, " ")
-        .trim();
+      const totalUnidades = prestamo.equipos.reduce(
+        (acumulado, equipo) => acumulado + equipo.cantidad,
+        0
+      );
+      const usuarioEntregaLabel =
+        `${rangoAbreviacionLabel(prestamo.usuarioEntrega.rango, "")} ${prestamo.usuarioEntrega.apellido}, ${prestamo.usuarioEntrega.nombre}`
+          .replace(/\s+/g, " ")
+          .trim();
       const usuarioRecibeLabel = prestamo.prestamoHistorial?.usuarioRecibeDevolucion
         ? `${rangoAbreviacionLabel(prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango, "")} ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.apellido}, ${prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre}`
             .replace(/\s+/g, " ")
@@ -439,7 +465,10 @@ export async function GET(req: Request) {
         totalUnidades,
         ci: destinatario.ci || null,
         persona: destinatario.etiqueta,
-        registradoPor: usuarioRecibeLabel || prestamo.prestamoHistorial.usuarioRecibeDevolucion?.username || null,
+        registradoPor:
+          usuarioRecibeLabel ||
+          prestamo.prestamoHistorial.usuarioRecibeDevolucion?.username ||
+          null,
         equipos: prestamo.equipos.map((equipo) => ({
           equipoId: equipo.equipo.equipoId.toString(),
           nombre: equipo.equipo.nombre,
@@ -484,7 +513,9 @@ export async function GET(req: Request) {
     generatedAt: formatDateTimeForDisplay(new Date()),
     resumen,
     historial,
-    prestamos: includePrestamos ? prestamos.map((prestamo) => serializePrestamoWithActuante(prestamo, actuanteByMovimientoId)) : [],
+    prestamos: includePrestamos
+      ? prestamos.map((prestamo) => serializePrestamoWithActuante(prestamo, actuanteByMovimientoId))
+      : [],
   };
 
   return NextResponse.json(data);
@@ -494,12 +525,18 @@ export async function POST(req: Request) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
   if (!hasStockDelegates()) {
-    return NextResponse.json({ error: "El cliente Prisma de stock no esta listo. Reinicia el servidor de desarrollo." }, { status: 503 });
+    return NextResponse.json(
+      { error: "El cliente Prisma de stock no esta listo. Reinicia el servidor de desarrollo." },
+      { status: 503 }
+    );
   }
 
   const body = await req.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. Revisa tipo, fecha e equipos." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Payload invalido. Revisa tipo, fecha e equipos." },
+      { status: 400 }
+    );
   }
 
   const tipo = parseTipoStockOperacion(body.tipo);
@@ -517,7 +554,10 @@ export async function POST(req: Request) {
       equipoId: parseBigIntId(equipo.equipoId),
       cantidad: parseCantidad(equipo.cantidad),
     }))
-    .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{ equipoId: bigint; cantidad: number }>;
+    .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{
+    equipoId: bigint;
+    cantidad: number;
+  }>;
 
   if (parsedItems.length === 0) {
     return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
@@ -540,7 +580,9 @@ export async function POST(req: Request) {
   }
 
   const comentarios = body.comentarios?.trim() || null;
-  const itemNombrePorId = new Map(equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
+  const itemNombrePorId = new Map(
+    equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre])
+  );
   const itemsDetallados = Array.from(dedupedItems.entries()).map(([equipoId, cantidad]) => ({
     equipoId,
     nombre: itemNombrePorId.get(equipoId) ?? "Equipo sin nombre",
@@ -599,14 +641,20 @@ export async function POST(req: Request) {
           rol: auth.user.rol,
         },
         `${tipo} de stock (${totalUnidades} unidades).`,
-        "/",
+        "/"
       );
     } catch {
       // No bloquear stock por fallas de push.
     }
 
-    return NextResponse.json({ ok: true, stockOperacionId: created.stockOperacionId.toString() }, { status: 201 });
+    return NextResponse.json(
+      { ok: true, stockOperacionId: created.stockOperacionId.toString() },
+      { status: 201 }
+    );
   } catch {
-    return NextResponse.json({ error: "No se pudo registrar la operacion de stock." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo registrar la operacion de stock." },
+      { status: 500 }
+    );
   }
 }

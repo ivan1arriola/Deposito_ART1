@@ -38,7 +38,10 @@ export async function POST(request: Request) {
   const auth = await authorizeRequest(request, "manage_users");
   if (!auth.ok) return auth.response;
   if (!isAdminRole(auth.user.rol)) {
-    return NextResponse.json({ error: "Solo el administrador puede suscribirse a notificaciones." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Solo el administrador puede suscribirse a notificaciones." },
+      { status: 403 }
+    );
   }
 
   const body = await request.json();
@@ -54,7 +57,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "No se pudo guardar la suscripcion. Verifica migracion web_push_subscription." },
-      { status: 503 },
+      { status: 503 }
     );
   }
 }
@@ -63,7 +66,10 @@ export async function DELETE(request: Request) {
   const auth = await authorizeRequest(request, "manage_users");
   if (!auth.ok) return auth.response;
   if (!isAdminRole(auth.user.rol)) {
-    return NextResponse.json({ error: "Solo el administrador puede desuscribirse." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Solo el administrador puede desuscribirse." },
+      { status: 403 }
+    );
   }
 
   const body = await request.json();
@@ -78,7 +84,7 @@ export async function DELETE(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "No se pudo desactivar la suscripcion. Verifica migracion web_push_subscription." },
-      { status: 503 },
+      { status: 503 }
     );
   }
 }

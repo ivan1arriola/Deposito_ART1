@@ -1,5 +1,9 @@
 import type { TipoEquipo } from "@/types/entities";
-import { GENERAL_TIPO_EQUIPO_CLAVE, GENERAL_TIPO_EQUIPO_NOMBRE, GENERAL_TIPO_EQUIPO_ORDEN } from "@/lib/equipo-tipos";
+import {
+  GENERAL_TIPO_EQUIPO_CLAVE,
+  GENERAL_TIPO_EQUIPO_NOMBRE,
+  GENERAL_TIPO_EQUIPO_ORDEN,
+} from "@/lib/equipo-tipos";
 
 type EquipoTipoLike = {
   tipo: TipoEquipo;
@@ -24,7 +28,9 @@ type EquipoTipoSection<T> = {
 
 function resolveTipoOrder(equipo: EquipoTipoLike | TipoEquipo) {
   if (typeof equipo === "string") {
-    return equipo === GENERAL_TIPO_EQUIPO_CLAVE ? GENERAL_TIPO_EQUIPO_ORDEN : Number.MAX_SAFE_INTEGER;
+    return equipo === GENERAL_TIPO_EQUIPO_CLAVE
+      ? GENERAL_TIPO_EQUIPO_ORDEN
+      : Number.MAX_SAFE_INTEGER;
   }
   if (typeof equipo.tipoOrden === "number" && Number.isFinite(equipo.tipoOrden)) {
     return equipo.tipoOrden;
@@ -34,7 +40,10 @@ function resolveTipoOrder(equipo: EquipoTipoLike | TipoEquipo) {
 }
 
 function resolveTipoLabel(equipo: EquipoTipoLike) {
-  return equipo.tipoLabel?.trim() || (equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? GENERAL_TIPO_EQUIPO_NOMBRE : equipo.tipo);
+  return (
+    equipo.tipoLabel?.trim() ||
+    (equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? GENERAL_TIPO_EQUIPO_NOMBRE : equipo.tipo)
+  );
 }
 
 export function compareEquipoNombre(left: string, right: string) {
@@ -44,9 +53,12 @@ export function compareEquipoNombre(left: string, right: string) {
 export function compareEquiposByTipoAndName<T extends EquipoNombreLike>(left: T, right: T) {
   const leftOrder = resolveTipoOrder(left);
   const rightOrder = resolveTipoOrder(right);
-  const byTipo = leftOrder !== rightOrder
-    ? leftOrder - rightOrder
-    : resolveTipoLabel(left).localeCompare(resolveTipoLabel(right), "es", { sensitivity: "base" });
+  const byTipo =
+    leftOrder !== rightOrder
+      ? leftOrder - rightOrder
+      : resolveTipoLabel(left).localeCompare(resolveTipoLabel(right), "es", {
+          sensitivity: "base",
+        });
   if (byTipo !== 0) return byTipo;
   return compareEquipoNombre(left.nombre, right.nombre);
 }
@@ -54,15 +66,20 @@ export function compareEquiposByTipoAndName<T extends EquipoNombreLike>(left: T,
 export function compareEquiposByTipoAndOrder<T extends EquipoOrdenLike>(left: T, right: T) {
   const leftOrder = resolveTipoOrder(left);
   const rightOrder = resolveTipoOrder(right);
-  const byTipo = leftOrder !== rightOrder
-    ? leftOrder - rightOrder
-    : resolveTipoLabel(left).localeCompare(resolveTipoLabel(right), "es", { sensitivity: "base" });
+  const byTipo =
+    leftOrder !== rightOrder
+      ? leftOrder - rightOrder
+      : resolveTipoLabel(left).localeCompare(resolveTipoLabel(right), "es", {
+          sensitivity: "base",
+        });
   if (byTipo !== 0) return byTipo;
   if (left.ordenPdf !== right.ordenPdf) return left.ordenPdf - right.ordenPdf;
   return compareEquipoNombre(left.nombre, right.nombre);
 }
 
-export function groupEquiposByTipo<T extends EquipoTipoLike>(equipos: T[]): Array<EquipoTipoSection<T>> {
+export function groupEquiposByTipo<T extends EquipoTipoLike>(
+  equipos: T[]
+): Array<EquipoTipoSection<T>> {
   const grouped = new Map<TipoEquipo, EquipoTipoSection<T>>();
 
   for (const equipo of equipos) {

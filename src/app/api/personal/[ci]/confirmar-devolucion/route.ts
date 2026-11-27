@@ -12,7 +12,8 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
   const { ci } = await context.params;
   const ciDecoded = decodeURIComponent(ci).trim();
   if (!ciDecoded) return NextResponse.json({ error: "CI inválida." }, { status: 400 });
-  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI inválida." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded))
+    return NextResponse.json({ error: "CI inválida." }, { status: 400 });
 
   try {
     const personalRecord = await prisma.personal.findUnique({
@@ -31,11 +32,12 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
 
     await prisma.$transaction(async (tx) => {
       // 1. Create history record
-      const tipo = personalRecord.rango.tipo === TipoPersonal.SUBALTERNO
-        ? "SUBALTERNO"
-        : personalRecord.rango.tipo === TipoPersonal.OFICIAL
-          ? "OFICIAL"
-          : "SUBOFICIAL";
+      const tipo =
+        personalRecord.rango.tipo === TipoPersonal.SUBALTERNO
+          ? "SUBALTERNO"
+          : personalRecord.rango.tipo === TipoPersonal.OFICIAL
+            ? "OFICIAL"
+            : "SUBOFICIAL";
 
       await tx.personalHistorial.create({
         data: {
@@ -52,8 +54,14 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
           fechaIngreso: personalRecord.fechaIngreso ?? null,
           fechaIngresoOriginal: personalRecord.fechaIngresoOriginal ?? null,
           bateriaId: personalRecord.bateriaId ?? null,
-          tallas: personalRecord.tallas.map(t => ({ tipo: t.tallaTipo.nombre, valor: t.tallaValor })),
-          observaciones: personalRecord.observaciones.map(o => ({ texto: o.texto, fecha: o.fecha })),
+          tallas: personalRecord.tallas.map((t) => ({
+            tipo: t.tallaTipo.nombre,
+            valor: t.tallaValor,
+          })),
+          observaciones: personalRecord.observaciones.map((o) => ({
+            texto: o.texto,
+            fecha: o.fecha,
+          })),
         },
       });
 
@@ -66,9 +74,7 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
       await tx.movimiento.deleteMany({
         where: { destinatarioPersonal: { is: { ci: ciDecoded } } },
       });
-      
-      
-      
+
       await tx.personal.delete({ where: { ci: ciDecoded } });
     });
 
@@ -88,6 +94,9 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.log("Error al confirmar devolución y baja:", error);
-    return NextResponse.json({ error: "No se pudo confirmar la baja del personal." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo confirmar la baja del personal." },
+      { status: 500 }
+    );
   }
 }

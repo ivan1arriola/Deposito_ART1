@@ -4,12 +4,7 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { buildSubalternoPersonalData } from "@/lib/personal-subalterno-data";
 import { invalidateRangoTipoCountCache, getTallaTipoIdMap } from "@/lib/reference-data-cache";
-import {
-  type Prisma,
-  TipoArticulo,
-  TipoMovimiento,
-  TipoPersonal,
-} from "@/generated/prisma/client";
+import { type Prisma, TipoArticulo, TipoMovimiento, TipoPersonal } from "@/generated/prisma/client";
 import type { TallaKey } from "@/lib/tallas";
 
 type UndoTalla = {
@@ -221,9 +216,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
           });
         } else if (entidad === "PERSONAL") {
           await tx.personalTalla.deleteMany({ where: { ci: entidadId } });
-          
-          
-          
+
           await tx.observacion.deleteMany({ where: { ci: entidadId } });
           await tx.personal.delete({ where: { ci: entidadId } });
         } else if (entidad === "OBSERVACION") {
@@ -310,7 +303,10 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
                 tallaValor: t.valor,
               };
             })
-            .filter((equipo): equipo is { ci: string; tallaTipoId: number; tallaValor: string } => equipo !== null);
+            .filter(
+              (equipo): equipo is { ci: string; tallaTipoId: number; tallaValor: string } =>
+                equipo !== null
+            );
 
           if (tallasToCreate.length > 0) {
             await tx.personalTalla.createMany({
@@ -581,7 +577,9 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
                   tipo: sm.tipo,
                   cantidad: sm.cantidad,
                   comentario: sm.comentario,
-                  articuloEntregaPersonalId: sm.articuloEntregaPersonalId ? BigInt(sm.articuloEntregaPersonalId) : null,
+                  articuloEntregaPersonalId: sm.articuloEntregaPersonalId
+                    ? BigInt(sm.articuloEntregaPersonalId)
+                    : null,
                   createdAt: new Date(sm.createdAt),
                 },
               });
@@ -613,7 +611,8 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
             if (existingActive) throw new Error("ALREADY_ACTIVE");
 
             const tallas = (historyRecord.tallas as Array<{ tipo: string; valor: string }>) || [];
-            const observaciones = (historyRecord.observaciones as Array<{ texto: string; fecha: string }>) || [];
+            const observaciones =
+              (historyRecord.observaciones as Array<{ texto: string; fecha: string }>) || [];
             const tallaTipoMap = await getTallaTipoIdMap();
 
             await tx.personal.create({
@@ -637,11 +636,8 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
             });
 
             if (historyRecord.tipo === "SUBALTERNO") {
-              
             } else if (historyRecord.tipo === "OFICIAL") {
-              
             } else {
-              
             }
 
             if (tallas.length > 0) {
@@ -655,7 +651,10 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
                     tallaValor: t.valor,
                   };
                 })
-                .filter((equipo): equipo is { ci: string; tallaTipoId: number; tallaValor: string } => equipo !== null);
+                .filter(
+                  (equipo): equipo is { ci: string; tallaTipoId: number; tallaValor: string } =>
+                    equipo !== null
+                );
 
               if (tallasToCreate.length > 0) {
                 await tx.personalTalla.createMany({
@@ -723,31 +722,55 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
   } catch (error: unknown) {
     if (error instanceof Error) {
       if (error.message === "AUDIT_NOT_FOUND") {
-        return NextResponse.json({ error: "Registro de auditoría no encontrado." }, { status: 404 });
+        return NextResponse.json(
+          { error: "Registro de auditoría no encontrado." },
+          { status: 404 }
+        );
       }
       if (error.message === "UNDO_EXPIRED") {
-        return NextResponse.json({ error: "El límite de 5 días para deshacer este cambio ha expirado." }, { status: 400 });
+        return NextResponse.json(
+          { error: "El límite de 5 días para deshacer este cambio ha expirado." },
+          { status: 400 }
+        );
       }
       if (error.message === "NO_PREVIOUS_STATE") {
-        return NextResponse.json({ error: "No hay estado previo registrado para deshacer este cambio." }, { status: 400 });
+        return NextResponse.json(
+          { error: "No hay estado previo registrado para deshacer este cambio." },
+          { status: 400 }
+        );
       }
       if (error.message === "NOT_FOUND_IN_TRASH") {
-        return NextResponse.json({ error: "El elemento ya no se encuentra en la papelera para ser restaurado." }, { status: 410 });
+        return NextResponse.json(
+          { error: "El elemento ya no se encuentra en la papelera para ser restaurado." },
+          { status: 410 }
+        );
       }
       if (error.message === "DUPLICATE_NAME") {
         return NextResponse.json(
-          { error: "Ya existe un elemento activo con ese nombre. Cambia el nombre para evitar conflictos." },
+          {
+            error:
+              "Ya existe un elemento activo con ese nombre. Cambia el nombre para evitar conflictos.",
+          },
           { status: 409 }
         );
       }
       if (error.message === "ALREADY_ACTIVE") {
-        return NextResponse.json({ error: "El personal ya se encuentra activo en el sistema." }, { status: 409 });
+        return NextResponse.json(
+          { error: "El personal ya se encuentra activo en el sistema." },
+          { status: 409 }
+        );
       }
       if (error.message === "UNSUPPORTED_UNDO_ENTITY") {
-        return NextResponse.json({ error: "Esta entidad no soporta la función de deshacer." }, { status: 400 });
+        return NextResponse.json(
+          { error: "Esta entidad no soporta la función de deshacer." },
+          { status: 400 }
+        );
       }
     }
     console.log("Error en Deshacer Auditoría:", error);
-    return NextResponse.json({ error: "Error interno al deshacer la acción de auditoría." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error interno al deshacer la acción de auditoría." },
+      { status: 500 }
+    );
   }
 }

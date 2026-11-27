@@ -21,7 +21,7 @@ export function OficialesSuboficialesResumenView({
 }: OficialesSuboficialesResumenViewProps) {
   const registros = useMemo(
     () => oficialesSuboficiales.filter((registro) => registro.tipo === viewType),
-    [oficialesSuboficiales, viewType],
+    [oficialesSuboficiales, viewType]
   );
 
   const typeLabel = viewType === "OFICIAL" ? "oficiales" : "suboficiales";
@@ -55,7 +55,7 @@ export function OficialesSuboficialesResumenView({
           }),
         };
       }),
-    [registros],
+    [registros]
   );
 
   return (
@@ -89,10 +89,15 @@ export function OficialesSuboficialesResumenView({
       <article className="ej-card rounded-2xl p-4">
         <div className="space-y-4">
           {tallasResumen.map((section) => (
-            <article key={`resumen-${section.key}`} className="rounded-xl border border-stone-200 bg-white p-3">
+            <article
+              key={`resumen-${section.key}`}
+              className="rounded-xl border border-stone-200 bg-white p-3"
+            >
               <h3 className="text-sm font-semibold text-stone-900">{section.label}</h3>
               {section.rows.length === 0 ? (
-                <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">Sin datos.</p>
+                <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">
+                  Sin datos.
+                </p>
               ) : (
                 <div className="mt-2 overflow-auto rounded-lg border border-stone-200">
                   <table className="w-full table-fixed border-collapse text-left text-xs">
@@ -102,7 +107,9 @@ export function OficialesSuboficialesResumenView({
                     </colgroup>
                     <thead>
                       <tr className="bg-stone-100">
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                          Talla
+                        </th>
                         <th className="border-b border-stone-200 px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-stone-600">
                           {typeColumnLabel}
                         </th>
@@ -110,9 +117,16 @@ export function OficialesSuboficialesResumenView({
                     </thead>
                     <tbody>
                       {section.rows.map((row, index) => (
-                        <tr key={`${section.key}-${row.talla}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.talla}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-right text-sm font-semibold tabular-nums text-stone-900">{row.cantidad}</td>
+                        <tr
+                          key={`${section.key}-${row.talla}`}
+                          className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}
+                        >
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">
+                            {row.talla}
+                          </td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-right text-sm font-semibold tabular-nums text-stone-900">
+                            {row.cantidad}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

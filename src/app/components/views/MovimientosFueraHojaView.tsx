@@ -20,28 +20,46 @@ type MovimientosFueraHojaResponse = {
 
 type MovimientosFueraHojaViewProps = {
   canWrite: boolean;
-  onOpenRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION", options?: { incluirFueraDeHoja?: boolean }) => void;
+  onOpenRegistro: (
+    ci: string,
+    tipo: "ENTREGA" | "DEVOLUCION",
+    options?: { incluirFueraDeHoja?: boolean }
+  ) => void;
 };
 
-export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: MovimientosFueraHojaViewProps) {
+export function MovimientosFueraHojaView({
+  canWrite,
+  onOpenRegistro,
+}: MovimientosFueraHojaViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [rows, setRows] = useState<MovimientoFueraHojaViewRow[]>([]);
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<MovimientosFueraHojaSortField>(DEFAULT_MOVIMIENTOS_FUERA_HOJA_SORT.field);
-  const [sortDirection, setSortDirection] = useState<MovimientosFueraHojaSortDirection>(DEFAULT_MOVIMIENTOS_FUERA_HOJA_SORT.direction);
+  const [sortField, setSortField] = useState<MovimientosFueraHojaSortField>(
+    DEFAULT_MOVIMIENTOS_FUERA_HOJA_SORT.field
+  );
+  const [sortDirection, setSortDirection] = useState<MovimientosFueraHojaSortDirection>(
+    DEFAULT_MOVIMIENTOS_FUERA_HOJA_SORT.direction
+  );
 
   const loadRows = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/hojas-de-entrega/movimientos-fuera-hoja?ts=${Date.now()}`, {
-        cache: "no-store",
-      });
+      const response = await fetch(
+        `/api/hojas-de-entrega/movimientos-fuera-hoja?ts=${Date.now()}`,
+        {
+          cache: "no-store",
+        }
+      );
       const payload = (await response.json()) as MovimientosFueraHojaResponse | { error?: string };
       if (!response.ok) {
-        throw new Error(typeof payload === "object" && payload && "error" in payload ? payload.error || "Error" : "Error");
+        throw new Error(
+          typeof payload === "object" && payload && "error" in payload
+            ? payload.error || "Error"
+            : "Error"
+        );
       }
 
       const data = payload as MovimientosFueraHojaResponse;
@@ -61,15 +79,27 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
   const rowSearchIndex = useMemo(
     () =>
       buildSearchIndex(rows, {
-        text: (row) => [row.fecha, row.tipo, row.ci, row.gradoAbreviacion, row.persona, row.equipo, row.observaciones || ""].join(" "),
+        text: (row) =>
+          [
+            row.fecha,
+            row.tipo,
+            row.ci,
+            row.gradoAbreviacion,
+            row.persona,
+            row.equipo,
+            row.observaciones || "",
+          ].join(" "),
       }),
-    [rows],
+    [rows]
   );
   const filteredRows = useMemo(() => {
     return filterSearchIndex(rowSearchIndex, search);
   }, [rowSearchIndex, search]);
   const sortedRows = useMemo(() => {
-    return sortMovimientosFueraHojaRows(filteredRows, { field: sortField, direction: sortDirection });
+    return sortMovimientosFueraHojaRows(filteredRows, {
+      field: sortField,
+      direction: sortDirection,
+    });
   }, [filteredRows, sortField, sortDirection]);
 
   return (
@@ -77,7 +107,9 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
       <article className="ej-card rounded-2xl p-4">
         <div className="flex flex-wrap equipos-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-stone-900">Movimientos fuera de hoja de entrega</h2>
+            <h2 className="text-base font-semibold text-stone-900">
+              Movimientos fuera de hoja de entrega
+            </h2>
             <p className="mt-1 text-xs text-stone-600">
               Listado global de movimientos de equipos no incluidos en la hoja de entrega principal.
             </p>
@@ -144,7 +176,9 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
             placeholder="Buscar por CI, persona, equipo, fecha u observaciones"
             className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
           />
-          <p className="text-xs font-semibold text-stone-600">Mostrando {sortedRows.length} de {rows.length}</p>
+          <p className="text-xs font-semibold text-stone-600">
+            Mostrando {sortedRows.length} de {rows.length}
+          </p>
         </div>
 
         <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,220px)_minmax(0,220px)_1fr] md:equipos-center">
@@ -152,7 +186,9 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
             Ordenar por
             <select
               value={sortField}
-              onChange={(event) => setSortField(event.target.value as MovimientosFueraHojaSortField)}
+              onChange={(event) =>
+                setSortField(event.target.value as MovimientosFueraHojaSortField)
+              }
               className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
             >
               <option value="fecha">Fecha</option>
@@ -165,7 +201,9 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
             Dirección
             <select
               value={sortDirection}
-              onChange={(event) => setSortDirection(event.target.value as MovimientosFueraHojaSortDirection)}
+              onChange={(event) =>
+                setSortDirection(event.target.value as MovimientosFueraHojaSortDirection)
+              }
               className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
             >
               <option value="asc">Ascendente</option>
@@ -174,7 +212,11 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
           </label>
         </div>
 
-        {error ? <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
+        {error ? (
+          <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+            {error}
+          </p>
+        ) : null}
 
         {loading && rows.length === 0 ? (
           <LoadingInline
@@ -185,7 +227,9 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
         ) : null}
 
         {!loading && !error && sortedRows.length === 0 ? (
-          <p className="mt-3 text-xs text-stone-600">No hay movimientos para mostrar con el filtro actual.</p>
+          <p className="mt-3 text-xs text-stone-600">
+            No hay movimientos para mostrar con el filtro actual.
+          </p>
         ) : null}
       </article>
 
@@ -195,34 +239,73 @@ export function MovimientosFueraHojaView({ canWrite, onOpenRegistro }: Movimient
             <table className="w-full min-w-[1060px] border-collapse text-left text-xs">
               <thead>
                 <tr className="bg-stone-100">
-                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Fecha</th>
-                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Tipo</th>
-                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">CI</th>
-                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Grado</th>
-                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Persona</th>
-                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Equipo</th>
-                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Cantidad</th>
-                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Observaciones</th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                    Fecha
+                  </th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                    Tipo
+                  </th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                    CI
+                  </th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                    Grado
+                  </th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                    Persona
+                  </th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                    Equipo
+                  </th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                    Cantidad
+                  </th>
+                  <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                    Observaciones
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {sortedRows.map((row, index) => (
-                  <tr key={`${row.movimientoId}-${row.equipo}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.fecha}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.tipo}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.ci}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.gradoAbreviacion}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.persona}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">{row.equipo}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.cantidad}</td>
-                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-700">{row.observaciones || "-"}</td>
+                  <tr
+                    key={`${row.movimientoId}-${row.equipo}-${index}`}
+                    className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}
+                  >
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">
+                      {row.fecha}
+                    </td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">
+                      {row.tipo}
+                    </td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">
+                      {row.ci}
+                    </td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">
+                      {row.gradoAbreviacion}
+                    </td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">
+                      {row.persona}
+                    </td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-800">
+                      {row.equipo}
+                    </td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">
+                      {row.cantidad}
+                    </td>
+                    <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-700">
+                      {row.observaciones || "-"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {generatedAt ? <p className="mt-3 text-xs text-stone-500">Generado: {formatDateTimeForDisplay(generatedAt)}</p> : null}
+          {generatedAt ? (
+            <p className="mt-3 text-xs text-stone-500">
+              Generado: {formatDateTimeForDisplay(generatedAt)}
+            </p>
+          ) : null}
         </article>
       ) : null}
     </section>

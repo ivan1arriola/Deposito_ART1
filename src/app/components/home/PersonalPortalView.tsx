@@ -67,7 +67,9 @@ export function PersonalPortalView({
   const personalCi = currentUser.personalCi ?? (Number.isFinite(fallbackCi) ? fallbackCi : null);
   const personalCiText = personalCi !== null ? String(personalCi) : "";
   const personalCiLabel = personalCiText !== "" ? formatUruguayanCi(personalCiText) : "Sin CI";
-  const personalFullName = `${currentUser.apellido}, ${currentUser.nombre}`.replace(/\s+/g, " ").trim();
+  const personalFullName = `${currentUser.apellido}, ${currentUser.nombre}`
+    .replace(/\s+/g, " ")
+    .trim();
   const personalProfileState: PersonaProfileState = personalSelfProfile ?? {
     identity: {
       ci: personalCiText,
@@ -106,8 +108,12 @@ export function PersonalPortalView({
       <section className="ej-card rounded-2xl p-4">
         <div className="flex flex-wrap equipos-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-black tracking-tight text-[var(--color-text-primary)]">Portal de Personal</h1>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Acceso de solo consulta a tu información.</p>
+            <h1 className="text-xl font-black tracking-tight text-[var(--color-text-primary)]">
+              Portal de Personal
+            </h1>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              Acceso de solo consulta a tu información.
+            </p>
             <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
               {`${currentUser.grado} ${personalFullName} · CI ${personalCiLabel}`}
             </p>

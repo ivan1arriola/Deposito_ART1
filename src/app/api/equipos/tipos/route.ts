@@ -2,8 +2,16 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import { buildEquipoTipoOptions, GENERAL_TIPO_EQUIPO_CLAVE, normalizeEquipoTipoClave } from "@/lib/equipo-tipos";
-import { applyTipoEquipoOrder, getOrderedTipoEquipoIds, insertTipoEquipoAtOrder } from "@/lib/tipo-equipo-ordering";
+import {
+  buildEquipoTipoOptions,
+  GENERAL_TIPO_EQUIPO_CLAVE,
+  normalizeEquipoTipoClave,
+} from "@/lib/equipo-tipos";
+import {
+  applyTipoEquipoOrder,
+  getOrderedTipoEquipoIds,
+  insertTipoEquipoAtOrder,
+} from "@/lib/tipo-equipo-ordering";
 
 type TipoEquipoPayload = {
   nombre?: string;
@@ -42,7 +50,10 @@ export async function GET(request: Request) {
   try {
     return NextResponse.json(await loadTiposEquipo());
   } catch {
-    return NextResponse.json({ error: "No se pudieron cargar los tipos de equipo." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudieron cargar los tipos de equipo." },
+      { status: 500 }
+    );
   }
 }
 
@@ -55,10 +66,18 @@ export async function POST(request: Request) {
   const orden = parseOrden(body?.orden);
   const clave = buildClaveFromNombre(nombre);
 
-  if (!nombre || !clave || clave === GENERAL_TIPO_EQUIPO_CLAVE || body?.orden !== undefined && orden === null) {
+  if (
+    !nombre ||
+    !clave ||
+    clave === GENERAL_TIPO_EQUIPO_CLAVE ||
+    (body?.orden !== undefined && orden === null)
+  ) {
     return NextResponse.json(
-      { error: "Payload inválido. 'nombre' es obligatorio, no puede resolver a GENERAL y 'orden' debe ser entero positivo." },
-      { status: 400 },
+      {
+        error:
+          "Payload inválido. 'nombre' es obligatorio, no puede resolver a GENERAL y 'orden' debe ser entero positivo.",
+      },
+      { status: 400 }
     );
   }
 
@@ -109,8 +128,16 @@ export async function POST(request: Request) {
 
     return NextResponse.json(await loadTiposEquipo(), { status: 201 });
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-      return NextResponse.json({ error: "Ya existe un tipo de equipo con ese nombre." }, { status: 409 });
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "Ya existe un tipo de equipo con ese nombre." },
+        { status: 409 }
+      );
     }
     return NextResponse.json({ error: "No se pudo crear el tipo de equipo." }, { status: 500 });
   }

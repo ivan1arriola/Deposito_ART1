@@ -20,11 +20,11 @@ export const prestamoInclude = {
             },
           },
           bateria: {
-                            select: {
-                              nombre: true,
-                              orden: true,
-                            },
-                          },
+            select: {
+              nombre: true,
+              orden: true,
+            },
+          },
         },
       },
     },
@@ -119,11 +119,15 @@ function formatUserLabel(user: {
   nombre: string;
   username: string;
 }) {
-  return `${rangoAbreviacionLabel(user.rango, "")} ${user.apellido}, ${user.nombre}`.replace(/\s+/g, " ").trim() || user.username;
+  return (
+    `${rangoAbreviacionLabel(user.rango, "")} ${user.apellido}, ${user.nombre}`
+      .replace(/\s+/g, " ")
+      .trim() || user.username
+  );
 }
 
 export function formatPrestamoDestinatario(
-  data: Pick<PrestamoWithRelations, "destinatarioPersonal" | "destinatarioExterno">,
+  data: Pick<PrestamoWithRelations, "destinatarioPersonal" | "destinatarioExterno">
 ): PrestamoDestinatarioResumen {
   const destinatario = resolveDestinatarioMovimiento(data);
   if (destinatario && destinatario.tipo !== "RECINTO") {
@@ -158,7 +162,7 @@ export function formatPrestamoDestinatario(
 
 export function serializePrestamoWithActuante(
   prestamo: PrestamoWithRelations,
-  actuanteByMovimientoId?: PrestamoActuanteByMovimientoId,
+  actuanteByMovimientoId?: PrestamoActuanteByMovimientoId
 ): PrestamoStockEntry {
   const destinatario = formatPrestamoDestinatario(prestamo);
   const estado = prestamo.prestamoHistorial ? "DEVUELTO" : "PENDIENTE";

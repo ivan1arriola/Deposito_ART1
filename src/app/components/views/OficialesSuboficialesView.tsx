@@ -36,7 +36,7 @@ export function OficialesSuboficialesView({
 }: OficialesSuboficialesViewProps) {
   const registros = useMemo(
     () => oficialesSuboficiales.filter((registro) => registro.tipo === viewType),
-    [oficialesSuboficiales, viewType],
+    [oficialesSuboficiales, viewType]
   );
 
   const tallasResumen = useMemo(
@@ -67,7 +67,7 @@ export function OficialesSuboficialesView({
           }),
         };
       }),
-    [registros],
+    [registros]
   );
 
   const createLabel = viewType === "OFICIAL" ? "Registrar oficial" : "Registrar suboficial";
@@ -131,8 +131,13 @@ export function OficialesSuboficialesView({
               {registros.map((registro) => {
                 const talles = tallasMap(registro.tallas);
                 return (
-                  <article key={`mobile-${viewType}-${registro.ci}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                    <p className="text-xs font-mono text-stone-600">{formatUruguayanCi(registro.ci)}</p>
+                  <article
+                    key={`mobile-${viewType}-${registro.ci}`}
+                    className="rounded-xl border border-stone-200 bg-stone-50 p-3"
+                  >
+                    <p className="text-xs font-mono text-stone-600">
+                      {formatUruguayanCi(registro.ci)}
+                    </p>
                     <p className="mt-1 text-sm font-semibold text-stone-900">
                       {registro.apellido}, {registro.nombre}
                     </p>
@@ -141,8 +146,13 @@ export function OficialesSuboficialesView({
                     </p>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       {tallasEntries(talles).map((entry) => (
-                        <div key={`mobile-talla-${registro.ci}-${entry.key}`} className="rounded-md border border-stone-200 bg-white px-2 py-2">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">{entry.label}</p>
+                        <div
+                          key={`mobile-talla-${registro.ci}-${entry.key}`}
+                          className="rounded-md border border-stone-200 bg-white px-2 py-2"
+                        >
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+                            {entry.label}
+                          </p>
                           <p className="mt-1 text-sm font-bold text-stone-900">{entry.value}</p>
                         </div>
                       ))}
@@ -174,34 +184,73 @@ export function OficialesSuboficialesView({
               <table className="w-full min-w-max border-collapse text-left text-xs">
                 <thead>
                   <tr className="bg-stone-100">
-                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">CI</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Apellido</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Nombre</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Grado</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Parka</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Camisaco</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Pantalon</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Kepi</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Calzado</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-stone-600">Acciones</th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      CI
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Apellido
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Nombre
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Grado
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Parka
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Camisaco
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Pantalon
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Kepi
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Calzado
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {registros.map((registro, index) => {
                     const talles = tallasMap(registro.tallas);
                     return (
-                      <tr key={`desktop-${viewType}-${registro.ci}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                        <td className="border-b border-stone-200 px-3 py-3 font-mono text-xs text-stone-700">{formatUruguayanCi(registro.ci)}</td>
-                        <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">{registro.apellido}</td>
-                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">{registro.nombre}</td>
+                      <tr
+                        key={`desktop-${viewType}-${registro.ci}`}
+                        className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}
+                      >
+                        <td className="border-b border-stone-200 px-3 py-3 font-mono text-xs text-stone-700">
+                          {formatUruguayanCi(registro.ci)}
+                        </td>
+                        <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">
+                          {registro.apellido}
+                        </td>
+                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">
+                          {registro.nombre}
+                        </td>
                         <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">
                           {registro.gradoMando.abreviacion} - {registro.gradoMando.nombreCompleto}
                         </td>
-                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">{talles.PARKA}</td>
-                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">{talles.CAMISACO}</td>
-                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">{talles.PANTALON}</td>
-                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">{talles.KEPI}</td>
-                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">{talles.CALZADO}</td>
+                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">
+                          {talles.PARKA}
+                        </td>
+                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">
+                          {talles.CAMISACO}
+                        </td>
+                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">
+                          {talles.PANTALON}
+                        </td>
+                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">
+                          {talles.KEPI}
+                        </td>
+                        <td className="border-b border-stone-200 px-3 py-3 text-sm text-stone-900">
+                          {talles.CALZADO}
+                        </td>
                         <td className="border-b border-stone-200 px-3 py-3 text-right">
                           <div className="inline-flex flex-wrap justify-end gap-2">
                             <button
@@ -239,16 +288,23 @@ export function OficialesSuboficialesView({
         </div>
         <div className="space-y-4">
           {tallasResumen.map((section) => (
-            <article key={`resumen-${section.key}`} className="rounded-xl border border-stone-200 bg-white p-3">
+            <article
+              key={`resumen-${section.key}`}
+              className="rounded-xl border border-stone-200 bg-white p-3"
+            >
               <h4 className="text-sm font-semibold text-stone-900">{section.label}</h4>
               {section.rows.length === 0 ? (
-                <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">Sin datos.</p>
+                <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">
+                  Sin datos.
+                </p>
               ) : (
                 <div className="mt-2 overflow-auto rounded-lg border border-stone-200">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
                       <tr className="bg-stone-100">
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                          Talla
+                        </th>
                         <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
                           {TYPE_LABEL[viewType]}
                         </th>
@@ -256,9 +312,16 @@ export function OficialesSuboficialesView({
                     </thead>
                     <tbody>
                       {section.rows.map((row, index) => (
-                        <tr key={`${section.key}-${row.talla}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.talla}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.cantidad}</td>
+                        <tr
+                          key={`${section.key}-${row.talla}`}
+                          className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}
+                        >
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">
+                            {row.talla}
+                          </td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">
+                            {row.cantidad}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

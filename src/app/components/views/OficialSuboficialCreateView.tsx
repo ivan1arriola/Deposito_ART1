@@ -76,11 +76,15 @@ export function OficialSuboficialCreateView({
     form.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(form.telefonoContacto);
 
   const isEditMode = mode === "edit";
-  const headerTitle = isEditMode ? `Editar ${TYPE_LABEL[form.tipo].toLowerCase()}` : `Registrar ${TYPE_LABEL[form.tipo].toLowerCase()}`;
+  const headerTitle = isEditMode
+    ? `Editar ${TYPE_LABEL[form.tipo].toLowerCase()}`
+    : `Registrar ${TYPE_LABEL[form.tipo].toLowerCase()}`;
   const headerDescription = isEditMode
     ? "Actualiza datos personales, grado y talles del registro seleccionado."
     : "Registra personal de SS.OO y Suboficiales con su grado y tallas.";
-  const submitLabel = isEditMode ? "Guardar cambios" : `Registrar ${TYPE_LABEL[form.tipo].toLowerCase()}`;
+  const submitLabel = isEditMode
+    ? "Guardar cambios"
+    : `Registrar ${TYPE_LABEL[form.tipo].toLowerCase()}`;
 
   return (
     <section className="mt-6 space-y-4">
@@ -88,8 +92,12 @@ export function OficialSuboficialCreateView({
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">{headerTitle}</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">
+                Nueva vista
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">
+                {headerTitle}
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
                 {headerDescription}
               </p>
@@ -115,10 +123,14 @@ export function OficialSuboficialCreateView({
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
             <div className="space-y-4">
               <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
-                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Identidad</legend>
+                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">
+                  Identidad
+                </legend>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <label className="sm:col-span-2 xl:col-span-4">
-                    <span className="block text-xs font-medium text-stone-700">Cedula de identidad *</span>
+                    <span className="block text-xs font-medium text-stone-700">
+                      Cedula de identidad *
+                    </span>
                     <input
                       value={form.ci}
                       onChange={(event) => handleCiChange(event.target.value)}
@@ -136,12 +148,16 @@ export function OficialSuboficialCreateView({
                     {ciAlreadyExists && duplicateLabel ? (
                       <span className="mt-1 block text-[11px] font-medium text-rose-700">{`Cedula repetida: ${duplicateLabel}.`}</span>
                     ) : (
-                      <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
+                      <span className="mt-1 block text-[11px] text-stone-500">
+                        Sin puntos ni guion.
+                      </span>
                     )}
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">Primer apellido *</span>
+                    <span className="block text-xs font-medium text-stone-700">
+                      Primer apellido *
+                    </span>
                     <input
                       value={form.apellido1}
                       onChange={(event) => onChange("apellido1", event.target.value)}
@@ -151,7 +167,9 @@ export function OficialSuboficialCreateView({
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">Segundo apellido</span>
+                    <span className="block text-xs font-medium text-stone-700">
+                      Segundo apellido
+                    </span>
                     <input
                       value={form.apellido2}
                       onChange={(event) => onChange("apellido2", event.target.value)}
@@ -181,25 +199,35 @@ export function OficialSuboficialCreateView({
                   </label>
 
                   <label className="sm:col-span-2 xl:col-span-4">
-                    <span className="block text-xs font-medium text-stone-700">Celular de contacto</span>
+                    <span className="block text-xs font-medium text-stone-700">
+                      Celular de contacto
+                    </span>
                     <input
                       value={form.telefonoContacto}
                       onChange={(event) => onChange("telefonoContacto", event.target.value)}
                       placeholder="099123456 o +59899123456"
                       inputMode="tel"
                       className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${
-                        telefonoLooksValid ? "border-stone-300 bg-white" : "border-rose-600 bg-rose-50"
+                        telefonoLooksValid
+                          ? "border-stone-300 bg-white"
+                          : "border-rose-600 bg-rose-50"
                       }`}
                     />
-                    <span className={`mt-1 block text-[11px] ${telefonoLooksValid ? "text-stone-500" : "font-medium text-rose-700"}`}>
-                      {telefonoLooksValid ? "Opcional. Se guarda normalizado como celular uruguayo." : "Ingresa un celular uruguayo valido."}
+                    <span
+                      className={`mt-1 block text-[11px] ${telefonoLooksValid ? "text-stone-500" : "font-medium text-rose-700"}`}
+                    >
+                      {telefonoLooksValid
+                        ? "Opcional. Se guarda normalizado como celular uruguayo."
+                        : "Ingresa un celular uruguayo valido."}
                     </span>
                   </label>
                 </div>
               </fieldset>
 
               <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
-                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Destino</legend>
+                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">
+                  Destino
+                </legend>
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                   <label>
                     <span className="block text-xs font-medium text-stone-700">Tipo *</span>
@@ -238,7 +266,9 @@ export function OficialSuboficialCreateView({
               </fieldset>
 
               <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
-                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Tallas y medidas</legend>
+                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">
+                  Tallas y medidas
+                </legend>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {TALLA_KEYS.map((key) => (
                     <label key={key}>
@@ -264,7 +294,9 @@ export function OficialSuboficialCreateView({
             <aside className="space-y-4">
               <article className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
                 <h3 className="text-sm font-semibold text-stone-900">Estado del formulario</h3>
-                <p className="mt-1 text-xs leading-5 text-stone-600">Completa los campos obligatorios para habilitar el registro.</p>
+                <p className="mt-1 text-xs leading-5 text-stone-600">
+                  Completa los campos obligatorios para habilitar el registro.
+                </p>
 
                 {!canRegister ? (
                   <p className="mt-3 rounded-xl border border-amber-300/80 bg-amber-50 px-3 py-2 text-xs text-amber-900">
@@ -301,9 +333,12 @@ export function OficialSuboficialCreateView({
               </article>
 
               <article className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-ejercito-blue)] p-4 text-white shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">Alta inmediata</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">
+                  Alta inmediata
+                </p>
                 <p className="mt-3 text-sm leading-6 text-white/85">
-                  Al confirmar, el registro queda disponible en la vista de {TYPE_LABEL[form.tipo].toLowerCase()}.
+                  Al confirmar, el registro queda disponible en la vista de{" "}
+                  {TYPE_LABEL[form.tipo].toLowerCase()}.
                 </p>
 
                 <button

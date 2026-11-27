@@ -50,7 +50,12 @@ export function ThemeRegistry({ children, options = { key: "mui" } }: ThemeRegis
       }
     }
 
-    return <style data-emotion={`${cache.key} ${names.join(" ")}`} dangerouslySetInnerHTML={{ __html: styles }} />;
+    return (
+      <style
+        data-emotion={`${cache.key} ${names.join(" ")}`}
+        dangerouslySetInnerHTML={{ __html: styles }}
+      />
+    );
   });
 
   return <CacheProvider value={cache}>{children}</CacheProvider>;

@@ -30,8 +30,8 @@ vi.mock("@/lib/prisma", () => ({
     usuario: {
       create: vi.fn(),
     },
-      bateria: true
-},
+    bateria: true,
+  },
 }));
 
 describe("POST /api/usuarios", () => {
@@ -130,7 +130,7 @@ describe("POST /api/usuarios", () => {
       activo: true,
       createdAt: new Date("2026-05-17T10:00:00Z"),
       updatedAt: new Date("2026-05-17T10:00:00Z"),
-        bateria: true
+      bateria: true,
     };
     vi.mocked(prisma.usuario.create).mockResolvedValue(mockCreatedUser as never);
 
@@ -165,7 +165,7 @@ describe("POST /api/usuarios", () => {
           rol: "EDITOR",
           activo: true,
         },
-      }),
+      })
     );
 
     expect(sendEmailVerificationMagicLinkEmail).toHaveBeenCalledWith(
@@ -173,7 +173,7 @@ describe("POST /api/usuarios", () => {
       expect.objectContaining({
         usuarioId: "usr-999",
         mailReferencia: "jperez@ejercito.mil.uy",
-      }),
+      })
     );
 
     expect(logAudit).toHaveBeenCalledWith(
@@ -182,7 +182,7 @@ describe("POST /api/usuarios", () => {
         accion: "CREATE",
         entidad: "USUARIO",
         entidadId: "usr-999",
-      }),
+      })
     );
   });
 

@@ -5,18 +5,19 @@ import { normalizePgConnectionStringSecurity } from "../src/lib/postgres-connect
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  
   process.exit(1);
 }
 
-const adapter = new PrismaPg({ connectionString: normalizePgConnectionStringSecurity(connectionString) });
+const adapter = new PrismaPg({
+  connectionString: normalizePgConnectionStringSecurity(connectionString),
+});
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
   try {
     // 1. Create or find the "Desarrollo" rank
     let rango = await prisma.rango.findFirst({
-      where: { abreviacion: "Desarrollo" }
+      where: { abreviacion: "Desarrollo" },
     });
 
     if (!rango) {
@@ -24,7 +25,7 @@ async function main() {
       const maxSubalterno = await prisma.rango.findFirst({
         where: { tipo: "SUBALTERNO" },
         orderBy: { orden: "desc" },
-        select: { orden: true }
+        select: { orden: true },
       });
       const nextOrden = (maxSubalterno?.orden ?? 6) + 1;
 
@@ -33,8 +34,8 @@ async function main() {
           tipo: "SUBALTERNO",
           abreviacion: "Desarrollo",
           nombreCompleto: "Desarrollo",
-          orden: nextOrden
-        }
+          orden: nextOrden,
+        },
       });
       console.log("Rango 'Desarrollo' creado:", rango);
     } else {
@@ -44,11 +45,8 @@ async function main() {
     // 2. Update users with fictitious rank/apellido
     const usersToUpdate = await prisma.usuario.findMany({
       where: {
-        OR: [
-          { apellido: "S/D" },
-          { username: "admin" }
-        ]
-      }
+        OR: [{ apellido: "S/D" }, { username: "admin" }],
+      },
     });
 
     console.log(`Encontrados ${usersToUpdate.length} usuarios para actualizar.`);
@@ -58,10 +56,12 @@ async function main() {
         where: { usuarioId: user.usuarioId },
         data: {
           rangoId: rango.rangoId,
-          apellido: user.apellido === "S/D" ? "Sistema" : user.apellido
-        }
+          apellido: user.apellido === "S/D" ? "Sistema" : user.apellido,
+        },
       });
-      console.log(`Usuario '${user.username}' actualizado. Grado asignado: 'Desarrollo', Apellido: '${updated.apellido}'`);
+      console.log(
+        `Usuario '${user.username}' actualizado. Grado asignado: 'Desarrollo', Apellido: '${updated.apellido}'`
+      );
     }
 
     console.log("¡Migración de rango de desarrollo completada con éxito!");

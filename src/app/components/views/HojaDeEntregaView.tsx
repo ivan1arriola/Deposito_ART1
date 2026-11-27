@@ -71,7 +71,10 @@ async function api<T>(url: string): Promise<T> {
 
   if (!response.ok) {
     const message =
-      typeof data === "object" && data && "error" in data && typeof (data as { error?: unknown }).error === "string"
+      typeof data === "object" &&
+      data &&
+      "error" in data &&
+      typeof (data as { error?: unknown }).error === "string"
         ? (data as { error: string }).error
         : "Error";
     throw new Error(message || "Error");
@@ -140,32 +143,39 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
     };
   }, [ci]);
 
-  const exportPdf = useCallback((documentType: "hoja" | "guia") => {
-    if (!data || pdfActionLoading) return;
+  const exportPdf = useCallback(
+    (documentType: "hoja" | "guia") => {
+      if (!data || pdfActionLoading) return;
 
-    const isGuide = documentType === "guia";
-    setPdfActionLoading(documentType);
-    try {
-      setStatus(isGuide ? "Descargando guía de responsabilidad en PDF..." : "Descargando hoja de entrega en PDF A4...");
-      const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?document=${documentType}&ts=${Date.now()}`;
-      const link = document.createElement("a");
-      link.href = pdfUrl;
-      link.rel = "noopener";
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const isGuide = documentType === "guia";
+      setPdfActionLoading(documentType);
+      try {
+        setStatus(
+          isGuide
+            ? "Descargando guía de responsabilidad en PDF..."
+            : "Descargando hoja de entrega en PDF A4..."
+        );
+        const pdfUrl = `/api/hoja-de-entrega/${encodeURIComponent(ci)}/pdf?document=${documentType}&ts=${Date.now()}`;
+        const link = document.createElement("a");
+        link.href = pdfUrl;
+        link.rel = "noopener";
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-      setStatus(isGuide ? "Descarga de guía iniciada." : "Descarga de hoja iniciada.");
-      window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error desconocido";
-      setStatus(`Error: ${message}`);
-      window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
-    } finally {
-      setPdfActionLoading(null);
-    }
-  }, [ci, data, pdfActionLoading]);
+        setStatus(isGuide ? "Descarga de guía iniciada." : "Descarga de hoja iniciada.");
+        window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Error desconocido";
+        setStatus(`Error: ${message}`);
+        window.setTimeout(() => setStatus("Hoja de entrega cargada."), 2000);
+      } finally {
+        setPdfActionLoading(null);
+      }
+    },
+    [ci, data, pdfActionLoading]
+  );
 
   const fechaImpresion = formatDisplayDate(new Date());
   const canonicalData = useMemo(() => (data ? toCanonicalData(data) : null), [data]);
@@ -200,7 +210,9 @@ export function HojaDeEntregaView({ ci, onClose }: HojaDeEntregaViewProps) {
         {loading ? <span>{status}</span> : status}
       </div>
 
-      {canonicalData ? <HojaEntregaCanonicalSheet data={canonicalData} fechaImpresion={fechaImpresion} /> : null}
+      {canonicalData ? (
+        <HojaEntregaCanonicalSheet data={canonicalData} fechaImpresion={fechaImpresion} />
+      ) : null}
     </main>
   );
 }

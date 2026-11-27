@@ -43,4 +43,3 @@ describe("validateAndNormalizeTallas", () => {
     expect(result.error).toContain("XS, S, M, L, XL, XXL, XXXL");
   });
 });
-

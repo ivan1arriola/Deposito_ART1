@@ -31,8 +31,12 @@ export function RangoCreateView({
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Registrar grado</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">
+                Nueva vista
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">
+                Registrar grado
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
                 Agrega un nuevo grado para clasificar personal y mantener el orden jerárquico.
               </p>
@@ -84,7 +88,9 @@ export function RangoCreateView({
           </div>
 
           <aside className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-ejercito-blue)] p-4 text-white shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">Alta inmediata</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">
+              Alta inmediata
+            </p>
             <p className="mt-3 text-sm leading-6 text-white/85">
               El grado quedará disponible al instante para altas y edición de personal.
             </p>

@@ -290,11 +290,13 @@ function extractFunctions(text) {
     },
     {
       kind: "arrow",
-      regex: /\b(?:export\s+const\s+|export\s+let\s+|const\s+|let\s+)([A-Za-z0-9_$]+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>/g,
+      regex:
+        /\b(?:export\s+const\s+|export\s+let\s+|const\s+|let\s+)([A-Za-z0-9_$]+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>/g,
     },
     {
       kind: "arrow",
-      regex: /\b(?:export\s+const\s+|export\s+let\s+|const\s+|let\s+)([A-Za-z0-9_$]+)\s*=\s*(?:async\s*)?[A-Za-z0-9_$]+\s*=>/g,
+      regex:
+        /\b(?:export\s+const\s+|export\s+let\s+|const\s+|let\s+)([A-Za-z0-9_$]+)\s*=\s*(?:async\s*)?[A-Za-z0-9_$]+\s*=>/g,
     },
   ];
 
@@ -398,9 +400,7 @@ function detectRole(filePath, text) {
   const extension = path.extname(normalizedPath).toLowerCase();
   const baseName = path.basename(normalizedPath, extension);
 
-  const hasJsx =
-    /<([A-Za-z][A-Za-z0-9._:-]*)(\s|\/?>)/.test(text) &&
-    !/^\s*<\?xml\b/i.test(text);
+  const hasJsx = /<([A-Za-z][A-Za-z0-9._:-]*)(\s|\/?>)/.test(text) && !/^\s*<\?xml\b/i.test(text);
 
   const isHookLike = /^use[A-Z0-9]/.test(baseName) || /\/hooks?\//i.test(normalizedPath);
   const isServiceLike =
@@ -476,17 +476,16 @@ function computeSharedMetrics(filePath, text) {
   const internalImports = importMatches.filter((line) => /from\s+['"](\.|@\/)/.test(line)).length;
   const externalImports = importMatches.length - internalImports;
 
-  const complexityText = text
-    .replace(/\?\./g, "")
-    .replace(/\?\?/g, "");
+  const complexityText = text.replace(/\?\./g, "").replace(/\?\?/g, "");
 
   const branchPoints = countMatches(
     complexityText,
-    /\b(if|else\s+if|for|while|switch|case|catch)\b/g,
+    /\b(if|else\s+if|for|while|switch|case|catch)\b/g
   );
   const ternaryPoints = countMatches(complexityText, /\?/g);
   const logicalPoints = countMatches(complexityText, /&&|\|\|/g);
-  const complexityEstimate = 1 + branchPoints + Math.floor(ternaryPoints / 2) + Math.floor(logicalPoints / 3);
+  const complexityEstimate =
+    1 + branchPoints + Math.floor(ternaryPoints / 2) + Math.floor(logicalPoints / 3);
 
   let depth = 0;
   let maxDepth = 0;
@@ -508,7 +507,7 @@ function computeSharedMetrics(filePath, text) {
         line.length >= 16 &&
         !line.startsWith("import ") &&
         !line.startsWith("export ") &&
-        !line.startsWith("//"),
+        !line.startsWith("//")
     );
 
   const frequencies = new Map();
@@ -527,7 +526,7 @@ function computeSharedMetrics(filePath, text) {
   const functionList = extractFunctions(text);
   const exportCount = countMatches(
     text,
-    /\bexport\s+(?:default\s+)?(?:const|let|function|class|type|interface)\b/g,
+    /\bexport\s+(?:default\s+)?(?:const|let|function|class|type|interface)\b/g
   );
 
   return {
@@ -572,27 +571,36 @@ function analyzeReactComponent(filePath, text, shared) {
   const propContracts = extractPropContracts(text);
   const maxProps = propContracts.reduce((max, item) => Math.max(max, item.propCount), 0);
   const maxBooleanProps = propContracts.reduce((max, item) => Math.max(max, item.booleanCount), 0);
-  const maxCallbackProps = propContracts.reduce((max, item) => Math.max(max, item.callbackCount), 0);
+  const maxCallbackProps = propContracts.reduce(
+    (max, item) => Math.max(max, item.callbackCount),
+    0
+  );
 
   const hookCalls = countMatches(text, /\buse[A-Z][A-Za-z0-9_]*\s*\(/g);
   const stateHooks = countMatches(text, /\buseState\s*\(/g);
   const effectHooks = countMatches(text, /\buseEffect\s*\(/g);
-  const memoHooks = countMatches(text, /\buseMemo\s*\(/g) + countMatches(text, /\buseCallback\s*\(/g);
+  const memoHooks =
+    countMatches(text, /\buseMemo\s*\(/g) + countMatches(text, /\buseCallback\s*\(/g);
   const refHooks = countMatches(text, /\buseRef\s*\(/g);
-  const customHookCalls = Math.max(0, hookCalls - stateHooks - effectHooks - memoHooks - refHooks - countMatches(text, /\buseContext\s*\(/g));
+  const customHookCalls = Math.max(
+    0,
+    hookCalls -
+      stateHooks -
+      effectHooks -
+      memoHooks -
+      refHooks -
+      countMatches(text, /\buseContext\s*\(/g)
+  );
 
   const jsxLines = text
     .split(/\r?\n/)
-    .filter((line) => /<([A-Za-z][A-Za-z0-9._:-]*)(\s|\/?>)/.test(line))
-    .length;
+    .filter((line) => /<([A-Za-z][A-Za-z0-9._:-]*)(\s|\/?>)/.test(line)).length;
 
   const jsxElements = countMatches(text, /<([A-Za-z][A-Za-z0-9._:-]*)(\s|\/?>)/g);
   const customElements = countMatches(text, /<([A-Z][A-Za-z0-9_]*)\b/g);
   const htmlElements = countMatches(text, /<([a-z][A-Za-z0-9-]*)\b/g);
   const conditionalRenderCount =
-    countMatches(text, /\?\s*</g) +
-    countMatches(text, /&&\s*</g) +
-    countMatches(text, /:\s*</g);
+    countMatches(text, /\?\s*</g) + countMatches(text, /&&\s*</g) + countMatches(text, /:\s*</g);
   const helperFunctions = shared.topFunctions.filter((item) => !/^[A-Z]/.test(item.name)).length;
   const componentFunctions = shared.topFunctions.filter((item) => /^[A-Z]/.test(item.name)).length;
 
@@ -685,7 +693,8 @@ function analyzeHook(text, shared) {
   const hookCalls = countMatches(text, /\buse[A-Z][A-Za-z0-9_]*\s*\(/g);
   const stateHooks = countMatches(text, /\buseState\s*\(/g);
   const effectHooks = countMatches(text, /\buseEffect\s*\(/g);
-  const memoHooks = countMatches(text, /\buseMemo\s*\(/g) + countMatches(text, /\buseCallback\s*\(/g);
+  const memoHooks =
+    countMatches(text, /\buseMemo\s*\(/g) + countMatches(text, /\buseCallback\s*\(/g);
   const fetchCalls =
     countMatches(text, /\bfetch\s*\(/g) +
     countMatches(text, /\baxios\./g) +
@@ -726,13 +735,9 @@ function analyzeHook(text, shared) {
 }
 
 function analyzeService(text, shared) {
-  const exportedFunctions = countMatches(
-    text,
-    /\bexport\s+(?:async\s+)?function\s+[A-Za-z0-9_$]+\s*\(/g,
-  ) + countMatches(
-    text,
-    /\bexport\s+const\s+[A-Za-z0-9_$]+\s*=\s*(?:async\s*)?\(/g,
-  );
+  const exportedFunctions =
+    countMatches(text, /\bexport\s+(?:async\s+)?function\s+[A-Za-z0-9_$]+\s*\(/g) +
+    countMatches(text, /\bexport\s+const\s+[A-Za-z0-9_$]+\s*=\s*(?:async\s*)?\(/g);
 
   const fetchCalls =
     countMatches(text, /\bfetch\s*\(/g) +
@@ -778,13 +783,9 @@ function analyzeService(text, shared) {
 }
 
 function analyzeUtility(text, shared) {
-  const exportedFunctions = countMatches(
-    text,
-    /\bexport\s+(?:async\s+)?function\s+[A-Za-z0-9_$]+\s*\(/g,
-  ) + countMatches(
-    text,
-    /\bexport\s+const\s+[A-Za-z0-9_$]+\s*=\s*(?:async\s*)?\(/g,
-  );
+  const exportedFunctions =
+    countMatches(text, /\bexport\s+(?:async\s+)?function\s+[A-Za-z0-9_$]+\s*\(/g) +
+    countMatches(text, /\bexport\s+const\s+[A-Za-z0-9_$]+\s*=\s*(?:async\s*)?\(/g);
 
   const hasJsx = /<([A-Za-z][A-Za-z0-9._:-]*)(\s|\/?>)/.test(text);
   const hasFetch =
@@ -855,13 +856,9 @@ function analyzeTypeModule(text, shared) {
 }
 
 function analyzeGenericModule(role, text, shared) {
-  const exportedFunctions = countMatches(
-    text,
-    /\bexport\s+(?:async\s+)?function\s+[A-Za-z0-9_$]+\s*\(/g,
-  ) + countMatches(
-    text,
-    /\bexport\s+const\s+[A-Za-z0-9_$]+\s*=\s*(?:async\s*)?\(/g,
-  );
+  const exportedFunctions =
+    countMatches(text, /\bexport\s+(?:async\s+)?function\s+[A-Za-z0-9_$]+\s*\(/g) +
+    countMatches(text, /\bexport\s+const\s+[A-Za-z0-9_$]+\s*=\s*(?:async\s*)?\(/g);
 
   const hasJsx = /<([A-Za-z][A-Za-z0-9._:-]*)(\s|\/?>)/.test(text);
   const hookCalls = countMatches(text, /\buse[A-Z][A-Za-z0-9_]*\s*\(/g);
@@ -935,11 +932,7 @@ function buildTargetStructure(filePath, role) {
 
   return {
     style: "module-split",
-    suggestedPaths: [
-      `${dir}/${name}${ext}`,
-      `${dir}/${name}.types.ts`,
-      `${dir}/${name}.utils.ts`,
-    ],
+    suggestedPaths: [`${dir}/${name}${ext}`, `${dir}/${name}.types.ts`, `${dir}/${name}.utils.ts`],
   };
 }
 
@@ -961,7 +954,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         `${path.posix.dirname(filePath)}/${path.posix.basename(filePath, path.posix.extname(filePath))}/components/`,
         {
           suggestedNames: ["Header", "Body", "Actions", "Toolbar", "List", "Item"],
-        },
+        }
       );
     }
 
@@ -977,7 +970,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
             `use${path.posix.basename(filePath, path.posix.extname(filePath))}Actions`,
             `use${path.posix.basename(filePath, path.posix.extname(filePath))}ViewModel`,
           ],
-        },
+        }
       );
     }
 
@@ -988,8 +981,10 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         "Se detecto acceso a datos directo dentro del componente.",
         `${path.posix.dirname(filePath)}/services/`,
         {
-          suggestedNames: [`${path.posix.basename(filePath, path.posix.extname(filePath))}.service.ts`],
-        },
+          suggestedNames: [
+            `${path.posix.basename(filePath, path.posix.extname(filePath))}.service.ts`,
+          ],
+        }
       );
     }
 
@@ -998,7 +993,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         "extract_utils",
         "medium",
         "Hay bastante logica derivada o helpers puros dentro del componente.",
-        `${path.posix.dirname(filePath)}/${path.posix.basename(filePath, path.posix.extname(filePath))}/${path.posix.basename(filePath, path.posix.extname(filePath))}.utils.ts`,
+        `${path.posix.dirname(filePath)}/${path.posix.basename(filePath, path.posix.extname(filePath))}/${path.posix.basename(filePath, path.posix.extname(filePath))}.utils.ts`
       );
     }
 
@@ -1009,8 +1004,9 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         "El contrato de props es demasiado ancho o esta dominado por booleans.",
         `${path.posix.dirname(filePath)}/${path.posix.basename(filePath, path.posix.extname(filePath))}/${path.posix.basename(filePath, path.posix.extname(filePath))}.types.ts`,
         {
-          strategy: "agrupar props por dominio, reemplazar booleans por variant o dividir componente",
-        },
+          strategy:
+            "agrupar props por dominio, reemplazar booleans por variant o dividir componente",
+        }
       );
     }
 
@@ -1019,11 +1015,13 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         "create_types_module",
         shared.anyCount > 0 ? "high" : "medium",
         "Conviene formalizar contratos de props y tipos auxiliares en un modulo aparte.",
-        `${path.posix.dirname(filePath)}/${path.posix.basename(filePath, path.posix.extname(filePath))}/${path.posix.basename(filePath, path.posix.extname(filePath))}.types.ts`,
+        `${path.posix.dirname(filePath)}/${path.posix.basename(filePath, path.posix.extname(filePath))}/${path.posix.basename(filePath, path.posix.extname(filePath))}.types.ts`
       );
     }
 
-    notes.push("Patron recomendado: orquestador + secciones + hojas + hook de dominio + types + utils.");
+    notes.push(
+      "Patron recomendado: orquestador + secciones + hojas + hook de dominio + types + utils."
+    );
   }
 
   if (role === "HOOK") {
@@ -1039,7 +1037,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
             `${path.posix.basename(filePath, path.posix.extname(filePath))}.types.ts`,
             `${path.posix.basename(filePath, path.posix.extname(filePath))}.effects.ts`,
           ],
-        },
+        }
       );
     }
 
@@ -1048,11 +1046,13 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         "move_io_to_service",
         "high",
         "El hook mezcla orquestacion con acceso a datos.",
-        `${path.posix.dirname(filePath)}/../services/`,
+        `${path.posix.dirname(filePath)}/../services/`
       );
     }
 
-    notes.push("Patron recomendado: hook orquestador pequeno + service + utils + type contract reducido.");
+    notes.push(
+      "Patron recomendado: hook orquestador pequeno + service + utils + type contract reducido."
+    );
   }
 
   if (role === "SERVICE") {
@@ -1061,7 +1061,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         "remove_ui_from_service",
         "high",
         "Un service no deberia renderizar UI.",
-        `${path.posix.dirname(filePath)}/../components/`,
+        `${path.posix.dirname(filePath)}/../components/`
       );
     }
 
@@ -1070,7 +1070,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         "remove_hooks_from_service",
         "high",
         "Un service no deberia depender de hooks de React.",
-        `${path.posix.dirname(filePath)}/../hooks/`,
+        `${path.posix.dirname(filePath)}/../hooks/`
       );
     }
 
@@ -1082,7 +1082,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         path.posix.dirname(filePath),
         {
           strategy: "partir por recurso, caso de uso o adapter/mapper",
-        },
+        }
       );
     }
 
@@ -1095,7 +1095,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         "move_ui_out_of_utils",
         "high",
         "Las utilidades no deberian contener JSX.",
-        `${path.posix.dirname(filePath)}/../components/`,
+        `${path.posix.dirname(filePath)}/../components/`
       );
     }
 
@@ -1104,7 +1104,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
         "move_io_out_of_utils",
         "medium",
         "Las utilidades estan mezcladas con efectos secundarios o IO.",
-        `${path.posix.dirname(filePath)}/../services/`,
+        `${path.posix.dirname(filePath)}/../services/`
       );
     }
   }
@@ -1114,7 +1114,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
       "separate_types_and_render",
       "high",
       "El archivo de tipos esta mezclado con render.",
-      `${path.posix.dirname(filePath)}/../components/`,
+      `${path.posix.dirname(filePath)}/../components/`
     );
   }
 
@@ -1123,7 +1123,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
       "deduplicate",
       shared.duplicationRatio > 0.25 ? "high" : "medium",
       "Hay repeticion suficiente como para justificar extraccion.",
-      `${path.posix.dirname(filePath)}/${path.posix.basename(filePath, path.posix.extname(filePath))}.utils.ts`,
+      `${path.posix.dirname(filePath)}/${path.posix.basename(filePath, path.posix.extname(filePath))}.utils.ts`
     );
   }
 
@@ -1132,7 +1132,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
       "replace_any",
       "high",
       "Hay deuda de tipado que dificulta refactors seguros.",
-      `${path.posix.dirname(filePath)}/${path.posix.basename(filePath, path.posix.extname(filePath))}.types.ts`,
+      `${path.posix.dirname(filePath)}/${path.posix.basename(filePath, path.posix.extname(filePath))}.types.ts`
     );
   }
 
@@ -1144,7 +1144,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
       null,
       {
         strategy: "introducir fachada local, barrel por dominio o partir responsabilidades",
-      },
+      }
     );
   }
 
@@ -1169,8 +1169,7 @@ function createRefactorPlan(filePath, role, shared, architecture, risk) {
     firstStep,
     notes,
     actions: actions.slice(0, 8),
-    estimatedRefactorSize:
-      risk.score >= 65 ? "large" : risk.score >= 45 ? "medium" : "small",
+    estimatedRefactorSize: risk.score >= 65 ? "large" : risk.score >= 45 ? "medium" : "small",
   };
 }
 
@@ -1194,7 +1193,7 @@ function calculateRiskScore(shared, roleMetrics) {
     add(
       Math.min(24, Math.ceil((shared.loc - 280) / 12)),
       `Archivo demasiado grande (${shared.loc} LOC).`,
-      "Partir por responsabilidad y dejar un punto de entrada pequeno por archivo.",
+      "Partir por responsabilidad y dejar un punto de entrada pequeno por archivo."
     );
   }
 
@@ -1202,7 +1201,7 @@ function calculateRiskScore(shared, roleMetrics) {
     add(
       Math.min(20, shared.complexityEstimate - 24),
       `Complejidad estimada alta (${shared.complexityEstimate}).`,
-      "Reducir ramas condicionales y mover logica compleja a funciones puras o hooks.",
+      "Reducir ramas condicionales y mover logica compleja a funciones puras o hooks."
     );
   }
 
@@ -1210,7 +1209,7 @@ function calculateRiskScore(shared, roleMetrics) {
     add(
       Math.min(12, (shared.maxDepth - 5) * 2),
       `Anidamiento alto (profundidad ${shared.maxDepth}).`,
-      "Usar guard clauses y retornos tempranos para bajar la profundidad.",
+      "Usar guard clauses y retornos tempranos para bajar la profundidad."
     );
   }
 
@@ -1218,7 +1217,7 @@ function calculateRiskScore(shared, roleMetrics) {
     add(
       Math.min(12, Math.ceil((shared.duplicationRatio - 0.15) * 60)),
       `Duplicacion perceptible (${round(shared.duplicationRatio * 100, 1)}%).`,
-      "Extraer repeticion a utilidades compartidas o subcomponentes reutilizables.",
+      "Extraer repeticion a utilidades compartidas o subcomponentes reutilizables."
     );
   }
 
@@ -1226,7 +1225,7 @@ function calculateRiskScore(shared, roleMetrics) {
     add(
       Math.min(10, shared.anyCount),
       `Uso de any (${shared.anyCount}).`,
-      "Reemplazar any por tipos explicitos para preservar contratos y refactors seguros.",
+      "Reemplazar any por tipos explicitos para preservar contratos y refactors seguros."
     );
   }
 
@@ -1234,7 +1233,7 @@ function calculateRiskScore(shared, roleMetrics) {
     add(
       Math.min(8, shared.todoCount * 2),
       `Pendientes tecnicos detectados (${shared.todoCount} TODO/FIXME/HACK).`,
-      "Convertir deuda tecnica en tickets o resolverla antes de seguir agregando capas.",
+      "Convertir deuda tecnica en tickets o resolverla antes de seguir agregando capas."
     );
   }
 
@@ -1242,7 +1241,7 @@ function calculateRiskScore(shared, roleMetrics) {
     add(
       4,
       `Lineas demasiado largas (maximo ${shared.maxLineLength}).`,
-      "Partir expresiones largas para mejorar lectura y revision.",
+      "Partir expresiones largas para mejorar lectura y revision."
     );
   }
 
@@ -1250,7 +1249,7 @@ function calculateRiskScore(shared, roleMetrics) {
     add(
       Math.min(10, Math.ceil((shared.internalImports - 18) / 2)),
       `Acoplamiento interno alto (${shared.internalImports} imports internos).`,
-      "Agrupar dependencias por dominio y exponer una API mas chica por modulo.",
+      "Agrupar dependencias por dominio y exponer una API mas chica por modulo."
     );
   }
 
@@ -1259,7 +1258,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         Math.min(20, Math.ceil((80 - roleMetrics.compositionHealth) / 4)),
         `Salud de composicion baja (${roleMetrics.compositionHealth}/100).`,
-        "Usar patron ensamblador: componente orquestador + subcomponentes + hooks + types.",
+        "Usar patron ensamblador: componente orquestador + subcomponentes + hooks + types."
       );
     }
 
@@ -1267,7 +1266,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         Math.min(12, (roleMetrics.maxProps - 8) * 2),
         `Demasiadas props en el contrato principal (${roleMetrics.maxProps}).`,
-        "Reducir props, agruparlas por dominio o mover parte del contrato a subcomponentes/contexto local.",
+        "Reducir props, agruparlas por dominio o mover parte del contrato a subcomponentes/contexto local."
       );
     }
 
@@ -1275,7 +1274,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         Math.min(10, (roleMetrics.maxBooleanProps - 2) * 3),
         `Demasiadas boolean props (${roleMetrics.maxBooleanProps}).`,
-        "Reemplazar matrices de booleans por variants, slots o subcomponentes.",
+        "Reemplazar matrices de booleans por variants, slots o subcomponentes."
       );
     }
 
@@ -1283,7 +1282,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         8,
         `Demasiados hooks en un mismo componente (hooks=${roleMetrics.hookCalls}, state=${roleMetrics.stateHooks}).`,
-        "Extraer estado derivado y logica de interaccion a hooks de dominio.",
+        "Extraer estado derivado y logica de interaccion a hooks de dominio."
       );
     }
 
@@ -1291,7 +1290,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         Math.min(10, roleMetrics.fetchCalls * 4),
         `Acceso a datos dentro del componente (${roleMetrics.fetchCalls} senales).`,
-        "Mover fetch/axios/prisma a services o hooks de datos.",
+        "Mover fetch/axios/prisma a services o hooks de datos."
       );
     }
 
@@ -1299,7 +1298,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         8,
         `Poca composicion visual para el tamano del archivo (subcomponentes usados=${roleMetrics.customElements}).`,
-        "Extraer bloques de UI a componentes hoja o secciones con responsabilidad unica.",
+        "Extraer bloques de UI a componentes hoja o secciones con responsabilidad unica."
       );
     }
 
@@ -1307,7 +1306,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         Math.min(8, roleMetrics.helperFunctions - 8),
         `Mucha logica auxiliar local (${roleMetrics.helperFunctions} helpers).`,
-        "Mover helpers puros a utils.ts y dejar el componente enfocado en ensamblar UI.",
+        "Mover helpers puros a utils.ts y dejar el componente enfocado en ensamblar UI."
       );
     }
 
@@ -1315,7 +1314,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         4,
         `Demasiadas exportaciones en archivo de componente (${shared.exportCount}).`,
-        "Dejar un componente principal por archivo y mover lo demas a modulos vecinos si crece.",
+        "Dejar un componente principal por archivo y mover lo demas a modulos vecinos si crece."
       );
     }
   }
@@ -1325,7 +1324,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         Math.min(18, Math.ceil((80 - roleMetrics.modularityHealth) / 4)),
         `Hook demasiado grande o cargado (${roleMetrics.modularityHealth}/100).`,
-        "Separar fetch, estado derivado y acciones en hooks o helpers mas pequenos.",
+        "Separar fetch, estado derivado y acciones en hooks o helpers mas pequenos."
       );
     }
 
@@ -1333,7 +1332,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         Math.min(8, roleMetrics.returnedFieldCount - 8),
         `El hook devuelve demasiados campos (${roleMetrics.returnedFieldCount}).`,
-        "Reducir el contrato del hook o dividirlo por casos de uso.",
+        "Reducir el contrato del hook o dividirlo por casos de uso."
       );
     }
   }
@@ -1343,7 +1342,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         18,
         "JSX dentro de un service.",
-        "Sacar UI del service y dejar solo IO / acceso a datos / adaptadores.",
+        "Sacar UI del service y dejar solo IO / acceso a datos / adaptadores."
       );
     }
 
@@ -1351,7 +1350,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         16,
         "Hooks dentro de un service.",
-        "Mover hooks a la capa de UI y dejar el service como modulo puro.",
+        "Mover hooks a la capa de UI y dejar el service como modulo puro."
       );
     }
   }
@@ -1361,7 +1360,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         18,
         "JSX dentro de un util.",
-        "Mover UI a componentes y dejar utils para logica pura reutilizable.",
+        "Mover UI a componentes y dejar utils para logica pura reutilizable."
       );
     }
 
@@ -1369,7 +1368,7 @@ function calculateRiskScore(shared, roleMetrics) {
       add(
         10,
         "Llamadas de red dentro de utilidades.",
-        "Mover IO a services y dejar utils libres de efectos secundarios.",
+        "Mover IO a services y dejar utils libres de efectos secundarios."
       );
     }
   }
@@ -1378,7 +1377,7 @@ function calculateRiskScore(shared, roleMetrics) {
     add(
       24,
       "JSX dentro de archivo de tipos/modelos.",
-      "Separar tipos del render para mantener fronteras claras de responsabilidad.",
+      "Separar tipos del render para mantener fronteras claras de responsabilidad."
     );
   }
 
@@ -1470,7 +1469,7 @@ function summarize(metricsList) {
       acc[item.riskLevel] = (acc[item.riskLevel] ?? 0) + 1;
       return acc;
     },
-    { BAJO: 0, MEDIO: 0, ALTO: 0, CRITICO: 0 },
+    { BAJO: 0, MEDIO: 0, ALTO: 0, CRITICO: 0 }
   );
 
   const byRole = metricsList.reduce((acc, item) => {
@@ -1490,7 +1489,7 @@ function summarize(metricsList) {
     ? round(
         componentFiles.reduce((acc, item) => acc + (item.architecture.compositionHealth ?? 0), 0) /
           componentFiles.length,
-        1,
+        1
       )
     : null;
 
@@ -1525,10 +1524,9 @@ function formatRoleSpecific(item) {
     ].join(" | ");
   }
 
-  return [
-    `mod=${item.architecture.modularityHealth ?? "--"}`,
-    `imports=${item.importCount}`,
-  ].join(" | ");
+  return [`mod=${item.architecture.modularityHealth ?? "--"}`, `imports=${item.importCount}`].join(
+    " | "
+  );
 }
 
 function formatActions(item) {
@@ -1552,25 +1550,25 @@ function formatTable(summary, hotspots, top) {
 
   if (summary.averageComponentCompositionHealth !== null) {
     lines.push(
-      `Salud promedio de composicion en componentes: ${summary.averageComponentCompositionHealth}/100`,
+      `Salud promedio de composicion en componentes: ${summary.averageComponentCompositionHealth}/100`
     );
   }
 
   lines.push(
-    `Distribucion: BAJO=${summary.byLevel.BAJO}, MEDIO=${summary.byLevel.MEDIO}, ALTO=${summary.byLevel.ALTO}, CRITICO=${summary.byLevel.CRITICO}`,
+    `Distribucion: BAJO=${summary.byLevel.BAJO}, MEDIO=${summary.byLevel.MEDIO}, ALTO=${summary.byLevel.ALTO}, CRITICO=${summary.byLevel.CRITICO}`
   );
   lines.push(
     `Roles: ${Object.entries(summary.byRole)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([role, count]) => `${role}=${count}`)
-      .join(", ")}`,
+      .join(", ")}`
   );
   lines.push(
     `Acciones sugeridas: ${Object.entries(summary.byAction)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([action, count]) => `${action}=${count}`)
-      .join(", ")}`,
+      .join(", ")}`
   );
 
   lines.push("");
@@ -1688,7 +1686,7 @@ function formatMarkdownBacklog(report) {
   lines.push("|---|---:|---:|---:|---:|");
   for (const folder of backlog) {
     lines.push(
-      `| ${folder.folder} | ${folder.totalFiles} | ${folder.avgRisk} | ${folder.criticalCount} | ${folder.highRiskCount} |`,
+      `| ${folder.folder} | ${folder.totalFiles} | ${folder.avgRisk} | ${folder.criticalCount} | ${folder.highRiskCount} |`
     );
   }
 
@@ -1704,7 +1702,9 @@ function formatMarkdownBacklog(report) {
     lines.push(`- Criticos: ${folder.criticalCount} | Altos: ${folder.highRiskCount}`);
 
     if (folder.topActions.length > 0) {
-      lines.push(`- Acciones mas frecuentes: ${folder.topActions.map((a) => `${a.kind} (${a.count})`).join(", ")}`);
+      lines.push(
+        `- Acciones mas frecuentes: ${folder.topActions.map((a) => `${a.kind} (${a.count})`).join(", ")}`
+      );
     } else {
       lines.push("- Acciones mas frecuentes: sin acciones sugeridas");
     }
@@ -1750,10 +1750,7 @@ async function main() {
   }
 
   metrics.sort(
-    (a, b) =>
-      b.riskScore - a.riskScore ||
-      b.loc - a.loc ||
-      a.filePath.localeCompare(b.filePath),
+    (a, b) => b.riskScore - a.riskScore || b.loc - a.loc || a.filePath.localeCompare(b.filePath)
   );
 
   const summary = summarize(metrics);
@@ -1787,7 +1784,7 @@ async function main() {
   }
 
   const highRiskCount = metrics.filter(
-    (item) => item.riskLevel === "ALTO" || item.riskLevel === "CRITICO",
+    (item) => item.riskLevel === "ALTO" || item.riskLevel === "CRITICO"
   ).length;
 
   process.exitCode = options.failOnHighRisk && highRiskCount > 0 ? 2 : 0;

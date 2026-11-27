@@ -15,19 +15,25 @@ function hasEtiquetadoDelegates() {
     equipo?: unknown;
     equipoCodigoSIE?: unknown;
   };
-  return typeof candidate.equipo !== "undefined" && typeof candidate.equipoCodigoSIE !== "undefined";
+  return (
+    typeof candidate.equipo !== "undefined" && typeof candidate.equipoCodigoSIE !== "undefined"
+  );
 }
 
 const SIE_CODE_REGEX = /^(?:\d{8}|[A-Z]{3}\d{2})$/;
 
 function normalizeCodigoSIE(value: unknown) {
-  const normalized = String(value ?? "").trim().toUpperCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (!SIE_CODE_REGEX.test(normalized)) return null;
   return normalized;
 }
 
 function normalizeTalla(value: unknown) {
-  const normalized = String(value ?? "").trim().toUpperCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toUpperCase();
   return normalized.length > 0 ? normalized : "-";
 }
 
@@ -43,8 +49,10 @@ export async function POST(request: Request) {
 
   if (!hasEtiquetadoDelegates()) {
     return NextResponse.json(
-      { error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo." },
-      { status: 503 },
+      {
+        error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo.",
+      },
+      { status: 503 }
     );
   }
 
@@ -56,8 +64,11 @@ export async function POST(request: Request) {
 
   if (!codigo || equipoId === null) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo e equipo son obligatorios. Formatos validos: 8 digitos o 3 letras y 2 numeros." },
-      { status: 400 },
+      {
+        error:
+          "Payload invalido. codigo e equipo son obligatorios. Formatos validos: 8 digitos o 3 letras y 2 numeros.",
+      },
+      { status: 400 }
     );
   }
 
@@ -78,7 +89,10 @@ export async function POST(request: Request) {
     select: { equipoCodigoSIEId: true },
   });
   if (existingTuple) {
-    return NextResponse.json({ error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo." }, { status: 409 });
+    return NextResponse.json(
+      { error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo." },
+      { status: 409 }
+    );
   }
 
   if (!allowDuplicateCodigo) {
@@ -111,7 +125,7 @@ export async function POST(request: Request) {
             `El codigo SIE ${codigo} ya existe en: ${duplicatesSummary}. ` +
             "Si deseas registrarlo igual, confirma la acción y vuelve a intentar.",
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
   }
@@ -152,11 +166,19 @@ export async function POST(request: Request) {
         equipoId: created.equipo.equipoId.toString(),
         equipoNombre: created.equipo.nombre,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-      return NextResponse.json({ error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo." }, { status: 409 });
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo." },
+        { status: 409 }
+      );
     }
 
     return NextResponse.json({ error: "No se pudo registrar el codigo SIE." }, { status: 500 });

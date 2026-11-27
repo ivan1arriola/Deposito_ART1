@@ -102,7 +102,11 @@ function basePersonalRecord() {
       { tallaTipoId: 4, tallaValor: "54", tallaTipo: { tallaTipoId: 4, nombre: "KEPI" } },
     ],
     observaciones: [
-      { observacionId: BigInt(1), texto: "Observación de prueba", fecha: new Date("2024-05-18T00:00:00.000Z") },
+      {
+        observacionId: BigInt(1),
+        texto: "Observación de prueba",
+        fecha: new Date("2024-05-18T00:00:00.000Z"),
+      },
     ],
   };
 }
@@ -180,7 +184,7 @@ describe("DELETE /api/personal/[ci]", () => {
           loansCount: 1,
           vestuarioCount: 1,
         }),
-      }),
+      })
     );
   });
 
@@ -237,7 +241,7 @@ describe("DELETE /api/personal/[ci]", () => {
         detalle: expect.objectContaining({
           evento: "PERSONAL_DADO_DE_BAJA_HISTORIAL",
         }),
-      }),
+      })
     );
   });
 

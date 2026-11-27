@@ -26,7 +26,7 @@ export function useLoginState() {
       }
       setLoginUsername(value);
     },
-    [loginMode, sanitizeLoginCi],
+    [loginMode, sanitizeLoginCi]
   );
 
   const handleLoginUsernamePaste = useCallback(
@@ -36,21 +36,30 @@ export function useLoginState() {
       const pasted = event.clipboardData.getData("text");
       setLoginUsername(sanitizeLoginCi(pasted));
     },
-    [loginMode, sanitizeLoginCi],
+    [loginMode, sanitizeLoginCi]
   );
 
   const handleLoginUsernameKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLInputElement>) => {
       if (loginMode !== "PERSONAL") return;
 
-      const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab", "Enter"];
+      const allowedKeys = [
+        "Backspace",
+        "Delete",
+        "ArrowLeft",
+        "ArrowRight",
+        "Home",
+        "End",
+        "Tab",
+        "Enter",
+      ];
       if (allowedKeys.includes(event.key) || event.ctrlKey || event.metaKey || event.altKey) return;
 
       if (!/^[0-9]$/.test(event.key)) {
         event.preventDefault();
       }
     },
-    [loginMode],
+    [loginMode]
   );
 
   const handleSelectPersonalLogin = useCallback(() => {

@@ -33,14 +33,19 @@ export function ArticuloStockIngresoView({
   onComentariosChange,
 }: ArticuloStockIngresoViewProps) {
   const articulosOrdenados = [...articulos].sort(
-    (a, b) => a.tipo.localeCompare(b.tipo) || a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
+    (a, b) =>
+      a.tipo.localeCompare(b.tipo) ||
+      a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })
   );
 
-  const articuloSeleccionado = articulosOrdenados.find((articulo) => String(articulo.articuloId) === articuloId) ?? null;
+  const articuloSeleccionado =
+    articulosOrdenados.find((articulo) => String(articulo.articuloId) === articuloId) ?? null;
   const cantidadIngresada = Number(cantidad);
   const cantidadValida = Number.isInteger(cantidadIngresada) && cantidadIngresada > 0;
   const stockProyectado =
-    articuloSeleccionado && cantidadValida ? articuloSeleccionado.stockActual + cantidadIngresada : articuloSeleccionado?.stockActual ?? 0;
+    articuloSeleccionado && cantidadValida
+      ? articuloSeleccionado.stockActual + cantidadIngresada
+      : (articuloSeleccionado?.stockActual ?? 0);
 
   return (
     <section className="mt-6 space-y-4">
@@ -48,8 +53,12 @@ export function ArticuloStockIngresoView({
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Vista operativa</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Ingreso de stock de artículos</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">
+                Vista operativa
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">
+                Ingreso de stock de artículos
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
                 Suma unidades a un artículo ya registrado sin mezclarlo con el stock de equipos.
               </p>
@@ -68,7 +77,9 @@ export function ArticuloStockIngresoView({
         <div className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
             {articulosOrdenados.length === 0 ? (
-              <p className="text-sm text-stone-600">Primero debes registrar al menos un artículo.</p>
+              <p className="text-sm text-stone-600">
+                Primero debes registrar al menos un artículo.
+              </p>
             ) : (
               <>
                 <label className="block">
@@ -88,7 +99,9 @@ export function ArticuloStockIngresoView({
                 </label>
 
                 <label className="mt-4 block">
-                  <span className="block text-xs font-medium text-stone-700">Cantidad a ingresar *</span>
+                  <span className="block text-xs font-medium text-stone-700">
+                    Cantidad a ingresar *
+                  </span>
                   <input
                     type="number"
                     min={1}
@@ -115,16 +128,22 @@ export function ArticuloStockIngresoView({
           </div>
 
           <aside className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-ejercito-blue)] p-4 text-white shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">Resumen</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">
+              Resumen
+            </p>
             {articuloSeleccionado ? (
               <>
                 <p className="mt-3 text-sm font-bold">{articuloSeleccionado.nombre}</p>
-                <p className="mt-1 text-sm text-white/80">{TIPO_LABEL[articuloSeleccionado.tipo]}</p>
+                <p className="mt-1 text-sm text-white/80">
+                  {TIPO_LABEL[articuloSeleccionado.tipo]}
+                </p>
                 <p className="mt-4 text-sm leading-6 text-white/85">{`Stock actual: ${articuloSeleccionado.stockActual}`}</p>
                 <p className="text-sm leading-6 text-white/85">{`Stock proyectado: ${stockProyectado}`}</p>
               </>
             ) : (
-              <p className="mt-3 text-sm leading-6 text-white/85">Selecciona un artículo para ver su stock actual.</p>
+              <p className="mt-3 text-sm leading-6 text-white/85">
+                Selecciona un artículo para ver su stock actual.
+              </p>
             )}
             <button
               type="button"

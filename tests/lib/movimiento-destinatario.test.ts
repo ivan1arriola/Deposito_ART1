@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeRecintoClase, resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
+import {
+  normalizeRecintoClase,
+  resolveDestinatarioMovimiento,
+} from "@/lib/movimiento-destinatario";
 
 describe("movimiento-destinatario", () => {
   it("normaliza la clase del recinto", () => {

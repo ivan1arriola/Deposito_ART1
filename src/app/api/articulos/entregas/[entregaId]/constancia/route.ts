@@ -81,14 +81,29 @@ function normalizeCellValue(value: string | null | undefined) {
 }
 
 function layoutTableRow(row: TableRow, font: PDFFont): TableRowLayout {
-  const articuloLines = wrapText(normalizeCellValue(row.articulo), TABLE_COL_ARTICULO - 10, font, TABLE_CELL_TEXT_SIZE);
-  const tipoLines = wrapText(normalizeCellValue(row.tipo), TABLE_COL_TIPO - 10, font, TABLE_CELL_TEXT_SIZE);
-  const cantidadLines = wrapText(normalizeCellValue(row.cantidad), TABLE_COL_QTY - 10, font, TABLE_CELL_TEXT_SIZE);
+  const articuloLines = wrapText(
+    normalizeCellValue(row.articulo),
+    TABLE_COL_ARTICULO - 10,
+    font,
+    TABLE_CELL_TEXT_SIZE
+  );
+  const tipoLines = wrapText(
+    normalizeCellValue(row.tipo),
+    TABLE_COL_TIPO - 10,
+    font,
+    TABLE_CELL_TEXT_SIZE
+  );
+  const cantidadLines = wrapText(
+    normalizeCellValue(row.cantidad),
+    TABLE_COL_QTY - 10,
+    font,
+    TABLE_CELL_TEXT_SIZE
+  );
 
   const lineCount = Math.max(articuloLines.length, tipoLines.length, cantidadLines.length, 1);
   const height = Math.max(
     TABLE_MIN_ROW_HEIGHT,
-    TABLE_CELL_TOP_PADDING + TABLE_CELL_BOTTOM_PADDING + lineCount * TABLE_CELL_LINE_HEIGHT,
+    TABLE_CELL_TOP_PADDING + TABLE_CELL_BOTTOM_PADDING + lineCount * TABLE_CELL_LINE_HEIGHT
   );
 
   return {
@@ -108,10 +123,10 @@ const entregaConstanciaInclude = {
         },
       },
       bateria: {
-                    select: {
-                      nombre: true,
-                    },
-                  },
+        select: {
+          nombre: true,
+        },
+      },
     },
   },
   ordenante: {
@@ -182,7 +197,7 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
     entrega.personal.apellido1,
     entrega.personal.apellido2,
     entrega.personal.nombre1,
-    entrega.personal.nombre2,
+    entrega.personal.nombre2
   );
   const destinatarioGrado = entrega.personal.rango.abreviacion;
   const destinatarioCi = formatUruguayanCi(entrega.personal.ci);
@@ -190,23 +205,25 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
   const destinatarioFirmaLabel = militaryShortLabel(
     entrega.personal.rango.abreviacion,
     entrega.personal.apellido1,
-    entrega.personal.nombre1,
+    entrega.personal.nombre1
   );
 
   const ordenanteLabel = `${entrega.ordenante.rango.abreviacion} ${fullName(
     entrega.ordenante.apellido1,
     entrega.ordenante.apellido2,
     entrega.ordenante.nombre1,
-    entrega.ordenante.nombre2,
-  )}`.replace(/\s+/g, " ").trim();
-  const usuarioEntregaLabel = `${rangoAbreviacionLabel(entrega.usuarioEntrega.rango, "")} ${entrega.usuarioEntrega.apellido}, ${entrega.usuarioEntrega.nombre}`.replace(
-    /\s+/g,
-    " ",
-  ).trim();
+    entrega.ordenante.nombre2
+  )}`
+    .replace(/\s+/g, " ")
+    .trim();
+  const usuarioEntregaLabel =
+    `${rangoAbreviacionLabel(entrega.usuarioEntrega.rango, "")} ${entrega.usuarioEntrega.apellido}, ${entrega.usuarioEntrega.nombre}`
+      .replace(/\s+/g, " ")
+      .trim();
   const entregaFirmaLabel = militaryShortLabel(
     rangoAbreviacionLabel(entrega.usuarioEntrega.rango, ""),
     entrega.usuarioEntrega.apellido,
-    entrega.usuarioEntrega.nombre,
+    entrega.usuarioEntrega.nombre
   );
   const observaciones = entrega.comentario?.trim() || "-";
 
@@ -217,7 +234,10 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
   }));
 
   const totalArticulos = rows.length;
-  const totalUnidades = entrega.movimientosStock.reduce((total, movimiento) => total + movimiento.cantidad, 0);
+  const totalUnidades = entrega.movimientosStock.reduce(
+    (total, movimiento) => total + movimiento.cantidad,
+    0
+  );
 
   const pdfDoc = await PDFDocument.create();
   const assets = await createReceiptPdfAssets(pdfDoc);
@@ -243,7 +263,7 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
       },
       top0,
       innerX,
-      innerW,
+      innerW
     );
     let y = header.nextY;
 
@@ -266,13 +286,40 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
 
       const col4 = (innerW - gap * 2) / 3;
       drawField(page, assets, innerX, y, col4, boxH, "Fecha de entrega", fechaEntrega);
-      drawField(page, assets, innerX + col4 + gap, y, col4, boxH, "Total articulos", String(totalArticulos));
-      drawField(page, assets, innerX + col4 * 2 + gap * 2, y, col4, boxH, "Total unidades", String(totalUnidades));
+      drawField(
+        page,
+        assets,
+        innerX + col4 + gap,
+        y,
+        col4,
+        boxH,
+        "Total articulos",
+        String(totalArticulos)
+      );
+      drawField(
+        page,
+        assets,
+        innerX + col4 * 2 + gap * 2,
+        y,
+        col4,
+        boxH,
+        "Total unidades",
+        String(totalUnidades)
+      );
       y += boxH + 6;
 
       const halfW = (innerW - gap) / 2;
       drawField(page, assets, innerX, y, halfW, boxH, "Ordenado por", ordenanteLabel);
-      drawField(page, assets, innerX + halfW + gap, y, halfW, boxH, "Registrado por", usuarioEntregaLabel);
+      drawField(
+        page,
+        assets,
+        innerX + halfW + gap,
+        y,
+        halfW,
+        boxH,
+        "Registrado por",
+        usuarioEntregaLabel
+      );
       y += boxH + 6;
 
       y = drawFieldMultiline(page, assets, innerX, y, innerW, "Observaciones", observaciones);
@@ -284,7 +331,9 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
       innerX,
       y,
       innerW,
-      continuation ? "Detalle de articulos entregados (continuacion)" : "Detalle de articulos entregados",
+      continuation
+        ? "Detalle de articulos entregados (continuacion)"
+        : "Detalle de articulos entregados"
     );
 
     const tableX = innerX;
@@ -345,7 +394,7 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
       },
       top0,
       innerX,
-      innerW,
+      innerW
     );
     const pageContext: PageContext = {
       page,
@@ -369,7 +418,10 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
       color: rgb(0, 0, 0),
     });
     ctx.page.drawLine({
-      start: { x: ctx.tableX + ctx.colArticulo + ctx.colTipo, y: A4_HEIGHT - ctx.y - layout.height },
+      start: {
+        x: ctx.tableX + ctx.colArticulo + ctx.colTipo,
+        y: A4_HEIGHT - ctx.y - layout.height,
+      },
       end: { x: ctx.tableX + ctx.colArticulo + ctx.colTipo, y: A4_HEIGHT - ctx.y },
       thickness: 1,
       color: rgb(0, 0, 0),
@@ -382,7 +434,7 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
         line,
         ctx.tableX + 8,
         ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
-        TABLE_CELL_TEXT_SIZE,
+        TABLE_CELL_TEXT_SIZE
       );
     });
     layout.tipoLines.forEach((line, index) => {
@@ -392,7 +444,7 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
         line,
         ctx.tableX + ctx.colArticulo + 8,
         ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
-        TABLE_CELL_TEXT_SIZE,
+        TABLE_CELL_TEXT_SIZE
       );
     });
     layout.cantidadLines.forEach((line, index) => {
@@ -402,7 +454,7 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
         line,
         ctx.tableX + ctx.colArticulo + ctx.colTipo + 8,
         ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
-        TABLE_CELL_TEXT_SIZE,
+        TABLE_CELL_TEXT_SIZE
       );
     });
     ctx.y += layout.height;
@@ -414,8 +466,7 @@ export async function GET(request: Request, context: { params: Promise<{ entrega
 
   function drawClosingBlock(ctx: PageContext) {
     drawAcknowledgementFooter(ctx.page, assets, ctx.y, {
-      body:
-        "El militar que recibe deja constancia de haber recibido los articulos detallados, conformes a la presente entrega, para su uso institucional y bajo su responsabilidad.",
+      body: "El militar que recibe deja constancia de haber recibido los articulos detallados, conformes a la presente entrega, para su uso institucional y bajo su responsabilidad.",
       leftSignatureTitle: "Firma de quien entrega",
       leftSignatureName: entregaFirmaLabel,
       rightSignatureTitle: "Firma de quien recibe",

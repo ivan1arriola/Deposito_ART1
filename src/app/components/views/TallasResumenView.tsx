@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { TALLA_KEYS, TALLA_LABELS } from "@/lib/tallas";
-import type { ResumenBateria, SectionId, TallasResumenSubView, TallasResumenViewProps } from "./tallas-resumen/types";
+import type {
+  ResumenBateria,
+  SectionId,
+  TallasResumenSubView,
+  TallasResumenViewProps,
+} from "./tallas-resumen/types";
 import {
   buildResumenOficialesSuboficiales,
   buildResumenTallasPorBateria,
@@ -29,15 +34,33 @@ type QuickPrintLinkProps = {
 function QuickPrintLink({ href, label, className }: QuickPrintLinkProps) {
   return (
     <a href={href} target="_blank" rel="noreferrer" className={className}>
-      <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9V4h12v5M6 17h12v3H6v-3zm-2-2h16a2 2 0 002-2v-2a2 2 0 00-2-2H4a2 2 0 00-2 2v2a2 2 0 002 2z" />
+      <svg
+        className="h-4 w-4 shrink-0"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M6 9V4h12v5M6 17h12v3H6v-3zm-2-2h16a2 2 0 002-2v-2a2 2 0 00-2-2H4a2 2 0 00-2 2v2a2 2 0 002 2z"
+        />
       </svg>
       <span>{label}</span>
     </a>
   );
 }
 
-function AccordionCard({ title, description, open, onToggle, badge, children }: AccordionCardProps) {
+function AccordionCard({
+  title,
+  description,
+  open,
+  onToggle,
+  badge,
+  children,
+}: AccordionCardProps) {
   return (
     <article className="ej-card rounded-2xl p-4">
       <button
@@ -87,8 +110,15 @@ function buildOpenSectionsForSubView(subView: TallasResumenSubView): Record<Sect
   };
 }
 
-export function TallasResumenView({ personal, baterias, oficialesSuboficiales, subView = "general" }: TallasResumenViewProps) {
-  const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>(() => buildOpenSectionsForSubView(subView));
+export function TallasResumenView({
+  personal,
+  baterias,
+  oficialesSuboficiales,
+  subView = "general",
+}: TallasResumenViewProps) {
+  const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>(() =>
+    buildOpenSectionsForSubView(subView)
+  );
   const [showMissingDataWarning, setShowMissingDataWarning] = useState(false);
 
   const resumenUnidad = useMemo<ResumenBateria>(() => {
@@ -101,7 +131,7 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
 
   const resumenOficialesSuboficiales = useMemo(
     () => buildResumenOficialesSuboficiales(oficialesSuboficiales),
-    [oficialesSuboficiales],
+    [oficialesSuboficiales]
   );
 
   const toggleSection = (section: SectionId) => {
@@ -141,8 +171,8 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
           resumen.flatMap((bateria) => {
             const tallaData = bateria.tallas.find((t) => t.key === tallaKey);
             return tallaData?.values.map((value) => value.talla) ?? [];
-          }),
-        ),
+          })
+        )
       ).sort((a, b) => {
         if (a === "Sin dato") return 1;
         if (b === "Sin dato") return -1;
@@ -150,7 +180,10 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
       });
 
       return (
-        <article key={`talla-section-${tallaKey}`} className="rounded-xl border border-stone-200 bg-white p-3">
+        <article
+          key={`talla-section-${tallaKey}`}
+          className="rounded-xl border border-stone-200 bg-white p-3"
+        >
           <div className="mb-3 flex equipos-center justify-between">
             <div>
               <h3 className="text-sm font-semibold text-stone-900">{TALLA_LABELS[tallaKey]}</h3>
@@ -168,16 +201,23 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
               <div className="space-y-3 md:hidden">
                 {resumen.map((bateria) => {
                   const talla = bateria.tallas.find((t) => t.key === tallaKey);
-                  const tallaCounts = new Map(talla?.values.map((value) => [value.talla, value.cantidad]));
+                  const tallaCounts = new Map(
+                    talla?.values.map((value) => [value.talla, value.cantidad])
+                  );
 
                   return (
-                    <article key={`card-${bateria.key}-${tallaKey}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                    <article
+                      key={`card-${bateria.key}-${tallaKey}`}
+                      className="rounded-xl border border-stone-200 bg-stone-50 p-3"
+                    >
                       <div className="flex equipos-center justify-between gap-2">
                         <h4 className="text-sm font-semibold text-stone-900">{bateria.nombre}</h4>
                         {showTotal ? (
                           <span
                             className={`inline-flex min-w-[2.5rem] justify-center rounded-full px-2 py-0.5 text-xs font-bold ${
-                              bateria.total > 0 ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-600"
+                              bateria.total > 0
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-stone-200 text-stone-600"
                             }`}
                           >
                             {bateria.total}
@@ -188,9 +228,14 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
                         {columnLabels.map((label) => {
                           const value = tallaCounts.get(label) ?? 0;
                           return (
-                            <div key={`mobile-${bateria.key}-${tallaKey}-${label}`} className="rounded-lg border border-stone-200 bg-white px-2 py-2">
+                            <div
+                              key={`mobile-${bateria.key}-${tallaKey}-${label}`}
+                              className="rounded-lg border border-stone-200 bg-white px-2 py-2"
+                            >
                               <p className="text-[11px] font-semibold text-stone-500">{label}</p>
-                              <p className="text-sm font-bold text-stone-900">{value > 0 ? value : "-"}</p>
+                              <p className="text-sm font-bold text-stone-900">
+                                {value > 0 ? value : "-"}
+                              </p>
                             </div>
                           );
                         })}
@@ -224,16 +269,25 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
                   <tbody>
                     {resumen.map((bateria, rowIndex) => {
                       const talla = bateria.tallas.find((t) => t.key === tallaKey);
-                      const tallaCounts = new Map(talla?.values.map((value) => [value.talla, value.cantidad]));
+                      const tallaCounts = new Map(
+                        talla?.values.map((value) => [value.talla, value.cantidad])
+                      );
 
                       return (
-                        <tr key={`row-${bateria.key}-${tallaKey}`} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                          <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">{bateria.nombre}</td>
+                        <tr
+                          key={`row-${bateria.key}-${tallaKey}`}
+                          className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}
+                        >
+                          <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">
+                            {bateria.nombre}
+                          </td>
                           {showTotal ? (
                             <td className="border-b border-stone-200 px-3 py-3">
                               <span
                                 className={`inline-flex min-w-[2.5rem] justify-center rounded-full px-2 py-0.5 text-xs font-bold ${
-                                  bateria.total > 0 ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-600"
+                                  bateria.total > 0
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-stone-200 text-stone-600"
                                 }`}
                               >
                                 {bateria.total}
@@ -243,7 +297,10 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
                           {columnLabels.map((label) => {
                             const value = tallaCounts.get(label) ?? 0;
                             return (
-                              <td key={`cell-${bateria.key}-${tallaKey}-${label}`} className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">
+                              <td
+                                key={`cell-${bateria.key}-${tallaKey}-${label}`}
+                                className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900"
+                              >
                                 {value > 0 ? value : "-"}
                               </td>
                             );
@@ -267,11 +324,16 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
 
   const renderResumenPorBateria = (resumen: ResumenBateria[]) => {
     return resumen.map((bateria) => (
-      <article key={`bateria-${bateria.key}`} className="rounded-xl border border-stone-200 bg-white p-3">
+      <article
+        key={`bateria-${bateria.key}`}
+        className="rounded-xl border border-stone-200 bg-white p-3"
+      >
         <div className="mb-3 flex equipos-center justify-between gap-2">
           <div>
             <h3 className="text-sm font-semibold text-stone-900">{bateria.nombre}</h3>
-            <p className="mt-1 text-xs text-stone-600">Total de subalternos considerados en este grupo</p>
+            <p className="mt-1 text-xs text-stone-600">
+              Total de subalternos considerados en este grupo
+            </p>
           </div>
           <span
             className={`inline-flex min-w-[2.5rem] justify-center rounded-full px-2 py-0.5 text-xs font-bold ${
@@ -287,7 +349,10 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
             const hasAnyData = talla.values.length > 0;
 
             return (
-              <article key={`bateria-${bateria.key}-talla-${talla.key}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+              <article
+                key={`bateria-${bateria.key}-talla-${talla.key}`}
+                className="rounded-xl border border-stone-200 bg-stone-50 p-3"
+              >
                 <div className="mb-3 flex equipos-center justify-between gap-2">
                   <div>
                     <h4 className="text-sm font-semibold text-stone-900">{talla.label}</h4>
@@ -304,7 +369,10 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
                   <>
                     <div className="grid grid-cols-2 gap-2 md:hidden">
                       {talla.values.map((value) => (
-                        <div key={`mobile-${bateria.key}-${talla.key}-${value.talla}`} className="rounded-lg border border-stone-200 bg-white px-2 py-2">
+                        <div
+                          key={`mobile-${bateria.key}-${talla.key}-${value.talla}`}
+                          className="rounded-lg border border-stone-200 bg-white px-2 py-2"
+                        >
                           <p className="text-[11px] font-semibold text-stone-500">{value.talla}</p>
                           <p className="text-sm font-bold text-stone-900">{value.cantidad}</p>
                         </div>
@@ -314,15 +382,26 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
                       <table className="w-full border-collapse text-left text-xs">
                         <thead>
                           <tr className="bg-stone-100">
-                            <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
-                            <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Cantidad</th>
+                            <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                              Talla
+                            </th>
+                            <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                              Cantidad
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
                           {talla.values.map((value, index) => (
-                            <tr key={`row-${bateria.key}-${talla.key}-${value.talla}`} className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                              <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">{value.talla}</td>
-                              <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">{value.cantidad}</td>
+                            <tr
+                              key={`row-${bateria.key}-${talla.key}-${value.talla}`}
+                              className={index % 2 === 0 ? "bg-white" : "bg-stone-50/70"}
+                            >
+                              <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">
+                                {value.talla}
+                              </td>
+                              <td className="border-b border-stone-200 px-3 py-3 text-sm font-semibold text-stone-900">
+                                {value.cantidad}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -348,13 +427,18 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
         <div className="mb-3">
           <h2 className="text-base font-semibold text-stone-900">Impresion de talles</h2>
           <p className="mt-1 text-xs text-stone-600">
-            Selecciona directamente el boton de lo que quieres imprimir. Cada accion indica grupo y tipo de documento.
+            Selecciona directamente el boton de lo que quieres imprimir. Cada accion indica grupo y
+            tipo de documento.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
           <section className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Subalternos</p>
-            <p className="mt-1 text-xs text-emerald-900/80">Acciones de impresion para personal subalterno.</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
+              Subalternos
+            </p>
+            <p className="mt-1 text-xs text-emerald-900/80">
+              Acciones de impresion para personal subalterno.
+            </p>
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <QuickPrintLink
                 href="/talles-subalternos?autoprint=1"
@@ -371,7 +455,9 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
 
           <section className="rounded-xl border border-sky-200 bg-sky-50/40 p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">Oficiales</p>
-            <p className="mt-1 text-xs text-sky-900/80">Acciones de impresion para personal oficial.</p>
+            <p className="mt-1 text-xs text-sky-900/80">
+              Acciones de impresion para personal oficial.
+            </p>
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <QuickPrintLink
                 href="/talles-oficiales-suboficiales?autoprint=1&tipo=oficial"
@@ -387,8 +473,12 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
           </section>
 
           <section className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-800">Suboficiales</p>
-            <p className="mt-1 text-xs text-indigo-900/80">Acciones de impresion para personal suboficial.</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-800">
+              Suboficiales
+            </p>
+            <p className="mt-1 text-xs text-indigo-900/80">
+              Acciones de impresion para personal suboficial.
+            </p>
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <QuickPrintLink
                 href="/talles-oficiales-suboficiales?autoprint=1&tipo=suboficial"
@@ -404,7 +494,9 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
           </section>
 
           <section className="rounded-xl border border-amber-200 bg-amber-50/40 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Toda la unidad</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+              Toda la unidad
+            </p>
             <p className="mt-1 text-xs text-amber-900/80">Consolidado general de toda la unidad.</p>
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <QuickPrintLink
@@ -421,8 +513,12 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
           </section>
 
           <section className="rounded-xl border border-rose-200 bg-rose-50/40 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">Por bateria</p>
-            <p className="mt-1 text-xs text-rose-900/80">Frecuencia absoluta de talles para cada bateria.</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">
+              Por bateria
+            </p>
+            <p className="mt-1 text-xs text-rose-900/80">
+              Frecuencia absoluta de talles para cada bateria.
+            </p>
             <div className="mt-3 grid grid-cols-1 gap-2">
               <QuickPrintLink
                 href="/resumen-talles-por-bateria?autoprint=1"
@@ -467,28 +563,52 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
           badge={String(oficialesSuboficiales.length)}
         >
           {resumenOficialesSuboficiales.map((section) => (
-            <article key={`resumen-ssoo-${section.key}`} className="rounded-xl border border-stone-200 bg-white p-3">
+            <article
+              key={`resumen-ssoo-${section.key}`}
+              className="rounded-xl border border-stone-200 bg-white p-3"
+            >
               <h3 className="text-sm font-semibold text-stone-900">{section.label}</h3>
               {section.rows.length === 0 ? (
-                <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">Sin datos.</p>
+                <p className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-500">
+                  Sin datos.
+                </p>
               ) : (
                 <div className="mt-2 overflow-auto rounded-lg border border-stone-200">
                   <table className="w-full border-collapse text-left text-xs">
                     <thead>
                       <tr className="bg-stone-100">
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Talla</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Oficiales</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Suboficiales</th>
-                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">Total</th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                          Talla
+                        </th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                          Oficiales
+                        </th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                          Suboficiales
+                        </th>
+                        <th className="border-b border-stone-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                          Total
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {section.rows.map((row, rowIndex) => (
-                        <tr key={`${section.key}-${row.talla}`} className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.talla}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.oficiales}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">{row.suboficiales}</td>
-                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">{row.total}</td>
+                        <tr
+                          key={`${section.key}-${row.talla}`}
+                          className={rowIndex % 2 === 0 ? "bg-white" : "bg-stone-50/70"}
+                        >
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">
+                            {row.talla}
+                          </td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">
+                            {row.oficiales}
+                          </td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm text-stone-900">
+                            {row.suboficiales}
+                          </td>
+                          <td className="border-b border-stone-200 px-3 py-2 text-sm font-semibold text-stone-900">
+                            {row.total}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -510,8 +630,19 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
             aria-controls="missing-data-warning-panel"
             title="Hay personal con talles sin dato"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.66 18h16.68a1 1 0 00.87-1.5l-7.5-13a1 1 0 00-1.74 0z" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.66 18h16.68a1 1 0 00.87-1.5l-7.5-13a1 1 0 00-1.74 0z"
+              />
             </svg>
             <span className="hidden sm:inline">Datos incompletos</span>
             <span className="inline-flex min-w-[1.5rem] justify-center rounded-full bg-amber-700 px-1.5 py-0.5 text-[11px] font-bold text-white">
@@ -528,7 +659,8 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
                 <div>
                   <p className="text-sm font-semibold text-amber-900">Advertencia de talles</p>
                   <p className="mt-1 text-xs text-stone-700">
-                    Se detectaron {totalPersonalConTallesIncompletos} personas con uno o mas talles sin dato.
+                    Se detectaron {totalPersonalConTallesIncompletos} personas con uno o mas talles
+                    sin dato.
                   </p>
                 </div>
                 <button
@@ -548,14 +680,19 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
                     </p>
                     <ul className="mt-1 space-y-1">
                       {subalternosConTallesIncompletos.slice(0, 10).map((entry) => (
-                        <li key={entry.id} className="rounded-lg border border-stone-200 bg-stone-50 px-2 py-1.5 text-xs text-stone-700">
+                        <li
+                          key={entry.id}
+                          className="rounded-lg border border-stone-200 bg-stone-50 px-2 py-1.5 text-xs text-stone-700"
+                        >
                           <span className="font-semibold text-stone-900">{entry.label}</span>
                           <span className="ml-1">{`- Falta: ${entry.missing.map((key) => TALLA_LABELS[key]).join(", ")}`}</span>
                         </li>
                       ))}
                     </ul>
                     {subalternosConTallesIncompletos.length > 10 ? (
-                      <p className="mt-1 text-[11px] text-stone-500">... y {subalternosConTallesIncompletos.length - 10} mas.</p>
+                      <p className="mt-1 text-[11px] text-stone-500">
+                        ... y {subalternosConTallesIncompletos.length - 10} mas.
+                      </p>
                     ) : null}
                   </section>
                 ) : null}
@@ -567,14 +704,19 @@ export function TallasResumenView({ personal, baterias, oficialesSuboficiales, s
                     </p>
                     <ul className="mt-1 space-y-1">
                       {oficialesSuboficialesConTallesIncompletos.slice(0, 10).map((entry) => (
-                        <li key={entry.id} className="rounded-lg border border-stone-200 bg-stone-50 px-2 py-1.5 text-xs text-stone-700">
+                        <li
+                          key={entry.id}
+                          className="rounded-lg border border-stone-200 bg-stone-50 px-2 py-1.5 text-xs text-stone-700"
+                        >
                           <span className="font-semibold text-stone-900">{entry.label}</span>
                           <span className="ml-1">{`- Falta: ${entry.missing.map((key) => TALLA_LABELS[key]).join(", ")}`}</span>
                         </li>
                       ))}
                     </ul>
                     {oficialesSuboficialesConTallesIncompletos.length > 10 ? (
-                      <p className="mt-1 text-[11px] text-stone-500">... y {oficialesSuboficialesConTallesIncompletos.length - 10} mas.</p>
+                      <p className="mt-1 text-[11px] text-stone-500">
+                        ... y {oficialesSuboficialesConTallesIncompletos.length - 10} mas.
+                      </p>
                     ) : null}
                   </section>
                 ) : null}

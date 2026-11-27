@@ -159,7 +159,10 @@ describe("POST /api/auditoria/[auditoriaId]/undo", () => {
       entidad: "ARTICULO",
       accion: "UPDATE",
       entidadId: "42",
-      detalle: { previo: { nombre: "Remera Termica", tipo: "ABRIGO" }, nuevo: { nombre: "Remera Manga Larga", tipo: "EQUIPO" } },
+      detalle: {
+        previo: { nombre: "Remera Termica", tipo: "ABRIGO" },
+        nuevo: { nombre: "Remera Manga Larga", tipo: "EQUIPO" },
+      },
     });
 
     mockTx.articulo.update.mockResolvedValue({ articuloId: 42, nombre: "Remera Termica" });

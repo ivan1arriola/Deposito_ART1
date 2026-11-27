@@ -32,18 +32,25 @@ function parseOptionalRangoId(value: unknown) {
 function isValidPayload(body: unknown): body is UsuarioPayload {
   if (!body || typeof body !== "object") return false;
   const candidate = body as Record<string, unknown>;
-  if (candidate.rangoId !== undefined && parseOptionalRangoId(candidate.rangoId) === undefined) return false;
+  if (candidate.rangoId !== undefined && parseOptionalRangoId(candidate.rangoId) === undefined)
+    return false;
   if (typeof candidate.nombre !== "string" || candidate.nombre.trim() === "") return false;
   if (typeof candidate.apellido !== "string" || candidate.apellido.trim() === "") return false;
   if (typeof candidate.usuario !== "string" || candidate.usuario.trim() === "") return false;
   if (typeof candidate.password !== "string" || candidate.password.length < 8) return false;
-  if (candidate.mailReferencia !== undefined && candidate.mailReferencia !== null && typeof candidate.mailReferencia !== "string") return false;
+  if (
+    candidate.mailReferencia !== undefined &&
+    candidate.mailReferencia !== null &&
+    typeof candidate.mailReferencia !== "string"
+  )
+    return false;
   if (candidate.rol !== undefined && typeof candidate.rol !== "string") return false;
   return true;
 }
 
 function roleFromValue(value: unknown): UserRole {
-  if (value === "ADMIN" || value === "DESARROLLADOR" || value === "EDITOR" || value === "READ_ONLY") return value;
+  if (value === "ADMIN" || value === "DESARROLLADOR" || value === "EDITOR" || value === "READ_ONLY")
+    return value;
   return "EDITOR";
 }
 
@@ -82,7 +89,9 @@ function serializeUsuario(usuario: UsuarioRecord) {
     apellido: usuario.apellido,
     username: usuario.username,
     mailReferencia: usuario.mailReferencia,
-    mailVerificadaAt: usuario.mailVerificadaAt ? formatDateTimeForDisplay(usuario.mailVerificadaAt) : null,
+    mailVerificadaAt: usuario.mailVerificadaAt
+      ? formatDateTimeForDisplay(usuario.mailVerificadaAt)
+      : null,
     rol: usuario.rol,
     activo: usuario.activo,
     createdAt: formatDateTimeForDisplay(usuario.createdAt),
@@ -105,16 +114,15 @@ export async function GET(request: Request) {
     listPersonalAdminUsers(),
   ]);
 
-  const usuarios = [
-    ...usuariosSistema.map(serializeUsuario),
-    ...usuariosPersonal,
-  ].sort((left, right) => {
-    const byApellido = left.apellido.localeCompare(right.apellido, "es", { sensitivity: "base" });
-    if (byApellido !== 0) return byApellido;
-    const byNombre = left.nombre.localeCompare(right.nombre, "es", { sensitivity: "base" });
-    if (byNombre !== 0) return byNombre;
-    return left.username.localeCompare(right.username, "es", { sensitivity: "base" });
-  });
+  const usuarios = [...usuariosSistema.map(serializeUsuario), ...usuariosPersonal].sort(
+    (left, right) => {
+      const byApellido = left.apellido.localeCompare(right.apellido, "es", { sensitivity: "base" });
+      if (byApellido !== 0) return byApellido;
+      const byNombre = left.nombre.localeCompare(right.nombre, "es", { sensitivity: "base" });
+      if (byNombre !== 0) return byNombre;
+      return left.username.localeCompare(right.username, "es", { sensitivity: "base" });
+    }
+  );
 
   return NextResponse.json(usuarios);
 }
@@ -127,8 +135,11 @@ export async function POST(request: Request) {
   const body = await request.json();
   if (!isValidPayload(body)) {
     return NextResponse.json(
-      { error: "Payload inválido. Nombre, apellido, usuario y contraseña (mín. 8 caracteres) son obligatorios." },
-      { status: 400 },
+      {
+        error:
+          "Payload inválido. Nombre, apellido, usuario y contraseña (mín. 8 caracteres) son obligatorios.",
+      },
+      { status: 400 }
     );
   }
 
@@ -148,7 +159,9 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await hashPassword(body.password);
-  const normalizedMail = body.mailReferencia?.trim() ? normalizeEmailAddress(body.mailReferencia) : null;
+  const normalizedMail = body.mailReferencia?.trim()
+    ? normalizeEmailAddress(body.mailReferencia)
+    : null;
   if (normalizedMail && !isValidEmailAddress(normalizedMail)) {
     return NextResponse.json({ error: "Mail de referencia invalido." }, { status: 400 });
   }
@@ -204,7 +217,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json(serializeUsuario(created), { status: 201 });
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
       return NextResponse.json({ error: "El usuario ya existe." }, { status: 409 });
     }
     return NextResponse.json({ error: "No se pudo crear el usuario." }, { status: 500 });

@@ -1,6 +1,7 @@
 import type { EquipoMovimientoViewRow } from "@/types/views";
 
-export type MovimientosEquipoTipoFilter = "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO_PENDIENTE";
+export type MovimientosEquipoTipoFilter =
+  "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO_PENDIENTE";
 
 export const DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS: MovimientosEquipoTipoFilter[] = [
   "ENTREGA",
@@ -9,7 +10,9 @@ export const DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS: MovimientosEquipoTipoFilte
   "PRESTAMO_PENDIENTE",
 ];
 
-const VALID_TIPO_FILTERS = new Set<MovimientosEquipoTipoFilter>(DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS);
+const VALID_TIPO_FILTERS = new Set<MovimientosEquipoTipoFilter>(
+  DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS
+);
 
 function normalizeTipoFilters(filters: readonly string[]): MovimientosEquipoTipoFilter[] {
   const normalized: MovimientosEquipoTipoFilter[] = [];
@@ -22,18 +25,22 @@ function normalizeTipoFilters(filters: readonly string[]): MovimientosEquipoTipo
   return normalized.length > 0 ? normalized : [...DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS];
 }
 
-export function parseMovimientosEquipoTipoFilters(raw: string | null | undefined): MovimientosEquipoTipoFilter[] {
+export function parseMovimientosEquipoTipoFilters(
+  raw: string | null | undefined
+): MovimientosEquipoTipoFilter[] {
   if (!raw) return [...DEFAULT_MOVIMIENTOS_EQUIPO_TIPO_FILTERS];
   return normalizeTipoFilters(raw.split(","));
 }
 
-export function serializeMovimientosEquipoTipoFilters(filters: readonly MovimientosEquipoTipoFilter[]): string {
+export function serializeMovimientosEquipoTipoFilters(
+  filters: readonly MovimientosEquipoTipoFilter[]
+): string {
   return normalizeTipoFilters(filters).join(",");
 }
 
 export function applyMovimientosEquipoTipoFilters(
   rows: readonly EquipoMovimientoViewRow[],
-  filters: readonly MovimientosEquipoTipoFilter[],
+  filters: readonly MovimientosEquipoTipoFilter[]
 ): EquipoMovimientoViewRow[] {
   const enabled = new Set(normalizeTipoFilters(filters));
 

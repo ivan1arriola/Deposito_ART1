@@ -51,7 +51,7 @@ function tallasPayloadFromForm(form: TallasFormValues) {
       acc[key] = normalizeTallaValue(key, form[key]) ?? "";
       return acc;
     },
-    {} as Record<TallaKey, string>,
+    {} as Record<TallaKey, string>
   );
 }
 

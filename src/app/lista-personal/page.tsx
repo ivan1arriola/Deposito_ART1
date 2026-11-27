@@ -65,12 +65,12 @@ export default async function ListaPersonalPage({
         },
       },
       bateria: {
-                  select: {
-                    bateriaId: true,
-                    nombre: true,
-                    orden: true,
-                  },
-                },
+        select: {
+          bateriaId: true,
+          nombre: true,
+          orden: true,
+        },
+      },
     },
   });
 

@@ -51,9 +51,7 @@ describe("POST /api/articulos/ingresos", () => {
       response: new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 }),
     } as never);
 
-    const res = await POST(
-      createMockRequest({ articuloId: 1, cantidad: 12 }),
-    );
+    const res = await POST(createMockRequest({ articuloId: 1, cantidad: 12 }));
 
     expect(res.status).toBe(403);
     expect(prisma.$transaction).not.toHaveBeenCalled();
@@ -65,9 +63,7 @@ describe("POST /api/articulos/ingresos", () => {
       user: { usuarioId: "usr-1" },
     } as never);
 
-    const res = await POST(
-      createMockRequest({ articuloId: 1, cantidad: -5 }),
-    );
+    const res = await POST(createMockRequest({ articuloId: 1, cantidad: -5 }));
 
     expect(res.status).toBe(400);
     expect(prisma.$transaction).not.toHaveBeenCalled();
@@ -80,9 +76,7 @@ describe("POST /api/articulos/ingresos", () => {
     } as never);
     mockTx.articulo.findUnique.mockResolvedValue(null);
 
-    const res = await POST(
-      createMockRequest({ articuloId: 99, cantidad: 10 }),
-    );
+    const res = await POST(createMockRequest({ articuloId: 99, cantidad: 10 }));
 
     expect(res.status).toBe(404);
     const json = await res.json();
@@ -106,7 +100,7 @@ describe("POST /api/articulos/ingresos", () => {
     vi.mocked(calcularStockArticulo).mockResolvedValue(22);
 
     const res = await POST(
-      createMockRequest({ articuloId: 1, cantidad: 12, comentarios: "Compra mensual" }),
+      createMockRequest({ articuloId: 1, cantidad: 12, comentarios: "Compra mensual" })
     );
 
     expect(res.status).toBe(201);

@@ -45,7 +45,7 @@ export type StockViewProps = {
       | "fechaPrestamo"
       | "fechaEstimadaDevolucionTexto"
       | "comentarios",
-    value: string,
+    value: string
   ) => void;
   onPrestamoItemChange: (index: number, field: keyof PrestamoDraftEquipo, value: string) => void;
   onAddPrestamoItem: () => void;
@@ -55,7 +55,11 @@ export type StockViewProps = {
   onReturnPrestamo: (
     prestamoId: string,
     fechaDevolucion: string,
-    equipos?: Array<{ equipoId: string; estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion?: string }>,
+    equipos?: Array<{
+      equipoId: string;
+      estadoDevolucion: PrestamoEstadoEquipo;
+      comentarioDevolucion?: string;
+    }>
   ) => void;
   onReload: () => void;
 };

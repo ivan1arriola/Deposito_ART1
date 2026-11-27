@@ -4,7 +4,10 @@ import { authorizeRequest } from "@/lib/auth";
 import { formatDateOnlyFromDate, formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { getHojaEntregaData } from "@/lib/hoja-entrega-data";
 import { getPersonalSelfContact } from "@/lib/personal-auth";
-import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
+import {
+  ensurePrestamoActuanteCompatibility,
+  fetchPrestamoActuanteByMovimientoIds,
+} from "@/lib/prestamo-actuante";
 import { prestamoInclude, serializePrestamoWithActuante } from "@/lib/prestamos";
 import { prisma } from "@/lib/prisma";
 import {
@@ -14,7 +17,8 @@ import {
 } from "@/lib/tipo-movimiento";
 
 type PersonaProfileTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
-type PersonaProfileTimelineType = "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO";
+type PersonaProfileTimelineType =
+  "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO";
 
 type PersonaProfileTimelineEntry = {
   id: string;
@@ -52,10 +56,10 @@ const PERSONAL_PROFILE_SELECT = {
     },
   },
   bateria: {
-          select: {
-            nombre: true,
-          },
-        },
+    select: {
+      nombre: true,
+    },
+  },
   tallas: {
     include: {
       tallaTipo: {
@@ -86,11 +90,17 @@ function formatUsuarioMovimientoLabel(usuario: {
   nombre: string;
   username: string;
 }) {
-  const label = `${usuario.rango?.abreviacion ?? ""} ${usuario.apellido}, ${usuario.nombre}`.replace(/\s+/g, " ").trim();
+  const label = `${usuario.rango?.abreviacion ?? ""} ${usuario.apellido}, ${usuario.nombre}`
+    .replace(/\s+/g, " ")
+    .trim();
   return label || usuario.username;
 }
 
-function buildEquipmentSummaryFromHoja(hojaSnapshot: { matrix: Array<{ equipo: string; entregaTotal: number; devolucionTotal: number }> } | null) {
+function buildEquipmentSummaryFromHoja(
+  hojaSnapshot: {
+    matrix: Array<{ equipo: string; entregaTotal: number; devolucionTotal: number }>;
+  } | null
+) {
   if (!hojaSnapshot) return [] as PersonaProfileEquipmentRow[];
   return hojaSnapshot.matrix
     .map((row) => {
@@ -110,7 +120,7 @@ function buildEquipmentSummaryFromHoja(hojaSnapshot: { matrix: Array<{ equipo: s
 }
 
 function buildEquipmentSummaryFromPrestamos(
-  prestamos: Array<ReturnType<typeof serializePrestamoWithActuante>>,
+  prestamos: Array<ReturnType<typeof serializePrestamoWithActuante>>
 ) {
   const prestadoMap = new Map<string, number>();
   const devueltoMap = new Map<string, number>();
@@ -147,16 +157,24 @@ function buildPersonaProfileTimeline(
     usuarioEntregaNombre: string;
     equipos: Array<{ nombre: string; cantidad: number }>;
   }>,
-  prestamos: Array<ReturnType<typeof serializePrestamoWithActuante>>,
+  prestamos: Array<ReturnType<typeof serializePrestamoWithActuante>>
 ) {
   const registrosTimeline = registros.map((registro) => ({
     id: `registro-${registro.registroId}`,
     fecha: registro.fecha,
-    tipo: registro.tipo === "ENTREGA" ? "ENTREGA" : registro.tipo === "DEVOLUCION" ? "DEVOLUCION" : "ASIGNACION",
+    tipo:
+      registro.tipo === "ENTREGA"
+        ? "ENTREGA"
+        : registro.tipo === "DEVOLUCION"
+          ? "DEVOLUCION"
+          : "ASIGNACION",
     descripcion: `Registro ${registro.tipo.toLowerCase()} · ${registro.equipos.reduce((acc, equipo) => acc + equipo.cantidad, 0)} unidades`,
     responsable: registro.usuarioEntregaNombre?.trim() || null,
     estadoPrestamo: null,
-    equipos: registro.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
+    equipos: registro.equipos.map((equipo) => ({
+      nombre: equipo.nombre,
+      cantidad: equipo.cantidad,
+    })),
   })) satisfies PersonaProfileTimelineEntry[];
 
   const prestamosTimeline = prestamos.flatMap((prestamo) => {
@@ -167,7 +185,10 @@ function buildPersonaProfileTimeline(
       descripcion: `Préstamo ${prestamo.reciboNumero} · ${prestamo.estado.toLowerCase()}`,
       responsable: prestamo.usuarioEntregaNombre ?? null,
       estadoPrestamo: prestamo.estado,
-      equipos: prestamo.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
+      equipos: prestamo.equipos.map((equipo) => ({
+        nombre: equipo.nombre,
+        cantidad: equipo.cantidad,
+      })),
     };
 
     if (!prestamo.fechaDevolucion) return [prestamoEntry];
@@ -179,7 +200,10 @@ function buildPersonaProfileTimeline(
       descripcion: `Devolución de préstamo ${prestamo.reciboNumero}`,
       responsable: prestamo.usuarioRecibeDevolucionNombre ?? prestamo.usuarioEntregaNombre ?? null,
       estadoPrestamo: "DEVUELTO",
-      equipos: prestamo.equipos.map((equipo) => ({ nombre: equipo.nombre, cantidad: equipo.cantidad })),
+      equipos: prestamo.equipos.map((equipo) => ({
+        nombre: equipo.nombre,
+        cantidad: equipo.cantidad,
+      })),
     };
 
     return [prestamoEntry, devolucionEntry];
@@ -206,7 +230,10 @@ export async function GET(request: Request) {
   });
 
   if (!persona) {
-    return NextResponse.json({ error: "No se encontró información personal para esta cuenta." }, { status: 404 });
+    return NextResponse.json(
+      { error: "No se encontró información personal para esta cuenta." },
+      { status: 404 }
+    );
   }
 
   const contacto = await getPersonalSelfContact(ci);
@@ -267,11 +294,11 @@ export async function GET(request: Request) {
   ]);
 
   const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds(
-    prestamosRaw.map((prestamo) => prestamo.movimientoId),
+    prestamosRaw.map((prestamo) => prestamo.movimientoId)
   );
 
   const prestamos = prestamosRaw.map((prestamo) =>
-    serializePrestamoWithActuante(prestamo, actuanteByMovimientoId),
+    serializePrestamoWithActuante(prestamo, actuanteByMovimientoId)
   );
 
   const registros = registrosRaw.map((movimiento) => {
@@ -320,7 +347,7 @@ export async function GET(request: Request) {
                   devolucionTotal: row.devolucionTotal,
                 })),
               }
-            : null,
+            : null
         )
       : buildEquipmentSummaryFromPrestamos(prestamos);
 
@@ -337,7 +364,8 @@ export async function GET(request: Request) {
       bateriaNombre: persona.bateria?.nombre ?? null,
       telefonoContacto: contacto?.telefonoContacto ?? persona.telefonoContacto,
       mailReferencia: contacto?.mailReferencia ?? null,
-      esReingreso: persona.rango.tipo === TipoPersonal.SUBALTERNO ? (persona.esReingreso ?? false) : null,
+      esReingreso:
+        persona.rango.tipo === TipoPersonal.SUBALTERNO ? (persona.esReingreso ?? false) : null,
       fechaIngreso:
         persona.rango.tipo === TipoPersonal.SUBALTERNO
           ? formatDateOnlyFromDate(persona.fechaIngreso ?? null)

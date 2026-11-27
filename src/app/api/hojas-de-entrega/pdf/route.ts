@@ -20,10 +20,16 @@ export async function GET(request: Request) {
 
   const requestStartedAtMs = Date.now();
   const loadingStartedAtMs = Date.now();
-  const [hojas, movimientosFueraHoja] = await Promise.all([getAllHojasEntregaData(), getMovimientosFueraHojaData()]);
+  const [hojas, movimientosFueraHoja] = await Promise.all([
+    getAllHojasEntregaData(),
+    getMovimientosFueraHojaData(),
+  ]);
   const loadingMs = Math.max(0, Date.now() - loadingStartedAtMs);
   if (hojas.length === 0) {
-    return NextResponse.json({ error: "No hay personal para generar hojas de entrega." }, { status: 404 });
+    return NextResponse.json(
+      { error: "No hay personal para generar hojas de entrega." },
+      { status: 404 }
+    );
   }
 
   const renderingStartedAtMs = Date.now();
@@ -44,7 +50,9 @@ export async function GET(request: Request) {
 
   const mergedPdf = await PDFDocument.create();
   const hojasPdf = await PDFDocument.load(hojasPdfBytes, { parseSpeed: ParseSpeeds.Fastest });
-  const fueraHojaPdf = await PDFDocument.load(fueraHojaPdfBytes, { parseSpeed: ParseSpeeds.Fastest });
+  const fueraHojaPdf = await PDFDocument.load(fueraHojaPdfBytes, {
+    parseSpeed: ParseSpeeds.Fastest,
+  });
 
   const hojasPages = await mergedPdf.copyPages(hojasPdf, hojasPdf.getPageIndices());
   for (const page of hojasPages) {

@@ -55,7 +55,9 @@ export function comparePersonalByHierarchy(a: PersonalLike, b: PersonalLike) {
   const byApellido1 = a.apellido1.localeCompare(b.apellido1, "es", { sensitivity: "base" });
   if (byApellido1 !== 0) return byApellido1;
 
-  const byApellido2 = (a.apellido2 ?? "").localeCompare(b.apellido2 ?? "", "es", { sensitivity: "base" });
+  const byApellido2 = (a.apellido2 ?? "").localeCompare(b.apellido2 ?? "", "es", {
+    sensitivity: "base",
+  });
   if (byApellido2 !== 0) return byApellido2;
 
   const byNombre1 = a.nombre1.localeCompare(b.nombre1, "es", { sensitivity: "base" });

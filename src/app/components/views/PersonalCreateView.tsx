@@ -37,8 +37,15 @@ type PersonalCreateViewProps = {
   onSubmitMovimientoDraft: () => void;
   onEditMovimiento: (index: number) => void;
   onRemoveMovimiento: (index: number) => void;
-  onMovimientoDraftChange: (field: keyof Omit<PersonalAltaMovimientoForm, "equipos">, value: string) => void;
-  onMovimientoDraftItemChange: (equipoIndex: number, field: "equipoId" | "cantidad", value: string) => void;
+  onMovimientoDraftChange: (
+    field: keyof Omit<PersonalAltaMovimientoForm, "equipos">,
+    value: string
+  ) => void;
+  onMovimientoDraftItemChange: (
+    equipoIndex: number,
+    field: "equipoId" | "cantidad",
+    value: string
+  ) => void;
   onAddMovimientoDraftItem: () => void;
   onRemoveMovimientoDraftItem: (equipoIndex: number) => void;
 };
@@ -95,7 +102,8 @@ export function PersonalCreateView({
   };
 
   const telefonoContactoLooksValid =
-    newPersonal.telefonoContacto.trim() === "" || isValidUruguayanMobileNumber(newPersonal.telefonoContacto);
+    newPersonal.telefonoContacto.trim() === "" ||
+    isValidUruguayanMobileNumber(newPersonal.telefonoContacto);
   const fechaActualLabel = newPersonal.esReingreso ? "Fecha de re-ingreso *" : "Fecha de ingreso";
 
   return (
@@ -104,10 +112,15 @@ export function PersonalCreateView({
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Registrar subalterno</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">
+                Nueva vista
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">
+                Registrar subalterno
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
-                Completa identidad, destino y tallas en una sola ficha. Al guardar, el registro queda disponible de inmediato en la vista principal.
+                Completa identidad, destino y tallas en una sola ficha. Al guardar, el registro
+                queda disponible de inmediato en la vista principal.
               </p>
             </div>
 
@@ -131,10 +144,14 @@ export function PersonalCreateView({
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
             <div className="space-y-4">
               <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
-                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Identidad</legend>
+                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">
+                  Identidad
+                </legend>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <label className="sm:col-span-2 xl:col-span-4">
-                    <span className="block text-xs font-medium text-stone-700">Cédula de identidad *</span>
+                    <span className="block text-xs font-medium text-stone-700">
+                      Cédula de identidad *
+                    </span>
                     <input
                       value={newPersonal.ci}
                       onChange={(event) => handleCiChange(event.target.value)}
@@ -151,12 +168,16 @@ export function PersonalCreateView({
                         {`Cédula repetida: ${apellidosLabel(duplicatePersonal)}, ${nombresLabel(duplicatePersonal)}.`}
                       </span>
                     ) : (
-                      <span className="mt-1 block text-[11px] text-stone-500">Sin puntos ni guion.</span>
+                      <span className="mt-1 block text-[11px] text-stone-500">
+                        Sin puntos ni guion.
+                      </span>
                     )}
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">Primer apellido *</span>
+                    <span className="block text-xs font-medium text-stone-700">
+                      Primer apellido *
+                    </span>
                     <input
                       value={newPersonal.apellido1}
                       onChange={(event) => onPersonalChange("apellido1", event.target.value)}
@@ -166,7 +187,9 @@ export function PersonalCreateView({
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">Segundo apellido</span>
+                    <span className="block text-xs font-medium text-stone-700">
+                      Segundo apellido
+                    </span>
                     <input
                       value={newPersonal.apellido2}
                       onChange={(event) => onPersonalChange("apellido2", event.target.value)}
@@ -196,7 +219,9 @@ export function PersonalCreateView({
                   </label>
 
                   <label className="sm:col-span-2 xl:col-span-4">
-                    <span className="block text-xs font-medium text-stone-700">Celular de contacto</span>
+                    <span className="block text-xs font-medium text-stone-700">
+                      Celular de contacto
+                    </span>
                     <input
                       value={newPersonal.telefonoContacto}
                       onChange={(event) => onPersonalChange("telefonoContacto", event.target.value)}
@@ -204,15 +229,21 @@ export function PersonalCreateView({
                       inputMode="tel"
                       className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm ${telefonoContactoLooksValid ? "border-stone-300 bg-white" : "border-rose-600 bg-rose-50"}`}
                     />
-                    <span className={`mt-1 block text-[11px] ${telefonoContactoLooksValid ? "text-stone-500" : "font-medium text-rose-700"}`}>
-                      {telefonoContactoLooksValid ? "Opcional. Se guarda normalizado como celular uruguayo." : "Ingresa un celular uruguayo válido."}
+                    <span
+                      className={`mt-1 block text-[11px] ${telefonoContactoLooksValid ? "text-stone-500" : "font-medium text-rose-700"}`}
+                    >
+                      {telefonoContactoLooksValid
+                        ? "Opcional. Se guarda normalizado como celular uruguayo."
+                        : "Ingresa un celular uruguayo válido."}
                     </span>
                   </label>
                 </div>
               </fieldset>
 
               <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
-                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Destino</legend>
+                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">
+                  Destino
+                </legend>
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
                   <label className="md:col-span-3 flex equipos-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5">
                     <input
@@ -257,7 +288,9 @@ export function PersonalCreateView({
                   </label>
 
                   <label>
-                    <span className="block text-xs font-medium text-stone-700">{fechaActualLabel}</span>
+                    <span className="block text-xs font-medium text-stone-700">
+                      {fechaActualLabel}
+                    </span>
                     <DateTextInput
                       value={newPersonal.fechaIngreso}
                       onChange={(value) => onPersonalChange("fechaIngreso", value)}
@@ -272,20 +305,26 @@ export function PersonalCreateView({
 
                   {newPersonal.esReingreso ? (
                     <label>
-                      <span className="block text-xs font-medium text-stone-700">Fecha de ingreso</span>
+                      <span className="block text-xs font-medium text-stone-700">
+                        Fecha de ingreso
+                      </span>
                       <DateTextInput
                         value={newPersonal.fechaIngresoOriginal}
                         onChange={(value) => onPersonalChange("fechaIngresoOriginal", value)}
                         className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm"
                       />
-                      <span className="mt-1 block text-[11px] text-stone-500">Opcional. Solo para casos de reingreso en formato DD/MM/AAAA.</span>
+                      <span className="mt-1 block text-[11px] text-stone-500">
+                        Opcional. Solo para casos de reingreso en formato DD/MM/AAAA.
+                      </span>
                     </label>
                   ) : null}
                 </div>
               </fieldset>
 
               <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
-                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Tallas y medidas</legend>
+                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">
+                  Tallas y medidas
+                </legend>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {TALLA_KEYS.map((key) => (
                     <label key={key}>
@@ -308,10 +347,13 @@ export function PersonalCreateView({
               </fieldset>
 
               <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
-                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">Movimientos iniciales (opcional)</legend>
+                <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">
+                  Movimientos iniciales (opcional)
+                </legend>
                 <div className="flex flex-wrap equipos-center justify-between gap-3">
                   <p className="text-xs text-stone-600">
-                    Puedes cargar movimientos en esta misma pantalla. Al guardar, se crea la persona y luego se registran sus movimientos.
+                    Puedes cargar movimientos en esta misma pantalla. Al guardar, se crea la persona
+                    y luego se registran sus movimientos.
                   </p>
                   <button
                     type="button"
@@ -330,14 +372,19 @@ export function PersonalCreateView({
                 ) : (
                   <div className="mt-3 space-y-3">
                     {movimientos.map((movimiento, movimientoIndex) => (
-                      <article key={`movimiento-${movimientoIndex}`} className="rounded-xl border border-stone-200 bg-white p-3">
+                      <article
+                        key={`movimiento-${movimientoIndex}`}
+                        className="rounded-xl border border-stone-200 bg-white p-3"
+                      >
                         <div className="flex flex-wrap equipos-center justify-between gap-2">
                           <div className="space-y-1">
                             <p className="text-xs font-semibold text-stone-800">{`Movimiento #${movimientoIndex + 1}`}</p>
                             <p className="text-xs text-stone-600">
                               {`${movimiento.tipo === "ENTREGA" ? "Entrega" : "Devolución"} | Fecha: ${movimiento.fecha || "Sin fecha"}`}
                             </p>
-                            {movimiento.comentarios.trim() !== "" ? <p className="text-xs text-stone-600">{movimiento.comentarios}</p> : null}
+                            {movimiento.comentarios.trim() !== "" ? (
+                              <p className="text-xs text-stone-600">{movimiento.comentarios}</p>
+                            ) : null}
                           </div>
 
                           <div className="flex equipos-center gap-2">
@@ -360,9 +407,13 @@ export function PersonalCreateView({
 
                         <ul className="mt-2 space-y-1 text-xs text-stone-700">
                           {movimiento.equipos.map((equipoMovimiento, equipoIndex) => {
-                            const equipoSeleccionado = equiposActivos.find((candidate) => candidate.equipoId === equipoMovimiento.equipoId);
+                            const equipoSeleccionado = equiposActivos.find(
+                              (candidate) => candidate.equipoId === equipoMovimiento.equipoId
+                            );
                             return (
-                              <li key={`movimiento-${movimientoIndex}-resumen-equipo-${equipoIndex}`}>
+                              <li
+                                key={`movimiento-${movimientoIndex}-resumen-equipo-${equipoIndex}`}
+                              >
                                 {`${equipoSeleccionado?.nombre ?? "Equipo sin definir"} x ${equipoMovimiento.cantidad}`}
                               </li>
                             );
@@ -409,15 +460,20 @@ export function PersonalCreateView({
                   <p>{`Celular: ${newPersonal.telefonoContacto.trim() === "" ? "Opcional" : telefonoContactoLooksValid ? "Válido" : "Inválido"}`}</p>
                   <p>{`Batería: ${Number(newPersonal.bateriaId) > 0 ? "Completa" : "Pendiente"}`}</p>
                   <p>{`${newPersonal.esReingreso ? "Fecha de re-ingreso" : "Fecha de ingreso"}: ${newPersonal.fechaIngreso ? "Completa" : "Pendiente"}`}</p>
-                  {newPersonal.esReingreso ? <p>{`Fecha de ingreso: ${newPersonal.fechaIngresoOriginal ? "Completa" : "Opcional"}`}</p> : null}
+                  {newPersonal.esReingreso ? (
+                    <p>{`Fecha de ingreso: ${newPersonal.fechaIngresoOriginal ? "Completa" : "Opcional"}`}</p>
+                  ) : null}
                   <p>{`Movimientos iniciales: ${movimientos.length > 0 ? `${movimientos.length} cargado(s)` : "No"}`}</p>
                 </div>
               </article>
 
               <article className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-ejercito-blue)] p-4 text-white shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">Alta inmediata</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">
+                  Alta inmediata
+                </p>
                 <p className="mt-3 text-sm leading-6 text-white/85">
-                  Al confirmar, la ficha se incorpora al listado de subalternos y ya puede recibir movimientos de entrega o devolución.
+                  Al confirmar, la ficha se incorpora al listado de subalternos y ya puede recibir
+                  movimientos de entrega o devolución.
                 </p>
 
                 <button
@@ -437,9 +493,12 @@ export function PersonalCreateView({
         <ModalFrame onClose={onCloseMovimientoModal} size="lg" closeOnBackdrop={false}>
           <div className="space-y-4">
             <header className="space-y-1">
-              <h3 className="text-xl font-semibold text-stone-900">{movimientoModalEditing ? "Rectificar movimiento" : "Agregar movimiento"}</h3>
+              <h3 className="text-xl font-semibold text-stone-900">
+                {movimientoModalEditing ? "Rectificar movimiento" : "Agregar movimiento"}
+              </h3>
               <p className="text-sm text-stone-600">
-                Define el movimiento y los equipos asociados. Al cerrar este modal verás el resumen en el alta de subalterno.
+                Define el movimiento y los equipos asociados. Al cerrar este modal verás el resumen
+                en el alta de subalterno.
               </p>
             </header>
 
@@ -477,12 +536,19 @@ export function PersonalCreateView({
             </div>
 
             <section className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-stone-600">Equipos</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-stone-600">
+                Equipos
+              </p>
               {movimientoDraft.equipos.map((equipo, equipoIndex) => (
-                <div key={`nuevo-personal-movimiento-equipo-${equipoIndex}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
+                <div
+                  key={`nuevo-personal-movimiento-equipo-${equipoIndex}`}
+                  className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]"
+                >
                   <select
                     value={equipo.equipoId}
-                    onChange={(event) => onMovimientoDraftItemChange(equipoIndex, "equipoId", event.target.value)}
+                    onChange={(event) =>
+                      onMovimientoDraftItemChange(equipoIndex, "equipoId", event.target.value)
+                    }
                     className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
                   >
                     <option value="">Seleccionar equipo</option>
@@ -490,7 +556,9 @@ export function PersonalCreateView({
                       .filter((equipoOption) => {
                         if (equipoOption.equipoId === equipo.equipoId) return true;
                         return !movimientoDraft.equipos.some(
-                          (selectedItem, selectedIndex) => selectedIndex !== equipoIndex && selectedItem.equipoId === equipoOption.equipoId,
+                          (selectedItem, selectedIndex) =>
+                            selectedIndex !== equipoIndex &&
+                            selectedItem.equipoId === equipoOption.equipoId
                         );
                       })
                       .map((equipoOption) => (
@@ -504,7 +572,9 @@ export function PersonalCreateView({
                     type="number"
                     min={1}
                     value={equipo.cantidad}
-                    onChange={(event) => onMovimientoDraftItemChange(equipoIndex, "cantidad", event.target.value)}
+                    onChange={(event) =>
+                      onMovimientoDraftItemChange(equipoIndex, "cantidad", event.target.value)
+                    }
                     className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
                   />
 

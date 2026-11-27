@@ -30,7 +30,10 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const parsedTipo = parseTipoPersonal(url.searchParams.get("tipo"));
   if (parsedTipo === undefined) {
-    return NextResponse.json({ error: "Tipo de personal invalido. Usa SUBALTERNO, OFICIAL o SUBOFICIAL." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Tipo de personal invalido. Usa SUBALTERNO, OFICIAL o SUBOFICIAL." },
+      { status: 400 }
+    );
   }
   const tipo = parsedTipo ?? TipoPersonal.SUBALTERNO;
 
@@ -39,13 +42,16 @@ export async function GET(request: Request) {
       prisma.rango.findMany({
         where: { tipo },
         orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
-      }),
+      })
     );
 
     return NextResponse.json(rangos);
   } catch (error: unknown) {
     if (isPrismaDatabaseUnavailable(error)) {
-      return NextResponse.json({ error: "Base de datos no disponible temporalmente. Intenta nuevamente." }, { status: 503 });
+      return NextResponse.json(
+        { error: "Base de datos no disponible temporalmente. Intenta nuevamente." },
+        { status: 503 }
+      );
     }
     return NextResponse.json({ error: "No se pudieron cargar los grados." }, { status: 500 });
   }
@@ -57,14 +63,19 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   const candidate = body as Record<string, unknown>;
-  const abreviacion = typeof candidate?.abreviacion === "string" ? candidate.abreviacion.trim() : "";
-  const nombreCompleto = typeof candidate?.nombreCompleto === "string" ? candidate.nombreCompleto.trim() : "";
+  const abreviacion =
+    typeof candidate?.abreviacion === "string" ? candidate.abreviacion.trim() : "";
+  const nombreCompleto =
+    typeof candidate?.nombreCompleto === "string" ? candidate.nombreCompleto.trim() : "";
   const orden = parseOptionalOrden(candidate?.orden);
 
   if (!abreviacion || !nombreCompleto || orden === null) {
     return NextResponse.json(
-      { error: "Payload invalido. 'abreviacion' y 'nombreCompleto' son obligatorios; 'orden' debe ser entero positivo." },
-      { status: 400 },
+      {
+        error:
+          "Payload invalido. 'abreviacion' y 'nombreCompleto' son obligatorios; 'orden' debe ser entero positivo.",
+      },
+      { status: 400 }
     );
   }
 
@@ -83,7 +94,11 @@ export async function POST(req: Request) {
           orden: existing.length + 1,
         },
       });
-      const orderedIds = moveCatalogId(existing.map((entry) => entry.rangoId), createdRango.rangoId, orden ?? existing.length + 1);
+      const orderedIds = moveCatalogId(
+        existing.map((entry) => entry.rangoId),
+        createdRango.rangoId,
+        orden ?? existing.length + 1
+      );
 
       for (const [index, rangoId] of orderedIds.entries()) {
         await tx.rango.update({
@@ -100,14 +115,26 @@ export async function POST(req: Request) {
       accion: "CREATE",
       entidad: "GRADO_PERSONAL",
       entidadId: String(created.rangoId),
-      detalle: { abreviacion: created.abreviacion, nombreCompleto: created.nombreCompleto, orden: created.orden },
+      detalle: {
+        abreviacion: created.abreviacion,
+        nombreCompleto: created.nombreCompleto,
+        orden: created.orden,
+      },
     });
     invalidateRangoTipoCountCache();
 
     return NextResponse.json(created, { status: 201 });
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-      return NextResponse.json({ error: "La abreviacion o el nombre completo ya existe." }, { status: 409 });
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "La abreviacion o el nombre completo ya existe." },
+        { status: 409 }
+      );
     }
 
     return NextResponse.json({ error: "No se pudo crear el grado del personal." }, { status: 500 });

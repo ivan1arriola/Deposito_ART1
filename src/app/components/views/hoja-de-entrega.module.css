@@ -423,7 +423,10 @@
 }
 
 .infoGrid5 {
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 1fr) minmax(
+      0,
+      1.25fr
+    );
 }
 
 .infoGridItem {
@@ -643,7 +646,6 @@
   box-shadow: none !important;
   text-shadow: none !important;
 }
-
 
 /* ===== ESTILOS DE IMPRESIÓN Y PDF ===== */
 @media screen {

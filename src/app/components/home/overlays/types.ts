@@ -1,5 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDialogState, UserRoleDialogState } from "@/app/types/home";
+import type {
+  PersonalObservacionDraft,
+  UserPasswordDialogState,
+  UserProfileDialogState,
+  UserRoleDialogState,
+} from "@/app/types/home";
 import type {
   CurrentUser,
   Equipo,
@@ -12,7 +17,12 @@ import type {
   SoldadoWidgetVariant,
 } from "@/types/entities";
 import type { RegistroDraft, RegistroDraftEquipo } from "@/types/forms";
-import type { ConfirmDialogState, MainView, RegistroView, RegistroViewerState } from "@/types/views";
+import type {
+  ConfirmDialogState,
+  MainView,
+  RegistroView,
+  RegistroViewerState,
+} from "@/types/views";
 import type { PersonaProfileState } from "@/app/components/views/PersonaProfileView";
 
 export type HomeOverlaysLayerProps = {
@@ -111,7 +121,12 @@ export type HomeOverlaysLayerProps = {
   }) => Promise<void>;
   updateRecordatorioTask: (
     tareaId: string,
-    input: Partial<{ titulo: string; nota: string; fechaLimite: string | null; prioridad: "NORMAL" | "URGENTE" }> & { completada?: boolean },
+    input: Partial<{
+      titulo: string;
+      nota: string;
+      fechaLimite: string | null;
+      prioridad: "NORMAL" | "URGENTE";
+    }> & { completada?: boolean }
   ) => Promise<void>;
   isAppGlobalBusy: boolean;
   appBusyLabel: string;

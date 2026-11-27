@@ -1,7 +1,11 @@
 import type { Role } from "@/types/entities";
 
 export const ADMIN_ROLE_VALUES = ["ADMIN", "DESARROLLADOR"] as const satisfies readonly Role[];
-export const WRITE_ROLE_VALUES = ["ADMIN", "DESARROLLADOR", "EDITOR"] as const satisfies readonly Role[];
+export const WRITE_ROLE_VALUES = [
+  "ADMIN",
+  "DESARROLLADOR",
+  "EDITOR",
+] as const satisfies readonly Role[];
 
 export function isAdminRole(value: unknown): value is (typeof ADMIN_ROLE_VALUES)[number] {
   return value === "ADMIN" || value === "DESARROLLADOR";

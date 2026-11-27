@@ -35,10 +35,7 @@ interface SaveRegistroOptions extends CallbackProps {
   onRegistroUpdated?: () => void;
 }
 
-export async function createRegistroHandler(
-  payload: RegistroPayload,
-  callbacks: CallbackProps
-) {
+export async function createRegistroHandler(payload: RegistroPayload, callbacks: CallbackProps) {
   try {
     await api("/api/registros", {
       method: "POST",
@@ -107,14 +104,11 @@ export async function saveRegistroHandler(
     }
 
     const isRectificacion = registroId !== null;
-    await api(
-      isRectificacion ? `/api/registros/${registroId}` : "/api/registros",
-      {
-        method: isRectificacion ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
+    await api(isRectificacion ? `/api/registros/${registroId}` : "/api/registros", {
+      method: isRectificacion ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
     callbacks.onSuccess?.();
     callbacks.onSaved?.();

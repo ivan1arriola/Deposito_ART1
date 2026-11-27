@@ -25,7 +25,8 @@ export async function GET(req: Request, context: { params: Promise<{ articuloId:
 
   const { articuloId: articuloIdParam } = await context.params;
   const articuloId = parseArticuloId(articuloIdParam);
-  if (articuloId === null) return NextResponse.json({ error: "articuloId inválido." }, { status: 400 });
+  if (articuloId === null)
+    return NextResponse.json({ error: "articuloId inválido." }, { status: 400 });
 
   try {
     const articulo = await prisma.articulo.findUnique({
@@ -76,7 +77,10 @@ export async function GET(req: Request, context: { params: Promise<{ articuloId:
       movimientos,
     });
   } catch {
-    return NextResponse.json({ error: "No se pudieron obtener los detalles del artículo." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudieron obtener los detalles del artículo." },
+      { status: 500 }
+    );
   }
 }
 
@@ -89,7 +93,8 @@ export async function PUT(req: Request, context: { params: Promise<{ articuloId:
 
   const { articuloId: articuloIdParam } = await context.params;
   const articuloId = parseArticuloId(articuloIdParam);
-  if (articuloId === null) return NextResponse.json({ error: "articuloId inválido." }, { status: 400 });
+  if (articuloId === null)
+    return NextResponse.json({ error: "articuloId inválido." }, { status: 400 });
 
   const body = await req.json();
   const candidate = body as Record<string, unknown>;
@@ -99,7 +104,7 @@ export async function PUT(req: Request, context: { params: Promise<{ articuloId:
   if (!nombre || !tipo) {
     return NextResponse.json(
       { error: "Payload inválido. 'nombre' es obligatorio y 'tipo' debe ser OFICINA o LIMPIEZA." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -132,8 +137,10 @@ export async function PUT(req: Request, context: { params: Promise<{ articuloId:
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
-      if (code === "P2002") return NextResponse.json({ error: "El artículo ya existe." }, { status: 409 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+      if (code === "P2002")
+        return NextResponse.json({ error: "El artículo ya existe." }, { status: 409 });
     }
 
     return NextResponse.json({ error: "No se pudo actualizar el artículo." }, { status: 500 });
@@ -149,7 +156,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ articulo
 
   const { articuloId: articuloIdParam } = await context.params;
   const articuloId = parseArticuloId(articuloIdParam);
-  if (articuloId === null) return NextResponse.json({ error: "articuloId inválido." }, { status: 400 });
+  if (articuloId === null)
+    return NextResponse.json({ error: "articuloId inválido." }, { status: 400 });
 
   try {
     const deletionResult = await prisma.$transaction(async (tx) => {
@@ -175,12 +183,13 @@ export async function DELETE(req: Request, context: { params: Promise<{ articulo
         )
       );
 
-      const affectedEntregas = affectedEntregaIds.length > 0
-        ? await tx.articuloEntregaPersonal.findMany({
-            where: { articuloEntregaPersonalId: { in: affectedEntregaIds } },
-            include: { movimientosStock: true },
-          })
-        : [];
+      const affectedEntregas =
+        affectedEntregaIds.length > 0
+          ? await tx.articuloEntregaPersonal.findMany({
+              where: { articuloEntregaPersonalId: { in: affectedEntregaIds } },
+              include: { movimientosStock: true },
+            })
+          : [];
 
       // Determine which ones will become empty (i.e. only contain movements of this article)
       const emptyEntregas = affectedEntregas.filter((entrega) =>

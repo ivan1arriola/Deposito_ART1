@@ -13,8 +13,15 @@ import {
   isDateInputAfter,
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
-import { prestamoInclude, serializePrestamoWithActuante, totalUnidadesPrestamo } from "@/lib/prestamos";
-import { ensurePrestamoActuanteCompatibility, fetchPrestamoActuanteByMovimientoIds } from "@/lib/prestamo-actuante";
+import {
+  prestamoInclude,
+  serializePrestamoWithActuante,
+  totalUnidadesPrestamo,
+} from "@/lib/prestamos";
+import {
+  ensurePrestamoActuanteCompatibility,
+  fetchPrestamoActuanteByMovimientoIds,
+} from "@/lib/prestamo-actuante";
 
 type DevolucionPrestamoPayload = {
   fechaDevolucion?: string;
@@ -47,7 +54,9 @@ function parseBigIntId(value: unknown) {
 }
 
 function parseEstadoEquipoPrestamo(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "NUEVO") return "NUEVO";
   if (raw === "BUENO") return "BUENO";
   if (raw === "REGULAR") return "REGULAR";
@@ -73,7 +82,10 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
     return NextResponse.json({ error: "fechaDevolucion inválida." }, { status: 400 });
   }
   if (isDateInputAfterToday(fechaDevolucionInput)) {
-    return NextResponse.json({ error: "La fecha de devolución no puede ser futura." }, { status: 400 });
+    return NextResponse.json(
+      { error: "La fecha de devolución no puede ser futura." },
+      { status: 400 }
+    );
   }
 
   const existing = await prisma.movimiento.findUnique({
@@ -95,10 +107,16 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
 
   const fechaPrestamoDisplay = formatDateOnlyFromDate(existing.fecha);
   if (fechaPrestamoDisplay && isDateInputAfter(fechaPrestamoDisplay, fechaDevolucionInput)) {
-    return NextResponse.json({ error: "La fecha de devolución no puede ser anterior a la fecha del préstamo." }, { status: 400 });
+    return NextResponse.json(
+      { error: "La fecha de devolución no puede ser anterior a la fecha del préstamo." },
+      { status: 400 }
+    );
   }
 
-  const devolucionInputByEquipoId = new Map<string, { estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion: string }>();
+  const devolucionInputByEquipoId = new Map<
+    string,
+    { estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion: string }
+  >();
   if (Array.isArray(body.equipos)) {
     for (const equipo of body.equipos) {
       const equipoId = parseBigIntId(equipo.equipoId);
@@ -113,35 +131,36 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      const equipoUpdates = existing.equipos.map((equipo) => {
-        const equipoId = equipo.equipoId.toString();
-        const equipoUpdate = devolucionInputByEquipoId.get(equipoId) ?? {
-          estadoDevolucion: equipo.estadoEntrega,
-          comentarioDevolucion: "",
-        };
-        return {
-          movimientoId: existing.movimientoId,
-          equipoId: equipo.equipoId,
-          estadoDevolucion: equipoUpdate.estadoDevolucion,
-          comentarioDevolucion: equipoUpdate.comentarioDevolucion || null,
-        };
-      });
+    await prisma.$transaction(
+      async (tx) => {
+        const equipoUpdates = existing.equipos.map((equipo) => {
+          const equipoId = equipo.equipoId.toString();
+          const equipoUpdate = devolucionInputByEquipoId.get(equipoId) ?? {
+            estadoDevolucion: equipo.estadoEntrega,
+            comentarioDevolucion: "",
+          };
+          return {
+            movimientoId: existing.movimientoId,
+            equipoId: equipo.equipoId,
+            estadoDevolucion: equipoUpdate.estadoDevolucion,
+            comentarioDevolucion: equipoUpdate.comentarioDevolucion || null,
+          };
+        });
 
-      if (equipoUpdates.length > 0) {
-        const values = Prisma.join(
-          equipoUpdates.map(
-            (entry) =>
-              Prisma.sql`(
+        if (equipoUpdates.length > 0) {
+          const values = Prisma.join(
+            equipoUpdates.map(
+              (entry) =>
+                Prisma.sql`(
                 CAST(${entry.movimientoId} AS bigint),
                 CAST(${entry.equipoId} AS bigint),
                 CAST(${entry.estadoDevolucion} AS text),
                 CAST(${entry.comentarioDevolucion} AS text)
-              )`,
-          ),
-        );
+              )`
+            )
+          );
 
-        await tx.$executeRaw`
+          await tx.$executeRaw`
           UPDATE "movimiento_equipo" AS mi
           SET
             "estado_devolucion" = CAST(v."estado_devolucion" AS "public"."estado_equipo_prestamo"),
@@ -152,22 +171,27 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
           WHERE mi."movimiento_id" = v."movimiento_id"
             AND mi."equipo_id" = v."equipo_id"
         `;
-      }
+        }
 
-      await tx.prestamoHistorial.create({
-        data: {
-          movimientoId: existing.movimientoId,
-          reciboNumero: existing.prestamoActivo?.reciboNumero ?? `PR-${existing.movimientoId.toString().padStart(8, "0")}`,
-          fechaDevolucion,
-          fechaEstimadaDevolucionTexto: existing.prestamoActivo?.fechaEstimadaDevolucionTexto ?? null,
-          usuarioRecibeDevolucionId: auth.user.usuarioId,
-        },
-      });
+        await tx.prestamoHistorial.create({
+          data: {
+            movimientoId: existing.movimientoId,
+            reciboNumero:
+              existing.prestamoActivo?.reciboNumero ??
+              `PR-${existing.movimientoId.toString().padStart(8, "0")}`,
+            fechaDevolucion,
+            fechaEstimadaDevolucionTexto:
+              existing.prestamoActivo?.fechaEstimadaDevolucionTexto ?? null,
+            usuarioRecibeDevolucionId: auth.user.usuarioId,
+          },
+        });
 
-      await tx.prestamoActivo.delete({
-        where: { movimientoId: existing.movimientoId },
-      });
-    }, { timeout: 15_000 });
+        await tx.prestamoActivo.delete({
+          where: { movimientoId: existing.movimientoId },
+        });
+      },
+      { timeout: 15_000 }
+    );
 
     const updated = await prisma.movimiento.findUniqueOrThrow({
       where: { movimientoId: existing.movimientoId },
@@ -181,10 +205,13 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       entidadId: updated.movimientoId.toString(),
       detalle: {
         evento: "PRESTAMO_DEVUELTO",
-        reciboNumero: updated.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo.reciboNumero,
+        reciboNumero:
+          updated.prestamoHistorial?.reciboNumero ?? existing.prestamoActivo.reciboNumero,
         fechaPrestamo: formatDateOnlyFromDate(updated.fecha),
         fechaEstimadaDevolucionTexto:
-          updated.prestamoHistorial?.fechaEstimadaDevolucionTexto ?? existing.prestamoActivo.fechaEstimadaDevolucionTexto ?? null,
+          updated.prestamoHistorial?.fechaEstimadaDevolucionTexto ??
+          existing.prestamoActivo.fechaEstimadaDevolucionTexto ??
+          null,
         fechaDevolucion: formatDateOnlyForDisplay(fechaDevolucionInput),
         totalEquipos: updated.equipos.length,
         totalUnidades: totalUnidadesPrestamo(updated),
@@ -211,13 +238,15 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
           rol: auth.user.rol,
         },
         `Devolución de préstamo ${updated.movimientoId.toString()}.`,
-        `/api/prestamos/${encodeURIComponent(updated.movimientoId.toString())}/recibo`,
+        `/api/prestamos/${encodeURIComponent(updated.movimientoId.toString())}/recibo`
       );
     } catch {
       // No bloquear devolución por fallas de push.
     }
 
-    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
+      .replace(/\s+/g, " ")
+      .trim();
     const resumenItems = updated.equipos
       .slice(0, 4)
       .map((equipo) => `${equipo.equipo.nombre} x${equipo.cantidad}`)
@@ -244,9 +273,14 @@ export async function PUT(request: Request, context: { params: Promise<{ prestam
       ]);
     }
 
-    const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([updated.movimientoId]);
+    const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds([
+      updated.movimientoId,
+    ]);
     return NextResponse.json(serializePrestamoWithActuante(updated, actuanteByMovimientoId));
   } catch {
-    return NextResponse.json({ error: "No se pudo registrar la devolución del préstamo." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo registrar la devolución del préstamo." },
+      { status: 500 }
+    );
   }
 }

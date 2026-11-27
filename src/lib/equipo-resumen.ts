@@ -33,8 +33,8 @@ export async function getEquipoResumenData(): Promise<EquipoResumenData> {
     },
     include: {
       bateria: {
-                    select: { bateriaId: true, nombre: true, orden: true },
-                  },
+        select: { bateriaId: true, nombre: true, orden: true },
+      },
       movimientosDestinatario: {
         where: {
           movimiento: {

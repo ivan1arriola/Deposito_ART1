@@ -133,7 +133,11 @@ function QuickActionButton({
           "linear-gradient(90deg, rgba(24,27,21,0.58) 0%, rgba(255,255,255,0.04) 38%, rgba(24,27,21,0.48) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 2px, rgba(0,0,0,0) 2px 7px)",
       }}
     >
-      <span aria-hidden className="absolute inset-y-3 left-0 w-[4px] rounded-r-full" style={{ backgroundImage: toneStyles.rail }} />
+      <span
+        aria-hidden
+        className="absolute inset-y-3 left-0 w-[4px] rounded-r-full"
+        style={{ backgroundImage: toneStyles.rail }}
+      />
       <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-white/10" />
       <span aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-black/25" />
       <div className="flex equipos-start justify-between gap-3">
@@ -160,7 +164,9 @@ function QuickActionButton({
         </span>
       </div>
       <div className="mt-4">
-        <div className="text-[15px] font-semibold leading-snug tracking-[0.01em] text-white">{title}</div>
+        <div className="text-[15px] font-semibold leading-snug tracking-[0.01em] text-white">
+          {title}
+        </div>
         <p className="mt-1.5 text-[12px] leading-5 text-[rgba(243,245,237,0.84)]">{description}</p>
       </div>
     </button>
@@ -177,7 +183,12 @@ function QuickActionButton({
   return button;
 }
 
-function AscensoSargentoPanel({ ci, busy, onContinue, onPrintDeliverySheet }: AscensoSargentoPanelProps) {
+function AscensoSargentoPanel({
+  ci,
+  busy,
+  onContinue,
+  onPrintDeliverySheet,
+}: AscensoSargentoPanelProps) {
   const [adminPassword, setAdminPassword] = useState("");
   const [printedOnce, setPrintedOnce] = useState(false);
 
@@ -303,8 +314,12 @@ export function PersonalSection({
     onStartEditPersonal(persona);
   };
 
-  const editingPersona = editPersonalCi ? personal.find((persona) => persona.ci === editPersonalCi) ?? null : null;
-  const canShowAscensoBlock = Boolean(isAdmin && editingPersona && canPromoteEditPersonalToSuboficial);
+  const editingPersona = editPersonalCi
+    ? (personal.find((persona) => persona.ci === editPersonalCi) ?? null)
+    : null;
+  const canShowAscensoBlock = Boolean(
+    isAdmin && editingPersona && canPromoteEditPersonalToSuboficial
+  );
 
   const actionGridClass = canWrite
     ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7"
@@ -312,7 +327,8 @@ export function PersonalSection({
 
   const personalConErrorReingreso = useMemo(() => {
     return personal.filter(
-      (persona) => persona.esReingreso && (!persona.fechaIngreso || persona.fechaIngreso.trim() === "")
+      (persona) =>
+        persona.esReingreso && (!persona.fechaIngreso || persona.fechaIngreso.trim() === "")
     );
   }, [personal]);
 
@@ -321,7 +337,9 @@ export function PersonalSection({
       <section className="ej-card overflow-hidden rounded-[28px] p-3 sm:p-4">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-stone-900">Personal subalterno</h2>
-          <p className="mt-1 text-xs text-stone-600">Orden: grado del personal subalterno, apellidos y nombres.</p>
+          <p className="mt-1 text-xs text-stone-600">
+            Orden: grado del personal subalterno, apellidos y nombres.
+          </p>
           <div className="mt-2 flex flex-wrap equipos-center gap-2">
             <div className="inline-flex rounded-full border border-[rgba(39,47,33,0.82)] bg-[linear-gradient(180deg,rgba(61,71,49,0.98)_0%,rgba(40,49,33,0.98)_100%)] px-3 py-1 text-xs font-bold text-[rgba(244,220,151,0.95)]">
               {personalFiltrado.length} resultado{personalFiltrado.length === 1 ? "" : "s"}
@@ -348,7 +366,6 @@ export function PersonalSection({
             />
           ) : null}
 
-
           <QuickActionButton
             eyebrow="PDF"
             title="Imprimir hojas de entrega"
@@ -372,8 +389,14 @@ export function PersonalSection({
             }
             icon={<ForwardToInboxOutlinedIcon fontSize="small" />}
             tone="slate"
-            onClick={emailAllDeliverySheetsBusy ? onCancelEmailAllDeliverySheets : onEmailAllDeliverySheets}
-            disabled={loading || personal.length === 0 || (!emailAllDeliverySheetsBusy && Boolean(emailAllDeliverySheetsDisabledReason))}
+            onClick={
+              emailAllDeliverySheetsBusy ? onCancelEmailAllDeliverySheets : onEmailAllDeliverySheets
+            }
+            disabled={
+              loading ||
+              personal.length === 0 ||
+              (!emailAllDeliverySheetsBusy && Boolean(emailAllDeliverySheetsDisabledReason))
+            }
             tooltip={emailAllDeliverySheetsBusy ? null : emailAllDeliverySheetsDisabledReason}
           />
           <QuickActionButton
@@ -408,11 +431,15 @@ export function PersonalSection({
                 Atención: Fichas de reingreso incompletas (Fecha Re-ingreso obligatoria)
               </h3>
               <p className="mt-0.5 text-xs text-rose-800 font-medium">
-                Se detectó personal marcado como reingreso sin la fecha correspondiente registrada. Selecciona &quot;Corregir&quot; para ingresar el dato faltante.
+                Se detectó personal marcado como reingreso sin la fecha correspondiente registrada.
+                Selecciona &quot;Corregir&quot; para ingresar el dato faltante.
               </p>
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {personalConErrorReingreso.map((persona) => (
-                  <div key={persona.ci} className="flex equipos-center justify-between rounded-xl bg-white p-3 border border-rose-200 shadow-xs hover:border-rose-300 transition">
+                  <div
+                    key={persona.ci}
+                    className="flex equipos-center justify-between rounded-xl bg-white p-3 border border-rose-200 shadow-xs hover:border-rose-300 transition"
+                  >
                     <div className="min-w-0 pr-2">
                       <p className="text-xs font-bold text-stone-900 truncate">
                         {persona.rango.nombreCompleto}
@@ -420,9 +447,7 @@ export function PersonalSection({
                       <p className="text-xs text-stone-700 truncate">
                         {persona.apellido1} {persona.nombre1}
                       </p>
-                      <p className="text-[10px] text-stone-500 font-mono">
-                        CI {persona.ci}
-                      </p>
+                      <p className="text-[10px] text-stone-500 font-mono">CI {persona.ci}</p>
                     </div>
                     <button
                       type="button"
@@ -527,7 +552,9 @@ export function PersonalSection({
             <div>
               <h3 className="text-lg font-semibold text-stone-900">Editar subalterno</h3>
               <p className="mt-1 text-sm text-stone-600">
-                {editingPersona ? `${editingPersona.rango.nombreCompleto} - ${editingPersona.apellido1} ${editingPersona.nombre1}` : `CI ${editPersonalCi}`}
+                {editingPersona
+                  ? `${editingPersona.rango.nombreCompleto} - ${editingPersona.apellido1} ${editingPersona.nombre1}`
+                  : `CI ${editPersonalCi}`}
               </p>
             </div>
             <button

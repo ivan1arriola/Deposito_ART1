@@ -17,9 +17,16 @@ export async function getOrderedTipoEquipoIds(tx: TipoEquipoOrderTx, excludeTipo
   return tipos.map((tipo) => tipo.tipoEquipoId);
 }
 
-export function insertTipoEquipoAtOrder(orderedIds: number[], tipoEquipoId: number, order?: number | null) {
+export function insertTipoEquipoAtOrder(
+  orderedIds: number[],
+  tipoEquipoId: number,
+  order?: number | null
+) {
   const nextOrder = orderedIds.filter((currentId) => currentId !== tipoEquipoId);
-  const targetIndex = order === undefined || order === null ? nextOrder.length : clampTipoEquipoOrder(order, nextOrder.length);
+  const targetIndex =
+    order === undefined || order === null
+      ? nextOrder.length
+      : clampTipoEquipoOrder(order, nextOrder.length);
   nextOrder.splice(targetIndex, 0, tipoEquipoId);
   return nextOrder;
 }
@@ -27,7 +34,9 @@ export function insertTipoEquipoAtOrder(orderedIds: number[], tipoEquipoId: numb
 export async function applyTipoEquipoOrder(tx: TipoEquipoOrderTx, orderedIds: number[]) {
   if (orderedIds.length === 0) return;
 
-  const valueTuples = orderedIds.map((tipoEquipoId, index) => Prisma.sql`(${tipoEquipoId}, ${index + 1})`);
+  const valueTuples = orderedIds.map(
+    (tipoEquipoId, index) => Prisma.sql`(${tipoEquipoId}, ${index + 1})`
+  );
   await tx.$executeRaw`
     UPDATE "public"."tipo_equipo" AS t
     SET "orden" = v.orden::smallint

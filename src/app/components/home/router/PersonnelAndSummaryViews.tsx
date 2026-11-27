@@ -166,7 +166,8 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
                 next.fechaIngresoOriginal = "";
               }
               return next;
-            })}
+            })
+          }
           onSaveEditPersonal={(ci) => void updatePersonal(ci)}
           canPromoteEditPersonalToSuboficial={canPromoteEditPersonalToSuboficial}
           promoteEditPersonalBusy={promotingSubalternoCi !== null}
@@ -222,11 +223,21 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
       ) : null}
 
       {activeView === "hoja_matrix" ? (
-        <HojaMatrixView data={hojaMatrixData} loading={hojaMatrixLoading} error={hojaMatrixError} onReload={loadHojaMatrix} />
+        <HojaMatrixView
+          data={hojaMatrixData}
+          loading={hojaMatrixLoading}
+          error={hojaMatrixError}
+          onReload={loadHojaMatrix}
+        />
       ) : null}
 
       {activeView === "equipo_resumen" ? (
-        <EquipoResumenView data={equipoResumenData} loading={equipoResumenLoading} error={equipoResumenError} onReload={loadEquipoResumen} />
+        <EquipoResumenView
+          data={equipoResumenData}
+          loading={equipoResumenLoading}
+          error={equipoResumenError}
+          onReload={loadEquipoResumen}
+        />
       ) : null}
 
       {activeView === "movimientos_fuera_hoja" ? (
@@ -265,9 +276,7 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
         />
       ) : null}
 
-      {activeView === "personal_bajas" ? (
-        <PersonalBajasView />
-      ) : null}
+      {activeView === "personal_bajas" ? <PersonalBajasView /> : null}
     </>
   );
 }

@@ -76,7 +76,10 @@ export function buildPersonalDestinatarioEtiqueta(personal: PersonalDestinatario
 }
 
 export function buildPersonaExternaNombre(personaExterna: PersonaExternaShape) {
-  return joinNames(personaExterna.apellido ? `${personaExterna.apellido},` : "", personaExterna.nombre);
+  return joinNames(
+    personaExterna.apellido ? `${personaExterna.apellido},` : "",
+    personaExterna.nombre
+  );
 }
 
 export function buildPersonaExternaEtiqueta(personaExterna: PersonaExternaShape) {
@@ -84,7 +87,9 @@ export function buildPersonaExternaEtiqueta(personaExterna: PersonaExternaShape)
 }
 
 export function normalizeRecintoClase(value: string | null | undefined) {
-  const normalized = String(value ?? "").trim().toUpperCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (normalized === "EXTERNO") return "EXTERNO" as const;
   return "INTERNO" as const;
 }
@@ -93,7 +98,9 @@ export function buildRecintoDestinatarioEtiqueta(recinto: RecintoDestinatarioSha
   return joinNames(recinto.nombre);
 }
 
-export function resolveDestinatarioMovimiento(source: DestinatarioSource): DestinatarioMovimientoResumen | null {
+export function resolveDestinatarioMovimiento(
+  source: DestinatarioSource
+): DestinatarioMovimientoResumen | null {
   if (source.destinatarioPersonal?.personal) {
     const personal = source.destinatarioPersonal.personal;
     return {

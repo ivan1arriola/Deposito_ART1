@@ -36,8 +36,10 @@ export async function GET(request: Request) {
 
   if (!hasEtiquetadoDelegates()) {
     return NextResponse.json(
-      { error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo." },
-      { status: 503 },
+      {
+        error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo.",
+      },
+      { status: 503 }
     );
   }
 
@@ -138,9 +140,13 @@ export async function GET(request: Request) {
         .sort((a, b) => {
           const byCodigo = a.codigo.localeCompare(b.codigo, "es", { sensitivity: "base" });
           if (byCodigo !== 0) return byCodigo;
-          return normalizeTallaForSort(a.talla).localeCompare(normalizeTallaForSort(b.talla), "es", {
-            sensitivity: "base",
-          });
+          return normalizeTallaForSort(a.talla).localeCompare(
+            normalizeTallaForSort(b.talla),
+            "es",
+            {
+              sensitivity: "base",
+            }
+          );
         });
 
       const codigos = codigosConEquipo.map((codigo) => ({
@@ -153,8 +159,8 @@ export async function GET(request: Request) {
         new Set(
           codigos
             .map((codigo) => codigo.talla.trim())
-            .filter((talla) => talla.length > 0 && talla !== "-"),
-        ),
+            .filter((talla) => talla.length > 0 && talla !== "-")
+        )
       ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
       const equiposBase =
@@ -165,7 +171,9 @@ export async function GET(request: Request) {
                 equipoNombre: entry.equipo.nombre,
                 cantidad: entry.cantidad,
               }))
-              .sort((a, b) => a.equipoNombre.localeCompare(b.equipoNombre, "es", { sensitivity: "base" }))
+              .sort((a, b) =>
+                a.equipoNombre.localeCompare(b.equipoNombre, "es", { sensitivity: "base" })
+              )
           : Array.from(
               new Map(
                 codigosConEquipo.map((codigo) => [
@@ -173,11 +181,15 @@ export async function GET(request: Request) {
                   {
                     equipoId: codigo.equipoId,
                     equipoNombre: codigo.equipoNombre,
-                    cantidad: codigosConEquipo.filter((entry) => entry.equipoId === codigo.equipoId).length || 1,
+                    cantidad:
+                      codigosConEquipo.filter((entry) => entry.equipoId === codigo.equipoId)
+                        .length || 1,
                   },
-                ]),
-              ).values(),
-            ).sort((a, b) => a.equipoNombre.localeCompare(b.equipoNombre, "es", { sensitivity: "base" }));
+                ])
+              ).values()
+            ).sort((a, b) =>
+              a.equipoNombre.localeCompare(b.equipoNombre, "es", { sensitivity: "base" })
+            );
 
       const equipos = equiposBase.map((equipo) => {
         const codigosSIEEquipo = codigosConEquipo

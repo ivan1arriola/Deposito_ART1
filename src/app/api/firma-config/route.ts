@@ -33,7 +33,10 @@ export async function GET(request: Request) {
     const config = await getFirmaConfig();
     return NextResponse.json(config);
   } catch {
-    return NextResponse.json({ error: "No se pudo leer la configuración de firmas." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo leer la configuración de firmas." },
+      { status: 500 }
+    );
   }
 }
 
@@ -45,7 +48,7 @@ export async function PUT(request: Request) {
   if (!isValidPayload(body)) {
     return NextResponse.json(
       { error: "Payload invalido. Todos los campos de rango y nombre son obligatorios." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -71,6 +74,9 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(updated);
   } catch {
-    return NextResponse.json({ error: "No se pudo guardar la configuración de firmas." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo guardar la configuración de firmas." },
+      { status: 500 }
+    );
   }
 }

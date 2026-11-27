@@ -47,7 +47,10 @@ export function LoadingBootStatus() {
   }, []);
 
   const activeStep = BOOT_STEPS[stepIndex] ?? BOOT_STEPS[0];
-  const dynamicTitle = useMemo(() => `${activeStep.title}${".".repeat(dotCount)}`, [activeStep.title, dotCount]);
+  const dynamicTitle = useMemo(
+    () => `${activeStep.title}${".".repeat(dotCount)}`,
+    [activeStep.title, dotCount]
+  );
 
   return (
     <Stack spacing={0.65} alignItems="center">

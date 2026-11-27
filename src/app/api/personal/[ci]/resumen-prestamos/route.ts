@@ -80,7 +80,12 @@ function toPrintUppercase(value: string | null | undefined) {
   return sanitizeForPdf(value).toLocaleUpperCase("es-UY");
 }
 
-function fullName(apellido1: string, apellido2: string | null, nombre1: string, nombre2: string | null) {
+function fullName(
+  apellido1: string,
+  apellido2: string | null,
+  nombre1: string,
+  nombre2: string | null
+) {
   const apellidos = `${apellido1} ${apellido2 ?? ""}`.replace(/\s+/g, " ").trim();
   const nombres = `${nombre1} ${nombre2 ?? ""}`.replace(/\s+/g, " ").trim();
   return `${apellidos}, ${nombres}`.replace(/\s+/g, " ").trim();
@@ -91,7 +96,9 @@ function firstWord(value: string) {
 }
 
 function militaryShortLabel(gradoAbreviacion: string, apellido: string, nombre: string) {
-  return `${gradoAbreviacion} ${firstWord(apellido)} ${firstWord(nombre)}`.replace(/\s+/g, " ").trim();
+  return `${gradoAbreviacion} ${firstWord(apellido)} ${firstWord(nombre)}`
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function movementTypeLabel(tipo: TipoMovimiento) {
@@ -103,19 +110,28 @@ function movementTypeLabel(tipo: TipoMovimiento) {
 
 function movementReference(movimiento: MovimientoResumen) {
   if (movimiento.tipo === MOVIMIENTO_TIPO_PRESTAMO) {
-    return movimiento.prestamoActivo?.reciboNumero ?? `PR-${movimiento.movimientoId.toString().padStart(8, "0")}`;
+    return (
+      movimiento.prestamoActivo?.reciboNumero ??
+      `PR-${movimiento.movimientoId.toString().padStart(8, "0")}`
+    );
   }
   return `MV-${movimiento.movimientoId.toString().padStart(8, "0")}`;
 }
 
-function resolveItemEstado(movimiento: MovimientoResumen, equipo: MovimientoResumen["equipos"][number]) {
+function resolveItemEstado(
+  movimiento: MovimientoResumen,
+  equipo: MovimientoResumen["equipos"][number]
+) {
   if (movimiento.tipo === MOVIMIENTO_TIPO_DEVOLUCION) {
     return equipo.estadoDevolucion ?? equipo.estadoEntrega ?? "BUENO";
   }
   return equipo.estadoEntrega ?? equipo.estadoDevolucion ?? "BUENO";
 }
 
-function resolveItemObservacion(movimiento: MovimientoResumen, equipo: MovimientoResumen["equipos"][number]) {
+function resolveItemObservacion(
+  movimiento: MovimientoResumen,
+  equipo: MovimientoResumen["equipos"][number]
+) {
   if (movimiento.tipo === MOVIMIENTO_TIPO_DEVOLUCION) {
     return equipo.comentarioDevolucion ?? equipo.comentarioEntrega ?? "-";
   }
@@ -126,17 +142,41 @@ function yForTop(top: number, fontSize: number) {
   return A4_HEIGHT - top - fontSize;
 }
 
-function drawTextAt(page: PDFPage, font: PDFFont, text: string, x: number, top: number, size: number, color = rgb(0, 0, 0)) {
+function drawTextAt(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  x: number,
+  top: number,
+  size: number,
+  color = rgb(0, 0, 0)
+) {
   page.drawText(sanitizeForPdf(text), { x, y: yForTop(top, size), size, font, color });
 }
 
-function drawTextRight(page: PDFPage, font: PDFFont, text: string, rightX: number, top: number, size: number, color = rgb(0, 0, 0)) {
+function drawTextRight(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  rightX: number,
+  top: number,
+  size: number,
+  color = rgb(0, 0, 0)
+) {
   const safe = sanitizeForPdf(text);
   const width = font.widthOfTextAtSize(safe, size);
   page.drawText(safe, { x: rightX - width, y: yForTop(top, size), size, font, color });
 }
 
-function drawRectTop(page: PDFPage, x: number, top: number, width: number, height: number, border = rgb(0, 0, 0), fill?: boolean) {
+function drawRectTop(
+  page: PDFPage,
+  x: number,
+  top: number,
+  width: number,
+  height: number,
+  border = rgb(0, 0, 0),
+  fill?: boolean
+) {
   page.drawRectangle({
     x,
     y: A4_HEIGHT - top - height,
@@ -148,7 +188,13 @@ function drawRectTop(page: PDFPage, x: number, top: number, width: number, heigh
   });
 }
 
-function drawHorizontalLine(page: PDFPage, x: number, yTop: number, width: number, thickness = 0.5) {
+function drawHorizontalLine(
+  page: PDFPage,
+  x: number,
+  yTop: number,
+  width: number,
+  thickness = 0.5
+) {
   page.drawLine({
     start: { x, y: A4_HEIGHT - yTop },
     end: { x: x + width, y: A4_HEIGHT - yTop },
@@ -178,7 +224,11 @@ function wrapText(text: string, maxWidth: number, font: PDFFont, size: number) {
 
 async function loadWatermarkBytes() {
   const watermarkPath = path.join(process.cwd(), WATERMARK_FILENAME);
-  try { return await readFile(watermarkPath); } catch { return null; }
+  try {
+    return await readFile(watermarkPath);
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(request: Request, context: { params: Promise<{ ci: string }> }) {
@@ -191,7 +241,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     include: {
       rango: true,
       bateria: true,
-    }
+    },
   });
 
   if (!personal) return NextResponse.json({ error: "Personal no encontrado." }, { status: 404 });
@@ -209,7 +259,10 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
   });
 
   if (movimientos.length === 0) {
-    return NextResponse.json({ error: "No se encontraron movimientos vigentes para esta persona." }, { status: 404 });
+    return NextResponse.json(
+      { error: "No se encontraron movimientos vigentes para esta persona." },
+      { status: 404 }
+    );
   }
 
   const pdfDoc = await PDFDocument.create();
@@ -222,11 +275,17 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
       acc[movimiento.tipo] += 1;
       return acc;
     },
-    { [MOVIMIENTO_TIPO_ENTREGA]: 0, [MOVIMIENTO_TIPO_DEVOLUCION]: 0, [MOVIMIENTO_TIPO_ASIGNACION]: 0, [MOVIMIENTO_TIPO_PRESTAMO]: 0 },
+    {
+      [MOVIMIENTO_TIPO_ENTREGA]: 0,
+      [MOVIMIENTO_TIPO_DEVOLUCION]: 0,
+      [MOVIMIENTO_TIPO_ASIGNACION]: 0,
+      [MOVIMIENTO_TIPO_PRESTAMO]: 0,
+    }
   );
   const totalUnidades = movimientos.reduce(
-    (acc, movimiento) => acc + movimiento.equipos.reduce((itemsAcc, equipo) => itemsAcc + equipo.cantidad, 0),
-    0,
+    (acc, movimiento) =>
+      acc + movimiento.equipos.reduce((itemsAcc, equipo) => itemsAcc + equipo.cantidad, 0),
+    0
   );
 
   let currentPage: PDFPage | null = null;
@@ -237,10 +296,16 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     currentPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
     pageNumber++;
     currentY = PAGE_MARGIN_Y + RECEIPT_PADDING;
-    
+
     // Marco de página (Simple y elegante)
-    drawRectTop(currentPage, PAGE_MARGIN_X, PAGE_MARGIN_Y, A4_WIDTH - PAGE_MARGIN_X * 2, A4_HEIGHT - PAGE_MARGIN_Y * 2);
-    
+    drawRectTop(
+      currentPage,
+      PAGE_MARGIN_X,
+      PAGE_MARGIN_Y,
+      A4_WIDTH - PAGE_MARGIN_X * 2,
+      A4_HEIGHT - PAGE_MARGIN_Y * 2
+    );
+
     if (watermarkImage) {
       const native = watermarkImage.scale(1);
       const scale = 0.5;
@@ -251,42 +316,90 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
         y: (A4_HEIGHT - h) / 2,
         width: w,
         height: h,
-        opacity: WATERMARK_OPACITY
+        opacity: WATERMARK_OPACITY,
       });
     }
 
     // Cabecera Institucional
     const headerTitle = "HOJA DE MOVIMIENTOS - DEPÓSITO GENERAL";
     const headerUnit = 'GRUPO "BRIG. GRAL. MANUEL ORIBE" DE ARTILLERIA 105MM NO. 1';
-    
+
     drawTextAt(currentPage!, bold, headerUnit, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 8);
-    drawTextRight(currentPage!, regular, `Impreso: ${formatDateUy(new Date())} ${formatTimeUy(new Date())}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, currentY, 7);
+    drawTextRight(
+      currentPage!,
+      regular,
+      `Impreso: ${formatDateUy(new Date())} ${formatTimeUy(new Date())}`,
+      A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING,
+      currentY,
+      7
+    );
     currentY += 12;
-    
+
     drawTextAt(currentPage!, bold, headerTitle, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 14);
-    drawTextRight(currentPage!, bold, `Página ${pageNumber}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, currentY, 9);
+    drawTextRight(
+      currentPage!,
+      bold,
+      `Página ${pageNumber}`,
+      A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING,
+      currentY,
+      9
+    );
     currentY += 18;
-    
+
     drawHorizontalLine(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 1.5);
     currentY += 14;
 
     if (pageNumber === 1) {
       // Información del Personal (Compacta)
-      const pName = fullName(personal!.apellido1, personal!.apellido2, personal!.nombre1, personal!.nombre2);
+      const pName = fullName(
+        personal!.apellido1,
+        personal!.apellido2,
+        personal!.nombre1,
+        personal!.nombre2
+      );
       const pGrado = personal!.rango.abreviacion;
       const pCi = formatUruguayanCi(personal!.ci);
       const pBat = personal!.bateria?.nombre || "No aplica";
 
       drawTextAt(currentPage!, bold, "PERSONAL:", PAGE_MARGIN_X + RECEIPT_PADDING, currentY, 10);
-      drawTextAt(currentPage!, regular, `${pGrado} ${pName}`, PAGE_MARGIN_X + RECEIPT_PADDING + 65, currentY, 10);
-      drawTextRight(currentPage!, regular, `C.I. ${pCi}  |  UNIDAD: ${pBat}`, A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING, currentY, 10);
+      drawTextAt(
+        currentPage!,
+        regular,
+        `${pGrado} ${pName}`,
+        PAGE_MARGIN_X + RECEIPT_PADDING + 65,
+        currentY,
+        10
+      );
+      drawTextRight(
+        currentPage!,
+        regular,
+        `C.I. ${pCi}  |  UNIDAD: ${pBat}`,
+        A4_WIDTH - PAGE_MARGIN_X - RECEIPT_PADDING,
+        currentY,
+        10
+      );
       currentY += 16;
-      
+
       // Resumen (Una sola fila compacta)
-      drawRectTop(currentPage!, PAGE_MARGIN_X + RECEIPT_PADDING, currentY, INNER_WIDTH, 18, rgb(0, 0, 0), false);
+      drawRectTop(
+        currentPage!,
+        PAGE_MARGIN_X + RECEIPT_PADDING,
+        currentY,
+        INNER_WIDTH,
+        18,
+        rgb(0, 0, 0),
+        false
+      );
       const summaryText = `RESUMEN GENERAL: ${movimientos.length} Movimientos — ${totalUnidades} Unidades — ENTREGAS: ${movementsByType[MOVIMIENTO_TIPO_ENTREGA]} | DEVOLUCIONES: ${movementsByType[MOVIMIENTO_TIPO_DEVOLUCION]} | ASIGNACIONES: ${movementsByType[MOVIMIENTO_TIPO_ASIGNACION]} | PRÉSTAMOS: ${movementsByType[MOVIMIENTO_TIPO_PRESTAMO]}`;
-      drawTextAt(currentPage!, bold, summaryText, PAGE_MARGIN_X + RECEIPT_PADDING + 8, currentY + 5, 8.5);
-      
+      drawTextAt(
+        currentPage!,
+        bold,
+        summaryText,
+        PAGE_MARGIN_X + RECEIPT_PADDING + 8,
+        currentY + 5,
+        8.5
+      );
+
       currentY += 28;
     }
   }
@@ -297,7 +410,11 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     const referencia = movementReference(mov);
     const fechaM = formatDateOnlyFromDate(mov.fecha) ?? "-";
     const tipoM = movementTypeLabel(mov.tipo);
-    const resp = militaryShortLabel(mov.usuarioEntrega.rango?.abreviacion ?? "", mov.usuarioEntrega.apellido, mov.usuarioEntrega.nombre);
+    const resp = militaryShortLabel(
+      mov.usuarioEntrega.rango?.abreviacion ?? "",
+      mov.usuarioEntrega.apellido,
+      mov.usuarioEntrega.nombre
+    );
     const totalUnidadesMovimiento = mov.equipos.reduce((acc, equipo) => acc + equipo.cantidad, 0);
 
     // Estimación de altura compacta
@@ -306,7 +423,9 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     const tableHeaderH = TABLE_HEADER_HEIGHT;
     const rowCount = Math.max(mov.equipos.length, 1);
     const rowH = rowCount * TABLE_MIN_ROW_HEIGHT;
-    const obsH = mov.observaciones ? wrapText(mov.observaciones, INNER_WIDTH - 20, regular, 8).length * 12 + 15 : 0;
+    const obsH = mov.observaciones
+      ? wrapText(mov.observaciones, INNER_WIDTH - 20, regular, 8).length * 12 + 15
+      : 0;
     const spacing = 15;
     const totalMovH = headerH + subHeaderH + tableHeaderH + rowH + obsH + spacing;
 
@@ -319,23 +438,51 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     let movY = currentY + 10;
 
     // Fila 1: Tipo e ID combinados (Ej: ENTREGA MV-00000001)
-    drawTextAt(currentPage!, bold, `${tipoM} ${referencia}`, PAGE_MARGIN_X + RECEIPT_PADDING, movY, 11);
+    drawTextAt(
+      currentPage!,
+      bold,
+      `${tipoM} ${referencia}`,
+      PAGE_MARGIN_X + RECEIPT_PADDING,
+      movY,
+      11
+    );
     movY += 15;
 
     // Fila 2: Fecha, Responsable y Unidades
-    drawTextAt(currentPage!, regular, `Fecha: ${fechaM}  |  Responsable: ${resp}  |  Total Unidades: ${totalUnidadesMovimiento}`, PAGE_MARGIN_X + RECEIPT_PADDING, movY, 9);
+    drawTextAt(
+      currentPage!,
+      regular,
+      `Fecha: ${fechaM}  |  Responsable: ${resp}  |  Total Unidades: ${totalUnidadesMovimiento}`,
+      PAGE_MARGIN_X + RECEIPT_PADDING,
+      movY,
+      9
+    );
     movY += 15;
 
     // Tabla de Equipos
     const tableX = PAGE_MARGIN_X + RECEIPT_PADDING;
     const tableW = INNER_WIDTH;
-    
+
     // Encabezado de tabla (Sin fondo para ahorrar tinta, solo bordes)
     drawRectTop(currentPage!, tableX, movY, tableW, tableHeaderH, rgb(0, 0, 0));
     drawTextAt(currentPage!, bold, "EQUIPO", tableX + 5, movY + 4, 8);
     drawTextAt(currentPage!, bold, "CANT", tableX + TABLE_COL_EFECTO, movY + 4, 8);
-    drawTextAt(currentPage!, bold, "ESTADO", tableX + TABLE_COL_EFECTO + TABLE_COL_QTY, movY + 4, 8);
-    drawTextAt(currentPage!, bold, "OBSERVACIONES", tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + TABLE_COL_ESTADO, movY + 4, 8);
+    drawTextAt(
+      currentPage!,
+      bold,
+      "ESTADO",
+      tableX + TABLE_COL_EFECTO + TABLE_COL_QTY,
+      movY + 4,
+      8
+    );
+    drawTextAt(
+      currentPage!,
+      bold,
+      "OBSERVACIONES",
+      tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + TABLE_COL_ESTADO,
+      movY + 4,
+      8
+    );
     movY += tableHeaderH;
 
     if (mov.equipos.length === 0) {
@@ -345,16 +492,37 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     } else {
       for (const equipo of mov.equipos) {
         drawRectTop(currentPage!, tableX, movY, tableW, TABLE_MIN_ROW_HEIGHT, rgb(0, 0, 0));
-        drawTextAt(currentPage!, regular, toPrintUppercase(equipo.equipo.nombre).slice(0, 60), tableX + 5, movY + 3, 8);
-        drawTextAt(currentPage!, regular, String(equipo.cantidad), tableX + TABLE_COL_EFECTO + 5, movY + 3, 8);
-        drawTextAt(currentPage!, regular, resolveItemEstado(mov, equipo), tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + 5, movY + 3, 8);
+        drawTextAt(
+          currentPage!,
+          regular,
+          toPrintUppercase(equipo.equipo.nombre).slice(0, 60),
+          tableX + 5,
+          movY + 3,
+          8
+        );
+        drawTextAt(
+          currentPage!,
+          regular,
+          String(equipo.cantidad),
+          tableX + TABLE_COL_EFECTO + 5,
+          movY + 3,
+          8
+        );
+        drawTextAt(
+          currentPage!,
+          regular,
+          resolveItemEstado(mov, equipo),
+          tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + 5,
+          movY + 3,
+          8
+        );
         drawTextAt(
           currentPage!,
           regular,
           resolveItemObservacion(mov, equipo).slice(0, 35),
           tableX + TABLE_COL_EFECTO + TABLE_COL_QTY + TABLE_COL_ESTADO + 5,
           movY + 3,
-          8,
+          8
         );
         movY += TABLE_MIN_ROW_HEIGHT;
       }
@@ -363,7 +531,9 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     if (mov.observaciones) {
       const lines = wrapText(mov.observaciones, tableW - 10, regular, 8);
       drawTextAt(currentPage!, bold, "Nota:", tableX, movY + 5, 8);
-      lines.forEach((l, i) => drawTextAt(currentPage!, regular, l, tableX + 35, movY + 5 + i * 11, 8));
+      lines.forEach((l, i) =>
+        drawTextAt(currentPage!, regular, l, tableX + 35, movY + 5 + i * 11, 8)
+      );
       movY += lines.length * 11 + 8;
     }
 
@@ -375,7 +545,7 @@ export async function GET(request: Request, context: { params: Promise<{ ci: str
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename=\"Hoja_Movimientos_${ci}.pdf\"`
-    }
+      "Content-Disposition": `inline; filename=\"Hoja_Movimientos_${ci}.pdf\"`,
+    },
   });
 }

@@ -9,7 +9,11 @@ import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyForDisplay, formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
-import { buildStockEquipoTraceData, parseStockTraceColumn, parseStockTraceItemId } from "@/lib/stock-equipo-trace";
+import {
+  buildStockEquipoTraceData,
+  parseStockTraceColumn,
+  parseStockTraceItemId,
+} from "@/lib/stock-equipo-trace";
 
 export const revalidate = 0;
 export const metadata = {
@@ -232,7 +236,9 @@ export default async function TrazabilidadEquiposPage({
         <main className="sheet">
           <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
           <h1 className="title">Trazabilidad de Equipos</h1>
-          <p className="empty-state">Parámetros inválidos para la impresión. Volvé a abrir desde el detalle de trazabilidad.</p>
+          <p className="empty-state">
+            Parámetros inválidos para la impresión. Volvé a abrir desde el detalle de trazabilidad.
+          </p>
         </main>
       </>
     );
@@ -266,7 +272,8 @@ export default async function TrazabilidadEquiposPage({
     oficialNombre: firmas.oficialNombre,
   });
 
-  const columnLabel = column === "SUBALTERNOS" ? "Subalternos" : column === "RECINTO" ? "Recintos" : "Préstamos";
+  const columnLabel =
+    column === "SUBALTERNOS" ? "Subalternos" : column === "RECINTO" ? "Recintos" : "Préstamos";
   const totalEnColumna =
     column === "SUBALTERNOS"
       ? traceData.totals.subalternos
@@ -311,17 +318,22 @@ export default async function TrazabilidadEquiposPage({
                       <p className="trace-line">{`${entry.tipoPersonal}${entry.bateria ? ` | Batería ${entry.bateria}` : ""}`}</p>
                     </div>
                     <div>
-                      <p className="trace-total">{entry.cantidadNeta > 0 ? `+${entry.cantidadNeta}` : entry.cantidadNeta}</p>
+                      <p className="trace-total">
+                        {entry.cantidadNeta > 0 ? `+${entry.cantidadNeta}` : entry.cantidadNeta}
+                      </p>
                     </div>
                   </div>
                   <div className="movement-list">
                     {entry.movimientos.map((movimiento) => (
-                      <p key={`print-trace-subalterno-mov-${entry.ci}-${movimiento.movimientoId}-${movimiento.tipo}`} className="movement-line">
+                      <p
+                        key={`print-trace-subalterno-mov-${entry.ci}-${movimiento.movimientoId}-${movimiento.tipo}`}
+                        className="movement-line"
+                      >
                         <span className="movement-delta">
                           {movimiento.delta > 0 ? `+${movimiento.delta}` : movimiento.delta}
                         </span>{" "}
-                        ({movimiento.cantidad}) | {movimiento.tipo} | Mov. #{movimiento.movimientoId} |{" "}
-                        {formatDateOnlyForDisplay(movimiento.fecha)}
+                        ({movimiento.cantidad}) | {movimiento.tipo} | Mov. #
+                        {movimiento.movimientoId} | {formatDateOnlyForDisplay(movimiento.fecha)}
                         {movimiento.observaciones ? ` | Obs: ${movimiento.observaciones}` : ""}
                       </p>
                     ))}
@@ -331,7 +343,7 @@ export default async function TrazabilidadEquiposPage({
             </section>
           )
         ) : column === "RECINTO" ? (
-          (!traceData.recintos || traceData.recintos.length === 0) ? (
+          !traceData.recintos || traceData.recintos.length === 0 ? (
             <p className="empty-state">No hay asignaciones activas a recintos para este equipo.</p>
           ) : (
             <section className="trace-list">
@@ -342,12 +354,17 @@ export default async function TrazabilidadEquiposPage({
                       <p className="trace-persona">{entry.recintoNombre}</p>
                     </div>
                     <div>
-                      <p className="trace-total">{entry.cantidadNeta > 0 ? `+${entry.cantidadNeta}` : entry.cantidadNeta}</p>
+                      <p className="trace-total">
+                        {entry.cantidadNeta > 0 ? `+${entry.cantidadNeta}` : entry.cantidadNeta}
+                      </p>
                     </div>
                   </div>
                   <div className="movement-list">
                     {entry.movimientos.map((movimiento) => (
-                      <p key={`print-trace-recinto-mov-${entry.recintoNombre}-${movimiento.movimientoId}`} className="movement-line">
+                      <p
+                        key={`print-trace-recinto-mov-${entry.recintoNombre}-${movimiento.movimientoId}`}
+                        className="movement-line"
+                      >
                         <span className="movement-delta">
                           {movimiento.delta > 0 ? `+${movimiento.delta}` : movimiento.delta}
                         </span>{" "}
@@ -371,12 +388,16 @@ export default async function TrazabilidadEquiposPage({
                   <div>
                     <p className="trace-persona">{entry.destinatarioEtiqueta}</p>
                     <p className="trace-line">
-                      {entry.destinatarioCi ? `CI ${formatUruguayanCi(entry.destinatarioCi)}` : "CI pendiente"}
+                      {entry.destinatarioCi
+                        ? `CI ${formatUruguayanCi(entry.destinatarioCi)}`
+                        : "CI pendiente"}
                     </p>
                     <p className="trace-line">{`Clase: ${entry.clasePrestamo}`}</p>
                     <p className="trace-line">{`Recibo: ${entry.reciboNumero} | Préstamo #${entry.prestamoId} | Mov. #${entry.movimientoId}`}</p>
                     <p className="trace-line">{`Fecha: ${formatDateOnlyForDisplay(entry.fechaPrestamo)}`}</p>
-                    {entry.observaciones ? <p className="trace-line">{`Obs: ${entry.observaciones}`}</p> : null}
+                    {entry.observaciones ? (
+                      <p className="trace-line">{`Obs: ${entry.observaciones}`}</p>
+                    ) : null}
                   </div>
                   <div>
                     <p className="trace-total">{`+${entry.cantidad}`}</p>

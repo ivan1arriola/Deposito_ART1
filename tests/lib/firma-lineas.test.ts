@@ -27,7 +27,7 @@ describe("buildFirmasHojaEntregaLineas", () => {
         indentLevel: linea.indentLevel,
         isBold: Boolean(linea.isBold),
         inlineOffsetChars: linea.inlineOffsetChars ?? 0,
-      })),
+      }))
     ).toEqual([
       { key: "alistado-titulo", indentLevel: 0, isBold: false, inlineOffsetChars: 0 },
       { key: "alistado-rango", indentLevel: 0, isBold: true, inlineOffsetChars: 0 },
@@ -82,7 +82,7 @@ describe("buildFirmasInstitucionalesLineas", () => {
         oficialRango: "Tte. 2 (Apy)",
         oficialNombre: "Gerardo Otero",
       },
-      2,
+      2
     );
 
     expect(lineas.map((linea) => linea.indentLevel)).toEqual([2, 2, 2, 3, 3, 3]);

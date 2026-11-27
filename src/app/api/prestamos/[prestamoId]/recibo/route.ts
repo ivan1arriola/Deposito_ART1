@@ -5,7 +5,10 @@ import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
 import { rangoAbreviacionLabel } from "@/lib/formatters";
-import { buildPersonaExternaNombre, buildPersonalDestinatarioNombre } from "@/lib/movimiento-destinatario";
+import {
+  buildPersonaExternaNombre,
+  buildPersonalDestinatarioNombre,
+} from "@/lib/movimiento-destinatario";
 import { prisma } from "@/lib/prisma";
 import {
   A4_HEIGHT,
@@ -84,20 +87,41 @@ function normalizeCellValue(value: string | null | undefined) {
 }
 
 function layoutTableRow(row: TableRow, font: PDFFont): TableRowLayout {
-  const efectoLines = wrapText(normalizeCellValue(row.efecto), TABLE_COL_EFECTO - 10, font, TABLE_CELL_TEXT_SIZE);
-  const cantidadLines = wrapText(normalizeCellValue(row.cantidad), TABLE_COL_QTY - 10, font, TABLE_CELL_TEXT_SIZE);
-  const estadoLines = wrapText(normalizeCellValue(row.estado), TABLE_COL_ESTADO - 10, font, TABLE_CELL_TEXT_SIZE);
+  const efectoLines = wrapText(
+    normalizeCellValue(row.efecto),
+    TABLE_COL_EFECTO - 10,
+    font,
+    TABLE_CELL_TEXT_SIZE
+  );
+  const cantidadLines = wrapText(
+    normalizeCellValue(row.cantidad),
+    TABLE_COL_QTY - 10,
+    font,
+    TABLE_CELL_TEXT_SIZE
+  );
+  const estadoLines = wrapText(
+    normalizeCellValue(row.estado),
+    TABLE_COL_ESTADO - 10,
+    font,
+    TABLE_CELL_TEXT_SIZE
+  );
   const observacionesLines = wrapText(
     normalizeCellValue(row.observaciones),
     TABLE_COL_OBS - 10,
     font,
-    TABLE_CELL_TEXT_SIZE,
+    TABLE_CELL_TEXT_SIZE
   );
 
-  const lineCount = Math.max(efectoLines.length, cantidadLines.length, estadoLines.length, observacionesLines.length, 1);
+  const lineCount = Math.max(
+    efectoLines.length,
+    cantidadLines.length,
+    estadoLines.length,
+    observacionesLines.length,
+    1
+  );
   const height = Math.max(
     TABLE_MIN_ROW_HEIGHT,
-    TABLE_CELL_TOP_PADDING + TABLE_CELL_BOTTOM_PADDING + lineCount * TABLE_CELL_LINE_HEIGHT,
+    TABLE_CELL_TOP_PADDING + TABLE_CELL_BOTTOM_PADDING + lineCount * TABLE_CELL_LINE_HEIGHT
   );
 
   return {
@@ -119,10 +143,10 @@ const prestamoReciboInclude = {
             },
           },
           bateria: {
-                            select: {
-                              nombre: true,
-                            },
-                          },
+            select: {
+              nombre: true,
+            },
+          },
         },
       },
     },
@@ -209,7 +233,8 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     `PR-${prestamo.movimientoId.toString().padStart(8, "0")}`;
 
   const fechaPrestamo = formatDateOnlyFromDate(prestamo.fecha) ?? "-";
-  const fechaDevolucion = formatDateOnlyFromDate(prestamo.prestamoHistorial?.fechaDevolucion) ?? "Pendiente";
+  const fechaDevolucion =
+    formatDateOnlyFromDate(prestamo.prestamoHistorial?.fechaDevolucion) ?? "Pendiente";
   const fechaEstimadaDevolucion =
     prestamo.prestamoHistorial?.fechaEstimadaDevolucionTexto ??
     prestamo.prestamoActivo?.fechaEstimadaDevolucionTexto ??
@@ -223,7 +248,11 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
 
   const destinatarioPersonal = prestamo.destinatarioPersonal?.personal ?? null;
   const destinatarioExterno = prestamo.destinatarioExterno?.personaExterna ?? null;
-  const clasePrestamo = destinatarioPersonal ? "INTERNO" : destinatarioExterno ? "EXTERNO" : "PENDIENTE";
+  const clasePrestamo = destinatarioPersonal
+    ? "INTERNO"
+    : destinatarioExterno
+      ? "EXTERNO"
+      : "PENDIENTE";
   const isPendiente = clasePrestamo === "PENDIENTE";
 
   const destinatarioNombre = isPendiente
@@ -238,9 +267,9 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     : (destinatarioPersonal?.rango.abreviacion ?? destinatarioExterno?.grado ?? "-");
   const destinatarioCi = isPendiente
     ? ""
-    : (destinatarioPersonal?.ci || destinatarioExterno?.ci
+    : destinatarioPersonal?.ci || destinatarioExterno?.ci
       ? formatUruguayanCi(destinatarioPersonal?.ci ?? destinatarioExterno?.ci ?? "")
-      : "-");
+      : "-";
   const tercerCampoLabel = clasePrestamo === "INTERNO" ? "Batería" : "Unidad";
   const tercerCampoValor = isPendiente
     ? ""
@@ -250,13 +279,13 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
   const entregaLabel = militaryShortLabel(
     rangoAbreviacionLabel(prestamo.usuarioEntrega.rango, ""),
     prestamo.usuarioEntrega.apellido,
-    prestamo.usuarioEntrega.nombre,
+    prestamo.usuarioEntrega.nombre
   );
   const destinatarioFirmaLabel = destinatarioPersonal
     ? militaryShortLabel(
         destinatarioPersonal.rango.abreviacion,
         destinatarioPersonal.apellido1,
-        destinatarioPersonal.nombre1,
+        destinatarioPersonal.nombre1
       )
     : destinatarioExterno
       ? `${destinatarioExterno.grado} ${destinatarioExterno.apellido}`.replace(/\s+/g, " ").trim()
@@ -265,7 +294,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
     ? militaryShortLabel(
         rangoAbreviacionLabel(prestamo.prestamoHistorial.usuarioRecibeDevolucion.rango, ""),
         prestamo.prestamoHistorial.usuarioRecibeDevolucion.apellido,
-        prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre,
+        prestamo.prestamoHistorial.usuarioRecibeDevolucion.nombre
       )
     : destinatarioFirmaLabel;
 
@@ -301,7 +330,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       },
       top0,
       innerX,
-      innerW,
+      innerW
     );
     let y = header.nextY;
 
@@ -314,7 +343,16 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
 
       drawField(page, assets, innerX, y, col3, boxH, "Grado", destinatarioGrado);
       drawField(page, assets, innerX + col3 + gap, y, col3, boxH, "C.I.", destinatarioCi);
-      drawField(page, assets, innerX + col3 * 2 + gap * 2, y, col6, boxH, tercerCampoLabel, tercerCampoValor);
+      drawField(
+        page,
+        assets,
+        innerX + col3 * 2 + gap * 2,
+        y,
+        col6,
+        boxH,
+        tercerCampoLabel,
+        tercerCampoValor
+      );
       y += boxH + 6;
 
       drawField(page, assets, innerX, y, innerW, row2H, "Nombre", destinatarioNombre);
@@ -324,7 +362,16 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
 
       const col4 = (innerW - gap * 2) / 3;
       drawField(page, assets, innerX, y, col4, boxH, "Fecha de entrega", fechaPrestamo);
-      drawField(page, assets, innerX + col4 + gap, y, col4, boxH, "Fecha de devolución", fechaDevolucion);
+      drawField(
+        page,
+        assets,
+        innerX + col4 + gap,
+        y,
+        col4,
+        boxH,
+        "Fecha de devolución",
+        fechaDevolucion
+      );
       drawField(
         page,
         assets,
@@ -333,7 +380,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
         col4,
         boxH,
         "Fecha estimada devolución",
-        fechaEstimadaDevolucion,
+        fechaEstimadaDevolucion
       );
       y += boxH + 6;
 
@@ -346,7 +393,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       innerX,
       y,
       innerW,
-      continuation ? "Detalle de equipo prestados (continuacion)" : "Detalle de equipo prestados",
+      continuation ? "Detalle de equipo prestados (continuacion)" : "Detalle de equipo prestados"
     );
 
     const tableX = innerX;
@@ -417,7 +464,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       },
       top0,
       innerX,
-      innerW,
+      innerW
     );
     const context: PageContext = {
       page,
@@ -449,7 +496,10 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
       color: rgb(0, 0, 0),
     });
     ctx.page.drawLine({
-      start: { x: ctx.tableX + ctx.colEfecto + ctx.colQty + ctx.colEstado, y: A4_HEIGHT - ctx.y - layout.height },
+      start: {
+        x: ctx.tableX + ctx.colEfecto + ctx.colQty + ctx.colEstado,
+        y: A4_HEIGHT - ctx.y - layout.height,
+      },
       end: { x: ctx.tableX + ctx.colEfecto + ctx.colQty + ctx.colEstado, y: A4_HEIGHT - ctx.y },
       thickness: 1,
       color: rgb(0, 0, 0),
@@ -462,7 +512,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
         line,
         ctx.tableX + 8,
         ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
-        TABLE_CELL_TEXT_SIZE,
+        TABLE_CELL_TEXT_SIZE
       );
     });
     layout.cantidadLines.forEach((line, index) => {
@@ -472,7 +522,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
         line,
         ctx.tableX + ctx.colEfecto + 8,
         ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
-        TABLE_CELL_TEXT_SIZE,
+        TABLE_CELL_TEXT_SIZE
       );
     });
     layout.estadoLines.forEach((line, index) => {
@@ -482,7 +532,7 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
         line,
         ctx.tableX + ctx.colEfecto + ctx.colQty + 8,
         ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
-        TABLE_CELL_TEXT_SIZE,
+        TABLE_CELL_TEXT_SIZE
       );
     });
     layout.observacionesLines.forEach((line, index) => {
@@ -492,33 +542,30 @@ export async function GET(request: Request, context: { params: Promise<{ prestam
         line,
         ctx.tableX + ctx.colEfecto + ctx.colQty + ctx.colEstado + 8,
         ctx.y + TABLE_CELL_TOP_PADDING + index * TABLE_CELL_LINE_HEIGHT,
-        TABLE_CELL_TEXT_SIZE,
+        TABLE_CELL_TEXT_SIZE
       );
     });
     ctx.y += layout.height;
   }
 
   function drawEmptyRow(ctx: PageContext) {
-    drawTableRow(ctx, layoutTableRow({ cantidad: "", efecto: "", estado: "", observaciones: "" }, regular));
+    drawTableRow(
+      ctx,
+      layoutTableRow({ cantidad: "", efecto: "", estado: "", observaciones: "" }, regular)
+    );
   }
 
   function drawClosingBlock(ctx: PageContext) {
-    drawAcknowledgementFooter(
-      ctx.page,
-      assets,
-      ctx.y,
-      {
-        body:
-          "El militar que recibe deja constancia de haber retirado los efectos detallados, en el estado indicado, comprometiendose a su adecuada conservacion y devolución cuando le sea requerida.",
-        leftSignatureTitle: "Firma de quien entrega",
-        leftSignatureName: entregaLabel,
-        rightSignatureTitle: "Firma de quien recibe",
-        rightSignatureName: recibeLabel,
-        leftStampTitle: "SELLO DE ENTREGA",
-        rightStampTitle: "SELLO DE DEVOLUCIÓN",
-        footerNote: `Documento interno de control de préstamo de efectos. Impreso: ${fechaImpresion}`,
-      },
-    );
+    drawAcknowledgementFooter(ctx.page, assets, ctx.y, {
+      body: "El militar que recibe deja constancia de haber retirado los efectos detallados, en el estado indicado, comprometiendose a su adecuada conservacion y devolución cuando le sea requerida.",
+      leftSignatureTitle: "Firma de quien entrega",
+      leftSignatureName: entregaLabel,
+      rightSignatureTitle: "Firma de quien recibe",
+      rightSignatureName: recibeLabel,
+      leftStampTitle: "SELLO DE ENTREGA",
+      rightStampTitle: "SELLO DE DEVOLUCIÓN",
+      footerNote: `Documento interno de control de préstamo de efectos. Impreso: ${fechaImpresion}`,
+    });
   }
 
   let ctx = startPage(false);

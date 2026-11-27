@@ -65,7 +65,7 @@ export default async function TallesSubalternosPage({
   }));
   const tallaColumnWidths = buildDynamicTallaColumnWidths(
     41,
-    personalRows.map((persona) => persona.talles),
+    personalRows.map((persona) => persona.talles)
   );
   const printedAt = new Date();
   const generatedAt = formatDateTimeForDisplay(printedAt);
@@ -229,7 +229,9 @@ export default async function TallesSubalternosPage({
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <header className="header">
           <h1 className="title">Talles de subalternos</h1>
-          <p className="subtitle">Listado nominal de talles, uno por uno, para personal subalterno.</p>
+          <p className="subtitle">
+            Listado nominal de talles, uno por uno, para personal subalterno.
+          </p>
           <p className="meta">{`Generado: ${generatedAt} | Total subalternos: ${personal.length}`}</p>
         </header>
 

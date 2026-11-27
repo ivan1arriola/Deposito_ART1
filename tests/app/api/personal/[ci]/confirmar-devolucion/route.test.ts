@@ -87,7 +87,11 @@ function basePersonalRecord() {
       { tallaTipoId: 5, tallaValor: "40", tallaTipo: { tallaTipoId: 5, nombre: "CALZADO" } },
     ],
     observaciones: [
-      { observacionId: BigInt(1), texto: "Observación de prueba", fecha: new Date("2024-05-18T00:00:00.000Z") },
+      {
+        observacionId: BigInt(1),
+        texto: "Observación de prueba",
+        fecha: new Date("2024-05-18T00:00:00.000Z"),
+      },
     ],
   };
 }
@@ -100,9 +104,12 @@ describe("POST /api/personal/[ci]/confirmar-devolucion", () => {
   });
 
   it("confirma la baja y transfiere toda la información al historial", async () => {
-    const request = new Request("http://localhost:3000/api/personal/51067524/confirmar-devolucion", {
-      method: "POST",
-    });
+    const request = new Request(
+      "http://localhost:3000/api/personal/51067524/confirmar-devolucion",
+      {
+        method: "POST",
+      }
+    );
 
     const response = await POST(request, {
       params: Promise.resolve({ ci: "51067524" }),
@@ -153,7 +160,7 @@ describe("POST /api/personal/[ci]/confirmar-devolucion", () => {
         detalle: expect.objectContaining({
           evento: "PERSONAL_CONFIRMAR_BAJA_HISTORIAL",
         }),
-      }),
+      })
     );
   });
 
@@ -175,9 +182,12 @@ describe("POST /api/personal/[ci]/confirmar-devolucion", () => {
   it("retorna 404 si el personal no existe", async () => {
     vi.mocked(prisma.personal.findUnique).mockResolvedValue(null as never);
 
-    const request = new Request("http://localhost:3000/api/personal/51067524/confirmar-devolucion", {
-      method: "POST",
-    });
+    const request = new Request(
+      "http://localhost:3000/api/personal/51067524/confirmar-devolucion",
+      {
+        method: "POST",
+      }
+    );
 
     const response = await POST(request, {
       params: Promise.resolve({ ci: "51067524" }),

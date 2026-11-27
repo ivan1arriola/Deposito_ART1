@@ -142,10 +142,18 @@ export function AppInstallCard({ compact = false }: AppInstallCardProps) {
       className={`ej-card mt-4 rounded-2xl border border-stone-300/70 bg-white/85 ${compact ? "p-3 sm:p-4" : "p-4 sm:p-5"}`}
       aria-live="polite"
     >
-      <div className={`flex flex-col gap-3 ${compact ? "" : "sm:flex-row sm:equipos-center sm:justify-between"}`}>
+      <div
+        className={`flex flex-col gap-3 ${compact ? "" : "sm:flex-row sm:equipos-center sm:justify-between"}`}
+      >
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Aplicación instalable</p>
-          <h2 className={`${compact ? "text-sm sm:text-base" : "text-base sm:text-lg"} font-bold text-stone-900`}>Instala el Sistema de Depósito General - Artillería 1 en Chrome</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+            Aplicación instalable
+          </p>
+          <h2
+            className={`${compact ? "text-sm sm:text-base" : "text-base sm:text-lg"} font-bold text-stone-900`}
+          >
+            Instala el Sistema de Depósito General - Artillería 1 en Chrome
+          </h2>
           <p className={`${compact ? "text-xs" : "text-sm"} mt-1 text-stone-700`}>{summaryText}</p>
         </div>
 

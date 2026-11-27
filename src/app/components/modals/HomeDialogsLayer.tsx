@@ -1,10 +1,28 @@
 "use client";
 
-import { apellidosLabel, nombresLabel, roleDescription, roleLabel, roleScope } from "@/lib/formatters";
-import type { Equipo, OficialSuboficial, Personal, PersonalObservacion, Rango, Role } from "@/types/entities";
+import {
+  apellidosLabel,
+  nombresLabel,
+  roleDescription,
+  roleLabel,
+  roleScope,
+} from "@/lib/formatters";
+import type {
+  Equipo,
+  OficialSuboficial,
+  Personal,
+  PersonalObservacion,
+  Rango,
+  Role,
+} from "@/types/entities";
 import type { RegistroDraft, RegistroDraftEquipo } from "@/types/forms";
 import type { ConfirmDialogState, RegistroView, RegistroViewerState } from "@/types/views";
-import type { PersonalObservacionDraft, UserPasswordDialogState, UserProfileDialogState, UserRoleDialogState } from "@/app/types/home";
+import type {
+  PersonalObservacionDraft,
+  UserPasswordDialogState,
+  UserProfileDialogState,
+  UserRoleDialogState,
+} from "@/app/types/home";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 import { ConfirmDialogModal } from "./ConfirmDialog";
 import { PersonalObservacionModal } from "./PersonalObservacionModal";
@@ -39,8 +57,11 @@ type HomeDialogsLayerProps = {
   usernameSaving: boolean;
   userRangoOptions: Rango[];
   onUsernameDialogChange: (
-    field: keyof Pick<UserProfileDialogState, "rangoId" | "nombre" | "apellido" | "username" | "mailReferencia">,
-    value: string,
+    field: keyof Pick<
+      UserProfileDialogState,
+      "rangoId" | "nombre" | "apellido" | "username" | "mailReferencia"
+    >,
+    value: string
   ) => void;
   onCloseUsernameDialog: () => void;
   onSubmitUsernameDialog: () => void;
@@ -83,7 +104,7 @@ type HomeDialogsLayerProps = {
       | "destinatarioExternoApellido"
       | "destinatarioExternoCi"
       | "destinatarioExternoUnidadDestino",
-    value: string,
+    value: string
   ) => void;
   onToggleRegistroIncluirFueraDeHoja: () => void;
   onToggleRegistroDestinatario: (ci: string) => void;
@@ -219,7 +240,12 @@ export function HomeDialogsLayer({
         onSubmit={onSubmitUsernameDialog}
       />
 
-      <ConfirmDialogModal dialog={confirmDialog} busy={confirmDialogBusy} onClose={onCloseConfirmDialog} onConfirm={onConfirmDialogAccept} />
+      <ConfirmDialogModal
+        dialog={confirmDialog}
+        busy={confirmDialogBusy}
+        onClose={onCloseConfirmDialog}
+        onConfirm={onConfirmDialogAccept}
+      />
 
       <RegistroViewerModal
         viewer={registroViewer}
@@ -239,7 +265,11 @@ export function HomeDialogsLayer({
 
       <RegistroEditorModal
         draft={registroDraft}
-        personaLabel={personaRegistro ? `${apellidosLabel(personaRegistro)}, ${nombresLabel(personaRegistro)}` : null}
+        personaLabel={
+          personaRegistro
+            ? `${apellidosLabel(personaRegistro)}, ${nombresLabel(personaRegistro)}`
+            : null
+        }
         personalFiltrado={personalFiltrado}
         oficialesSuboficiales={oficialesSuboficiales}
         equiposOrdenados={equiposOrdenados}
@@ -251,15 +281,33 @@ export function HomeDialogsLayer({
         onDestinatarioTipoChange={(value) => onRegistroDraftChange("destinatarioTipo", value)}
         onRecintoClaseChange={(value) => onRegistroDraftChange("recintoClase", value)}
         onRecintoNombreChange={(value) => onRegistroDraftChange("recintoNombre", value)}
-        onRecintoResponsableGradoChange={(value) => onRegistroDraftChange("recintoResponsableGrado", value)}
-        onRecintoResponsableNombreChange={(value) => onRegistroDraftChange("recintoResponsableNombre", value)}
-        onRecintoResponsableApellidoChange={(value) => onRegistroDraftChange("recintoResponsableApellido", value)}
-        onRecintoResponsableCiChange={(value) => onRegistroDraftChange("recintoResponsableCi", value)}
-        onDestinatarioExternoGradoChange={(value) => onRegistroDraftChange("destinatarioExternoGrado", value)}
-        onDestinatarioExternoNombreChange={(value) => onRegistroDraftChange("destinatarioExternoNombre", value)}
-        onDestinatarioExternoApellidoChange={(value) => onRegistroDraftChange("destinatarioExternoApellido", value)}
-        onDestinatarioExternoCiChange={(value) => onRegistroDraftChange("destinatarioExternoCi", value)}
-        onDestinatarioExternoUnidadDestinoChange={(value) => onRegistroDraftChange("destinatarioExternoUnidadDestino", value)}
+        onRecintoResponsableGradoChange={(value) =>
+          onRegistroDraftChange("recintoResponsableGrado", value)
+        }
+        onRecintoResponsableNombreChange={(value) =>
+          onRegistroDraftChange("recintoResponsableNombre", value)
+        }
+        onRecintoResponsableApellidoChange={(value) =>
+          onRegistroDraftChange("recintoResponsableApellido", value)
+        }
+        onRecintoResponsableCiChange={(value) =>
+          onRegistroDraftChange("recintoResponsableCi", value)
+        }
+        onDestinatarioExternoGradoChange={(value) =>
+          onRegistroDraftChange("destinatarioExternoGrado", value)
+        }
+        onDestinatarioExternoNombreChange={(value) =>
+          onRegistroDraftChange("destinatarioExternoNombre", value)
+        }
+        onDestinatarioExternoApellidoChange={(value) =>
+          onRegistroDraftChange("destinatarioExternoApellido", value)
+        }
+        onDestinatarioExternoCiChange={(value) =>
+          onRegistroDraftChange("destinatarioExternoCi", value)
+        }
+        onDestinatarioExternoUnidadDestinoChange={(value) =>
+          onRegistroDraftChange("destinatarioExternoUnidadDestino", value)
+        }
         onToggleIncluirFueraDeHoja={onToggleRegistroIncluirFueraDeHoja}
         onToggleDestinatario={onToggleRegistroDestinatario}
         onSelectAllDestinatarios={onSelectAllRegistroDestinatarios}

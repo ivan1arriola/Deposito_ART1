@@ -183,7 +183,7 @@ describe("Handlers de Autenticación", () => {
       vi.mocked(api).mockRejectedValue(new Error("Usuario no encontrado"));
 
       await expect(requestPasswordResetHandler("nadie", { onError })).rejects.toThrow(
-        "Usuario no encontrado",
+        "Usuario no encontrado"
       );
       expect(onError).toHaveBeenCalledWith("Usuario no encontrado");
     });
@@ -213,7 +213,7 @@ describe("Handlers de Autenticación", () => {
 
       await changePasswordHandler(
         { currentPassword: "vieja", newPassword: "nueva" },
-        { onSuccess },
+        { onSuccess }
       );
 
       expect(vi.mocked(api)).toHaveBeenCalledWith("/api/auth/password-change", {
@@ -229,13 +229,13 @@ describe("Handlers de Autenticación", () => {
       vi.mocked(api).mockRejectedValue(new Error("Contraseña actual incorrecta"));
 
       await expect(
-        changePasswordHandler({ currentPassword: "x", newPassword: "y" }, { onError }),
+        changePasswordHandler({ currentPassword: "x", newPassword: "y" }, { onError })
       ).rejects.toThrow("Contraseña actual incorrecta");
       expect(onError).toHaveBeenCalledWith("Contraseña actual incorrecta");
 
       vi.mocked(api).mockRejectedValue(42);
       await expect(
-        changePasswordHandler({ currentPassword: "x", newPassword: "y" }, { onError }),
+        changePasswordHandler({ currentPassword: "x", newPassword: "y" }, { onError })
       ).rejects.toBe(42);
       expect(onError).toHaveBeenCalledWith("No se pudo cambiar la contraseña.");
     });
@@ -243,12 +243,12 @@ describe("Handlers de Autenticación", () => {
     it("debería tolerar callbacks vacíos al cambiar contraseña", async () => {
       vi.mocked(api).mockResolvedValue({});
       await expect(
-        changePasswordHandler({ currentPassword: "a", newPassword: "b" }, {}),
+        changePasswordHandler({ currentPassword: "a", newPassword: "b" }, {})
       ).resolves.toBeUndefined();
 
       vi.mocked(api).mockRejectedValue(new Error("fallo"));
       await expect(
-        changePasswordHandler({ currentPassword: "a", newPassword: "b" }, {}),
+        changePasswordHandler({ currentPassword: "a", newPassword: "b" }, {})
       ).rejects.toThrow("fallo");
     });
   });

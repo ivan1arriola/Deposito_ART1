@@ -39,10 +39,10 @@ const PERSONAL_IDENTITY_SELECT = {
     },
   },
   bateria: {
-          select: {
-            nombre: true,
-          },
-        },
+    select: {
+      nombre: true,
+    },
+  },
 } as const satisfies Prisma.PersonalSelect;
 
 type PersonalIdentityRecord = Prisma.PersonalGetPayload<{
@@ -160,7 +160,10 @@ function toPersonalAuthIdentity(record: PersonalIdentityRecord): PersonalAuthIde
   };
 }
 
-function toPersonalAdminUser(identity: PersonalAuthIdentity, credential: PersonalCredentialRow | null): PersonalAdminUser {
+function toPersonalAdminUser(
+  identity: PersonalAuthIdentity,
+  credential: PersonalCredentialRow | null
+): PersonalAdminUser {
   return {
     usuarioId: toPersonalUsuarioId(identity.ci),
     rangoId: identity.rangoId,
@@ -357,7 +360,7 @@ export async function getPersonalSessionIdentity(ci: string) {
 export async function changePersonalPassword(
   ci: string,
   currentPassword: string,
-  newPassword: string,
+  newPassword: string
 ): Promise<PersonalPasswordChangeResult> {
   await ensurePersonalAuthCompatibility();
 
@@ -453,7 +456,9 @@ export async function listPersonalAdminUsers() {
   const normalized = personal.map(toPersonalAuthIdentity);
 
   const credentialByCi = await fetchCredentialMap(normalized.map((entry) => entry.ci));
-  return normalized.map((identity) => toPersonalAdminUser(identity, credentialByCi.get(identity.ci) ?? null));
+  return normalized.map((identity) =>
+    toPersonalAdminUser(identity, credentialByCi.get(identity.ci) ?? null)
+  );
 }
 
 export async function getPersonalSelfContact(ci: string): Promise<PersonalSelfContact | null> {
@@ -475,7 +480,9 @@ export async function getPersonalSelfContact(ci: string): Promise<PersonalSelfCo
   };
 }
 
-export async function getPersonalNotificationTarget(ci: string): Promise<PersonalNotificationTarget | null> {
+export async function getPersonalNotificationTarget(
+  ci: string
+): Promise<PersonalNotificationTarget | null> {
   await ensurePersonalAuthCompatibility();
 
   const normalizedCi = normalizeCiOrNull(ci);
@@ -498,7 +505,7 @@ export async function getPersonalNotificationTarget(ci: string): Promise<Persona
 
 export async function updatePersonalSelfContact(
   ci: string,
-  updates: PersonalContactUpdate,
+  updates: PersonalContactUpdate
 ): Promise<PersonalSelfContact | null> {
   await ensurePersonalAuthCompatibility();
 

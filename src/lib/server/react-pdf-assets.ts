@@ -28,7 +28,10 @@ async function loadPublicAssetDataUrl(assetPath: string) {
     const mimeType = detectMimeTypeFromPath(normalizedAssetPath);
     return `data:${mimeType};base64,${bytes.toString("base64")}`;
   } catch (error) {
-    console.warn(`[react-pdf-assets] No se pudo cargar asset "${normalizedAssetPath}" para PDF:`, error);
+    console.warn(
+      `[react-pdf-assets] No se pudo cargar asset "${normalizedAssetPath}" para PDF:`,
+      error
+    );
     return null;
   }
 }

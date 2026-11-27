@@ -45,7 +45,10 @@ function buildDisplayName(row: HojaMatrixRow) {
   return [row.nombre1, row.apellido1].filter(Boolean).join(" ").trim();
 }
 
-function buildPrintableRows(rows: HojaMatrixRow[], includeBatterySeparators: boolean): PrintableRow[] {
+function buildPrintableRows(
+  rows: HojaMatrixRow[],
+  includeBatterySeparators: boolean
+): PrintableRow[] {
   const printableRows: PrintableRow[] = [];
   let currentGrade = "";
   let currentBattery = "";
@@ -136,8 +139,14 @@ export async function GET(request: Request) {
   const titleStartRow = logoEndRow + 1;
   const labelRow = topEndRow + 1;
 
-  const longestGrade = data.rows.reduce((max, row) => Math.max(max, row.gradoAbreviacion.length), "Grado".length);
-  const longestName = data.rows.reduce((max, row) => Math.max(max, buildDisplayName(row).length), "Nombre".length);
+  const longestGrade = data.rows.reduce(
+    (max, row) => Math.max(max, row.gradoAbreviacion.length),
+    "Grado".length
+  );
+  const longestName = data.rows.reduce(
+    (max, row) => Math.max(max, buildDisplayName(row).length),
+    "Nombre".length
+  );
   const gradeColumnWidth = clamp(longestGrade + 2, GRADE_COLUMN_MIN_WIDTH, GRADE_COLUMN_MAX_WIDTH);
   const nameColumnWidth = clamp(longestName + 2, NAME_COLUMN_MIN_WIDTH, NAME_COLUMN_MAX_WIDTH);
 

@@ -21,7 +21,10 @@ export const TALLA_OPTIONS: Record<TallaKey, readonly string[]> = {
   CALZADO: CALZADO_TALLES,
 };
 
-export function normalizeTallaValue(key: TallaKey, value: string | null | undefined): string | null {
+export function normalizeTallaValue(
+  key: TallaKey,
+  value: string | null | undefined
+): string | null {
   const trimmed = value?.trim();
   if (!trimmed) return null;
 

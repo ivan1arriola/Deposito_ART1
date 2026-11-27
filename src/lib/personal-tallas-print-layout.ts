@@ -19,7 +19,10 @@ function measureWrappedText(text: string) {
   return Math.max(longestWord, Math.ceil(normalized.length * 0.62));
 }
 
-export function buildDynamicTallaColumnWidths(totalWidthPercent: number, rows: readonly TallaRow[]): Record<TallaKey, string> {
+export function buildDynamicTallaColumnWidths(
+  totalWidthPercent: number,
+  rows: readonly TallaRow[]
+): Record<TallaKey, string> {
   const weights = TALLA_KEYS.map((key) => {
     const headerWeight = measureWrappedText(TALLA_LABELS[key]) * HEADER_PRIORITY;
     const contentWeight = rows.reduce((max, row) => {
@@ -45,6 +48,6 @@ export function buildDynamicTallaColumnWidths(totalWidthPercent: number, rows: r
       acc[key] = `${width.toFixed(2)}%`;
       return acc;
     },
-    {} as Record<TallaKey, string>,
+    {} as Record<TallaKey, string>
   );
 }

@@ -6,7 +6,11 @@ import {
 } from "@/app/components/print/InstitutionalPrintHeader";
 import { FirmaLineasHtml } from "@/app/components/shared/FirmaLineasHtml";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
-import { compareEquiposByTipoAndName, compareEquiposByTipoAndOrder, groupEquiposByTipo } from "@/lib/equipo-sort";
+import {
+  compareEquiposByTipoAndName,
+  compareEquiposByTipoAndOrder,
+  groupEquiposByTipo,
+} from "@/lib/equipo-sort";
 import { serializeEquipoTipoData, tipoEquipoRelationSelect } from "@/lib/equipo-tipos-data";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
@@ -255,7 +259,9 @@ export default async function ListadoEquiposUnidadPage({
       existenciaSie: equipo.existenciaSie,
     };
   });
-  const resumenOrdenado = [...resumen].sort(isAlphaSort ? compareEquiposByTipoAndName : compareEquiposByTipoAndOrder);
+  const resumenOrdenado = [...resumen].sort(
+    isAlphaSort ? compareEquiposByTipoAndName : compareEquiposByTipoAndOrder
+  );
   const resumenPorTipo = groupEquiposByTipo(resumenOrdenado).map((section) => ({
     ...section,
     title: isAlphaSort ? `Equipos ${section.label} (A-Z)` : `Equipos ${section.label}`,

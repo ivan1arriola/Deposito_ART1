@@ -21,7 +21,7 @@ function applyPrestamoDraftFieldChange(
     | "fechaPrestamo"
     | "fechaEstimadaDevolucionTexto"
     | "comentarios",
-  value: string,
+  value: string
 ): PrestamoDraft {
   if (field === "clasePrestamo") {
     if (value === "INTERNO") {
@@ -56,7 +56,11 @@ function applyPrestamoDraftFieldChange(
   }
 
   if (field === "destinatarioTipo") {
-    return { ...prev, destinatarioTipo: value as PrestamoDraft["destinatarioTipo"], destinatarioCi: "" };
+    return {
+      ...prev,
+      destinatarioTipo: value as PrestamoDraft["destinatarioTipo"],
+      destinatarioCi: "",
+    };
   }
 
   return { ...prev, [field]: value };
@@ -97,8 +101,21 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
     openPersonaProfileByCi,
   } = props;
 
-  const isStockView = ["stock", "stock_total", "stock_actual", "stock_alta", "stock_baja", "stock_historial", "stock_prestamos"].includes(activeView);
-  const isPrestamosModuleView = ["formularios", "prestamos_registrar", "prestamos_vigentes", "prestamos_historial"].includes(activeView);
+  const isStockView = [
+    "stock",
+    "stock_total",
+    "stock_actual",
+    "stock_alta",
+    "stock_baja",
+    "stock_historial",
+    "stock_prestamos",
+  ].includes(activeView);
+  const isPrestamosModuleView = [
+    "formularios",
+    "prestamos_registrar",
+    "prestamos_vigentes",
+    "prestamos_historial",
+  ].includes(activeView);
   const prestamosViewMode =
     activeView === "prestamos_registrar"
       ? "registrar"
@@ -134,7 +151,9 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           draft={stockDraft}
           saving={stockSaving}
           maxDate={maxFechaIngreso}
-          onDraftChange={(field, value) => setStockDraft((prev: StockOperacionDraft) => ({ ...prev, [field]: value }))}
+          onDraftChange={(field, value) =>
+            setStockDraft((prev: StockOperacionDraft) => ({ ...prev, [field]: value }))
+          }
           onDraftItemChange={updateStockDraftItem}
           onAddItem={addStockDraftItem}
           onRemoveEquipo={removeStockDraftItem}
@@ -145,14 +164,18 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           prestamoSaving={prestamoSaving}
           returningPrestamoId={returningPrestamoId}
           onPrestamoDraftChange={(field, value) =>
-            setPrestamoDraft((prev: PrestamoDraft) => applyPrestamoDraftFieldChange(prev, field, value))
+            setPrestamoDraft((prev: PrestamoDraft) =>
+              applyPrestamoDraftFieldChange(prev, field, value)
+            )
           }
           onPrestamoItemChange={updatePrestamoDraftItem}
           onAddPrestamoItem={addPrestamoDraftItem}
           onRemovePrestamoItem={removePrestamoDraftItem}
           onSubmitPrestamo={() => void savePrestamo(false)}
           onSubmitPrestamoAndPrint={() => void savePrestamo(true)}
-          onReturnPrestamo={(prestamoId, fechaDevolucion, equipos) => void returnPrestamo(prestamoId, fechaDevolucion, equipos)}
+          onReturnPrestamo={(prestamoId, fechaDevolucion, equipos) =>
+            void returnPrestamo(prestamoId, fechaDevolucion, equipos)
+          }
           onReload={() => void reloadActiveStockData()}
         />
       ) : null}
@@ -178,14 +201,18 @@ export function StockPrestamoViews(props: StockPrestamoViewsProps) {
           editingPrestamoId={editingPrestamoId}
           maxDate={maxFechaIngreso}
           onPrestamoDraftChange={(field, value) =>
-            setPrestamoDraft((prev: PrestamoDraft) => applyPrestamoDraftFieldChange(prev, field, value))
+            setPrestamoDraft((prev: PrestamoDraft) =>
+              applyPrestamoDraftFieldChange(prev, field, value)
+            )
           }
           onPrestamoItemChange={updatePrestamoDraftItem}
           onAddPrestamoItem={addPrestamoDraftItem}
           onRemovePrestamoItem={removePrestamoDraftItem}
           onSubmitPrestamo={() => void savePrestamo(false)}
           onSubmitPrestamoAndPrint={() => void savePrestamo(true)}
-          onReturnPrestamo={(prestamoId, fechaDevolucion, equipos) => void returnPrestamo(prestamoId, fechaDevolucion, equipos)}
+          onReturnPrestamo={(prestamoId, fechaDevolucion, equipos) =>
+            void returnPrestamo(prestamoId, fechaDevolucion, equipos)
+          }
           onEditPrestamo={(prestamoId, payload) => editPrestamo(prestamoId, payload)}
           onDeletePrestamo={(prestamoId) => void deletePrestamo(prestamoId)}
           onReload={() => void reloadActiveStockData()}

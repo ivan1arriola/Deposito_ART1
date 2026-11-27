@@ -31,13 +31,17 @@ function normalizeCodigoSIE(value: string) {
 }
 
 function normalizeCodigoSIEInput(value: unknown) {
-  const normalized = String(value ?? "").trim().toUpperCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (!SIE_CODE_REGEX.test(normalized)) return null;
   return normalized;
 }
 
 function normalizeTalla(value: unknown) {
-  const normalized = String(value ?? "").trim().toUpperCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toUpperCase();
   return normalized.length > 0 ? normalized : "-";
 }
 
@@ -60,8 +64,10 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
 
   if (!hasEtiquetadoDelegates()) {
     return NextResponse.json(
-      { error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo." },
-      { status: 503 },
+      {
+        error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo.",
+      },
+      { status: 503 }
     );
   }
 
@@ -84,8 +90,11 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
 
   if (!codigo || equipoId === null) {
     return NextResponse.json(
-      { error: "Payload invalido. codigo e equipo son obligatorios. Formatos validos: 8 digitos o 3 letras y 2 numeros." },
-      { status: 400 },
+      {
+        error:
+          "Payload invalido. codigo e equipo son obligatorios. Formatos validos: 8 digitos o 3 letras y 2 numeros.",
+      },
+      { status: 400 }
     );
   }
 
@@ -108,7 +117,10 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
     return NextResponse.json({ error: "Codigo SIE no encontrado." }, { status: 404 });
   }
   if (existing.codigo !== originalCodigo) {
-    return NextResponse.json({ error: "El codigo SIE indicado no coincide con el registro seleccionado." }, { status: 409 });
+    return NextResponse.json(
+      { error: "El codigo SIE indicado no coincide con el registro seleccionado." },
+      { status: 409 }
+    );
   }
   if (!equipo) {
     return NextResponse.json({ error: "El equipo seleccionado no existe." }, { status: 400 });
@@ -121,7 +133,7 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
   if (existing.equipoId.toString() !== equipoId.toString() && cajasVinculadas > 0) {
     return NextResponse.json(
       { error: "No se puede cambiar el equipo de un codigo SIE que ya esta vinculado a cajas." },
-      { status: 409 },
+      { status: 409 }
     );
   }
 
@@ -163,8 +175,16 @@ export async function PUT(request: Request, context: { params: Promise<{ codigo:
       equipoNombre: updated.equipo.nombre,
     });
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-      return NextResponse.json({ error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo." }, { status: 409 });
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo." },
+        { status: 409 }
+      );
     }
 
     return NextResponse.json({ error: "No se pudo actualizar el codigo SIE." }, { status: 500 });
@@ -177,8 +197,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
 
   if (!hasEtiquetadoDelegates()) {
     return NextResponse.json(
-      { error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo." },
-      { status: 503 },
+      {
+        error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo.",
+      },
+      { status: 503 }
     );
   }
 
@@ -206,7 +228,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
     return NextResponse.json({ error: "Codigo SIE no encontrado." }, { status: 404 });
   }
   if (existing.codigo !== codigo) {
-    return NextResponse.json({ error: "El codigo SIE indicado no coincide con el registro seleccionado." }, { status: 409 });
+    return NextResponse.json(
+      { error: "El codigo SIE indicado no coincide con el registro seleccionado." },
+      { status: 409 }
+    );
   }
 
   const cajasVinculadas = await prisma.cajaEquipoCodigoSIE.count({

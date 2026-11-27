@@ -1,10 +1,16 @@
 import { TipoMovimiento, type Prisma } from "@/generated/prisma/client";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
-import { buildPersonalDestinatarioEtiqueta, resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
+import {
+  buildPersonalDestinatarioEtiqueta,
+  resolveDestinatarioMovimiento,
+} from "@/lib/movimiento-destinatario";
 import { prisma } from "@/lib/prisma";
 import type { StockEquipoTraceData } from "@/types/views";
 
-type PrismaItemTraceLike = Pick<Prisma.TransactionClient, "equipo" | "movimientoEquipo" | "prestamoActivo">;
+type PrismaItemTraceLike = Pick<
+  Prisma.TransactionClient,
+  "equipo" | "movimientoEquipo" | "prestamoActivo"
+>;
 
 export function parseStockTraceItemId(value: unknown) {
   if (typeof value === "bigint") return value;
@@ -13,8 +19,12 @@ export function parseStockTraceItemId(value: unknown) {
   return BigInt(raw);
 }
 
-export function parseStockTraceColumn(value: unknown): "SUBALTERNOS" | "PRESTAMO" | "RECINTO" | null {
-  const raw = String(value ?? "").trim().toUpperCase();
+export function parseStockTraceColumn(
+  value: unknown
+): "SUBALTERNOS" | "PRESTAMO" | "RECINTO" | null {
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "SUBALTERNOS") return "SUBALTERNOS";
   if (raw === "PRESTAMO") return "PRESTAMO";
   if (raw === "RECINTO") return "RECINTO";
@@ -34,7 +44,10 @@ export function hasStockItemTraceDelegates(client: unknown = prisma) {
   );
 }
 
-export async function buildStockEquipoTraceData(equipoId: bigint, client: PrismaItemTraceLike = prisma) {
+export async function buildStockEquipoTraceData(
+  equipoId: bigint,
+  client: PrismaItemTraceLike = prisma
+) {
   const equipo = await client.equipo.findUnique({
     where: { equipoId },
     select: {
@@ -79,10 +92,10 @@ export async function buildStockEquipoTraceData(equipoId: bigint, client: Prisma
                       },
                     },
                     bateria: {
-                                              select: {
-                                                nombre: true,
-                                              },
-                                            },
+                      select: {
+                        nombre: true,
+                      },
+                    },
                   },
                 },
               },
@@ -109,10 +122,7 @@ export async function buildStockEquipoTraceData(equipoId: bigint, client: Prisma
           },
         },
       },
-      orderBy: [
-        { movimiento: { fecha: "desc" } },
-        { movimiento: { createdAt: "desc" } },
-      ],
+      orderBy: [{ movimiento: { fecha: "desc" } }, { movimiento: { createdAt: "desc" } }],
     }),
     client.prestamoActivo.findMany({
       where: {
@@ -177,10 +187,7 @@ export async function buildStockEquipoTraceData(equipoId: bigint, client: Prisma
           },
         },
       },
-      orderBy: [
-        { movimiento: { fecha: "desc" } },
-        { createdAt: "desc" },
-      ],
+      orderBy: [{ movimiento: { fecha: "desc" } }, { createdAt: "desc" }],
     }),
   ]);
 
@@ -197,11 +204,15 @@ export async function buildStockEquipoTraceData(equipoId: bigint, client: Prisma
   >();
   for (const movimientoEquipo of movimientoEquipos) {
     const tipoMovimiento = movimientoEquipo.movimiento.tipo;
-    if (tipoMovimiento !== TipoMovimiento.ENTREGA && tipoMovimiento !== TipoMovimiento.DEVOLUCION) continue;
+    if (tipoMovimiento !== TipoMovimiento.ENTREGA && tipoMovimiento !== TipoMovimiento.DEVOLUCION)
+      continue;
     const personal = movimientoEquipo.movimiento.destinatarioPersonal?.personal;
     if (!personal) continue;
     const ci = personal.ci;
-    const delta = tipoMovimiento === TipoMovimiento.ENTREGA ? movimientoEquipo.cantidad : -movimientoEquipo.cantidad;
+    const delta =
+      tipoMovimiento === TipoMovimiento.ENTREGA
+        ? movimientoEquipo.cantidad
+        : -movimientoEquipo.cantidad;
     const existing = subalternosByCi.get(ci);
     if (existing) {
       existing.cantidadNeta += delta;
@@ -249,7 +260,7 @@ export async function buildStockEquipoTraceData(equipoId: bigint, client: Prisma
     const recinto = movimientoEquipo.movimiento.destinatarioRecinto;
     const personal = movimientoEquipo.movimiento.destinatarioPersonal?.personal;
     const externo = movimientoEquipo.movimiento.destinatarioExterno?.personaExterna;
-    
+
     let nombre = "Asignación sin destinatario";
     if (recinto) {
       nombre = recinto.nombre;
@@ -299,16 +310,14 @@ export async function buildStockEquipoTraceData(equipoId: bigint, client: Prisma
       bateria: entry.bateria,
       tipoPersonal: entry.tipoPersonal,
       cantidadNeta: entry.cantidadNeta,
-      movimientos: entry.movimientos
-        .slice()
-        .sort((a, b) => {
-          const fechaDiff = b.fecha.localeCompare(a.fecha);
-          if (fechaDiff !== 0) return fechaDiff;
-          const movimientoA = BigInt(a.movimientoId);
-          const movimientoB = BigInt(b.movimientoId);
-          if (movimientoA === movimientoB) return 0;
-          return movimientoB > movimientoA ? 1 : -1;
-        }),
+      movimientos: entry.movimientos.slice().sort((a, b) => {
+        const fechaDiff = b.fecha.localeCompare(a.fecha);
+        if (fechaDiff !== 0) return fechaDiff;
+        const movimientoA = BigInt(a.movimientoId);
+        const movimientoB = BigInt(b.movimientoId);
+        if (movimientoA === movimientoB) return 0;
+        return movimientoB > movimientoA ? 1 : -1;
+      }),
     }));
 
   const recintos = Array.from(recintosByNombre.values())
@@ -336,14 +345,18 @@ export async function buildStockEquipoTraceData(equipoId: bigint, client: Prisma
         prestamoId: prestamo.movimientoId.toString(),
         reciboNumero: prestamo.reciboNumero,
         clasePrestamo: (destinatario?.clase ?? "PENDIENTE") as "INTERNO" | "EXTERNO" | "PENDIENTE",
-        estado: (prestamo.estado === "DEVUELTO" ? "DEVUELTO" : "PENDIENTE") as "PENDIENTE" | "DEVUELTO",
+        estado: (prestamo.estado === "DEVUELTO" ? "DEVUELTO" : "PENDIENTE") as
+          "PENDIENTE" | "DEVUELTO",
         fechaPrestamo: formatDateOnlyFromDate(prestamo.movimiento.fecha) ?? "",
         destinatarioCi: destinatario?.ci ?? null,
         perfilCi: destinatario?.perfilCi ?? null,
         destinatarioEtiqueta: destinatario?.etiqueta ?? "Destinatario pendiente",
         destinatarioUnidadDestino: destinatario?.unidadDestino ?? null,
         observaciones: prestamo.movimiento.observaciones ?? null,
-        cantidad: prestamo.movimiento.equipos.reduce((total, itemMovimiento) => total + itemMovimiento.cantidad, 0),
+        cantidad: prestamo.movimiento.equipos.reduce(
+          (total, itemMovimiento) => total + itemMovimiento.cantidad,
+          0
+        ),
         movimientoId: prestamo.movimiento.movimientoId.toString(),
       };
     })

@@ -48,7 +48,11 @@ export function RegistroViewerModal({
           <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(viewer.ci)}`}</p>
           <p className="text-xs font-medium text-stone-700">{`Subalterno: ${viewer.nombre}`}</p>
         </div>
-        <button type="button" onClick={onClose} className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded bg-stone-600 px-2 py-1 text-xs font-semibold text-white"
+        >
           Cerrar
         </button>
       </div>
@@ -61,16 +65,25 @@ export function RegistroViewerModal({
           />
         ) : null}
         {!viewer.loading && viewer.error ? (
-          <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{viewer.error}</p>
+          <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+            {viewer.error}
+          </p>
         ) : null}
         {!viewer.loading && !viewer.error && totalItems === 0 ? (
-          <p className="text-sm text-stone-600">No hay movimientos registrados para esta persona.</p>
+          <p className="text-sm text-stone-600">
+            No hay movimientos registrados para esta persona.
+          </p>
         ) : null}
         {!viewer.loading && !viewer.error
           ? rows.map((registro) => (
-              <div key={registro.registroId} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
+              <div
+                key={registro.registroId}
+                className="rounded-lg border border-stone-200 bg-stone-50 p-3"
+              >
                 <div className="flex flex-wrap equipos-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-stone-900">{formatDateOnlyForDisplay(registro.fecha)}</p>
+                  <p className="text-sm font-semibold text-stone-900">
+                    {formatDateOnlyForDisplay(registro.fecha)}
+                  </p>
                   <div className="flex equipos-center gap-2">
                     {canWrite && registro.tipo !== "AJUSTE" ? (
                       <button
@@ -98,7 +111,7 @@ export function RegistroViewerModal({
                             ? "bg-amber-100 text-amber-800"
                             : registro.tipo === "ASIGNACION"
                               ? "bg-indigo-100 text-indigo-800"
-                            : "bg-sky-100 text-sky-800"
+                              : "bg-sky-100 text-sky-800"
                       }`}
                     >
                       {registro.tipo}
@@ -112,13 +125,20 @@ export function RegistroViewerModal({
                     } (${roleLabel(registro.auditoria.usuario?.rol ?? null)}) - Auditoría BD #${registro.auditoria.auditoriaId}`}
                   </p>
                 ) : (
-                  <p className="mt-1 text-xs text-stone-500">Sin referencia de auditoría para este movimiento.</p>
+                  <p className="mt-1 text-xs text-stone-500">
+                    Sin referencia de auditoría para este movimiento.
+                  </p>
                 )}
-                {registro.comentarios ? <p className="mt-1 text-xs text-stone-700">{registro.comentarios}</p> : null}
+                {registro.comentarios ? (
+                  <p className="mt-1 text-xs text-stone-700">{registro.comentarios}</p>
+                ) : null}
                 <p className="mt-1 text-xs text-stone-600">Afecta stock: Si</p>
                 <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
                   {registro.equipos.map((equipo) => (
-                    <p key={`${registro.registroId}-${equipo.equipoId}`} className="text-xs text-stone-700">
+                    <p
+                      key={`${registro.registroId}-${equipo.equipoId}`}
+                      className="text-xs text-stone-700"
+                    >
                       <span className="font-semibold">{equipo.cantidad}x</span> {equipo.nombre}
                     </p>
                   ))}

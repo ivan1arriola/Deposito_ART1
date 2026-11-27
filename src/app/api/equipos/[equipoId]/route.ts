@@ -58,10 +58,18 @@ function parseNullableTipoEquipoId(value: unknown) {
   return parsed;
 }
 
-async function resolveTipoEquipoId(client: TipoEquipoLookupClient, body: EquipoPayload): Promise<number | null | undefined> {
+async function resolveTipoEquipoId(
+  client: TipoEquipoLookupClient,
+  body: EquipoPayload
+): Promise<number | null | undefined> {
   if (Object.prototype.hasOwnProperty.call(body, "tipoEquipoId")) {
     const parsed = parseNullableTipoEquipoId(body.tipoEquipoId);
-    if (body.tipoEquipoId !== null && body.tipoEquipoId !== undefined && body.tipoEquipoId !== "" && parsed === null) {
+    if (
+      body.tipoEquipoId !== null &&
+      body.tipoEquipoId !== undefined &&
+      body.tipoEquipoId !== "" &&
+      parsed === null
+    ) {
       return undefined;
     }
     if (parsed === null) return null;
@@ -169,7 +177,11 @@ type DeleteImpactData = {
   affectedStockOperacionIds: bigint[];
 };
 
-async function buildDeleteImpactData(tx: Prisma.TransactionClient, equipoId: bigint, equipoNombre: string): Promise<DeleteImpactData> {
+async function buildDeleteImpactData(
+  tx: Prisma.TransactionClient,
+  equipoId: bigint,
+  equipoNombre: string
+): Promise<DeleteImpactData> {
   const movimientoRefs = await tx.movimientoEquipo.findMany({
     where: { equipoId },
     select: { movimientoId: true },
@@ -178,11 +190,11 @@ async function buildDeleteImpactData(tx: Prisma.TransactionClient, equipoId: big
     where: { equipoId },
     select: { stockOperacionId: true },
   });
-  const affectedMovimientoIds = Array.from(new Set(movimientoRefs.map((ref) => ref.movimientoId.toString()))).map((id) =>
-    BigInt(id),
-  );
+  const affectedMovimientoIds = Array.from(
+    new Set(movimientoRefs.map((ref) => ref.movimientoId.toString()))
+  ).map((id) => BigInt(id));
   const affectedStockOperacionIds = Array.from(
-    new Set(stockRefs.map((ref) => ref.stockOperacionId.toString())),
+    new Set(stockRefs.map((ref) => ref.stockOperacionId.toString()))
   ).map((id) => BigInt(id));
 
   const [movimientos, stockOperaciones, codigosSIE, cajaEquipoRefs] = await Promise.all([
@@ -273,7 +285,9 @@ async function buildDeleteImpactData(tx: Prisma.TransactionClient, equipoId: big
     }),
   ]);
 
-  const cajaIdsConRelacionEquipo = Array.from(new Set(cajaEquipoRefs.map((entry) => entry.codigoDepositoGeneral)));
+  const cajaIdsConRelacionEquipo = Array.from(
+    new Set(cajaEquipoRefs.map((entry) => entry.codigoDepositoGeneral))
+  );
 
   const cajasAfectadas = await tx.caja.findMany({
     where: {
@@ -341,7 +355,7 @@ async function buildDeleteImpactData(tx: Prisma.TransactionClient, equipoId: big
 
   const normalizedCajas = cajasAfectadas.map((caja) => {
     const codigosSIERelacionados = Array.from(
-      new Set(caja.codigosSIE.map((codigo) => codigo.equipoCodigoSIE.codigo)),
+      new Set(caja.codigosSIE.map((codigo) => codigo.equipoCodigoSIE.codigo))
     ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
     const tieneRelacionEquipoDirecta = caja.equipos.length > 0;
     const quedaSinEquipos = tieneRelacionEquipoDirecta ? caja._count.equipos <= 1 : false;
@@ -360,8 +374,13 @@ async function buildDeleteImpactData(tx: Prisma.TransactionClient, equipoId: big
     normalizedRegistros.filter((mov) => mov.seEliminaMovimiento).length +
     normalizedStock.filter((mov) => mov.seEliminaMovimiento).length;
   const totalMovimientos = normalizedRegistros.length + normalizedStock.length;
-  const totalAparicionesEquipoEnCajas = new Set(cajaEquipoRefs.map((entry) => entry.codigoDepositoGeneral)).size;
-  const totalCodigosSIEEnCajas = normalizedCodigosSIE.reduce((acc, codigo) => acc + codigo.aparicionesEnCajas, 0);
+  const totalAparicionesEquipoEnCajas = new Set(
+    cajaEquipoRefs.map((entry) => entry.codigoDepositoGeneral)
+  ).size;
+  const totalCodigosSIEEnCajas = normalizedCodigosSIE.reduce(
+    (acc, codigo) => acc + codigo.aparicionesEnCajas,
+    0
+  );
   const cajasQueQuedanSinEquipos = normalizedCajas.filter((caja) => caja.quedaSinEquipos).length;
 
   return {
@@ -422,9 +441,13 @@ export async function GET(request: Request, context: { params: Promise<{ equipoI
     }
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
     }
-    return NextResponse.json({ error: "No se pudo calcular el impacto de borrado." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo calcular el impacto de borrado." },
+      { status: 500 }
+    );
   }
 }
 
@@ -441,7 +464,10 @@ export async function POST(request: Request, context: { params: Promise<{ equipo
   const body = (await request.json()) as EquipoMergePayload;
   const targetEquipoIdRaw = body?.targetEquipoId ?? body?.targetEquipoId;
   if (typeof targetEquipoIdRaw !== "string" && typeof targetEquipoIdRaw !== "number") {
-    return NextResponse.json({ error: "Payload invalido. targetEquipoId es obligatorio." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Payload invalido. targetEquipoId es obligatorio." },
+      { status: 400 }
+    );
   }
 
   const targetEquipoId = parseItemId(String(targetEquipoIdRaw));
@@ -450,26 +476,39 @@ export async function POST(request: Request, context: { params: Promise<{ equipo
   }
 
   if (targetEquipoId === sourceEquipoId) {
-    return NextResponse.json({ error: "Debes seleccionar dos equipos distintos para unificar." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Debes seleccionar dos equipos distintos para unificar." },
+      { status: 400 }
+    );
   }
 
   try {
-    const mergeResult = await prisma.$transaction(async (tx) => {
-      const [sourceEquipo, targetEquipo] = await Promise.all([
-        tx.equipo.findUniqueOrThrow({
-          where: { equipoId: sourceEquipoId },
-          select: { equipoId: true, nombre: true, activo: true, existenciaSie: true },
-        }),
-        tx.equipo.findUniqueOrThrow({
-          where: { equipoId: targetEquipoId },
-          select: { equipoId: true, nombre: true, activo: true, existenciaSie: true },
-        }),
-      ]);
+    const mergeResult = await prisma.$transaction(
+      async (tx) => {
+        const [sourceEquipo, targetEquipo] = await Promise.all([
+          tx.equipo.findUniqueOrThrow({
+            where: { equipoId: sourceEquipoId },
+            select: { equipoId: true, nombre: true, activo: true, existenciaSie: true },
+          }),
+          tx.equipo.findUniqueOrThrow({
+            where: { equipoId: targetEquipoId },
+            select: { equipoId: true, nombre: true, activo: true, existenciaSie: true },
+          }),
+        ]);
 
-      const remainingIdsInSourceGroup = await getOrderedEquipoIds(tx, sourceEquipo.activo, sourceEquipoId);
+        const remainingIdsInSourceGroup = await getOrderedEquipoIds(
+          tx,
+          sourceEquipo.activo,
+          sourceEquipoId
+        );
 
-      const [sourceMovimientoEquipos, sourceStockEquipos, sourceCajaEquipos, sourceCodigosSIE, targetCodigosSIE] =
-        await Promise.all([
+        const [
+          sourceMovimientoEquipos,
+          sourceStockEquipos,
+          sourceCajaEquipos,
+          sourceCodigosSIE,
+          targetCodigosSIE,
+        ] = await Promise.all([
           tx.movimientoEquipo.findMany({
             where: { equipoId: sourceEquipoId },
             select: {
@@ -498,197 +537,216 @@ export async function POST(request: Request, context: { params: Promise<{ equipo
           }),
         ]);
 
-      const [targetMovimientoEquipos, targetStockEquipos] = await Promise.all([
-        sourceMovimientoEquipos.length > 0
-          ? tx.movimientoEquipo.findMany({
-              where: {
-                equipoId: targetEquipoId,
-                movimientoId: { in: sourceMovimientoEquipos.map((entry) => entry.movimientoId) },
-              },
-              select: { movimientoId: true },
-            })
-          : Promise.resolve([]),
-        sourceStockEquipos.length > 0
-          ? tx.stockOperacionEquipo.findMany({
-              where: {
-                equipoId: targetEquipoId,
-                stockOperacionId: { in: sourceStockEquipos.map((entry) => entry.stockOperacionId) },
-              },
-              select: { stockOperacionId: true },
-            })
-          : Promise.resolve([]),
-      ]);
+        const [targetMovimientoEquipos, targetStockEquipos] = await Promise.all([
+          sourceMovimientoEquipos.length > 0
+            ? tx.movimientoEquipo.findMany({
+                where: {
+                  equipoId: targetEquipoId,
+                  movimientoId: { in: sourceMovimientoEquipos.map((entry) => entry.movimientoId) },
+                },
+                select: { movimientoId: true },
+              })
+            : Promise.resolve([]),
+          sourceStockEquipos.length > 0
+            ? tx.stockOperacionEquipo.findMany({
+                where: {
+                  equipoId: targetEquipoId,
+                  stockOperacionId: {
+                    in: sourceStockEquipos.map((entry) => entry.stockOperacionId),
+                  },
+                },
+                select: { stockOperacionId: true },
+              })
+            : Promise.resolve([]),
+        ]);
 
-      const movimientoTargetIds = new Set(targetMovimientoEquipos.map((entry) => entry.movimientoId.toString()));
-      const stockTargetIds = new Set(targetStockEquipos.map((entry) => entry.stockOperacionId.toString()));
+        const movimientoTargetIds = new Set(
+          targetMovimientoEquipos.map((entry) => entry.movimientoId.toString())
+        );
+        const stockTargetIds = new Set(
+          targetStockEquipos.map((entry) => entry.stockOperacionId.toString())
+        );
 
-      for (const sourceMovimientoEquipo of sourceMovimientoEquipos) {
-        await tx.movimientoEquipo.upsert({
-          where: {
-            movimientoId_equipoId: {
+        for (const sourceMovimientoEquipo of sourceMovimientoEquipos) {
+          await tx.movimientoEquipo.upsert({
+            where: {
+              movimientoId_equipoId: {
+                movimientoId: sourceMovimientoEquipo.movimientoId,
+                equipoId: targetEquipoId,
+              },
+            },
+            update: {
+              cantidad: { increment: sourceMovimientoEquipo.cantidad },
+            },
+            create: {
               movimientoId: sourceMovimientoEquipo.movimientoId,
               equipoId: targetEquipoId,
+              cantidad: sourceMovimientoEquipo.cantidad,
+              estadoEntrega: sourceMovimientoEquipo.estadoEntrega,
+              comentarioEntrega: sourceMovimientoEquipo.comentarioEntrega,
+              estadoDevolucion: sourceMovimientoEquipo.estadoDevolucion,
+              comentarioDevolucion: sourceMovimientoEquipo.comentarioDevolucion,
             },
-          },
-          update: {
-            cantidad: { increment: sourceMovimientoEquipo.cantidad },
-          },
-          create: {
-            movimientoId: sourceMovimientoEquipo.movimientoId,
-            equipoId: targetEquipoId,
-            cantidad: sourceMovimientoEquipo.cantidad,
-            estadoEntrega: sourceMovimientoEquipo.estadoEntrega,
-            comentarioEntrega: sourceMovimientoEquipo.comentarioEntrega,
-            estadoDevolucion: sourceMovimientoEquipo.estadoDevolucion,
-            comentarioDevolucion: sourceMovimientoEquipo.comentarioDevolucion,
-          },
-        });
-
-        await tx.movimientoEquipo.delete({
-          where: {
-            movimientoId_equipoId: {
-              movimientoId: sourceMovimientoEquipo.movimientoId,
-              equipoId: sourceEquipoId,
-            },
-          },
-        });
-      }
-
-      for (const sourceStockEquipo of sourceStockEquipos) {
-        await tx.stockOperacionEquipo.upsert({
-          where: {
-            stockOperacionId_equipoId: {
-              stockOperacionId: sourceStockEquipo.stockOperacionId,
-              equipoId: targetEquipoId,
-            },
-          },
-          update: {
-            cantidad: { increment: sourceStockEquipo.cantidad },
-          },
-          create: {
-            stockOperacionId: sourceStockEquipo.stockOperacionId,
-            equipoId: targetEquipoId,
-            cantidad: sourceStockEquipo.cantidad,
-          },
-        });
-
-        await tx.stockOperacionEquipo.delete({
-          where: {
-            stockOperacionId_equipoId: {
-              stockOperacionId: sourceStockEquipo.stockOperacionId,
-              equipoId: sourceEquipoId,
-            },
-          },
-        });
-      }
-
-      for (const sourceCajaEquipo of sourceCajaEquipos) {
-        await tx.cajaEquipo.upsert({
-          where: {
-            codigoDepositoGeneral_equipoId: {
-              codigoDepositoGeneral: sourceCajaEquipo.codigoDepositoGeneral,
-              equipoId: targetEquipoId,
-            },
-          },
-          update: {
-            cantidad: { increment: sourceCajaEquipo.cantidad },
-          },
-          create: {
-            codigoDepositoGeneral: sourceCajaEquipo.codigoDepositoGeneral,
-            equipoId: targetEquipoId,
-            cantidad: sourceCajaEquipo.cantidad,
-          },
-        });
-
-        await tx.cajaEquipo.delete({
-          where: {
-            codigoDepositoGeneral_equipoId: {
-              codigoDepositoGeneral: sourceCajaEquipo.codigoDepositoGeneral,
-              equipoId: sourceEquipoId,
-            },
-          },
-        });
-      }
-
-      const targetMap = new Map(targetCodigosSIE.map((codigo) => [`${codigo.codigo}:::${codigo.talla}`, codigo.equipoCodigoSIEId]));
-
-      for (const sourceCodigo of sourceCodigosSIE) {
-        const key = `${sourceCodigo.codigo}:::${sourceCodigo.talla}`;
-        const existingTargetId = targetMap.get(key);
-
-        if (existingTargetId !== undefined) {
-          const cajasAsociadas = await tx.cajaEquipoCodigoSIE.findMany({
-            where: { equipoCodigoSIEId: sourceCodigo.equipoCodigoSIEId },
           });
 
-          for (const caja of cajasAsociadas) {
-            const exists = await tx.cajaEquipoCodigoSIE.findUnique({
-              where: {
-                codigoDepositoGeneral_equipoCodigoSIEId: {
-                  codigoDepositoGeneral: caja.codigoDepositoGeneral,
-                  equipoCodigoSIEId: existingTargetId,
-                },
+          await tx.movimientoEquipo.delete({
+            where: {
+              movimientoId_equipoId: {
+                movimientoId: sourceMovimientoEquipo.movimientoId,
+                equipoId: sourceEquipoId,
               },
-            });
-            if (!exists) {
-              await tx.cajaEquipoCodigoSIE.create({
-                data: {
-                  codigoDepositoGeneral: caja.codigoDepositoGeneral,
-                  equipoCodigoSIEId: existingTargetId,
-                },
-              });
-            }
-          }
-
-          await tx.cajaEquipoCodigoSIE.deleteMany({
-            where: { equipoCodigoSIEId: sourceCodigo.equipoCodigoSIEId },
-          });
-          await tx.equipoCodigoSIE.delete({
-            where: { equipoCodigoSIEId: sourceCodigo.equipoCodigoSIEId },
-          });
-        } else {
-          await tx.equipoCodigoSIE.update({
-            where: { equipoCodigoSIEId: sourceCodigo.equipoCodigoSIEId },
-            data: { equipoId: targetEquipoId },
+            },
           });
         }
-      }
 
-      await tx.equipo.update({
-        where: { equipoId: targetEquipoId },
-        data: { existenciaSie: { increment: sourceEquipo.existenciaSie } },
-      });
+        for (const sourceStockEquipo of sourceStockEquipos) {
+          await tx.stockOperacionEquipo.upsert({
+            where: {
+              stockOperacionId_equipoId: {
+                stockOperacionId: sourceStockEquipo.stockOperacionId,
+                equipoId: targetEquipoId,
+              },
+            },
+            update: {
+              cantidad: { increment: sourceStockEquipo.cantidad },
+            },
+            create: {
+              stockOperacionId: sourceStockEquipo.stockOperacionId,
+              equipoId: targetEquipoId,
+              cantidad: sourceStockEquipo.cantidad,
+            },
+          });
 
-      await tx.equipo.delete({
-        where: { equipoId: sourceEquipoId },
-      });
+          await tx.stockOperacionEquipo.delete({
+            where: {
+              stockOperacionId_equipoId: {
+                stockOperacionId: sourceStockEquipo.stockOperacionId,
+                equipoId: sourceEquipoId,
+              },
+            },
+          });
+        }
 
-      await applyEquipoOrder(tx, remainingIdsInSourceGroup, sourceEquipo.activo ? 0 : 10000);
+        for (const sourceCajaEquipo of sourceCajaEquipos) {
+          await tx.cajaEquipo.upsert({
+            where: {
+              codigoDepositoGeneral_equipoId: {
+                codigoDepositoGeneral: sourceCajaEquipo.codigoDepositoGeneral,
+                equipoId: targetEquipoId,
+              },
+            },
+            update: {
+              cantidad: { increment: sourceCajaEquipo.cantidad },
+            },
+            create: {
+              codigoDepositoGeneral: sourceCajaEquipo.codigoDepositoGeneral,
+              equipoId: targetEquipoId,
+              cantidad: sourceCajaEquipo.cantidad,
+            },
+          });
 
-      const unidadesRegistrosReasignadas = sourceMovimientoEquipos.reduce((total, entry) => total + entry.cantidad, 0);
-      const unidadesStockReasignadas = sourceStockEquipos.reduce((total, entry) => total + entry.cantidad, 0);
-      const registrosConsolidados = sourceMovimientoEquipos.filter((entry) =>
-        movimientoTargetIds.has(entry.movimientoId.toString()),
-      ).length;
-      const stockConsolidados = sourceStockEquipos.filter((entry) =>
-        stockTargetIds.has(entry.stockOperacionId.toString()),
-      ).length;
+          await tx.cajaEquipo.delete({
+            where: {
+              codigoDepositoGeneral_equipoId: {
+                codigoDepositoGeneral: sourceCajaEquipo.codigoDepositoGeneral,
+                equipoId: sourceEquipoId,
+              },
+            },
+          });
+        }
 
-      return {
-        sourceEquipo,
-        targetEquipo,
-        resumen: {
-          totalRegistrosAfectados: sourceMovimientoEquipos.length,
-          totalStockAfectados: sourceStockEquipos.length,
-          totalMovimientosAfectados: sourceMovimientoEquipos.length + sourceStockEquipos.length,
-          registrosConsolidados,
-          stockConsolidados,
-          unidadesRegistrosReasignadas,
-          unidadesStockReasignadas,
-          unidadesTotalesReasignadas: unidadesRegistrosReasignadas + unidadesStockReasignadas,
-        },
-      };
-    }, { maxWait: 5_000, timeout: 20_000 });
+        const targetMap = new Map(
+          targetCodigosSIE.map((codigo) => [
+            `${codigo.codigo}:::${codigo.talla}`,
+            codigo.equipoCodigoSIEId,
+          ])
+        );
+
+        for (const sourceCodigo of sourceCodigosSIE) {
+          const key = `${sourceCodigo.codigo}:::${sourceCodigo.talla}`;
+          const existingTargetId = targetMap.get(key);
+
+          if (existingTargetId !== undefined) {
+            const cajasAsociadas = await tx.cajaEquipoCodigoSIE.findMany({
+              where: { equipoCodigoSIEId: sourceCodigo.equipoCodigoSIEId },
+            });
+
+            for (const caja of cajasAsociadas) {
+              const exists = await tx.cajaEquipoCodigoSIE.findUnique({
+                where: {
+                  codigoDepositoGeneral_equipoCodigoSIEId: {
+                    codigoDepositoGeneral: caja.codigoDepositoGeneral,
+                    equipoCodigoSIEId: existingTargetId,
+                  },
+                },
+              });
+              if (!exists) {
+                await tx.cajaEquipoCodigoSIE.create({
+                  data: {
+                    codigoDepositoGeneral: caja.codigoDepositoGeneral,
+                    equipoCodigoSIEId: existingTargetId,
+                  },
+                });
+              }
+            }
+
+            await tx.cajaEquipoCodigoSIE.deleteMany({
+              where: { equipoCodigoSIEId: sourceCodigo.equipoCodigoSIEId },
+            });
+            await tx.equipoCodigoSIE.delete({
+              where: { equipoCodigoSIEId: sourceCodigo.equipoCodigoSIEId },
+            });
+          } else {
+            await tx.equipoCodigoSIE.update({
+              where: { equipoCodigoSIEId: sourceCodigo.equipoCodigoSIEId },
+              data: { equipoId: targetEquipoId },
+            });
+          }
+        }
+
+        await tx.equipo.update({
+          where: { equipoId: targetEquipoId },
+          data: { existenciaSie: { increment: sourceEquipo.existenciaSie } },
+        });
+
+        await tx.equipo.delete({
+          where: { equipoId: sourceEquipoId },
+        });
+
+        await applyEquipoOrder(tx, remainingIdsInSourceGroup, sourceEquipo.activo ? 0 : 10000);
+
+        const unidadesRegistrosReasignadas = sourceMovimientoEquipos.reduce(
+          (total, entry) => total + entry.cantidad,
+          0
+        );
+        const unidadesStockReasignadas = sourceStockEquipos.reduce(
+          (total, entry) => total + entry.cantidad,
+          0
+        );
+        const registrosConsolidados = sourceMovimientoEquipos.filter((entry) =>
+          movimientoTargetIds.has(entry.movimientoId.toString())
+        ).length;
+        const stockConsolidados = sourceStockEquipos.filter((entry) =>
+          stockTargetIds.has(entry.stockOperacionId.toString())
+        ).length;
+
+        return {
+          sourceEquipo,
+          targetEquipo,
+          resumen: {
+            totalRegistrosAfectados: sourceMovimientoEquipos.length,
+            totalStockAfectados: sourceStockEquipos.length,
+            totalMovimientosAfectados: sourceMovimientoEquipos.length + sourceStockEquipos.length,
+            registrosConsolidados,
+            stockConsolidados,
+            unidadesRegistrosReasignadas,
+            unidadesStockReasignadas,
+            unidadesTotalesReasignadas: unidadesRegistrosReasignadas + unidadesStockReasignadas,
+          },
+        };
+      },
+      { maxWait: 5_000, timeout: 20_000 }
+    );
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -725,7 +783,8 @@ export async function POST(request: Request, context: { params: Promise<{ equipo
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
     }
 
     return NextResponse.json({ error: "No se pudo unificar el equipo." }, { status: 500 });
@@ -747,83 +806,94 @@ export async function PUT(request: Request, context: { params: Promise<{ equipoI
   if (!nombre || !isValidOrder(body?.ordenPdf)) {
     return NextResponse.json(
       { error: "Payload invalido. 'nombre' es obligatorio y 'ordenPdf' debe ser entero positivo." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   try {
-    const updated = await prisma.$transaction(async (tx) => {
-      const existing = await tx.equipo.findUniqueOrThrow({
-        where: { equipoId },
-        select: equipoSelect,
-      });
-
-      const nextActive = body.activo === undefined ? existing.activo : Boolean(body.activo);
-      const resolvedTipoEquipoId = await resolveTipoEquipoId(tx, body);
-      const nextTipoEquipoId =
-        body.tipo === undefined && !Object.prototype.hasOwnProperty.call(body, "tipoEquipoId")
-          ? existing.tipoEquipoId
-          : resolvedTipoEquipoId;
-      if (typeof nextTipoEquipoId === "undefined") {
-        throw new Error("Payload inválido. El tipo de equipo indicado no existe.");
-      }
-
-      if (nextActive !== existing.activo) {
-        const oldGroupIds = await getOrderedEquipoIds(tx, existing.activo, equipoId);
-
-        await tx.equipo.update({
+    const updated = await prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.equipo.findUniqueOrThrow({
           where: { equipoId },
-          data: {
-            nombre,
-            tipoEquipoId: nextTipoEquipoId,
-            activo: nextActive,
-            ordenPdf: 1,
-          },
+          select: equipoSelect,
         });
 
-        await applyEquipoOrder(tx, oldGroupIds, existing.activo ? 0 : 10000);
+        const nextActive = body.activo === undefined ? existing.activo : Boolean(body.activo);
+        const resolvedTipoEquipoId = await resolveTipoEquipoId(tx, body);
+        const nextTipoEquipoId =
+          body.tipo === undefined && !Object.prototype.hasOwnProperty.call(body, "tipoEquipoId")
+            ? existing.tipoEquipoId
+            : resolvedTipoEquipoId;
+        if (typeof nextTipoEquipoId === "undefined") {
+          throw new Error("Payload inválido. El tipo de equipo indicado no existe.");
+        }
 
-        const newGroupIds = await getOrderedEquipoIds(tx, nextActive, equipoId);
-        const nextOrderedIds = insertEquipoAtOrder(newGroupIds, equipoId, body.ordenPdf ?? newGroupIds.length + 1);
-        await applyEquipoOrder(tx, nextOrderedIds, nextActive ? 0 : 10000);
-      } else {
-        const currentGroupIds = await getOrderedEquipoIds(tx, nextActive, equipoId);
-        const nextOrderedIds = insertEquipoAtOrder(currentGroupIds, equipoId, body.ordenPdf ?? existing.ordenPdf);
+        if (nextActive !== existing.activo) {
+          const oldGroupIds = await getOrderedEquipoIds(tx, existing.activo, equipoId);
 
-        await tx.equipo.update({
+          await tx.equipo.update({
+            where: { equipoId },
+            data: {
+              nombre,
+              tipoEquipoId: nextTipoEquipoId,
+              activo: nextActive,
+              ordenPdf: 1,
+            },
+          });
+
+          await applyEquipoOrder(tx, oldGroupIds, existing.activo ? 0 : 10000);
+
+          const newGroupIds = await getOrderedEquipoIds(tx, nextActive, equipoId);
+          const nextOrderedIds = insertEquipoAtOrder(
+            newGroupIds,
+            equipoId,
+            body.ordenPdf ?? newGroupIds.length + 1
+          );
+          await applyEquipoOrder(tx, nextOrderedIds, nextActive ? 0 : 10000);
+        } else {
+          const currentGroupIds = await getOrderedEquipoIds(tx, nextActive, equipoId);
+          const nextOrderedIds = insertEquipoAtOrder(
+            currentGroupIds,
+            equipoId,
+            body.ordenPdf ?? existing.ordenPdf
+          );
+
+          await tx.equipo.update({
+            where: { equipoId },
+            data: {
+              nombre,
+              tipoEquipoId: nextTipoEquipoId,
+              activo: nextActive,
+              ordenPdf: 1,
+            },
+          });
+
+          await applyEquipoOrder(tx, nextOrderedIds, nextActive ? 0 : 10000);
+        }
+
+        const updatedRecord = await tx.equipo.findUniqueOrThrow({
           where: { equipoId },
-          data: {
-            nombre,
-            tipoEquipoId: nextTipoEquipoId,
-            activo: nextActive,
-            ordenPdf: 1,
-          },
+          select: equipoSelect,
         });
 
-        await applyEquipoOrder(tx, nextOrderedIds, nextActive ? 0 : 10000);
-      }
+        const previoTipo = serializeEquipoTipoData(existing);
+        const nuevoTipo = serializeEquipoTipoData(updatedRecord);
 
-      const updatedRecord = await tx.equipo.findUniqueOrThrow({
-        where: { equipoId },
-        select: equipoSelect,
-      });
-
-      const previoTipo = serializeEquipoTipoData(existing);
-      const nuevoTipo = serializeEquipoTipoData(updatedRecord);
-
-      return {
-        ...updatedRecord,
-        previo: {
-          nombre: existing.nombre,
-          tipo: previoTipo.tipo,
-          tipoEquipoId: existing.tipoEquipoId,
-          activo: existing.activo,
-          ordenPdf: existing.ordenPdf,
-          existenciaSie: existing.existenciaSie,
-        },
-        nuevoTipo,
-      };
-    }, { maxWait: 5_000, timeout: 20_000 });
+        return {
+          ...updatedRecord,
+          previo: {
+            nombre: existing.nombre,
+            tipo: previoTipo.tipo,
+            tipoEquipoId: existing.tipoEquipoId,
+            activo: existing.activo,
+            ordenPdf: existing.ordenPdf,
+            existenciaSie: existing.existenciaSie,
+          },
+          nuevoTipo,
+        };
+      },
+      { maxWait: 5_000, timeout: 20_000 }
+    );
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -850,8 +920,10 @@ export async function PUT(request: Request, context: { params: Promise<{ equipoI
     }
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
-      if (code === "P2002") return NextResponse.json({ error: "El nombre ya existe." }, { status: 409 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
+      if (code === "P2002")
+        return NextResponse.json({ error: "El nombre ya existe." }, { status: 409 });
     }
 
     return NextResponse.json({ error: "No se pudo actualizar el equipo." }, { status: 500 });
@@ -862,7 +934,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ equip
   const auth = await authorizeRequest(request, "write_data");
   if (!auth.ok) return auth.response;
   if (!isAdminRole(auth.user.rol)) {
-    return NextResponse.json({ error: "Solo un administrador puede actualizar la existencia del SIE." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Solo un administrador puede actualizar la existencia del SIE." },
+      { status: 403 }
+    );
   }
 
   const { equipoId: equipoIdParam } = await context.params;
@@ -876,7 +951,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ equip
   if (existenciaSie === null) {
     return NextResponse.json(
       { error: "Payload invalido. 'existenciaSie' debe ser un entero mayor o igual a 0." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -919,9 +994,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ equip
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
     }
-    return NextResponse.json({ error: "No se pudo actualizar la existencia del SIE." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo actualizar la existencia del SIE." },
+      { status: 500 }
+    );
   }
 }
 
@@ -938,198 +1017,199 @@ export async function DELETE(request: Request, context: { params: Promise<{ equi
   try {
     await ensureMovimientoDestinatarioRecintoCompatibility();
 
-    const deletionResult = await prisma.$transaction(async (tx) => {
-      const existing = await tx.equipo.findUniqueOrThrow({
-        where: { equipoId },
-        select: {
-          equipoId: true,
-          nombre: true,
-          activo: true,
-          ordenPdf: true,
-          existenciaSie: true,
-        },
-      });
-
-      const { impacto, affectedMovimientoIds, affectedStockOperacionIds } = await buildDeleteImpactData(
-        tx,
-        equipoId,
-        existing.nombre,
-      );
-      const remainingIds = await getOrderedEquipoIds(tx, existing.activo, equipoId);
-
-      const cajaEquipos = await tx.cajaEquipo.findMany({
-        where: { equipoId },
-      });
-
-      const equipoCodigosSIE = await tx.equipoCodigoSIE.findMany({
-        where: { equipoId },
-      });
-
-      const equipoCodigoSIEIds = equipoCodigosSIE.map((codigo) => codigo.equipoCodigoSIEId);
-      const cajaItemCodigosSIE =
-        equipoCodigoSIEIds.length > 0
-          ? await tx.cajaEquipoCodigoSIE.findMany({
-              where: { equipoCodigoSIEId: { in: equipoCodigoSIEIds } },
-            })
-          : [];
-
-      const movimientoEquipos = await tx.movimientoEquipo.findMany({
-        where: { equipoId },
-      });
-
-      const stockOperacionEquipos = await tx.stockOperacionEquipo.findMany({
-        where: { equipoId },
-      });
-
-      const emptyMovimientoIds = [];
-      for (const movimientoId of affectedMovimientoIds) {
-        const count = await tx.movimientoEquipo.count({
-          where: { movimientoId },
+    const deletionResult = await prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.equipo.findUniqueOrThrow({
+          where: { equipoId },
+          select: {
+            equipoId: true,
+            nombre: true,
+            activo: true,
+            ordenPdf: true,
+            existenciaSie: true,
+          },
         });
-        const countThisEquipo = movimientoEquipos.filter((movimientoEquipo) => movimientoEquipo.movimientoId === movimientoId)
-          .length;
-        if (count === countThisEquipo) {
-          emptyMovimientoIds.push(movimientoId);
+
+        const { impacto, affectedMovimientoIds, affectedStockOperacionIds } =
+          await buildDeleteImpactData(tx, equipoId, existing.nombre);
+        const remainingIds = await getOrderedEquipoIds(tx, existing.activo, equipoId);
+
+        const cajaEquipos = await tx.cajaEquipo.findMany({
+          where: { equipoId },
+        });
+
+        const equipoCodigosSIE = await tx.equipoCodigoSIE.findMany({
+          where: { equipoId },
+        });
+
+        const equipoCodigoSIEIds = equipoCodigosSIE.map((codigo) => codigo.equipoCodigoSIEId);
+        const cajaItemCodigosSIE =
+          equipoCodigoSIEIds.length > 0
+            ? await tx.cajaEquipoCodigoSIE.findMany({
+                where: { equipoCodigoSIEId: { in: equipoCodigoSIEIds } },
+              })
+            : [];
+
+        const movimientoEquipos = await tx.movimientoEquipo.findMany({
+          where: { equipoId },
+        });
+
+        const stockOperacionEquipos = await tx.stockOperacionEquipo.findMany({
+          where: { equipoId },
+        });
+
+        const emptyMovimientoIds = [];
+        for (const movimientoId of affectedMovimientoIds) {
+          const count = await tx.movimientoEquipo.count({
+            where: { movimientoId },
+          });
+          const countThisEquipo = movimientoEquipos.filter(
+            (movimientoEquipo) => movimientoEquipo.movimientoId === movimientoId
+          ).length;
+          if (count === countThisEquipo) {
+            emptyMovimientoIds.push(movimientoId);
+          }
         }
-      }
 
-      const deletedMovimientos =
-        emptyMovimientoIds.length > 0
-          ? await tx.movimiento.findMany({
-              where: { movimientoId: { in: emptyMovimientoIds } },
-            })
-          : [];
+        const deletedMovimientos =
+          emptyMovimientoIds.length > 0
+            ? await tx.movimiento.findMany({
+                where: { movimientoId: { in: emptyMovimientoIds } },
+              })
+            : [];
 
-      const deletedMovimientoDestinatariosPersonal =
-        emptyMovimientoIds.length > 0
-          ? await tx.movimientoDestinatarioPersonal.findMany({
-              where: { movimientoId: { in: emptyMovimientoIds } },
-            })
-          : [];
+        const deletedMovimientoDestinatariosPersonal =
+          emptyMovimientoIds.length > 0
+            ? await tx.movimientoDestinatarioPersonal.findMany({
+                where: { movimientoId: { in: emptyMovimientoIds } },
+              })
+            : [];
 
-      const deletedMovimientoDestinatariosExterno =
-        emptyMovimientoIds.length > 0
-          ? await tx.movimientoDestinatarioExterno.findMany({
-              where: { movimientoId: { in: emptyMovimientoIds } },
-            })
-          : [];
+        const deletedMovimientoDestinatariosExterno =
+          emptyMovimientoIds.length > 0
+            ? await tx.movimientoDestinatarioExterno.findMany({
+                where: { movimientoId: { in: emptyMovimientoIds } },
+              })
+            : [];
 
-      const deletedMovimientoDestinatariosRecinto =
-        emptyMovimientoIds.length > 0
-          ? await tx.movimientoDestinatarioRecinto.findMany({
-              where: { movimientoId: { in: emptyMovimientoIds } },
-            })
-          : [];
+        const deletedMovimientoDestinatariosRecinto =
+          emptyMovimientoIds.length > 0
+            ? await tx.movimientoDestinatarioRecinto.findMany({
+                where: { movimientoId: { in: emptyMovimientoIds } },
+              })
+            : [];
 
-      const deletedPrestamosActivos =
-        emptyMovimientoIds.length > 0
-          ? await tx.prestamoActivo.findMany({
-              where: { movimientoId: { in: emptyMovimientoIds } },
-            })
-          : [];
+        const deletedPrestamosActivos =
+          emptyMovimientoIds.length > 0
+            ? await tx.prestamoActivo.findMany({
+                where: { movimientoId: { in: emptyMovimientoIds } },
+              })
+            : [];
 
-      const deletedPrestamosHistoriales =
-        emptyMovimientoIds.length > 0
-          ? await tx.prestamoHistorial.findMany({
-              where: { movimientoId: { in: emptyMovimientoIds } },
-            })
-          : [];
+        const deletedPrestamosHistoriales =
+          emptyMovimientoIds.length > 0
+            ? await tx.prestamoHistorial.findMany({
+                where: { movimientoId: { in: emptyMovimientoIds } },
+              })
+            : [];
 
-      const emptyStockOperacionIds = [];
-      for (const stockOperacionId of affectedStockOperacionIds) {
-        const count = await tx.stockOperacionEquipo.count({
-          where: { stockOperacionId },
-        });
-        const countThisEquipo = stockOperacionEquipos.filter(
-          (stockOperacionEquipo) => stockOperacionEquipo.stockOperacionId === stockOperacionId,
-        ).length;
-        if (count === countThisEquipo) {
-          emptyStockOperacionIds.push(stockOperacionId);
+        const emptyStockOperacionIds = [];
+        for (const stockOperacionId of affectedStockOperacionIds) {
+          const count = await tx.stockOperacionEquipo.count({
+            where: { stockOperacionId },
+          });
+          const countThisEquipo = stockOperacionEquipos.filter(
+            (stockOperacionEquipo) => stockOperacionEquipo.stockOperacionId === stockOperacionId
+          ).length;
+          if (count === countThisEquipo) {
+            emptyStockOperacionIds.push(stockOperacionId);
+          }
         }
-      }
 
-      const deletedStockOperaciones =
-        emptyStockOperacionIds.length > 0
-          ? await tx.stockOperacion.findMany({
-              where: { stockOperacionId: { in: emptyStockOperacionIds } },
-            })
-          : [];
+        const deletedStockOperaciones =
+          emptyStockOperacionIds.length > 0
+            ? await tx.stockOperacion.findMany({
+                where: { stockOperacionId: { in: emptyStockOperacionIds } },
+              })
+            : [];
 
-      const payload = JSON.parse(
-        JSON.stringify(
-          {
-            equipo: existing,
-            cajaEquipos,
-            equipoCodigosSIE,
-            cajaItemCodigosSIE,
-            movimientoEquipos,
-            stockOperacionEquipos,
-            deletedMovimientos,
-            deletedMovimientoDestinatariosPersonal,
-            deletedMovimientoDestinatariosExterno,
-            deletedMovimientoDestinatariosRecinto,
-            deletedPrestamosActivos,
-            deletedPrestamosHistoriales,
-            deletedStockOperaciones,
-          },
-          (key, value) => (typeof value === "bigint" ? value.toString() : value),
-        ),
-      );
+        const payload = JSON.parse(
+          JSON.stringify(
+            {
+              equipo: existing,
+              cajaEquipos,
+              equipoCodigosSIE,
+              cajaItemCodigosSIE,
+              movimientoEquipos,
+              stockOperacionEquipos,
+              deletedMovimientos,
+              deletedMovimientoDestinatariosPersonal,
+              deletedMovimientoDestinatariosExterno,
+              deletedMovimientoDestinatariosRecinto,
+              deletedPrestamosActivos,
+              deletedPrestamosHistoriales,
+              deletedStockOperaciones,
+            },
+            (key, value) => (typeof value === "bigint" ? value.toString() : value)
+          )
+        );
 
-      await tx.papeleraRegistro.create({
-        data: {
-          tipo: "EQUIPO",
-          nombre: existing.nombre,
-          originalId: String(existing.equipoId),
-          payload,
-        },
-      });
-
-      await tx.movimientoEquipo.deleteMany({
-        where: { equipoId },
-      });
-      await tx.stockOperacionEquipo.deleteMany({
-        where: { equipoId },
-      });
-      await tx.cajaEquipoCodigoSIE.deleteMany({
-        where: { equipoCodigoSIE: { equipoId } },
-      });
-      await tx.equipoCodigoSIE.deleteMany({
-        where: { equipoId },
-      });
-      await tx.cajaEquipo.deleteMany({
-        where: { equipoId },
-      });
-
-      if (affectedMovimientoIds.length > 0) {
-        await tx.movimiento.deleteMany({
-          where: {
-            movimientoId: { in: affectedMovimientoIds },
-            equipos: { none: {} },
+        await tx.papeleraRegistro.create({
+          data: {
+            tipo: "EQUIPO",
+            nombre: existing.nombre,
+            originalId: String(existing.equipoId),
+            payload,
           },
         });
-      }
 
-      if (affectedStockOperacionIds.length > 0) {
-        await tx.stockOperacion.deleteMany({
-          where: {
-            stockOperacionId: { in: affectedStockOperacionIds },
-            equipos: { none: {} },
-          },
+        await tx.movimientoEquipo.deleteMany({
+          where: { equipoId },
         });
-      }
+        await tx.stockOperacionEquipo.deleteMany({
+          where: { equipoId },
+        });
+        await tx.cajaEquipoCodigoSIE.deleteMany({
+          where: { equipoCodigoSIE: { equipoId } },
+        });
+        await tx.equipoCodigoSIE.deleteMany({
+          where: { equipoId },
+        });
+        await tx.cajaEquipo.deleteMany({
+          where: { equipoId },
+        });
 
-      const removed = await tx.equipo.delete({
-        where: { equipoId },
-      });
+        if (affectedMovimientoIds.length > 0) {
+          await tx.movimiento.deleteMany({
+            where: {
+              movimientoId: { in: affectedMovimientoIds },
+              equipos: { none: {} },
+            },
+          });
+        }
 
-      await applyEquipoOrder(tx, remainingIds, existing.activo ? 0 : 10000);
+        if (affectedStockOperacionIds.length > 0) {
+          await tx.stockOperacion.deleteMany({
+            where: {
+              stockOperacionId: { in: affectedStockOperacionIds },
+              equipos: { none: {} },
+            },
+          });
+        }
 
-      return {
-        removed,
-        impacto,
-      };
-    }, { maxWait: 5_000, timeout: 20_000 });
+        const removed = await tx.equipo.delete({
+          where: { equipoId },
+        });
+
+        await applyEquipoOrder(tx, remainingIds, existing.activo ? 0 : 10000);
+
+        return {
+          removed,
+          impacto,
+        };
+      },
+      { maxWait: 5_000, timeout: 20_000 }
+    );
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -1148,7 +1228,8 @@ export async function DELETE(request: Request, context: { params: Promise<{ equi
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
     }
 
     return NextResponse.json({ error: "No se pudo eliminar el equipo." }, { status: 500 });

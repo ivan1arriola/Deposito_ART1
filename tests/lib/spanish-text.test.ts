@@ -3,7 +3,9 @@ import { normalizeOutputText, normalizeSearchText, stripDiacritics } from "@/lib
 
 describe("spanish-text", () => {
   it("preserva tildes y Ñ en texto de salida", () => {
-    expect(normalizeOutputText("Año, acción, pingüino, Ñandú")).toBe("Año, acción, pingüino, Ñandú");
+    expect(normalizeOutputText("Año, acción, pingüino, Ñandú")).toBe(
+      "Año, acción, pingüino, Ñandú"
+    );
   });
 
   it("normaliza NBSP en texto de salida", () => {

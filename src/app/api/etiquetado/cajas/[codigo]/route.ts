@@ -23,8 +23,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
 
   if (!hasEtiquetadoDelegates()) {
     return NextResponse.json(
-      { error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo." },
-      { status: 503 },
+      {
+        error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo.",
+      },
+      { status: 503 }
     );
   }
 
@@ -78,12 +80,13 @@ export async function DELETE(request: Request, context: { params: Promise<{ codi
         ? existing.equipos
             .map((entry) => entry.equipo.nombre)
             .sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }))
-        : Array.from(new Set(existing.codigosSIE.map((entry) => entry.equipoCodigoSIE.equipo.nombre))).sort((a, b) =>
-            a.localeCompare(b, "es", { sensitivity: "base" },
-          ));
-    const cantidad = existing.equipos.length > 0
-      ? existing.equipos.reduce((sum, entry) => sum + entry.cantidad, 0)
-      : existing.codigosSIE.length;
+        : Array.from(
+            new Set(existing.codigosSIE.map((entry) => entry.equipoCodigoSIE.equipo.nombre))
+          ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+    const cantidad =
+      existing.equipos.length > 0
+        ? existing.equipos.reduce((sum, entry) => sum + entry.cantidad, 0)
+        : existing.codigosSIE.length;
 
     await logAudit({
       usuarioId: auth.user.usuarioId,

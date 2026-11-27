@@ -37,7 +37,10 @@ function parseDateOnly(value: string) {
   return dateInputToDate(value);
 }
 
-export async function PUT(req: Request, context: { params: Promise<{ ci: string; observacionId: string }> }) {
+export async function PUT(
+  req: Request,
+  context: { params: Promise<{ ci: string; observacionId: string }> }
+) {
   const auth = await authorizeRequest(req, "write_data");
   if (!auth.ok) return auth.response;
 
@@ -45,8 +48,10 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string;
   const ciDecoded = decodeURIComponent(ci).trim();
   const observacionId = parseObservacionId(observacionIdParam);
   if (!ciDecoded) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
-  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
-  if (!observacionId) return NextResponse.json({ error: "observacionId invalido." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded))
+    return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  if (!observacionId)
+    return NextResponse.json({ error: "observacionId invalido." }, { status: 400 });
 
   const body = await req.json();
   if (!isValidPayload(body)) {
@@ -58,7 +63,10 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string;
     return NextResponse.json({ error: "La fecha de la observación es invalida." }, { status: 400 });
   }
   if (isDateInputAfterToday(body.fecha)) {
-    return NextResponse.json({ error: "La fecha de la observación no puede ser futura." }, { status: 400 });
+    return NextResponse.json(
+      { error: "La fecha de la observación no puede ser futura." },
+      { status: 400 }
+    );
   }
 
   const existing = await prisma.observacion.findFirst({
@@ -114,7 +122,10 @@ export async function PUT(req: Request, context: { params: Promise<{ ci: string;
   }
 }
 
-export async function DELETE(req: Request, context: { params: Promise<{ ci: string; observacionId: string }> }) {
+export async function DELETE(
+  req: Request,
+  context: { params: Promise<{ ci: string; observacionId: string }> }
+) {
   const auth = await authorizeRequest(req, "delete_data");
   if (!auth.ok) return auth.response;
 
@@ -122,8 +133,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
   const ciDecoded = decodeURIComponent(ci).trim();
   const observacionId = parseObservacionId(observacionIdParam);
   if (!ciDecoded) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
-  if (!isValidUruguayanCi(ciDecoded)) return NextResponse.json({ error: "CI invalida." }, { status: 400 });
-  if (!observacionId) return NextResponse.json({ error: "observacionId invalido." }, { status: 400 });
+  if (!isValidUruguayanCi(ciDecoded))
+    return NextResponse.json({ error: "CI invalida." }, { status: 400 });
+  if (!observacionId)
+    return NextResponse.json({ error: "observacionId invalido." }, { status: 400 });
 
   const existing = await prisma.observacion.findFirst({
     where: {

@@ -5,11 +5,7 @@ export const metadata = {
   title: "Hoja de Entrega",
 };
 
-export default async function HojaEntregaPage({
-  params,
-}: {
-  params: Promise<{ ci: string }>;
-}) {
+export default async function HojaEntregaPage({ params }: { params: Promise<{ ci: string }> }) {
   const { ci } = await params;
   const ciValue = decodeURIComponent(ci).trim();
 

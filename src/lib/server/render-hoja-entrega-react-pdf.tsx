@@ -4,11 +4,11 @@ import React from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
 import { buildFirmasHojaEntregaLineas, type FirmaLinea } from "@/lib/firma-lineas";
 import { ParseSpeeds, PDFDocument } from "pdf-lib";
+import { getHojaEntregaDatePart, type HojaEntregaSheetData } from "@/lib/hoja-entrega-data";
 import {
-  getHojaEntregaDatePart,
-  type HojaEntregaSheetData,
-} from "@/lib/hoja-entrega-data";
-import { getArtilleriaLogoDataUrl, getPublicAssetAbsolutePath } from "@/lib/server/react-pdf-assets";
+  getArtilleriaLogoDataUrl,
+  getPublicAssetAbsolutePath,
+} from "@/lib/server/react-pdf-assets";
 
 type RenderHojasEntregaPdfOptions = {
   pageNumberLabel?: string;
@@ -64,15 +64,7 @@ type PreparedHojaEntregaData = {
 };
 
 type DensityProfile = {
-  id:
-    | "normal"
-    | "compact"
-    | "tight"
-    | "ultra"
-    | "micro"
-    | "nano"
-    | "pico"
-    | "atomic";
+  id: "normal" | "compact" | "tight" | "ultra" | "micro" | "nano" | "pico" | "atomic";
   scale: number;
 };
 
@@ -100,10 +92,7 @@ let hojaEntregaFontsRegistrationPromise: Promise<boolean> | null = null;
 
 async function ensureHojaEntregaFontsRegistered(ReactPdf: {
   Font: {
-    register: (descriptor: {
-      family: string;
-      src: string;
-    }) => void;
+    register: (descriptor: { family: string; src: string }) => void;
   };
 }) {
   if (hojaEntregaFontsRegistrationPromise) return hojaEntregaFontsRegistrationPromise;
@@ -116,7 +105,10 @@ async function ensureHojaEntregaFontsRegistered(ReactPdf: {
       ReactPdf.Font.register({ family: HOJA_ENTREGA_MONO_BOLD_FAMILY, src: boldFontPath });
       return true;
     } catch (error) {
-      console.warn("[hoja-entrega-pdf] No se pudieron registrar fuentes embebidas, usando fallback estándar.", error);
+      console.warn(
+        "[hoja-entrega-pdf] No se pudieron registrar fuentes embebidas, usando fallback estándar.",
+        error
+      );
       return false;
     }
   })();
@@ -157,7 +149,8 @@ function buildTighterProfileOrder(initialProfileId: DensityProfile["id"]) {
 }
 
 function normalizeFastBatchChunkSize(rawValue: number | undefined) {
-  if (typeof rawValue !== "number" || !Number.isFinite(rawValue)) return DEFAULT_FAST_BATCH_CHUNK_SIZE;
+  if (typeof rawValue !== "number" || !Number.isFinite(rawValue))
+    return DEFAULT_FAST_BATCH_CHUNK_SIZE;
   const parsedValue = Math.floor(rawValue);
   if (parsedValue < 1) return DEFAULT_FAST_BATCH_CHUNK_SIZE;
   return Math.min(parsedValue, MAX_FAST_BATCH_CHUNK_SIZE);
@@ -174,8 +167,14 @@ function getFastBatchChunkSizeFromEnv() {
 
 function buildHojaDensityScore(hoja: HojaEntregaSheetData) {
   const entregasConFecha = hoja.entregas.reduce((acc, equipo) => acc + (equipo.fecha ? 1 : 0), 0);
-  const devolucionesConFecha = hoja.devoluciones.reduce((acc, equipo) => acc + (equipo.fecha ? 1 : 0), 0);
-  const observacionesChars = hoja.observaciones.reduce((acc, equipo) => acc + equipo.texto.length, 0);
+  const devolucionesConFecha = hoja.devoluciones.reduce(
+    (acc, equipo) => acc + (equipo.fecha ? 1 : 0),
+    0
+  );
+  const observacionesChars = hoja.observaciones.reduce(
+    (acc, equipo) => acc + equipo.texto.length,
+    0
+  );
   return (
     hoja.matrix.length * 8 +
     hoja.observaciones.length * 20 +
@@ -262,7 +261,7 @@ function normalizeSixDates(values: Array<{ fecha: string | null }>) {
 function buildHeaderInfoRows(
   data: HojaEntregaSheetData,
   fechaImpresion: string,
-  ciDisplay: string,
+  ciDisplay: string
 ): HeaderInfoCell[][] {
   const ingresoLabel = data.persona.esReingreso ? "Fecha Re-ingreso:" : "Fecha Ingreso:";
 
@@ -296,8 +295,18 @@ function buildHeaderInfoRows(
     ],
     [
       { width: "22%", label: "C.I:", value: ciDisplay, minHeight: 14 },
-      { width: "25%", label: "Batería:", value: data.persona.bateria || "Cdo. y Serv.", minHeight: 14 },
-      { width: "25%", label: ingresoLabel, value: formatShortDate(data.persona.fechaIngreso), minHeight: 14 },
+      {
+        width: "25%",
+        label: "Batería:",
+        value: data.persona.bateria || "Cdo. y Serv.",
+        minHeight: 14,
+      },
+      {
+        width: "25%",
+        label: ingresoLabel,
+        value: formatShortDate(data.persona.fechaIngreso),
+        minHeight: 14,
+      },
       { width: "28%", label: "Fecha de impresión:", value: fechaImpresion, minHeight: 14 },
     ],
   ];
@@ -339,7 +348,10 @@ function buildFirmaBloques(lineas: FirmaLinea[]): FirmaBloque[] {
   })).filter((bloque) => bloque.lineas.length > 0);
 }
 
-function prepareHojaEntregaData(data: HojaEntregaSheetData, fechaImpresion: string): PreparedHojaEntregaData {
+function prepareHojaEntregaData(
+  data: HojaEntregaSheetData,
+  fechaImpresion: string
+): PreparedHojaEntregaData {
   const alistadoNombre = buildAlistadoNombre(data);
   const firmaLineas = buildFirmasHojaEntregaLineas({
     alistadoRango: data.persona.rangoAbreviacion,
@@ -363,7 +375,7 @@ function prepareHojaEntregaData(data: HojaEntregaSheetData, fechaImpresion: stri
     firmaBloques: buildFirmaBloques(firmaLineas),
     observacionesText: data.observaciones.map(
       (obs) =>
-        `${renderDate(obs.fecha, "day")}/${renderDate(obs.fecha, "month")}/${renderDate(obs.fecha, "year")} - ${obs.texto}`,
+        `${renderDate(obs.fecha, "day")}/${renderDate(obs.fecha, "month")}/${renderDate(obs.fecha, "year")} - ${obs.texto}`
     ),
   };
 }
@@ -371,13 +383,17 @@ function prepareHojaEntregaData(data: HojaEntregaSheetData, fechaImpresion: stri
 export async function renderHojasEntregaPdf(
   hojas: HojaEntregaSheetData[],
   fechaImpresion: string,
-  options: RenderHojasEntregaPdfOptions = {},
+  options: RenderHojasEntregaPdfOptions = {}
 ): Promise<Uint8Array> {
   const ReactPdf = await import("@react-pdf/renderer");
   const { Document, Page, Text, View, StyleSheet, pdf, Image } = ReactPdf;
   const usingEmbeddedMonoFonts = await ensureHojaEntregaFontsRegistered(ReactPdf);
-  const monoRegularFontFamily = usingEmbeddedMonoFonts ? HOJA_ENTREGA_MONO_REGULAR_FAMILY : "Courier";
-  const monoBoldFontFamily = usingEmbeddedMonoFonts ? HOJA_ENTREGA_MONO_BOLD_FAMILY : "Courier-Bold";
+  const monoRegularFontFamily = usingEmbeddedMonoFonts
+    ? HOJA_ENTREGA_MONO_REGULAR_FAMILY
+    : "Courier";
+  const monoBoldFontFamily = usingEmbeddedMonoFonts
+    ? HOJA_ENTREGA_MONO_BOLD_FAMILY
+    : "Courier-Bold";
   const sansRegularFontFamily = "Helvetica";
   const sansBoldFontFamily = "Helvetica-Bold";
 
@@ -393,9 +409,12 @@ export async function renderHojasEntregaPdf(
   const expectedPagesPerHoja = (includeSheetPage ? 1 : 0) + (includeUsageGuidePage ? 1 : 0);
   const performanceMode = options.performanceMode ?? "adaptive";
   const fastBatchInitialProfileId = options.fastBatchInitialProfileId ?? "tight";
-  const fastBatchChunkSize = normalizeFastBatchChunkSize(options.fastBatchChunkSize ?? getFastBatchChunkSizeFromEnv());
+  const fastBatchChunkSize = normalizeFastBatchChunkSize(
+    options.fastBatchChunkSize ?? getFastBatchChunkSizeFromEnv()
+  );
   const adaptiveInitialProfileId =
-    options.adaptiveInitialProfileId ?? (performanceMode === "fast-batch" ? fastBatchInitialProfileId : "normal");
+    options.adaptiveInitialProfileId ??
+    (performanceMode === "fast-batch" ? fastBatchInitialProfileId : "normal");
   const stylesCache = new Map<DensityProfile["id"], ReturnType<typeof StyleSheet.create>>();
 
   const renderDocumentToUint8Array = async (document: React.ReactElement) => {
@@ -440,7 +459,7 @@ export async function renderHojasEntregaPdf(
 
   const renderHojasBytesWithProfile = async (
     hojasToRender: PreparedHojaEntregaData[],
-    profile: DensityProfile,
+    profile: DensityProfile
   ) => {
     const signatureTab = getSignatureTabSize(profile);
     const signatureLineHeight = 1.2;
@@ -452,332 +471,332 @@ export async function renderHojasEntregaPdf(
     const styles =
       cachedStyles ??
       StyleSheet.create({
-      page: {
-        paddingLeft: A4_MARGIN_X,
-        paddingRight: A4_MARGIN_X,
-        paddingTop: A4_MARGIN_TOP,
-        paddingBottom: A4_MARGIN_BOTTOM,
-        fontFamily: monoRegularFontFamily,
-        fontSize: scaled(profile, 6.7, 4.6),
-        color: "#000000",
-        backgroundColor: "#ffffff",
-      },
+        page: {
+          paddingLeft: A4_MARGIN_X,
+          paddingRight: A4_MARGIN_X,
+          paddingTop: A4_MARGIN_TOP,
+          paddingBottom: A4_MARGIN_BOTTOM,
+          fontFamily: monoRegularFontFamily,
+          fontSize: scaled(profile, 6.7, 4.6),
+          color: "#000000",
+          backgroundColor: "#ffffff",
+        },
 
-      sheet: {
-        minHeight: A4_CONTENT_HEIGHT,
-        flexDirection: "column",
-      },
+        sheet: {
+          minHeight: A4_CONTENT_HEIGHT,
+          flexDirection: "column",
+        },
 
-      content: {
-        flexGrow: 1,
-        flexDirection: "column",
-      },
+        content: {
+          flexGrow: 1,
+          flexDirection: "column",
+        },
 
-      table: {
-        width: "100%",
-        borderWidth: scaled(profile, 1, 0.55),
-        borderColor: BORDER,
-        flexDirection: "column",
-        flexGrow: 1,
-      },
+        table: {
+          width: "100%",
+          borderWidth: scaled(profile, 1, 0.55),
+          borderColor: BORDER,
+          flexDirection: "column",
+          flexGrow: 1,
+        },
 
-      matrixSection: {
-        flexGrow: 1,
-        flexDirection: "column",
-      },
+        matrixSection: {
+          flexGrow: 1,
+          flexDirection: "column",
+        },
 
-      row: {
-        flexDirection: "row",
-        width: "100%",
-      },
+        row: {
+          flexDirection: "row",
+          width: "100%",
+        },
 
-      matrixRow: {
-        flexGrow: 1,
-      },
+        matrixRow: {
+          flexGrow: 1,
+        },
 
-      cell: {
-        borderRightWidth: scaled(profile, 0.75, 0.42),
-        borderBottomWidth: scaled(profile, 0.75, 0.42),
-        borderColor: BORDER,
-        paddingHorizontal: scaled(profile, 1.4, 0.7),
-        paddingVertical: scaled(profile, 0.24, 0.05),
-        justifyContent: "center",
-      },
+        cell: {
+          borderRightWidth: scaled(profile, 0.75, 0.42),
+          borderBottomWidth: scaled(profile, 0.75, 0.42),
+          borderColor: BORDER,
+          paddingHorizontal: scaled(profile, 1.4, 0.7),
+          paddingVertical: scaled(profile, 0.24, 0.05),
+          justifyContent: "center",
+        },
 
-      noRightBorder: {
-        borderRightWidth: 0,
-      },
+        noRightBorder: {
+          borderRightWidth: 0,
+        },
 
-      center: {
-        textAlign: "center",
-      },
+        center: {
+          textAlign: "center",
+        },
 
-      left: {
-        textAlign: "left",
-      },
+        left: {
+          textAlign: "left",
+        },
 
-      topTitleCell: {
-        backgroundColor: BG_WHITE,
-        paddingVertical: scaled(profile, 1.5, 0.7),
-        minHeight: scaled(profile, 22, 16),
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-      },
+        topTitleCell: {
+          backgroundColor: BG_WHITE,
+          paddingVertical: scaled(profile, 1.5, 0.7),
+          minHeight: scaled(profile, 22, 16),
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+        },
 
-      logo: {
-        width: 35,
-        height: 35,
-        position: "absolute",
-        left: 10,
-        top: 2,
-      },
+        logo: {
+          width: 35,
+          height: 35,
+          position: "absolute",
+          left: 10,
+          top: 2,
+        },
 
-      topTitle: {
-        textAlign: "center",
-        fontFamily: monoBoldFontFamily,
-        fontSize: scaled(profile, 8.1, 5.8),
-      },
+        topTitle: {
+          textAlign: "center",
+          fontFamily: monoBoldFontFamily,
+          fontSize: scaled(profile, 8.1, 5.8),
+        },
 
-      subTitleCell: {
-        backgroundColor: BG_WHITE,
-        paddingVertical: scaled(profile, 1.4, 0.65),
-        minHeight: scaled(profile, 16.5, 11.5),
-      },
+        subTitleCell: {
+          backgroundColor: BG_WHITE,
+          paddingVertical: scaled(profile, 1.4, 0.65),
+          minHeight: scaled(profile, 16.5, 11.5),
+        },
 
-      subTitle: {
-        textAlign: "center",
-        fontFamily: monoBoldFontFamily,
-        fontSize: scaled(profile, 7.9, 5.7),
-      },
+        subTitle: {
+          textAlign: "center",
+          fontFamily: monoBoldFontFamily,
+          fontSize: scaled(profile, 7.9, 5.7),
+        },
 
-      infoCell: {
-        backgroundColor: BG_WHITE,
-        justifyContent: "center",
-        paddingTop: scaled(profile, 0.8, 0.25),
-        paddingBottom: scaled(profile, 0.8, 0.25),
-      },
+        infoCell: {
+          backgroundColor: BG_WHITE,
+          justifyContent: "center",
+          paddingTop: scaled(profile, 0.8, 0.25),
+          paddingBottom: scaled(profile, 0.8, 0.25),
+        },
 
-      infoLine: {
-        fontFamily: monoRegularFontFamily,
-        fontSize: scaled(profile, 6.9, 4.9),
-        lineHeight: 1,
-      },
+        infoLine: {
+          fontFamily: monoRegularFontFamily,
+          fontSize: scaled(profile, 6.9, 4.9),
+          lineHeight: 1,
+        },
 
-      infoLabel: {
-        fontFamily: monoBoldFontFamily,
-        fontSize: scaled(profile, 6.9, 4.9),
-        lineHeight: 1,
-      },
+        infoLabel: {
+          fontFamily: monoBoldFontFamily,
+          fontSize: scaled(profile, 6.9, 4.9),
+          lineHeight: 1,
+        },
 
-      infoValue: {
-        fontFamily: monoRegularFontFamily,
-        fontWeight: "normal",
-        fontSize: scaled(profile, 6.9, 4.9),
-        lineHeight: 1,
-      },
+        infoValue: {
+          fontFamily: monoRegularFontFamily,
+          fontWeight: "normal",
+          fontSize: scaled(profile, 6.9, 4.9),
+          lineHeight: 1,
+        },
 
-      sectionHeader: {
-        backgroundColor: BG_MID,
-        minHeight: scaled(profile, 14.5, 9.2),
-        paddingVertical: 0,
-        justifyContent: "center",
-      },
+        sectionHeader: {
+          backgroundColor: BG_MID,
+          minHeight: scaled(profile, 14.5, 9.2),
+          paddingVertical: 0,
+          justifyContent: "center",
+        },
 
-      sectionHeaderText: {
-        textAlign: "center",
-        fontFamily: monoBoldFontFamily,
-        fontSize: scaled(profile, 7.2, 5),
-      },
+        sectionHeaderText: {
+          textAlign: "center",
+          fontFamily: monoBoldFontFamily,
+          fontSize: scaled(profile, 7.2, 5),
+        },
 
-      dateLabelCell: {
-        backgroundColor: BG_MID,
-        minHeight: scaled(profile, 11.2, 7.5),
-        paddingVertical: 0,
-        justifyContent: "center",
-      },
+        dateLabelCell: {
+          backgroundColor: BG_MID,
+          minHeight: scaled(profile, 11.2, 7.5),
+          paddingVertical: 0,
+          justifyContent: "center",
+        },
 
-      dateLabelText: {
-        textAlign: "center",
-        fontFamily: monoBoldFontFamily,
-        fontSize: scaled(profile, 6.7, 4.7),
-      },
+        dateLabelText: {
+          textAlign: "center",
+          fontFamily: monoBoldFontFamily,
+          fontSize: scaled(profile, 6.7, 4.7),
+        },
 
-      dateValueCell: {
-        backgroundColor: BG_MID,
-        minHeight: scaled(profile, 11.2, 7.5),
-        paddingVertical: 0,
-        justifyContent: "center",
-      },
+        dateValueCell: {
+          backgroundColor: BG_MID,
+          minHeight: scaled(profile, 11.2, 7.5),
+          paddingVertical: 0,
+          justifyContent: "center",
+        },
 
-      dateValueText: {
-        textAlign: "center",
-        fontFamily: monoRegularFontFamily,
-        fontWeight: "normal",
-        fontSize: scaled(profile, 6.7, 4.7),
-      },
+        dateValueText: {
+          textAlign: "center",
+          fontFamily: monoRegularFontFamily,
+          fontWeight: "normal",
+          fontSize: scaled(profile, 6.7, 4.7),
+        },
 
-      tMergedTop: {
-        backgroundColor: BG_MID,
-        borderBottomWidth: 0,
-        minHeight: scaled(profile, 11.2, 7.5),
-        paddingVertical: 0,
-        justifyContent: "center",
-      },
+        tMergedTop: {
+          backgroundColor: BG_MID,
+          borderBottomWidth: 0,
+          minHeight: scaled(profile, 11.2, 7.5),
+          paddingVertical: 0,
+          justifyContent: "center",
+        },
 
-      tMergedMiddle: {
-        backgroundColor: BG_MID,
-        borderTopWidth: 0,
-        borderBottomWidth: 0,
-        minHeight: scaled(profile, 11.2, 7.5),
-        paddingVertical: 0,
-        justifyContent: "center",
-      },
+        tMergedMiddle: {
+          backgroundColor: BG_MID,
+          borderTopWidth: 0,
+          borderBottomWidth: 0,
+          minHeight: scaled(profile, 11.2, 7.5),
+          paddingVertical: 0,
+          justifyContent: "center",
+        },
 
-      tMergedBottom: {
-        backgroundColor: BG_MID,
-        borderTopWidth: 0,
-        minHeight: scaled(profile, 11.2, 7.5),
-        paddingVertical: 0,
-        justifyContent: "center",
-      },
+        tMergedBottom: {
+          backgroundColor: BG_MID,
+          borderTopWidth: 0,
+          minHeight: scaled(profile, 11.2, 7.5),
+          paddingVertical: 0,
+          justifyContent: "center",
+        },
 
-      tText: {
-        textAlign: "center",
-        fontFamily: monoRegularFontFamily,
-        fontWeight: "normal",
-        fontSize: scaled(profile, 6.8, 4.8),
-      },
+        tText: {
+          textAlign: "center",
+          fontFamily: monoRegularFontFamily,
+          fontWeight: "normal",
+          fontSize: scaled(profile, 6.8, 4.8),
+        },
 
-      itemCell: {
-        backgroundColor: BG_WHITE,
-        minHeight: scaled(profile, 11.2, 7.4),
-        paddingVertical: 0,
-        justifyContent: "center",
-      },
+        itemCell: {
+          backgroundColor: BG_WHITE,
+          minHeight: scaled(profile, 11.2, 7.4),
+          paddingVertical: 0,
+          justifyContent: "center",
+        },
 
-      itemName: {
-        textAlign: "left",
-        fontSize: scaled(profile, 6.55, 4.6),
-        lineHeight: 1,
-      },
+        itemName: {
+          textAlign: "left",
+          fontSize: scaled(profile, 6.55, 4.6),
+          lineHeight: 1,
+        },
 
-      qtyCell: {
-        backgroundColor: BG_WHITE,
-        minHeight: scaled(profile, 11.2, 7.4),
-        paddingVertical: 0,
-        justifyContent: "center",
-      },
+        qtyCell: {
+          backgroundColor: BG_WHITE,
+          minHeight: scaled(profile, 11.2, 7.4),
+          paddingVertical: 0,
+          justifyContent: "center",
+        },
 
-      qtyText: {
-        textAlign: "center",
-        fontSize: scaled(profile, 6.9, 4.8),
-      },
+        qtyText: {
+          textAlign: "center",
+          fontSize: scaled(profile, 6.9, 4.8),
+        },
 
-      totalCell: {
-        backgroundColor: BG_TOTAL,
-        minHeight: scaled(profile, 11.2, 7.4),
-        paddingVertical: 0,
-        justifyContent: "center",
-      },
+        totalCell: {
+          backgroundColor: BG_TOTAL,
+          minHeight: scaled(profile, 11.2, 7.4),
+          paddingVertical: 0,
+          justifyContent: "center",
+        },
 
-      totalText: {
-        textAlign: "center",
-        fontFamily: monoRegularFontFamily,
-        fontWeight: "normal",
-        fontSize: scaled(profile, 6.9, 4.8),
-      },
+        totalText: {
+          textAlign: "center",
+          fontFamily: monoRegularFontFamily,
+          fontWeight: "normal",
+          fontSize: scaled(profile, 6.9, 4.8),
+        },
 
-      observacionesWrapper: {
-        backgroundColor: BG_WHITE,
-        minHeight: scaled(profile, 19, 12),
-        paddingTop: scaled(profile, 0.6, 0.2),
-        paddingBottom: scaled(profile, 0.9, 0.25),
-        paddingHorizontal: scaled(profile, 1.5, 0.8),
-        justifyContent: "flex-start",
-      },
+        observacionesWrapper: {
+          backgroundColor: BG_WHITE,
+          minHeight: scaled(profile, 19, 12),
+          paddingTop: scaled(profile, 0.6, 0.2),
+          paddingBottom: scaled(profile, 0.9, 0.25),
+          paddingHorizontal: scaled(profile, 1.5, 0.8),
+          justifyContent: "flex-start",
+        },
 
-      observacionesTitle: {
-        textAlign: "center",
-        fontFamily: monoBoldFontFamily,
-        fontSize: scaled(profile, 7.2, 5),
-        marginBottom: scaled(profile, 0.8, 0.18),
-      },
+        observacionesTitle: {
+          textAlign: "center",
+          fontFamily: monoBoldFontFamily,
+          fontSize: scaled(profile, 7.2, 5),
+          marginBottom: scaled(profile, 0.8, 0.18),
+        },
 
-      observacionLine: {
-        fontSize: scaled(profile, 6.3, 4.4),
-        lineHeight: 1.2,
-        marginBottom: 0,
-        textAlign: "center",
-      },
+        observacionLine: {
+          fontSize: scaled(profile, 6.3, 4.4),
+          lineHeight: 1.2,
+          marginBottom: 0,
+          textAlign: "center",
+        },
 
-      firmas: {
-        marginTop: scaled(profile, 13, 8),
-        marginBottom: scaled(profile, 11, 7),
-        paddingTop: scaled(profile, 2.2, 1.2),
-        paddingBottom: scaled(profile, 1.8, 1),
-        paddingLeft: 0,
-        paddingRight: 0,
-        flexShrink: 0,
-      },
-      firmaLineRow: {
-        width: "100%",
-        flexDirection: "row",
-        paddingLeft: 0,
-      },
-      firmaBlock: {
-        width: "100%",
-        paddingBottom: scaled(profile, 0.6, 0.4),
-      },
-      firmaLine: {
-        fontSize: signatureFontSize,
-        lineHeight: signatureLineHeight,
-      },
-      firmaLineStrong: {
-        fontFamily: monoBoldFontFamily,
-      },
+        firmas: {
+          marginTop: scaled(profile, 13, 8),
+          marginBottom: scaled(profile, 11, 7),
+          paddingTop: scaled(profile, 2.2, 1.2),
+          paddingBottom: scaled(profile, 1.8, 1),
+          paddingLeft: 0,
+          paddingRight: 0,
+          flexShrink: 0,
+        },
+        firmaLineRow: {
+          width: "100%",
+          flexDirection: "row",
+          paddingLeft: 0,
+        },
+        firmaBlock: {
+          width: "100%",
+          paddingBottom: scaled(profile, 0.6, 0.4),
+        },
+        firmaLine: {
+          fontSize: signatureFontSize,
+          lineHeight: signatureLineHeight,
+        },
+        firmaLineStrong: {
+          fontFamily: monoBoldFontFamily,
+        },
 
-      pageNumber: {
-        position: "absolute",
-        right: A4_MARGIN_X,
-        bottom: 4,
-        fontSize: scaled(profile, 5.2, 3.8),
-        fontFamily: sansRegularFontFamily,
-      },
+        pageNumber: {
+          position: "absolute",
+          right: A4_MARGIN_X,
+          bottom: 4,
+          fontSize: scaled(profile, 5.2, 3.8),
+          fontFamily: sansRegularFontFamily,
+        },
 
-      // Manual / Guia Styles
-      manualPage: {
-        padding: 40,
-        fontFamily: sansRegularFontFamily,
-        fontSize: 10,
-        color: "#1e293b",
-      },
-      manualTitle: {
-        fontSize: 18,
-        fontFamily: sansBoldFontFamily,
-        color: "#0f172a",
-        marginBottom: 15,
-        textAlign: "center",
-        textDecoration: "underline",
-      },
-      manualSection: {
-        marginBottom: 15,
-        padding: 10,
-        backgroundColor: "#f8fafc",
-        borderLeftWidth: 3,
-        borderLeftColor: "#059669",
-      },
-      manualSubtitle: {
-        fontSize: 12,
-        fontFamily: sansBoldFontFamily,
-        color: "#334155",
-        marginBottom: 5,
-      },
-      manualText: {
-        fontSize: 10,
-        lineHeight: 1.4,
-        textAlign: "justify",
-      },
+        // Manual / Guia Styles
+        manualPage: {
+          padding: 40,
+          fontFamily: sansRegularFontFamily,
+          fontSize: 10,
+          color: "#1e293b",
+        },
+        manualTitle: {
+          fontSize: 18,
+          fontFamily: sansBoldFontFamily,
+          color: "#0f172a",
+          marginBottom: 15,
+          textAlign: "center",
+          textDecoration: "underline",
+        },
+        manualSection: {
+          marginBottom: 15,
+          padding: 10,
+          backgroundColor: "#f8fafc",
+          borderLeftWidth: 3,
+          borderLeftColor: "#059669",
+        },
+        manualSubtitle: {
+          fontSize: 12,
+          fontFamily: sansBoldFontFamily,
+          color: "#334155",
+          marginBottom: 5,
+        },
+        manualText: {
+          fontSize: 10,
+          lineHeight: 1.4,
+          textAlign: "justify",
+        },
       });
     if (!cachedStyles) {
       stylesCache.set(profile.id, styles);
@@ -798,7 +817,9 @@ export async function renderHojasEntregaPdf(
                 isLast ? styles.noRightBorder : {},
               ]}
             >
-              <Text style={[styles.infoLine, cell.align === "center" ? styles.center : styles.left]}>
+              <Text
+                style={[styles.infoLine, cell.align === "center" ? styles.center : styles.left]}
+              >
                 {cell.label ? <Text style={styles.infoLabel}>{`${cell.label} `}</Text> : null}
                 <Text style={styles.infoValue}>{cell.value || " "}</Text>
               </Text>
@@ -809,7 +830,8 @@ export async function renderHojasEntregaPdf(
     );
 
     const HojaEntregaSheetPage = ({ hoja }: { hoja: PreparedHojaEntregaData }) => {
-      const { data, entregaCols, devolCols, headerInfoRows, firmaBloques, observacionesText } = hoja;
+      const { data, entregaCols, devolCols, headerInfoRows, firmaBloques, observacionesText } =
+        hoja;
 
       const itemWidthStyle = { width: widthPct(ITEM_COL_WIDTH) };
       const dataWidthStyle = { width: widthPct(DATA_COL_WIDTH) };
@@ -821,7 +843,14 @@ export async function renderHojasEntregaPdf(
             <View style={styles.content}>
               <View style={styles.table}>
                 <View style={styles.row}>
-                  <View style={[styles.cell, styles.topTitleCell, styles.noRightBorder, { width: "100%" }]}>
+                  <View
+                    style={[
+                      styles.cell,
+                      styles.topTitleCell,
+                      styles.noRightBorder,
+                      { width: "100%" },
+                    ]}
+                  >
                     <Text style={styles.topTitle}>
                       {'Grupo "Brig.Gral.Manuel Oribe" de Artillería 105mm No.1.-'}
                     </Text>
@@ -829,7 +858,14 @@ export async function renderHojasEntregaPdf(
                 </View>
 
                 <View style={styles.row}>
-                  <View style={[styles.cell, styles.subTitleCell, styles.noRightBorder, { width: "100%" }]}>
+                  <View
+                    style={[
+                      styles.cell,
+                      styles.subTitleCell,
+                      styles.noRightBorder,
+                      { width: "100%" },
+                    ]}
+                  >
                     <Text style={styles.subTitle}>ADMINISTRACIÓN - S4</Text>
                   </View>
                 </View>
@@ -853,7 +889,14 @@ export async function renderHojasEntregaPdf(
                     <Text style={styles.sectionHeaderText}>DEVOLUCIONES</Text>
                   </View>
 
-                  <View style={[styles.cell, styles.sectionHeader, styles.noRightBorder, dataWidthStyle]} />
+                  <View
+                    style={[
+                      styles.cell,
+                      styles.sectionHeader,
+                      styles.noRightBorder,
+                      dataWidthStyle,
+                    ]}
+                  />
                 </View>
 
                 {DATE_ROW_CONFIGS.map((config) => {
@@ -861,8 +904,8 @@ export async function renderHojasEntregaPdf(
                     config.mergedVariant === "top"
                       ? styles.tMergedTop
                       : config.mergedVariant === "middle"
-                      ? styles.tMergedMiddle
-                      : styles.tMergedBottom;
+                        ? styles.tMergedMiddle
+                        : styles.tMergedBottom;
 
                   return (
                     <View key={config.key} style={styles.row}>
@@ -892,7 +935,9 @@ export async function renderHojasEntregaPdf(
                         </View>
                       ))}
 
-                      <View style={[styles.cell, mergedStyle, styles.noRightBorder, dataWidthStyle]}>
+                      <View
+                        style={[styles.cell, mergedStyle, styles.noRightBorder, dataWidthStyle]}
+                      >
                         {config.showTMarkers ? <Text style={styles.tText}>T</Text> : null}
                       </View>
                     </View>
@@ -907,7 +952,10 @@ export async function renderHojasEntregaPdf(
                       </View>
 
                       {row.entrega.slice(0, 6).map((qty, idx) => (
-                        <View key={`entrega-${index}-${idx}`} style={[styles.cell, styles.qtyCell, dataWidthStyle]}>
+                        <View
+                          key={`entrega-${index}-${idx}`}
+                          style={[styles.cell, styles.qtyCell, dataWidthStyle]}
+                        >
                           <Text style={styles.qtyText}>{formatQuantity(qty)}</Text>
                         </View>
                       ))}
@@ -917,12 +965,22 @@ export async function renderHojasEntregaPdf(
                       </View>
 
                       {row.devolucion.slice(0, 6).map((qty, idx) => (
-                        <View key={`devolucion-${index}-${idx}`} style={[styles.cell, styles.qtyCell, dataWidthStyle]}>
+                        <View
+                          key={`devolucion-${index}-${idx}`}
+                          style={[styles.cell, styles.qtyCell, dataWidthStyle]}
+                        >
                           <Text style={styles.qtyText}>{formatQuantity(qty)}</Text>
                         </View>
                       ))}
 
-                      <View style={[styles.cell, styles.totalCell, styles.noRightBorder, dataWidthStyle]}>
+                      <View
+                        style={[
+                          styles.cell,
+                          styles.totalCell,
+                          styles.noRightBorder,
+                          dataWidthStyle,
+                        ]}
+                      >
                         <Text style={styles.totalText}>{formatTotal(row.devolucionTotal)}</Text>
                       </View>
                     </View>
@@ -977,10 +1035,7 @@ export async function renderHojasEntregaPdf(
                           ]}
                         >
                           <Text
-                            style={[
-                              styles.firmaLine,
-                              linea.isBold ? styles.firmaLineStrong : {},
-                            ]}
+                            style={[styles.firmaLine, linea.isBold ? styles.firmaLineStrong : {}]}
                           >
                             {linea.text}
                           </Text>
@@ -1009,35 +1064,42 @@ export async function renderHojasEntregaPdf(
     const GuiaUsoPage = () => (
       <Page size="A4" style={styles.manualPage}>
         <View style={{ alignItems: "center", marginBottom: 20 }}>
-          {logoDataUrl ? React.createElement(Image, { src: logoDataUrl, style: { width: 60, height: 60 } }) : null}
+          {logoDataUrl
+            ? React.createElement(Image, { src: logoDataUrl, style: { width: 60, height: 60 } })
+            : null}
         </View>
         <Text style={styles.manualTitle}>GUÍA DE CUIDADO Y RESPONSABILIDAD</Text>
-        
+
         <View style={styles.manualSection}>
           <Text style={styles.manualSubtitle}>1. Conservación del Equipo</Text>
           <Text style={styles.manualText}>
-            El equipo entregado es propiedad del Estado y su cuidado es responsabilidad directa del personal que lo recibe. 
-            Mantenga sus prendas limpias, secas y almacenadas en lugares adecuados para evitar el deterioro prematuro.
+            El equipo entregado es propiedad del Estado y su cuidado es responsabilidad directa del
+            personal que lo recibe. Mantenga sus prendas limpias, secas y almacenadas en lugares
+            adecuados para evitar el deterioro prematuro.
           </Text>
         </View>
 
         <View style={styles.manualSection}>
           <Text style={styles.manualSubtitle}>2. Pérdidas y Deterioro</Text>
           <Text style={styles.manualText}>
-            Cualquier pérdida o daño por negligencia deberá ser reportado inmediatamente a su superior. 
-            La reposición de equipos extraviados se rige por las normativas administrativas vigentes.
+            Cualquier pérdida o daño por negligencia deberá ser reportado inmediatamente a su
+            superior. La reposición de equipos extraviados se rige por las normativas
+            administrativas vigentes.
           </Text>
         </View>
 
         <View style={styles.manualSection}>
           <Text style={styles.manualSubtitle}>3. Proceso de Devolución</Text>
           <Text style={styles.manualText}>
-            Al finalizar su servicio o ser destinado a otra unidad, todo el equipo registrado en esta hoja debe ser 
-            devuelto al Depósito en condiciones óptimas de higiene. Se dejará constancia en la columna de DEVOLUCIONES.
+            Al finalizar su servicio o ser destinado a otra unidad, todo el equipo registrado en
+            esta hoja debe ser devuelto al Depósito en condiciones óptimas de higiene. Se dejará
+            constancia en la columna de DEVOLUCIONES.
           </Text>
         </View>
 
-        <View style={{ marginTop: 40, borderTopWidth: 1, borderTopColor: "#e2e8f0", paddingTop: 10 }}>
+        <View
+          style={{ marginTop: 40, borderTopWidth: 1, borderTopColor: "#e2e8f0", paddingTop: 10 }}
+        >
           <Text style={{ fontSize: 8, color: "#64748b", textAlign: "center" }}>
             &ldquo;La disciplina en el equipo refleja la disciplina en el servicio.&rdquo;
           </Text>
@@ -1050,7 +1112,9 @@ export async function renderHojasEntregaPdf(
         {hojasToRender.flatMap((hoja, index) => {
           const pages: React.ReactElement[] = [];
           if (includeSheetPage) {
-            pages.push(<HojaEntregaSheetPage key={`${hoja.data.persona.ci}-${index}`} hoja={hoja} />);
+            pages.push(
+              <HojaEntregaSheetPage key={`${hoja.data.persona.ci}-${index}`} hoja={hoja} />
+            );
           }
           if (includeUsageGuidePage) {
             pages.push(<GuiaUsoPage key={`guia-${hoja.data.persona.ci}-${index}`} />);
@@ -1063,7 +1127,10 @@ export async function renderHojasEntregaPdf(
     return renderDocumentToUint8Array(<HojaEntregaPdfDocument />);
   };
 
-  const renderSingleHojaBytesWithProfile = async (hoja: PreparedHojaEntregaData, profile: DensityProfile) => {
+  const renderSingleHojaBytesWithProfile = async (
+    hoja: PreparedHojaEntregaData,
+    profile: DensityProfile
+  ) => {
     return renderHojasBytesWithProfile([hoja], profile);
   };
 
@@ -1074,7 +1141,7 @@ export async function renderHojasEntregaPdf(
   const renderFastBatchBytesForProfile = async (
     hojasToRender: PreparedHojaEntregaData[],
     profile: DensityProfile,
-    chunkSize: number,
+    chunkSize: number
   ): Promise<Uint8Array | null> => {
     if (hojasToRender.length <= chunkSize) {
       const bytes = await renderHojasBytesWithProfile(hojasToRender, profile);
@@ -1122,12 +1189,14 @@ export async function renderHojasEntregaPdf(
 
     if (bestEffortBytes) {
       console.warn(
-        `[hoja-entrega-pdf] Ajuste de una hoja fuera de objetivo para ${buildAlistadoNombre(hoja.data)}. Perfil final=${bestProfileId}, esperado=${expectedPagesPerHoja}, obtenido=${bestPageCount}. Se devuelve mejor esfuerzo sin cortar contenido.`,
+        `[hoja-entrega-pdf] Ajuste de una hoja fuera de objetivo para ${buildAlistadoNombre(hoja.data)}. Perfil final=${bestProfileId}, esperado=${expectedPagesPerHoja}, obtenido=${bestPageCount}. Se devuelve mejor esfuerzo sin cortar contenido.`
       );
       return bestEffortBytes;
     }
 
-    throw new Error(`No se pudo generar el PDF de hoja de entrega para ${buildAlistadoNombre(hoja.data)}.`);
+    throw new Error(
+      `No se pudo generar el PDF de hoja de entrega para ${buildAlistadoNombre(hoja.data)}.`
+    );
   };
 
   if (hojas.length === 0) {
@@ -1157,7 +1226,11 @@ export async function renderHojasEntregaPdf(
         }
       }
 
-      const bytes = await renderFastBatchBytesForProfile(preparedHojas, profile, fastBatchChunkSize);
+      const bytes = await renderFastBatchBytesForProfile(
+        preparedHojas,
+        profile,
+        fastBatchChunkSize
+      );
       if (bytes) {
         return bytes;
       }

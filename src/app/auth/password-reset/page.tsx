@@ -16,11 +16,8 @@ export default function PasswordResetPage() {
   const [state, setState] = useState<ViewState>("form");
 
   const submitDisabled = useMemo(
-    () =>
-      state === "submitting" ||
-      newPassword.trim().length < 8 ||
-      confirmPassword.trim() === "",
-    [confirmPassword, newPassword, state],
+    () => state === "submitting" || newPassword.trim().length < 8 || confirmPassword.trim() === "",
+    [confirmPassword, newPassword, state]
   );
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -66,14 +63,20 @@ export default function PasswordResetPage() {
         {!hasToken ? (
           <div className="mt-3 space-y-3">
             <p className="text-sm text-stone-700">El enlace es inválido o no contiene token.</p>
-            <Link href="/" className="inline-block rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-800">
+            <Link
+              href="/"
+              className="inline-block rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-800"
+            >
               Volver al inicio
             </Link>
           </div>
         ) : state === "success" ? (
           <div className="mt-3 space-y-3">
             <p className="text-sm text-emerald-700">Contraseña actualizada correctamente.</p>
-            <Link href="/" className="inline-block rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-800">
+            <Link
+              href="/"
+              className="inline-block rounded-lg border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-800"
+            >
               Ir a iniciar sesión
             </Link>
           </div>
@@ -107,4 +110,3 @@ export default function PasswordResetPage() {
     </main>
   );
 }
-

@@ -75,7 +75,7 @@ export function buildFirmasLineas(input: {
     buildFirmaBloqueLineas({
       bloque,
       baseIndentLevel,
-    }),
+    })
   );
 }
 
@@ -92,20 +92,23 @@ export function getFirmaLineInlineOffsetCss(linea: Pick<FirmaLinea, "inlineOffse
   return `${inlineOffsetChars}ch`;
 }
 
-export function getFirmaLineBaseIndentPt(linea: Pick<FirmaLinea, "indentLevel">, tabSizePt: number): number {
+export function getFirmaLineBaseIndentPt(
+  linea: Pick<FirmaLinea, "indentLevel">,
+  tabSizePt: number
+): number {
   return tabSizePt * linea.indentLevel;
 }
 
 export function getFirmaLineInlineOffsetPt(
   linea: Pick<FirmaLinea, "inlineOffsetChars">,
-  monospaceCharWidthPt: number,
+  monospaceCharWidthPt: number
 ): number {
   return monospaceCharWidthPt * (linea.inlineOffsetChars ?? 0);
 }
 
 export function buildFirmasInstitucionalesLineas(
   input: FirmasInstitucionalesInput,
-  startIndentLevel = 0,
+  startIndentLevel = 0
 ): FirmaLinea[] {
   return buildFirmasLineas({
     baseIndentLevel: startIndentLevel,

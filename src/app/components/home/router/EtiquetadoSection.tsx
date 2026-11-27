@@ -40,10 +40,14 @@ export function EtiquetadoSection(props: EtiquetadoSectionProps) {
       onDeleteEstanteria={(codigo, piso) => void deleteEtiquetadoEstanteria(codigo, piso)}
       onCreateCodigoSIE={(input) => void createEtiquetadoCodigoSIE(input)}
       onUpdateCodigoSIE={(input) => void updateEtiquetadoCodigoSIE(input)}
-      onDeleteCodigoSIE={(codigoSIEId, codigo) => void deleteEtiquetadoCodigoSIE(codigoSIEId, codigo)}
+      onDeleteCodigoSIE={(codigoSIEId, codigo) =>
+        void deleteEtiquetadoCodigoSIE(codigoSIEId, codigo)
+      }
       onCreateCaja={(input) => void createEtiquetadoCaja(input)}
       onDeleteCaja={(codigoDepositoGeneral) => void deleteEtiquetadoCaja(codigoDepositoGeneral)}
-      onPrintCaja={(codigoDepositoGeneral, orientacion) => printEtiquetaCaja(codigoDepositoGeneral, orientacion)}
+      onPrintCaja={(codigoDepositoGeneral, orientacion) =>
+        printEtiquetaCaja(codigoDepositoGeneral, orientacion)
+      }
       onPrintListadoCajas={printListadoCajas}
       onPrintTodas={(cajas) => printTodasEtiquetas(cajas)}
     />

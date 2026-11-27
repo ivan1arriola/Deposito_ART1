@@ -249,7 +249,9 @@ export default async function ResumenTallasTodaUnidadPage({
             <article key={talla.key} className="section">
               <div className="section-header">
                 <h2 className="section-title">{talla.label}</h2>
-                <p className="section-subtitle">Conteo absoluto por talle registrado en toda la unidad.</p>
+                <p className="section-subtitle">
+                  Conteo absoluto por talle registrado en toda la unidad.
+                </p>
               </div>
               <table>
                 <thead>

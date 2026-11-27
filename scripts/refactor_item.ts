@@ -44,7 +44,7 @@ const replacements = [
   { from: /\bitemId\b/g, to: "equipoId" },
   { from: /\bitemIds\b/g, to: "equipoIds" },
   { from: /\bItemId\b/g, to: "EquipoId" },
-  
+
   // Specific casing and compounds
   { from: /\bMovimientoItem\b/g, to: "MovimientoEquipo" },
   { from: /\bmovimientoItem\b/g, to: "movimientoEquipo" },
@@ -57,14 +57,14 @@ const replacements = [
   { from: /\bitemCodigoSIE\b/g, to: "equipoCodigoSIE" },
   { from: /\bitemCodigoSieId\b/g, to: "equipoCodigoSieId" },
   { from: /\bcajaItemCodigoSIE\b/g, to: "cajaEquipoCodigoSIE" },
-  
+
   // Paths
   { from: /\/api\/items/g, to: "/api/equipos" },
   { from: /\/api\/stock\/item-trace/g, to: "/api/stock/equipo-trace" },
   { from: /item-ordering/g, to: "equipo-ordering" },
   { from: /stock-item-trace/g, to: "stock-equipo-trace" },
   { from: /\[itemId\]/g, to: "[equipoId]" },
-  
+
   // Plurals and specific edge cases
   { from: /\bITEM\b/g, to: "EQUIPO" },
   { from: /\bITEMS\b/g, to: "EQUIPOS" },

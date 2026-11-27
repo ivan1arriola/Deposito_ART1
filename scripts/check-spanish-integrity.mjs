@@ -163,7 +163,10 @@ function buildSpellingSegments(filePath, text) {
 
 function matchCasing(original, replacement) {
   if (original.toUpperCase() === original) return replacement.toUpperCase();
-  if (original[0].toUpperCase() === original[0] && original.slice(1).toLowerCase() === original.slice(1))
+  if (
+    original[0].toUpperCase() === original[0] &&
+    original.slice(1).toLowerCase() === original.slice(1)
+  )
     return replacement[0].toUpperCase() + replacement.slice(1);
   return replacement;
 }
@@ -181,11 +184,9 @@ function collectCommonSpanishTypos(filePath, text, findings, fixEdits) {
     const segmentText = segment.content;
     const trimmedSegmentText = segmentText.trim();
     const hasNaturalLanguageShape =
-      /\s/.test(trimmedSegmentText) ||
-      /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/u.test(trimmedSegmentText);
+      /\s/.test(trimmedSegmentText) || /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/u.test(trimmedSegmentText);
     const looksTechnicalToken =
-      /[\/_-]/.test(trimmedSegmentText) ||
-      /^[A-Z0-9_]+$/.test(trimmedSegmentText);
+      /[\/_-]/.test(trimmedSegmentText) || /^[A-Z0-9_]+$/.test(trimmedSegmentText);
 
     if (!hasNaturalLanguageShape || looksTechnicalToken) {
       continue;
@@ -196,7 +197,7 @@ function collectCommonSpanishTypos(filePath, text, findings, fixEdits) {
         const typoIndex = (match.index ?? 0) + segment.index;
         const found = match[0];
         findings.push(
-          `[SPANISH] ${filePath}:${lineNumberAt(text, typoIndex)} posible typo habitual "${found}"; sugerido: "${typo.correct}"`,
+          `[SPANISH] ${filePath}:${lineNumberAt(text, typoIndex)} posible typo habitual "${found}"; sugerido: "${typo.correct}"`
         );
         if (DO_FIX) {
           fixEdits.push({
@@ -236,14 +237,14 @@ for (const filePath of listTrackedFiles()) {
     const nfdMatch = text.match(NFD_NORMALIZE_RE);
     if (nfdMatch && nfdMatch.index !== undefined) {
       findings.push(
-        `[SPANISH] ${filePath}:${lineNumberAt(text, nfdMatch.index)} usa normalize(\"NFD\") fuera del módulo permitido`,
+        `[SPANISH] ${filePath}:${lineNumberAt(text, nfdMatch.index)} usa normalize(\"NFD\") fuera del módulo permitido`
       );
     }
 
     const diacriticsMatch = text.match(DIACRITICS_CLASS_RE);
     if (diacriticsMatch && diacriticsMatch.index !== undefined) {
       findings.push(
-        `[SPANISH] ${filePath}:${lineNumberAt(text, diacriticsMatch.index)} usa clase de diacríticos fuera del módulo permitido`,
+        `[SPANISH] ${filePath}:${lineNumberAt(text, diacriticsMatch.index)} usa clase de diacríticos fuera del módulo permitido`
       );
     }
   }
@@ -251,7 +252,7 @@ for (const filePath of listTrackedFiles()) {
   const transliterationMatch = text.match(TRANSLITERATION_PAIR_RE);
   if (transliterationMatch && transliterationMatch.index !== undefined) {
     findings.push(
-      `[SPANISH] ${filePath}:${lineNumberAt(text, transliterationMatch.index)} contiene transliteración manual acento->ASCII`,
+      `[SPANISH] ${filePath}:${lineNumberAt(text, transliterationMatch.index)} contiene transliteración manual acento->ASCII`
     );
   }
 
@@ -279,5 +280,7 @@ if (findings.length > 0) {
 }
 
 if (!findings.length) {
-  console.log("OK: no se detectaron riesgos de eliminación de tildes/Ñ fuera de los módulos permitidos.");
+  console.log(
+    "OK: no se detectaron riesgos de eliminación de tildes/Ñ fuera de los módulos permitidos."
+  );
 }

@@ -60,11 +60,16 @@ export function FormulariosPrestamosView({
   const [tab, setTab] = useState<PrestamosTab>(canWrite ? "registrar" : "vigentes");
   const isIntegratedView = fixedTab === null;
   const activeTab: PrestamosTab = fixedTab ?? (!canWrite && tab === "registrar" ? "vigentes" : tab);
-  const [selectedPrestamo, setSelectedPrestamo] = useState<StockDashboardData["prestamos"][number] | null>(null);
+  const [selectedPrestamo, setSelectedPrestamo] = useState<
+    StockDashboardData["prestamos"][number] | null
+  >(null);
   const [prestamoIdFilter, setPrestamoIdFilter] = useState("");
   const [returnDateByPrestamo, setReturnDateByPrestamo] = useState<Record<string, string>>({});
   const [returnItemsByPrestamo, setReturnItemsByPrestamo] = useState<
-    Record<string, Record<string, { estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion: string }>>
+    Record<
+      string,
+      Record<string, { estadoDevolucion: PrestamoEstadoEquipo; comentarioDevolucion: string }>
+    >
   >({});
   const [returnDialog, setReturnDialog] = useState<{
     prestamo: StockDashboardData["prestamos"][number];
@@ -114,7 +119,10 @@ export function FormulariosPrestamosView({
   function submitReturnDialog() {
     if (!returnDialog) return;
     const fechaDevolucion = returnDialog.fechaDevolucion.trim() || getTodayDateInput();
-    setReturnDateByPrestamo((prev) => ({ ...prev, [returnDialog.prestamo.prestamoId]: fechaDevolucion }));
+    setReturnDateByPrestamo((prev) => ({
+      ...prev,
+      [returnDialog.prestamo.prestamoId]: fechaDevolucion,
+    }));
     onReturnPrestamo(
       returnDialog.prestamo.prestamoId,
       fechaDevolucion,
@@ -125,14 +133,14 @@ export function FormulariosPrestamosView({
           estadoDevolucion: itemData.estadoDevolucion,
           comentarioDevolucion: itemData.comentarioDevolucion.trim() || undefined,
         };
-      }),
+      })
     );
     setReturnDialog(null);
   }
 
   const getReturnItemData = (
     prestamoId: string,
-    equipo: StockDashboardData["prestamos"][number]["equipos"][number],
+    equipo: StockDashboardData["prestamos"][number]["equipos"][number]
   ) => {
     const byPrestamo = returnItemsByPrestamo[prestamoId];
     if (byPrestamo && byPrestamo[equipo.equipoId]) return byPrestamo[equipo.equipoId];
@@ -152,12 +160,16 @@ export function FormulariosPrestamosView({
         prestamo.destinatarioTipo && prestamo.destinatarioTipo !== "EXTERNO"
           ? prestamo.destinatarioTipo
           : "PERSONAL",
-      destinatarioCi: prestamo.clasePrestamo === "INTERNO" ? prestamo.destinatarioCi ?? "" : "",
-      destinatarioExternoGrado: prestamo.clasePrestamo === "EXTERNO" ? prestamo.destinatarioGrado ?? "" : "",
+      destinatarioCi: prestamo.clasePrestamo === "INTERNO" ? (prestamo.destinatarioCi ?? "") : "",
+      destinatarioExternoGrado:
+        prestamo.clasePrestamo === "EXTERNO" ? (prestamo.destinatarioGrado ?? "") : "",
       destinatarioExternoNombre: prestamo.clasePrestamo === "EXTERNO" ? externalName.nombre : "",
-      destinatarioExternoApellido: prestamo.clasePrestamo === "EXTERNO" ? externalName.apellido : "",
-      destinatarioExternoCi: prestamo.clasePrestamo === "EXTERNO" ? prestamo.destinatarioCi ?? "" : "",
-      destinatarioExternoUnidadDestino: prestamo.clasePrestamo === "EXTERNO" ? prestamo.destinatarioUnidadDestino ?? "" : "",
+      destinatarioExternoApellido:
+        prestamo.clasePrestamo === "EXTERNO" ? externalName.apellido : "",
+      destinatarioExternoCi:
+        prestamo.clasePrestamo === "EXTERNO" ? (prestamo.destinatarioCi ?? "") : "",
+      destinatarioExternoUnidadDestino:
+        prestamo.clasePrestamo === "EXTERNO" ? (prestamo.destinatarioUnidadDestino ?? "") : "",
       fechaPrestamo: prestamo.fechaPrestamo || getTodayDateInput(),
       fechaEstimadaDevolucionTexto: prestamo.fechaEstimadaDevolucionTexto ?? "",
       fechaDevolucion: prestamo.fechaDevolucion || getTodayDateInput(),
@@ -188,8 +200,12 @@ export function FormulariosPrestamosView({
       cantidad: Number(equipo.cantidad),
       estadoEntrega: equipo.estadoEntrega,
       comentarioEntrega: equipo.comentarioEntrega.trim() || undefined,
-      estadoDevolucion: editDialog.prestamo.estado === "DEVUELTO" ? equipo.estadoDevolucion : undefined,
-      comentarioDevolucion: editDialog.prestamo.estado === "DEVUELTO" ? equipo.comentarioDevolucion.trim() || undefined : undefined,
+      estadoDevolucion:
+        editDialog.prestamo.estado === "DEVUELTO" ? equipo.estadoDevolucion : undefined,
+      comentarioDevolucion:
+        editDialog.prestamo.estado === "DEVUELTO"
+          ? equipo.comentarioDevolucion.trim() || undefined
+          : undefined,
     }));
 
     if (payloadItems.some((equipo) => !Number.isInteger(equipo.cantidad) || equipo.cantidad <= 0)) {
@@ -209,7 +225,9 @@ export function FormulariosPrestamosView({
         !editDialog.destinatarioExternoApellido.trim() ||
         !editDialog.destinatarioExternoUnidadDestino.trim()
       ) {
-        setEditDialogError("Completa grado, nombre, apellido y unidad de destino del destinatario externo.");
+        setEditDialogError(
+          "Completa grado, nombre, apellido y unidad de destino del destinatario externo."
+        );
         return;
       }
       if (!isValidUruguayanCi(editDialog.destinatarioExternoCi.trim())) {
@@ -222,8 +240,10 @@ export function FormulariosPrestamosView({
     try {
       await onEditPrestamo(editDialog.prestamo.prestamoId, {
         clasePrestamo: editDialog.clasePrestamo,
-        destinatarioTipo: editDialog.clasePrestamo === "INTERNO" ? editDialog.destinatarioTipo : undefined,
-        destinatarioCi: editDialog.clasePrestamo === "INTERNO" ? editDialog.destinatarioCi.trim() : undefined,
+        destinatarioTipo:
+          editDialog.clasePrestamo === "INTERNO" ? editDialog.destinatarioTipo : undefined,
+        destinatarioCi:
+          editDialog.clasePrestamo === "INTERNO" ? editDialog.destinatarioCi.trim() : undefined,
         destinatarioExterno:
           editDialog.clasePrestamo === "EXTERNO"
             ? {
@@ -236,7 +256,8 @@ export function FormulariosPrestamosView({
             : undefined,
         fechaPrestamo: editDialog.fechaPrestamo.trim(),
         fechaEstimadaDevolucionTexto: editDialog.fechaEstimadaDevolucionTexto.trim() || undefined,
-        fechaDevolucion: editDialog.prestamo.estado === "DEVUELTO" ? editDialog.fechaDevolucion.trim() : undefined,
+        fechaDevolucion:
+          editDialog.prestamo.estado === "DEVUELTO" ? editDialog.fechaDevolucion.trim() : undefined,
         comentarios: editDialog.comentarios.trim() || undefined,
         motivo,
         equipos: payloadItems,
@@ -251,12 +272,17 @@ export function FormulariosPrestamosView({
   }
 
   const equiposOrdenados = useMemo(
-    () => [...equipos].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })),
-    [equipos],
+    () =>
+      [...equipos].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })),
+    [equipos]
   );
 
   const destinatarioOptions = useMemo(() => {
-    return buildDestinatarioOptions(prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales);
+    return buildDestinatarioOptions(
+      prestamoDraft.destinatarioTipo,
+      personal,
+      oficialesSuboficiales
+    );
   }, [prestamoDraft.destinatarioTipo, personal, oficialesSuboficiales]);
   const actuanteOptions = useMemo(() => {
     return buildActuanteOptions(oficialesSuboficiales, personal);
@@ -264,11 +290,13 @@ export function FormulariosPrestamosView({
 
   const prestamosVigentes = useMemo(
     () => prestamos.filter((prestamo) => prestamo.estado === "PENDIENTE"),
-    [prestamos],
+    [prestamos]
   );
   const prestamosVigentesFiltrados = useMemo(() => {
     if (normalizedPrestamoIdFilter === "") return prestamosVigentes;
-    return prestamosVigentes.filter((prestamo) => prestamo.prestamoId.includes(normalizedPrestamoIdFilter));
+    return prestamosVigentes.filter((prestamo) =>
+      prestamo.prestamoId.includes(normalizedPrestamoIdFilter)
+    );
   }, [prestamosVigentes, normalizedPrestamoIdFilter]);
   const resumenPrestamosVigentesPrintHref = useMemo(() => {
     const params = new URLSearchParams();
@@ -285,13 +313,13 @@ export function FormulariosPrestamosView({
   const selectedDestinatario = useMemo(
     () =>
       prestamoDraft.clasePrestamo === "INTERNO"
-        ? destinatarioOptions.find((option) => option.ci === prestamoDraft.destinatarioCi) ?? null
+        ? (destinatarioOptions.find((option) => option.ci === prestamoDraft.destinatarioCi) ?? null)
         : null,
-    [destinatarioOptions, prestamoDraft.clasePrestamo, prestamoDraft.destinatarioCi],
+    [destinatarioOptions, prestamoDraft.clasePrestamo, prestamoDraft.destinatarioCi]
   );
   const selectedActuante = useMemo(
     () => actuanteOptions.find((option) => option.ci === prestamoDraft.actuanteCi) ?? null,
-    [actuanteOptions, prestamoDraft.actuanteCi],
+    [actuanteOptions, prestamoDraft.actuanteCi]
   );
   const draftDestinatarioResumen = useMemo(() => {
     if (prestamoDraft.clasePrestamo === "PENDIENTE") {
@@ -301,11 +329,16 @@ export function FormulariosPrestamosView({
       };
     }
     if (prestamoDraft.clasePrestamo === "EXTERNO") {
-      const nombre = [prestamoDraft.destinatarioExternoApellido.trim(), prestamoDraft.destinatarioExternoNombre.trim()]
+      const nombre = [
+        prestamoDraft.destinatarioExternoApellido.trim(),
+        prestamoDraft.destinatarioExternoNombre.trim(),
+      ]
         .filter(Boolean)
         .join(", ");
       return {
-        label: [prestamoDraft.destinatarioExternoGrado.trim(), nombre].filter(Boolean).join(" ") || "Sin completar",
+        label:
+          [prestamoDraft.destinatarioExternoGrado.trim(), nombre].filter(Boolean).join(" ") ||
+          "Sin completar",
         ci: prestamoDraft.destinatarioExternoCi.trim(),
       };
     }
@@ -320,11 +353,15 @@ export function FormulariosPrestamosView({
   }, [editDialog, personal, oficialesSuboficiales]);
   const equiposConSeleccion = useMemo(
     () => prestamoDraft.equipos.filter((equipo) => equipo.equipoId.trim() !== "").length,
-    [prestamoDraft.equipos],
+    [prestamoDraft.equipos]
   );
   const totalUnidadesPrestadas = useMemo(
-    () => prestamoDraft.equipos.reduce((total, equipo) => total + (Number(equipo.cantidad) > 0 ? Number(equipo.cantidad) : 0), 0),
-    [prestamoDraft.equipos],
+    () =>
+      prestamoDraft.equipos.reduce(
+        (total, equipo) => total + (Number(equipo.cantidad) > 0 ? Number(equipo.cantidad) : 0),
+        0
+      ),
+    [prestamoDraft.equipos]
   );
 
   const headerTitle =
@@ -358,7 +395,15 @@ export function FormulariosPrestamosView({
             disabled={loading}
             className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
           >
-            {loading ? <LoadingInline label="Recargando..." size="xs" textClassName="text-xs font-semibold text-stone-700" /> : "Recargar"}
+            {loading ? (
+              <LoadingInline
+                label="Recargando..."
+                size="xs"
+                textClassName="text-xs font-semibold text-stone-700"
+              />
+            ) : (
+              "Recargar"
+            )}
           </button>
         </div>
 
@@ -391,7 +436,11 @@ export function FormulariosPrestamosView({
         ) : null}
       </article>
 
-      {error ? <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
+      {error ? (
+        <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </p>
+      ) : null}
 
       {activeTab === "vigentes" || activeTab === "historial" ? (
         <article className="ej-card rounded-2xl p-4">
@@ -416,7 +465,9 @@ export function FormulariosPrestamosView({
             <div className="flex flex-wrap equipos-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-stone-900">Registrar prestamo</h3>
-                <p className="mt-1 text-xs text-stone-600">Completa los pasos en orden para evitar errores al guardar.</p>
+                <p className="mt-1 text-xs text-stone-600">
+                  Completa los pasos en orden para evitar errores al guardar.
+                </p>
               </div>
               <span className="rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-stone-700">
                 {prestamoClaseLabel(prestamoDraft.clasePrestamo)}
@@ -424,27 +475,35 @@ export function FormulariosPrestamosView({
             </div>
 
             <section className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Resumen rapido</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+                Resumen rapido
+              </p>
               <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-amber-900 md:grid-cols-2">
                 <p>
                   <span className="font-semibold">Destinatario:</span>{" "}
                   {draftDestinatarioResumen.label}
                 </p>
                 <p>
-                  <span className="font-semibold">Por orden de:</span> {selectedActuante ? selectedActuante.label : "Sin seleccionar"}
+                  <span className="font-semibold">Por orden de:</span>{" "}
+                  {selectedActuante ? selectedActuante.label : "Sin seleccionar"}
                 </p>
                 <p>
-                  <span className="font-semibold">Clase:</span> {prestamoClaseLabel(prestamoDraft.clasePrestamo)}
+                  <span className="font-semibold">Clase:</span>{" "}
+                  {prestamoClaseLabel(prestamoDraft.clasePrestamo)}
                 </p>
                 <p>
                   <span className="font-semibold">CI:</span>{" "}
-                  {draftDestinatarioResumen.ci ? formatUruguayanCi(draftDestinatarioResumen.ci) : "Pendiente"}
+                  {draftDestinatarioResumen.ci
+                    ? formatUruguayanCi(draftDestinatarioResumen.ci)
+                    : "Pendiente"}
                 </p>
                 <p>
-                  <span className="font-semibold">Fecha prestamo:</span> {prestamoDraft.fechaPrestamo.trim() || "Sin definir"}
+                  <span className="font-semibold">Fecha prestamo:</span>{" "}
+                  {prestamoDraft.fechaPrestamo.trim() || "Sin definir"}
                 </p>
                 <p>
-                  <span className="font-semibold">Equipos:</span> {equiposConSeleccion}/{prestamoDraft.equipos.length} seleccionados
+                  <span className="font-semibold">Equipos:</span> {equiposConSeleccion}/
+                  {prestamoDraft.equipos.length} seleccionados
                   {" · "}
                   {totalUnidadesPrestadas} unidades
                 </p>
@@ -452,9 +511,12 @@ export function FormulariosPrestamosView({
             </section>
 
             <section className="mt-3 rounded-xl border border-stone-200 bg-stone-50/80 p-3 md:p-4">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-700">1) Destinatario y autorizacion</h4>
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+                1) Destinatario y autorizacion
+              </h4>
               <p className="mt-1 text-xs text-stone-600">
-                Define si el préstamo es interno, externo o si el destinatario queda pendiente para completarlo después.
+                Define si el préstamo es interno, externo o si el destinatario queda pendiente para
+                completarlo después.
               </p>
               <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                 <label className="text-xs text-stone-700 md:col-span-2">
@@ -478,7 +540,9 @@ export function FormulariosPrestamosView({
                       <select
                         value={prestamoDraft.destinatarioTipo}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoDraftChange("destinatarioTipo", event.target.value)}
+                        onChange={(event) =>
+                          onPrestamoDraftChange("destinatarioTipo", event.target.value)
+                        }
                         className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
                       >
                         <option value="PERSONAL">Subalternos</option>
@@ -508,7 +572,9 @@ export function FormulariosPrestamosView({
                       <input
                         value={prestamoDraft.destinatarioExternoGrado}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoGrado", event.target.value)}
+                        onChange={(event) =>
+                          onPrestamoDraftChange("destinatarioExternoGrado", event.target.value)
+                        }
                         placeholder="Ej: Sgto., Tte., Cabo"
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                       />
@@ -518,7 +584,9 @@ export function FormulariosPrestamosView({
                       <input
                         value={prestamoDraft.destinatarioExternoCi}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoCi", event.target.value)}
+                        onChange={(event) =>
+                          onPrestamoDraftChange("destinatarioExternoCi", event.target.value)
+                        }
                         placeholder="Solo números"
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                       />
@@ -528,7 +596,9 @@ export function FormulariosPrestamosView({
                       <input
                         value={prestamoDraft.destinatarioExternoNombre}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoNombre", event.target.value)}
+                        onChange={(event) =>
+                          onPrestamoDraftChange("destinatarioExternoNombre", event.target.value)
+                        }
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                       />
                     </label>
@@ -537,7 +607,9 @@ export function FormulariosPrestamosView({
                       <input
                         value={prestamoDraft.destinatarioExternoApellido}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoApellido", event.target.value)}
+                        onChange={(event) =>
+                          onPrestamoDraftChange("destinatarioExternoApellido", event.target.value)
+                        }
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                       />
                     </label>
@@ -546,7 +618,12 @@ export function FormulariosPrestamosView({
                       <input
                         value={prestamoDraft.destinatarioExternoUnidadDestino}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoDraftChange("destinatarioExternoUnidadDestino", event.target.value)}
+                        onChange={(event) =>
+                          onPrestamoDraftChange(
+                            "destinatarioExternoUnidadDestino",
+                            event.target.value
+                          )
+                        }
                         placeholder="Unidad u organismo externo"
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                       />
@@ -556,7 +633,8 @@ export function FormulariosPrestamosView({
 
                 {prestamoDraft.clasePrestamo === "PENDIENTE" ? (
                   <p className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 md:col-span-2">
-                    El préstamo se guardará sin destinatario y luego podrá completarse desde la edición.
+                    El préstamo se guardará sin destinatario y luego podrá completarse desde la
+                    edición.
                   </p>
                 ) : null}
 
@@ -575,8 +653,12 @@ export function FormulariosPrestamosView({
             </section>
 
             <section className="mt-3 rounded-xl border border-stone-200 bg-white p-3 md:p-4">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-700">2) Datos del prestamo</h4>
-              <p className="mt-1 text-xs text-stone-600">Completa fecha, estimacion de devolucion y cualquier observacion relevante.</p>
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+                2) Datos del prestamo
+              </h4>
+              <p className="mt-1 text-xs text-stone-600">
+                Completa fecha, estimacion de devolucion y cualquier observacion relevante.
+              </p>
               <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                 <label className="text-xs text-stone-700">
                   Fecha prestamo
@@ -594,7 +676,9 @@ export function FormulariosPrestamosView({
                   <input
                     value={prestamoDraft.fechaEstimadaDevolucionTexto}
                     disabled={prestamoSaving}
-                    onChange={(event) => onPrestamoDraftChange("fechaEstimadaDevolucionTexto", event.target.value)}
+                    onChange={(event) =>
+                      onPrestamoDraftChange("fechaEstimadaDevolucionTexto", event.target.value)
+                    }
                     placeholder="Ej: 10 dias, fin de campana, 2 semanas"
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   />
@@ -615,8 +699,12 @@ export function FormulariosPrestamosView({
 
             <section className="mt-3 rounded-xl border border-stone-200 bg-white p-3 md:p-4">
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-700">3) Equipos prestados</h4>
-                <p className="mt-1 text-xs text-stone-600">Agrega cada equipo una sola vez e indica su estado de entrega.</p>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+                  3) Equipos prestados
+                </h4>
+                <p className="mt-1 text-xs text-stone-600">
+                  Agrega cada equipo una sola vez e indica su estado de entrega.
+                </p>
               </div>
 
               {equiposConSeleccion === 0 ? (
@@ -636,7 +724,9 @@ export function FormulariosPrestamosView({
                       <select
                         value={equipo.equipoId}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoItemChange(index, "equipoId", event.target.value)}
+                        onChange={(event) =>
+                          onPrestamoItemChange(index, "equipoId", event.target.value)
+                        }
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
                       >
                         <option value="">Seleccionar equipo</option>
@@ -645,7 +735,8 @@ export function FormulariosPrestamosView({
                             if (equipoOption.equipoId === equipo.equipoId) return true;
                             return !prestamoDraft.equipos.some(
                               (selectedItem, selectedIndex) =>
-                                selectedIndex !== index && selectedItem.equipoId === equipoOption.equipoId,
+                                selectedIndex !== index &&
+                                selectedItem.equipoId === equipoOption.equipoId
                             );
                           })
                           .map((equipoOption) => (
@@ -663,7 +754,9 @@ export function FormulariosPrestamosView({
                         min={1}
                         value={equipo.cantidad}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoItemChange(index, "cantidad", event.target.value)}
+                        onChange={(event) =>
+                          onPrestamoItemChange(index, "cantidad", event.target.value)
+                        }
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
                       />
                     </label>
@@ -673,7 +766,9 @@ export function FormulariosPrestamosView({
                       <select
                         value={equipo.estadoEntrega}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoItemChange(index, "estadoEntrega", event.target.value)}
+                        onChange={(event) =>
+                          onPrestamoItemChange(index, "estadoEntrega", event.target.value)
+                        }
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
                       >
                         {ESTADO_OPTIONS.map((estado) => (
@@ -689,7 +784,9 @@ export function FormulariosPrestamosView({
                       <input
                         value={equipo.comentarioEntrega}
                         disabled={prestamoSaving}
-                        onChange={(event) => onPrestamoItemChange(index, "comentarioEntrega", event.target.value)}
+                        onChange={(event) =>
+                          onPrestamoItemChange(index, "comentarioEntrega", event.target.value)
+                        }
                         placeholder="Comentario del equipo (opcional)"
                         className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-normal text-stone-900"
                       />
@@ -740,7 +837,12 @@ export function FormulariosPrestamosView({
                 className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-50"
               >
                 {prestamoSaving ? (
-                  <LoadingInline label="Guardando..." size="xs" tone="light" textClassName="text-xs font-semibold text-white" />
+                  <LoadingInline
+                    label="Guardando..."
+                    size="xs"
+                    tone="light"
+                    textClassName="text-xs font-semibold text-white"
+                  />
                 ) : (
                   "Guardar e imprimir"
                 )}
@@ -821,28 +923,61 @@ export function FormulariosPrestamosView({
             </header>
 
             <div className="grid grid-cols-1 gap-2 text-sm text-stone-700 md:grid-cols-2">
-              <p><span className="font-semibold text-stone-900">Identificador:</span> {selectedPrestamo.prestamoId}</p>
-              <p><span className="font-semibold text-stone-900">Estado:</span> {selectedPrestamo.estado}</p>
-              <p><span className="font-semibold text-stone-900">Clase:</span> {prestamoClaseLabel(selectedPrestamo.clasePrestamo)}</p>
-              <p><span className="font-semibold text-stone-900">Destinatario:</span> {selectedPrestamo.destinatarioEtiqueta}</p>
-              <p><span className="font-semibold text-stone-900">CI:</span> {selectedPrestamo.destinatarioCi ? formatUruguayanCi(selectedPrestamo.destinatarioCi) : "Pendiente"}</p>
+              <p>
+                <span className="font-semibold text-stone-900">Identificador:</span>{" "}
+                {selectedPrestamo.prestamoId}
+              </p>
+              <p>
+                <span className="font-semibold text-stone-900">Estado:</span>{" "}
+                {selectedPrestamo.estado}
+              </p>
+              <p>
+                <span className="font-semibold text-stone-900">Clase:</span>{" "}
+                {prestamoClaseLabel(selectedPrestamo.clasePrestamo)}
+              </p>
+              <p>
+                <span className="font-semibold text-stone-900">Destinatario:</span>{" "}
+                {selectedPrestamo.destinatarioEtiqueta}
+              </p>
+              <p>
+                <span className="font-semibold text-stone-900">CI:</span>{" "}
+                {selectedPrestamo.destinatarioCi
+                  ? formatUruguayanCi(selectedPrestamo.destinatarioCi)
+                  : "Pendiente"}
+              </p>
               {selectedPrestamo.destinatarioUnidadDestino ? (
-                <p><span className="font-semibold text-stone-900">Unidad destino:</span> {selectedPrestamo.destinatarioUnidadDestino}</p>
+                <p>
+                  <span className="font-semibold text-stone-900">Unidad destino:</span>{" "}
+                  {selectedPrestamo.destinatarioUnidadDestino}
+                </p>
               ) : null}
-              <p><span className="font-semibold text-stone-900">Entregado por:</span> {selectedPrestamo.usuarioEntregaNombre}</p>
-              <p><span className="font-semibold text-stone-900">Por orden de:</span> {selectedPrestamo.actuanteNombre ?? "No registrado"}</p>
+              <p>
+                <span className="font-semibold text-stone-900">Entregado por:</span>{" "}
+                {selectedPrestamo.usuarioEntregaNombre}
+              </p>
+              <p>
+                <span className="font-semibold text-stone-900">Por orden de:</span>{" "}
+                {selectedPrestamo.actuanteNombre ?? "No registrado"}
+              </p>
               <p>
                 <span className="font-semibold text-stone-900">Recibido por:</span>{" "}
                 {selectedPrestamo.usuarioRecibeDevolucionNombre ?? "Pendiente"}
               </p>
-              <p><span className="font-semibold text-stone-900">Fecha prestamo:</span> {formatDateOnlyForDisplay(selectedPrestamo.fechaPrestamo)}</p>
+              <p>
+                <span className="font-semibold text-stone-900">Fecha prestamo:</span>{" "}
+                {formatDateOnlyForDisplay(selectedPrestamo.fechaPrestamo)}
+              </p>
               <p>
                 <span className="font-semibold text-stone-900">Fecha estimada devolución:</span>{" "}
-                {selectedPrestamo.fechaEstimadaDevolucionTexto?.trim() ? selectedPrestamo.fechaEstimadaDevolucionTexto : "-"}
+                {selectedPrestamo.fechaEstimadaDevolucionTexto?.trim()
+                  ? selectedPrestamo.fechaEstimadaDevolucionTexto
+                  : "-"}
               </p>
               <p>
                 <span className="font-semibold text-stone-900">Fecha devolución:</span>{" "}
-                {selectedPrestamo.fechaDevolucion ? formatDateOnlyForDisplay(selectedPrestamo.fechaDevolucion) : "Pendiente"}
+                {selectedPrestamo.fechaDevolucion
+                  ? formatDateOnlyForDisplay(selectedPrestamo.fechaDevolucion)
+                  : "Pendiente"}
               </p>
               <p>
                 <span className="font-semibold text-stone-900">Comentarios:</span>{" "}
@@ -851,18 +986,29 @@ export function FormulariosPrestamosView({
             </div>
 
             <section className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos prestados</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+                Equipos prestados
+              </p>
               <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
                 {selectedPrestamo.equipos.map((equipo) => (
-                  <div key={`${selectedPrestamo.prestamoId}-modal-${equipo.equipoId}`} className="mb-2 rounded-lg border border-stone-200 bg-white p-2 last:mb-0">
+                  <div
+                    key={`${selectedPrestamo.prestamoId}-modal-${equipo.equipoId}`}
+                    className="mb-2 rounded-lg border border-stone-200 bg-white p-2 last:mb-0"
+                  >
                     <p className="text-sm text-stone-700">
-                      <span className="font-semibold text-amber-700">{equipo.cantidad}</span> {equipo.nombre}
+                      <span className="font-semibold text-amber-700">{equipo.cantidad}</span>{" "}
+                      {equipo.nombre}
                     </p>
-                    <p className="text-xs text-stone-600">Entrega: {equipo.estadoEntrega}{equipo.comentarioEntrega ? ` | ${equipo.comentarioEntrega}` : ""}</p>
+                    <p className="text-xs text-stone-600">
+                      Entrega: {equipo.estadoEntrega}
+                      {equipo.comentarioEntrega ? ` | ${equipo.comentarioEntrega}` : ""}
+                    </p>
                     {selectedPrestamo.estado === "PENDIENTE" ? (
                       <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-[140px_minmax(0,1fr)]">
                         <select
-                          value={getReturnItemData(selectedPrestamo.prestamoId, equipo).estadoDevolucion}
+                          value={
+                            getReturnItemData(selectedPrestamo.prestamoId, equipo).estadoDevolucion
+                          }
                           disabled={returningPrestamoId === selectedPrestamo.prestamoId}
                           onChange={(event) =>
                             setReturnItemsByPrestamo((prev) => ({
@@ -879,13 +1025,19 @@ export function FormulariosPrestamosView({
                           className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700"
                         >
                           {ESTADO_OPTIONS.map((estado) => (
-                            <option key={`${selectedPrestamo.prestamoId}-${equipo.equipoId}-modal-${estado}`} value={estado}>
+                            <option
+                              key={`${selectedPrestamo.prestamoId}-${equipo.equipoId}-modal-${estado}`}
+                              value={estado}
+                            >
                               {estado}
                             </option>
                           ))}
                         </select>
                         <input
-                          value={getReturnItemData(selectedPrestamo.prestamoId, equipo).comentarioDevolucion}
+                          value={
+                            getReturnItemData(selectedPrestamo.prestamoId, equipo)
+                              .comentarioDevolucion
+                          }
                           disabled={returningPrestamoId === selectedPrestamo.prestamoId}
                           onChange={(event) =>
                             setReturnItemsByPrestamo((prev) => ({
@@ -949,7 +1101,9 @@ export function FormulariosPrestamosView({
                   disabled={returningPrestamoId === selectedPrestamo.prestamoId}
                   className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
-                  {returningPrestamoId === selectedPrestamo.prestamoId ? "Guardando..." : "Devolver"}
+                  {returningPrestamoId === selectedPrestamo.prestamoId
+                    ? "Guardando..."
+                    : "Devolver"}
                 </button>
               ) : null}
               <button
@@ -975,14 +1129,18 @@ export function FormulariosPrestamosView({
             </header>
 
             <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-              <p className="text-xs text-stone-600">Fecha prestamo: {formatDateOnlyForDisplay(returnDialog.prestamo.fechaPrestamo)}</p>
+              <p className="text-xs text-stone-600">
+                Fecha prestamo: {formatDateOnlyForDisplay(returnDialog.prestamo.fechaPrestamo)}
+              </p>
               <label className="mt-3 block text-xs text-stone-700">
                 Fecha devolucion
                 <DateTextInput
                   value={returnDialog.fechaDevolucion}
                   disabled={returningPrestamoId === returnDialog.prestamo.prestamoId}
                   onChange={(value) =>
-                    setReturnDialog((current) => (current ? { ...current, fechaDevolucion: value } : current))
+                    setReturnDialog((current) =>
+                      current ? { ...current, fechaDevolucion: value } : current
+                    )
                   }
                   ariaLabel={`Fecha de devolución. Maximo ${maxDate}`}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -998,7 +1156,7 @@ export function FormulariosPrestamosView({
                           ...current,
                           fechaDevolucion: getTodayDateInput(),
                         }
-                      : current,
+                      : current
                   )
                 }
                 className="mt-2 rounded border border-stone-300 bg-white px-3 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-50"
@@ -1022,7 +1180,9 @@ export function FormulariosPrestamosView({
                 disabled={returningPrestamoId === returnDialog.prestamo.prestamoId}
                 className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {returningPrestamoId === returnDialog.prestamo.prestamoId ? "Guardando..." : "Confirmar devolución"}
+                {returningPrestamoId === returnDialog.prestamo.prestamoId
+                  ? "Guardando..."
+                  : "Confirmar devolución"}
               </button>
             </footer>
           </div>
@@ -1098,10 +1258,11 @@ export function FormulariosPrestamosView({
                           current
                             ? {
                                 ...current,
-                                destinatarioTipo: event.target.value as "PERSONAL" | "OFICIAL" | "SUBOFICIAL",
+                                destinatarioTipo: event.target.value as
+                                  "PERSONAL" | "OFICIAL" | "SUBOFICIAL",
                                 destinatarioCi: "",
                               }
-                            : current,
+                            : current
                         )
                       }
                       className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -1120,7 +1281,9 @@ export function FormulariosPrestamosView({
                       disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                       placeholder={`Buscar ${destinatarioTipoLabel(editDialog.destinatarioTipo).toLowerCase()} por grado, apellido, nombre o CI`}
                       onChange={(ci) =>
-                        setEditDialog((current) => (current ? { ...current, destinatarioCi: ci } : current))
+                        setEditDialog((current) =>
+                          current ? { ...current, destinatarioCi: ci } : current
+                        )
                       }
                     />
                   </div>
@@ -1136,7 +1299,9 @@ export function FormulariosPrestamosView({
                       disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                       onChange={(event) =>
                         setEditDialog((current) =>
-                          current ? { ...current, destinatarioExternoGrado: event.target.value } : current,
+                          current
+                            ? { ...current, destinatarioExternoGrado: event.target.value }
+                            : current
                         )
                       }
                       className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -1149,7 +1314,9 @@ export function FormulariosPrestamosView({
                       disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                       onChange={(event) =>
                         setEditDialog((current) =>
-                          current ? { ...current, destinatarioExternoCi: event.target.value } : current,
+                          current
+                            ? { ...current, destinatarioExternoCi: event.target.value }
+                            : current
                         )
                       }
                       className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -1162,7 +1329,9 @@ export function FormulariosPrestamosView({
                       disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                       onChange={(event) =>
                         setEditDialog((current) =>
-                          current ? { ...current, destinatarioExternoNombre: event.target.value } : current,
+                          current
+                            ? { ...current, destinatarioExternoNombre: event.target.value }
+                            : current
                         )
                       }
                       className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -1175,7 +1344,9 @@ export function FormulariosPrestamosView({
                       disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                       onChange={(event) =>
                         setEditDialog((current) =>
-                          current ? { ...current, destinatarioExternoApellido: event.target.value } : current,
+                          current
+                            ? { ...current, destinatarioExternoApellido: event.target.value }
+                            : current
                         )
                       }
                       className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -1188,7 +1359,9 @@ export function FormulariosPrestamosView({
                       disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                       onChange={(event) =>
                         setEditDialog((current) =>
-                          current ? { ...current, destinatarioExternoUnidadDestino: event.target.value } : current,
+                          current
+                            ? { ...current, destinatarioExternoUnidadDestino: event.target.value }
+                            : current
                         )
                       }
                       className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -1210,7 +1383,11 @@ export function FormulariosPrestamosView({
                 <DateTextInput
                   value={editDialog.fechaPrestamo}
                   disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
-                  onChange={(value) => setEditDialog((current) => (current ? { ...current, fechaPrestamo: value } : current))}
+                  onChange={(value) =>
+                    setEditDialog((current) =>
+                      current ? { ...current, fechaPrestamo: value } : current
+                    )
+                  }
                   ariaLabel={`Fecha préstamo. Maximo ${maxDate}`}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 />
@@ -1221,7 +1398,11 @@ export function FormulariosPrestamosView({
                   <DateTextInput
                     value={editDialog.fechaDevolucion}
                     disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
-                    onChange={(value) => setEditDialog((current) => (current ? { ...current, fechaDevolucion: value } : current))}
+                    onChange={(value) =>
+                      setEditDialog((current) =>
+                        current ? { ...current, fechaDevolucion: value } : current
+                      )
+                    }
                     ariaLabel={`Fecha devolución. Maximo ${maxDate}`}
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   />
@@ -1234,7 +1415,9 @@ export function FormulariosPrestamosView({
                   disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                   onChange={(event) =>
                     setEditDialog((current) =>
-                      current ? { ...current, fechaEstimadaDevolucionTexto: event.target.value } : current,
+                      current
+                        ? { ...current, fechaEstimadaDevolucionTexto: event.target.value }
+                        : current
                     )
                   }
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -1245,14 +1428,20 @@ export function FormulariosPrestamosView({
                 <input
                   value={editDialog.comentarios}
                   disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
-                  onChange={(event) => setEditDialog((current) => (current ? { ...current, comentarios: event.target.value } : current))}
+                  onChange={(event) =>
+                    setEditDialog((current) =>
+                      current ? { ...current, comentarios: event.target.value } : current
+                    )
+                  }
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                 />
               </label>
             </div>
 
             <section className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+                Equipos
+              </p>
               {editDialog.equipos.map((equipo, index) => (
                 <div
                   key={`edit-prestamo-equipo-${equipo.equipoId}`}
@@ -1281,14 +1470,20 @@ export function FormulariosPrestamosView({
                       setEditDialog((current) => {
                         if (!current) return current;
                         const nextItems = [...current.equipos];
-                        nextItems[index] = { ...nextItems[index], estadoEntrega: event.target.value as PrestamoEstadoEquipo };
+                        nextItems[index] = {
+                          ...nextItems[index],
+                          estadoEntrega: event.target.value as PrestamoEstadoEquipo,
+                        };
                         return { ...current, equipos: nextItems };
                       })
                     }
                     className="rounded border border-stone-300 px-3 py-2 text-sm"
                   >
                     {ESTADO_OPTIONS.map((estado) => (
-                      <option key={`edit-prestamo-equipo-${equipo.equipoId}-${estado}`} value={estado}>
+                      <option
+                        key={`edit-prestamo-equipo-${equipo.equipoId}-${estado}`}
+                        value={estado}
+                      >
                         {estado}
                       </option>
                     ))}
@@ -1300,7 +1495,10 @@ export function FormulariosPrestamosView({
                       setEditDialog((current) => {
                         if (!current) return current;
                         const nextItems = [...current.equipos];
-                        nextItems[index] = { ...nextItems[index], comentarioEntrega: event.target.value };
+                        nextItems[index] = {
+                          ...nextItems[index],
+                          comentarioEntrega: event.target.value,
+                        };
                         return { ...current, equipos: nextItems };
                       })
                     }
@@ -1316,14 +1514,20 @@ export function FormulariosPrestamosView({
                           setEditDialog((current) => {
                             if (!current) return current;
                             const nextItems = [...current.equipos];
-                            nextItems[index] = { ...nextItems[index], estadoDevolucion: event.target.value as PrestamoEstadoEquipo };
+                            nextItems[index] = {
+                              ...nextItems[index],
+                              estadoDevolucion: event.target.value as PrestamoEstadoEquipo,
+                            };
                             return { ...current, equipos: nextItems };
                           })
                         }
                         className="rounded border border-stone-300 px-3 py-2 text-sm"
                       >
                         {ESTADO_OPTIONS.map((estado) => (
-                          <option key={`edit-prestamo-devolucion-${equipo.equipoId}-${estado}`} value={estado}>
+                          <option
+                            key={`edit-prestamo-devolucion-${equipo.equipoId}-${estado}`}
+                            value={estado}
+                          >
                             {estado}
                           </option>
                         ))}
@@ -1335,7 +1539,10 @@ export function FormulariosPrestamosView({
                           setEditDialog((current) => {
                             if (!current) return current;
                             const nextItems = [...current.equipos];
-                            nextItems[index] = { ...nextItems[index], comentarioDevolucion: event.target.value };
+                            nextItems[index] = {
+                              ...nextItems[index],
+                              comentarioDevolucion: event.target.value,
+                            };
                             return { ...current, equipos: nextItems };
                           })
                         }
@@ -1353,13 +1560,19 @@ export function FormulariosPrestamosView({
               <input
                 value={editDialog.motivo}
                 disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
-                onChange={(event) => setEditDialog((current) => (current ? { ...current, motivo: event.target.value } : current))}
+                onChange={(event) =>
+                  setEditDialog((current) =>
+                    current ? { ...current, motivo: event.target.value } : current
+                  )
+                }
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               />
             </label>
 
             {editDialogError ? (
-              <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{editDialogError}</p>
+              <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+                {editDialogError}
+              </p>
             ) : null}
 
             <footer className="flex justify-end gap-2 border-t border-stone-200 pt-3">
@@ -1377,7 +1590,9 @@ export function FormulariosPrestamosView({
                 disabled={editingPrestamoId === editDialog.prestamo.prestamoId}
                 className="rounded-lg bg-sky-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {editingPrestamoId === editDialog.prestamo.prestamoId ? "Guardando..." : "Guardar cambios"}
+                {editingPrestamoId === editDialog.prestamo.prestamoId
+                  ? "Guardando..."
+                  : "Guardar cambios"}
               </button>
             </footer>
           </div>

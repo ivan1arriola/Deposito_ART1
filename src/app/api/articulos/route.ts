@@ -52,7 +52,7 @@ export async function POST(req: Request) {
   if (!nombre || !tipo) {
     return NextResponse.json(
       { error: "Payload inválido. 'nombre' es obligatorio y 'tipo' debe ser OFICINA o LIMPIEZA." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -71,7 +71,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json(created, { status: 201 });
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
       return NextResponse.json({ error: "El artículo ya existe." }, { status: 409 });
     }
 

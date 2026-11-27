@@ -48,11 +48,21 @@ export function PersonalTableDesktop({
             <th className="w-[12%] px-2 py-2">Apellidos</th>
             <th className="w-[13%] px-2 py-2">Nombres</th>
             <th className="w-[10%] px-2 py-2">Batería</th>
-            <th className="w-[6%] px-2 py-2" title="Parka">Parka</th>
-            <th className="w-[6%] px-2 py-2" title="Camisaco">Camis.</th>
-            <th className="w-[6%] px-2 py-2" title="Pantalon">Pant.</th>
-            <th className="w-[6%] px-2 py-2" title="Kepi">Kepi</th>
-            <th className="w-[6%] px-2 py-2" title="Calzado">Calz.</th>
+            <th className="w-[6%] px-2 py-2" title="Parka">
+              Parka
+            </th>
+            <th className="w-[6%] px-2 py-2" title="Camisaco">
+              Camis.
+            </th>
+            <th className="w-[6%] px-2 py-2" title="Pantalon">
+              Pant.
+            </th>
+            <th className="w-[6%] px-2 py-2" title="Kepi">
+              Kepi
+            </th>
+            <th className="w-[6%] px-2 py-2" title="Calzado">
+              Calz.
+            </th>
             <th className="w-[14%] px-2 py-2">Acciones</th>
           </tr>
         </thead>
@@ -65,8 +75,18 @@ export function PersonalTableDesktop({
 
             return (
               <Fragment key={persona.ci}>
-                <tr className={!ciValida ? "bg-[rgba(218,95,84,0.12)]" : isEven ? "bg-[rgba(248,245,236,0.92)]" : "bg-[rgba(239,234,220,0.88)]"}>
-                  <td className={`px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-bold text-red-700"}`}>
+                <tr
+                  className={
+                    !ciValida
+                      ? "bg-[rgba(218,95,84,0.12)]"
+                      : isEven
+                        ? "bg-[rgba(248,245,236,0.92)]"
+                        : "bg-[rgba(239,234,220,0.88)]"
+                  }
+                >
+                  <td
+                    className={`px-3 py-2 font-mono text-xs ${ciValida ? "text-stone-700" : "font-bold text-red-700"}`}
+                  >
                     <div>
                       {formatUruguayanCi(persona.ci)}
                       {!ciValida ? <span className="ml-1 text-red-700">(con error)</span> : null}
@@ -82,7 +102,9 @@ export function PersonalTableDesktop({
                       <div className="mt-1 text-[10px] text-stone-500">{`Cel: ${formatUruguayanMobileNumber(persona.telefonoContacto)}`}</div>
                     ) : null}
                   </td>
-                  <td className="px-2 py-2 text-stone-700">{persona.bateria?.nombre ?? "Sin batería"}</td>
+                  <td className="px-2 py-2 text-stone-700">
+                    {persona.bateria?.nombre ?? "Sin batería"}
+                  </td>
                   <td className="px-2 py-2 text-stone-900">{tallas.PARKA}</td>
                   <td className="px-2 py-2 text-stone-900">{tallas.CAMISACO}</td>
                   <td className="px-2 py-2 text-stone-900">{tallas.PANTALON}</td>

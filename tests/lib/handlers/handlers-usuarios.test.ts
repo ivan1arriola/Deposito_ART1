@@ -39,7 +39,7 @@ describe("Handlers de Usuarios", () => {
           mailReferencia: "jperez@referencia.local",
           rol: "EDITOR",
         },
-        { onSuccess },
+        { onSuccess }
       );
 
       expect(vi.mocked(api)).toHaveBeenCalledWith(
@@ -56,7 +56,7 @@ describe("Handlers de Usuarios", () => {
             rol: "EDITOR",
             activo: true,
           }),
-        }),
+        })
       );
       expect(onSuccess).toHaveBeenCalled();
     });
@@ -76,7 +76,7 @@ describe("Handlers de Usuarios", () => {
           usuario: "mgomez",
           mailReferencia: "",
         },
-        { onSuccess },
+        { onSuccess }
       );
 
       expect(vi.mocked(api)).toHaveBeenCalledWith(
@@ -90,7 +90,7 @@ describe("Handlers de Usuarios", () => {
             usuario: "mgomez",
             mailReferencia: "",
           }),
-        }),
+        })
       );
       expect(onSuccess).toHaveBeenCalled();
     });
@@ -108,7 +108,7 @@ describe("Handlers de Usuarios", () => {
         expect.objectContaining({
           method: "PUT",
           body: JSON.stringify({ rol: "READ_ONLY" }),
-        }),
+        })
       );
       expect(onSuccess).toHaveBeenCalled();
     });
@@ -126,7 +126,7 @@ describe("Handlers de Usuarios", () => {
         expect.objectContaining({
           method: "PUT",
           body: JSON.stringify({ password: "NuevaClave123" }),
-        }),
+        })
       );
       expect(onSuccess).toHaveBeenCalled();
     });
@@ -145,7 +145,7 @@ describe("Handlers de Usuarios", () => {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ activo: false }),
-        }),
+        })
       );
       expect(onSuccess).toHaveBeenCalled();
     });
@@ -160,7 +160,7 @@ describe("Handlers de Usuarios", () => {
 
       expect(vi.mocked(api)).toHaveBeenCalledWith(
         "/api/usuarios/USR123",
-        expect.objectContaining({ method: "DELETE" }),
+        expect.objectContaining({ method: "DELETE" })
       );
       expect(onSuccess).toHaveBeenCalled();
     });
@@ -181,7 +181,7 @@ describe("Handlers de Usuarios", () => {
 
       expect(vi.mocked(api)).toHaveBeenCalledWith(
         "/api/firma-config",
-        expect.objectContaining({ method: "PUT" }),
+        expect.objectContaining({ method: "PUT" })
       );
       expect(onSave).toHaveBeenCalled();
     });
@@ -190,7 +190,12 @@ describe("Handlers de Usuarios", () => {
       const onSave = vi.fn();
       const onSuccess = vi.fn();
       const onError = vi.fn();
-      const config = { encargadoRango: "Cap.", encargadoNombre: "Ana", oficialRango: "May.", oficialNombre: "Luis" };
+      const config = {
+        encargadoRango: "Cap.",
+        encargadoNombre: "Ana",
+        oficialRango: "May.",
+        oficialNombre: "Luis",
+      };
       vi.mocked(api).mockResolvedValue(config);
 
       await saveFirmaConfigHandler("Cap.", "Ana", "May.", "Luis", { onSave, onSuccess });
@@ -199,19 +204,19 @@ describe("Handlers de Usuarios", () => {
 
       vi.mocked(api).mockRejectedValue(new Error("Permiso denegado"));
       await expect(
-        saveFirmaConfigHandler("Cap.", "Ana", "May.", "Luis", { onSave, onError }),
+        saveFirmaConfigHandler("Cap.", "Ana", "May.", "Luis", { onSave, onError })
       ).rejects.toThrow("Permiso denegado");
       expect(onError).toHaveBeenCalledWith("Permiso denegado");
 
       vi.mocked(api).mockRejectedValue("fallo");
       await expect(
-        saveFirmaConfigHandler("Cap.", "Ana", "May.", "Luis", { onSave, onError }),
+        saveFirmaConfigHandler("Cap.", "Ana", "May.", "Luis", { onSave, onError })
       ).rejects.toBe("fallo");
       expect(onError).toHaveBeenCalledWith("No se pudo guardar la configuración.");
 
-      await expect(
-        saveFirmaConfigHandler("Cap.", "Ana", "May.", "Luis", { onSave }),
-      ).rejects.toBe("fallo");
+      await expect(saveFirmaConfigHandler("Cap.", "Ana", "May.", "Luis", { onSave })).rejects.toBe(
+        "fallo"
+      );
     });
   });
 
@@ -244,7 +249,7 @@ describe("Handlers de Usuarios", () => {
           mailReferencia: "alopez@referencia.local",
           rol: "ADMIN",
         },
-        {},
+        {}
       );
 
       expect(vi.mocked(api)).toHaveBeenCalledWith("/api/usuarios", {
@@ -270,8 +275,8 @@ describe("Handlers de Usuarios", () => {
         updateUsuarioProfileHandler(
           "U1",
           { nombre: "A", apellido: "B", usuario: "ab", mailReferencia: "" },
-          {},
-        ),
+          {}
+        )
       ).resolves.toBeUndefined();
       await expect(changeUserRoleHandler("U1", "EDITOR", {})).resolves.toBeUndefined();
       await expect(changeUserPasswordHandler("U1", "Clave1234", {})).resolves.toBeUndefined();
@@ -292,19 +297,19 @@ describe("Handlers de Usuarios", () => {
 
       vi.mocked(api).mockRejectedValue(new Error("Error específico"));
       await expect(
-        createUsuarioHandler({ ...baseInput, password: "123", rol: "EDITOR" }, { onError }),
+        createUsuarioHandler({ ...baseInput, password: "123", rol: "EDITOR" }, { onError })
       ).rejects.toThrow("Error específico");
       await expect(updateUsuarioProfileHandler("U1", baseInput, { onError })).rejects.toThrow(
-        "Error específico",
+        "Error específico"
       );
       await expect(changeUserRoleHandler("U1", "ADMIN", { onError })).rejects.toThrow(
-        "Error específico",
+        "Error específico"
       );
       await expect(changeUserPasswordHandler("U1", "123", { onError })).rejects.toThrow(
-        "Error específico",
+        "Error específico"
       );
       await expect(toggleUserActiveHandler("U1", false, { onError })).rejects.toThrow(
-        "Error específico",
+        "Error específico"
       );
       await expect(confirmUserEmailHandler("U1", { onError })).rejects.toThrow("Error específico");
       await expect(deleteUsuarioHandler("U1", { onError })).rejects.toThrow("Error específico");
@@ -312,7 +317,7 @@ describe("Handlers de Usuarios", () => {
 
       vi.mocked(api).mockRejectedValue("fallo");
       await expect(
-        createUsuarioHandler({ ...baseInput, password: "123", rol: "EDITOR" }, { onError }),
+        createUsuarioHandler({ ...baseInput, password: "123", rol: "EDITOR" }, { onError })
       ).rejects.toBe("fallo");
       expect(onError).toHaveBeenLastCalledWith("No se pudo crear el usuario.");
 
@@ -335,7 +340,7 @@ describe("Handlers de Usuarios", () => {
       expect(onError).toHaveBeenLastCalledWith("No se pudo eliminar el usuario.");
 
       await expect(
-        createUsuarioHandler({ ...baseInput, password: "123", rol: "EDITOR" }, {}),
+        createUsuarioHandler({ ...baseInput, password: "123", rol: "EDITOR" }, {})
       ).rejects.toBe("fallo");
       await expect(updateUsuarioProfileHandler("U1", baseInput, {})).rejects.toBe("fallo");
       await expect(changeUserRoleHandler("U1", "ADMIN", {})).rejects.toBe("fallo");

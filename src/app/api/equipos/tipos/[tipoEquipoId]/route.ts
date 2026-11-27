@@ -3,7 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { GENERAL_TIPO_EQUIPO_CLAVE, normalizeEquipoTipoClave } from "@/lib/equipo-tipos";
-import { applyTipoEquipoOrder, getOrderedTipoEquipoIds, insertTipoEquipoAtOrder } from "@/lib/tipo-equipo-ordering";
+import {
+  applyTipoEquipoOrder,
+  getOrderedTipoEquipoIds,
+  insertTipoEquipoAtOrder,
+} from "@/lib/tipo-equipo-ordering";
 
 type TipoEquipoPayload = {
   nombre?: string;
@@ -23,7 +27,10 @@ function parseOrden(value: unknown) {
   return parsed;
 }
 
-export async function PUT(request: Request, context: { params: Promise<{ tipoEquipoId: string }> }) {
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ tipoEquipoId: string }> }
+) {
   const auth = await authorizeRequest(request, "write_data");
   if (!auth.ok) return auth.response;
 
@@ -37,10 +44,18 @@ export async function PUT(request: Request, context: { params: Promise<{ tipoEqu
   const nombre = typeof body?.nombre === "string" ? body.nombre.trim() : "";
   const orden = parseOrden(body?.orden);
   const claveNormalizada = normalizeEquipoTipoClave(nombre);
-  if (!nombre || !claveNormalizada || claveNormalizada === GENERAL_TIPO_EQUIPO_CLAVE || (body?.orden !== undefined && orden === null)) {
+  if (
+    !nombre ||
+    !claveNormalizada ||
+    claveNormalizada === GENERAL_TIPO_EQUIPO_CLAVE ||
+    (body?.orden !== undefined && orden === null)
+  ) {
     return NextResponse.json(
-      { error: "Payload inválido. 'nombre' es obligatorio, no puede resolver a GENERAL y 'orden' debe ser entero positivo." },
-      { status: 400 },
+      {
+        error:
+          "Payload inválido. 'nombre' es obligatorio, no puede resolver a GENERAL y 'orden' debe ser entero positivo.",
+      },
+      { status: 400 }
     );
   }
 
@@ -52,9 +67,15 @@ export async function PUT(request: Request, context: { params: Promise<{ tipoEqu
         select: { tipoEquipoId: true, clave: true, nombre: true, orden: true },
       });
 
-      const currentIndex = currentOrderedIds.findIndex((currentTipoEquipoId) => currentTipoEquipoId === tipoEquipoId);
+      const currentIndex = currentOrderedIds.findIndex(
+        (currentTipoEquipoId) => currentTipoEquipoId === tipoEquipoId
+      );
       const fallbackOrder = currentIndex >= 0 ? currentIndex + 1 : currentOrderedIds.length;
-      const finalOrderedIds = insertTipoEquipoAtOrder(currentOrderedIds, tipoEquipoId, orden ?? fallbackOrder);
+      const finalOrderedIds = insertTipoEquipoAtOrder(
+        currentOrderedIds,
+        tipoEquipoId,
+        orden ?? fallbackOrder
+      );
 
       await tx.tipoEquipoCatalogo.update({
         where: { tipoEquipoId },
@@ -87,14 +108,25 @@ export async function PUT(request: Request, context: { params: Promise<{ tipoEqu
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Tipo de equipo no encontrado." }, { status: 404 });
-      if (code === "P2002") return NextResponse.json({ error: "Ya existe un tipo de equipo con ese nombre." }, { status: 409 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Tipo de equipo no encontrado." }, { status: 404 });
+      if (code === "P2002")
+        return NextResponse.json(
+          { error: "Ya existe un tipo de equipo con ese nombre." },
+          { status: 409 }
+        );
     }
-    return NextResponse.json({ error: "No se pudo actualizar el tipo de equipo." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo actualizar el tipo de equipo." },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(request: Request, context: { params: Promise<{ tipoEquipoId: string }> }) {
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ tipoEquipoId: string }> }
+) {
   const auth = await authorizeRequest(request, "delete_data");
   if (!auth.ok) return auth.response;
 
@@ -154,7 +186,12 @@ export async function DELETE(request: Request, context: { params: Promise<{ tipo
       equiposReasignadosAGeneral: deleted.equiposReasignadosAGeneral,
     });
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2025") {
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2025"
+    ) {
       return NextResponse.json({ error: "Tipo de equipo no encontrado." }, { status: 404 });
     }
     return NextResponse.json({ error: "No se pudo eliminar el tipo de equipo." }, { status: 500 });

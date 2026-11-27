@@ -81,15 +81,21 @@ export function RegistroEditorModal({
   const personalDestinatarioOptions = useMemo(() => {
     const subalternos = personalFiltrado.map((persona) => ({
       ci: persona.ci,
-      label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`.replace(/\s+/g, " ").trim(),
+      label: `${persona.rango.abreviacion} ${apellidosLabel(persona)}, ${nombresLabel(persona)}`
+        .replace(/\s+/g, " ")
+        .trim(),
       batteryLabel: persona.bateria?.nombre ?? null,
     }));
     const mandos = oficialesSuboficiales.map((registro) => ({
       ci: registro.ci,
-      label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`.replace(/\s+/g, " ").trim(),
+      label: `${registro.gradoMando.abreviacion} ${registro.apellido}, ${registro.nombre}`
+        .replace(/\s+/g, " ")
+        .trim(),
       batteryLabel: null,
     }));
-    return [...subalternos, ...mandos].sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+    return [...subalternos, ...mandos].sort((a, b) =>
+      a.label.localeCompare(b.label, "es", { sensitivity: "base" })
+    );
   }, [oficialesSuboficiales, personalFiltrado]);
   const personalSearchIndex = useMemo(
     () =>
@@ -97,22 +103,32 @@ export function RegistroEditorModal({
         text: (persona) => `${persona.label} ${persona.batteryLabel ?? ""}`,
         digits: (persona) => `${persona.ci} ${formatUruguayanCi(persona.ci)}`,
       }),
-    [personalDestinatarioOptions],
+    [personalDestinatarioOptions]
   );
   const personalVisible = useMemo(
     () => filterSearchIndex(personalSearchIndex, destinatarioSearch),
-    [destinatarioSearch, personalSearchIndex],
+    [destinatarioSearch, personalSearchIndex]
   );
   if (!draft) return null;
   const isRectificacion = draft.modo === "rectificar";
-  const movementLabel = draft.tipo === "ENTREGA" ? "Entrega" : draft.tipo === "DEVOLUCION" ? "Devolución" : "Asignación";
+  const movementLabel =
+    draft.tipo === "ENTREGA"
+      ? "Entrega"
+      : draft.tipo === "DEVOLUCION"
+        ? "Devolución"
+        : "Asignación";
   const selectedCis =
-    draft.ciList.length > 0 ? Array.from(new Set(draft.ciList)) : draft.ci.trim() !== "" ? [draft.ci.trim()] : [];
+    draft.ciList.length > 0
+      ? Array.from(new Set(draft.ciList))
+      : draft.ci.trim() !== ""
+        ? [draft.ci.trim()]
+        : [];
   const selectedCiSet = new Set(selectedCis);
   const equiposOrdenadosAlfabeticamente = [...equiposOrdenados].sort((a, b) =>
-    a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }),
+    a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })
   );
-  const canIncludeFueraDeHoja = draft.modo === "crear" && (draft.tipo === "ENTREGA" || draft.tipo === "ASIGNACION");
+  const canIncludeFueraDeHoja =
+    draft.modo === "crear" && (draft.tipo === "ENTREGA" || draft.tipo === "ASIGNACION");
   const includeInactiveItems = canIncludeFueraDeHoja && draft.incluirFueraDeHoja;
   const showPersonalDestinatarios = !isRectificacion && draft.destinatarioTipo === "PERSONAL";
   const showRecintoFields = draft.destinatarioTipo === "RECINTO";
@@ -121,21 +137,37 @@ export function RegistroEditorModal({
     draft.modo === "crear" &&
     (draft.destinatarioTipo === "RECINTO" ||
       draft.destinatarioTipo === "EXTERNO" ||
-      (draft.tipo === "ASIGNACION" && draft.destinatarioTipo === "PERSONAL" && selectedCis.length === 1));
+      (draft.tipo === "ASIGNACION" &&
+        draft.destinatarioTipo === "PERSONAL" &&
+        selectedCis.length === 1));
 
   return (
     <ModalFrame onClose={onClose} size="lg" closeOnBackdrop={false}>
       <div className="flex equipos-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-stone-900">
-            {draft.modo === "rectificar" ? `Rectificar ${movementLabel}` : `Registrar ${movementLabel}`}
+            {draft.modo === "rectificar"
+              ? `Rectificar ${movementLabel}`
+              : `Registrar ${movementLabel}`}
           </h3>
-          {isRectificacion ? <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(draft.ci)}`}</p> : null}
-          {!isRectificacion && draft.destinatarioTipo === "PERSONAL" ? <p className="text-xs text-stone-600">{`Destinatarios seleccionados: ${selectedCis.length}`}</p> : null}
-          {!isRectificacion && draft.destinatarioTipo === "RECINTO" ? <p className="text-xs text-stone-600">Destino: recinto</p> : null}
-          {!isRectificacion && draft.destinatarioTipo === "EXTERNO" ? <p className="text-xs text-stone-600">Destino: externo</p> : null}
-          {draft.modo === "rectificar" && draft.registroId ? <p className="text-xs text-stone-600">{`Registro #${draft.registroId}`}</p> : null}
-          {personaLabel ? <p className="text-xs font-medium text-stone-700">{`Subalterno: ${personaLabel}`}</p> : null}
+          {isRectificacion ? (
+            <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(draft.ci)}`}</p>
+          ) : null}
+          {!isRectificacion && draft.destinatarioTipo === "PERSONAL" ? (
+            <p className="text-xs text-stone-600">{`Destinatarios seleccionados: ${selectedCis.length}`}</p>
+          ) : null}
+          {!isRectificacion && draft.destinatarioTipo === "RECINTO" ? (
+            <p className="text-xs text-stone-600">Destino: recinto</p>
+          ) : null}
+          {!isRectificacion && draft.destinatarioTipo === "EXTERNO" ? (
+            <p className="text-xs text-stone-600">Destino: externo</p>
+          ) : null}
+          {draft.modo === "rectificar" && draft.registroId ? (
+            <p className="text-xs text-stone-600">{`Registro #${draft.registroId}`}</p>
+          ) : null}
+          {personaLabel ? (
+            <p className="text-xs font-medium text-stone-700">{`Subalterno: ${personaLabel}`}</p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -160,7 +192,9 @@ export function RegistroEditorModal({
             <select
               value={draft.destinatarioTipo}
               disabled={saving}
-              onChange={(event) => onDestinatarioTipoChange(event.target.value as RegistroDraft["destinatarioTipo"])}
+              onChange={(event) =>
+                onDestinatarioTipoChange(event.target.value as RegistroDraft["destinatarioTipo"])
+              }
               className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             >
               <option value="PERSONAL">Personal</option>
@@ -199,7 +233,9 @@ export function RegistroEditorModal({
               <select
                 value={draft.recintoClase}
                 disabled={saving}
-                onChange={(event) => onRecintoClaseChange(event.target.value as RegistroDraft["recintoClase"])}
+                onChange={(event) =>
+                  onRecintoClaseChange(event.target.value as RegistroDraft["recintoClase"])
+                }
                 className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
               >
                 <option value="INTERNO">Dentro de la unidad</option>
@@ -217,9 +253,11 @@ export function RegistroEditorModal({
               />
             </label>
           </div>
-          
+
           <div className="mt-1 rounded-lg border border-stone-200 bg-stone-50 p-3">
-            <p className="text-xs font-semibold text-stone-700 mb-2">Responsable a Cargo (Quien recibe)</p>
+            <p className="text-xs font-semibold text-stone-700 mb-2">
+              Responsable a Cargo (Quien recibe)
+            </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <label className="text-xs text-stone-700">
                 Grado (Opcional)
@@ -330,16 +368,16 @@ export function RegistroEditorModal({
             onChange={onToggleIncluirFueraDeHoja}
             className="mt-0.5"
           />
-          <span>
-            Incluir equipos fuera de hoja de entrega (no visibles en la hoja estándar).
-          </span>
+          <span>Incluir equipos fuera de hoja de entrega (no visibles en la hoja estándar).</span>
         </label>
       ) : null}
 
       {showPersonalDestinatarios ? (
         <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
           <div className="flex flex-wrap equipos-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">Destinatarios</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+              Destinatarios
+            </p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -368,7 +406,9 @@ export function RegistroEditorModal({
           />
           <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-stone-200 bg-white p-2">
             {personalVisible.length === 0 ? (
-              <p className="px-2 py-2 text-xs text-stone-500">No hay personal para el filtro actual.</p>
+              <p className="px-2 py-2 text-xs text-stone-500">
+                No hay personal para el filtro actual.
+              </p>
             ) : (
               personalVisible.map((persona) => {
                 const checked = selectedCiSet.has(persona.ci);
@@ -385,7 +425,9 @@ export function RegistroEditorModal({
                       disabled={saving}
                       onChange={() => onToggleDestinatario(persona.ci)}
                     />
-                    <span className="font-mono text-[11px] text-stone-600">{formatUruguayanCi(persona.ci)}</span>
+                    <span className="font-mono text-[11px] text-stone-600">
+                      {formatUruguayanCi(persona.ci)}
+                    </span>
                     <span className="text-stone-800">{persona.label}</span>
                   </label>
                 );
@@ -396,9 +438,14 @@ export function RegistroEditorModal({
       ) : null}
 
       <div className="mt-3 space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Equipos del movimiento</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+          Equipos del movimiento
+        </p>
         {draft.equipos.map((equipo, index) => (
-          <div key={`reg-equipo-${index}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
+          <div
+            key={`reg-equipo-${index}`}
+            className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_110px_auto]"
+          >
             <select
               value={equipo.equipoId}
               disabled={saving}
@@ -408,15 +455,23 @@ export function RegistroEditorModal({
               <option value="">Seleccionar equipo</option>
               {equiposOrdenadosAlfabeticamente
                 .filter((catalogItem) => {
-                  if (!includeInactiveItems && !catalogItem.activo && catalogItem.equipoId !== equipo.equipoId) return false;
+                  if (
+                    !includeInactiveItems &&
+                    !catalogItem.activo &&
+                    catalogItem.equipoId !== equipo.equipoId
+                  )
+                    return false;
                   if (catalogItem.equipoId === equipo.equipoId) return true;
                   return !draft.equipos.some(
-                    (selectedItem, selectedIndex) => selectedIndex !== index && selectedItem.equipoId === catalogItem.equipoId,
+                    (selectedItem, selectedIndex) =>
+                      selectedIndex !== index && selectedItem.equipoId === catalogItem.equipoId
                   );
                 })
                 .map((catalogItem) => (
                   <option key={catalogItem.equipoId} value={catalogItem.equipoId}>
-                    {catalogItem.activo ? catalogItem.nombre : `${catalogItem.nombre} (fuera de hoja)`}
+                    {catalogItem.activo
+                      ? catalogItem.nombre
+                      : `${catalogItem.nombre} (fuera de hoja)`}
                   </option>
                 ))}
             </select>
@@ -448,7 +503,9 @@ export function RegistroEditorModal({
             disabled={saving}
             className="inline-flex equipos-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span className="inline-flex h-4 w-4 equipos-center justify-center rounded-full bg-stone-800 text-[10px] font-bold text-white">+</span>
+            <span className="inline-flex h-4 w-4 equipos-center justify-center rounded-full bg-stone-800 text-[10px] font-bold text-white">
+              +
+            </span>
             Equipo
           </button>
         </div>

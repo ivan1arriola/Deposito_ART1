@@ -43,7 +43,10 @@ export type HojaEntregaSheetData = {
   observaciones: Array<{ fecha: string; texto: string }>;
 };
 
-export function getHojaEntregaDatePart(value: string | null | undefined, part: "day" | "month" | "year"): string {
+export function getHojaEntregaDatePart(
+  value: string | null | undefined,
+  part: "day" | "month" | "year"
+): string {
   const parts = extractDateParts(value);
   if (!parts) return "";
   return parts[part];

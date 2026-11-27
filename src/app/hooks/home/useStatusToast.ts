@@ -26,11 +26,7 @@ function looksLikeErrorStatus(status: string) {
   );
 }
 
-export function useStatusToast({
-  status,
-  enabled,
-  ignoredStatuses,
-}: UseStatusToastOptions) {
+export function useStatusToast({ status, enabled, ignoredStatuses }: UseStatusToastOptions) {
   const lastToastStatusRef = useRef<string | null>(null);
 
   useEffect(() => {

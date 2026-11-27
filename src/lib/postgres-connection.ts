@@ -19,7 +19,9 @@ export function normalizePgConnectionStringSecurity(connectionString: string) {
       return connectionString;
     }
 
-    const useLibpqCompat = (parsedUrl.searchParams.get("uselibpqcompat") ?? "").trim().toLowerCase();
+    const useLibpqCompat = (parsedUrl.searchParams.get("uselibpqcompat") ?? "")
+      .trim()
+      .toLowerCase();
     if (TRUTHY_VALUES.has(useLibpqCompat)) {
       return connectionString;
     }

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { filterArticuloEntregasHistorial, type ArticuloEntregaHistorialEntry } from "@/lib/articulo-entregas-history";
+import {
+  filterArticuloEntregasHistorial,
+  type ArticuloEntregaHistorialEntry,
+} from "@/lib/articulo-entregas-history";
 
 const SAMPLE_ENTREGAS: ArticuloEntregaHistorialEntry[] = [
   {
@@ -45,9 +48,15 @@ const SAMPLE_ENTREGAS: ArticuloEntregaHistorialEntry[] = [
 
 describe("filterArticuloEntregasHistorial", () => {
   it("filtra por texto en artículos y comentarios", () => {
-    expect(filterArticuloEntregasHistorial(SAMPLE_ENTREGAS, { searchTerm: "block" })).toHaveLength(1);
-    expect(filterArticuloEntregasHistorial(SAMPLE_ENTREGAS, { searchTerm: "semanal" })).toHaveLength(1);
-    expect(filterArticuloEntregasHistorial(SAMPLE_ENTREGAS, { searchTerm: "lavandina" })).toHaveLength(1);
+    expect(filterArticuloEntregasHistorial(SAMPLE_ENTREGAS, { searchTerm: "block" })).toHaveLength(
+      1
+    );
+    expect(
+      filterArticuloEntregasHistorial(SAMPLE_ENTREGAS, { searchTerm: "semanal" })
+    ).toHaveLength(1);
+    expect(
+      filterArticuloEntregasHistorial(SAMPLE_ENTREGAS, { searchTerm: "lavandina" })
+    ).toHaveLength(1);
   });
 
   it("filtra por rango de fechas ISO", () => {

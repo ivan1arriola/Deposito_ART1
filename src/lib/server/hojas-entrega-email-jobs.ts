@@ -36,7 +36,13 @@ type HojasEntregaEmailJobRow = {
   updated_at: Date;
 };
 
-const VALID_JOB_STATUSES: readonly HojasEntregaEmailJobStatus[] = ["queued", "running", "completed", "failed", "cancelled"];
+const VALID_JOB_STATUSES: readonly HojasEntregaEmailJobStatus[] = [
+  "queued",
+  "running",
+  "completed",
+  "failed",
+  "cancelled",
+];
 const VALID_JOB_STEPS: readonly HojasEntregaEmailJobStep[] = [
   "queued",
   "loading-data",
@@ -220,7 +226,9 @@ async function getJobById(jobId: string): Promise<HojasEntregaEmailJobRow | null
   return rows[0] ?? null;
 }
 
-export async function findActiveHojasEntregaEmailJob(userId: string): Promise<HojasEntregaEmailJobSnapshot | null> {
+export async function findActiveHojasEntregaEmailJob(
+  userId: string
+): Promise<HojasEntregaEmailJobSnapshot | null> {
   await cleanupExpiredJobs();
 
   const rows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
@@ -311,7 +319,10 @@ export async function createHojasEntregaEmailJob(input: {
   return toSnapshot(createdJob);
 }
 
-export async function getHojasEntregaEmailJob(jobId: string, userId: string): Promise<HojasEntregaEmailJobSnapshot | null> {
+export async function getHojasEntregaEmailJob(
+  jobId: string,
+  userId: string
+): Promise<HojasEntregaEmailJobSnapshot | null> {
   await cleanupExpiredJobs();
 
   const rows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
@@ -340,7 +351,7 @@ export async function getHojasEntregaEmailJob(jobId: string, userId: string): Pr
 
 export async function updateHojasEntregaEmailJob(
   jobId: string,
-  patch: HojasEntregaEmailJobUpdate,
+  patch: HojasEntregaEmailJobUpdate
 ): Promise<HojasEntregaEmailJobSnapshot | null> {
   await cleanupExpiredJobs();
 
@@ -359,7 +370,10 @@ export async function updateHojasEntregaEmailJob(
   const nextFileName = patch.fileName !== undefined ? patch.fileName : currentJob.file_name;
   const nextHojas = patch.hojas !== undefined ? patch.hojas : currentJob.hojas;
   const nextError = patch.error !== undefined ? patch.error : currentJob.error;
-  const nextMetrics = patch.metrics !== undefined ? normalizeMetrics(patch.metrics) : parseMetricsJson(currentJob.metrics_json);
+  const nextMetrics =
+    patch.metrics !== undefined
+      ? normalizeMetrics(patch.metrics)
+      : parseMetricsJson(currentJob.metrics_json);
   const nextMetricsJson = nextMetrics ? JSON.stringify(nextMetrics) : null;
 
   const rows = await prisma.$queryRaw<HojasEntregaEmailJobRow[]>`
@@ -400,7 +414,9 @@ export async function updateHojasEntregaEmailJob(
 
 export async function completeHojasEntregaEmailJob(
   jobId: string,
-  patch: Omit<HojasEntregaEmailJobUpdate, "status" | "step" | "progress" | "error"> & { message: string },
+  patch: Omit<HojasEntregaEmailJobUpdate, "status" | "step" | "progress" | "error"> & {
+    message: string;
+  }
 ): Promise<HojasEntregaEmailJobSnapshot | null> {
   return await updateHojasEntregaEmailJob(jobId, {
     ...patch,
@@ -414,7 +430,7 @@ export async function completeHojasEntregaEmailJob(
 export async function failHojasEntregaEmailJob(
   jobId: string,
   message: string,
-  patch: Omit<HojasEntregaEmailJobUpdate, "status" | "step" | "progress" | "message" | "error"> = {},
+  patch: Omit<HojasEntregaEmailJobUpdate, "status" | "step" | "progress" | "message" | "error"> = {}
 ): Promise<HojasEntregaEmailJobSnapshot | null> {
   return await updateHojasEntregaEmailJob(jobId, {
     ...patch,
@@ -436,7 +452,7 @@ export async function setHojasEntregaEmailJobProgress(
     fileName?: string | null;
     hojas?: number | null;
     metrics?: HojasEntregaEmailJobMetrics | null;
-  },
+  }
 ): Promise<HojasEntregaEmailJobSnapshot | null> {
   return await updateHojasEntregaEmailJob(jobId, {
     status: "running",
@@ -454,7 +470,7 @@ export async function setHojasEntregaEmailJobProgress(
 export async function cancelHojasEntregaEmailJob(
   jobId: string,
   userId: string,
-  message = "Envío cancelado por el usuario.",
+  message = "Envío cancelado por el usuario."
 ): Promise<HojasEntregaEmailJobSnapshot | null> {
   await cleanupExpiredJobs();
 

@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
-import { cancelHojasEntregaEmailJob, getHojasEntregaEmailJob } from "@/lib/server/hojas-entrega-email-jobs";
+import {
+  cancelHojasEntregaEmailJob,
+  getHojasEntregaEmailJob,
+} from "@/lib/server/hojas-entrega-email-jobs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +23,7 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
           usuarioId: true,
           activo: true,
         },
-      }),
+      })
     );
 
     if (!usuario || !usuario.activo) {
@@ -29,7 +32,10 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
 
     const job = await getHojasEntregaEmailJob(jobId, usuario.usuarioId);
     if (!job) {
-      return NextResponse.json({ error: "No se encontro el seguimiento del envío solicitado." }, { status: 404 });
+      return NextResponse.json(
+        { error: "No se encontro el seguimiento del envío solicitado." },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({ ok: true, job }, { status: 200 });
@@ -37,11 +43,14 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
     if (isPrismaDatabaseUnavailable(error)) {
       return NextResponse.json(
         { error: "Base de datos no disponible temporalmente. Intenta nuevamente." },
-        { status: 503 },
+        { status: 503 }
       );
     }
 
-    return NextResponse.json({ error: "No se pudo consultar el estado del envío." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo consultar el estado del envío." },
+      { status: 500 }
+    );
   }
 }
 
@@ -58,7 +67,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ jobI
           usuarioId: true,
           activo: true,
         },
-      }),
+      })
     );
 
     if (!usuario || !usuario.activo) {
@@ -67,7 +76,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ jobI
 
     const cancelledJob = await cancelHojasEntregaEmailJob(jobId, usuario.usuarioId);
     if (!cancelledJob) {
-      return NextResponse.json({ error: "No se encontro el seguimiento del envío solicitado." }, { status: 404 });
+      return NextResponse.json(
+        { error: "No se encontro el seguimiento del envío solicitado." },
+        { status: 404 }
+      );
     }
 
     if (cancelledJob.status !== "cancelled") {
@@ -76,7 +88,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ jobI
           error: "El envío ya finalizo y no puede cancelarse.",
           job: cancelledJob,
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -87,13 +99,13 @@ export async function DELETE(request: Request, context: { params: Promise<{ jobI
         message: "Envío cancelado por el usuario.",
         job: cancelledJob,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error: unknown) {
     if (isPrismaDatabaseUnavailable(error)) {
       return NextResponse.json(
         { error: "Base de datos no disponible temporalmente. Intenta nuevamente." },
-        { status: 503 },
+        { status: 503 }
       );
     }
 

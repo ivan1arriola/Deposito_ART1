@@ -1,7 +1,15 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import type { PrestamoEditPayload } from "@/app/components/views/FormulariosPrestamosView";
 import type { MainView } from "@/types/views";
-import type { Articulo, Equipo, EquipoTipo, OficialSuboficial, Personal, Role, TipoArticulo } from "@/types/entities";
+import type {
+  Articulo,
+  Equipo,
+  EquipoTipo,
+  OficialSuboficial,
+  Personal,
+  Role,
+  TipoArticulo,
+} from "@/types/entities";
 import type {
   EquipoForm,
   OficialSuboficialForm,
@@ -42,8 +50,15 @@ export type CreationViewsProps = {
   saveNewPersonalMovimientoFromModal: () => void;
   editNewPersonalMovimiento: (index: number) => void;
   removeNewPersonalMovimiento: (index: number) => void;
-  updateNewPersonalMovimientoDraft: (field: "tipo" | "fecha" | "comentarios", value: string) => void;
-  updateNewPersonalMovimientoDraftItem: (equipoIndex: number, field: "equipoId" | "cantidad", value: string) => void;
+  updateNewPersonalMovimientoDraft: (
+    field: "tipo" | "fecha" | "comentarios",
+    value: string
+  ) => void;
+  updateNewPersonalMovimientoDraftItem: (
+    equipoIndex: number,
+    field: "equipoId" | "cantidad",
+    value: string
+  ) => void;
   addNewPersonalMovimientoDraftItem: () => void;
   removeNewPersonalMovimientoDraftItem: (equipoIndex: number) => void;
   editingOficialSuboficialCi: string | null;
@@ -70,7 +85,12 @@ export type CreationViewsProps = {
   oficialSuboficialRequiredFields: boolean[];
   canSubmitOficialSuboficial: boolean;
   creatingOficialSuboficial: boolean;
-  rangosOficialSuboficialDisponibles: Array<{ rangoId: number; abreviacion: string; nombreCompleto: string; orden: number }>;
+  rangosOficialSuboficialDisponibles: Array<{
+    rangoId: number;
+    abreviacion: string;
+    nombreCompleto: string;
+    orden: number;
+  }>;
   cancelOficialSuboficialForm: () => void;
   createOficialSuboficial: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   updateNewOficialSuboficialField: (field: keyof OficialSuboficialForm, value: string) => void;
@@ -108,7 +128,11 @@ export type CreationViewsProps = {
   setArticuloEntregaPersonalOrdenanteCi: (value: string) => void;
   setArticuloEntregaPersonalFecha: (value: string) => void;
   setArticuloEntregaPersonalComentarios: (value: string) => void;
-  updateArticuloEntregaPersonalItem: (index: number, field: "articuloId" | "cantidad", value: string) => void;
+  updateArticuloEntregaPersonalItem: (
+    index: number,
+    field: "articuloId" | "cantidad",
+    value: string
+  ) => void;
   addArticuloEntregaPersonalItem: () => void;
   removeArticuloEntregaPersonalItem: (index: number) => void;
   newBateria: string;
@@ -125,7 +149,13 @@ export type CreationViewsProps = {
   setNewRangoOrden: (value: string) => void;
   isAdmin: boolean;
   newUserRangoId: string;
-  rangosConfigView: Array<{ rangoId: number; abreviacion: string; nombreCompleto: string; orden: number; tipo?: "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL" }>;
+  rangosConfigView: Array<{
+    rangoId: number;
+    abreviacion: string;
+    nombreCompleto: string;
+    orden: number;
+    tipo?: "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
+  }>;
   newNombre: string;
   newApellido: string;
   newUsername: string;
@@ -182,12 +212,24 @@ export type PersonnelAndSummaryViewsProps = {
   bulkDeliveryEmailDisabledReason: string | null;
   printPersonnelByBattery: () => void;
   openMassRegistro: (tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION") => void;
-  openRecintoRegistro: (tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION", options?: { incluirFueraDeHoja?: boolean }) => void;
+  openRecintoRegistro: (
+    tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION",
+    options?: { incluirFueraDeHoja?: boolean }
+  ) => void;
   setActiveView: Dispatch<SetStateAction<MainView>>;
   toggleTallas: (ci: string) => void;
   deletePersonal: (ci: string) => void;
-  openRegistro: (ci: string, tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION", options?: { incluirFueraDeHoja?: boolean }) => void;
-  deleteRecintoRegistro: (registroId: string, fechaLabel: string, nombreLabel: string, onSuccess: () => void) => void;
+  openRegistro: (
+    ci: string,
+    tipo: "ENTREGA" | "DEVOLUCION" | "ASIGNACION",
+    options?: { incluirFueraDeHoja?: boolean }
+  ) => void;
+  deleteRecintoRegistro: (
+    registroId: string,
+    fechaLabel: string,
+    nombreLabel: string,
+    onSuccess: () => void
+  ) => void;
   openPersonalObservacion: (persona: Personal) => Promise<void>;
   openRegistroViewer: (persona: Personal) => Promise<void>;
   openPersonaProfileFromPersonal: (persona: Personal) => Promise<void>;
@@ -247,7 +289,11 @@ export type StockPrestamoViewsProps = {
   returnPrestamo: (
     prestamoId: string,
     fechaDevolucion: string,
-    equipos?: Array<{ equipoId: string; estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioDevolucion?: string }>,
+    equipos?: Array<{
+      equipoId: string;
+      estadoDevolucion: "NUEVO" | "BUENO" | "REGULAR" | "MALO";
+      comentarioDevolucion?: string;
+    }>
   ) => Promise<void>;
   reloadActiveStockData: () => Promise<void>;
   editingPrestamoId: string | null;
@@ -267,8 +313,19 @@ export type EtiquetadoSectionProps = {
   createEtiquetadoItem: (input: { nombre: string }) => Promise<void>;
   createEtiquetadoEstanteria: (nombreEstanteria: string, piso: number) => Promise<void>;
   deleteEtiquetadoEstanteria: (codigo: string, piso: number) => Promise<void>;
-  createEtiquetadoCodigoSIE: (input: { codigo: string; talla: string; equipoId: string; allowDuplicateCodigo?: boolean }) => Promise<void>;
-  updateEtiquetadoCodigoSIE: (input: { originalCodigoSIEId: string; originalCodigo: string; codigo: string; talla: string; equipoId: string }) => Promise<void>;
+  createEtiquetadoCodigoSIE: (input: {
+    codigo: string;
+    talla: string;
+    equipoId: string;
+    allowDuplicateCodigo?: boolean;
+  }) => Promise<void>;
+  updateEtiquetadoCodigoSIE: (input: {
+    originalCodigoSIEId: string;
+    originalCodigo: string;
+    codigo: string;
+    talla: string;
+    equipoId: string;
+  }) => Promise<void>;
   deleteEtiquetadoCodigoSIE: (codigoSIEId: string, codigo: string) => Promise<void>;
   createEtiquetadoCaja: (input: {
     estanteria: string;
@@ -277,9 +334,14 @@ export type EtiquetadoSectionProps = {
     codigosSIEIds: string[];
   }) => Promise<void>;
   deleteEtiquetadoCaja: (codigoDepositoGeneral: number) => Promise<void>;
-  printEtiquetaCaja: (codigoDepositoGeneral: number, orientacion: "horizontal" | "vertical") => void;
+  printEtiquetaCaja: (
+    codigoDepositoGeneral: number,
+    orientacion: "horizontal" | "vertical"
+  ) => void;
   printListadoCajas: () => void;
-  printTodasEtiquetas: (cajas: Array<{ codigoDepositoGeneral: number; orientacion: "horizontal" | "vertical" }>) => void;
+  printTodasEtiquetas: (
+    cajas: Array<{ codigoDepositoGeneral: number; orientacion: "horizontal" | "vertical" }>
+  ) => void;
 };
 
 export type HomeViewRouterProps = CreationViewsProps &

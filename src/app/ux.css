@@ -66,9 +66,10 @@ a:focus-visible,
   justify-content: center;
   padding: 24px;
   background:
-    linear-gradient(rgb(239 242 235 / 92%), rgb(239 242 235 / 92%)),
-    var(--background-camo-pattern);
-  background-size: auto, 220px 220px;
+    linear-gradient(rgb(239 242 235 / 92%), rgb(239 242 235 / 92%)), var(--background-camo-pattern);
+  background-size:
+    auto,
+    220px 220px;
 }
 
 .login-panel {
@@ -198,7 +199,11 @@ a:focus-visible,
   background: transparent;
   color: #54606d;
   text-align: left;
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .login-mode-button:hover {
@@ -251,7 +256,9 @@ a:focus-visible,
   background: #ffffff;
   color: #17212b;
   font: inherit;
-  transition: border-color 140ms ease, box-shadow 140ms ease;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .login-input::placeholder {
@@ -313,7 +320,9 @@ a:focus-visible,
   color: #ffffff;
   font-size: 14px;
   font-weight: 750;
-  transition: background-color 140ms ease, transform 100ms ease;
+  transition:
+    background-color 140ms ease,
+    transform 100ms ease;
 }
 
 .login-submit:hover:not(:disabled) {

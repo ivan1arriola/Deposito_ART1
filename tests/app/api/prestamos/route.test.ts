@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/prestamos/route";
 import { authorizeRequest } from "@/lib/auth";
-import { ensurePrestamoActuanteCompatibility, upsertPrestamoActuante } from "@/lib/prestamo-actuante";
+import {
+  ensurePrestamoActuanteCompatibility,
+  upsertPrestamoActuante,
+} from "@/lib/prestamo-actuante";
 import { logAudit } from "@/lib/audit";
 import { notifyAdminOnMovement } from "@/lib/notify-admins";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
@@ -169,7 +172,7 @@ describe("POST /api/prestamos", () => {
         fechaEstimadaDevolucionTexto: "30 dias",
         comentarios: "Grupo Artilleria 2",
         equipos: [{ equipoId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
-      }),
+      })
     );
 
     expect(res.status).toBe(201);
@@ -246,7 +249,7 @@ describe("POST /api/prestamos", () => {
         fechaEstimadaDevolucionTexto: "30 dias",
         comentarios: "Grupo Artilleria 2",
         equipos: [{ equipoId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
-      }),
+      })
     );
 
     expect(res.status).toBe(201);
@@ -254,7 +257,7 @@ describe("POST /api/prestamos", () => {
       1,
       expect.objectContaining({
         where: expect.objectContaining({ ci: destinatarioCi }),
-      }),
+      })
     );
     expect(mockTx.movimientoDestinatarioPersonal.create).toHaveBeenCalledWith({
       data: {
@@ -298,7 +301,7 @@ describe("POST /api/prestamos", () => {
         fechaEstimadaDevolucionTexto: "30 dias",
         comentarios: "Grupo Artilleria 2",
         equipos: [{ equipoId: "1", cantidad: 1, estadoEntrega: "NUEVO" }],
-      }),
+      })
     );
 
     expect(res.status).toBe(201);
@@ -311,8 +314,13 @@ describe("POST /api/prestamos", () => {
     });
     expect(mockTx.personaExterna.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({ grado: "Sgto.", nombre: "Juan", apellido: "Perez", unidadDestino: "Unidad X" }),
-      }),
+        create: expect.objectContaining({
+          grado: "Sgto.",
+          nombre: "Juan",
+          apellido: "Perez",
+          unidadDestino: "Unidad X",
+        }),
+      })
     );
   });
 });

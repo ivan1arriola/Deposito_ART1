@@ -15,7 +15,10 @@ export function normalizeDigits(value: string) {
   return value.replace(/\D/g, "");
 }
 
-export function buildSearchIndex<T>(values: T[], options: BuildSearchIndexOptions<T>): SearchIndexEntry<T>[] {
+export function buildSearchIndex<T>(
+  values: T[],
+  options: BuildSearchIndexOptions<T>
+): SearchIndexEntry<T>[] {
   return values.map((value) => ({
     value,
     normalizedText: normalizeSearchText(options.text(value)),

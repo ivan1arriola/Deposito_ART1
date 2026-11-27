@@ -11,17 +11,29 @@ type EquipoCreateViewProps = {
   saving: boolean;
   onBack: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onChange: (key: keyof Pick<EquipoForm, "nombre" | "tipo" | "activo">, value: string | boolean) => void;
+  onChange: (
+    key: keyof Pick<EquipoForm, "nombre" | "tipo" | "activo">,
+    value: string | boolean
+  ) => void;
 };
 
-export function EquipoCreateView({ form, tiposEquipo, saving, onBack, onSubmit, onChange }: EquipoCreateViewProps) {
+export function EquipoCreateView({
+  form,
+  tiposEquipo,
+  saving,
+  onBack,
+  onSubmit,
+  onChange,
+}: EquipoCreateViewProps) {
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
-              <h2 className="text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Registrar equipo</h2>
+              <h2 className="text-2xl font-black tracking-tight text-[var(--color-text-primary)]">
+                Registrar equipo
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
                 Crea un equipo operativo y define si aparece en la hoja de entrega.
               </p>
@@ -37,7 +49,10 @@ export function EquipoCreateView({ form, tiposEquipo, saving, onBack, onSubmit, 
           </div>
         </div>
 
-        <form onSubmit={onSubmit} className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <form
+          onSubmit={onSubmit}
+          className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 xl:grid-cols-[minmax(0,1fr)_320px]"
+        >
           <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
             <label className="block">
               <span className="block text-xs font-medium text-stone-700">Nombre del equipo *</span>
@@ -76,7 +91,9 @@ export function EquipoCreateView({ form, tiposEquipo, saving, onBack, onSubmit, 
           </div>
 
           <aside className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-ejercito-blue)] p-4 text-white shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">Alta inmediata</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">
+              Alta inmediata
+            </p>
             <p className="mt-3 text-sm leading-6 text-white/85">
               El equipo quedará disponible enseguida para configuración, stock y movimientos.
             </p>

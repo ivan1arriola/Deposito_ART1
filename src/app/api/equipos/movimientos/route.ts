@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { authorizeRequest } from "@/lib/auth";
-import { getMovimientosEquipoData, parseEquipoMovimientoItemId } from "@/lib/movimientos-equipo-data";
+import {
+  getMovimientosEquipoData,
+  parseEquipoMovimientoItemId,
+} from "@/lib/movimientos-equipo-data";
 
 export async function GET(request: Request) {
   const auth = await authorizeRequest(request, "read_data");
@@ -20,6 +23,9 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Error en GET /api/equipos/movimientos:", error);
-    return NextResponse.json({ error: "Error interno al cargar los movimientos del equipo" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error interno al cargar los movimientos del equipo" },
+      { status: 500 }
+    );
   }
 }

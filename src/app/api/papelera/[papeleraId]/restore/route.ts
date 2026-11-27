@@ -354,7 +354,6 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
             },
           });
         }
-
       } else if (registro.tipo === "ARTICULO") {
         const payload = registro.payload as unknown as TrashArticuloPayload;
 
@@ -405,7 +404,9 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
               tipo: sm.tipo,
               cantidad: sm.cantidad,
               comentario: sm.comentario,
-              articuloEntregaPersonalId: sm.articuloEntregaPersonalId ? BigInt(sm.articuloEntregaPersonalId) : null,
+              articuloEntregaPersonalId: sm.articuloEntregaPersonalId
+                ? BigInt(sm.articuloEntregaPersonalId)
+                : null,
               createdAt: new Date(sm.createdAt),
             },
           });
@@ -435,12 +436,18 @@ export async function POST(req: Request, context: { params: Promise<{ papeleraId
   } catch (error: unknown) {
     if (error instanceof Error) {
       if (error.message === "P2025") {
-        return NextResponse.json({ error: "Registro no encontrado en la papelera." }, { status: 404 });
+        return NextResponse.json(
+          { error: "Registro no encontrado en la papelera." },
+          { status: 404 }
+        );
       }
       if (error.message === "DUPLICATE_NAME") {
         return NextResponse.json(
-          { error: "Ya existe un elemento activo con ese nombre. Cambia el nombre del activo para poder restaurar." },
-          { status: 409 },
+          {
+            error:
+              "Ya existe un elemento activo con ese nombre. Cambia el nombre del activo para poder restaurar.",
+          },
+          { status: 409 }
         );
       }
     }

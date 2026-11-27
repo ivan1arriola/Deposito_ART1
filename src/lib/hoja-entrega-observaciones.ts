@@ -27,7 +27,7 @@ type MovimientoObservacionItemInput = {
 };
 
 function toObservationTimestamp(value: string | Date) {
-  const parsed = value instanceof Date ? value : dateInputToDate(value) ?? new Date(value);
+  const parsed = value instanceof Date ? value : (dateInputToDate(value) ?? new Date(value));
   const time = parsed.getTime();
   return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
 }
@@ -39,7 +39,7 @@ function toObservationDate(value: string | Date) {
 
 export function buildHojaObservaciones(
   observacionesPersonal: PersonalObservacionInput[],
-  movimientos: MovimientoObservacionInput[],
+  movimientos: MovimientoObservacionInput[]
 ): HojaObservacion[] {
   const personal = observacionesPersonal
     .map((observacion) => {
@@ -56,8 +56,9 @@ export function buildHojaObservaciones(
     })
     .filter(
       (
-        observacion,
-      ): observacion is { fecha: string; texto: string; sortOrder: number; sortTime: number } => observacion !== null,
+        observacion
+      ): observacion is { fecha: string; texto: string; sortOrder: number; sortTime: number } =>
+        observacion !== null
     );
 
   const movimientosNormalizados = movimientos
@@ -66,7 +67,9 @@ export function buildHojaObservaciones(
       const fecha = toObservationDate(movimiento.fecha);
       if (!fecha) return null;
 
-      const tipoStr = String(movimiento.tipo || "").trim().toUpperCase();
+      const tipoStr = String(movimiento.tipo || "")
+        .trim()
+        .toUpperCase();
       if (tipoStr !== "ENTREGA" && tipoStr !== "DEVOLUCION") return null;
 
       // Identificar equipos inactivos (fuera de hoja)
@@ -88,7 +91,7 @@ export function buildHojaObservaciones(
         const descripcionItems = itemsFueraHoja
           .map((it) => `${it.cantidad} x ${it.equipo.nombre}`)
           .join(", ");
-        
+
         const manualPart = comentarios ? ` (${comentarios})` : "";
         texto = `${labelTipo} Fuera de Hoja: ${descripcionItems}${manualPart}`;
       } else {
@@ -106,11 +109,15 @@ export function buildHojaObservaciones(
     })
     .filter(
       (
-        observacion,
-      ): observacion is { fecha: string; texto: string; sortOrder: number; sortTime: number } => observacion !== null,
+        observacion
+      ): observacion is { fecha: string; texto: string; sortOrder: number; sortTime: number } =>
+        observacion !== null
     );
 
   return [...personal, ...movimientosNormalizados]
-    .sort((a, b) => a.sortTime - b.sortTime || a.sortOrder - b.sortOrder || a.texto.localeCompare(b.texto, "es"))
+    .sort(
+      (a, b) =>
+        a.sortTime - b.sortTime || a.sortOrder - b.sortOrder || a.texto.localeCompare(b.texto, "es")
+    )
     .map(({ fecha, texto }) => ({ fecha, texto }));
 }

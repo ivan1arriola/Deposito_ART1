@@ -15,11 +15,7 @@ export type PasswordResetRequestResponse = {
   message: string;
 };
 
-export async function loginHandler(
-  username: string,
-  password: string,
-  callbacks: CallbackProps,
-) {
+export async function loginHandler(username: string, password: string, callbacks: CallbackProps) {
   try {
     const result = await signIn("credentials", {
       username,
@@ -28,7 +24,8 @@ export async function loginHandler(
     });
 
     if (result?.error) {
-      const message = result.error === "CredentialsSignin" ? "Credenciales inválidas" : result.error;
+      const message =
+        result.error === "CredentialsSignin" ? "Credenciales inválidas" : result.error;
       callbacks.onError?.(message);
       return;
     }
@@ -49,16 +46,12 @@ export async function logoutHandler(callbacks: CallbackProps) {
   try {
     await signOut({ redirect: false });
   } catch (_error) {
-    
   } finally {
     callbacks.onSuccess?.();
   }
 }
 
-export async function requestPasswordResetHandler(
-  username: string,
-  callbacks: CallbackProps,
-) {
+export async function requestPasswordResetHandler(username: string, callbacks: CallbackProps) {
   try {
     const result = await api<PasswordResetRequestResponse>("/api/auth/password-reset/request", {
       method: "POST",
@@ -76,7 +69,7 @@ export async function requestPasswordResetHandler(
 
 export async function changePasswordHandler(
   payload: { currentPassword: string; newPassword: string },
-  callbacks: CallbackProps,
+  callbacks: CallbackProps
 ) {
   try {
     await api("/api/auth/password-change", {
@@ -112,7 +105,8 @@ export async function initializeDatabaseHandler(callbacks: CallbackProps) {
     }>("/api/db-init", { method: "POST" });
     callbacks.onSuccess?.(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "No se pudo inicializar la base de datos.";
+    const message =
+      error instanceof Error ? error.message : "No se pudo inicializar la base de datos.";
     callbacks.onError?.(message);
     throw error;
   }

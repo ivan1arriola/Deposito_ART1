@@ -94,7 +94,9 @@ export function PersonalBajasView() {
         const body = await res.json();
         throw new Error(body.error || "No se pudo confirmar la devolución.");
       }
-      setSuccess("¡Devolución confirmada con éxito! El personal ha sido transferido al historial administrativo.");
+      setSuccess(
+        "¡Devolución confirmada con éxito! El personal ha sido transferido al historial administrativo."
+      );
       setConfirmCi(null);
       await fetchBajasData();
       setTimeout(() => setSuccess(null), 6000);
@@ -134,13 +136,15 @@ export function PersonalBajasView() {
   // Filter lists
   const filteredPendientes = pendientes.filter((p) => {
     const term = searchPendiente.toLowerCase();
-    const fullName = `${p.nombre1} ${p.nombre2 || ""} ${p.apellido1} ${p.apellido2 || ""}`.toLowerCase();
+    const fullName =
+      `${p.nombre1} ${p.nombre2 || ""} ${p.apellido1} ${p.apellido2 || ""}`.toLowerCase();
     return p.ci.includes(term) || fullName.includes(term) || p.grado.toLowerCase().includes(term);
   });
 
   const filteredHistorial = historial.filter((h) => {
     const term = searchHistorial.toLowerCase();
-    const fullName = `${h.nombre1} ${h.nombre2 || ""} ${h.apellido1} ${h.apellido2 || ""}`.toLowerCase();
+    const fullName =
+      `${h.nombre1} ${h.nombre2 || ""} ${h.apellido1} ${h.apellido2 || ""}`.toLowerCase();
     return h.ci.includes(term) || fullName.includes(term) || h.grado.toLowerCase().includes(term);
   });
 
@@ -148,7 +152,9 @@ export function PersonalBajasView() {
     return (
       <div className="flex min-h-[400px] flex-col equipos-center justify-center p-8">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-stone-800" />
-        <p className="mt-4 text-sm font-semibold text-stone-600">Reconstruyendo estado de bajas...</p>
+        <p className="mt-4 text-sm font-semibold text-stone-600">
+          Reconstruyendo estado de bajas...
+        </p>
       </div>
     );
   }
@@ -178,7 +184,8 @@ export function PersonalBajasView() {
               </span>
             </h2>
             <p className="mt-1 text-xs text-stone-600">
-              Personal militar en proceso de baja que cuenta con préstamos de equipo o prendas de vestuario a su cargo.
+              Personal militar en proceso de baja que cuenta con préstamos de equipo o prendas de
+              vestuario a su cargo.
             </p>
           </div>
           <input
@@ -257,12 +264,19 @@ export function PersonalBajasView() {
                                 </span>
                               </h4>
                               {p.outstandingVestuario.length === 0 ? (
-                                <p className="mt-3 text-xs text-stone-500 italic">No tiene vestuario pendiente.</p>
+                                <p className="mt-3 text-xs text-stone-500 italic">
+                                  No tiene vestuario pendiente.
+                                </p>
                               ) : (
                                 <ul className="mt-2 divide-y divide-stone-200/50">
                                   {p.outstandingVestuario.map((equipo, idx) => (
-                                    <li key={idx} className="flex justify-between py-2 text-xs font-medium">
-                                      <span className="text-stone-800 font-semibold">{equipo.nombre}</span>
+                                    <li
+                                      key={idx}
+                                      className="flex justify-between py-2 text-xs font-medium"
+                                    >
+                                      <span className="text-stone-800 font-semibold">
+                                        {equipo.nombre}
+                                      </span>
                                       <span className="rounded bg-amber-100 px-2 py-0.5 font-bold text-amber-900 font-mono">
                                         Saldo: {equipo.cantidad}
                                       </span>
@@ -281,11 +295,16 @@ export function PersonalBajasView() {
                                 </span>
                               </h4>
                               {p.outstandingLoans.length === 0 ? (
-                                <p className="mt-3 text-xs text-stone-500 italic">No tiene préstamos de equipo activos.</p>
+                                <p className="mt-3 text-xs text-stone-500 italic">
+                                  No tiene préstamos de equipo activos.
+                                </p>
                               ) : (
                                 <div className="mt-2 space-y-3">
                                   {p.outstandingLoans.map((loan) => (
-                                    <div key={loan.movimientoId} className="rounded-lg border border-stone-200 bg-white p-2.5 shadow-xs">
+                                    <div
+                                      key={loan.movimientoId}
+                                      className="rounded-lg border border-stone-200 bg-white p-2.5 shadow-xs"
+                                    >
                                       <div className="flex justify-between text-[10px] font-black text-stone-500">
                                         <span>RECIBO: #{loan.reciboNumero || "N/A"}</span>
                                         <span>FECHA: {loan.fecha}</span>
@@ -293,8 +312,12 @@ export function PersonalBajasView() {
                                       <ul className="mt-1.5 divide-y divide-stone-100">
                                         {loan.equipos.map((equipo, i) => (
                                           <li key={i} className="flex justify-between py-1 text-xs">
-                                            <span className="text-stone-700 font-semibold">{equipo.nombre}</span>
-                                            <span className="font-mono text-stone-900 font-bold">Qty: {equipo.cantidad}</span>
+                                            <span className="text-stone-700 font-semibold">
+                                              {equipo.nombre}
+                                            </span>
+                                            <span className="font-mono text-stone-900 font-bold">
+                                              Qty: {equipo.cantidad}
+                                            </span>
                                           </li>
                                         ))}
                                       </ul>
@@ -314,7 +337,8 @@ export function PersonalBajasView() {
               {filteredPendientes.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-stone-500 italic">
-                    No hay personal militar en proceso de devolución pendiente con los filtros actuales.
+                    No hay personal militar en proceso de devolución pendiente con los filtros
+                    actuales.
                   </td>
                 </tr>
               )}
@@ -334,7 +358,8 @@ export function PersonalBajasView() {
               </span>
             </h2>
             <p className="mt-1 text-xs text-stone-600">
-              Registros históricos de personal que fue dado de baja y devolvió la totalidad de sus equipos. Listos para re-alta rápida.
+              Registros históricos de personal que fue dado de baja y devolvió la totalidad de sus
+              equipos. Listos para re-alta rápida.
             </p>
           </div>
           <input
@@ -372,7 +397,9 @@ export function PersonalBajasView() {
                       <td className="px-4 py-3.5 text-stone-800 font-semibold">
                         {[h.apellido1, h.apellido2, h.nombre1, h.nombre2].filter(Boolean).join(" ")}
                       </td>
-                      <td className="px-4 py-3.5 text-stone-600 text-xs font-bold uppercase">{h.tipo}</td>
+                      <td className="px-4 py-3.5 text-stone-600 text-xs font-bold uppercase">
+                        {h.tipo}
+                      </td>
                       <td className="px-4 py-3.5 text-stone-500 font-mono text-xs">
                         {new Date(h.bajaAt).toLocaleDateString("es-UY", {
                           year: "numeric",
@@ -387,7 +414,9 @@ export function PersonalBajasView() {
                           type="button"
                           onClick={() => toggleExpand(`hist-${h.ci}`)}
                           className={`rounded-lg px-2.5 py-1 text-xs font-black transition-colors ${
-                            isExpanded ? "bg-stone-800 text-white" : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                            isExpanded
+                              ? "bg-stone-800 text-white"
+                              : "bg-stone-100 text-stone-700 hover:bg-stone-200"
                           }`}
                         >
                           {isExpanded ? "Ocultar Ficha" : "Ver Tallas & Obs"}
@@ -415,13 +444,22 @@ export function PersonalBajasView() {
                               </h4>
                               <div className="mt-2.5 grid grid-cols-2 lg:grid-cols-3 gap-2">
                                 {h.tallas.map((t, idx) => (
-                                  <div key={idx} className="rounded-lg border border-stone-200 bg-white p-2 text-center">
-                                    <div className="text-[9px] font-black uppercase text-stone-400">{t.tipo}</div>
-                                    <div className="mt-0.5 text-xs font-black text-stone-900">{t.valor}</div>
+                                  <div
+                                    key={idx}
+                                    className="rounded-lg border border-stone-200 bg-white p-2 text-center"
+                                  >
+                                    <div className="text-[9px] font-black uppercase text-stone-400">
+                                      {t.tipo}
+                                    </div>
+                                    <div className="mt-0.5 text-xs font-black text-stone-900">
+                                      {t.valor}
+                                    </div>
                                   </div>
                                 ))}
                                 {h.tallas.length === 0 && (
-                                  <p className="text-xs text-stone-500 italic col-span-3">No hay tallas guardadas.</p>
+                                  <p className="text-xs text-stone-500 italic col-span-3">
+                                    No hay tallas guardadas.
+                                  </p>
                                 )}
                               </div>
                             </div>
@@ -432,11 +470,16 @@ export function PersonalBajasView() {
                                 💬 Observaciones & Historial
                               </h4>
                               {h.observaciones.length === 0 ? (
-                                <p className="mt-3 text-xs text-stone-500 italic">No hay observaciones registradas.</p>
+                                <p className="mt-3 text-xs text-stone-500 italic">
+                                  No hay observaciones registradas.
+                                </p>
                               ) : (
                                 <ul className="mt-2 space-y-2">
                                   {h.observaciones.map((o, idx) => (
-                                    <li key={idx} className="rounded bg-white border border-stone-150 p-2 text-xs">
+                                    <li
+                                      key={idx}
+                                      className="rounded bg-white border border-stone-150 p-2 text-xs"
+                                    >
                                       <p className="text-stone-700 font-medium">{o.texto}</p>
                                       <p className="mt-1 text-[9px] font-mono text-stone-400">
                                         {o.fecha ? new Date(o.fecha).toLocaleDateString() : ""}
@@ -474,13 +517,18 @@ export function PersonalBajasView() {
               ⚠️ Confirmar Devolución y Baja Definitiva
             </h3>
             <p className="mt-3 text-xs text-stone-600 leading-relaxed">
-              ¿Confirmas que el personal militar con CI <strong>{formatUruguayanCi(confirmCi)}</strong> ha devuelto la totalidad del vestuario y armamento/equipo entregado?
+              ¿Confirmas que el personal militar con CI{" "}
+              <strong>{formatUruguayanCi(confirmCi)}</strong> ha devuelto la totalidad del vestuario
+              y armamento/equipo entregado?
             </p>
             <div className="mt-3 bg-stone-50 rounded-xl p-3 border border-stone-150 text-[11px] text-stone-600 leading-normal">
               <strong>Efectos colaterales:</strong>
               <ul className="list-disc list-inside mt-1 space-y-1">
                 <li>Se creará una ficha digital inalterable en el Historial de Bajas.</li>
-                <li>Se purgarán de forma definitiva todas sus referencias activas del sistema operativo.</li>
+                <li>
+                  Se purgarán de forma definitiva todas sus referencias activas del sistema
+                  operativo.
+                </li>
               </ul>
             </div>
             <div className="mt-6 flex justify-end gap-2.5">
@@ -516,13 +564,17 @@ export function PersonalBajasView() {
               🛡️ Confirmar Reincorporación / Re-Alta
             </h3>
             <p className="mt-3 text-xs text-stone-600 leading-relaxed">
-              ¿Confirmas la reincorporación de personal con CI <strong>{formatUruguayanCi(reactivateCi)}</strong>?
+              ¿Confirmas la reincorporación de personal con CI{" "}
+              <strong>{formatUruguayanCi(reactivateCi)}</strong>?
             </p>
             <div className="mt-3 bg-stone-50 rounded-xl p-3 border border-stone-150 text-[11px] text-stone-600 leading-normal">
               <strong>Efectos colaterales:</strong>
               <ul className="list-disc list-inside mt-1 space-y-1">
                 <li>Se restaurará su perfil personal militar operativo completo.</li>
-                <li>Se re-cargarán automáticamente todas sus tallas de prendas y observaciones históricas.</li>
+                <li>
+                  Se re-cargarán automáticamente todas sus tallas de prendas y observaciones
+                  históricas.
+                </li>
                 <li>Se removerá del historial administrativo de bajas.</li>
               </ul>
             </div>

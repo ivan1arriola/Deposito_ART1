@@ -28,7 +28,8 @@ export async function PUT(req: Request, context: { params: Promise<{ bateriaId: 
 
   const { bateriaId: bateriaIdParam } = await context.params;
   const bateriaId = parseBateriaId(bateriaIdParam);
-  if (bateriaId === null) return NextResponse.json({ error: "bateriaId invalido." }, { status: 400 });
+  if (bateriaId === null)
+    return NextResponse.json({ error: "bateriaId invalido." }, { status: 400 });
 
   const body = await req.json();
   const candidate = body as Record<string, unknown>;
@@ -37,12 +38,15 @@ export async function PUT(req: Request, context: { params: Promise<{ bateriaId: 
   if (!nombre || orden === null) {
     return NextResponse.json(
       { error: "Payload invalido. 'nombre' es obligatorio; 'orden' debe ser entero positivo." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   if (isLegacyBatteryName(nombre)) {
-    return NextResponse.json({ error: "Esa categoria corresponde a un grado, no a una bateria." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Esa categoria corresponde a un grado, no a una bateria." },
+      { status: 400 }
+    );
   }
 
   try {
@@ -56,14 +60,14 @@ export async function PUT(req: Request, context: { params: Promise<{ bateriaId: 
         where: { bateriaId },
         data: { nombre },
       });
-      const visibleIds = existing.filter((entry) => !isLegacyBatteryName(entry.nombre)).map((entry) => entry.bateriaId);
-      const legacyIds = existing.filter((entry) => isLegacyBatteryName(entry.nombre)).map((entry) => entry.bateriaId);
+      const visibleIds = existing
+        .filter((entry) => !isLegacyBatteryName(entry.nombre))
+        .map((entry) => entry.bateriaId);
+      const legacyIds = existing
+        .filter((entry) => isLegacyBatteryName(entry.nombre))
+        .map((entry) => entry.bateriaId);
       const orderedIds = [
-        ...moveCatalogId(
-        visibleIds,
-        bateriaId,
-        orden ?? current?.orden ?? visibleIds.length,
-        ),
+        ...moveCatalogId(visibleIds, bateriaId, orden ?? current?.orden ?? visibleIds.length),
         ...legacyIds.filter((currentBateriaId) => currentBateriaId !== bateriaId),
       ];
 
@@ -97,8 +101,10 @@ export async function PUT(req: Request, context: { params: Promise<{ bateriaId: 
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Bateria no encontrada." }, { status: 404 });
-      if (code === "P2002") return NextResponse.json({ error: "El nombre ya existe." }, { status: 409 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Bateria no encontrada." }, { status: 404 });
+      if (code === "P2002")
+        return NextResponse.json({ error: "El nombre ya existe." }, { status: 409 });
     }
     return NextResponse.json({ error: "No se pudo actualizar la bateria." }, { status: 500 });
   }
@@ -110,7 +116,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ bateriaI
 
   const { bateriaId: bateriaIdParam } = await context.params;
   const bateriaId = parseBateriaId(bateriaIdParam);
-  if (bateriaId === null) return NextResponse.json({ error: "bateriaId invalido." }, { status: 400 });
+  if (bateriaId === null)
+    return NextResponse.json({ error: "bateriaId invalido." }, { status: 400 });
 
   try {
     const deleted = await prisma.$transaction(async (tx) => {
@@ -151,11 +158,12 @@ export async function DELETE(req: Request, context: { params: Promise<{ bateriaI
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Bateria no encontrada." }, { status: 404 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Bateria no encontrada." }, { status: 404 });
       if (code === "P2003") {
         return NextResponse.json(
           { error: "No se puede eliminar la bateria porque tiene personal asociado." },
-          { status: 409 },
+          { status: 409 }
         );
       }
     }

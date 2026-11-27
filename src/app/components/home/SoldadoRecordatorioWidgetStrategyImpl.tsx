@@ -37,7 +37,9 @@ class SoldadoWidgetStrategyFactory {
   constructor(private readonly strategies: SoldadoWidgetRenderStrategy[]) {}
 
   resolve(context: SoldadoRecordatorioWidgetRenderContext): SoldadoWidgetRenderStrategy {
-    return this.strategies.find((strategy) => strategy.canHandle(context)) ?? defaultVisibleStrategy;
+    return (
+      this.strategies.find((strategy) => strategy.canHandle(context)) ?? defaultVisibleStrategy
+    );
   }
 }
 
@@ -47,7 +49,9 @@ const soldadoWidgetStrategyFactory = new SoldadoWidgetStrategyFactory([
   defaultVisibleStrategy,
 ]);
 
-export function renderSoldadoRecordatorioWidget(context: SoldadoRecordatorioWidgetRenderContext): ReactNode {
+export function renderSoldadoRecordatorioWidget(
+  context: SoldadoRecordatorioWidgetRenderContext
+): ReactNode {
   const strategy = soldadoWidgetStrategyFactory.resolve(context);
   return strategy.render(context);
 }

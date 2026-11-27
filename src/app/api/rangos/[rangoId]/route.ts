@@ -24,18 +24,24 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
 
   const { rangoId: rangoIdParam } = await context.params;
   const rangoId = parseRangoId(rangoIdParam);
-  if (rangoId === null) return NextResponse.json({ error: "rangoId (grado del personal) invalido." }, { status: 400 });
+  if (rangoId === null)
+    return NextResponse.json({ error: "rangoId (grado del personal) invalido." }, { status: 400 });
 
   const body = await req.json();
   const candidate = body as Record<string, unknown>;
-  const abreviacion = typeof candidate?.abreviacion === "string" ? candidate.abreviacion.trim() : "";
-  const nombreCompleto = typeof candidate?.nombreCompleto === "string" ? candidate.nombreCompleto.trim() : "";
+  const abreviacion =
+    typeof candidate?.abreviacion === "string" ? candidate.abreviacion.trim() : "";
+  const nombreCompleto =
+    typeof candidate?.nombreCompleto === "string" ? candidate.nombreCompleto.trim() : "";
   const orden = parseOptionalOrden(candidate?.orden);
 
   if (!abreviacion || !nombreCompleto || orden === null) {
     return NextResponse.json(
-      { error: "Payload invalido. 'abreviacion' y 'nombreCompleto' son obligatorios; 'orden' debe ser entero positivo." },
-      { status: 400 },
+      {
+        error:
+          "Payload invalido. 'abreviacion' y 'nombreCompleto' son obligatorios; 'orden' debe ser entero positivo.",
+      },
+      { status: 400 }
     );
   }
 
@@ -64,7 +70,7 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
       const orderedIds = moveCatalogId(
         existing.map((entry) => entry.rangoId),
         rangoId,
-        orden ?? current.orden ?? existing.length,
+        orden ?? current.orden ?? existing.length
       );
 
       for (const [index, currentRangoId] of orderedIds.entries()) {
@@ -111,12 +117,19 @@ export async function PUT(req: Request, context: { params: Promise<{ rangoId: st
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Grado del personal no encontrado." }, { status: 404 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Grado del personal no encontrado." }, { status: 404 });
       if (code === "P2002") {
-        return NextResponse.json({ error: "La abreviacion o el nombre completo ya existe." }, { status: 409 });
+        return NextResponse.json(
+          { error: "La abreviacion o el nombre completo ya existe." },
+          { status: 409 }
+        );
       }
     }
-    return NextResponse.json({ error: "No se pudo actualizar el grado del personal." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo actualizar el grado del personal." },
+      { status: 500 }
+    );
   }
 }
 
@@ -126,7 +139,8 @@ export async function DELETE(req: Request, context: { params: Promise<{ rangoId:
 
   const { rangoId: rangoIdParam } = await context.params;
   const rangoId = parseRangoId(rangoIdParam);
-  if (rangoId === null) return NextResponse.json({ error: "rangoId (grado del personal) invalido." }, { status: 400 });
+  if (rangoId === null)
+    return NextResponse.json({ error: "rangoId (grado del personal) invalido." }, { status: 400 });
 
   try {
     const deleted = await prisma.$transaction(async (tx) => {
@@ -180,14 +194,18 @@ export async function DELETE(req: Request, context: { params: Promise<{ rangoId:
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2025") return NextResponse.json({ error: "Grado del personal no encontrado." }, { status: 404 });
+      if (code === "P2025")
+        return NextResponse.json({ error: "Grado del personal no encontrado." }, { status: 404 });
       if (code === "P2003") {
         return NextResponse.json(
           { error: "No se puede eliminar el grado del personal porque tiene personal asociado." },
-          { status: 409 },
+          { status: 409 }
         );
       }
     }
-    return NextResponse.json({ error: "No se pudo eliminar el grado del personal." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo eliminar el grado del personal." },
+      { status: 500 }
+    );
   }
 }

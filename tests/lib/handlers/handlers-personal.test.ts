@@ -121,16 +121,21 @@ describe("Handlers de Personal", () => {
   describe("promoteSargentoToSuboficialHandler", () => {
     it("deberia solicitar ascenso de sargento a suboficial con password", async () => {
       const onSuccess = vi.fn();
-      vi.mocked(api).mockResolvedValue({ ok: true, prestamoGenerado: { reciboNumero: "PR-00000001" } });
+      vi.mocked(api).mockResolvedValue({
+        ok: true,
+        prestamoGenerado: { reciboNumero: "PR-00000001" },
+      });
 
-      await promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "ClaveAdmin123", { onSuccess });
+      await promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "ClaveAdmin123", {
+        onSuccess,
+      });
 
       expect(vi.mocked(api)).toHaveBeenCalledWith(
         `/api/personal/${mockPersonalPayload.ci}/ascenso-sargento-primero`,
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ adminPassword: "ClaveAdmin123" }),
-        }),
+        })
       );
       expect(onSuccess).toHaveBeenCalled();
     });
@@ -140,24 +145,24 @@ describe("Handlers de Personal", () => {
       vi.mocked(api).mockRejectedValue(new Error("Contraseña inválida"));
 
       await expect(
-        promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "mal", { onError }),
+        promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "mal", { onError })
       ).rejects.toThrow("Contraseña inválida");
       expect(onError).toHaveBeenCalledWith("Contraseña inválida");
 
       vi.mocked(api).mockRejectedValue("fallo");
       await expect(
-        promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "mal", { onError }),
+        promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "mal", { onError })
       ).rejects.toBe("fallo");
       expect(onError).toHaveBeenCalledWith("No se pudo completar el ascenso.");
 
       vi.mocked(api).mockResolvedValue({ ok: true });
       await expect(
-        promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "ok", {}),
+        promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "ok", {})
       ).resolves.toEqual({ ok: true });
 
       vi.mocked(api).mockRejectedValue(new Error("err"));
       await expect(
-        promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "ok", {}),
+        promoteSargentoToSuboficialHandler(mockPersonalPayload.ci, "ok", {})
       ).rejects.toThrow("err");
     });
   });
@@ -171,11 +176,11 @@ describe("Handlers de Personal", () => {
       expect(onError).toHaveBeenLastCalledWith("No se pudo crear el personal.");
 
       await expect(updatePersonalHandler("123/4", mockPersonalPayload, { onError })).rejects.toBe(
-        "fallo",
+        "fallo"
       );
       expect(vi.mocked(api)).toHaveBeenLastCalledWith(
         "/api/personal/123%2F4",
-        expect.objectContaining({ method: "PUT" }),
+        expect.objectContaining({ method: "PUT" })
       );
       expect(onError).toHaveBeenLastCalledWith("No se pudo actualizar el personal.");
 
@@ -184,7 +189,7 @@ describe("Handlers de Personal", () => {
 
       vi.mocked(api).mockRejectedValue(new Error("Error al actualizar"));
       await expect(updatePersonalHandler("123", mockPersonalPayload, { onError })).rejects.toThrow(
-        "Error al actualizar",
+        "Error al actualizar"
       );
       expect(onError).toHaveBeenLastCalledWith("Error al actualizar");
 
@@ -196,7 +201,7 @@ describe("Handlers de Personal", () => {
       vi.mocked(api).mockRejectedValue(new Error("sin callback"));
       await expect(createPersonalHandler(mockPersonalPayload, {})).rejects.toThrow("sin callback");
       await expect(updatePersonalHandler("123", mockPersonalPayload, {})).rejects.toThrow(
-        "sin callback",
+        "sin callback"
       );
       await expect(deletePersonalHandler("123", {})).rejects.toThrow("sin callback");
     });
@@ -230,7 +235,7 @@ describe("Handlers de Personal", () => {
       await expect(createOficialSuboficialHandler({}, { onError })).rejects.toThrow("CI duplicada");
       expect(onError).toHaveBeenLastCalledWith("CI duplicada");
       await expect(updateOficialSuboficialHandler("1", {}, { onError })).rejects.toThrow(
-        "CI duplicada",
+        "CI duplicada"
       );
       expect(onError).toHaveBeenLastCalledWith("CI duplicada");
 
@@ -239,7 +244,7 @@ describe("Handlers de Personal", () => {
       expect(onError).toHaveBeenLastCalledWith("No se pudo crear el personal oficial/suboficial.");
       await expect(updateOficialSuboficialHandler("1", {}, { onError })).rejects.toBe("fallo");
       expect(onError).toHaveBeenLastCalledWith(
-        "No se pudo actualizar el personal oficial/suboficial.",
+        "No se pudo actualizar el personal oficial/suboficial."
       );
 
       vi.mocked(api).mockResolvedValue({});
@@ -278,7 +283,7 @@ describe("Handlers de Personal", () => {
         "123/4",
         "OBS/1",
         { detalle: "Actualizada" },
-        { onSuccess },
+        { onSuccess }
       );
       expect(vi.mocked(api)).toHaveBeenCalledWith("/api/personal/123%2F4/observaciones/OBS%2F1", {
         method: "PUT",
@@ -302,16 +307,16 @@ describe("Handlers de Personal", () => {
 
       vi.mocked(api).mockRejectedValue(new Error("Observación inválida"));
       await expect(createPersonalObservacionHandler("1", {}, { onError })).rejects.toThrow(
-        "Observación inválida",
+        "Observación inválida"
       );
       await expect(loadPersonalObservacionesHandler("1", { onError })).rejects.toThrow(
-        "Observación inválida",
+        "Observación inválida"
       );
       await expect(updatePersonalObservacionHandler("1", "2", {}, { onError })).rejects.toThrow(
-        "Observación inválida",
+        "Observación inválida"
       );
       await expect(deletePersonalObservacionHandler("1", "2", { onError })).rejects.toThrow(
-        "Observación inválida",
+        "Observación inválida"
       );
 
       vi.mocked(api).mockRejectedValue("fallo");
@@ -322,7 +327,7 @@ describe("Handlers de Personal", () => {
       expect(onError).toHaveBeenLastCalledWith("No se pudieron cargar las observaciones.");
 
       await expect(updatePersonalObservacionHandler("1", "2", {}, { onError })).rejects.toBe(
-        "fallo",
+        "fallo"
       );
       expect(onError).toHaveBeenLastCalledWith("No se pudo actualizar la observación.");
 
@@ -339,7 +344,7 @@ describe("Handlers de Personal", () => {
       await expect(createPersonalObservacionHandler("1", {}, {})).rejects.toThrow("sin callback");
       await expect(loadPersonalObservacionesHandler("1", {})).rejects.toThrow("sin callback");
       await expect(updatePersonalObservacionHandler("1", "2", {}, {})).rejects.toThrow(
-        "sin callback",
+        "sin callback"
       );
       await expect(deletePersonalObservacionHandler("1", "2", {})).rejects.toThrow("sin callback");
     });

@@ -20,7 +20,7 @@ export type UsuarioProfileInput = {
 
 export async function createUsuarioHandler(
   input: UsuarioProfileInput & { password: string; rol: Role },
-  callbacks: CallbackProps,
+  callbacks: CallbackProps
 ) {
   try {
     await api("/api/usuarios", {
@@ -48,7 +48,7 @@ export async function createUsuarioHandler(
 export async function updateUsuarioProfileHandler(
   usuarioId: string,
   input: UsuarioProfileInput,
-  callbacks: CallbackProps,
+  callbacks: CallbackProps
 ) {
   try {
     await api(`/api/usuarios/${usuarioId}`, {
@@ -73,7 +73,7 @@ export async function updateUsuarioProfileHandler(
 export async function changeUserRoleHandler(
   usuarioId: string,
   rol: Role,
-  callbacks: CallbackProps,
+  callbacks: CallbackProps
 ) {
   try {
     await api(`/api/usuarios/${usuarioId}`, {
@@ -92,7 +92,7 @@ export async function changeUserRoleHandler(
 export async function changeUserPasswordHandler(
   usuarioId: string,
   password: string,
-  callbacks: CallbackProps,
+  callbacks: CallbackProps
 ) {
   try {
     await api(`/api/usuarios/${usuarioId}`, {
@@ -111,7 +111,7 @@ export async function changeUserPasswordHandler(
 export async function toggleUserActiveHandler(
   usuarioId: string,
   newActive: boolean,
-  callbacks: CallbackProps,
+  callbacks: CallbackProps
 ) {
   try {
     await api(`/api/usuarios/${usuarioId}`, {
@@ -127,10 +127,7 @@ export async function toggleUserActiveHandler(
   }
 }
 
-export async function confirmUserEmailHandler(
-  usuarioId: string,
-  callbacks: CallbackProps,
-) {
+export async function confirmUserEmailHandler(usuarioId: string, callbacks: CallbackProps) {
   try {
     await api(`/api/usuarios/${usuarioId}`, {
       method: "PUT",
@@ -145,10 +142,7 @@ export async function confirmUserEmailHandler(
   }
 }
 
-export async function deleteUsuarioHandler(
-  usuarioId: string,
-  callbacks: CallbackProps,
-) {
+export async function deleteUsuarioHandler(usuarioId: string, callbacks: CallbackProps) {
   try {
     await api(`/api/usuarios/${usuarioId}`, { method: "DELETE" });
     callbacks.onSuccess?.();
@@ -164,7 +158,7 @@ export async function saveFirmaConfigHandler(
   encargadoNombre: string,
   oficialRango: string,
   oficialNombre: string,
-  callbacks: CallbackProps & { onSave: (config: unknown) => void },
+  callbacks: CallbackProps & { onSave: (config: unknown) => void }
 ) {
   try {
     const updated = await api("/api/firma-config", {

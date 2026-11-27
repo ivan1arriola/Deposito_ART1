@@ -53,7 +53,10 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
   if (!auth.ok) return auth.response;
 
   if (!isAdminRole(auth.user.rol)) {
-    return NextResponse.json({ error: "Solo el administrador puede ejecutar este ascenso." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Solo el administrador puede ejecutar este ascenso." },
+      { status: 403 }
+    );
   }
 
   const { ci } = await context.params;
@@ -64,7 +67,10 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
 
   const body = await request.json();
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Debes confirmar la acción con la contraseña del administrador." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Debes confirmar la acción con la contraseña del administrador." },
+      { status: 400 }
+    );
   }
 
   const usuarioAdmin = await prisma.usuario.findUnique({
@@ -83,195 +89,217 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
   const fechaAscensoInput = getTodayDateInput();
   const fechaAscenso = dateInputToDate(fechaAscensoInput);
   if (!fechaAscenso) {
-    return NextResponse.json({ error: "No se pudo resolver la fecha de ascenso." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo resolver la fecha de ascenso." },
+      { status: 500 }
+    );
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      const persona = await tx.personal.findUnique({
-        where: { ci: ciDecoded },
-        select: {
-          ci: true,
-          rangoId: true,
-          apellido1: true,
-          apellido2: true,
-          nombre1: true,
-          nombre2: true,
-          tipo: true,
-          rango: {
-            select: {
-              rangoId: true,
-              tipo: true,
-              abreviacion: true,
-              nombreCompleto: true,
-              orden: true,
+    const result = await prisma.$transaction(
+      async (tx) => {
+        const persona = await tx.personal.findUnique({
+          where: { ci: ciDecoded },
+          select: {
+            ci: true,
+            rangoId: true,
+            apellido1: true,
+            apellido2: true,
+            nombre1: true,
+            nombre2: true,
+            tipo: true,
+            rango: {
+              select: {
+                rangoId: true,
+                tipo: true,
+                abreviacion: true,
+                nombreCompleto: true,
+                orden: true,
+              },
             },
-          }
-        },
-      });
+          },
+        });
 
-      if (!persona) {
-        throw new AscensoError("PERSONA_NO_ENCONTRADA", "Personal no encontrado.");
-      }
-      if (persona.rango.tipo !== TipoPersonal.SUBALTERNO || (persona.tipo !== TipoPersonal.SUBALTERNO)) {
-        throw new AscensoError("PERSONA_NO_SUBALTERNO", "La persona no pertenece a personal subalterno.");
-      }
-      if (!rankLooksLikeSargento(persona.rango)) {
-        throw new AscensoError("RANGO_ORIGEN_INVALIDO", "Solo se puede ascender personal con grado Sargento.");
-      }
+        if (!persona) {
+          throw new AscensoError("PERSONA_NO_ENCONTRADA", "Personal no encontrado.");
+        }
+        if (
+          persona.rango.tipo !== TipoPersonal.SUBALTERNO ||
+          persona.tipo !== TipoPersonal.SUBALTERNO
+        ) {
+          throw new AscensoError(
+            "PERSONA_NO_SUBALTERNO",
+            "La persona no pertenece a personal subalterno."
+          );
+        }
+        if (!rankLooksLikeSargento(persona.rango)) {
+          throw new AscensoError(
+            "RANGO_ORIGEN_INVALIDO",
+            "Solo se puede ascender personal con grado Sargento."
+          );
+        }
 
-      const rangosSuboficial = await tx.rango.findMany({
-        where: { tipo: TipoPersonal.SUBOFICIAL },
-        select: {
-          rangoId: true,
-          abreviacion: true,
-          nombreCompleto: true,
-          orden: true,
-        },
-        orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
-      });
-      const rangoDestino = rangosSuboficial.find((rank) => rankLooksLikeSargentoPrimero(rank));
-      if (!rangoDestino) {
-        throw new AscensoError(
-          "RANGO_DESTINO_NO_ENCONTRADO",
-          "No existe un rango SUBOFICIAL identificado como Sargento Primero.",
-        );
-      }
+        const rangosSuboficial = await tx.rango.findMany({
+          where: { tipo: TipoPersonal.SUBOFICIAL },
+          select: {
+            rangoId: true,
+            abreviacion: true,
+            nombreCompleto: true,
+            orden: true,
+          },
+          orderBy: [{ orden: "asc" }, { rangoId: "asc" }],
+        });
+        const rangoDestino = rangosSuboficial.find((rank) => rankLooksLikeSargentoPrimero(rank));
+        if (!rangoDestino) {
+          throw new AscensoError(
+            "RANGO_DESTINO_NO_ENCONTRADO",
+            "No existe un rango SUBOFICIAL identificado como Sargento Primero."
+          );
+        }
 
-      const movimientosVestuario = await tx.movimiento.findMany({
-        where: {
-          destinatarioPersonal: { is: { ci: ciDecoded } },
-          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
-        },
-        select: {
-          movimientoId: true,
-          tipo: true,
-          equipos: {
-            select: {
-              equipoId: true,
-              cantidad: true,
-              equipo: {
-                select: {
-                  nombre: true,
-                  ordenPdf: true,
+        const movimientosVestuario = await tx.movimiento.findMany({
+          where: {
+            destinatarioPersonal: { is: { ci: ciDecoded } },
+            tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
+          },
+          select: {
+            movimientoId: true,
+            tipo: true,
+            equipos: {
+              select: {
+                equipoId: true,
+                cantidad: true,
+                equipo: {
+                  select: {
+                    nombre: true,
+                    ordenPdf: true,
+                  },
                 },
               },
             },
           },
-        },
-      });
+        });
 
-      const netoPorItem = new Map<string, { equipoId: bigint; nombre: string; ordenPdf: number; cantidadNeta: number }>();
-      for (const movimiento of movimientosVestuario) {
-        const factor = movimiento.tipo === TipoMovimiento.ENTREGA ? 1 : -1;
-        for (const equipo of movimiento.equipos) {
-          const key = equipo.equipoId.toString();
-          const prev = netoPorItem.get(key);
-          if (!prev) {
-            netoPorItem.set(key, {
-              equipoId: equipo.equipoId,
-              nombre: equipo.equipo.nombre,
-              ordenPdf: equipo.equipo.ordenPdf,
-              cantidadNeta: equipo.cantidad * factor,
-            });
-            continue;
+        const netoPorItem = new Map<
+          string,
+          { equipoId: bigint; nombre: string; ordenPdf: number; cantidadNeta: number }
+        >();
+        for (const movimiento of movimientosVestuario) {
+          const factor = movimiento.tipo === TipoMovimiento.ENTREGA ? 1 : -1;
+          for (const equipo of movimiento.equipos) {
+            const key = equipo.equipoId.toString();
+            const prev = netoPorItem.get(key);
+            if (!prev) {
+              netoPorItem.set(key, {
+                equipoId: equipo.equipoId,
+                nombre: equipo.equipo.nombre,
+                ordenPdf: equipo.equipo.ordenPdf,
+                cantidadNeta: equipo.cantidad * factor,
+              });
+              continue;
+            }
+            prev.cantidadNeta += equipo.cantidad * factor;
           }
-          prev.cantidadNeta += equipo.cantidad * factor;
         }
-      }
 
-      const itemsPrestamo = Array.from(netoPorItem.values())
-        .filter((entry) => entry.cantidadNeta > 0)
-        .sort((a, b) => a.ordenPdf - b.ordenPdf);
+        const itemsPrestamo = Array.from(netoPorItem.values())
+          .filter((entry) => entry.cantidadNeta > 0)
+          .sort((a, b) => a.ordenPdf - b.ordenPdf);
 
-      const totalUnidadesPrestamo = itemsPrestamo.reduce((acc, entry) => acc + entry.cantidadNeta, 0);
-      const movimientosEliminados = await tx.movimiento.deleteMany({
-        where: {
-          destinatarioPersonal: { is: { ci: ciDecoded } },
-          tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
-        },
-      });
-
-      let prestamoGenerado: { prestamoId: string; reciboNumero: string; totalEquipos: number; totalUnidades: number } | null = null;
-      if (itemsPrestamo.length > 0) {
-        const movimientoPrestamo = await tx.movimiento.create({
-          data: {
-            tipo: TipoMovimiento.PRESTAMO,
-            fecha: fechaAscenso,
-            usuarioEntregaId: auth.user.usuarioId,
-            afectaStock: true,
-            observaciones: ASCENSO_COMENTARIO_PRESTAMO,
-          },
-          select: { movimientoId: true },
-        });
-
-        await tx.movimientoDestinatarioPersonal.create({
-          data: {
-            movimientoId: movimientoPrestamo.movimientoId,
-            ci: ciDecoded,
+        const totalUnidadesPrestamo = itemsPrestamo.reduce(
+          (acc, entry) => acc + entry.cantidadNeta,
+          0
+        );
+        const movimientosEliminados = await tx.movimiento.deleteMany({
+          where: {
+            destinatarioPersonal: { is: { ci: ciDecoded } },
+            tipo: { in: [TipoMovimiento.ENTREGA, TipoMovimiento.DEVOLUCION] },
           },
         });
 
-        const provisionalRecibo = `TMP-${randomUUID()}`;
-        await tx.prestamoActivo.create({
+        let prestamoGenerado: {
+          prestamoId: string;
+          reciboNumero: string;
+          totalEquipos: number;
+          totalUnidades: number;
+        } | null = null;
+        if (itemsPrestamo.length > 0) {
+          const movimientoPrestamo = await tx.movimiento.create({
+            data: {
+              tipo: TipoMovimiento.PRESTAMO,
+              fecha: fechaAscenso,
+              usuarioEntregaId: auth.user.usuarioId,
+              afectaStock: true,
+              observaciones: ASCENSO_COMENTARIO_PRESTAMO,
+            },
+            select: { movimientoId: true },
+          });
+
+          await tx.movimientoDestinatarioPersonal.create({
+            data: {
+              movimientoId: movimientoPrestamo.movimientoId,
+              ci: ciDecoded,
+            },
+          });
+
+          const provisionalRecibo = `TMP-${randomUUID()}`;
+          await tx.prestamoActivo.create({
+            data: {
+              movimientoId: movimientoPrestamo.movimientoId,
+              reciboNumero: provisionalRecibo,
+              fechaEstimadaDevolucionTexto: ASCENSO_FECHA_ESTIMADA,
+            },
+          });
+
+          const reciboNumero = `PR-${movimientoPrestamo.movimientoId.toString().padStart(8, "0")}`;
+          await tx.prestamoActivo.update({
+            where: { movimientoId: movimientoPrestamo.movimientoId },
+            data: { reciboNumero },
+          });
+
+          await tx.movimientoEquipo.createMany({
+            data: itemsPrestamo.map((entry) => ({
+              movimientoId: movimientoPrestamo.movimientoId,
+              equipoId: entry.equipoId,
+              cantidad: entry.cantidadNeta,
+              estadoEntrega: EstadoEquipoPrestamo.BUENO,
+              comentarioEntrega: null,
+            })),
+          });
+
+          prestamoGenerado = {
+            prestamoId: movimientoPrestamo.movimientoId.toString(),
+            reciboNumero,
+            totalEquipos: itemsPrestamo.length,
+            totalUnidades: totalUnidadesPrestamo,
+          };
+        }
+
+        await tx.personal.update({
+          where: { ci: ciDecoded },
           data: {
-            movimientoId: movimientoPrestamo.movimientoId,
-            reciboNumero: provisionalRecibo,
-            fechaEstimadaDevolucionTexto: ASCENSO_FECHA_ESTIMADA,
+            rangoId: rangoDestino.rangoId,
           },
         });
 
-        const reciboNumero = `PR-${movimientoPrestamo.movimientoId.toString().padStart(8, "0")}`;
-        await tx.prestamoActivo.update({
-          where: { movimientoId: movimientoPrestamo.movimientoId },
-          data: { reciboNumero },
-        });
-
-        await tx.movimientoEquipo.createMany({
-          data: itemsPrestamo.map((entry) => ({
-            movimientoId: movimientoPrestamo.movimientoId,
-            equipoId: entry.equipoId,
+        return {
+          persona,
+          rangoDestino,
+          movimientosEliminados: movimientosEliminados.count,
+          itemsPrestamo: itemsPrestamo.map((entry) => ({
+            equipoId: entry.equipoId.toString(),
+            nombre: entry.nombre,
             cantidad: entry.cantidadNeta,
-            estadoEntrega: EstadoEquipoPrestamo.BUENO,
-            comentarioEntrega: null,
           })),
-        });
-
-        prestamoGenerado = {
-          prestamoId: movimientoPrestamo.movimientoId.toString(),
-          reciboNumero,
-          totalEquipos: itemsPrestamo.length,
-          totalUnidades: totalUnidadesPrestamo,
+          totalUnidadesPrestamo,
+          prestamoGenerado,
         };
+      },
+      {
+        maxWait: ASCENSO_TX_MAX_WAIT_MS,
+        timeout: ASCENSO_TX_TIMEOUT_MS,
       }
-
-      await tx.personal.update({
-        where: { ci: ciDecoded },
-        data: {
-          rangoId: rangoDestino.rangoId,
-        },
-      });
-
-      
-
-      
-
-      return {
-        persona,
-        rangoDestino,
-        movimientosEliminados: movimientosEliminados.count,
-        itemsPrestamo: itemsPrestamo.map((entry) => ({
-          equipoId: entry.equipoId.toString(),
-          nombre: entry.nombre,
-          cantidad: entry.cantidadNeta,
-        })),
-        totalUnidadesPrestamo,
-        prestamoGenerado,
-      };
-    }, {
-      maxWait: ASCENSO_TX_MAX_WAIT_MS,
-      timeout: ASCENSO_TX_TIMEOUT_MS,
-    });
+    );
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -281,9 +309,10 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
       detalle: {
         evento: "ASCENSO_SARGENTO_A_SARGENTO_PRIMERO",
         ci: ciDecoded,
-        nombre: `${result.persona.apellido1} ${result.persona.apellido2 ?? ""}, ${result.persona.nombre1} ${result.persona.nombre2 ?? ""}`
-          .replace(/\s+/g, " ")
-          .trim(),
+        nombre:
+          `${result.persona.apellido1} ${result.persona.apellido2 ?? ""}, ${result.persona.nombre1} ${result.persona.nombre2 ?? ""}`
+            .replace(/\s+/g, " ")
+            .trim(),
         rangoAnterior: {
           rangoId: result.persona.rango.rangoId,
           abreviacion: result.persona.rango.abreviacion,
@@ -304,7 +333,9 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
       },
     });
 
-    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
+      .replace(/\s+/g, " ")
+      .trim();
     await Promise.allSettled([
       sendPersonalMovementEmailNotification({
         request,
@@ -349,7 +380,7 @@ export async function POST(request: Request, context: { params: Promise<{ ci: st
     if (prismaLike?.code === "P2028" || prismaLike?.code === "P1008") {
       return NextResponse.json(
         { error: "La operacion demoro demasiado. Reintenta el ascenso en unos segundos." },
-        { status: 503 },
+        { status: 503 }
       );
     }
 

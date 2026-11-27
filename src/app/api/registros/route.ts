@@ -97,7 +97,9 @@ function parseCantidad(value: unknown) {
 }
 
 function parseTipoMovimiento(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "ENTREGA") return MOVIMIENTO_TIPO_ENTREGA;
   if (raw === "DEVOLUCION") return MOVIMIENTO_TIPO_DEVOLUCION;
   if (raw === "ASIGNACION") return MOVIMIENTO_TIPO_ASIGNACION;
@@ -130,7 +132,9 @@ function parseTargetCiList(ciValue: unknown, ciListValue: unknown) {
 }
 
 function parseDestinatarioTipo(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "" || raw === "PERSONAL") return "PERSONAL" as const;
   if (raw === "RECINTO") return "RECINTO" as const;
   if (raw === "EXTERNO") return "EXTERNO" as const;
@@ -138,7 +142,9 @@ function parseDestinatarioTipo(value: unknown) {
 }
 
 function parseRecintoClase(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "" || raw === "INTERNO") return "INTERNO" as const;
   if (raw === "EXTERNO") return "EXTERNO" as const;
   return null;
@@ -164,7 +170,9 @@ function sanitizeExternalPayload(value: MovimientoPayload["destinatarioExterno"]
   };
 }
 
-function parseDestinatarioPayload(candidate: Record<string, unknown>): ParsedDestinatarioPayload | null {
+function parseDestinatarioPayload(
+  candidate: Record<string, unknown>
+): ParsedDestinatarioPayload | null {
   const destinatarioTipo = parseDestinatarioTipo(candidate.destinatarioTipo);
   if (!destinatarioTipo) return null;
 
@@ -172,14 +180,22 @@ function parseDestinatarioPayload(candidate: Record<string, unknown>): ParsedDes
     const recintoClase = parseRecintoClase(candidate.recintoClase);
     const recintoNombre = parseRecintoNombre(candidate.recintoNombre);
     if (!recintoClase || !recintoNombre) return null;
-    
-    const rawDestinatarioRecinto = candidate.destinatarioRecinto as Record<string, string> | undefined;
-    const recintoResponsable = rawDestinatarioRecinto && (rawDestinatarioRecinto.grado || rawDestinatarioRecinto.nombre || rawDestinatarioRecinto.apellido || rawDestinatarioRecinto.ci) ? {
-      grado: String(rawDestinatarioRecinto.grado ?? "").trim(),
-      nombre: String(rawDestinatarioRecinto.nombre ?? "").trim(),
-      apellido: String(rawDestinatarioRecinto.apellido ?? "").trim(),
-      ci: String(rawDestinatarioRecinto.ci ?? "").trim(),
-    } : null;
+
+    const rawDestinatarioRecinto = candidate.destinatarioRecinto as
+      Record<string, string> | undefined;
+    const recintoResponsable =
+      rawDestinatarioRecinto &&
+      (rawDestinatarioRecinto.grado ||
+        rawDestinatarioRecinto.nombre ||
+        rawDestinatarioRecinto.apellido ||
+        rawDestinatarioRecinto.ci)
+        ? {
+            grado: String(rawDestinatarioRecinto.grado ?? "").trim(),
+            nombre: String(rawDestinatarioRecinto.nombre ?? "").trim(),
+            apellido: String(rawDestinatarioRecinto.apellido ?? "").trim(),
+            ci: String(rawDestinatarioRecinto.ci ?? "").trim(),
+          }
+        : null;
 
     return {
       destinatarioTipo,
@@ -190,9 +206,12 @@ function parseDestinatarioPayload(candidate: Record<string, unknown>): ParsedDes
   }
 
   if (destinatarioTipo === "EXTERNO") {
-    const externo = sanitizeExternalPayload(candidate.destinatarioExterno as MovimientoPayload["destinatarioExterno"]);
+    const externo = sanitizeExternalPayload(
+      candidate.destinatarioExterno as MovimientoPayload["destinatarioExterno"]
+    );
     if (!externo.ci.startsWith("SD-") && !isValidUruguayanCi(externo.ci)) return null;
-    if (!externo.grado || !externo.nombre || !externo.apellido || !externo.unidadDestino) return null;
+    if (!externo.grado || !externo.nombre || !externo.apellido || !externo.unidadDestino)
+      return null;
     return {
       destinatarioTipo,
       externo,
@@ -209,7 +228,7 @@ function parseDestinatarioPayload(candidate: Record<string, unknown>): ParsedDes
 
 function validateDestinatarioTipoForMovimiento(
   tipo: TipoMovimiento,
-  destinatarioPayload: ParsedDestinatarioPayload,
+  destinatarioPayload: ParsedDestinatarioPayload
 ) {
   if (tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION) {
     return destinatarioPayload.destinatarioTipo === "PERSONAL";
@@ -234,7 +253,9 @@ function formatUsuarioMovimientoLabel(usuario: {
   nombre: string;
   username: string;
 }) {
-  const label = `${usuario.rango?.abreviacion ?? ""} ${usuario.apellido}, ${usuario.nombre}`.replace(/\s+/g, " ").trim();
+  const label = `${usuario.rango?.abreviacion ?? ""} ${usuario.apellido}, ${usuario.nombre}`
+    .replace(/\s+/g, " ")
+    .trim();
   return label || usuario.username;
 }
 
@@ -249,14 +270,23 @@ function buildPersonalAuditDetail(personal: {
 }) {
   return {
     ci: personal.ci,
-    nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2].filter(Boolean).join(" "),
+    nombre: [personal.nombre1, personal.nombre2, personal.apellido1, personal.apellido2]
+      .filter(Boolean)
+      .join(" "),
     grado: personal.rango.nombreCompleto,
     gradoAbreviacion: personal.rango.abreviacion,
     bateria: personal.bateria?.nombre ?? null,
   };
 }
 
-function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombre: string; responsable?: Extract<ParsedDestinatarioPayload, { destinatarioTipo: "RECINTO" }>["recintoResponsable"] }) {
+function buildRecintoAuditDetail(recinto: {
+  clase: MovimientoRecintoClase;
+  nombre: string;
+  responsable?: Extract<
+    ParsedDestinatarioPayload,
+    { destinatarioTipo: "RECINTO" }
+  >["recintoResponsable"];
+}) {
   return {
     clase: recinto.clase,
     nombre: recinto.nombre,
@@ -265,7 +295,9 @@ function buildRecintoAuditDetail(recinto: { clase: MovimientoRecintoClase; nombr
   };
 }
 
-function buildExternoAuditDetail(externo: ParsedDestinatarioPayload & { destinatarioTipo: "EXTERNO" }) {
+function buildExternoAuditDetail(
+  externo: ParsedDestinatarioPayload & { destinatarioTipo: "EXTERNO" }
+) {
   return {
     ci: externo.externo.ci,
     grado: externo.externo.grado,
@@ -275,12 +307,17 @@ function buildExternoAuditDetail(externo: ParsedDestinatarioPayload & { destinat
   };
 }
 
-function formatRecintoNotificationLabel(recinto: { clase: MovimientoRecintoClase; nombre: string }) {
+function formatRecintoNotificationLabel(recinto: {
+  clase: MovimientoRecintoClase;
+  nombre: string;
+}) {
   const scope = recinto.clase === "EXTERNO" ? "fuera de la unidad" : "dentro de la unidad";
   return `${recinto.nombre} (${scope})`;
 }
 
-function formatExternoNotificationLabel(externo: ParsedDestinatarioPayload & { destinatarioTipo: "EXTERNO" }) {
+function formatExternoNotificationLabel(
+  externo: ParsedDestinatarioPayload & { destinatarioTipo: "EXTERNO" }
+) {
   return `${externo.externo.grado} ${externo.externo.apellido}, ${externo.externo.nombre} (${externo.externo.unidadDestino})`
     .replace(/\s+/g, " ")
     .trim();
@@ -356,10 +393,10 @@ export async function GET(req: Request) {
                 },
               },
               bateria: {
-                                  select: {
-                                    nombre: true,
-                                  },
-                                },
+                select: {
+                  nombre: true,
+                },
+              },
             },
           },
         },
@@ -446,17 +483,24 @@ export async function GET(req: Request) {
           };
         })(),
         ci: destinatario?.ci ?? "",
-        destinatarioTipo: movimiento.destinatarioRecinto ? "RECINTO" : movimiento.destinatarioExterno ? "EXTERNO" : "PERSONAL",
+        destinatarioTipo: movimiento.destinatarioRecinto
+          ? "RECINTO"
+          : movimiento.destinatarioExterno
+            ? "EXTERNO"
+            : "PERSONAL",
         recintoClase: movimiento.destinatarioRecinto?.clase ?? null,
         recintoNombre: movimiento.destinatarioRecinto?.nombre ?? null,
-        recintoResponsableInfo: movimiento.destinatarioRecinto && (movimiento.destinatarioRecinto.responsableGrado || movimiento.destinatarioRecinto.responsableNombre)
-          ? {
-              grado: movimiento.destinatarioRecinto.responsableGrado ?? "",
-              nombre: movimiento.destinatarioRecinto.responsableNombre ?? "",
-              apellido: movimiento.destinatarioRecinto.responsableApellido ?? "",
-              ci: movimiento.destinatarioRecinto.responsableCi ?? "",
-            }
-          : null,
+        recintoResponsableInfo:
+          movimiento.destinatarioRecinto &&
+          (movimiento.destinatarioRecinto.responsableGrado ||
+            movimiento.destinatarioRecinto.responsableNombre)
+            ? {
+                grado: movimiento.destinatarioRecinto.responsableGrado ?? "",
+                nombre: movimiento.destinatarioRecinto.responsableNombre ?? "",
+                apellido: movimiento.destinatarioRecinto.responsableApellido ?? "",
+                ci: movimiento.destinatarioRecinto.responsableCi ?? "",
+              }
+            : null,
         usuarioEntregaId: movimiento.usuarioEntregaId,
         usuarioEntregaNombre: formatUsuarioMovimientoLabel(movimiento.usuarioEntrega),
         fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
@@ -470,7 +514,7 @@ export async function GET(req: Request) {
           cantidad: detail.cantidad,
         })),
       };
-    }),
+    })
   );
 }
 
@@ -483,7 +527,10 @@ export async function POST(req: Request) {
   const body = await req.json();
   const requestMeta = readRequestMeta(req);
   if (!isValidPayload(body)) {
-    return NextResponse.json({ error: "Payload invalido. Revisa destinatarios, tipo y equipos." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Payload invalido. Revisa destinatarios, tipo y equipos." },
+      { status: 400 }
+    );
   }
 
   const destinatarioPayload = parseDestinatarioPayload(body as Record<string, unknown>);
@@ -497,7 +544,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "tipo o fecha invalidos." }, { status: 400 });
   }
   if (!validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload)) {
-    return NextResponse.json({ error: "El tipo de destinatario no es valido para este movimiento." }, { status: 400 });
+    return NextResponse.json(
+      { error: "El tipo de destinatario no es valido para este movimiento." },
+      { status: 400 }
+    );
   }
 
   if (body.fecha && isDateInputAfterToday(body.fecha)) {
@@ -510,7 +560,11 @@ export async function POST(req: Request) {
       cantidad: parseCantidad(equipo.cantidad),
       comentario: typeof equipo.comentario === "string" ? equipo.comentario.trim() : "",
     }))
-    .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{ equipoId: bigint; cantidad: number; comentario: string }>;
+    .filter((equipo) => equipo.equipoId !== null && equipo.cantidad !== null) as Array<{
+    equipoId: bigint;
+    cantidad: number;
+    comentario: string;
+  }>;
 
   if (parsedEquipos.length === 0) {
     return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
@@ -522,7 +576,9 @@ export async function POST(req: Request) {
     const existing = dedupedEquipos.get(key);
     dedupedEquipos.set(key, {
       cantidad: (existing?.cantidad ?? 0) + equipo.cantidad,
-      comentario: existing?.comentario ? `${existing.comentario} | ${equipo.comentario}` : equipo.comentario,
+      comentario: existing?.comentario
+        ? `${existing.comentario} | ${equipo.comentario}`
+        : equipo.comentario,
     });
   }
 
@@ -532,7 +588,9 @@ export async function POST(req: Request) {
       ? prisma.personal.findMany({
           where: {
             ci: { in: destinatarioPayload.targetCis },
-            ...(tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION ? { rango: { tipo: TipoPersonal.SUBALTERNO } } : {}),
+            ...(tipo === MOVIMIENTO_TIPO_ENTREGA || tipo === MOVIMIENTO_TIPO_DEVOLUCION
+              ? { rango: { tipo: TipoPersonal.SUBALTERNO } }
+              : {}),
           },
           select: {
             ci: true,
@@ -544,8 +602,8 @@ export async function POST(req: Request) {
               select: { nombreCompleto: true, abreviacion: true, tipo: true },
             },
             bateria: {
-                              select: { nombre: true },
-                            },
+              select: { nombre: true },
+            },
           },
         })
       : Promise.resolve([]),
@@ -555,9 +613,13 @@ export async function POST(req: Request) {
     }),
   ]);
 
-  const personalByCi = new Map(personalRecords.map((personalRecord) => [personalRecord.ci, personalRecord]));
+  const personalByCi = new Map(
+    personalRecords.map((personalRecord) => [personalRecord.ci, personalRecord])
+  );
   if (destinatarioPayload.destinatarioTipo === "PERSONAL") {
-    const missingCis = destinatarioPayload.targetCis.filter((targetCi) => !personalByCi.has(targetCi));
+    const missingCis = destinatarioPayload.targetCis.filter(
+      (targetCi) => !personalByCi.has(targetCi)
+    );
     if (missingCis.length > 0) {
       const preview = missingCis.slice(0, 3).join(", ");
       const suffix = missingCis.length > 3 ? "..." : "";
@@ -575,14 +637,21 @@ export async function POST(req: Request) {
 
   const comentarios = body.comentarios?.trim() || null;
   const afectaStock = true;
-  const itemNombrePorId = new Map(equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
-  const itemsDetallados = Array.from(dedupedEquipos.entries()).map(([equipoId, { cantidad, comentario }]) => ({
-    equipoId,
-    nombre: itemNombrePorId.get(equipoId) ?? "Equipo sin nombre",
-    cantidad,
-    comentario,
-  }));
-  const totalUnidades = itemsDetallados.reduce((acumulado, equipo) => acumulado + equipo.cantidad, 0);
+  const itemNombrePorId = new Map(
+    equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre])
+  );
+  const itemsDetallados = Array.from(dedupedEquipos.entries()).map(
+    ([equipoId, { cantidad, comentario }]) => ({
+      equipoId,
+      nombre: itemNombrePorId.get(equipoId) ?? "Equipo sin nombre",
+      cantidad,
+      comentario,
+    })
+  );
+  const totalUnidades = itemsDetallados.reduce(
+    (acumulado, equipo) => acumulado + equipo.cantidad,
+    0
+  );
 
   try {
     const createdMovimientos = await prisma.$transaction(async (tx) => {
@@ -613,12 +682,14 @@ export async function POST(req: Request) {
         });
 
         await tx.movimientoEquipo.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(([equipoId, { cantidad, comentario }]) => ({
-            movimientoId: movimiento.movimientoId,
-            equipoId: BigInt(equipoId),
-            cantidad,
-            comentarioEntrega: comentario || null,
-          })),
+          data: Array.from(dedupedEquipos.entries()).map(
+            ([equipoId, { cantidad, comentario }]) => ({
+              movimientoId: movimiento.movimientoId,
+              equipoId: BigInt(equipoId),
+              cantidad,
+              comentarioEntrega: comentario || null,
+            })
+          ),
         });
 
         created.push({ movimientoId: movimiento.movimientoId, ci: null });
@@ -662,12 +733,14 @@ export async function POST(req: Request) {
         });
 
         await tx.movimientoEquipo.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(([equipoId, { cantidad, comentario }]) => ({
-            movimientoId: movimiento.movimientoId,
-            equipoId: BigInt(equipoId),
-            cantidad,
-            comentarioEntrega: comentario || null,
-          })),
+          data: Array.from(dedupedEquipos.entries()).map(
+            ([equipoId, { cantidad, comentario }]) => ({
+              movimientoId: movimiento.movimientoId,
+              equipoId: BigInt(equipoId),
+              cantidad,
+              comentarioEntrega: comentario || null,
+            })
+          ),
         });
 
         created.push({ movimientoId: movimiento.movimientoId, ci: null });
@@ -694,12 +767,14 @@ export async function POST(req: Request) {
         });
 
         await tx.movimientoEquipo.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(([equipoId, { cantidad, comentario }]) => ({
-            movimientoId: movimiento.movimientoId,
-            equipoId: BigInt(equipoId),
-            cantidad,
-            comentarioEntrega: comentario || null,
-          })),
+          data: Array.from(dedupedEquipos.entries()).map(
+            ([equipoId, { cantidad, comentario }]) => ({
+              movimientoId: movimiento.movimientoId,
+              equipoId: BigInt(equipoId),
+              cantidad,
+              comentarioEntrega: comentario || null,
+            })
+          ),
         });
 
         created.push({ movimientoId: movimiento.movimientoId, ci: targetCi });
@@ -770,7 +845,10 @@ export async function POST(req: Request) {
             entidad: "REGISTRO",
             entidadId: movimiento.movimientoId.toString(),
             detalle: {
-              evento: tipo === MOVIMIENTO_TIPO_ASIGNACION ? "MOVIMIENTO_ASIGNACION" : "MOVIMIENTO_VESTUARIO",
+              evento:
+                tipo === MOVIMIENTO_TIPO_ASIGNACION
+                  ? "MOVIMIENTO_ASIGNACION"
+                  : "MOVIMIENTO_VESTUARIO",
               ci: movimiento.ci,
               personal: buildPersonalAuditDetail(personalRecord),
               tipo,
@@ -785,7 +863,7 @@ export async function POST(req: Request) {
               userAgent: requestMeta.userAgent,
             },
           });
-        }),
+        })
       );
     }
 
@@ -798,7 +876,7 @@ export async function POST(req: Request) {
             })}.`
           : destinatarioPayload.destinatarioTipo === "EXTERNO"
             ? `${tipo} a externo ${formatExternoNotificationLabel(destinatarioPayload)}.`
-          : `${tipo} para ${destinatarioPayload.targetCis.length} personal(es).`;
+            : `${tipo} para ${destinatarioPayload.targetCis.length} personal(es).`;
       await notifyAdminOnMovement(
         {
           usuarioId: auth.user.usuarioId,
@@ -808,7 +886,7 @@ export async function POST(req: Request) {
           rol: auth.user.rol,
         },
         detail,
-        "/",
+        "/"
       );
     } catch {
       // No bloquear registro por fallas de push.
@@ -816,8 +894,14 @@ export async function POST(req: Request) {
 
     if (destinatarioPayload.destinatarioTipo === "PERSONAL") {
       const tipoLabel =
-        tipo === MOVIMIENTO_TIPO_ENTREGA ? "entrega" : tipo === MOVIMIENTO_TIPO_DEVOLUCION ? "devolucion" : "asignacion";
-      const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+        tipo === MOVIMIENTO_TIPO_ENTREGA
+          ? "entrega"
+          : tipo === MOVIMIENTO_TIPO_DEVOLUCION
+            ? "devolucion"
+            : "asignacion";
+      const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
+        .replace(/\s+/g, " ")
+        .trim();
       const resumenItems = itemsDetallados
         .slice(0, 4)
         .map((equipo) => `${equipo.nombre} x${equipo.cantidad}`)
@@ -843,8 +927,8 @@ export async function POST(req: Request) {
             ],
             actorLabel,
             portalPath: "/",
-          }),
-        ),
+          })
+        )
       );
     }
 
@@ -856,7 +940,7 @@ export async function POST(req: Request) {
           createdCount: 1,
           destinatarioTipo: destinatarioPayload.destinatarioTipo,
         },
-        { status: 201 },
+        { status: 201 }
       );
     }
 
@@ -865,9 +949,10 @@ export async function POST(req: Request) {
         ok: true,
         createdCount: createdMovimientos.length,
         registroIds: createdMovimientos.map((movimiento) => movimiento.movimientoId.toString()),
-        ciList: destinatarioPayload.destinatarioTipo === "PERSONAL" ? destinatarioPayload.targetCis : [],
+        ciList:
+          destinatarioPayload.destinatarioTipo === "PERSONAL" ? destinatarioPayload.targetCis : [],
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch {
     return NextResponse.json({ error: "No se pudo registrar el movimiento." }, { status: 500 });

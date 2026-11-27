@@ -83,14 +83,18 @@ export function EtiquetadoView({
   const [editCodigoSIE, setEditCodigoSIE] = useState("");
   const [editCodigoTalla, setEditCodigoTalla] = useState("");
   const [editCodigoItemId, setEditCodigoItemId] = useState("");
-  const [newCajaCantidadByItemId, setNewCajaCantidadByItemId] = useState<Record<string, string>>({});
+  const [newCajaCantidadByItemId, setNewCajaCantidadByItemId] = useState<Record<string, string>>(
+    {}
+  );
   const [newCajaEstanteria, setNewCajaEstanteria] = useState("");
   const [newCajaItemIds, setNewCajaItemIds] = useState<string[]>([]);
   const [newCajaCodigosSIEIds, setNewCajaCodigosSIEIds] = useState<string[]>([]);
   const [cajaFiltro, setCajaFiltro] = useState("");
   const [cajaItemFiltro, setCajaItemFiltro] = useState("");
   const [showCreateCajaForm, setShowCreateCajaForm] = useState(false);
-  const [massOrientationByCodigo, setMassOrientationByCodigo] = useState<Record<number, EtiquetaOrientacion>>({});
+  const [massOrientationByCodigo, setMassOrientationByCodigo] = useState<
+    Record<number, EtiquetaOrientacion>
+  >({});
 
   const codigoItemIdValue = itemOptions.some((equipo) => equipo.equipoId === newCodigoItemId)
     ? newCodigoItemId
@@ -99,34 +103,28 @@ export function EtiquetadoView({
     ? newCajaEstanteria
     : (estanteriaOptions[0]?.value ?? "");
 
-  const codigosSIEDisponibles = useMemo(
-    () => sortCodigosSIE(codigosSIE ?? []),
-    [codigosSIE],
-  );
+  const codigosSIEDisponibles = useMemo(() => sortCodigosSIE(codigosSIE ?? []), [codigosSIE]);
 
   const codigosDisponiblesSet = useMemo(
     () => new Set(codigosSIEDisponibles.map((codigo) => codigo.codigoSIEId)),
-    [codigosSIEDisponibles],
+    [codigosSIEDisponibles]
   );
   const codigoSIEItemById = useMemo(
     () => new Map(codigosSIEDisponibles.map((codigo) => [codigo.codigoSIEId, codigo.equipoId])),
-    [codigosSIEDisponibles],
+    [codigosSIEDisponibles]
   );
   const itemOptionById = useMemo(
     () => new Map(itemOptions.map((equipo) => [equipo.equipoId, equipo])),
-    [itemOptions],
+    [itemOptions]
   );
   const selectedCajaItemIds = useMemo(
     () => newCajaItemIds.filter((equipoId) => itemOptionById.has(equipoId)),
-    [newCajaItemIds, itemOptionById],
+    [newCajaItemIds, itemOptionById]
   );
-  const selectedCajaItemSet = useMemo(
-    () => new Set(selectedCajaItemIds),
-    [selectedCajaItemIds],
-  );
+  const selectedCajaItemSet = useMemo(() => new Set(selectedCajaItemIds), [selectedCajaItemIds]);
   const selectedCajaItems = useMemo(
     () => itemOptions.filter((equipo) => selectedCajaItemSet.has(equipo.equipoId)),
-    [itemOptions, selectedCajaItemSet],
+    [itemOptions, selectedCajaItemSet]
   );
   const selectedCajaItemsConCantidadDraft = useMemo(
     () =>
@@ -141,26 +139,26 @@ export function EtiquetadoView({
           valid,
         };
       }),
-    [newCajaCantidadByItemId, selectedCajaItemIds],
+    [newCajaCantidadByItemId, selectedCajaItemIds]
   );
   const cantidadCajaCalculada = useMemo(
     () => selectedCajaItemsConCantidadDraft.reduce((sum, equipo) => sum + equipo.cantidad, 0),
-    [selectedCajaItemsConCantidadDraft],
+    [selectedCajaItemsConCantidadDraft]
   );
   const allSelectedItemsHaveValidCantidad = useMemo(
     () => selectedCajaItemsConCantidadDraft.every((equipo) => equipo.valid),
-    [selectedCajaItemsConCantidadDraft],
+    [selectedCajaItemsConCantidadDraft]
   );
   const filteredItemOptions = useMemo(() => {
     const filtro = cajaItemFiltro.trim().toLowerCase();
     if (!filtro) return itemOptions;
-    return itemOptions.filter((equipo) =>
-      equipo.nombre.toLowerCase().includes(filtro),
-    );
+    return itemOptions.filter((equipo) => equipo.nombre.toLowerCase().includes(filtro));
   }, [itemOptions, cajaItemFiltro]);
   const allFilteredSelected = useMemo(
-    () => filteredItemOptions.length > 0 && filteredItemOptions.every((equipo) => selectedCajaItemSet.has(equipo.equipoId)),
-    [filteredItemOptions, selectedCajaItemSet],
+    () =>
+      filteredItemOptions.length > 0 &&
+      filteredItemOptions.every((equipo) => selectedCajaItemSet.has(equipo.equipoId)),
+    [filteredItemOptions, selectedCajaItemSet]
   );
   const codigosPorItemSeleccionado = useMemo(
     () =>
@@ -169,11 +167,11 @@ export function EtiquetadoView({
         equipoNombre: equipo.nombre,
         codigos: codigosSIEDisponibles.filter((codigo) => codigo.equipoId === equipo.equipoId),
       })),
-    [selectedCajaItems, codigosSIEDisponibles],
+    [selectedCajaItems, codigosSIEDisponibles]
   );
   const codigosPorItemSeleccionadoMap = useMemo(
     () => new Map(codigosPorItemSeleccionado.map((entry) => [entry.equipoId, entry])),
-    [codigosPorItemSeleccionado],
+    [codigosPorItemSeleccionado]
   );
 
   const selectedCajaCodigosSIEIds = useMemo(
@@ -183,11 +181,11 @@ export function EtiquetadoView({
         const equipoId = codigoSIEItemById.get(codigoSIEId);
         return typeof equipoId === "string" && selectedCajaItemSet.has(equipoId);
       }),
-    [newCajaCodigosSIEIds, codigosDisponiblesSet, codigoSIEItemById, selectedCajaItemSet],
+    [newCajaCodigosSIEIds, codigosDisponiblesSet, codigoSIEItemById, selectedCajaItemSet]
   );
   const selectedCajaCodigosSet = useMemo(
     () => new Set(selectedCajaCodigosSIEIds),
-    [selectedCajaCodigosSIEIds],
+    [selectedCajaCodigosSIEIds]
   );
 
   const cajasFiltradas = useMemo(() => {
@@ -196,7 +194,7 @@ export function EtiquetadoView({
 
   const massPrintCodes = useMemo(
     () => cajasList.map((caja) => caja.codigoDepositoGeneral),
-    [cajasList],
+    [cajasList]
   );
 
   function getMassOrientation(codigoDepositoGeneral: number): EtiquetaOrientacion {
@@ -249,7 +247,8 @@ export function EtiquetadoView({
     if (!codigo || !equipoId) return;
     const tallaNormalizada = talla.length > 0 ? talla : "-";
     const duplicateTupleExists = codigosSIEList.some(
-      (entry) => entry.codigo === codigo && entry.talla === tallaNormalizada && entry.equipoId === equipoId,
+      (entry) =>
+        entry.codigo === codigo && entry.talla === tallaNormalizada && entry.equipoId === equipoId
     );
     if (duplicateTupleExists) {
       window.alert("Ya existe un codigo SIE con la misma combinacion de codigo, talla e equipo.");
@@ -257,9 +256,12 @@ export function EtiquetadoView({
     }
 
     const sameCodeEntries = codigosSIEList.filter((entry) => entry.codigo === codigo);
-    const allowDuplicateCodigo = sameCodeEntries.length > 0
-      ? window.confirm(`El codigo SIE ${codigo} ya existe (${sameCodeEntries.length} registro(s)). Deseas registrarlo igualmente?`)
-      : false;
+    const allowDuplicateCodigo =
+      sameCodeEntries.length > 0
+        ? window.confirm(
+            `El codigo SIE ${codigo} ya existe (${sameCodeEntries.length} registro(s)). Deseas registrarlo igualmente?`
+          )
+        : false;
     if (sameCodeEntries.length > 0 && !allowDuplicateCodigo) return;
 
     onCreateCodigoSIE({ codigo, talla, equipoId, allowDuplicateCodigo });
@@ -273,7 +275,8 @@ export function EtiquetadoView({
     if (!equipoId || !selectedCajaItemSet.has(equipoId)) return;
     setNewCajaCodigosSIEIds((prev) => {
       const normalized = prev.filter((entry) => codigosDisponiblesSet.has(entry));
-      if (normalized.includes(codigoSIEId)) return normalized.filter((entry) => entry !== codigoSIEId);
+      if (normalized.includes(codigoSIEId))
+        return normalized.filter((entry) => entry !== codigoSIEId);
       return [...normalized, codigoSIEId];
     });
   }
@@ -282,7 +285,7 @@ export function EtiquetadoView({
     setNewCajaItemIds((prev) => {
       if (prev.includes(equipoId)) {
         setNewCajaCodigosSIEIds((prevCodigos) =>
-          prevCodigos.filter((codigoSIEId) => codigoSIEItemById.get(codigoSIEId) !== equipoId),
+          prevCodigos.filter((codigoSIEId) => codigoSIEItemById.get(codigoSIEId) !== equipoId)
         );
         setNewCajaCantidadByItemId((prevCantidades) => {
           const next = { ...prevCantidades };
@@ -292,7 +295,7 @@ export function EtiquetadoView({
         return prev.filter((entry) => entry !== equipoId);
       }
       setNewCajaCantidadByItemId((prevCantidades) =>
-        prevCantidades[equipoId] ? prevCantidades : { ...prevCantidades, [equipoId]: "1" },
+        prevCantidades[equipoId] ? prevCantidades : { ...prevCantidades, [equipoId]: "1" }
       );
       return [...prev, equipoId];
     });
@@ -305,7 +308,7 @@ export function EtiquetadoView({
 
   function clearCodigosForItem(equipoId: string) {
     setNewCajaCodigosSIEIds((prevCodigos) =>
-      prevCodigos.filter((codigoSIEId) => codigoSIEItemById.get(codigoSIEId) !== equipoId),
+      prevCodigos.filter((codigoSIEId) => codigoSIEItemById.get(codigoSIEId) !== equipoId)
     );
   }
 
@@ -338,13 +341,15 @@ export function EtiquetadoView({
       prevCodigos.filter((codigoSIEId) => {
         const equipoId = codigoSIEItemById.get(codigoSIEId);
         return !equipoId || !filteredSet.has(equipoId);
-      }),
+      })
     );
   }
 
   function handleCreateCaja(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const estanteriaSeleccionada = estanteriaOptions.find((option) => option.value === cajaEstanteriaValue);
+    const estanteriaSeleccionada = estanteriaOptions.find(
+      (option) => option.value === cajaEstanteriaValue
+    );
     const estanteria = normalizeEstanteriaName(estanteriaSeleccionada?.codigo ?? "");
     const piso = estanteriaSeleccionada?.piso ?? null;
     const itemsPayload = selectedCajaItemsConCantidadDraft.map((equipo) => ({
@@ -357,7 +362,8 @@ export function EtiquetadoView({
       !isValidEstanteriaName(estanteria) ||
       itemsPayload.length === 0 ||
       !allSelectedItemsHaveValidCantidad
-    ) return;
+    )
+      return;
     onCreateCaja({
       estanteria,
       piso,
@@ -379,7 +385,12 @@ export function EtiquetadoView({
     onDeleteCodigoSIE(codigoSIEId, codigo);
   }
 
-  function startEditCodigoSIE(codigo: { codigoSIEId: string; codigo: string; talla: string; equipoId: string }) {
+  function startEditCodigoSIE(codigo: {
+    codigoSIEId: string;
+    codigo: string;
+    talla: string;
+    equipoId: string;
+  }) {
     setEditingCodigoSIEId(codigo.codigoSIEId);
     setEditCodigoSIE(codigo.codigo);
     setEditCodigoTalla(codigo.talla === "-" ? "" : codigo.talla);
@@ -395,7 +406,8 @@ export function EtiquetadoView({
 
   function saveEditCodigoSIE() {
     if (!editingCodigoSIEId) return;
-    const originalCodigo = codigosSIEList.find((entry) => entry.codigoSIEId === editingCodigoSIEId)?.codigo ?? null;
+    const originalCodigo =
+      codigosSIEList.find((entry) => entry.codigoSIEId === editingCodigoSIEId)?.codigo ?? null;
     if (!originalCodigo) return;
     const codigo = normalizeCode(editCodigoSIE);
     const talla = normalizeCode(editCodigoTalla);
@@ -437,7 +449,11 @@ export function EtiquetadoView({
             className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-60"
           >
             {loading ? (
-              <LoadingInline label="Recargando..." size="xs" textClassName="text-xs font-semibold text-stone-700" />
+              <LoadingInline
+                label="Recargando..."
+                size="xs"
+                textClassName="text-xs font-semibold text-stone-700"
+              />
             ) : (
               "Recargar"
             )}
@@ -445,19 +461,25 @@ export function EtiquetadoView({
         </div>
         {!canWrite ? (
           <p className="mt-3 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
-            Modo solo lectura: puedes consultar e imprimir etiquetas, pero no crear ni eliminar registros.
+            Modo solo lectura: puedes consultar e imprimir etiquetas, pero no crear ni eliminar
+            registros.
           </p>
         ) : null}
       </article>
 
       {loading && !data ? (
         <article className="ej-card rounded-2xl p-4">
-          <LoadingInline label="Cargando modulo de etiquetado..." textClassName="text-sm font-medium text-stone-700" />
+          <LoadingInline
+            label="Cargando modulo de etiquetado..."
+            textClassName="text-sm font-medium text-stone-700"
+          />
         </article>
       ) : null}
 
       {error ? (
-        <article className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</article>
+        <article className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          {error}
+        </article>
       ) : null}
 
       {section === "codigos_sie" ? (
@@ -465,10 +487,17 @@ export function EtiquetadoView({
           <article className="ej-card order-2 rounded-2xl p-4">
             <h3 className="text-sm font-semibold text-stone-900">Registrar Equipo y Estanteria</h3>
             <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-              <form onSubmit={handleCreateItem} className="space-y-2 rounded-xl border border-stone-200 bg-stone-50 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Nuevo equipo</p>
+              <form
+                onSubmit={handleCreateItem}
+                className="space-y-2 rounded-xl border border-stone-200 bg-stone-50 p-3"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+                  Nuevo equipo
+                </p>
                 <label className="block">
-                  <span className="block text-xs font-medium text-stone-700">Nombre del equipo *</span>
+                  <span className="block text-xs font-medium text-stone-700">
+                    Nombre del equipo *
+                  </span>
                   <input
                     value={newItemNombre}
                     onChange={(event) => setNewItemNombre(event.target.value)}
@@ -478,8 +507,8 @@ export function EtiquetadoView({
                   />
                 </label>
                 <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                  Los equipos creados aqui quedan ocultos en Hoja de Entrega. Puedes habilitarlos luego desde
-                  Configuración &gt; Equipos.
+                  Los equipos creados aqui quedan ocultos en Hoja de Entrega. Puedes habilitarlos
+                  luego desde Configuración &gt; Equipos.
                 </p>
                 <button
                   type="submit"
@@ -490,9 +519,16 @@ export function EtiquetadoView({
                 </button>
               </form>
 
-              <form onSubmit={handleCreateEstanteria} className="space-y-2 rounded-xl border border-stone-200 bg-stone-50 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Nueva estantería</p>
-                <p className="text-xs text-stone-600">Formato: Nombre de estantería (A-Z) + piso.</p>
+              <form
+                onSubmit={handleCreateEstanteria}
+                className="space-y-2 rounded-xl border border-stone-200 bg-stone-50 p-3"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+                  Nueva estantería
+                </p>
+                <p className="text-xs text-stone-600">
+                  Formato: Nombre de estantería (A-Z) + piso.
+                </p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <label className="text-xs text-stone-700">
                     Piso
@@ -510,7 +546,9 @@ export function EtiquetadoView({
                     Nombre de estantería
                     <input
                       value={newEstanteriaCodigo}
-                      onChange={(event) => setNewEstanteriaCodigo(normalizeEstanteriaName(event.target.value))}
+                      onChange={(event) =>
+                        setNewEstanteriaCodigo(normalizeEstanteriaName(event.target.value))
+                      }
                       placeholder="A"
                       maxLength={1}
                       disabled={!canWrite}
@@ -538,7 +576,10 @@ export function EtiquetadoView({
                     key={`${estanteria.codigo}-${estanteria.piso}`}
                     className="flex equipos-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700"
                   >
-                    <span>{estanteria.etiqueta || formatEstanteriaLabel(estanteria.piso, estanteria.codigo)}</span>
+                    <span>
+                      {estanteria.etiqueta ||
+                        formatEstanteriaLabel(estanteria.piso, estanteria.codigo)}
+                    </span>
                     {canWrite ? (
                       <button
                         type="button"
@@ -557,9 +598,13 @@ export function EtiquetadoView({
           <article className="ej-card order-1 rounded-2xl p-4">
             <h3 className="text-sm font-semibold text-stone-900">Registrar Codigo SIE</h3>
             <p className="mt-1 text-xs text-stone-600">
-              El código SIE se registra primero. Si hubo un error de digitado, usa &quot;Editar código&quot; en la tabla.
+              El código SIE se registra primero. Si hubo un error de digitado, usa &quot;Editar
+              código&quot; en la tabla.
             </p>
-            <form onSubmit={handleCreateCodigoSIE} className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-4">
+            <form
+              onSubmit={handleCreateCodigoSIE}
+              className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-4"
+            >
               <input
                 value={newCodigoSIE}
                 onChange={(event) => setNewCodigoSIE(event.target.value)}
@@ -589,7 +634,9 @@ export function EtiquetadoView({
               </select>
               <button
                 type="submit"
-                disabled={!canWrite || newCodigoSIE.trim() === "" || codigoItemIdValue.trim() === ""}
+                disabled={
+                  !canWrite || newCodigoSIE.trim() === "" || codigoItemIdValue.trim() === ""
+                }
                 className="ej-button rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-60"
               >
                 Registrar código
@@ -600,10 +647,18 @@ export function EtiquetadoView({
               <table className="min-w-full border-separate border-spacing-0 text-sm">
                 <thead>
                   <tr>
-                    <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Codigo SIE</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Talla</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">Equipo</th>
-                    <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">Acciones</th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">
+                      Codigo SIE
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">
+                      Talla
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">
+                      Equipo
+                    </th>
+                    <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -620,7 +675,9 @@ export function EtiquetadoView({
                           {editingCodigoSIEId === codigo.codigoSIEId ? (
                             <input
                               value={editCodigoSIE}
-                              onChange={(event) => setEditCodigoSIE(event.target.value.toUpperCase())}
+                              onChange={(event) =>
+                                setEditCodigoSIE(event.target.value.toUpperCase())
+                              }
                               maxLength={8}
                               disabled={!canWrite}
                               className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
@@ -633,7 +690,9 @@ export function EtiquetadoView({
                           {editingCodigoSIEId === codigo.codigoSIEId ? (
                             <input
                               value={editCodigoTalla}
-                              onChange={(event) => setEditCodigoTalla(event.target.value.toUpperCase())}
+                              onChange={(event) =>
+                                setEditCodigoTalla(event.target.value.toUpperCase())
+                              }
                               disabled={!canWrite}
                               className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                             />
@@ -650,7 +709,10 @@ export function EtiquetadoView({
                               className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                             >
                               {itemOptions.map((equipo) => (
-                                <option key={`sie-equipo-edit-${codigo.codigoSIEId}-${equipo.equipoId}`} value={equipo.equipoId}>
+                                <option
+                                  key={`sie-equipo-edit-${codigo.codigoSIEId}-${equipo.equipoId}`}
+                                  value={equipo.equipoId}
+                                >
                                   {equipo.nombre}
                                 </option>
                               ))}
@@ -694,7 +756,9 @@ export function EtiquetadoView({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => confirmDeleteCodigoSIE(codigo.codigoSIEId, codigo.codigo)}
+                                  onClick={() =>
+                                    confirmDeleteCodigoSIE(codigo.codigoSIEId, codigo.codigo)
+                                  }
                                   className="rounded bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100"
                                 >
                                   Borrar
@@ -757,7 +821,10 @@ export function EtiquetadoView({
           </div>
 
           {canWrite && showCreateCajaForm ? (
-            <form onSubmit={handleCreateCaja} className="mt-3 space-y-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <form
+              onSubmit={handleCreateCaja}
+              className="mt-3 space-y-3 rounded-xl border border-stone-200 bg-stone-50 p-3"
+            >
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 <label className="text-xs text-stone-700">
                   Cantidad (calculada)
@@ -780,7 +847,9 @@ export function EtiquetadoView({
                     disabled={!canWrite || estanteriaOptions.length === 0}
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                   >
-                    {estanteriaOptions.length === 0 ? <option value="">Sin estanterías</option> : null}
+                    {estanteriaOptions.length === 0 ? (
+                      <option value="">Sin estanterías</option>
+                    ) : null}
                     {estanteriaOptions.map((estanteria) => (
                       <option key={`caja-estanteria-${estanteria.value}`} value={estanteria.value}>
                         {estanteria.label}
@@ -836,7 +905,9 @@ export function EtiquetadoView({
                           <label
                             key={`caja-equipo-${equipo.equipoId}`}
                             className={`flex cursor-pointer equipos-center gap-2 rounded-lg border px-2.5 py-2 text-sm ${
-                              checked ? "border-blue-300 bg-blue-50 text-blue-900" : "border-stone-300 bg-white text-stone-700"
+                              checked
+                                ? "border-blue-300 bg-blue-50 text-blue-900"
+                                : "border-stone-300 bg-white text-stone-700"
                             }`}
                           >
                             <input
@@ -861,26 +932,37 @@ export function EtiquetadoView({
                     Para cada equipo, selecciona códigos o deja activo &quot;Sin código&quot;.
                   </p>
                   {selectedCajaItems.length === 0 ? (
-                    <p className="mt-2 text-sm text-stone-600">Selecciona equipos para configurar códigos.</p>
+                    <p className="mt-2 text-sm text-stone-600">
+                      Selecciona equipos para configurar códigos.
+                    </p>
                   ) : (
                     <div className="mt-2 max-h-80 space-y-2 overflow-y-auto pr-1">
                       {selectedCajaItems.map((equipo) => {
                         const entry = codigosPorItemSeleccionadoMap.get(equipo.equipoId);
                         const codigos = entry?.codigos ?? [];
-                        const selectedCodesForItem = codigos.filter((codigo) => selectedCajaCodigosSet.has(codigo.codigoSIEId));
+                        const selectedCodesForItem = codigos.filter((codigo) =>
+                          selectedCajaCodigosSet.has(codigo.codigoSIEId)
+                        );
                         const hasSelectedCodes = selectedCodesForItem.length > 0;
                         return (
-                          <div key={`caja-equipo-codigos-${equipo.equipoId}`} className="rounded-lg border border-stone-200 bg-stone-50 p-2.5">
+                          <div
+                            key={`caja-equipo-codigos-${equipo.equipoId}`}
+                            className="rounded-lg border border-stone-200 bg-stone-50 p-2.5"
+                          >
                             <div className="flex flex-wrap equipos-center justify-between gap-2">
                               <div className="min-w-0">
-                                <p className="text-sm font-semibold text-stone-800">{equipo.nombre}</p>
+                                <p className="text-sm font-semibold text-stone-800">
+                                  {equipo.nombre}
+                                </p>
                                 <label className="mt-1 block text-[11px] font-medium text-stone-600">
                                   Cantidad del equipo
                                   <input
                                     type="number"
                                     min={1}
                                     value={newCajaCantidadByItemId[equipo.equipoId] ?? "1"}
-                                    onChange={(event) => updateCantidadForItem(equipo.equipoId, event.target.value)}
+                                    onChange={(event) =>
+                                      updateCantidadForItem(equipo.equipoId, event.target.value)
+                                    }
                                     className="mt-1 w-28 rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700"
                                   />
                                 </label>
@@ -895,7 +977,9 @@ export function EtiquetadoView({
                             </div>
 
                             {codigos.length === 0 ? (
-                              <p className="mt-2 text-xs text-stone-600">Sin códigos registrados. Quedará S/Código.</p>
+                              <p className="mt-2 text-xs text-stone-600">
+                                Sin códigos registrados. Quedará S/Código.
+                              </p>
                             ) : (
                               <div className="mt-2 flex flex-wrap gap-2">
                                 <button
@@ -959,18 +1043,26 @@ export function EtiquetadoView({
               <p className="text-sm text-stone-600">No hay cajas que coincidan con el filtro.</p>
             ) : (
               cajasFiltradas.map((caja) => (
-                <div key={`caja-${caja.codigoDepositoGeneral}`} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                <div
+                  key={`caja-${caja.codigoDepositoGeneral}`}
+                  className="rounded-xl border border-stone-200 bg-stone-50 p-3"
+                >
                   <div className="flex flex-wrap equipos-start justify-between gap-2">
                     <div>
-                      <p className="text-sm font-semibold text-stone-900">Caja {caja.codigoDepositoGeneral}</p>
+                      <p className="text-sm font-semibold text-stone-900">
+                        Caja {caja.codigoDepositoGeneral}
+                      </p>
                       <p className="text-xs text-stone-600">
-                        {caja.equipoNombres.length > 0 ? caja.equipoNombres.join(", ") : "Sin equipos asociados por código SIE"}
+                        {caja.equipoNombres.length > 0
+                          ? caja.equipoNombres.join(", ")
+                          : "Sin equipos asociados por código SIE"}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {renderTag(`Cantidad ${caja.cantidad}`, "accent")}
                         {renderTag(
-                          estanteriaLabelByKey.get(buildEstanteriaKey(caja.estanteria, caja.piso)) ??
-                            formatEstanteriaLabel(caja.piso, caja.estanteria),
+                          estanteriaLabelByKey.get(
+                            buildEstanteriaKey(caja.estanteria, caja.piso)
+                          ) ?? formatEstanteriaLabel(caja.piso, caja.estanteria)
                         )}
                       </div>
                     </div>
@@ -1011,14 +1103,18 @@ export function EtiquetadoView({
                                 return `${equipo.equipoNombre} x${equipo.cantidad}: S/Codigo`;
                               }
                               const codigosEquipo = equipo.codigosSIE
-                                .map((codigo) => `${codigo.codigo}${codigo.talla !== "-" ? ` (${codigo.talla})` : ""}`)
+                                .map(
+                                  (codigo) =>
+                                    `${codigo.codigo}${codigo.talla !== "-" ? ` (${codigo.talla})` : ""}`
+                                )
                                 .join(", ");
                               return `${equipo.equipoNombre} x${equipo.cantidad}: ${codigosEquipo}`;
                             })
                             .join(" | ")}
                     </p>
                     <p>
-                      <span className="font-semibold">Talles:</span> {caja.tallas.length > 0 ? caja.tallas.join(", ") : "-"}
+                      <span className="font-semibold">Talles:</span>{" "}
+                      {caja.tallas.length > 0 ? caja.tallas.join(", ") : "-"}
                     </p>
                   </div>
                 </div>
@@ -1038,10 +1134,13 @@ export function EtiquetadoView({
           {massPrintCodes.length > 0 ? (
             <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
               <div className="flex flex-wrap equipos-center gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">Orientacion de etiquetas</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
+                  Orientacion de etiquetas
+                </p>
               </div>
               <p className="mt-1 text-[11px] text-stone-600">
-                Define la orientacion por caja: puedes mezclar horizontal y vertical en una misma impresion.
+                Define la orientacion por caja: puedes mezclar horizontal y vertical en una misma
+                impresion.
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
@@ -1068,16 +1167,22 @@ export function EtiquetadoView({
                       className="grid grid-cols-[minmax(0,1fr)_auto] equipos-center gap-2 rounded-lg border border-stone-200 bg-white px-2.5 py-2"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-stone-900">Caja {caja.codigoDepositoGeneral}</p>
+                        <p className="text-sm font-semibold text-stone-900">
+                          Caja {caja.codigoDepositoGeneral}
+                        </p>
                         <p className="truncate text-xs text-stone-600">
-                          {estanteriaLabelByKey.get(buildEstanteriaKey(caja.estanteria, caja.piso)) ??
-                            formatEstanteriaLabel(caja.piso, caja.estanteria)} | Cantidad {caja.cantidad}
+                          {estanteriaLabelByKey.get(
+                            buildEstanteriaKey(caja.estanteria, caja.piso)
+                          ) ?? formatEstanteriaLabel(caja.piso, caja.estanteria)}{" "}
+                          | Cantidad {caja.cantidad}
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-1">
                         <button
                           type="button"
-                          onClick={() => setMassOrientation(caja.codigoDepositoGeneral, "horizontal")}
+                          onClick={() =>
+                            setMassOrientation(caja.codigoDepositoGeneral, "horizontal")
+                          }
                           className={`rounded px-2 py-1 text-xs font-semibold ${
                             orientacionCaja === "horizontal"
                               ? "bg-stone-900 text-white"
@@ -1113,7 +1218,7 @@ export function EtiquetadoView({
                   cajasList.map((caja) => ({
                     codigoDepositoGeneral: caja.codigoDepositoGeneral,
                     orientacion: getMassOrientation(caja.codigoDepositoGeneral),
-                  })),
+                  }))
                 )
               }
               disabled={massPrintCodes.length === 0}

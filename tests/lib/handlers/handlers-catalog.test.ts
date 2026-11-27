@@ -78,7 +78,7 @@ describe("Handlers de Catalogos - Rangos", () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ abreviacion: "Ten.", nombreCompleto: "Teniente", orden: 2 }),
-        }),
+        })
       );
     });
   });
@@ -95,7 +95,7 @@ describe("Handlers de Catalogos - Rangos", () => {
         "/api/rangos/1",
         expect.objectContaining({
           method: "PUT",
-        }),
+        })
       );
     });
 
@@ -125,7 +125,7 @@ describe("Handlers de Catalogos - Rangos", () => {
         "/api/rangos/1",
         expect.objectContaining({
           method: "DELETE",
-        }),
+        })
       );
     });
   });
@@ -149,7 +149,7 @@ describe("Handlers de Catalogos - Equipos", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ nombre: "F.R.I", orden: 1 }),
-      }),
+      })
     );
     expect(onSuccess).toHaveBeenCalledWith(response);
     expect(onError).not.toHaveBeenCalled();
@@ -167,7 +167,7 @@ describe("Handlers de Catalogos - Equipos", () => {
       expect.objectContaining({
         method: "PUT",
         body: JSON.stringify({ nombre: "Asalto", orden: 2 }),
-      }),
+      })
     );
     expect(onSuccess).toHaveBeenCalled();
   });
@@ -184,7 +184,7 @@ describe("Handlers de Catalogos - Equipos", () => {
       "/api/equipos/tipos/4",
       expect.objectContaining({
         method: "DELETE",
-      }),
+      })
     );
     expect(onSuccess).toHaveBeenCalledWith(response);
     expect(onError).not.toHaveBeenCalled();
@@ -206,7 +206,7 @@ describe("Handlers de Catalogos - Equipos", () => {
           tipo: "GENERAL",
           activo: true,
         }),
-      }),
+      })
     );
   });
 
@@ -222,7 +222,7 @@ describe("Handlers de Catalogos - Equipos", () => {
       expect.objectContaining({
         method: "PUT",
         body: JSON.stringify({ nombre: "Parka Pixelada", tipo: "FRI", activo: true, ordenPdf: 4 }),
-      }),
+      })
     );
   });
 
@@ -238,7 +238,7 @@ describe("Handlers de Catalogos - Equipos", () => {
       expect.objectContaining({
         method: "PATCH",
         body: JSON.stringify({ orderedItemIds: ["12", "18", "25"], activo: true }),
-      }),
+      })
     );
   });
 
@@ -254,7 +254,7 @@ describe("Handlers de Catalogos - Equipos", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ targetEquipoId: "18" }),
-      }),
+      })
     );
   });
 });
@@ -281,7 +281,7 @@ describe("Handlers de Catalogos - Articulos", () => {
           cantidad: 12,
           comentarios: "Compra mensual",
         }),
-      }),
+      })
     );
     expect(onSuccess).toHaveBeenCalled();
     expect(onError).not.toHaveBeenCalled();
@@ -293,7 +293,7 @@ describe("Handlers de Catalogos - Articulos", () => {
     vi.mocked(api).mockRejectedValue(new Error("Artículo no encontrado"));
 
     await expect(
-      ingresarStockArticuloHandler(404, 2, undefined, { onSuccess, onError }),
+      ingresarStockArticuloHandler(404, 2, undefined, { onSuccess, onError })
     ).rejects.toThrow("Artículo no encontrado");
 
     expect(onError).toHaveBeenCalledWith("Artículo no encontrado");
@@ -312,14 +312,14 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
       const onError = vi.fn();
 
       vi.mocked(api).mockRejectedValue("fallo");
-      await expect(createRangoHandler("Cbo.", "Cabo", undefined, { onSuccess, onError })).rejects.toBe(
-        "fallo",
-      );
+      await expect(
+        createRangoHandler("Cbo.", "Cabo", undefined, { onSuccess, onError })
+      ).rejects.toBe("fallo");
       expect(onError).toHaveBeenCalledWith("No se pudo crear el grado.");
 
-      await expect(updateRangoHandler(1, "Cbo.", "Cabo", undefined, { onSuccess, onError })).rejects.toBe(
-        "fallo",
-      );
+      await expect(
+        updateRangoHandler(1, "Cbo.", "Cabo", undefined, { onSuccess, onError })
+      ).rejects.toBe("fallo");
       expect(onError).toHaveBeenCalledWith("No se pudo actualizar el grado.");
 
       await expect(deleteRangoHandler(1, { onSuccess, onError })).rejects.toBe("fallo");
@@ -364,23 +364,23 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
 
       vi.mocked(api).mockRejectedValue(new Error("Duplicada"));
       await expect(createBateriaHandler("1ra", undefined, { onSuccess, onError })).rejects.toThrow(
-        "Duplicada",
+        "Duplicada"
       );
-      await expect(updateBateriaHandler(1, "1ra", undefined, { onSuccess, onError })).rejects.toThrow(
-        "Duplicada",
-      );
+      await expect(
+        updateBateriaHandler(1, "1ra", undefined, { onSuccess, onError })
+      ).rejects.toThrow("Duplicada");
       await expect(deleteBateriaHandler(1, { onSuccess, onError })).rejects.toThrow("Duplicada");
       expect(onError).toHaveBeenCalledTimes(3);
       expect(onError).toHaveBeenNthCalledWith(1, "Duplicada");
 
       vi.mocked(api).mockRejectedValue("fallo");
       await expect(createBateriaHandler("1ra", undefined, { onSuccess, onError })).rejects.toBe(
-        "fallo",
+        "fallo"
       );
       expect(onError).toHaveBeenLastCalledWith("No se pudo crear la batería.");
 
       await expect(updateBateriaHandler(1, "1ra", undefined, { onSuccess, onError })).rejects.toBe(
-        "fallo",
+        "fallo"
       );
       expect(onError).toHaveBeenLastCalledWith("No se pudo actualizar la batería.");
 
@@ -396,18 +396,24 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
 
       vi.mocked(api).mockRejectedValue(new Error("Error tipo"));
       await expect(createEquipoTipoHandler("T", 1, { onSuccess, onError })).rejects.toThrow(
-        "Error tipo",
+        "Error tipo"
       );
       await expect(updateEquipoTipoHandler(1, "T", 1, { onSuccess, onError })).rejects.toThrow(
-        "Error tipo",
+        "Error tipo"
       );
-      await expect(deleteEquipoTipoHandler(1, { onSuccess, onError })).rejects.toThrow("Error tipo");
+      await expect(deleteEquipoTipoHandler(1, { onSuccess, onError })).rejects.toThrow(
+        "Error tipo"
+      );
 
       vi.mocked(api).mockRejectedValue(null);
-      await expect(createEquipoTipoHandler("T", undefined, { onSuccess, onError })).rejects.toBeNull();
+      await expect(
+        createEquipoTipoHandler("T", undefined, { onSuccess, onError })
+      ).rejects.toBeNull();
       expect(onError).toHaveBeenLastCalledWith("No se pudo crear el tipo de equipo.");
 
-      await expect(updateEquipoTipoHandler(1, "T", undefined, { onSuccess, onError })).rejects.toBeNull();
+      await expect(
+        updateEquipoTipoHandler(1, "T", undefined, { onSuccess, onError })
+      ).rejects.toBeNull();
       expect(onError).toHaveBeenLastCalledWith("No se pudo actualizar el tipo de equipo.");
 
       await expect(deleteEquipoTipoHandler(1, { onSuccess, onError })).rejects.toBeNull();
@@ -421,18 +427,18 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
       const onError = vi.fn();
       vi.mocked(api).mockResolvedValue({});
 
-      await createArticuloHandler("Guantes", "CONSUMIBLE", { onSuccess, onError });
+      await createArticuloHandler("Resma A4", "OFICINA", { onSuccess, onError });
       expect(vi.mocked(api)).toHaveBeenCalledWith("/api/articulos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: "Guantes", tipo: "CONSUMIBLE" }),
+        body: JSON.stringify({ nombre: "Resma A4", tipo: "OFICINA" }),
       });
 
-      await updateArticuloHandler(3, "Guantes térmicos", "CONSUMIBLE", { onSuccess, onError });
+      await updateArticuloHandler(3, "Detergente", "LIMPIEZA", { onSuccess, onError });
       expect(vi.mocked(api)).toHaveBeenCalledWith("/api/articulos/3", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: "Guantes térmicos", tipo: "CONSUMIBLE" }),
+        body: JSON.stringify({ nombre: "Detergente", tipo: "LIMPIEZA" }),
       });
 
       await deleteArticuloHandler(3, { onSuccess, onError });
@@ -446,24 +452,24 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
       const onError = vi.fn();
 
       vi.mocked(api).mockRejectedValue(new Error("Error artículo"));
-      await expect(createArticuloHandler("X", "CONSUMIBLE", { onSuccess, onError })).rejects.toThrow(
-        "Error artículo",
+      await expect(createArticuloHandler("X", "OFICINA", { onSuccess, onError })).rejects.toThrow(
+        "Error artículo"
       );
-      await expect(updateArticuloHandler(1, "X", "CONSUMIBLE", { onSuccess, onError })).rejects.toThrow(
-        "Error artículo",
-      );
+      await expect(
+        updateArticuloHandler(1, "X", "OFICINA", { onSuccess, onError })
+      ).rejects.toThrow("Error artículo");
       await expect(deleteArticuloHandler(1, { onSuccess, onError })).rejects.toThrow(
-        "Error artículo",
+        "Error artículo"
       );
 
       vi.mocked(api).mockRejectedValue("fallo");
-      await expect(createArticuloHandler("X", "CONSUMIBLE", { onSuccess, onError })).rejects.toBe(
-        "fallo",
+      await expect(createArticuloHandler("X", "LIMPIEZA", { onSuccess, onError })).rejects.toBe(
+        "fallo"
       );
       expect(onError).toHaveBeenLastCalledWith("No se pudo crear el artículo.");
 
-      await expect(updateArticuloHandler(1, "X", "CONSUMIBLE", { onSuccess, onError })).rejects.toBe(
-        "fallo",
+      await expect(updateArticuloHandler(1, "X", "LIMPIEZA", { onSuccess, onError })).rejects.toBe(
+        "fallo"
       );
       expect(onError).toHaveBeenLastCalledWith("No se pudo actualizar el artículo.");
 
@@ -471,10 +477,10 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
       expect(onError).toHaveBeenLastCalledWith("No se pudo eliminar el artículo.");
 
       await expect(
-        ingresarStockArticuloHandler(1, 5, undefined, { onSuccess, onError }),
+        ingresarStockArticuloHandler(1, 5, undefined, { onSuccess, onError })
       ).rejects.toBe("fallo");
       expect(onError).toHaveBeenLastCalledWith(
-        "No se pudo registrar el ingreso de stock del artículo.",
+        "No se pudo registrar el ingreso de stock del artículo."
       );
     });
 
@@ -490,7 +496,7 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
         "2026-05-20",
         "Entrega anual",
         [{ articuloId: 7, cantidad: 2 }],
-        { onSuccess, onError },
+        { onSuccess, onError }
       );
 
       expect(vi.mocked(api)).toHaveBeenCalledWith("/api/articulos/entregas", {
@@ -515,8 +521,8 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
           "2026-05-20",
           undefined,
           [{ articuloId: 7, cantidad: 2 }],
-          { onSuccess, onError },
-        ),
+          { onSuccess, onError }
+        )
       ).rejects.toThrow("Sin stock");
       expect(onError).toHaveBeenLastCalledWith("Sin stock");
 
@@ -528,11 +534,11 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
           "2026-05-20",
           undefined,
           [{ articuloId: 7, cantidad: 2 }],
-          { onSuccess, onError },
-        ),
+          { onSuccess, onError }
+        )
       ).rejects.toBe("fallo");
       expect(onError).toHaveBeenLastCalledWith(
-        "No se pudo registrar la entrega de artículos a personal.",
+        "No se pudo registrar la entrega de artículos a personal."
       );
     });
   });
@@ -592,31 +598,33 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
       const onError = vi.fn();
 
       vi.mocked(api).mockRejectedValue(new Error("Error equipo"));
-      await expect(createEquipoHandler("Eq", "GENERAL", true, { onSuccess, onError })).rejects.toThrow(
-        "Error equipo",
-      );
       await expect(
-        updateEquipoHandler("1", "Eq", "GENERAL", true, 1, { onSuccess, onError }),
+        createEquipoHandler("Eq", "GENERAL", true, { onSuccess, onError })
       ).rejects.toThrow("Error equipo");
-      await expect(deleteEquipoHandler("1", { onSuccess, onError })).rejects.toThrow("Error equipo");
+      await expect(
+        updateEquipoHandler("1", "Eq", "GENERAL", true, 1, { onSuccess, onError })
+      ).rejects.toThrow("Error equipo");
+      await expect(deleteEquipoHandler("1", { onSuccess, onError })).rejects.toThrow(
+        "Error equipo"
+      );
       await expect(mergeEquipoHandler("1", "2", { onSuccess, onError })).rejects.toThrow(
-        "Error equipo",
+        "Error equipo"
       );
       await expect(loadEquipoDeleteImpactHandler("1", { onSuccess, onError })).rejects.toThrow(
-        "Error equipo",
+        "Error equipo"
       );
-      await expect(updateMultipleEquipoOrdersHandler(["1"], { onSuccess, onError })).rejects.toThrow(
-        "Error equipo",
-      );
+      await expect(
+        updateMultipleEquipoOrdersHandler(["1"], { onSuccess, onError })
+      ).rejects.toThrow("Error equipo");
 
       vi.mocked(api).mockRejectedValue("fallo");
       await expect(createEquipoHandler("Eq", "GENERAL", true, { onSuccess, onError })).rejects.toBe(
-        "fallo",
+        "fallo"
       );
       expect(onError).toHaveBeenLastCalledWith("No se pudo crear el equipo.");
 
       await expect(
-        updateEquipoHandler("1", "Eq", "GENERAL", true, 1, { onSuccess, onError }),
+        updateEquipoHandler("1", "Eq", "GENERAL", true, 1, { onSuccess, onError })
       ).rejects.toBe("fallo");
       expect(onError).toHaveBeenLastCalledWith("No se pudo actualizar el equipo.");
 
@@ -626,13 +634,15 @@ describe("Handlers de Catálogos - Cobertura completa y errores por defecto", ()
       await expect(mergeEquipoHandler("1", "2", { onSuccess, onError })).rejects.toBe("fallo");
       expect(onError).toHaveBeenLastCalledWith("No se pudo unificar el equipo.");
 
-      await expect(loadEquipoDeleteImpactHandler("1", { onSuccess, onError })).rejects.toBe("fallo");
+      await expect(loadEquipoDeleteImpactHandler("1", { onSuccess, onError })).rejects.toBe(
+        "fallo"
+      );
       expect(onError).toHaveBeenLastCalledWith(
-        "No se pudo calcular el impacto de borrado del equipo.",
+        "No se pudo calcular el impacto de borrado del equipo."
       );
 
       await expect(updateMultipleEquipoOrdersHandler(["1"], { onSuccess, onError })).rejects.toBe(
-        "fallo",
+        "fallo"
       );
       expect(onError).toHaveBeenLastCalledWith("No se pudo actualizar el orden de PDF.");
     });

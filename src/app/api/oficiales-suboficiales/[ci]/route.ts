@@ -64,7 +64,8 @@ function isValidPayload(body: unknown): body is OficialSuboficialUpdatePayload {
   if (typeof candidate.apellido1 !== "string" || candidate.apellido1.trim() === "") return false;
   if (typeof candidate.nombre1 !== "string" || candidate.nombre1.trim() === "") return false;
   if (parseRangoId(candidate.rangoId) === null) return false;
-  if (candidate.telefonoContacto !== undefined && typeof candidate.telefonoContacto !== "string") return false;
+  if (candidate.telefonoContacto !== undefined && typeof candidate.telefonoContacto !== "string")
+    return false;
   return true;
 }
 
@@ -153,7 +154,7 @@ export async function PUT(request: Request, context: { params: Promise<{ ci: str
   if (!isValidPayload(body)) {
     return NextResponse.json(
       { error: "Payload invalido. Revisa apellido1, nombre1 y rangoId." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -164,7 +165,10 @@ export async function PUT(request: Request, context: { params: Promise<{ ci: str
 
   const telefonoContacto = normalizeOptionalUruguayanMobileNumber(body.telefonoContacto);
   if ((body.telefonoContacto?.trim() ?? "") !== "" && !telefonoContacto) {
-    return NextResponse.json({ error: "telefonoContacto debe ser un celular uruguayo valido." }, { status: 400 });
+    return NextResponse.json(
+      { error: "telefonoContacto debe ser un celular uruguayo valido." },
+      { status: 400 }
+    );
   }
 
   const tallasPayload = extractTallas(body);
@@ -190,7 +194,11 @@ export async function PUT(request: Request, context: { params: Promise<{ ci: str
         select: { ci: true, rangoId: true, rango: { select: { tipo: true } } },
       });
 
-      if (!existing || (existing.rango.tipo !== TipoPersonal.OFICIAL && existing.rango.tipo !== TipoPersonal.SUBOFICIAL)) {
+      if (
+        !existing ||
+        (existing.rango.tipo !== TipoPersonal.OFICIAL &&
+          existing.rango.tipo !== TipoPersonal.SUBOFICIAL)
+      ) {
         return null;
       }
 
@@ -251,7 +259,9 @@ export async function PUT(request: Request, context: { params: Promise<{ ci: str
       },
     });
 
-    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
+      .replace(/\s+/g, " ")
+      .trim();
     await Promise.allSettled([
       sendPersonalMovementEmailNotification({
         request,
@@ -271,18 +281,29 @@ export async function PUT(request: Request, context: { params: Promise<{ ci: str
     return NextResponse.json(serializeOficialSuboficial(updated as OficialSuboficialRecord));
   } catch (error: unknown) {
     if (error instanceof Error && error.message === "RANGO_INVALIDO") {
-      return NextResponse.json({ error: "rangoId invalido para el tipo del registro." }, { status: 400 });
+      return NextResponse.json(
+        { error: "rangoId invalido para el tipo del registro." },
+        { status: 400 }
+      );
     }
     if (hasConstraintName(error, "personal_talla_valor_permitido_chk")) {
       return NextResponse.json(
-        { error: "Talles invalidos. Parka/Camisaco/Pantalon: XS a XXXL; Kepi: 54 a 63; Calzado: 34 a 47." },
-        { status: 400 },
+        {
+          error:
+            "Talles invalidos. Parka/Camisaco/Pantalon: XS a XXXL; Kepi: 54 a 63; Calzado: 34 a 47.",
+        },
+        { status: 400 }
       );
     }
 
     const code = getPrismaErrorCode(error);
-    if (code === "P2025") return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
-    if (code === "P2003") return NextResponse.json({ error: "rangoId invalido para el tipo del registro." }, { status: 400 });
+    if (code === "P2025")
+      return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
+    if (code === "P2003")
+      return NextResponse.json(
+        { error: "rangoId invalido para el tipo del registro." },
+        { status: 400 }
+      );
     return NextResponse.json({ error: "No se pudo actualizar el registro." }, { status: 500 });
   }
 }

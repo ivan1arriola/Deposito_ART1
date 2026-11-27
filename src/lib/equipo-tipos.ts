@@ -27,7 +27,9 @@ export function normalizeEquipoTipoClave(value: string) {
     .replace(/_{2,}/g, "_");
 }
 
-export function buildEquipoTipoDescriptor(tipoEquipo: EquipoTipoRecordLike | null | undefined): EquipoTipoDescriptor {
+export function buildEquipoTipoDescriptor(
+  tipoEquipo: EquipoTipoRecordLike | null | undefined
+): EquipoTipoDescriptor {
   if (!tipoEquipo) {
     return {
       tipo: GENERAL_TIPO_EQUIPO_CLAVE,

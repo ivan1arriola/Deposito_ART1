@@ -39,7 +39,7 @@ export function PersonalFilters({
       { value: "NONE", label: "Sin batería" },
       ...baterias.map((bateria) => ({ value: String(bateria.bateriaId), label: bateria.nombre })),
     ],
-    [baterias],
+    [baterias]
   );
 
   const activeFilterCount = useMemo(() => {
@@ -52,7 +52,9 @@ export function PersonalFilters({
   }, [bateriaFilter, searchApellidos, searchCedula, searchNombres]);
 
   return (
-    <section className={`rounded-[28px] border border-[rgba(88,80,58,0.18)] bg-[linear-gradient(180deg,rgba(247,244,234,0.96)_0%,rgba(232,228,213,0.94)_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] sm:p-4 ${className ?? ""}`}>
+    <section
+      className={`rounded-[28px] border border-[rgba(88,80,58,0.18)] bg-[linear-gradient(180deg,rgba(247,244,234,0.96)_0%,rgba(232,228,213,0.94)_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] sm:p-4 ${className ?? ""}`}
+    >
       <div className="flex flex-col gap-3 sm:min-h-[74px] sm:flex-row sm:equipos-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-stone-900">Filtros de subalternos</p>
@@ -81,9 +83,13 @@ export function PersonalFilters({
         </div>
       </div>
 
-      <div className={`${showMobileFilters ? "mt-3 grid" : "hidden"} grid-cols-1 gap-3 md:mt-4 md:grid md:grid-cols-3`}>
+      <div
+        className={`${showMobileFilters ? "mt-3 grid" : "hidden"} grid-cols-1 gap-3 md:mt-4 md:grid md:grid-cols-3`}
+      >
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Cédula</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Cédula
+          </span>
           <input
             value={searchCedula}
             onChange={(event) => onSearchCedulaChange(event.target.value)}
@@ -92,7 +98,9 @@ export function PersonalFilters({
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Apellidos</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Apellidos
+          </span>
           <input
             value={searchApellidos}
             onChange={(event) => onSearchApellidosChange(event.target.value)}
@@ -101,7 +109,9 @@ export function PersonalFilters({
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Nombres</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Nombres
+          </span>
           <input
             value={searchNombres}
             onChange={(event) => onSearchNombresChange(event.target.value)}
@@ -110,7 +120,9 @@ export function PersonalFilters({
           />
         </label>
         <label className="block md:col-span-3">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Batería</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Batería
+          </span>
           <div className="mt-1 grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(140px,1fr))]">
             {bateriaOptions.map((option) => {
               const isActive = bateriaFilter === option.value;

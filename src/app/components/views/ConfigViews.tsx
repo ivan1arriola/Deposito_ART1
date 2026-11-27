@@ -1,14 +1,30 @@
 "use client";
 
 import { FormEvent, ReactNode, useMemo, useState } from "react";
-import { formatAuditEntityId, resolveAuditEntityName, type AuditCiReferences } from "@/lib/audit-helpers";
+import {
+  formatAuditEntityId,
+  resolveAuditEntityName,
+  type AuditCiReferences,
+} from "@/lib/audit-helpers";
 import { formatUruguayanCi, normalizeCi } from "@/lib/ci";
 import { formatDateTimeForDisplay, formatDateTimeExact } from "@/lib/date-helpers";
 import { compareEquiposByTipoAndName } from "@/lib/equipo-sort";
 import { systemUserLabel } from "@/lib/formatters";
 import { buildSearchIndex, filterSearchIndex } from "@/lib/search-index";
 import type { MainView } from "@/types/views";
-import { ROLE_OPTIONS, type Articulo, type AuditoriaRecord, type Equipo, type EquipoTipo, type FirmaConfig, type Rango, type Role, type TipoArticulo, type TipoEquipo, type UsuarioAdmin } from "@/types/entities";
+import {
+  ROLE_OPTIONS,
+  type Articulo,
+  type AuditoriaRecord,
+  type Equipo,
+  type EquipoTipo,
+  type FirmaConfig,
+  type Rango,
+  type Role,
+  type TipoArticulo,
+  type TipoEquipo,
+  type UsuarioAdmin,
+} from "@/types/entities";
 import type { PapeleraRecord } from "@/app/types/home";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 import { ModalFrame } from "../modals/ModalFrame";
@@ -56,7 +72,16 @@ type TrashDetails = {
 };
 
 interface ConfigViewsProps {
-  activeView: "grados" | "baterias" | "articulos" | "equipos" | "tipos_equipo" | "firmas" | "usuarios" | "auditoria" | "papelera";
+  activeView:
+    | "grados"
+    | "baterias"
+    | "articulos"
+    | "equipos"
+    | "tipos_equipo"
+    | "firmas"
+    | "usuarios"
+    | "auditoria"
+    | "papelera";
   isAdmin: boolean;
   canWrite: boolean;
   // Grados state
@@ -162,7 +187,10 @@ interface ConfigViewsProps {
   onSumarStock?: (articuloId: number) => void;
   onEntregarArticulo?: (articuloId: number) => void;
   // Equipos callbacks
-  onNewEquipoChange: (value: string | boolean, key: keyof Pick<EquipoConfig, "nombre" | "tipo" | "activo">) => void;
+  onNewEquipoChange: (
+    value: string | boolean,
+    key: keyof Pick<EquipoConfig, "nombre" | "tipo" | "activo">
+  ) => void;
   onEditEquipoIdChange: (id: string | null) => void;
   onEditEquipoChange: (
     value: string | boolean | number,
@@ -179,7 +207,16 @@ interface ConfigViewsProps {
   onResetEquipoOrderDraft: () => void;
   onSaveEquipoInactivoOrder: () => void;
   onResetEquipoInactivoOrderDraft: () => void;
-  renderEquipoCard: (equipo: EquipoConfig, options?: { reorderableInActiveList?: boolean; reorderableInInactiveList?: boolean; orderIndex?: number; orderCount?: number; orderGroupType?: TipoEquipo }) => ReactNode;
+  renderEquipoCard: (
+    equipo: EquipoConfig,
+    options?: {
+      reorderableInActiveList?: boolean;
+      reorderableInInactiveList?: boolean;
+      orderIndex?: number;
+      orderCount?: number;
+      orderGroupType?: TipoEquipo;
+    }
+  ) => ReactNode;
   // Usuarios callbacks
   onNewUserRangoIdChange: (value: string) => void;
   onNewNombreChange: (value: string) => void;
@@ -212,7 +249,11 @@ interface ConfigViewsProps {
   rangoLabel: (rango: RangoConfig) => string;
   auditActionLabel: (accion: string) => string;
   auditEntityLabel: (entidad: string) => string;
-  renderAuditDetalle: (detalle: unknown, ciReferences?: AuditCiReferences, accion?: string) => ReactNode;
+  renderAuditDetalle: (
+    detalle: unknown,
+    ciReferences?: AuditCiReferences,
+    accion?: string
+  ) => ReactNode;
   // Papelera state and callbacks
   papelera?: PapeleraViewState;
   reloadCurrentViewData?: (showSpinner?: boolean) => Promise<void>;
@@ -233,7 +274,8 @@ const ARTICULO_TIPO_LABEL: Record<TipoArticulo, string> = {
   LIMPIEZA: "Limpieza",
 };
 export function ConfigViews(props: ConfigViewsProps) {
-  const [activeUserAccountTypeTab, setActiveUserAccountTypeTab] = useState<UserAccountType>("SISTEMA");
+  const [activeUserAccountTypeTab, setActiveUserAccountTypeTab] =
+    useState<UserAccountType>("SISTEMA");
   const [personalUsersSearch, setPersonalUsersSearch] = useState("");
   const equiposCountByTipo = useMemo(() => {
     const next = new Map<string, number>();
@@ -251,7 +293,11 @@ export function ConfigViews(props: ConfigViewsProps) {
   const [undoSuccess, setUndoSuccess] = useState<string | null>(null);
 
   const handleUndo = async (auditoriaId: string) => {
-    if (!confirm(`¿Estás seguro de que deseas deshacer esta acción (#${auditoriaId})? Esto revertirá el estado de la base de datos.`)) {
+    if (
+      !confirm(
+        `¿Estás seguro de que deseas deshacer esta acción (#${auditoriaId})? Esto revertirá el estado de la base de datos.`
+      )
+    ) {
       return;
     }
     setUndoingId(auditoriaId);
@@ -261,8 +307,8 @@ export function ConfigViews(props: ConfigViewsProps) {
       const response = await fetch(`/api/auditoria/${auditoriaId}/undo`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       });
       const data = await response.json();
       if (!response.ok) {
@@ -280,8 +326,18 @@ export function ConfigViews(props: ConfigViewsProps) {
   };
 
   const isUndoable = (log: AuditoriaRecord) => {
-    const undoableEntities = ["GRADO_PERSONAL", "BATERIA", "ARTICULO", "EQUIPO", "PERSONAL", "OBSERVACION"];
-    return (log.accion === "CREATE" || log.accion === "UPDATE" || log.accion === "DELETE") && undoableEntities.includes(log.entidad);
+    const undoableEntities = [
+      "GRADO_PERSONAL",
+      "BATERIA",
+      "ARTICULO",
+      "EQUIPO",
+      "PERSONAL",
+      "OBSERVACION",
+    ];
+    return (
+      (log.accion === "CREATE" || log.accion === "UPDATE" || log.accion === "DELETE") &&
+      undoableEntities.includes(log.entidad)
+    );
   };
 
   const isWithin5Days = (createdAt: string | Date) => {
@@ -306,8 +362,9 @@ export function ConfigViews(props: ConfigViewsProps) {
   const filteredTrashRecords = useMemo(() => {
     if (!props.papelera) return [];
     return props.papelera.records.filter((record) => {
-      const matchesSearch = record.nombre.toLowerCase().includes(trashSearchQuery.toLowerCase()) || 
-                            record.originalId.toLowerCase().includes(trashSearchQuery.toLowerCase());
+      const matchesSearch =
+        record.nombre.toLowerCase().includes(trashSearchQuery.toLowerCase()) ||
+        record.originalId.toLowerCase().includes(trashSearchQuery.toLowerCase());
       const matchesType = trashTypeFilter === "ALL" || record.tipo === trashTypeFilter;
       return matchesSearch && matchesType;
     });
@@ -372,7 +429,7 @@ export function ConfigViews(props: ConfigViewsProps) {
           ].join(" ");
         },
       }),
-    [usuariosPersonal],
+    [usuariosPersonal]
   );
   const personalUsersSearchTerm = personalUsersSearch.trim();
   const usuariosPersonalFiltrados = useMemo(() => {
@@ -381,14 +438,16 @@ export function ConfigViews(props: ConfigViewsProps) {
     }
     return filterSearchIndex(usuariosPersonalSearchIndex, personalUsersSearch);
   }, [usuariosPersonal, usuariosPersonalSearchIndex, personalUsersSearch, personalUsersSearchTerm]);
-  const usuariosFiltradosPorTipo = activeUserAccountTypeTab === "SISTEMA" ? usuariosSistema : usuariosPersonalFiltrados;
+  const usuariosFiltradosPorTipo =
+    activeUserAccountTypeTab === "SISTEMA" ? usuariosSistema : usuariosPersonalFiltrados;
   const renderTiposEquipoManagement = () => (
     <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
         <div>
           <h3 className="text-sm font-semibold text-stone-900">Tipos de equipo</h3>
           <p className="mt-1 text-xs text-stone-600">
-            Los equipos sin tipo relacionado quedan automáticamente en General, y el orden que definas aquí se refleja en stock, hojas y listados.
+            Los equipos sin tipo relacionado quedan automáticamente en General, y el orden que
+            definas aquí se refleja en stock, hojas y listados.
           </p>
         </div>
         {!props.canWrite ? (
@@ -424,7 +483,9 @@ export function ConfigViews(props: ConfigViewsProps) {
           Crear tipo
         </button>
       </div>
-      <p className="mt-2 text-xs text-stone-500">General siempre queda primero. Los demás tipos usan el orden numérico que indiques.</p>
+      <p className="mt-2 text-xs text-stone-500">
+        General siempre queda primero. Los demás tipos usan el orden numérico que indiques.
+      </p>
 
       <div className="mt-4 space-y-2">
         {props.tiposEquipo.map((tipo) => {
@@ -441,9 +502,13 @@ export function ConfigViews(props: ConfigViewsProps) {
                         Categoría por defecto
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-stone-500">Se aplica cuando un equipo no tiene tipo relacionado.</p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      Se aplica cuando un equipo no tiene tipo relacionado.
+                    </p>
                   </div>
-                  <span className="text-xs font-medium text-stone-500">{equiposRelacionados} equipo{equiposRelacionados === 1 ? "" : "s"}</span>
+                  <span className="text-xs font-medium text-stone-500">
+                    {equiposRelacionados} equipo{equiposRelacionados === 1 ? "" : "s"}
+                  </span>
                 </div>
               ) : props.editTipoEquipoId === tipo.tipoEquipoId ? (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_96px_auto]">
@@ -462,7 +527,11 @@ export function ConfigViews(props: ConfigViewsProps) {
                   <div className="flex gap-2">
                     {props.canWrite ? (
                       <>
-                        <SmallActionButton text="Ok" tone="ok" onClick={() => props.onUpdateTipoEquipo(tipo.tipoEquipoId ?? 0)} />
+                        <SmallActionButton
+                          text="Ok"
+                          tone="ok"
+                          onClick={() => props.onUpdateTipoEquipo(tipo.tipoEquipoId ?? 0)}
+                        />
                         <SmallActionButton
                           text="Cancelar"
                           tone="neutral"
@@ -501,7 +570,11 @@ export function ConfigViews(props: ConfigViewsProps) {
                           props.onEditTipoEquipoOrdenChange(String(tipo.orden));
                         }}
                       />
-                      <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteTipoEquipo(tipo.tipoEquipoId ?? 0)} />
+                      <SmallActionButton
+                        text="Borrar"
+                        tone="delete"
+                        onClick={() => props.onDeleteTipoEquipo(tipo.tipoEquipoId ?? 0)}
+                      />
                     </div>
                   ) : null}
                 </div>
@@ -517,9 +590,16 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Grados registrados</h2>
-          <p className="mt-1 text-xs text-stone-600">Desde esta vista se muestran los grados de oficiales, suboficiales y subalternos con su orden actual.</p>
-          <p className="mt-1 text-xs text-stone-600">El administrador puede editar o eliminar cualquier grado desde esta pantalla.</p>
+          <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">
+            Grados registrados
+          </h2>
+          <p className="mt-1 text-xs text-stone-600">
+            Desde esta vista se muestran los grados de oficiales, suboficiales y subalternos con su
+            orden actual.
+          </p>
+          <p className="mt-1 text-xs text-stone-600">
+            El administrador puede editar o eliminar cualquier grado desde esta pantalla.
+          </p>
           {!props.isAdmin ? (
             <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
               Modo solo lectura: solo el administrador puede editar o eliminar grados.
@@ -541,7 +621,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                       />
                       <input
                         value={props.editRangoNombreCompleto}
-                        onChange={(event) => props.onEditRangoNombreCompletoChange(event.target.value)}
+                        onChange={(event) =>
+                          props.onEditRangoNombreCompletoChange(event.target.value)
+                        }
                         className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                       />
                       <input
@@ -553,7 +635,11 @@ export function ConfigViews(props: ConfigViewsProps) {
                       />
                       {props.isAdmin ? (
                         <div className="flex gap-2">
-                          <SmallActionButton text="Ok" tone="ok" onClick={() => props.onUpdateRango(rango.rangoId)} />
+                          <SmallActionButton
+                            text="Ok"
+                            tone="ok"
+                            onClick={() => props.onUpdateRango(rango.rangoId)}
+                          />
                           <SmallActionButton
                             text="Cancelar"
                             tone="neutral"
@@ -571,7 +657,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                     <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
                       <div>
                         <div className="flex flex-wrap equipos-center gap-2">
-                          <span className="text-sm font-medium text-stone-800">{props.rangoLabel(rango)}</span>
+                          <span className="text-sm font-medium text-stone-800">
+                            {props.rangoLabel(rango)}
+                          </span>
                           {rango.tipo ? (
                             <span className="inline-flex equipos-center rounded-full border border-stone-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
                               {RANGO_TIPO_LABEL[rango.tipo]}
@@ -592,7 +680,11 @@ export function ConfigViews(props: ConfigViewsProps) {
                               props.onEditRangoOrdenChange(String(rango.orden));
                             }}
                           />
-                          <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteRango(rango.rangoId)} />
+                          <SmallActionButton
+                            text="Borrar"
+                            tone="delete"
+                            onClick={() => props.onDeleteRango(rango.rangoId)}
+                          />
                         </div>
                       ) : null}
                     </div>
@@ -610,8 +702,12 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">Baterías registradas</h2>
-          <p className="mt-1 text-xs text-stone-600">Desde esta vista puedes editar o eliminar baterías existentes.</p>
+          <h2 className="text-base font-semibold text-[var(--UniformeVerdeOscuro)]">
+            Baterías registradas
+          </h2>
+          <p className="mt-1 text-xs text-stone-600">
+            Desde esta vista puedes editar o eliminar baterías existentes.
+          </p>
           {!props.isAdmin ? (
             <p className="mt-2 rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-xs text-stone-700">
               Modo solo lectura: solo el administrador puede editar o eliminar baterías.
@@ -645,55 +741,63 @@ export function ConfigViews(props: ConfigViewsProps) {
           </div>
           <div className="mt-3 space-y-2">
             {props.baterias.map((bateria) => (
-            <div key={bateria.bateriaId} className="rounded-lg bg-stone-100/80 p-2">
-              {props.editBateriaId === bateria.bateriaId ? (
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_96px_auto]">
-                  <input
-                    value={props.editBateriaNombre}
-                    onChange={(event) => props.onEditBateriaNombreChange(event.target.value)}
-                    className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-                  />
-                  <input
-                    type="number"
-                    min="1"
-                    value={props.editBateriaOrden}
-                    onChange={(event) => props.onEditBateriaOrdenChange(event.target.value)}
-                    className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <SmallActionButton text="Ok" tone="ok" onClick={() => props.onUpdateBateria(bateria.bateriaId)} />
-                    <SmallActionButton
-                      text="Cancelar"
-                      tone="neutral"
-                      onClick={() => {
-                        props.onEditBateriaIdChange(null);
-                        props.onEditBateriaNombreChange("");
-                        props.onEditBateriaOrdenChange("");
-                      }}
+              <div key={bateria.bateriaId} className="rounded-lg bg-stone-100/80 p-2">
+                {props.editBateriaId === bateria.bateriaId ? (
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_96px_auto]">
+                    <input
+                      value={props.editBateriaNombre}
+                      onChange={(event) => props.onEditBateriaNombreChange(event.target.value)}
+                      className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                     />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
-                  <div>
-                    <span className="text-sm font-medium text-stone-800">{bateria.nombre}</span>
-                    <p className="mt-1 text-xs text-stone-500">{`Orden ${bateria.orden}`}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <SmallActionButton
-                      text="Editar"
-                      tone="edit"
-                      onClick={() => {
-                        props.onEditBateriaIdChange(bateria.bateriaId);
-                        props.onEditBateriaNombreChange(bateria.nombre);
-                        props.onEditBateriaOrdenChange(String(bateria.orden));
-                      }}
+                    <input
+                      type="number"
+                      min="1"
+                      value={props.editBateriaOrden}
+                      onChange={(event) => props.onEditBateriaOrdenChange(event.target.value)}
+                      className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
                     />
-                    <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteBateria(bateria.bateriaId)} />
+                    <div className="flex gap-2">
+                      <SmallActionButton
+                        text="Ok"
+                        tone="ok"
+                        onClick={() => props.onUpdateBateria(bateria.bateriaId)}
+                      />
+                      <SmallActionButton
+                        text="Cancelar"
+                        tone="neutral"
+                        onClick={() => {
+                          props.onEditBateriaIdChange(null);
+                          props.onEditBateriaNombreChange("");
+                          props.onEditBateriaOrdenChange("");
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
+                    <div>
+                      <span className="text-sm font-medium text-stone-800">{bateria.nombre}</span>
+                      <p className="mt-1 text-xs text-stone-500">{`Orden ${bateria.orden}`}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <SmallActionButton
+                        text="Editar"
+                        tone="edit"
+                        onClick={() => {
+                          props.onEditBateriaIdChange(bateria.bateriaId);
+                          props.onEditBateriaNombreChange(bateria.nombre);
+                          props.onEditBateriaOrdenChange(String(bateria.orden));
+                        }}
+                      />
+                      <SmallActionButton
+                        text="Borrar"
+                        tone="delete"
+                        onClick={() => props.onDeleteBateria(bateria.bateriaId)}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </article>
@@ -703,7 +807,10 @@ export function ConfigViews(props: ConfigViewsProps) {
 
   if (props.activeView === "articulos") {
     // Group articles by tipo
-    const grouped: Record<TipoArticulo, typeof props.articulos> = {} as Record<TipoArticulo, typeof props.articulos>;
+    const grouped: Record<TipoArticulo, typeof props.articulos> = {} as Record<
+      TipoArticulo,
+      typeof props.articulos
+    >;
     for (const art of props.articulos) {
       if (!grouped[art.tipo]) {
         grouped[art.tipo] = [];
@@ -814,7 +921,7 @@ export function ConfigViews(props: ConfigViewsProps) {
             <p>Sistema de Depósito General — Artillería 1</p>
           </div>
           <div class="meta">
-            <span>Fecha de Impresión: ${new Date().toLocaleDateString("es-UY")} ${new Date().toLocaleTimeString("es-UY", { hour: '2-digit', minute: '2-digit' })}</span>
+            <span>Fecha de Impresión: ${new Date().toLocaleDateString("es-UY")} ${new Date().toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" })}</span>
             <span>Total de Artículos: ${props.articulos.length}</span>
           </div>
 
@@ -832,14 +939,18 @@ export function ConfigViews(props: ConfigViewsProps) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${list.map(art => `
+                    ${list
+                      .map(
+                        (art) => `
                       <tr>
                         <td>${art.nombre}</td>
-                        <td class="text-right ${art.stockActual > 0 ? 'stock-positive' : 'stock-zero'}">
+                        <td class="text-right ${art.stockActual > 0 ? "stock-positive" : "stock-zero"}">
                           ${art.stockActual}
                         </td>
                       </tr>
-                    `).join("")}
+                    `
+                      )
+                      .join("")}
                   </tbody>
                 </table>
               </div>
@@ -867,8 +978,18 @@ export function ConfigViews(props: ConfigViewsProps) {
           <div className="flex flex-col gap-3 sm:flex-row sm:equipos-start sm:justify-between border-b border-stone-200 pb-4">
             <div>
               <h2 className="text-lg font-bold text-stone-900 flex equipos-center gap-2">
-                <svg className="w-5 h-5 text-stone-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                <svg
+                  className="w-5 h-5 text-stone-700"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                  />
                 </svg>
                 Catálogo de Artículos
               </h2>
@@ -882,8 +1003,18 @@ export function ConfigViews(props: ConfigViewsProps) {
                 onClick={handlePrintCatalog}
                 className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-100 flex equipos-center gap-1.5 shadow-sm"
               >
-                <svg className="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4" />
+                <svg
+                  className="w-4 h-4 text-stone-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4"
+                  />
                 </svg>
                 Imprimir catálogo
               </button>
@@ -893,7 +1024,13 @@ export function ConfigViews(props: ConfigViewsProps) {
                   onClick={() => props.onNavigateView("articulo_stock_ingreso")}
                   className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-100 flex equipos-center gap-1.5 shadow-sm"
                 >
-                  <svg className="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                  <svg
+                    className="w-4 h-4 text-stone-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2.5"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                   </svg>
                   Ingreso de stock
@@ -913,8 +1050,18 @@ export function ConfigViews(props: ConfigViewsProps) {
 
           {!props.isAdmin ? (
             <p className="mt-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600 flex equipos-center gap-2">
-              <svg className="w-4 h-4 text-stone-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-4 h-4 text-stone-400 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               Modo solo lectura: solo el administrador puede crear, editar o eliminar artículos.
             </p>
@@ -923,7 +1070,9 @@ export function ConfigViews(props: ConfigViewsProps) {
           <div className="mt-4 space-y-6">
             {props.articulos.length === 0 ? (
               <div className="rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-center">
-                <p className="text-sm text-stone-600">Todavía no hay artículos registrados en el sistema.</p>
+                <p className="text-sm text-stone-600">
+                  Todavía no hay artículos registrados en el sistema.
+                </p>
               </div>
             ) : null}
 
@@ -932,30 +1081,40 @@ export function ConfigViews(props: ConfigViewsProps) {
               if (list.length === 0) return null;
 
               return (
-                <div key={tipo} className="border border-stone-200/70 bg-stone-50/30 p-4 rounded-xl shadow-sm">
+                <div
+                  key={tipo}
+                  className="border border-stone-200/70 bg-stone-50/30 p-4 rounded-xl shadow-sm"
+                >
                   <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3.5 flex equipos-center justify-between">
                     <span className="flex equipos-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-stone-400"></span>
                       {ARTICULO_TIPO_LABEL[tipo]}
                     </span>
                     <span className="text-[10px] font-bold text-stone-500 bg-stone-200/60 px-2 py-0.5 rounded-full uppercase tracking-normal">
-                      {list.length} {list.length === 1 ? 'artículo' : 'artículos'}
+                      {list.length} {list.length === 1 ? "artículo" : "artículos"}
                     </span>
                   </h3>
 
                   <div className="grid grid-cols-1 gap-2.5">
                     {list.map((articulo) => (
-                      <div key={articulo.articuloId} className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 hover:shadow-sm transition-all duration-150">
+                      <div
+                        key={articulo.articuloId}
+                        className="rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-300 hover:shadow-sm transition-all duration-150"
+                      >
                         {props.editArticuloId === articulo.articuloId && props.isAdmin ? (
                           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
                             <input
                               value={props.editArticuloNombre}
-                              onChange={(event) => props.onEditArticuloNombreChange(event.target.value)}
+                              onChange={(event) =>
+                                props.onEditArticuloNombreChange(event.target.value)
+                              }
                               className="w-full rounded border border-stone-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-stone-500"
                             />
                             <select
                               value={props.editArticuloTipo}
-                              onChange={(event) => props.onEditArticuloTipoChange(event.target.value as TipoArticulo)}
+                              onChange={(event) =>
+                                props.onEditArticuloTipoChange(event.target.value as TipoArticulo)
+                              }
                               className="w-full rounded border border-stone-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-stone-500"
                             >
                               {ARTICULO_TIPO_OPTIONS.map((t) => (
@@ -965,7 +1124,11 @@ export function ConfigViews(props: ConfigViewsProps) {
                               ))}
                             </select>
                             <div className="flex gap-2">
-                              <SmallActionButton text="Ok" tone="ok" onClick={() => props.onUpdateArticulo(articulo.articuloId)} />
+                              <SmallActionButton
+                                text="Ok"
+                                tone="ok"
+                                onClick={() => props.onUpdateArticulo(articulo.articuloId)}
+                              />
                               <SmallActionButton
                                 text="Cancelar"
                                 tone="neutral"
@@ -982,22 +1145,38 @@ export function ConfigViews(props: ConfigViewsProps) {
                             {/* Left Side: Name and Category badge */}
                             <div className="flex equipos-center gap-2.5">
                               <div className="w-8 h-8 rounded-lg bg-stone-100 flex equipos-center justify-center text-stone-600 shadow-inner flex-shrink-0">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth="2"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                                  />
                                 </svg>
                               </div>
-                              <span className="text-sm font-semibold text-stone-800 tracking-tight">{articulo.nombre}</span>
+                              <span className="text-sm font-semibold text-stone-800 tracking-tight">
+                                {articulo.nombre}
+                              </span>
                             </div>
 
                             {/* Right Side: Stock Status and Actions */}
                             <div className="flex flex-wrap equipos-center gap-2 sm:gap-3 ml-auto sm:ml-0">
                               {/* Stock Badge */}
-                              <div className={`px-2.5 py-1 rounded-full text-xs font-bold border flex equipos-center gap-1.5 shadow-sm select-none ${
-                                articulo.stockActual > 0 
-                                  ? "bg-green-50/80 border-green-200/60 text-green-700" 
-                                  : "bg-red-50/80 border-red-200/60 text-red-700"
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${articulo.stockActual > 0 ? "bg-green-500" : "bg-red-500"}`}></span>
+                              <div
+                                className={`px-2.5 py-1 rounded-full text-xs font-bold border flex equipos-center gap-1.5 shadow-sm select-none ${
+                                  articulo.stockActual > 0
+                                    ? "bg-green-50/80 border-green-200/60 text-green-700"
+                                    : "bg-red-50/80 border-red-200/60 text-red-700"
+                                }`}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${articulo.stockActual > 0 ? "bg-green-500" : "bg-red-500"}`}
+                                ></span>
                                 Stock: {articulo.stockActual}
                               </div>
 
@@ -1016,8 +1195,18 @@ export function ConfigViews(props: ConfigViewsProps) {
                                     }}
                                     className="inline-flex equipos-center gap-1 px-2.5 py-1 text-xs font-bold text-stone-700 hover:text-emerald-700 bg-stone-100 hover:bg-emerald-50 border border-stone-200 hover:border-emerald-200 rounded-lg transition-colors duration-150 shadow-sm"
                                   >
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                    <svg
+                                      className="w-3 h-3"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                      strokeWidth="2.5"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M12 4v16m8-8H4"
+                                      />
                                     </svg>
                                     Sumar
                                   </button>
@@ -1033,8 +1222,18 @@ export function ConfigViews(props: ConfigViewsProps) {
                                     }}
                                     className="inline-flex equipos-center gap-1 px-2.5 py-1 text-xs font-bold text-stone-700 hover:text-blue-700 bg-stone-100 hover:bg-blue-50 border border-stone-200 hover:border-blue-200 rounded-lg transition-colors duration-150 shadow-sm"
                                   >
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    <svg
+                                      className="w-3 h-3"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                      strokeWidth="2.5"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                                      />
                                     </svg>
                                     Entregar
                                   </button>
@@ -1053,7 +1252,11 @@ export function ConfigViews(props: ConfigViewsProps) {
                                       props.onEditArticuloTipoChange(articulo.tipo);
                                     }}
                                   />
-                                  <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteArticulo(articulo.articuloId)} />
+                                  <SmallActionButton
+                                    text="Borrar"
+                                    tone="delete"
+                                    onClick={() => props.onDeleteArticulo(articulo.articuloId)}
+                                  />
                                 </div>
                               )}
                             </div>
@@ -1079,7 +1282,8 @@ export function ConfigViews(props: ConfigViewsProps) {
             <div>
               <h2 className="text-base font-semibold text-stone-900">Tipos de equipo</h2>
               <p className="mt-1 text-xs text-stone-600">
-                Administra las categorías del catálogo y define el orden en que aparecen en stock, hojas y listados.
+                Administra las categorías del catálogo y define el orden en que aparecen en stock,
+                hojas y listados.
               </p>
             </div>
             <button
@@ -1099,12 +1303,18 @@ export function ConfigViews(props: ConfigViewsProps) {
 
   if (props.activeView === "equipos") {
     const equiposOrdenadosAlfabeticamente = [...props.equipos].sort((a, b) =>
-      compareEquiposByTipoAndName(a, b),
+      compareEquiposByTipoAndName(a, b)
     );
     const tipoSections = props.tiposEquipo.map((tipo) => {
-      const alphabeticItems = equiposOrdenadosAlfabeticamente.filter((equipo) => equipo.tipo === tipo.clave);
-      const activeItems = props.equiposActivosEnPantalla.filter((equipo) => equipo.tipo === tipo.clave);
-      const inactiveItems = props.equiposInactivosEnPantalla.filter((equipo) => equipo.tipo === tipo.clave);
+      const alphabeticItems = equiposOrdenadosAlfabeticamente.filter(
+        (equipo) => equipo.tipo === tipo.clave
+      );
+      const activeItems = props.equiposActivosEnPantalla.filter(
+        (equipo) => equipo.tipo === tipo.clave
+      );
+      const inactiveItems = props.equiposInactivosEnPantalla.filter(
+        (equipo) => equipo.tipo === tipo.clave
+      );
 
       return {
         key: tipo.clave,
@@ -1125,9 +1335,12 @@ export function ConfigViews(props: ConfigViewsProps) {
             <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSI+PC9yZWN0Pgo8cGF0aCBkPSJNMCAwTDggOFpNOCAwTDAgOFoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuNCIgc3Ryb2tlLXdpZHRoPSIxIj48L3BhdGg+Cjwvc3ZnPg==')] bg-repeat" />
             <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:equipos-center sm:justify-between">
               <div>
-                <h2 className="text-2xl font-black tracking-tight text-white/95">Catálogo de Equipos</h2>
+                <h2 className="text-2xl font-black tracking-tight text-white/95">
+                  Catálogo de Equipos
+                </h2>
                 <p className="mt-2 text-sm font-medium text-stone-300 max-w-xl leading-relaxed">
-                  Administra, edita y elimina equipos. Organiza su aparición en las hojas de entrega o matrices.
+                  Administra, edita y elimina equipos. Organiza su aparición en las hojas de entrega
+                  o matrices.
                 </p>
               </div>
               <button
@@ -1135,7 +1348,19 @@ export function ConfigViews(props: ConfigViewsProps) {
                 onClick={() => props.onNavigateView("tipos_equipo")}
                 className="inline-flex equipos-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white shadow-sm ring-1 ring-white/20 transition-all hover:bg-white/20 hover:scale-105 active:scale-95"
               >
-                <svg className="h-4.5 w-4.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                <svg
+                  className="h-4.5 w-4.5 opacity-80"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                  />
+                </svg>
                 Categorías y Tipos
               </button>
             </div>
@@ -1145,8 +1370,22 @@ export function ConfigViews(props: ConfigViewsProps) {
             {!props.canWrite ? (
               <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
                 <div className="flex equipos-center gap-3 text-amber-800">
-                  <svg className="h-5 w-5 flex-shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                  <p className="text-sm font-bold">Modo de sólo lectura: no tienes permisos para modificar el catálogo.</p>
+                  <svg
+                    className="h-5 w-5 flex-shrink-0 text-amber-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <p className="text-sm font-bold">
+                    Modo de sólo lectura: no tienes permisos para modificar el catálogo.
+                  </p>
                 </div>
               </div>
             ) : null}
@@ -1178,8 +1417,8 @@ export function ConfigViews(props: ConfigViewsProps) {
                 </button>
               </div>
               <p className="text-xs font-semibold text-stone-400">
-                {equiposDisplayMode === "por_estado" 
-                  ? "Ordena equipos visibles y ocultos de manera independiente." 
+                {equiposDisplayMode === "por_estado"
+                  ? "Ordena equipos visibles y ocultos de manera independiente."
                   : "Todos los equipos organizados por nombre."}
               </p>
             </div>
@@ -1190,10 +1429,26 @@ export function ConfigViews(props: ConfigViewsProps) {
                   {tipoSections.map((section) => (
                     <div key={section.key} className="relative">
                       <div className="mb-4 flex equipos-center gap-3 pb-2 border-b border-stone-100">
-                        <div className={`flex h-8 w-8 equipos-center justify-center rounded-lg shadow-sm ${
-                          section.isGeneral ? "bg-sky-100 text-sky-600" : "bg-amber-100 text-amber-600"
-                        }`}>
-                          <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        <div
+                          className={`flex h-8 w-8 equipos-center justify-center rounded-lg shadow-sm ${
+                            section.isGeneral
+                              ? "bg-sky-100 text-sky-600"
+                              : "bg-amber-100 text-amber-600"
+                          }`}
+                        >
+                          <svg
+                            className="h-4.5 w-4.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2.5}
+                              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                            />
+                          </svg>
                         </div>
                         <h3 className="text-lg font-bold text-stone-800">
                           {section.isGeneral ? "Equipos Generales" : section.label}
@@ -1202,19 +1457,33 @@ export function ConfigViews(props: ConfigViewsProps) {
                           {section.alphabeticItems.length}
                         </span>
                       </div>
-                      
+
                       {section.alphabeticItems.length > 0 ? (
                         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                           {section.alphabeticItems.map((equipo) =>
-                            props.renderEquipoCard(equipo, { reorderableInActiveList: false }),
+                            props.renderEquipoCard(equipo, { reorderableInActiveList: false })
                           )}
                         </div>
                       ) : (
                         <div className="flex flex-col equipos-center justify-center rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
                           <div className="mb-3 rounded-full bg-stone-100 p-3 text-stone-300">
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" /></svg>
+                            <svg
+                              className="h-6 w-6"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"
+                              />
+                            </svg>
                           </div>
-                          <p className="text-sm font-bold text-stone-500">Sin equipos registrados</p>
+                          <p className="text-sm font-bold text-stone-500">
+                            Sin equipos registrados
+                          </p>
                         </div>
                       )}
                     </div>
@@ -1229,15 +1498,32 @@ export function ConfigViews(props: ConfigViewsProps) {
                       <div className="flex flex-col gap-4 sm:flex-row sm:equipos-center sm:justify-between">
                         <div className="flex equipos-center gap-3">
                           <div className="flex h-10 w-10 equipos-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shadow-sm ring-1 ring-emerald-200/50">
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                            <svg
+                              className="h-5 w-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2.5}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
                           </div>
                           <div>
-                            <h3 className="text-lg font-black tracking-tight text-stone-900">Activos en Hoja de Entrega</h3>
-                            <p className="text-xs font-semibold text-emerald-600">{props.equiposActivosEnPantalla.length} equipos visibles</p>
+                            <h3 className="text-lg font-black tracking-tight text-stone-900">
+                              Activos en Hoja de Entrega
+                            </h3>
+                            <p className="text-xs font-semibold text-emerald-600">
+                              {props.equiposActivosEnPantalla.length} equipos visibles
+                            </p>
                           </div>
                         </div>
-                        
-                        {props.equiposActivosEnPantalla.length > 0 && props.hasEquipoOrderDraftChanges ? (
+
+                        {props.equiposActivosEnPantalla.length > 0 &&
+                        props.hasEquipoOrderDraftChanges ? (
                           <div className="flex equipos-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
                             <button
                               type="button"
@@ -1251,7 +1537,19 @@ export function ConfigViews(props: ConfigViewsProps) {
                               onClick={props.onSaveEquipoOrder}
                               className="inline-flex equipos-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95"
                             >
-                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                              <svg
+                                className="h-4 w-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2.5}
+                                  d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                                />
+                              </svg>
                               Guardar Orden
                             </button>
                           </div>
@@ -1267,7 +1565,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                               {section.isGeneral ? "Generales" : section.label}
                             </h4>
                             <div className="h-px flex-1 bg-stone-100"></div>
-                            <span className="text-xs font-bold text-stone-400">{section.activeItems.length}</span>
+                            <span className="text-xs font-bold text-stone-400">
+                              {section.activeItems.length}
+                            </span>
                           </div>
                           {section.activeItems.length > 0 ? (
                             <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -1277,13 +1577,15 @@ export function ConfigViews(props: ConfigViewsProps) {
                                   orderGroupType: section.key,
                                   orderIndex: section.activeOrderById.get(equipo.equipoId) ?? -1,
                                   orderCount: section.activeItems.length,
-                                }),
+                                })
                               )}
                             </div>
                           ) : (
                             <div className="flex equipos-center gap-3 rounded-xl border border-stone-100 bg-stone-50/50 px-4 py-3">
                               <span className="h-1.5 w-1.5 rounded-full bg-stone-300"></span>
-                              <p className="text-xs font-medium text-stone-500">Ningún equipo activo en esta categoría.</p>
+                              <p className="text-xs font-medium text-stone-500">
+                                Ningún equipo activo en esta categoría.
+                              </p>
                             </div>
                           )}
                         </div>
@@ -1295,15 +1597,32 @@ export function ConfigViews(props: ConfigViewsProps) {
                     <div className="flex flex-col gap-4 sm:flex-row sm:equipos-center sm:justify-between mb-8">
                       <div className="flex equipos-center gap-3">
                         <div className="flex h-10 w-10 equipos-center justify-center rounded-xl bg-rose-100 text-rose-600 shadow-sm ring-1 ring-rose-200/50">
-                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                          <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2.5}
+                              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                            />
+                          </svg>
                         </div>
                         <div>
-                          <h3 className="text-lg font-black tracking-tight text-stone-900">Ocultos de Hoja General</h3>
-                          <p className="text-xs font-semibold text-rose-600">{props.equiposInactivos.length} equipos fuera de hoja</p>
+                          <h3 className="text-lg font-black tracking-tight text-stone-900">
+                            Ocultos de Hoja General
+                          </h3>
+                          <p className="text-xs font-semibold text-rose-600">
+                            {props.equiposInactivos.length} equipos fuera de hoja
+                          </p>
                         </div>
                       </div>
-                      
-                      {props.equiposInactivosEnPantalla.length > 0 && props.hasEquipoInactivoOrderDraftChanges ? (
+
+                      {props.equiposInactivosEnPantalla.length > 0 &&
+                      props.hasEquipoInactivoOrderDraftChanges ? (
                         <div className="flex equipos-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
                           <button
                             type="button"
@@ -1317,7 +1636,19 @@ export function ConfigViews(props: ConfigViewsProps) {
                             onClick={props.onSaveEquipoInactivoOrder}
                             className="inline-flex equipos-center gap-1.5 rounded-xl bg-stone-800 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-stone-800/20 transition-all hover:bg-stone-900 active:scale-95"
                           >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2.5}
+                                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                              />
+                            </svg>
                             Guardar Orden Inactivos
                           </button>
                         </div>
@@ -1329,10 +1660,14 @@ export function ConfigViews(props: ConfigViewsProps) {
                         <div key={`inactive-${section.key}`}>
                           <div className="mb-4 flex equipos-center gap-3">
                             <h4 className="text-sm font-bold uppercase tracking-widest text-stone-500">
-                              {section.isGeneral ? "Generales (Ocultos)" : `${section.label} (Ocultos)`}
+                              {section.isGeneral
+                                ? "Generales (Ocultos)"
+                                : `${section.label} (Ocultos)`}
                             </h4>
                             <div className="h-px flex-1 bg-stone-100"></div>
-                            <span className="text-xs font-bold text-stone-400">{section.inactiveItems.length}</span>
+                            <span className="text-xs font-bold text-stone-400">
+                              {section.inactiveItems.length}
+                            </span>
                           </div>
                           {section.inactiveItems.length > 0 ? (
                             <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -1343,13 +1678,15 @@ export function ConfigViews(props: ConfigViewsProps) {
                                   orderGroupType: section.key,
                                   orderIndex: section.inactiveOrderById.get(equipo.equipoId) ?? -1,
                                   orderCount: section.inactiveItems.length,
-                                }),
+                                })
                               )}
                             </div>
                           ) : (
                             <div className="flex equipos-center gap-3 rounded-xl border border-stone-100 bg-stone-50/50 px-4 py-3">
                               <span className="h-1.5 w-1.5 rounded-full bg-stone-300"></span>
-                              <p className="text-xs font-medium text-stone-500">Ningún equipo oculto en esta categoría.</p>
+                              <p className="text-xs font-medium text-stone-500">
+                                Ningún equipo oculto en esta categoría.
+                              </p>
                             </div>
                           )}
                         </div>
@@ -1369,17 +1706,22 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-stone-900">Firmas institucionales (solo administrador)</h2>
+          <h2 className="text-base font-semibold text-stone-900">
+            Firmas institucionales (solo administrador)
+          </h2>
           <p className="mt-1 text-xs text-stone-600">
-            Esta sección controla los datos de quienes firman la hoja de entrega. Los textos institucionales son fijos.
+            Esta sección controla los datos de quienes firman la hoja de entrega. Los textos
+            institucionales son fijos.
           </p>
           <div className="mt-3 space-y-2 rounded-lg border border-stone-200 bg-stone-50 p-3">
             <p className="text-xs font-semibold text-stone-700">Textos institucionales (fijos):</p>
             <p className="text-xs text-stone-600">
-              • Encargado: El Encargado del Depósito General del Grp. &quot;Brig. Gral. Manuel Oribe&quot; de Artillería 105mm No. 1.
+              • Encargado: El Encargado del Depósito General del Grp. &quot;Brig. Gral. Manuel
+              Oribe&quot; de Artillería 105mm No. 1.
             </p>
             <p className="text-xs text-stone-600">
-              • Oficial: El Oficial de Administración del Grp. &quot;Brig. Gral. Manuel Oribe&quot; de Artillería 105mm No. 1.
+              • Oficial: El Oficial de Administración del Grp. &quot;Brig. Gral. Manuel Oribe&quot;
+              de Artillería 105mm No. 1.
             </p>
           </div>
           {props.firmaConfigLoading ? (
@@ -1394,22 +1736,30 @@ export function ConfigViews(props: ConfigViewsProps) {
                 <h3 className="text-sm font-semibold text-stone-800">Datos del Encargado</h3>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <label className="block">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Grado</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+                      Grado
+                    </span>
                     <input
                       type="text"
                       value={props.firmaConfigDraft.encargadoRango}
-                      onChange={(event) => props.onFirmaConfigDraftChange("encargadoRango", event.target.value)}
+                      onChange={(event) =>
+                        props.onFirmaConfigDraftChange("encargadoRango", event.target.value)
+                      }
                       placeholder="Ej: Sgto."
                       disabled={props.firmaConfigSaving}
                       className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+                      Nombre
+                    </span>
                     <input
                       type="text"
                       value={props.firmaConfigDraft.encargadoNombre}
-                      onChange={(event) => props.onFirmaConfigDraftChange("encargadoNombre", event.target.value)}
+                      onChange={(event) =>
+                        props.onFirmaConfigDraftChange("encargadoNombre", event.target.value)
+                      }
                       placeholder="Ej: Wilson Lara"
                       disabled={props.firmaConfigSaving}
                       className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -1421,22 +1771,30 @@ export function ConfigViews(props: ConfigViewsProps) {
                 <h3 className="text-sm font-semibold text-stone-800">Datos del Oficial</h3>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <label className="block">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Grado</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+                      Grado
+                    </span>
                     <input
                       type="text"
                       value={props.firmaConfigDraft.oficialRango}
-                      onChange={(event) => props.onFirmaConfigDraftChange("oficialRango", event.target.value)}
+                      onChange={(event) =>
+                        props.onFirmaConfigDraftChange("oficialRango", event.target.value)
+                      }
                       placeholder="Ej: -Tte.2º"
                       disabled={props.firmaConfigSaving}
                       className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Nombre</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+                      Nombre
+                    </span>
                     <input
                       type="text"
                       value={props.firmaConfigDraft.oficialNombre}
-                      onChange={(event) => props.onFirmaConfigDraftChange("oficialNombre", event.target.value)}
+                      onChange={(event) =>
+                        props.onFirmaConfigDraftChange("oficialNombre", event.target.value)
+                      }
                       placeholder="Ej: Gerardo Otero"
                       disabled={props.firmaConfigSaving}
                       className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
@@ -1467,7 +1825,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                   )}
                 </button>
               </div>
-              {props.firmaConfigError ? <p className="text-xs font-medium text-rose-700">{props.firmaConfigError}</p> : null}
+              {props.firmaConfigError ? (
+                <p className="text-xs font-medium text-rose-700">{props.firmaConfigError}</p>
+              ) : null}
             </form>
           )}
         </article>
@@ -1481,7 +1841,8 @@ export function ConfigViews(props: ConfigViewsProps) {
         <article className="ej-card rounded-2xl p-4">
           <h2 className="text-base font-semibold text-stone-900">Usuarios registrados</h2>
           <p className="mt-1 text-xs text-stone-600">
-            Desde esta vista puedes editar, activar, desactivar o eliminar usuarios existentes. Las altas nuevas se hacen desde el menú `Configuración`.
+            Desde esta vista puedes editar, activar, desactivar o eliminar usuarios existentes. Las
+            altas nuevas se hacen desde el menú `Configuración`.
           </p>
           <form onSubmit={props.onCreateUsuario} className="hidden mt-3 space-y-3">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -1556,7 +1917,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                     <p className={`mt-1 text-xs ${selected ? "text-stone-200" : "text-stone-500"}`}>
                       {props.roleDescription(role)}
                     </p>
-                    <p className={`mt-2 text-[11px] font-medium uppercase tracking-wide ${selected ? "text-stone-300" : "text-stone-400"}`}>
+                    <p
+                      className={`mt-2 text-[11px] font-medium uppercase tracking-wide ${selected ? "text-stone-300" : "text-stone-400"}`}
+                    >
                       {props.roleScope(role)}
                     </p>
                   </button>
@@ -1574,7 +1937,8 @@ export function ConfigViews(props: ConfigViewsProps) {
           <div className="mt-3 flex flex-wrap gap-2">
             {USER_ACCOUNT_TYPE_TABS.map((tab) => {
               const isActive = activeUserAccountTypeTab === tab.value;
-              const count = tab.value === "SISTEMA" ? usuariosSistema.length : usuariosPersonal.length;
+              const count =
+                tab.value === "SISTEMA" ? usuariosSistema.length : usuariosPersonal.length;
 
               return (
                 <button
@@ -1601,7 +1965,9 @@ export function ConfigViews(props: ConfigViewsProps) {
           </div>
           {activeUserAccountTypeTab === "PERSONAL" ? (
             <label className="mt-3 block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Buscar personal</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+                Buscar personal
+              </span>
               <input
                 type="search"
                 value={personalUsersSearch}
@@ -1619,7 +1985,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                 <div key={usuario.usuarioId} className="rounded-lg bg-stone-100/80 p-2">
                   <div className="flex flex-col gap-2 sm:flex-row sm:equipos-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-medium text-stone-900">{systemUserLabel(usuario)}</p>
+                      <p className="text-sm font-medium text-stone-900">
+                        {systemUserLabel(usuario)}
+                      </p>
                       <p className="mt-1 text-xs text-stone-600">
                         {`Usuario: ${usuario.username}${isPersonalAccount ? " (acceso por cédula)" : ""}`}
                       </p>
@@ -1629,20 +1997,40 @@ export function ConfigViews(props: ConfigViewsProps) {
                           : "Mail de referencia: sin dato"}
                       </p>
                       <p className="mt-1 text-xs text-stone-500">
-                        {isPersonalAccount ? "Cuenta de personal: acceso de solo consulta a su ficha." : props.roleDescription(usuario.rol)}
+                        {isPersonalAccount
+                          ? "Cuenta de personal: acceso de solo consulta a su ficha."
+                          : props.roleDescription(usuario.rol)}
                       </p>
-                      <p className="text-xs text-stone-600">{usuario.activo ? "Activo" : "Inactivo"}</p>
+                      <p className="text-xs text-stone-600">
+                        {usuario.activo ? "Activo" : "Inactivo"}
+                      </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {!isPersonalAccount ? (
-                        <SmallActionButton text="Datos" tone="edit" onClick={() => props.onEditUsuario(usuario)} />
+                        <SmallActionButton
+                          text="Datos"
+                          tone="edit"
+                          onClick={() => props.onEditUsuario(usuario)}
+                        />
                       ) : null}
                       {!isPersonalAccount ? (
-                        <SmallActionButton text="Editar rol" tone="edit" onClick={() => props.onChangeUserRole(usuario)} />
+                        <SmallActionButton
+                          text="Editar rol"
+                          tone="edit"
+                          onClick={() => props.onChangeUserRole(usuario)}
+                        />
                       ) : null}
-                      <SmallActionButton text="Contraseña" tone="edit" onClick={() => props.onChangeUserPassword(usuario)} />
+                      <SmallActionButton
+                        text="Contraseña"
+                        tone="edit"
+                        onClick={() => props.onChangeUserPassword(usuario)}
+                      />
                       {!isPersonalAccount && usuario.mailReferencia && !usuario.mailVerificadaAt ? (
-                        <SmallActionButton text="Confirmar correo" tone="ok" onClick={() => props.onConfirmUserEmail(usuario)} />
+                        <SmallActionButton
+                          text="Confirmar correo"
+                          tone="ok"
+                          onClick={() => props.onConfirmUserEmail(usuario)}
+                        />
                       ) : null}
                       <SmallActionButton
                         text={usuario.activo ? "Desactivar" : "Activar"}
@@ -1650,7 +2038,11 @@ export function ConfigViews(props: ConfigViewsProps) {
                         onClick={() => props.onToggleUserActive(usuario)}
                       />
                       {!isPersonalAccount ? (
-                        <SmallActionButton text="Borrar" tone="delete" onClick={() => props.onDeleteUsuario(usuario)} />
+                        <SmallActionButton
+                          text="Borrar"
+                          tone="delete"
+                          onClick={() => props.onDeleteUsuario(usuario)}
+                        />
                       ) : null}
                     </div>
                   </div>
@@ -1676,9 +2068,13 @@ export function ConfigViews(props: ConfigViewsProps) {
     return (
       <section className="mt-6 grid grid-cols-1 gap-4">
         <article className="ej-card rounded-2xl p-4">
-          <h2 className="text-base font-semibold text-stone-900">Historial de Auditoría y Control de Cambios</h2>
+          <h2 className="text-base font-semibold text-stone-900">
+            Historial de Auditoría y Control de Cambios
+          </h2>
           <p className="mt-1 text-xs text-stone-600">
-            Visualice las transiciones exactas de estado (Antes → Ahora) de cada acción administrativa del sistema y deshaga cambios recientes (dentro de los 5 días de validez) de forma segura.
+            Visualice las transiciones exactas de estado (Antes → Ahora) de cada acción
+            administrativa del sistema y deshaga cambios recientes (dentro de los 5 días de validez)
+            de forma segura.
           </p>
           <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1fr)_300px] lg:equipos-center">
             <div className="flex flex-wrap gap-2">
@@ -1686,7 +2082,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                 type="button"
                 onClick={() => props.onAuditFilterChange("TODOS")}
                 className={`rounded px-3 py-1.5 text-xs font-semibold ${
-                  props.auditFilter === "TODOS" ? "bg-stone-800 text-white" : "border border-stone-300 bg-white text-stone-700"
+                  props.auditFilter === "TODOS"
+                    ? "bg-stone-800 text-white"
+                    : "border border-stone-300 bg-white text-stone-700"
                 }`}
               >
                 Todos los eventos
@@ -1740,10 +2138,17 @@ export function ConfigViews(props: ConfigViewsProps) {
             {props.auditoriaFiltradaPaginada.map((log) => {
               const exactTime = formatDateTimeExact(log.createdAt);
               const undoAvailable = isUndoable(log) && isWithin5Days(log.createdAt);
-              const resolvedName = resolveAuditEntityName(log.entidad, log.detalle, log.ciReferencias);
+              const resolvedName = resolveAuditEntityName(
+                log.entidad,
+                log.detalle,
+                log.ciReferencias
+              );
 
               return (
-                <div key={log.auditoriaId} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:shadow transition-shadow duration-150 flex flex-col gap-2 w-full">
+                <div
+                  key={log.auditoriaId}
+                  className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:shadow transition-shadow duration-150 flex flex-col gap-2 w-full"
+                >
                   {/* Día y hora exactas + Auditoría BD # */}
                   <div className="flex flex-wrap equipos-center justify-between border-b border-stone-100 pb-2">
                     <span className="text-[11px] font-bold text-stone-500 bg-stone-50 border border-stone-200/55 px-2 py-0.5 rounded flex equipos-center gap-1">
@@ -1758,49 +2163,74 @@ export function ConfigViews(props: ConfigViewsProps) {
                   {/* Quien realizó la acción (Usuario) + Qué hizo exactamente + Qué entidades afectó */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs border-b border-stone-50 pb-2">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-stone-400">Quién realizó la acción</span>
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-stone-400">
+                        Quién realizó la acción
+                      </span>
                       <span className="text-stone-800 text-sm">
                         {log.usuario ? (
                           <>
                             <span className="font-bold text-stone-900">
-                              {[log.usuario.rango?.abreviacion, log.usuario.nombre, log.usuario.apellido].filter(Boolean).join(" ").trim() || log.usuario.username}
+                              {[
+                                log.usuario.rango?.abreviacion,
+                                log.usuario.nombre,
+                                log.usuario.apellido,
+                              ]
+                                .filter(Boolean)
+                                .join(" ")
+                                .trim() || log.usuario.username}
                             </span>
                             <span className="text-stone-500 font-medium text-xs ml-1">
                               {`(${log.usuario.username} | ${props.roleLabel(log.usuario.rol)})`}
                             </span>
                           </>
-                        ) : (() => {
-                          if (log.detalle && typeof log.detalle === "object" && !Array.isArray(log.detalle)) {
-                            const det = log.detalle as Record<string, unknown>;
-                            if (det.accountType === "PERSONAL" || det.ci) {
-                              const ci = String(det.ci || det.username || log.entidadId || "");
-                              const formattedCi = formatUruguayanCi(ci);
-                              const nameFromRef = log.ciReferencias?.[ci] || log.ciReferencias?.[normalizeCi(ci)];
-                              const name = nameFromRef || [det.grado || det.gradoAbreviacion, det.nombre, det.apellido].filter(Boolean).join(" ").trim();
-                              return (
-                                <>
-                                  <span className="font-bold text-stone-900">
-                                    {name || `Personal`}
-                                  </span>
-                                  <span className="text-stone-500 font-medium text-xs ml-1">
-                                    {`(${formattedCi} | Personal)`}
-                                  </span>
-                                </>
-                              );
+                        ) : (
+                          (() => {
+                            if (
+                              log.detalle &&
+                              typeof log.detalle === "object" &&
+                              !Array.isArray(log.detalle)
+                            ) {
+                              const det = log.detalle as Record<string, unknown>;
+                              if (det.accountType === "PERSONAL" || det.ci) {
+                                const ci = String(det.ci || det.username || log.entidadId || "");
+                                const formattedCi = formatUruguayanCi(ci);
+                                const nameFromRef =
+                                  log.ciReferencias?.[ci] || log.ciReferencias?.[normalizeCi(ci)];
+                                const name =
+                                  nameFromRef ||
+                                  [det.grado || det.gradoAbreviacion, det.nombre, det.apellido]
+                                    .filter(Boolean)
+                                    .join(" ")
+                                    .trim();
+                                return (
+                                  <>
+                                    <span className="font-bold text-stone-900">
+                                      {name || `Personal`}
+                                    </span>
+                                    <span className="text-stone-500 font-medium text-xs ml-1">
+                                      {`(${formattedCi} | Personal)`}
+                                    </span>
+                                  </>
+                                );
+                              }
                             }
-                          }
-                          return <span className="font-bold text-stone-900">Sistema</span>;
-                        })()}
+                            return <span className="font-bold text-stone-900">Sistema</span>;
+                          })()
+                        )}
                       </span>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-stone-400">Qué hizo exactamente</span>
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-stone-400">
+                        Qué hizo exactamente
+                      </span>
                       <span className="font-medium text-stone-800 text-sm">
                         {`${props.auditActionLabel(log.accion)} ${props.auditEntityLabel(log.entidad)}`}
                       </span>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-stone-400">Entidades afectadas</span>
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-stone-400">
+                        Entidades afectadas
+                      </span>
                       <div className="flex flex-col gap-1 mt-0.5">
                         {resolvedName && (
                           <span className="font-bold text-stone-900 text-xs bg-stone-50 border border-stone-200/50 rounded px-1.5 py-0.5 w-max">
@@ -1888,7 +2318,8 @@ export function ConfigViews(props: ConfigViewsProps) {
                 Papelera de Reciclaje
               </h2>
               <p className="mt-1 text-xs text-stone-600 leading-relaxed">
-                Restaura o elimina permanentemente artículos y equipos dados de baja. Se listan sus recibos, préstamos y movimientos históricos resguardados.
+                Restaura o elimina permanentemente artículos y equipos dados de baja. Se listan sus
+                recibos, préstamos y movimientos históricos resguardados.
               </p>
             </div>
 
@@ -1984,11 +2415,13 @@ export function ConfigViews(props: ConfigViewsProps) {
                     >
                       <div className="flex equipos-center gap-3">
                         {/* Dynamic Icon Container */}
-                        <div className={`hidden xs:flex h-9 w-9 equipos-center justify-center rounded-xl transition-all ${
-                          record.tipo === "EQUIPO"
-                            ? "bg-blue-50 text-blue-600 border border-blue-150 group-hover:bg-blue-100/70"
-                            : "bg-purple-50 text-purple-600 border border-purple-150 group-hover:bg-purple-100/70"
-                        }`}>
+                        <div
+                          className={`hidden xs:flex h-9 w-9 equipos-center justify-center rounded-xl transition-all ${
+                            record.tipo === "EQUIPO"
+                              ? "bg-blue-50 text-blue-600 border border-blue-150 group-hover:bg-blue-100/70"
+                              : "bg-purple-50 text-purple-600 border border-purple-150 group-hover:bg-purple-100/70"
+                          }`}
+                        >
                           {record.tipo === "EQUIPO" ? (
                             <FolderZipOutlinedIcon className="h-4.5 w-4.5" />
                           ) : (
@@ -1998,19 +2431,28 @@ export function ConfigViews(props: ConfigViewsProps) {
 
                         <div>
                           <div className="flex flex-wrap equipos-center gap-2">
-                            <span className="text-sm font-bold text-stone-850">{record.nombre}</span>
-                            <span className={`inline-flex equipos-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border ${
-                              record.tipo === "EQUIPO"
-                                ? "bg-blue-50/70 text-blue-700 border-blue-200"
-                                : "bg-purple-50/70 text-purple-700 border-purple-200"
-                            }`}>
+                            <span className="text-sm font-bold text-stone-850">
+                              {record.nombre}
+                            </span>
+                            <span
+                              className={`inline-flex equipos-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border ${
+                                record.tipo === "EQUIPO"
+                                  ? "bg-blue-50/70 text-blue-700 border-blue-200"
+                                  : "bg-purple-50/70 text-purple-700 border-purple-200"
+                              }`}
+                            >
                               {record.tipo === "EQUIPO" ? "Equipo" : "Artículo"}
                             </span>
-                            <span className="text-[10px] text-stone-400 font-mono">ID: {record.originalId}</span>
+                            <span className="text-[10px] text-stone-400 font-mono">
+                              ID: {record.originalId}
+                            </span>
                           </div>
                           <p className="mt-1.5 text-[11px] text-stone-500 flex equipos-center gap-1">
                             <InfoOutlinedIcon className="h-3 w-3 inline text-stone-400" />
-                            Eliminado el: <strong className="text-stone-700 font-semibold">{formatDateTimeForDisplay(record.createdAt)}</strong>
+                            Eliminado el:{" "}
+                            <strong className="text-stone-700 font-semibold">
+                              {formatDateTimeForDisplay(record.createdAt)}
+                            </strong>
                           </p>
                         </div>
                       </div>
@@ -2060,23 +2502,27 @@ export function ConfigViews(props: ConfigViewsProps) {
                 )}
                 {trashModalAction === "restore"
                   ? "Confirmar Restauración de Registro"
-                  : "Confirmar Eliminación Permanente"
-                }
+                  : "Confirmar Eliminación Permanente"}
               </h3>
-              <span className={`inline-flex equipos-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border ${
-                selectedTrashRecord.tipo === "EQUIPO"
-                  ? "bg-blue-50 text-blue-700 border-blue-200"
-                  : "bg-purple-50 text-purple-700 border-purple-200"
-              }`}>
+              <span
+                className={`inline-flex equipos-center rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border ${
+                  selectedTrashRecord.tipo === "EQUIPO"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-purple-50 text-purple-700 border-purple-200"
+                }`}
+              >
                 {selectedTrashRecord.tipo === "EQUIPO" ? "Equipo" : "Artículo"}
               </span>
             </div>
 
             <div className="mt-3.5 rounded-xl border border-stone-150 bg-stone-50/70 p-3">
               <p className="text-xs font-bold text-stone-750">
-                Elemento a procesar: <span className="text-stone-900 font-extrabold">{selectedTrashRecord.nombre}</span>
+                Elemento a procesar:{" "}
+                <span className="text-stone-900 font-extrabold">{selectedTrashRecord.nombre}</span>
               </p>
-              <p className="text-[10px] text-stone-400 font-mono mt-1">Identificador de origen: {selectedTrashRecord.originalId}</p>
+              <p className="text-[10px] text-stone-400 font-mono mt-1">
+                Identificador de origen: {selectedTrashRecord.originalId}
+              </p>
             </div>
 
             {trashDetailsLoading ? (
@@ -2088,8 +2534,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                 <p className="text-xs text-stone-600 font-medium">
                   {trashModalAction === "restore"
                     ? "Se reestablecerá de forma atómica el elemento con las siguientes relaciones vinculadas:"
-                    : "Se eliminarán físicamente del servidor de datos las siguientes entidades resguardadas:"
-                  }
+                    : "Se eliminarán físicamente del servidor de datos las siguientes entidades resguardadas:"}
                 </p>
 
                 <div className="rounded-xl border border-stone-200 bg-white p-3 text-xs space-y-2 max-h-[35vh] overflow-y-auto shadow-inner">
@@ -2100,7 +2545,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                           <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
                           Ficha base del Equipo:
                         </span>
-                        <span className="font-extrabold text-stone-950">1 registro (Activo: {trashDetails.equipo?.activo ? "Sí" : "No"})</span>
+                        <span className="font-extrabold text-stone-950">
+                          1 registro (Activo: {trashDetails.equipo?.activo ? "Sí" : "No"})
+                        </span>
                       </div>
 
                       {(trashDetails.cajaEquipos?.length ?? 0) > 0 && (
@@ -2109,7 +2556,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Ubicaciones en Cajas del Depósito:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.cajaEquipos?.length ?? 0} registros</span>
+                          <span className="font-bold text-stone-900">
+                            {trashDetails.cajaEquipos?.length ?? 0} registros
+                          </span>
                         </div>
                       )}
 
@@ -2119,7 +2568,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <SearchOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Códigos de Barra de Inventario (SIE):
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.equipoCodigosSIE?.length ?? 0} códigos</span>
+                          <span className="font-bold text-stone-900">
+                            {trashDetails.equipoCodigosSIE?.length ?? 0} códigos
+                          </span>
                         </div>
                       )}
 
@@ -2129,7 +2580,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Asociaciones de Códigos a Cajas:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.cajaItemCodigosSIE?.length ?? 0} registros</span>
+                          <span className="font-bold text-stone-900">
+                            {trashDetails.cajaItemCodigosSIE?.length ?? 0} registros
+                          </span>
                         </div>
                       )}
 
@@ -2139,7 +2592,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <InfoOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Historial de Movimientos de Equipos:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.movimientoEquipos?.length ?? 0} movimientos</span>
+                          <span className="font-bold text-stone-900">
+                            {trashDetails.movimientoEquipos?.length ?? 0} movimientos
+                          </span>
                         </div>
                       )}
 
@@ -2149,7 +2604,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Recibos de Entrega / Préstamos completos:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.deletedMovimientos?.length ?? 0} planillas</span>
+                          <span className="font-bold text-stone-900">
+                            {trashDetails.deletedMovimientos?.length ?? 0} planillas
+                          </span>
                         </div>
                       )}
 
@@ -2159,7 +2616,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <WarningAmberOutlinedIcon className="h-4 w-4 text-amber-600" />
                             Préstamos Vigentes (Pendientes de Devolución):
                           </span>
-                          <span className="font-black text-amber-800">{trashDetails.deletedPrestamosActivos?.length ?? 0} activos</span>
+                          <span className="font-black text-amber-800">
+                            {trashDetails.deletedPrestamosActivos?.length ?? 0} activos
+                          </span>
                         </div>
                       )}
 
@@ -2169,7 +2628,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <CheckCircleOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Historial de Préstamos Finalizados:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.deletedPrestamosHistoriales?.length ?? 0} devueltos</span>
+                          <span className="font-bold text-stone-900">
+                            {trashDetails.deletedPrestamosHistoriales?.length ?? 0} devueltos
+                          </span>
                         </div>
                       )}
 
@@ -2179,7 +2640,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <CheckCircleOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Operaciones de Ajuste de Stock Relacionadas:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.stockOperacionEquipos?.length ?? 0} registros</span>
+                          <span className="font-bold text-stone-900">
+                            {trashDetails.stockOperacionEquipos?.length ?? 0} registros
+                          </span>
                         </div>
                       )}
                     </>
@@ -2190,7 +2653,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                           <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
                           Ficha base del Artículo:
                         </span>
-                        <span className="font-extrabold text-stone-950">1 registro (Tipo: {trashDetails.articulo?.tipo})</span>
+                        <span className="font-extrabold text-stone-950">
+                          1 registro (Tipo: {trashDetails.articulo?.tipo})
+                        </span>
                       </div>
 
                       {(trashDetails.stockMovimientos?.length ?? 0) > 0 && (
@@ -2199,7 +2664,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <InfoOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Movimientos de Stock (Ingresos / Entregas):
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.stockMovimientos?.length ?? 0} transacciones</span>
+                          <span className="font-bold text-stone-900">
+                            {trashDetails.stockMovimientos?.length ?? 0} transacciones
+                          </span>
                         </div>
                       )}
 
@@ -2209,7 +2676,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                             <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
                             Planillas de Entregas a Personal Completas:
                           </span>
-                          <span className="font-bold text-stone-900">{trashDetails.emptyEntregas?.length ?? 0} planillas</span>
+                          <span className="font-bold text-stone-900">
+                            {trashDetails.emptyEntregas?.length ?? 0} planillas
+                          </span>
                         </div>
                       )}
                     </>
@@ -2220,16 +2689,24 @@ export function ConfigViews(props: ConfigViewsProps) {
                   <div className="rounded-xl border border-red-250 bg-red-50 p-3 text-xs text-red-950 flex gap-2 equipos-start shadow-sm">
                     <WarningAmberOutlinedIcon className="h-5 w-5 text-red-750 shrink-0" />
                     <div>
-                      <strong className="font-extrabold text-red-900 block mb-0.5">⚠️ ADVERTENCIA CRÍTICA:</strong>
-                      Esta acción eliminará físicamente toda la información analizada y es irreversible. Se borrarán permanentemente del sistema de datos del depósito y no habrá forma de recuperarlos.
+                      <strong className="font-extrabold text-red-900 block mb-0.5">
+                        ⚠️ ADVERTENCIA CRÍTICA:
+                      </strong>
+                      Esta acción eliminará físicamente toda la información analizada y es
+                      irreversible. Se borrarán permanentemente del sistema de datos del depósito y
+                      no habrá forma de recuperarlos.
                     </div>
                   </div>
                 ) : (
                   <div className="rounded-xl border border-emerald-250 bg-emerald-50 p-3 text-xs text-emerald-950 flex gap-2 equipos-start shadow-sm">
                     <CheckCircleOutlinedIcon className="h-5 w-5 text-emerald-750 shrink-0" />
                     <div>
-                      <strong className="font-extrabold text-emerald-900 block mb-0.5">💡 NOTA DE RESTAURACIÓN:</strong>
-                      Al confirmar, se reinsertarán automáticamente todas las dependencias e historiales listados arriba, volviendo a estar disponibles en tiempo real en las vistas operativas principales y reportes del sistema.
+                      <strong className="font-extrabold text-emerald-900 block mb-0.5">
+                        💡 NOTA DE RESTAURACIÓN:
+                      </strong>
+                      Al confirmar, se reinsertarán automáticamente todas las dependencias e
+                      historiales listados arriba, volviendo a estar disponibles en tiempo real en
+                      las vistas operativas principales y reportes del sistema.
                     </div>
                   </div>
                 )}
@@ -2262,7 +2739,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                     : "bg-emerald-655 hover:bg-emerald-700 border border-emerald-750"
                 }`}
               >
-                {trashModalAction === "delete" ? "Sí, eliminar permanentemente" : "Sí, restaurar registro completo"}
+                {trashModalAction === "delete"
+                  ? "Sí, eliminar permanentemente"
+                  : "Sí, restaurar registro completo"}
               </button>
             </div>
           </ModalFrame>

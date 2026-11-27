@@ -70,7 +70,12 @@ export async function GET(req: Request) {
           grado: p.rango.nombreCompleto,
           gradoAbreviacion: p.rango.abreviacion,
           bateria: p.bateria?.nombre ?? null,
-          tipo: p.rango.tipo === TipoPersonal.SUBALTERNO ? "SUBALTERNO" : p.rango.tipo === TipoPersonal.OFICIAL ? "OFICIAL" : "SUBOFICIAL",
+          tipo:
+            p.rango.tipo === TipoPersonal.SUBALTERNO
+              ? "SUBALTERNO"
+              : p.rango.tipo === TipoPersonal.OFICIAL
+                ? "OFICIAL"
+                : "SUBOFICIAL",
           outstandingLoans: activeLoans.map((l) => ({
             movimientoId: l.movimientoId.toString(),
             reciboNumero: l.prestamoActivo?.reciboNumero,
@@ -117,6 +122,9 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     console.log("Error al obtener lista de bajas:", error);
-    return NextResponse.json({ error: "No se pudo recuperar la información de bajas." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo recuperar la información de bajas." },
+      { status: 500 }
+    );
   }
 }

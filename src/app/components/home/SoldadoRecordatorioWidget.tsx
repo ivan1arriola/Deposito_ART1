@@ -93,15 +93,15 @@ export function SoldadoRecordatorioWidget({
 
   const pendingTasks = useMemo(
     () => tasks.filter((task) => !task.completada).sort(sortPendingTasks),
-    [tasks],
+    [tasks]
   );
   const completedTasks = useMemo(
     () => tasks.filter((task) => task.completada).sort(sortCompletedTasks),
-    [tasks],
+    [tasks]
   );
   const urgentPendingTasks = useMemo(
     () => pendingTasks.filter((task) => isTaskUrgent(task, todayKey)),
-    [pendingTasks, todayKey],
+    [pendingTasks, todayKey]
   );
 
   const urgentCount = urgentPendingTasks.length;
@@ -114,7 +114,11 @@ export function SoldadoRecordatorioWidget({
         ? `${pendingTasks.length} pendiente(s)`
         : "Sin pendientes";
   const statusCaption =
-    urgentCount > 0 ? "Requiere atencion hoy" : hasPendingTasks ? "Hay tareas en seguimiento" : "Todo al dia";
+    urgentCount > 0
+      ? "Requiere atencion hoy"
+      : hasPendingTasks
+        ? "Hay tareas en seguimiento"
+        : "Todo al dia";
   const statusSurface =
     urgentCount > 0
       ? {
@@ -147,7 +151,15 @@ export function SoldadoRecordatorioWidget({
   const hiddenCount = Math.max(0, activeList.length - visibleTasks.length);
   const isRightCorner = corner === "TOP_RIGHT" || corner === "BOTTOM_RIGHT";
   const isTopCorner = corner === "TOP_LEFT" || corner === "TOP_RIGHT";
-  const avatarSize = isMobile ? 82 : isExtraLargeDesktop ? 132 : isLargeDesktop ? 120 : isDesktop ? 108 : 96;
+  const avatarSize = isMobile
+    ? 82
+    : isExtraLargeDesktop
+      ? 132
+      : isLargeDesktop
+        ? 120
+        : isDesktop
+          ? 108
+          : 96;
   const badgeSize = Math.max(20, Math.round(avatarSize * 0.24));
   const badgeFontSize = Math.max(11, Math.round(avatarSize * 0.13));
   const urgentPillHeight = Math.max(18, Math.round(avatarSize * 0.22));
@@ -156,31 +168,38 @@ export function SoldadoRecordatorioWidget({
   const urgentIndicatorLabel = urgentCount > 99 ? "Urg 99+" : `Urg ${urgentCount}`;
   const dragHandleSize = Math.max(20, Math.round(avatarSize * 0.24));
   const dragHandleIconSize = Math.max(14, Math.round(avatarSize * 0.17));
-  const resolveLeftBoundary = useCallback((viewportPadding: number) => {
-    if (typeof window === "undefined") return viewportPadding;
-    const sidebar = document.querySelector<HTMLElement>('[data-home-sidebar="true"]');
-    if (!sidebar) return viewportPadding;
+  const resolveLeftBoundary = useCallback(
+    (viewportPadding: number) => {
+      if (typeof window === "undefined") return viewportPadding;
+      const sidebar = document.querySelector<HTMLElement>('[data-home-sidebar="true"]');
+      if (!sidebar) return viewportPadding;
 
-    const sidebarStyles = window.getComputedStyle(sidebar);
-    if (sidebarStyles.display === "none" || sidebarStyles.visibility === "hidden") {
-      return viewportPadding;
-    }
+      const sidebarStyles = window.getComputedStyle(sidebar);
+      if (sidebarStyles.display === "none" || sidebarStyles.visibility === "hidden") {
+        return viewportPadding;
+      }
 
-    const sidebarRect = sidebar.getBoundingClientRect();
-    if (sidebarRect.width <= 0 || sidebarRect.right <= 0) {
-      return viewportPadding;
-    }
+      const sidebarRect = sidebar.getBoundingClientRect();
+      if (sidebarRect.width <= 0 || sidebarRect.right <= 0) {
+        return viewportPadding;
+      }
 
-    const gapToSidebar = isMobile ? viewportPadding : 10;
-    return Math.max(viewportPadding, Math.ceil(sidebarRect.right + gapToSidebar));
-  }, [isMobile]);
+      const gapToSidebar = isMobile ? viewportPadding : 10;
+      return Math.max(viewportPadding, Math.ceil(sidebarRect.right + gapToSidebar));
+    },
+    [isMobile]
+  );
   const widgetPositionSx = useMemo(() => {
     const sideOffset = isMobile ? 10 : 24;
     const verticalOffset = isMobile ? 14 : 24;
     const leftBoundary = resolveLeftBoundary(sideOffset);
     return {
-      ...(corner === "TOP_LEFT" || corner === "TOP_RIGHT" ? { top: verticalOffset } : { bottom: verticalOffset }),
-      ...(corner === "TOP_LEFT" || corner === "BOTTOM_LEFT" ? { left: leftBoundary } : { right: sideOffset }),
+      ...(corner === "TOP_LEFT" || corner === "TOP_RIGHT"
+        ? { top: verticalOffset }
+        : { bottom: verticalOffset }),
+      ...(corner === "TOP_LEFT" || corner === "BOTTOM_LEFT"
+        ? { left: leftBoundary }
+        : { right: sideOffset }),
     };
   }, [corner, isMobile, resolveLeftBoundary]);
   const widgetRuntimePositionSx = dragPreview
@@ -206,7 +225,7 @@ export function SoldadoRecordatorioWidget({
         message,
       });
     },
-    [displayFirstName, pendingTasks.length, urgentCount],
+    [displayFirstName, pendingTasks.length, urgentCount]
   );
 
   const dismissDialogue = useCallback(() => {
@@ -292,7 +311,11 @@ export function SoldadoRecordatorioWidget({
       const maxLeft = window.innerWidth - state.widgetWidth - viewportPadding;
       const maxTop = window.innerHeight - state.widgetHeight - viewportPadding;
       const nextLeft = clamp(event.clientX - state.offsetX, minLeft, Math.max(minLeft, maxLeft));
-      const nextTop = clamp(event.clientY - state.offsetY, viewportPadding, Math.max(viewportPadding, maxTop));
+      const nextTop = clamp(
+        event.clientY - state.offsetY,
+        viewportPadding,
+        Math.max(viewportPadding, maxTop)
+      );
       setDragPreview({ left: nextLeft, top: nextTop });
     }
   };
@@ -320,13 +343,13 @@ export function SoldadoRecordatorioWidget({
         viewportPadding,
         {
           minLeft,
-        },
+        }
       );
       const nextCorner = resolveCornerFromPoint(
         droppedPosition.left + state.widgetWidth / 2,
         droppedPosition.top + state.widgetHeight / 2,
         window.innerWidth,
-        window.innerHeight,
+        window.innerHeight
       );
       setCorner(nextCorner);
       setControlsOpen(false);
@@ -375,7 +398,8 @@ export function SoldadoRecordatorioWidget({
     <Box
       sx={{
         p: 1.5,
-        backgroundImage: "linear-gradient(180deg, rgba(250,251,247,0.98) 0%, rgba(240,244,235,0.95) 100%)",
+        backgroundImage:
+          "linear-gradient(180deg, rgba(250,251,247,0.98) 0%, rgba(240,244,235,0.95) 100%)",
       }}
     >
       <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
@@ -395,7 +419,10 @@ export function SoldadoRecordatorioWidget({
               border: "1px solid rgba(15, 25, 18, 0.35)",
             }}
           />
-          <Typography variant="subtitle1" sx={{ mt: 0.75, fontWeight: 900, lineHeight: 1.2, color: "#253027" }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ mt: 0.75, fontWeight: 900, lineHeight: 1.2, color: "#253027" }}
+          >
             Recordatorios
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
@@ -472,12 +499,23 @@ export function SoldadoRecordatorioWidget({
             }}
           >
             <Stack spacing={1}>
-              {loading ? <Typography variant="caption" color="text.secondary">Cargando tareas...</Typography> : null}
+              {loading ? (
+                <Typography variant="caption" color="text.secondary">
+                  Cargando tareas...
+                </Typography>
+              ) : null}
               {!loading && visibleTasks.length === 0 ? (
                 <Typography
                   variant="caption"
                   color="text.secondary"
-                  sx={{ border: "1px solid", borderColor: "divider", bgcolor: "action.hover", borderRadius: 1.5, px: 1, py: 1 }}
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    bgcolor: "action.hover",
+                    borderRadius: 1.5,
+                    px: 1,
+                    py: 1,
+                  }}
                 >
                   {filter === "HECHAS"
                     ? "No hay tareas hechas."
@@ -506,7 +544,13 @@ export function SoldadoRecordatorioWidget({
                       >
                         <Stack direction="row" spacing={1} alignItems="flex-start">
                           <Box sx={{ minWidth: 0, flex: 1 }}>
-                            <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+                            <Stack
+                              direction="row"
+                              spacing={0.75}
+                              alignItems="center"
+                              flexWrap="wrap"
+                              useFlexGap
+                            >
                               <Typography
                                 variant="caption"
                                 sx={{
@@ -522,7 +566,12 @@ export function SoldadoRecordatorioWidget({
                                 label={task.prioridad === "URGENTE" ? "Urgente" : "Normal"}
                                 size="small"
                                 color={task.prioridad === "URGENTE" ? "error" : "default"}
-                                sx={{ height: 20, fontSize: 10, textTransform: "uppercase", fontWeight: 700 }}
+                                sx={{
+                                  height: 20,
+                                  fontSize: 10,
+                                  textTransform: "uppercase",
+                                  fontWeight: 700,
+                                }}
                               />
                               {task.fechaLimite ? (
                                 <Chip
@@ -538,7 +587,12 @@ export function SoldadoRecordatorioWidget({
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
-                                sx={{ mt: 0.4, display: "block", textDecoration: isDone ? "line-through" : "none", opacity: isDone ? 0.8 : 1 }}
+                                sx={{
+                                  mt: 0.4,
+                                  display: "block",
+                                  textDecoration: isDone ? "line-through" : "none",
+                                  opacity: isDone ? 0.8 : 1,
+                                }}
                               >
                                 {task.nota}
                               </Typography>
@@ -596,8 +650,25 @@ export function SoldadoRecordatorioWidget({
       ) : null}
 
       {showComposer ? (
-        <Box sx={{ mt: 1.2, borderRadius: 2, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.2 }}>
-          <Typography variant="caption" sx={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, color: "text.secondary" }}>
+        <Box
+          sx={{
+            mt: 1.2,
+            borderRadius: 2,
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: "background.paper",
+            p: 1.2,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: 0.6,
+              color: "text.secondary",
+            }}
+          >
             Carga rapida
           </Typography>
           <Stack spacing={1} sx={{ mt: 1 }}>
@@ -627,16 +698,40 @@ export function SoldadoRecordatorioWidget({
               fullWidth
             />
             <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
-              <Button type="button" size="small" variant="outlined" color="inherit" onClick={() => setFechaLimite(todayIsoDate())}>
+              <Button
+                type="button"
+                size="small"
+                variant="outlined"
+                color="inherit"
+                onClick={() => setFechaLimite(todayIsoDate())}
+              >
                 Hoy
               </Button>
-              <Button type="button" size="small" variant="outlined" color="inherit" onClick={() => setFechaLimite(offsetIsoDate(1))}>
+              <Button
+                type="button"
+                size="small"
+                variant="outlined"
+                color="inherit"
+                onClick={() => setFechaLimite(offsetIsoDate(1))}
+              >
                 Manana
               </Button>
-              <Button type="button" size="small" variant="outlined" color="inherit" onClick={() => setFechaLimite(offsetIsoDate(7))}>
+              <Button
+                type="button"
+                size="small"
+                variant="outlined"
+                color="inherit"
+                onClick={() => setFechaLimite(offsetIsoDate(7))}
+              >
                 +7 dias
               </Button>
-              <Button type="button" size="small" variant="outlined" color="inherit" onClick={() => setFechaLimite("")}>
+              <Button
+                type="button"
+                size="small"
+                variant="outlined"
+                color="inherit"
+                onClick={() => setFechaLimite("")}
+              >
                 Sin fecha
               </Button>
             </Stack>
@@ -644,7 +739,9 @@ export function SoldadoRecordatorioWidget({
               select
               SelectProps={{ native: true }}
               value={prioridad}
-              onChange={(event) => setPrioridad(event.target.value === "URGENTE" ? "URGENTE" : "NORMAL")}
+              onChange={(event) =>
+                setPrioridad(event.target.value === "URGENTE" ? "URGENTE" : "NORMAL")
+              }
               size="small"
               fullWidth
             >
@@ -688,7 +785,9 @@ export function SoldadoRecordatorioWidget({
         position: "fixed",
         zIndex: 360,
         ...widgetRuntimePositionSx,
-        transition: isDragging ? "none" : "top 0.2s ease, right 0.2s ease, bottom 0.2s ease, left 0.2s ease",
+        transition: isDragging
+          ? "none"
+          : "top 0.2s ease, right 0.2s ease, bottom 0.2s ease, left 0.2s ease",
       }}
     >
       <style>{`
@@ -826,7 +925,13 @@ export function SoldadoRecordatorioWidget({
         alignItems={isRightCorner ? "flex-end" : "flex-start"}
         spacing={isMobile ? 1 : 0.85}
       >
-        <Box sx={{ position: "relative", display: "inline-flex", alignSelf: isRightCorner ? "flex-end" : "flex-start" }}>
+        <Box
+          sx={{
+            position: "relative",
+            display: "inline-flex",
+            alignSelf: isRightCorner ? "flex-end" : "flex-start",
+          }}
+        >
           <IconButton
             type="button"
             onClick={handleSoldierClick}
@@ -843,7 +948,12 @@ export function SoldadoRecordatorioWidget({
               cursor: "grab",
               "&:hover": { bgcolor: "transparent" },
               "&:active": { cursor: "grabbing" },
-              ...(isDragging ? { transform: "scale(1.03)", filter: "drop-shadow(0 0 10px rgba(16, 94, 255, 0.35))" } : {}),
+              ...(isDragging
+                ? {
+                    transform: "scale(1.03)",
+                    filter: "drop-shadow(0 0 10px rgba(16, 94, 255, 0.35))",
+                  }
+                : {}),
               "&:focus-visible": {
                 outline: "2px solid",
                 outlineColor: "primary.main",
@@ -864,7 +974,8 @@ export function SoldadoRecordatorioWidget({
                     minWidth: badgeSize,
                     height: badgeSize,
                     fontWeight: 800,
-                    boxShadow: "0 0 0 2px rgba(240, 244, 234, 0.97), 0 6px 14px rgba(17, 31, 20, 0.22)",
+                    boxShadow:
+                      "0 0 0 2px rgba(240, 244, 234, 0.97), 0 6px 14px rgba(17, 31, 20, 0.22)",
                   },
                 }}
               >
@@ -927,7 +1038,8 @@ export function SoldadoRecordatorioWidget({
                 borderRadius: 2.75,
                 px: 1.2,
                 py: 0.95,
-                backgroundImage: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,238,0.98) 100%)",
+                backgroundImage:
+                  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,238,0.98) 100%)",
                 color: "#1f261e",
                 border: "1px solid rgba(102, 114, 88, 0.34)",
                 boxShadow: "0 12px 26px rgba(20, 28, 19, 0.22)",
@@ -986,14 +1098,23 @@ export function SoldadoRecordatorioWidget({
               p: 1.25,
               borderRadius: 4,
               bgcolor: "rgba(250, 252, 248, 0.96)",
-              backgroundImage: "linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(240,244,236,0.6) 100%)",
+              backgroundImage:
+                "linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(240,244,236,0.6) 100%)",
               border: "1px solid rgba(130, 142, 115, 0.4)",
               boxShadow: "0 16px 36px rgba(10, 15, 8, 0.4), 0 0 0 1px rgba(255,255,255,0.6) inset",
               backdropFilter: "blur(12px) saturate(140%)",
             }}
           >
             <Box sx={{ px: 0.5, pb: 0.25 }}>
-              <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase", color: "#8a9e7f" }}>
+              <Typography
+                sx={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  letterSpacing: 0.8,
+                  textTransform: "uppercase",
+                  color: "#8a9e7f",
+                }}
+              >
                 Panel Rápido
               </Typography>
               <Typography sx={{ fontSize: 13, fontWeight: 800, lineHeight: 1.2, color: "#2c362a" }}>
@@ -1035,10 +1156,21 @@ export function SoldadoRecordatorioWidget({
               }}
             >
               <Stack spacing={0.1} sx={{ textAlign: "left", alignItems: "flex-start" }}>
-                <Typography component="span" sx={{ fontSize: 15, fontWeight: 800, lineHeight: 1.14, letterSpacing: 0.08 }}>
+                <Typography
+                  component="span"
+                  sx={{ fontSize: 15, fontWeight: 800, lineHeight: 1.14, letterSpacing: 0.08 }}
+                >
                   {statusHeadline}
                 </Typography>
-                <Typography component="span" sx={{ fontSize: 11, fontWeight: 600, color: statusSurface.mutedColor, lineHeight: 1.18 }}>
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: statusSurface.mutedColor,
+                    lineHeight: 1.18,
+                  }}
+                >
                   {statusCaption}
                 </Typography>
               </Stack>
@@ -1090,7 +1222,8 @@ export function SoldadoRecordatorioWidget({
             borderRadius: 4,
             border: "1px solid",
             borderColor: "rgba(107, 119, 93, 0.32)",
-            backgroundImage: "linear-gradient(180deg, rgba(253,254,251,0.98) 0%, rgba(238,244,232,0.96) 100%)",
+            backgroundImage:
+              "linear-gradient(180deg, rgba(253,254,251,0.98) 0%, rgba(238,244,232,0.96) 100%)",
             boxShadow: "0 20px 46px rgba(26, 33, 23, 0.25)",
           }}
         >
@@ -1110,7 +1243,8 @@ export function SoldadoRecordatorioWidget({
               borderTopRightRadius: 16,
               border: "1px solid",
               borderColor: "rgba(107, 119, 93, 0.3)",
-              backgroundImage: "linear-gradient(180deg, rgba(252,254,249,0.98) 0%, rgba(236,242,228,0.96) 100%)",
+              backgroundImage:
+                "linear-gradient(180deg, rgba(252,254,249,0.98) 0%, rgba(236,242,228,0.96) 100%)",
               boxShadow: "0 -10px 30px rgba(20, 28, 19, 0.2)",
               maxHeight: "82vh",
               overflow: "hidden",

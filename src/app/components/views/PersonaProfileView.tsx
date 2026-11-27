@@ -21,7 +21,8 @@ import TimelineRoundedIcon from "@mui/icons-material/TimelineRounded";
 import NoteAltRoundedIcon from "@mui/icons-material/NoteAltRounded";
 
 export type PersonaProfileTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
-export type PersonaProfileTimelineType = "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO";
+export type PersonaProfileTimelineType =
+  "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO" | "DEVOLUCION_PRESTAMO";
 
 export type PersonaProfileIdentity = {
   ci: string;
@@ -127,17 +128,21 @@ export function PersonaProfileView({
           <div className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 equipos-center justify-center rounded-full bg-stone-100 text-stone-300">
             <PersonRoundedIcon sx={{ fontSize: { xs: 32, sm: 40 } }} />
           </div>
-          <h2 className="mt-4 text-lg sm:text-xl font-bold text-stone-900">Perfil no seleccionado</h2>
-          <p className="mt-2 text-xs sm:text-sm text-stone-500 px-4">Selecciona una persona del buscador para ver su ficha completa.</p>
+          <h2 className="mt-4 text-lg sm:text-xl font-bold text-stone-900">
+            Perfil no seleccionado
+          </h2>
+          <p className="mt-2 text-xs sm:text-sm text-stone-500 px-4">
+            Selecciona una persona del buscador para ver su ficha completa.
+          </p>
           {showBackButton && (
-             <button
-                type="button"
-                onClick={onBack}
-                className="mt-6 inline-flex equipos-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 sm:px-6 sm:py-3 text-sm font-bold text-white transition hover:bg-black active:scale-95"
-              >
-                <ArrowBackRoundedIcon fontSize="small" />
-                Volver al inicio
-              </button>
+            <button
+              type="button"
+              onClick={onBack}
+              className="mt-6 inline-flex equipos-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 sm:px-6 sm:py-3 text-sm font-bold text-white transition hover:bg-black active:scale-95"
+            >
+              <ArrowBackRoundedIcon fontSize="small" />
+              Volver al inicio
+            </button>
           )}
         </article>
       </section>
@@ -147,13 +152,13 @@ export function PersonaProfileView({
   const timeline = sortTimeline(state.timeline);
   const tallas = tallasEntries(tallasMap(state.identity.tallas));
   const typeLabel = profileTypeLabel(state.identity.tipo);
-  
+
   const movementCounts = timeline.reduce<Record<PersonaProfileTimelineType, number>>(
     (acc, entry) => {
       acc[entry.tipo] += 1;
       return acc;
     },
-    { ENTREGA: 0, DEVOLUCION: 0, ASIGNACION: 0, PRESTAMO: 0, DEVOLUCION_PRESTAMO: 0 },
+    { ENTREGA: 0, DEVOLUCION: 0, ASIGNACION: 0, PRESTAMO: 0, DEVOLUCION_PRESTAMO: 0 }
   );
 
   return (
@@ -192,7 +197,7 @@ export function PersonaProfileView({
                 Hoja de Entrega
               </button>
             )}
-            
+
             {allowPrintActions && timeline.some((t) => t.tipo !== "DEVOLUCION_PRESTAMO") && (
               <button
                 type="button"
@@ -228,7 +233,9 @@ export function PersonaProfileView({
         {state.loading && (
           <div className="mt-4 sm:mt-6 flex equipos-center gap-3 rounded-2xl bg-indigo-50/50 p-3 sm:p-4 border border-indigo-100 animate-pulse">
             <div className="h-2 w-2 rounded-full bg-indigo-600" />
-            <p className="text-xs sm:text-sm font-bold text-indigo-700">Sincronizando información...</p>
+            <p className="text-xs sm:text-sm font-bold text-indigo-700">
+              Sincronizando información...
+            </p>
           </div>
         )}
 
@@ -245,66 +252,94 @@ export function PersonaProfileView({
           <article className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50">
             <div className="flex flex-col sm:flex-row sm:equipos-center justify-between gap-4 mb-6">
               <div className="flex equipos-center gap-2">
-                 <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
-                    <PersonRoundedIcon fontSize="small" />
-                 </div>
-                 <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">Información de Servicio</h3>
+                <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
+                  <PersonRoundedIcon fontSize="small" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">
+                  Información de Servicio
+                </h3>
               </div>
               <div className="flex gap-4 sm:gap-6 px-1">
-                 <div className="flex flex-col sm:text-right">
-                    <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-stone-400">Registros</p>
-                    <p className="text-lg sm:text-xl font-black text-stone-900">{state.registros.length}</p>
-                 </div>
-                 <div className="flex flex-col sm:text-right">
-                    <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-stone-400">Vigentes</p>
-                    <p className="text-lg sm:text-xl font-black text-indigo-600">{state.prestamos.filter(p => p.estado === "PENDIENTE").length}</p>
-                 </div>
+                <div className="flex flex-col sm:text-right">
+                  <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-stone-400">
+                    Registros
+                  </p>
+                  <p className="text-lg sm:text-xl font-black text-stone-900">
+                    {state.registros.length}
+                  </p>
+                </div>
+                <div className="flex flex-col sm:text-right">
+                  <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-stone-400">
+                    Vigentes
+                  </p>
+                  <p className="text-lg sm:text-xl font-black text-indigo-600">
+                    {state.prestamos.filter((p) => p.estado === "PENDIENTE").length}
+                  </p>
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 sm:gap-y-4">
               <div className="space-y-1">
-                 <p className="text-xs font-black uppercase tracking-widest text-stone-400">Grado</p>
-                 <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
-                    <MilitaryTechRoundedIcon sx={{ fontSize: 20, color: "var(--color-ejercito-gold)" }} />
-                    <span className="truncate">{state.identity.gradoAbreviacion} — {state.identity.gradoNombre}</span>
-                 </p>
+                <p className="text-xs font-black uppercase tracking-widest text-stone-400">Grado</p>
+                <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
+                  <MilitaryTechRoundedIcon
+                    sx={{ fontSize: 20, color: "var(--color-ejercito-gold)" }}
+                  />
+                  <span className="truncate">
+                    {state.identity.gradoAbreviacion} — {state.identity.gradoNombre}
+                  </span>
+                </p>
               </div>
 
               <div className="space-y-1">
-                 <p className="text-xs font-black uppercase tracking-widest text-stone-400">Batería / Unidad</p>
-                 <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
-                    <GroupsRoundedIcon sx={{ fontSize: 20, color: "stone.400" }} />
-                    <span className="truncate">{state.identity.bateriaNombre ?? "No aplica / General"}</span>
-                 </p>
+                <p className="text-xs font-black uppercase tracking-widest text-stone-400">
+                  Batería / Unidad
+                </p>
+                <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
+                  <GroupsRoundedIcon sx={{ fontSize: 20, color: "stone.400" }} />
+                  <span className="truncate">
+                    {state.identity.bateriaNombre ?? "No aplica / General"}
+                  </span>
+                </p>
               </div>
 
               <div className="space-y-1">
-                 <p className="text-xs font-black uppercase tracking-widest text-stone-400">Contacto</p>
-                 <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
-                    <PhoneRoundedIcon sx={{ fontSize: 18, color: "stone.300" }} />
-                    {state.identity.telefonoContacto ?? "Sin teléfono"}
-                 </p>
+                <p className="text-xs font-black uppercase tracking-widest text-stone-400">
+                  Contacto
+                </p>
+                <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
+                  <PhoneRoundedIcon sx={{ fontSize: 18, color: "stone.300" }} />
+                  {state.identity.telefonoContacto ?? "Sin teléfono"}
+                </p>
               </div>
 
               <div className="space-y-1">
-                 <p className="text-xs font-black uppercase tracking-widest text-stone-400">Incorporación</p>
-                 <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
-                    <CalendarTodayRoundedIcon sx={{ fontSize: 18, color: "stone.300" }} />
-                    {state.identity.fechaIngreso ?? "No registrada"}
-                 </p>
+                <p className="text-xs font-black uppercase tracking-widest text-stone-400">
+                  Incorporación
+                </p>
+                <p className="text-base font-bold text-stone-800 flex equipos-center gap-2">
+                  <CalendarTodayRoundedIcon sx={{ fontSize: 18, color: "stone.300" }} />
+                  {state.identity.fechaIngreso ?? "No registrada"}
+                </p>
               </div>
 
               {/* DYNAMIC FIELDS */}
               {state.identity.esReingreso === true && (
                 <>
                   <div className="space-y-1">
-                     <p className="text-xs font-black uppercase tracking-widest text-stone-400">Reingreso</p>
-                     <p className="text-base font-bold text-indigo-600">Personal de Reingreso</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-stone-400">
+                      Reingreso
+                    </p>
+                    <p className="text-base font-bold text-indigo-600">Personal de Reingreso</p>
                   </div>
                   <div className="space-y-1">
-                     <p className="text-xs font-black uppercase tracking-widest text-stone-400">Alta Original</p>
-                     <p className="text-base font-bold text-stone-800">{state.identity.fechaIngresoOriginal ?? "-"}</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-stone-400">
+                      Alta Original
+                    </p>
+                    <p className="text-base font-bold text-stone-800">
+                      {state.identity.fechaIngresoOriginal ?? "-"}
+                    </p>
                   </div>
                 </>
               )}
@@ -312,12 +347,21 @@ export function PersonaProfileView({
 
             {/* Tallas Section */}
             <div className="mt-8 pt-6 border-t border-stone-100">
-              <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 mb-4">Dimensiones y Tallas</p>
+              <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 mb-4">
+                Dimensiones y Tallas
+              </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 {tallas.map((entry) => (
-                  <div key={`profile-talla-${entry.key}`} className="rounded-xl sm:rounded-2xl border border-stone-100 bg-stone-50/50 px-3 py-2.5 sm:px-4 sm:py-3 text-center transition hover:border-stone-200">
-                    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-stone-400">{entry.label}</p>
-                    <p className="mt-0.5 sm:mt-1 text-base sm:text-lg font-black text-stone-900">{entry.value || "—"}</p>
+                  <div
+                    key={`profile-talla-${entry.key}`}
+                    className="rounded-xl sm:rounded-2xl border border-stone-100 bg-stone-50/50 px-3 py-2.5 sm:px-4 sm:py-3 text-center transition hover:border-stone-200"
+                  >
+                    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-stone-400">
+                      {entry.label}
+                    </p>
+                    <p className="mt-0.5 sm:mt-1 text-base sm:text-lg font-black text-stone-900">
+                      {entry.value || "—"}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -328,42 +372,65 @@ export function PersonaProfileView({
             {/* Equipment Summary Table */}
             <article className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50 overflow-hidden">
               <div className="flex equipos-center gap-2 mb-6">
-                 <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
-                    <Inventory2RoundedIcon fontSize="small" />
-                 </div>
-                 <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">Equipamiento Actual</h3>
+                <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
+                  <Inventory2RoundedIcon fontSize="small" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">
+                  Equipamiento Actual
+                </h3>
               </div>
 
               {state.equipmentSummary.length === 0 ? (
                 <div className="py-8 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200">
-                   <p className="text-xs sm:text-sm font-bold text-stone-400 px-4">Sin equipos cargados en sistema.</p>
+                  <p className="text-xs sm:text-sm font-bold text-stone-400 px-4">
+                    Sin equipos cargados en sistema.
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
                   <table className="w-full border-collapse text-xs sm:text-sm">
                     <thead>
                       <tr className="border-b border-stone-100">
-                        <th className="pb-3 text-left font-black uppercase tracking-widest text-stone-400">Artículo</th>
-                        <th className="pb-3 text-center font-black uppercase tracking-widest text-stone-400">E/P</th>
-                        <th className="pb-3 text-center font-black uppercase tracking-widest text-stone-400">Dev</th>
-                        <th className="pb-3 text-right font-black uppercase tracking-widest text-stone-400">Saldo</th>
+                        <th className="pb-3 text-left font-black uppercase tracking-widest text-stone-400">
+                          Artículo
+                        </th>
+                        <th className="pb-3 text-center font-black uppercase tracking-widest text-stone-400">
+                          E/P
+                        </th>
+                        <th className="pb-3 text-center font-black uppercase tracking-widest text-stone-400">
+                          Dev
+                        </th>
+                        <th className="pb-3 text-right font-black uppercase tracking-widest text-stone-400">
+                          Saldo
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-50">
                       {state.equipmentSummary.map((row) => (
-                        <tr key={`profile-equipment-${row.equipo}`} className="group hover:bg-stone-50/50 transition-colors">
+                        <tr
+                          key={`profile-equipment-${row.equipo}`}
+                          className="group hover:bg-stone-50/50 transition-colors"
+                        >
                           <td className="py-3 pr-2 sm:pr-4">
-                             <p className="font-bold text-stone-800 line-clamp-1 text-sm sm:text-base">{row.equipo}</p>
-                             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-tighter">
-                               {row.fuente === "REGISTROS" ? "Suministro" : "Préstamo"}
-                             </p>
+                            <p className="font-bold text-stone-800 line-clamp-1 text-sm sm:text-base">
+                              {row.equipo}
+                            </p>
+                            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-tighter">
+                              {row.fuente === "REGISTROS" ? "Suministro" : "Préstamo"}
+                            </p>
                           </td>
-                          <td className="py-3 text-center tabular-nums text-stone-600 font-medium">{row.entregado}</td>
-                          <td className="py-3 text-center tabular-nums text-stone-600 font-medium">{row.devuelto}</td>
+                          <td className="py-3 text-center tabular-nums text-stone-600 font-medium">
+                            {row.entregado}
+                          </td>
+                          <td className="py-3 text-center tabular-nums text-stone-600 font-medium">
+                            {row.devuelto}
+                          </td>
                           <td className="py-3 text-right">
-                             <span className={`inline-block min-w-[28px] sm:min-w-[32px] px-2 py-1 rounded-lg font-black tabular-nums text-center ${row.saldo > 0 ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-400"}`}>
-                                {row.saldo}
-                             </span>
+                            <span
+                              className={`inline-block min-w-[28px] sm:min-w-[32px] px-2 py-1 rounded-lg font-black tabular-nums text-center ${row.saldo > 0 ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-400"}`}
+                            >
+                              {row.saldo}
+                            </span>
                           </td>
                         </tr>
                       ))}
@@ -375,109 +442,156 @@ export function PersonaProfileView({
 
             {/* Observaciones Section */}
             {state.identity.tipo === "SUBALTERNO" && (
-               <article className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50">
-                  <div className="flex equipos-center gap-2 mb-6">
-                    <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
-                        <NoteAltRoundedIcon fontSize="small" />
-                    </div>
-                    <h3 className="text-base sm:text-lg font-black text-stone-900 tracking-tight">Observaciones</h3>
+              <article className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50">
+                <div className="flex equipos-center gap-2 mb-6">
+                  <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
+                    <NoteAltRoundedIcon fontSize="small" />
                   </div>
+                  <h3 className="text-base sm:text-lg font-black text-stone-900 tracking-tight">
+                    Observaciones
+                  </h3>
+                </div>
 
-                  {state.observaciones.length === 0 ? (
-                    <div className="py-10 sm:py-12 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200">
-                       <p className="text-xs sm:text-sm font-bold text-stone-400 px-4">Sin notas adicionales registradas.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                      {state.observaciones.map((observacion) => (
-                        <div key={observacion.observacionId} className="group relative pl-4 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-indigo-500 before:rounded-full">
-                          <p className="text-[10px] sm:text-[11px] font-black text-indigo-500 uppercase tracking-widest">{formatDateOnlyForDisplay(observacion.fecha)}</p>
-                          <p className="mt-1 text-sm sm:text-base font-medium text-stone-700 leading-relaxed">{observacion.texto}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-               </article>
-             )}
+                {state.observaciones.length === 0 ? (
+                  <div className="py-10 sm:py-12 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200">
+                    <p className="text-xs sm:text-sm font-bold text-stone-400 px-4">
+                      Sin notas adicionales registradas.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    {state.observaciones.map((observacion) => (
+                      <div
+                        key={observacion.observacionId}
+                        className="group relative pl-4 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-indigo-500 before:rounded-full"
+                      >
+                        <p className="text-[10px] sm:text-[11px] font-black text-indigo-500 uppercase tracking-widest">
+                          {formatDateOnlyForDisplay(observacion.fecha)}
+                        </p>
+                        <p className="mt-1 text-sm sm:text-base font-medium text-stone-700 leading-relaxed">
+                          {observacion.texto}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            )}
           </div>
 
           {/* Timeline Section */}
-          <article id="profile-timeline" className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50">
+          <article
+            id="profile-timeline"
+            className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50"
+          >
             <div className="flex flex-col sm:flex-row sm:equipos-center justify-between gap-4 mb-8">
               <div className="flex equipos-center gap-2">
                 <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
-                    <TimelineRoundedIcon fontSize="small" />
+                  <TimelineRoundedIcon fontSize="small" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">Historial de Movimientos</h3>
+                <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">
+                  Historial de Movimientos
+                </h3>
               </div>
               <div className="flex flex-wrap gap-1.5 sm:justify-end">
-                 {Object.entries(movementCounts).map(([tipo, count]) => count > 0 && (
-                    <span key={tipo} className={`rounded-lg px-2 py-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${movementTypeStyles(tipo as PersonaProfileTimelineType)}`}>
-                       {tipo.replace("_", " ")}: {count}
-                    </span>
-                 ))}
+                {Object.entries(movementCounts).map(
+                  ([tipo, count]) =>
+                    count > 0 && (
+                      <span
+                        key={tipo}
+                        className={`rounded-lg px-2 py-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${movementTypeStyles(tipo as PersonaProfileTimelineType)}`}
+                      >
+                        {tipo.replace("_", " ")}: {count}
+                      </span>
+                    )
+                )}
               </div>
             </div>
 
             {timeline.length === 0 ? (
               <div className="py-10 sm:py-12 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200">
-                 <p className="text-xs sm:text-sm font-bold text-stone-400 px-4">Sin historial registrado.</p>
+                <p className="text-xs sm:text-sm font-bold text-stone-400 px-4">
+                  Sin historial registrado.
+                </p>
               </div>
             ) : (
               <div className="relative space-y-6 before:absolute before:left-[15px] sm:before:left-[19px] before:top-2 before:bottom-2 before:w-[2px] before:bg-stone-100">
                 {timeline.map((entry) => (
                   <div key={entry.id} className="relative pl-10 sm:pl-12">
-                     <div className={`absolute left-0 top-1 z-10 flex h-8 w-8 sm:h-10 sm:w-10 equipos-center justify-center rounded-xl sm:rounded-2xl border-2 sm:border-4 border-white shadow-md ${
-                       entry.tipo === "ENTREGA" ? "bg-emerald-500 text-white" :
-                       entry.tipo === "DEVOLUCION" ? "bg-amber-500 text-white" :
-                       entry.tipo === "PRESTAMO" ? "bg-indigo-600 text-white" :
-                       entry.tipo === "ASIGNACION" ? "bg-violet-500 text-white" : "bg-cyan-500 text-white"
-                     }`}>
-                        <DescriptionRoundedIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />
-                     </div>
+                    <div
+                      className={`absolute left-0 top-1 z-10 flex h-8 w-8 sm:h-10 sm:w-10 equipos-center justify-center rounded-xl sm:rounded-2xl border-2 sm:border-4 border-white shadow-md ${
+                        entry.tipo === "ENTREGA"
+                          ? "bg-emerald-500 text-white"
+                          : entry.tipo === "DEVOLUCION"
+                            ? "bg-amber-500 text-white"
+                            : entry.tipo === "PRESTAMO"
+                              ? "bg-indigo-600 text-white"
+                              : entry.tipo === "ASIGNACION"
+                                ? "bg-violet-500 text-white"
+                                : "bg-cyan-500 text-white"
+                      }`}
+                    >
+                      <DescriptionRoundedIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />
+                    </div>
 
-                     <div className={movementCardClass(entry)}>
-                        <div className="flex flex-col sm:flex-row sm:equipos-center justify-between gap-3 pb-3 border-b border-stone-100 mb-3">
-                           <div className="flex equipos-center gap-2">
-                              <span className={`rounded-lg px-2 py-0.5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest ${movementTypeStyles(entry.tipo)}`}>
-                                {entry.tipo.replace("_", " ")}
-                              </span>
-                              <span className="text-xs sm:text-sm font-black text-stone-400">{formatDateOnlyForDisplay(entry.fecha)}</span>
-                           </div>
-
-                           {entry.tipo === "PRESTAMO" && (
-                             <button
-                               onClick={() => onPrintPrestamos([entry.dbId || entry.id])}
-                               className="inline-flex equipos-center justify-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-[10px] sm:text-[11px] font-black text-indigo-700 transition hover:bg-indigo-100 active:scale-95"
-                             >
-                               <PrintRoundedIcon sx={{ fontSize: 16 }} />
-                               REIMPRIMIR RECIBO
-                             </button>
-                           )}
+                    <div className={movementCardClass(entry)}>
+                      <div className="flex flex-col sm:flex-row sm:equipos-center justify-between gap-3 pb-3 border-b border-stone-100 mb-3">
+                        <div className="flex equipos-center gap-2">
+                          <span
+                            className={`rounded-lg px-2 py-0.5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest ${movementTypeStyles(entry.tipo)}`}
+                          >
+                            {entry.tipo.replace("_", " ")}
+                          </span>
+                          <span className="text-xs sm:text-sm font-black text-stone-400">
+                            {formatDateOnlyForDisplay(entry.fecha)}
+                          </span>
                         </div>
 
-                        <div className="space-y-4">
-                           <p className="text-sm sm:text-base font-bold text-stone-800 leading-snug">{entry.descripcion}</p>
-                           
-                           {entry.equipos.length > 0 && (
-                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 bg-stone-50 p-3 sm:p-4 rounded-xl border border-stone-100">
-                                {entry.equipos.map((equipo) => (
-                                  <div key={`${entry.id}-${equipo.nombre}`} className="flex equipos-center justify-between gap-4 border-b border-stone-200/50 last:border-0 pb-1 last:pb-0">
-                                     <span className="text-xs sm:text-sm font-bold text-stone-600 truncate pr-2">{equipo.nombre}</span>
-                                     <span className="text-xs sm:text-sm font-black text-stone-900 tabular-nums flex-shrink-0">x{equipo.cantidad}</span>
-                                  </div>
-                                ))}
-                             </div>
-                           )}
+                        {entry.tipo === "PRESTAMO" && (
+                          <button
+                            onClick={() => onPrintPrestamos([entry.dbId || entry.id])}
+                            className="inline-flex equipos-center justify-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-[10px] sm:text-[11px] font-black text-indigo-700 transition hover:bg-indigo-100 active:scale-95"
+                          >
+                            <PrintRoundedIcon sx={{ fontSize: 16 }} />
+                            REIMPRIMIR RECIBO
+                          </button>
+                        )}
+                      </div>
 
-                           <div className="flex equipos-center gap-1.5 pt-1">
-                              <NoteAltRoundedIcon sx={{ fontSize: 14, color: "stone.300" }} />
-                              <span className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-tight truncate">
-                                 Responsable: <span className="text-stone-600">{entry.responsable?.trim() || "SISTEMA"}</span>
-                              </span>
-                           </div>
+                      <div className="space-y-4">
+                        <p className="text-sm sm:text-base font-bold text-stone-800 leading-snug">
+                          {entry.descripcion}
+                        </p>
+
+                        {entry.equipos.length > 0 && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 bg-stone-50 p-3 sm:p-4 rounded-xl border border-stone-100">
+                            {entry.equipos.map((equipo) => (
+                              <div
+                                key={`${entry.id}-${equipo.nombre}`}
+                                className="flex equipos-center justify-between gap-4 border-b border-stone-200/50 last:border-0 pb-1 last:pb-0"
+                              >
+                                <span className="text-xs sm:text-sm font-bold text-stone-600 truncate pr-2">
+                                  {equipo.nombre}
+                                </span>
+                                <span className="text-xs sm:text-sm font-black text-stone-900 tabular-nums flex-shrink-0">
+                                  x{equipo.cantidad}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex equipos-center gap-1.5 pt-1">
+                          <NoteAltRoundedIcon sx={{ fontSize: 14, color: "stone.300" }} />
+                          <span className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-tight truncate">
+                            Responsable:{" "}
+                            <span className="text-stone-600">
+                              {entry.responsable?.trim() || "SISTEMA"}
+                            </span>
+                          </span>
                         </div>
-                     </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

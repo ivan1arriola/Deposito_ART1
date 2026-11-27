@@ -30,19 +30,27 @@ export function MergeEquipoModal({
 }: MergeEquipoModalProps) {
   if (!isOpen) return null;
 
-  const targetOptionsSorted = [...targetOptions].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" }));
-  const canSubmit = !saving && sourceName.trim() !== "" && targetEquipoId.trim() !== "" && targetOptions.length > 0;
+  const targetOptionsSorted = [...targetOptions].sort((a, b) =>
+    a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })
+  );
+  const canSubmit =
+    !saving && sourceName.trim() !== "" && targetEquipoId.trim() !== "" && targetOptions.length > 0;
 
   return (
     <ModalFrame onClose={onClose} size="md">
       <h3 className="text-base font-semibold text-stone-900">Reasignar movimientos de equipo</h3>
       <p className="mt-2 text-sm text-stone-700">
-        Se moverán todos los movimientos de <strong>{sourceName}</strong> al equipo que selecciones abajo.
+        Se moverán todos los movimientos de <strong>{sourceName}</strong> al equipo que selecciones
+        abajo.
       </p>
-      <p className="mt-1 text-xs text-rose-700">Acción irreversible: luego se eliminará el equipo original.</p>
+      <p className="mt-1 text-xs text-rose-700">
+        Acción irreversible: luego se eliminará el equipo original.
+      </p>
 
       <label className="mt-4 block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">Equipo destino</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-stone-700">
+          Equipo destino
+        </span>
         <select
           value={targetEquipoId}
           onChange={(event) => onTargetChange(event.target.value)}

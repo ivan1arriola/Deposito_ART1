@@ -63,7 +63,9 @@ function parseItemId(value: unknown) {
 }
 
 function normalizeEstanteria(value: unknown) {
-  const normalized = String(value ?? "").trim().toUpperCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (!/^[A-Z]$/.test(normalized)) return null;
   return normalized;
 }
@@ -97,7 +99,9 @@ function parseCodigoSIEIds(value: unknown): bigint[] | null {
   const parsed = value.map(parseCodigoSIEId);
   if (parsed.some((entry) => entry === null)) return null;
 
-  return Array.from(new Set((parsed as bigint[]).map((entry) => entry.toString()))).map((entry) => BigInt(entry));
+  return Array.from(new Set((parsed as bigint[]).map((entry) => entry.toString()))).map((entry) =>
+    BigInt(entry)
+  );
 }
 
 async function buildNextCodigoDepositoGeneral(tx: Pick<typeof prisma, "caja">) {
@@ -118,16 +122,26 @@ export async function POST(request: Request) {
 
   if (!hasEtiquetadoDelegates()) {
     return NextResponse.json(
-      { error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo." },
-      { status: 503 },
+      {
+        error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo.",
+      },
+      { status: 503 }
     );
   }
 
   const body = (await request.json()) as CreateCajaPayload;
   const codigoDepositoGeneralSolicitado =
-    typeof body.codigoDepositoGeneral === "undefined" ? null : parseCodigoDepositoGeneral(body.codigoDepositoGeneral);
-  if (typeof body.codigoDepositoGeneral !== "undefined" && codigoDepositoGeneralSolicitado === null) {
-    return NextResponse.json({ error: "Payload invalido. codigo de caja invalido." }, { status: 400 });
+    typeof body.codigoDepositoGeneral === "undefined"
+      ? null
+      : parseCodigoDepositoGeneral(body.codigoDepositoGeneral);
+  if (
+    typeof body.codigoDepositoGeneral !== "undefined" &&
+    codigoDepositoGeneralSolicitado === null
+  ) {
+    return NextResponse.json(
+      { error: "Payload invalido. codigo de caja invalido." },
+      { status: 400 }
+    );
   }
   const estanteria = normalizeEstanteria(body.estanteria);
   const piso = parsePiso(body.piso);
@@ -135,7 +149,7 @@ export async function POST(request: Request) {
   if (!parsedItems || parsedItems.length === 0) {
     return NextResponse.json(
       { error: "Payload invalido. Debes enviar al menos un equipo con cantidad valida." },
-      { status: 400 },
+      { status: 400 }
     );
   }
   const cantidadesByItemId = new Map<string, number>();
@@ -151,13 +165,19 @@ export async function POST(request: Request) {
   const cantidadTotal = equipos.reduce((sum, entry) => sum + entry.cantidad, 0);
   const codigosSIEIds = parseCodigoSIEIds(body.codigosSIEIds);
   if (codigosSIEIds === null) {
-    return NextResponse.json({ error: "Payload invalido. codigosSIEIds debe ser una lista de IDs numericos." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Payload invalido. codigosSIEIds debe ser una lista de IDs numericos." },
+      { status: 400 }
+    );
   }
 
   if (!estanteria || piso === null || equipoIds.length === 0 || cantidadTotal <= 0) {
     return NextResponse.json(
-      { error: "Payload invalido. nombre de estanteria, piso y equipos con cantidad son obligatorios." },
-      { status: 400 },
+      {
+        error:
+          "Payload invalido. nombre de estanteria, piso y equipos con cantidad son obligatorios.",
+      },
+      { status: 400 }
     );
   }
 
@@ -178,15 +198,25 @@ export async function POST(request: Request) {
   ]);
 
   if (!estanteriaRegistrada) {
-    return NextResponse.json({ error: "La estanteria en ese piso no existe. Registrala primero." }, { status: 400 });
+    return NextResponse.json(
+      { error: "La estanteria en ese piso no existe. Registrala primero." },
+      { status: 400 }
+    );
   }
   if (equiposFound.length !== equipoIds.length) {
-    return NextResponse.json({ error: "Uno o mas equipos seleccionados no existen." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Uno o mas equipos seleccionados no existen." },
+      { status: 400 }
+    );
   }
 
   const equipoIdSet = new Set(equipoIds.map((equipoId) => equipoId.toString()));
-  const equipoNameById = new Map(equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
-  const equipoNombres = Array.from(equipoNameById.values()).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  const equipoNameById = new Map(
+    equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre])
+  );
+  const equipoNombres = Array.from(equipoNameById.values()).sort((a, b) =>
+    a.localeCompare(b, "es", { sensitivity: "base" })
+  );
   let codigosSIEDetalle: Array<{
     codigoSIEId: string;
     codigo: string;
@@ -216,11 +246,13 @@ export async function POST(request: Request) {
     if (missing.length > 0) {
       return NextResponse.json(
         { error: `Los siguientes IDs de codigos SIE no existen: ${missing.join(", ")}` },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const codeById = new Map(codesFound.map((entry) => [entry.equipoCodigoSIEId.toString(), entry]));
+    const codeById = new Map(
+      codesFound.map((entry) => [entry.equipoCodigoSIEId.toString(), entry])
+    );
     codigosSIEDetalle = codigosSIEIds
       .map((entry) => codeById.get(entry.toString()))
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
@@ -236,15 +268,15 @@ export async function POST(request: Request) {
       new Set(
         codigosSIEDetalle
           .filter((entry) => !equipoIdSet.has(entry.equipoId))
-          .map((entry) => `${entry.codigo} (${entry.equipoNombre}, talla ${entry.talla})`),
-      ),
+          .map((entry) => `${entry.codigo} (${entry.equipoNombre}, talla ${entry.talla})`)
+      )
     );
     if (codigosFueraDeEquipos.length > 0) {
       return NextResponse.json(
         {
           error: `Estos codigos SIE no pertenecen a los equipos seleccionados: ${codigosFueraDeEquipos.join(", ")}`,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
   }
@@ -253,7 +285,8 @@ export async function POST(request: Request) {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
       const codigoDepositoGeneral = await prisma.$transaction(async (tx) => {
-        const codigoAsignado = codigoDepositoGeneralSolicitado ?? (await buildNextCodigoDepositoGeneral(tx));
+        const codigoAsignado =
+          codigoDepositoGeneralSolicitado ?? (await buildNextCodigoDepositoGeneral(tx));
 
         await tx.caja.create({
           data: {
@@ -322,21 +355,40 @@ export async function POST(request: Request) {
         (error as { code: string }).code === "P2002" &&
         codigoDepositoGeneralSolicitado === null
       ) {
-        return NextResponse.json({ error: "No se pudo asignar un numero de caja unico. Intenta nuevamente." }, { status: 409 });
+        return NextResponse.json(
+          { error: "No se pudo asignar un numero de caja unico. Intenta nuevamente." },
+          { status: 409 }
+        );
       }
-      if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
-        return NextResponse.json({ error: "Ya existe una caja con ese codigo de deposito general." }, { status: 409 });
+      if (
+        typeof error === "object" &&
+        error &&
+        "code" in error &&
+        (error as { code: string }).code === "P2002"
+      ) {
+        return NextResponse.json(
+          { error: "Ya existe una caja con ese codigo de deposito general." },
+          { status: 409 }
+        );
       }
-      if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2022") {
+      if (
+        typeof error === "object" &&
+        error &&
+        "code" in error &&
+        (error as { code: string }).code === "P2022"
+      ) {
         return NextResponse.json(
           {
             error:
               "La base de datos de etiquetado esta desactualizada. Aplica la actualizacion de esquema correspondiente.",
           },
-          { status: 500 },
+          { status: 500 }
         );
       }
-      if (error instanceof Error && error.message === "No se pudo asignar un numero de caja valido.") {
+      if (
+        error instanceof Error &&
+        error.message === "No se pudo asignar un numero de caja valido."
+      ) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
       return NextResponse.json({ error: "No se pudo crear la caja." }, { status: 500 });

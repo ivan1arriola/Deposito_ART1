@@ -51,7 +51,7 @@ export function usePapelera({ onStatusChange, onDataChanged }: UsePapeleraOption
         onStatusChange("Error de red al restaurar.");
       }
     },
-    [load, onDataChanged, onStatusChange],
+    [load, onDataChanged, onStatusChange]
   );
 
   const removePermanent = useCallback(
@@ -73,7 +73,7 @@ export function usePapelera({ onStatusChange, onDataChanged }: UsePapeleraOption
         onStatusChange("Error de red al eliminar permanentemente.");
       }
     },
-    [load, onStatusChange],
+    [load, onStatusChange]
   );
 
   return {

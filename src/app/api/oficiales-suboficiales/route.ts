@@ -31,7 +31,9 @@ type OficialSuboficialRecord = {
 };
 
 function parseTipoOficialSuboficial(raw: unknown) {
-  const normalized = String(raw ?? "").trim().toUpperCase();
+  const normalized = String(raw ?? "")
+    .trim()
+    .toUpperCase();
   if (normalized === "OFICIAL") return TipoPersonal.OFICIAL;
   if (normalized === "SUBOFICIAL") return TipoPersonal.SUBOFICIAL;
   return null;
@@ -57,14 +59,36 @@ function extractTallas(payload: Record<string, unknown>): Partial<Record<TallaKe
       : {};
 
   const merged: Partial<Record<TallaKey, string>> = {
-    PARKA: typeof tallasPayload.PARKA === "string" ? tallasPayload.PARKA : typeof payload.tallaParka === "string" ? payload.tallaParka : undefined,
+    PARKA:
+      typeof tallasPayload.PARKA === "string"
+        ? tallasPayload.PARKA
+        : typeof payload.tallaParka === "string"
+          ? payload.tallaParka
+          : undefined,
     CAMISACO:
-      typeof tallasPayload.CAMISACO === "string" ? tallasPayload.CAMISACO : typeof payload.tallaCamisaco === "string" ? payload.tallaCamisaco : undefined,
+      typeof tallasPayload.CAMISACO === "string"
+        ? tallasPayload.CAMISACO
+        : typeof payload.tallaCamisaco === "string"
+          ? payload.tallaCamisaco
+          : undefined,
     PANTALON:
-      typeof tallasPayload.PANTALON === "string" ? tallasPayload.PANTALON : typeof payload.tallaPantalon === "string" ? payload.tallaPantalon : undefined,
-    KEPI: typeof tallasPayload.KEPI === "string" ? tallasPayload.KEPI : typeof payload.tallaKepi === "string" ? payload.tallaKepi : undefined,
+      typeof tallasPayload.PANTALON === "string"
+        ? tallasPayload.PANTALON
+        : typeof payload.tallaPantalon === "string"
+          ? payload.tallaPantalon
+          : undefined,
+    KEPI:
+      typeof tallasPayload.KEPI === "string"
+        ? tallasPayload.KEPI
+        : typeof payload.tallaKepi === "string"
+          ? payload.tallaKepi
+          : undefined,
     CALZADO:
-      typeof tallasPayload.CALZADO === "string" ? tallasPayload.CALZADO : typeof payload.tallaCalzado === "string" ? payload.tallaCalzado : undefined,
+      typeof tallasPayload.CALZADO === "string"
+        ? tallasPayload.CALZADO
+        : typeof payload.tallaCalzado === "string"
+          ? payload.tallaCalzado
+          : undefined,
   };
 
   const clean: Partial<Record<TallaKey, string>> = {};
@@ -146,7 +170,11 @@ export async function GET(request: Request) {
     ],
   });
 
-  return NextResponse.json(oficialesSuboficiales.map((registro) => serializeOficialSuboficial(registro as OficialSuboficialRecord)));
+  return NextResponse.json(
+    oficialesSuboficiales.map((registro) =>
+      serializeOficialSuboficial(registro as OficialSuboficialRecord)
+    )
+  );
 }
 
 export async function POST(request: Request) {
@@ -156,33 +184,43 @@ export async function POST(request: Request) {
   const body = (await request.json()) as Record<string, unknown>;
   const ci = typeof body.ci === "string" ? body.ci.trim() : "";
   const tipo = parseTipoOficialSuboficial(body.tipo);
-  const apellido1 = normalizeNullableText(body.apellido1) ?? normalizeNullableText(body.apellido) ?? "";
+  const apellido1 =
+    normalizeNullableText(body.apellido1) ?? normalizeNullableText(body.apellido) ?? "";
   const apellido2 = normalizeNullableText(body.apellido2);
   const nombre1 = normalizeNullableText(body.nombre1) ?? normalizeNullableText(body.nombre) ?? "";
   const nombre2 = normalizeNullableText(body.nombre2);
   const rangoId = parseRangoId(body.rangoId ?? body.gradoMandoId);
   const telefonoContacto = normalizeOptionalUruguayanMobileNumber(
-    typeof body.telefonoContacto === "string" ? body.telefonoContacto : undefined,
+    typeof body.telefonoContacto === "string" ? body.telefonoContacto : undefined
   );
 
   if (!ci || !apellido1 || !nombre1 || !tipo || !rangoId) {
     return NextResponse.json(
       { error: "Payload invalido. Revisa ci, tipo, apellido1, nombre1 y rangoId." },
-      { status: 400 },
+      { status: 400 }
     );
   }
   if (!isValidUruguayanCi(ci)) {
     return NextResponse.json({ error: "La CI debe ser uruguaya valida." }, { status: 400 });
   }
-  if ((typeof body.telefonoContacto === "string" ? body.telefonoContacto.trim() : "") !== "" && !telefonoContacto) {
-    return NextResponse.json({ error: "telefonoContacto debe ser un celular uruguayo valido." }, { status: 400 });
+  if (
+    (typeof body.telefonoContacto === "string" ? body.telefonoContacto.trim() : "") !== "" &&
+    !telefonoContacto
+  ) {
+    return NextResponse.json(
+      { error: "telefonoContacto debe ser un celular uruguayo valido." },
+      { status: 400 }
+    );
   }
 
   const totalGradosTipo = await getRangoCountByTipo(tipo);
   if (totalGradosTipo === 0) {
     return NextResponse.json(
-      { error: "No se puede registrar personal oficial/suboficial sin grados del tipo seleccionado." },
-      { status: 400 },
+      {
+        error:
+          "No se puede registrar personal oficial/suboficial sin grados del tipo seleccionado.",
+      },
+      { status: 400 }
     );
   }
 
@@ -191,7 +229,10 @@ export async function POST(request: Request) {
     select: { rangoId: true },
   });
   if (!rangoValido) {
-    return NextResponse.json({ error: "rangoId invalido para el tipo seleccionado." }, { status: 400 });
+    return NextResponse.json(
+      { error: "rangoId invalido para el tipo seleccionado." },
+      { status: 400 }
+    );
   }
 
   const tallasPayload = extractTallas(body);
@@ -226,9 +267,7 @@ export async function POST(request: Request) {
       });
 
       if (tipo === TipoPersonal.OFICIAL) {
-        
       } else {
-        
       }
 
       if (tallasToCreate.length > 0) {
@@ -260,12 +299,17 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(serializeOficialSuboficial(created as OficialSuboficialRecord), { status: 201 });
+    return NextResponse.json(serializeOficialSuboficial(created as OficialSuboficialRecord), {
+      status: 201,
+    });
   } catch (error: unknown) {
     if (hasConstraintName(error, "personal_talla_valor_permitido_chk")) {
       return NextResponse.json(
-        { error: "Talles invalidos. Parka/Camisaco/Pantalon: XS a XXXL; Kepi: 54 a 63; Calzado: 34 a 47." },
-        { status: 400 },
+        {
+          error:
+            "Talles invalidos. Parka/Camisaco/Pantalon: XS a XXXL; Kepi: 54 a 63; Calzado: 34 a 47.",
+        },
+        { status: 400 }
       );
     }
     if (hasConstraintName(error, "personal_ci_uruguaya_valida_chk")) {
@@ -273,9 +317,13 @@ export async function POST(request: Request) {
     }
 
     const code = getPrismaErrorCode(error);
-    if (code === "P2002") return NextResponse.json({ error: "La cedula ya existe." }, { status: 409 });
+    if (code === "P2002")
+      return NextResponse.json({ error: "La cedula ya existe." }, { status: 409 });
     if (code === "P2003") {
-      return NextResponse.json({ error: "rangoId invalido para el tipo seleccionado." }, { status: 400 });
+      return NextResponse.json(
+        { error: "rangoId invalido para el tipo seleccionado." },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({ error: "No se pudo crear el registro." }, { status: 500 });

@@ -11,11 +11,11 @@ export async function GET(req: Request) {
       select: { unidadDestino: true },
       distinct: ["unidadDestino"],
     });
-    
+
     // Some are formatted like "Interno a la Unidad - Batería Comando", let's extract the detail
     // to suggest it again cleanly. Or just return them as they are and filter on frontend.
     const rawEntities = externas.map((e) => e.unidadDestino);
-    
+
     const parsedEntities = new Set<string>();
     for (const e of rawEntities) {
       if (!e || e === "-") continue;

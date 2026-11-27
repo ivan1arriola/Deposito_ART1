@@ -42,7 +42,6 @@ export type MovimientoFueraHojaRow = {
   observaciones: string | null;
 };
 
-
 const hojaEntregaPersonalSelect = {
   ci: true,
   apellido1: true,
@@ -60,10 +59,10 @@ const hojaEntregaPersonalSelect = {
     },
   },
   bateria: {
-          select: {
-            nombre: true,
-          },
-        },
+    select: {
+      nombre: true,
+    },
+  },
   tallas: {
     select: {
       tallaValor: true,
@@ -153,7 +152,7 @@ function toSixColumns(records: MovimientoWithItems[]): MatrixColumn[] {
           nombre: detail.equipo.nombre,
           cantidad: detail.cantidad,
         })),
-      })),
+      }))
     );
   } else {
     columns.push(
@@ -163,7 +162,7 @@ function toSixColumns(records: MovimientoWithItems[]): MatrixColumn[] {
           nombre: detail.equipo.nombre,
           cantidad: detail.cantidad,
         })),
-      })),
+      }))
     );
   }
 
@@ -174,13 +173,24 @@ function toSixColumns(records: MovimientoWithItems[]): MatrixColumn[] {
   return columns.slice(0, 6);
 }
 
-function buildMatrix(itemsOrder: string[], entregas: MatrixColumn[], devoluciones: MatrixColumn[]): HojaEntregaMatrixRow[] {
-  const entregaMaps = entregas.map((column) => new Map(column.equipos.map((equipo) => [equipo.nombre, equipo.cantidad])));
-  const devolucionMaps = devoluciones.map((column) => new Map(column.equipos.map((equipo) => [equipo.nombre, equipo.cantidad])));
+function buildMatrix(
+  itemsOrder: string[],
+  entregas: MatrixColumn[],
+  devoluciones: MatrixColumn[]
+): HojaEntregaMatrixRow[] {
+  const entregaMaps = entregas.map(
+    (column) => new Map(column.equipos.map((equipo) => [equipo.nombre, equipo.cantidad]))
+  );
+  const devolucionMaps = devoluciones.map(
+    (column) => new Map(column.equipos.map((equipo) => [equipo.nombre, equipo.cantidad]))
+  );
 
   return itemsOrder.map((itemName) => {
     const entrega = Array.from({ length: 6 }, (_, idx) => entregaMaps[idx]?.get(itemName) ?? 0);
-    const devolucion = Array.from({ length: 6 }, (_, idx) => devolucionMaps[idx]?.get(itemName) ?? 0);
+    const devolucion = Array.from(
+      { length: 6 },
+      (_, idx) => devolucionMaps[idx]?.get(itemName) ?? 0
+    );
     const entregaTotal = entrega.reduce((acc, value) => acc + value, 0);
     const devolucionRegistradaTotal = devolucion.reduce((acc, value) => acc + value, 0);
 
@@ -197,11 +207,15 @@ function buildMatrix(itemsOrder: string[], entregas: MatrixColumn[], devolucione
 function mapPersonaToHojaEntregaData(
   persona: HojaEntregaPersonalRecord,
   itemOrder: string[],
-  firmas: Awaited<ReturnType<typeof getFirmaConfig>>,
+  firmas: Awaited<ReturnType<typeof getFirmaConfig>>
 ): HojaEntregaSheetData {
   const movimientos = persona.movimientosDestinatario.map((entry) => entry.movimiento);
-  const entregas = toSixColumns(movimientos.filter((movimiento) => movimiento.tipo === TipoMovimiento.ENTREGA));
-  const devoluciones = toSixColumns(movimientos.filter((movimiento) => movimiento.tipo === TipoMovimiento.DEVOLUCION));
+  const entregas = toSixColumns(
+    movimientos.filter((movimiento) => movimiento.tipo === TipoMovimiento.ENTREGA)
+  );
+  const devoluciones = toSixColumns(
+    movimientos.filter((movimiento) => movimiento.tipo === TipoMovimiento.DEVOLUCION)
+  );
   const tallas = persona.tallas.reduce<Record<string, string>>((acc, talla) => {
     acc[talla.tallaTipo.nombre] = talla.tallaValor;
     return acc;
@@ -271,7 +285,7 @@ export async function getHojaEntregaData(ci: string): Promise<HojaEntregaSheetDa
   return mapPersonaToHojaEntregaData(
     persona,
     itemCatalog.map((equipo) => equipo.nombre),
-    firmas,
+    firmas
   );
 }
 

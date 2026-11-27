@@ -7,7 +7,7 @@ const compatibilityState = vi.hoisted(() => ({
 const mockEnsureMovimientoDestinatarioRecintoCompatibility = vi.hoisted(() =>
   vi.fn(async () => {
     compatibilityState.applied = true;
-  }),
+  })
 );
 
 const mockPrisma = vi.hoisted(() => ({
@@ -20,7 +20,8 @@ const mockPrisma = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/movimiento-destinatario-recinto-compat", () => ({
-  ensureMovimientoDestinatarioRecintoCompatibility: mockEnsureMovimientoDestinatarioRecintoCompatibility,
+  ensureMovimientoDestinatarioRecintoCompatibility:
+    mockEnsureMovimientoDestinatarioRecintoCompatibility,
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -43,8 +44,10 @@ describe("getMovimientosEquipoData", () => {
     mockPrisma.movimientoEquipo.findMany.mockImplementation(async () => {
       if (!compatibilityState.applied) {
         throw Object.assign(
-          new Error("The table `public.movimiento_destinatario_recinto` does not exist in the current database."),
-          { code: "P2021" },
+          new Error(
+            "The table `public.movimiento_destinatario_recinto` does not exist in the current database."
+          ),
+          { code: "P2021" }
         );
       }
 
@@ -75,9 +78,9 @@ describe("getMovimientosEquipoData", () => {
 
     expect(mockEnsureMovimientoDestinatarioRecintoCompatibility).toHaveBeenCalledTimes(1);
     expect(mockPrisma.movimientoEquipo.findMany).toHaveBeenCalledTimes(1);
-    expect(mockEnsureMovimientoDestinatarioRecintoCompatibility.mock.invocationCallOrder[0]).toBeLessThan(
-      mockPrisma.movimientoEquipo.findMany.mock.invocationCallOrder[0],
-    );
+    expect(
+      mockEnsureMovimientoDestinatarioRecintoCompatibility.mock.invocationCallOrder[0]
+    ).toBeLessThan(mockPrisma.movimientoEquipo.findMany.mock.invocationCallOrder[0]);
 
     expect(data.selectedItem).toEqual({
       equipoId: "113",

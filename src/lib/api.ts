@@ -129,7 +129,10 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const message =
-      typeof data === "object" && data && "error" in data && typeof (data as { error?: unknown }).error === "string"
+      typeof data === "object" &&
+      data &&
+      "error" in data &&
+      typeof (data as { error?: unknown }).error === "string"
         ? (data as { error: string }).error
         : "Error en la operacion.";
 

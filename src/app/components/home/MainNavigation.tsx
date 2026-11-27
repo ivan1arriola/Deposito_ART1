@@ -1,15 +1,7 @@
 "use client";
 
 import { useEffect, useState, type JSX, type ReactNode, type RefObject } from "react";
-import {
-  Box,
-  Button,
-  Collapse,
-  IconButton,
-  Stack,
-  Tooltip,
-  useMediaQuery,
-} from "@mui/material";
+import { Box, Button, Collapse, IconButton, Stack, Tooltip, useMediaQuery } from "@mui/material";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded";
@@ -36,17 +28,56 @@ import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import type { MainView } from "@/types/views";
 
-type ConfigView = Extract<MainView, "grados" | "baterias" | "equipos" | "recordatorios" | "firmas" | "usuarios" | "auditoria" | "usuario_nuevo" | "papelera">;
-type ArticuloView = Extract<MainView, "articulos" | "articulo_nuevo" | "articulo_stock_ingreso" | "articulo_entrega_personal" | "articulo_entregas_historial">;
+type ConfigView = Extract<
+  MainView,
+  | "grados"
+  | "baterias"
+  | "equipos"
+  | "recordatorios"
+  | "firmas"
+  | "usuarios"
+  | "auditoria"
+  | "usuario_nuevo"
+  | "papelera"
+>;
+type ArticuloView = Extract<
+  MainView,
+  | "articulos"
+  | "articulo_nuevo"
+  | "articulo_stock_ingreso"
+  | "articulo_entrega_personal"
+  | "articulo_entregas_historial"
+>;
 type CreateView = Extract<MainView, "personal_nuevo" | "oficial_nuevo" | "suboficial_nuevo">;
 type StockView = Extract<
   MainView,
-  "stock" | "stock_total" | "stock_actual" | "stock_alta" | "stock_baja" | "stock_historial" | "stock_prestamos" | "equipos" | "tipos_equipo" | "equipo_nuevo" | "movimientos_por_equipo" | "equipos_unificar"
+  | "stock"
+  | "stock_total"
+  | "stock_actual"
+  | "stock_alta"
+  | "stock_baja"
+  | "stock_historial"
+  | "stock_prestamos"
+  | "equipos"
+  | "tipos_equipo"
+  | "equipo_nuevo"
+  | "movimientos_por_equipo"
+  | "equipos_unificar"
 >;
-type PrestamosView = Extract<MainView, "prestamos_registrar" | "prestamos_vigentes" | "prestamos_historial" | "movimientos_recintos" | "formularios">;
+type PrestamosView = Extract<
+  MainView,
+  | "prestamos_registrar"
+  | "prestamos_vigentes"
+  | "prestamos_historial"
+  | "movimientos_recintos"
+  | "formularios"
+>;
 type TallasResumenView = Extract<
   MainView,
-  "tallas_resumen" | "tallas_resumen_subalternos_unidad" | "tallas_resumen_subalternos_bateria" | "tallas_resumen_oficiales_suboficiales"
+  | "tallas_resumen"
+  | "tallas_resumen_subalternos_unidad"
+  | "tallas_resumen_subalternos_bateria"
+  | "tallas_resumen_oficiales_suboficiales"
 >;
 type EtiquetadoView = Extract<
   MainView,
@@ -104,8 +135,18 @@ const icons = {
   history: <HistoryOutlinedIcon {...materialIconProps} />,
   trash: <DeleteOutlineOutlinedIcon {...materialIconProps} />,
   search: (
-    <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    <svg
+      className="h-[18px] w-[18px]"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      />
     </svg>
   ),
 };
@@ -123,45 +164,130 @@ const configViews: Array<NavOption<ConfigView>> = [
 
 const articuloViews: Array<NavOption<ArticuloView>> = [
   { view: "articulos", label: "Catálogo de Artículos", icon: icons.stock },
-  { view: "articulo_entrega_personal", label: "Entrega a personal", icon: icons.prestamos, writeOnly: true },
+  {
+    view: "articulo_entrega_personal",
+    label: "Entrega a personal",
+    icon: icons.prestamos,
+    writeOnly: true,
+  },
   { view: "articulo_entregas_historial", label: "Historial de entregas", icon: icons.history },
   { view: "articulo_stock_ingreso", label: "Ingreso de stock", icon: icons.altas, writeOnly: true },
   { view: "articulo_nuevo", label: "Alta de artículo", icon: icons.altas, adminOnly: true },
 ];
 
 const createViews: Array<NavOption<CreateView>> = [
-  { view: "personal_nuevo", label: "Alta de subalterno", shortLabel: "Subalterno", icon: icons.altas },
+  {
+    view: "personal_nuevo",
+    label: "Alta de subalterno",
+    shortLabel: "Subalterno",
+    icon: icons.altas,
+  },
   { view: "oficial_nuevo", label: "Alta de oficial", shortLabel: "Oficial", icon: icons.altas },
-  { view: "suboficial_nuevo", label: "Alta de suboficial", shortLabel: "Suboficial", icon: icons.altas },
+  {
+    view: "suboficial_nuevo",
+    label: "Alta de suboficial",
+    shortLabel: "Suboficial",
+    icon: icons.altas,
+  },
 ];
 
 const stockViews: Array<NavOption<StockView>> = [
-  { view: "equipo_nuevo", label: "Alta de equipo", shortLabel: "Alta Eq.", icon: icons.altas, writeOnly: true },
+  {
+    view: "equipo_nuevo",
+    label: "Alta de equipo",
+    shortLabel: "Alta Eq.",
+    icon: icons.altas,
+    writeOnly: true,
+  },
   { view: "equipos", label: "Catálogo de Equipos", shortLabel: "Equipos", icon: icons.stock },
   { view: "tipos_equipo", label: "Tipos de equipo", shortLabel: "Tipos", icon: icons.resumen },
-  { view: "equipos_unificar", label: "Unificar Equipos", shortLabel: "Unificar", icon: icons.stock, writeOnly: true },
+  {
+    view: "equipos_unificar",
+    label: "Unificar Equipos",
+    shortLabel: "Unificar",
+    icon: icons.stock,
+    writeOnly: true,
+  },
   { view: "stock_total", label: "Stock de Equipos", shortLabel: "Total", icon: icons.resumen },
-  { view: "stock_actual", label: "Stock de Equipos en Depósito", shortLabel: "Depósito", icon: icons.stock },
+  {
+    view: "stock_actual",
+    label: "Stock de Equipos en Depósito",
+    shortLabel: "Depósito",
+    icon: icons.stock,
+  },
   { view: "stock_alta", label: "Alta de stock", shortLabel: "Alta", icon: icons.altas },
   { view: "stock_baja", label: "Baja de stock", shortLabel: "Baja", icon: icons.minus },
-  { view: "stock_historial", label: "Historial de Stock", shortLabel: "Historial", icon: icons.history },
-  { view: "movimientos_por_equipo", label: "Movimientos por equipo", shortLabel: "Movimientos", icon: icons.history },
+  {
+    view: "stock_historial",
+    label: "Historial de Stock",
+    shortLabel: "Historial",
+    icon: icons.history,
+  },
+  {
+    view: "movimientos_por_equipo",
+    label: "Movimientos por equipo",
+    shortLabel: "Movimientos",
+    icon: icons.history,
+  },
 ];
 
 const prestamosViews: Array<NavOption<PrestamosView>> = [
-  { view: "prestamos_registrar", label: "Registrar préstamo", shortLabel: "Registrar", icon: icons.altas, writeOnly: true },
-  { view: "prestamos_vigentes", label: "Préstamos vigentes", shortLabel: "Vigentes", icon: icons.prestamos },
-  { view: "prestamos_historial", label: "Historial de Préstamos", shortLabel: "Historial", icon: icons.history },
-  { view: "movimientos_recintos", label: "Asignaciones a Recintos", shortLabel: "Recintos", icon: icons.history },
+  {
+    view: "prestamos_registrar",
+    label: "Registrar préstamo",
+    shortLabel: "Registrar",
+    icon: icons.altas,
+    writeOnly: true,
+  },
+  {
+    view: "prestamos_vigentes",
+    label: "Préstamos vigentes",
+    shortLabel: "Vigentes",
+    icon: icons.prestamos,
+  },
+  {
+    view: "prestamos_historial",
+    label: "Historial de Préstamos",
+    shortLabel: "Historial",
+    icon: icons.history,
+  },
+  {
+    view: "movimientos_recintos",
+    label: "Asignaciones a Recintos",
+    shortLabel: "Recintos",
+    icon: icons.history,
+  },
 ];
 
 const etiquetadoViews: Array<NavOption<EtiquetadoView>> = [
-  { view: "etiquetado_codigos_sie", label: "Códigos SIE", shortLabel: "Códigos", icon: icons.codigo },
-  { view: "etiquetado_listado_cajas", label: "Listado de cajas", shortLabel: "Cajas", icon: icons.cajas },
-  { view: "etiquetado_imprimir_todas", label: "Imprimir todas", shortLabel: "Imprimir", icon: icons.imprimir },
+  {
+    view: "etiquetado_codigos_sie",
+    label: "Códigos SIE",
+    shortLabel: "Códigos",
+    icon: icons.codigo,
+  },
+  {
+    view: "etiquetado_listado_cajas",
+    label: "Listado de cajas",
+    shortLabel: "Cajas",
+    icon: icons.cajas,
+  },
+  {
+    view: "etiquetado_imprimir_todas",
+    label: "Imprimir todas",
+    shortLabel: "Imprimir",
+    icon: icons.imprimir,
+  },
 ];
 
-const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix" | "equipo_resumen" | "movimientos_fuera_hoja" | "personal_bajas">>> = [
+const personalViews: Array<
+  NavOption<
+    Extract<
+      MainView,
+      "personal" | "hoja_matrix" | "equipo_resumen" | "movimientos_fuera_hoja" | "personal_bajas"
+    >
+  >
+> = [
   { view: "personal", label: "Personal subalterno", icon: icons.personal },
   { view: "hoja_matrix", label: "Hoja matriz", icon: icons.matrix },
   { view: "equipo_resumen", label: "Resumen de equipo en baterías", icon: icons.resumenEquipo },
@@ -169,7 +295,11 @@ const personalViews: Array<NavOption<Extract<MainView, "personal" | "hoja_matrix
   { view: "personal_bajas", label: "Bajas y devoluciones", icon: icons.trash },
 ];
 
-const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficiales" | "oficiales_resumen" | "suboficiales_resumen">>> = [
+const oficialesViews: Array<
+  NavOption<
+    Extract<MainView, "oficiales" | "suboficiales" | "oficiales_resumen" | "suboficiales_resumen">
+  >
+> = [
   { view: "oficiales", label: "Oficiales", icon: icons.oficiales },
   { view: "suboficiales", label: "Suboficiales", icon: icons.oficiales },
   { view: "oficiales_resumen", label: "Resumen de talles (oficiales)", icon: icons.resumen },
@@ -179,8 +309,16 @@ const oficialesViews: Array<NavOption<Extract<MainView, "oficiales" | "suboficia
 const tallasResumenViews: Array<NavOption<TallasResumenView>> = [
   { view: "tallas_resumen", label: "Panel general", icon: icons.resumen },
   { view: "tallas_resumen_subalternos_unidad", label: "Subalternos (unidad)", icon: icons.resumen },
-  { view: "tallas_resumen_subalternos_bateria", label: "Subalternos por batería", icon: icons.resumen },
-  { view: "tallas_resumen_oficiales_suboficiales", label: "Oficiales y suboficiales", icon: icons.resumen },
+  {
+    view: "tallas_resumen_subalternos_bateria",
+    label: "Subalternos por batería",
+    icon: icons.resumen,
+  },
+  {
+    view: "tallas_resumen_oficiales_suboficiales",
+    label: "Oficiales y suboficiales",
+    icon: icons.resumen,
+  },
 ];
 
 function navButtonSx(active: boolean, collapsed: boolean) {
@@ -353,9 +491,13 @@ export function MainNavigation({
 
   const isDashboardView = activeView === "dashboard";
   const filteredStockViews = stockViews.filter((equipo) => (equipo.writeOnly ? canWrite : true));
-  const filteredPrestamosViews = prestamosViews.filter((equipo) => (equipo.writeOnly ? canWrite : true));
+  const filteredPrestamosViews = prestamosViews.filter((equipo) =>
+    equipo.writeOnly ? canWrite : true
+  );
   const filteredCreateViews = createViews.filter((equipo) => (equipo.adminOnly ? isAdmin : true));
-  const filteredArticuloViews = articuloViews.filter((equipo) => (equipo.adminOnly ? isAdmin : true) && (equipo.writeOnly ? canWrite : true));
+  const filteredArticuloViews = articuloViews.filter(
+    (equipo) => (equipo.adminOnly ? isAdmin : true) && (equipo.writeOnly ? canWrite : true)
+  );
   const filteredConfigViews = configViews.filter((equipo) => (equipo.adminOnly ? isAdmin : true));
 
   function closeAllMenus() {
@@ -384,7 +526,10 @@ export function MainNavigation({
               onClick={onToggleCollapsed}
               sx={{
                 color: "rgba(255, 255, 255, 0.4)",
-                "&:hover": { color: "var(--color-ejercito-gold)", bgcolor: "rgba(255, 255, 255, 0.05)" },
+                "&:hover": {
+                  color: "var(--color-ejercito-gold)",
+                  bgcolor: "rgba(255, 255, 255, 0.05)",
+                },
                 transition: "all 0.2s",
               }}
             >
@@ -430,7 +575,12 @@ export function MainNavigation({
 
       <ExpandedMenuGroup title="Personal" icon={icons.personal} collapsed={collapsed}>
         {personalViews.map((equipo) => (
-          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
+          <Tooltip
+            key={equipo.view}
+            title={equipo.label}
+            placement="right"
+            disableHoverListener={!collapsed}
+          >
             <Button
               variant="text"
               startIcon={equipo.icon}
@@ -445,7 +595,12 @@ export function MainNavigation({
 
       <ExpandedMenuGroup title="Oficiales" icon={icons.oficiales} collapsed={collapsed}>
         {oficialesViews.map((equipo) => (
-          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
+          <Tooltip
+            key={equipo.view}
+            title={equipo.label}
+            placement="right"
+            disableHoverListener={!collapsed}
+          >
             <Button
               variant="text"
               startIcon={equipo.icon}
@@ -460,7 +615,12 @@ export function MainNavigation({
 
       <ExpandedMenuGroup title="Stock" icon={icons.stock} collapsed={collapsed}>
         {filteredStockViews.map((equipo) => (
-          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
+          <Tooltip
+            key={equipo.view}
+            title={equipo.label}
+            placement="right"
+            disableHoverListener={!collapsed}
+          >
             <Button
               variant="text"
               startIcon={equipo.icon}
@@ -475,7 +635,12 @@ export function MainNavigation({
 
       <ExpandedMenuGroup title="Etiquetado" icon={icons.etiquetado} collapsed={collapsed}>
         {etiquetadoViews.map((equipo) => (
-          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
+          <Tooltip
+            key={equipo.view}
+            title={equipo.label}
+            placement="right"
+            disableHoverListener={!collapsed}
+          >
             <Button
               variant="text"
               startIcon={equipo.icon}
@@ -490,7 +655,12 @@ export function MainNavigation({
 
       <ExpandedMenuGroup title="Resumen de tallas" icon={icons.resumen} collapsed={collapsed}>
         {tallasResumenViews.map((equipo) => (
-          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
+          <Tooltip
+            key={equipo.view}
+            title={equipo.label}
+            placement="right"
+            disableHoverListener={!collapsed}
+          >
             <Button
               variant="text"
               startIcon={equipo.icon}
@@ -521,7 +691,12 @@ export function MainNavigation({
 
       <ExpandedMenuGroup title="Préstamos" icon={icons.prestamos} collapsed={collapsed}>
         {filteredPrestamosViews.map((equipo) => (
-          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
+          <Tooltip
+            key={equipo.view}
+            title={equipo.label}
+            placement="right"
+            disableHoverListener={!collapsed}
+          >
             <Button
               key={equipo.view}
               variant="text"
@@ -537,7 +712,12 @@ export function MainNavigation({
 
       <ExpandedMenuGroup title="Artículos" icon={icons.stock} collapsed={collapsed}>
         {filteredArticuloViews.map((equipo) => (
-          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
+          <Tooltip
+            key={equipo.view}
+            title={equipo.label}
+            placement="right"
+            disableHoverListener={!collapsed}
+          >
             <Button
               variant="text"
               startIcon={equipo.icon}
@@ -552,7 +732,12 @@ export function MainNavigation({
 
       <ExpandedMenuGroup title="Configuración" icon={icons.config} collapsed={collapsed}>
         {filteredConfigViews.map((equipo) => (
-          <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
+          <Tooltip
+            key={equipo.view}
+            title={equipo.label}
+            placement="right"
+            disableHoverListener={!collapsed}
+          >
             <Button
               variant="text"
               startIcon={equipo.icon}
@@ -566,21 +751,37 @@ export function MainNavigation({
       </ExpandedMenuGroup>
 
       <ExpandedMenuGroup title="Manuales" icon={icons.prestamos} collapsed={collapsed}>
-        <Tooltip title="Manual de Usuario Final" placement="right" disableHoverListener={!collapsed}>
+        <Tooltip
+          title="Manual de Usuario Final"
+          placement="right"
+          disableHoverListener={!collapsed}
+        >
           <Button
             variant="text"
             startIcon={icons.prestamos}
-            onClick={() => window.open("/docs/manual-usuario-final.pdf", "_blank", "noopener,noreferrer")}
+            onClick={() =>
+              window.open("/docs/manual-usuario-final.pdf", "_blank", "noopener,noreferrer")
+            }
             sx={inlineSubmenuButtonSx(false)}
           >
             {!collapsed && "Manual de Usuario Final"}
           </Button>
         </Tooltip>
-        <Tooltip title="Presentación del Producto" placement="right" disableHoverListener={!collapsed}>
+        <Tooltip
+          title="Presentación del Producto"
+          placement="right"
+          disableHoverListener={!collapsed}
+        >
           <Button
             variant="text"
             startIcon={icons.prestamos}
-            onClick={() => window.open("/docs/presentacion-producto-deposito-art1.pdf", "_blank", "noopener,noreferrer")}
+            onClick={() =>
+              window.open(
+                "/docs/presentacion-producto-deposito-art1.pdf",
+                "_blank",
+                "noopener,noreferrer"
+              )
+            }
             sx={inlineSubmenuButtonSx(false)}
           >
             {!collapsed && "Presentación del Producto"}

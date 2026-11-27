@@ -45,12 +45,12 @@ El sistema está pensado para dos tipos de acceso:
 
 Las opciones visibles dependen del rol de la cuenta.
 
-| Rol | Qué puede hacer |
-| --- | --- |
+| Rol           | Qué puede hacer                                                                                                                                                             |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Administrador | Tiene acceso total. Puede crear y editar usuarios, cambiar roles, configurar firmas, ver auditoría, activar notificaciones, modificar catálogos y operar todos los módulos. |
-| Editor | Puede registrar y modificar datos operativos: personal, movimientos, stock, préstamos, equipos, cajas y reportes. No administra usuarios, firmas ni auditoría. |
-| Solo Lectura | Puede consultar información e imprimir documentos. No puede crear, editar, devolver, eliminar ni modificar configuraciones. |
-| Personal | Solo consulta su propia ficha, hoja PDF, movimientos, préstamos y datos de contacto. Puede cambiar su contraseña. |
+| Editor        | Puede registrar y modificar datos operativos: personal, movimientos, stock, préstamos, equipos, cajas y reportes. No administra usuarios, firmas ni auditoría.              |
+| Solo Lectura  | Puede consultar información e imprimir documentos. No puede crear, editar, devolver, eliminar ni modificar configuraciones.                                                 |
+| Personal      | Solo consulta su propia ficha, hoja PDF, movimientos, préstamos y datos de contacto. Puede cambiar su contraseña.                                                           |
 
 Cómo interpretar los permisos:
 
@@ -135,16 +135,16 @@ Detalles de uso:
 
 Botones y acciones comunes:
 
-| Acción | Uso esperado |
-| --- | --- |
-| Guardar | Registra los datos cargados en el formulario. |
-| Editar | Abre datos existentes para modificarlos. |
+| Acción            | Uso esperado                                                   |
+| ----------------- | -------------------------------------------------------------- |
+| Guardar           | Registra los datos cargados en el formulario.                  |
+| Editar            | Abre datos existentes para modificarlos.                       |
 | Borrar o Eliminar | Quita un registro luego de confirmar. Debe usarse con cuidado. |
-| Imprimir | Abre un PDF, recibo, etiqueta o listado imprimible. |
-| Descargar | Guarda una planilla o archivo generado. |
-| Limpiar filtros | Vuelve a mostrar el listado completo. |
-| Recargar | Trae nuevamente los datos desde el sistema. |
-| Ver detalle | Muestra información completa de un registro. |
+| Imprimir          | Abre un PDF, recibo, etiqueta o listado imprimible.            |
+| Descargar         | Guarda una planilla o archivo generado.                        |
+| Limpiar filtros   | Vuelve a mostrar el listado completo.                          |
+| Recargar          | Trae nuevamente los datos desde el sistema.                    |
+| Ver detalle       | Muestra información completa de un registro.                   |
 
 Trabajo en celular:
 
@@ -171,14 +171,14 @@ Recomendaciones de carga:
 
 Formatos recomendados:
 
-| Dato | Formato recomendado | Ejemplo |
-| --- | --- | --- |
-| Cédula | Solo números | `12345678` |
-| Fecha | Día, mes y año | `17/05/2026` |
-| Cantidad | Número entero positivo | `1`, `2`, `10` |
-| Código SIE numérico | 8 dígitos | `00005450` |
-| Código SIE alfanumérico | 3 letras y 2 números | `ABC12` |
-| Estantería | Letra y piso | `A`, piso `1` |
+| Dato                    | Formato recomendado    | Ejemplo        |
+| ----------------------- | ---------------------- | -------------- |
+| Cédula                  | Solo números           | `12345678`     |
+| Fecha                   | Día, mes y año         | `17/05/2026`   |
+| Cantidad                | Número entero positivo | `1`, `2`, `10` |
+| Código SIE numérico     | 8 dígitos              | `00005450`     |
+| Código SIE alfanumérico | 3 letras y 2 números   | `ABC12`        |
+| Estantería              | Letra y piso           | `A`, piso `1`  |
 
 Reglas de calidad de datos:
 

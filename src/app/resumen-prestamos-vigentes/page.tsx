@@ -305,21 +305,29 @@ export default async function ResumenPrestamosVigentesPage({
   ]);
 
   const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds(
-    prestamosRaw.map((prestamo) => prestamo.movimientoId),
+    prestamosRaw.map((prestamo) => prestamo.movimientoId)
   );
 
   const prestamos = prestamosRaw
     .map((prestamo) => serializePrestamoWithActuante(prestamo, actuanteByMovimientoId))
     .filter((prestamo) =>
-      normalizedPrestamoIdFilter === "" ? true : prestamo.prestamoId.includes(normalizedPrestamoIdFilter),
+      normalizedPrestamoIdFilter === ""
+        ? true
+        : prestamo.prestamoId.includes(normalizedPrestamoIdFilter)
     );
 
   const totalUnidades = prestamos.reduce(
-    (total, prestamo) => total + prestamo.equipos.reduce((subtotal, equipo) => subtotal + equipo.cantidad, 0),
-    0,
+    (total, prestamo) =>
+      total + prestamo.equipos.reduce((subtotal, equipo) => subtotal + equipo.cantidad, 0),
+    0
   );
-  const totalEquiposDistintos = new Set(prestamos.flatMap((prestamo) => prestamo.equipos.map((equipo) => equipo.equipoId))).size;
-  const totalTiposPrestados = prestamos.reduce((total, prestamo) => total + prestamo.equipos.length, 0);
+  const totalEquiposDistintos = new Set(
+    prestamos.flatMap((prestamo) => prestamo.equipos.map((equipo) => equipo.equipoId))
+  ).size;
+  const totalTiposPrestados = prestamos.reduce(
+    (total, prestamo) => total + prestamo.equipos.length,
+    0
+  );
 
   const now = new Date();
   const generatedAt = formatGeneratedAt(now);
@@ -342,7 +350,9 @@ export default async function ResumenPrestamosVigentesPage({
         <h1 className="title">Resumen de prestamos vigentes</h1>
         <p className="subtitle">Prestamos pendientes de devolucion al momento de la impresion.</p>
         <p className="meta">{`Generado: ${generatedAt}`}</p>
-        {normalizedPrestamoIdFilter ? <p className="filter">{`Filtro por ID: ${normalizedPrestamoIdFilter}`}</p> : null}
+        {normalizedPrestamoIdFilter ? (
+          <p className="filter">{`Filtro por ID: ${normalizedPrestamoIdFilter}`}</p>
+        ) : null}
 
         <section className="totals">
           <article className="totals-equipo">
@@ -388,7 +398,10 @@ export default async function ResumenPrestamosVigentesPage({
               </thead>
               <tbody>
                 {prestamos.map((prestamo) => {
-                  const totalUnidadesPrestamo = prestamo.equipos.reduce((total, equipo) => total + equipo.cantidad, 0);
+                  const totalUnidadesPrestamo = prestamo.equipos.reduce(
+                    (total, equipo) => total + equipo.cantidad,
+                    0
+                  );
                   return (
                     <tr key={`print-prestamo-vigente-${prestamo.prestamoId}`}>
                       <td>
@@ -399,14 +412,17 @@ export default async function ResumenPrestamosVigentesPage({
                         <div className="stack">
                           <p>{prestamo.destinatarioEtiqueta}</p>
                           <p className="subline">
-                            {prestamo.destinatarioCi ? `CI ${formatUruguayanCi(prestamo.destinatarioCi)}` : "CI pendiente"}
+                            {prestamo.destinatarioCi
+                              ? `CI ${formatUruguayanCi(prestamo.destinatarioCi)}`
+                              : "CI pendiente"}
                           </p>
                         </div>
                       </td>
                       <td>
                         <div className="stack">
                           <p>
-                            <span className="label">Prestado:</span> {formatDateOnlyForDisplay(prestamo.fechaPrestamo)}
+                            <span className="label">Prestado:</span>{" "}
+                            {formatDateOnlyForDisplay(prestamo.fechaPrestamo)}
                           </p>
                           <p>
                             <span className="label">Estimado:</span>{" "}
@@ -419,10 +435,12 @@ export default async function ResumenPrestamosVigentesPage({
                       <td>
                         <div className="stack">
                           <p>
-                            <span className="label">Por orden de:</span> {prestamo.actuanteNombre ?? "No registrado"}
+                            <span className="label">Por orden de:</span>{" "}
+                            {prestamo.actuanteNombre ?? "No registrado"}
                           </p>
                           <p>
-                            <span className="label">Registrado por:</span> {prestamo.usuarioEntregaNombre || "No registrado"}
+                            <span className="label">Registrado por:</span>{" "}
+                            {prestamo.usuarioEntregaNombre || "No registrado"}
                           </p>
                           <p>
                             <span className="label">Comentario:</span>{" "}
@@ -440,7 +458,10 @@ export default async function ResumenPrestamosVigentesPage({
                           ) : (
                             <ul className="equipo-list">
                               {prestamo.equipos.map((equipo) => (
-                                <li key={`prestamo-equipo-${prestamo.prestamoId}-${equipo.equipoId}`} className="equipo-line">
+                                <li
+                                  key={`prestamo-equipo-${prestamo.prestamoId}-${equipo.equipoId}`}
+                                  className="equipo-line"
+                                >
                                   {`${equipo.nombre} x${equipo.cantidad} (${equipo.estadoEntrega})`}
                                 </li>
                               ))}

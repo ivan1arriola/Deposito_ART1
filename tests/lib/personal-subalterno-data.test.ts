@@ -15,7 +15,7 @@ describe("buildSubalternoPersonalData", () => {
         fechaIngreso,
         fechaIngresoOriginal,
         bateriaId: 3,
-      }),
+      })
     ).toEqual({
       telefonoContacto: "099123456",
       tipo: TipoPersonal.SUBALTERNO,
@@ -39,7 +39,7 @@ describe("buildSubalternoPersonalData", () => {
         fechaIngreso,
         fechaIngresoOriginal,
         bateriaId: null,
-      }),
+      })
     ).toEqual({
       telefonoContacto: null,
       tipo: TipoPersonal.SUBALTERNO,

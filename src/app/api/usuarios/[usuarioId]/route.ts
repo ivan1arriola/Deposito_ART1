@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { type Prisma, UserRole } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { authorizeRequest, getUserFromRequest, hashPassword, invalidateAuthUserCache } from "@/lib/auth";
+import {
+  authorizeRequest,
+  getUserFromRequest,
+  hashPassword,
+  invalidateAuthUserCache,
+} from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { isValidEmailAddress, normalizeEmailAddress } from "@/lib/email-address";
@@ -29,7 +34,8 @@ type UsuarioUpdatePayload = {
 };
 
 function roleFromValue(value: unknown): UserRole | null {
-  if (value === "ADMIN" || value === "DESARROLLADOR" || value === "EDITOR" || value === "READ_ONLY") return value;
+  if (value === "ADMIN" || value === "DESARROLLADOR" || value === "EDITOR" || value === "READ_ONLY")
+    return value;
   return null;
 }
 
@@ -76,7 +82,9 @@ function serializeUsuario(usuario: UsuarioRecord) {
     apellido: usuario.apellido,
     username: usuario.username,
     mailReferencia: usuario.mailReferencia,
-    mailVerificadaAt: usuario.mailVerificadaAt ? formatDateTimeForDisplay(usuario.mailVerificadaAt) : null,
+    mailVerificadaAt: usuario.mailVerificadaAt
+      ? formatDateTimeForDisplay(usuario.mailVerificadaAt)
+      : null,
     rol: usuario.rol,
     activo: usuario.activo,
     createdAt: formatDateTimeForDisplay(usuario.createdAt),
@@ -113,7 +121,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     if (hasUnsupportedFields) {
       return NextResponse.json(
         { error: "Las cuentas de personal solo admiten cambio de contraseña y estado." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -121,8 +129,14 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       return NextResponse.json({ error: "No hay campos para actualizar." }, { status: 400 });
     }
 
-    if (body.password !== undefined && (typeof body.password !== "string" || body.password.length < 8)) {
-      return NextResponse.json({ error: "Contraseña inválida. Mínimo 8 caracteres." }, { status: 400 });
+    if (
+      body.password !== undefined &&
+      (typeof body.password !== "string" || body.password.length < 8)
+    ) {
+      return NextResponse.json(
+        { error: "Contraseña inválida. Mínimo 8 caracteres." },
+        { status: 400 }
+      );
     }
 
     let updated = await getPersonalAdminUserByCi(personalCi);
@@ -172,7 +186,10 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     return NextResponse.json({ error: "No autorizado para esta acción." }, { status: 403 });
   }
   if (isReadOnly) {
-    return NextResponse.json({ error: "El rol Solo Lectura no puede modificar usuarios." }, { status: 403 });
+    return NextResponse.json(
+      { error: "El rol Solo Lectura no puede modificar usuarios." },
+      { status: 403 }
+    );
   }
 
   const body = (await request.json()) as UsuarioUpdatePayload;
@@ -195,10 +212,19 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     return NextResponse.json({ error: "Usuario no encontrado." }, { status: 404 });
   }
 
-  if (!isAdmin && (body.rol !== undefined || body.activo !== undefined || body.password !== undefined || body.confirmarMail !== undefined)) {
+  if (
+    !isAdmin &&
+    (body.rol !== undefined ||
+      body.activo !== undefined ||
+      body.password !== undefined ||
+      body.confirmarMail !== undefined)
+  ) {
     return NextResponse.json(
-      { error: "Solo el administrador puede cambiar rol, estado, contraseñas ajenas o verificar correos." },
-      { status: 403 },
+      {
+        error:
+          "Solo el administrador puede cambiar rol, estado, contraseñas ajenas o verificar correos.",
+      },
+      { status: 403 }
     );
   }
 
@@ -257,12 +283,16 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     if (body.mailReferencia !== null && typeof body.mailReferencia !== "string") {
       return NextResponse.json({ error: "Mail de referencia invalido." }, { status: 400 });
     }
-    const nextMail = body.mailReferencia?.trim() ? normalizeEmailAddress(body.mailReferencia) : null;
+    const nextMail = body.mailReferencia?.trim()
+      ? normalizeEmailAddress(body.mailReferencia)
+      : null;
     if (nextMail && !isValidEmailAddress(nextMail)) {
       return NextResponse.json({ error: "Mail de referencia invalido." }, { status: 400 });
     }
 
-    const previousMail = existing.mailReferencia ? normalizeEmailAddress(existing.mailReferencia) : null;
+    const previousMail = existing.mailReferencia
+      ? normalizeEmailAddress(existing.mailReferencia)
+      : null;
     const mailChanged = previousMail !== nextMail;
 
     data.mailReferencia = nextMail;
@@ -277,9 +307,13 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
       return NextResponse.json({ error: "Acción de verificacion invalida." }, { status: 400 });
     }
 
-    const effectiveMail = data.mailReferencia !== undefined ? data.mailReferencia : existing.mailReferencia;
+    const effectiveMail =
+      data.mailReferencia !== undefined ? data.mailReferencia : existing.mailReferencia;
     if (!effectiveMail) {
-      return NextResponse.json({ error: "El usuario no tiene mail de referencia." }, { status: 400 });
+      return NextResponse.json(
+        { error: "El usuario no tiene mail de referencia." },
+        { status: 400 }
+      );
     }
 
     data.mailVerificadaAt = body.confirmarMail ? new Date() : null;
@@ -288,7 +322,10 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
 
   if (body.password !== undefined) {
     if (typeof body.password !== "string" || body.password.length < 8) {
-      return NextResponse.json({ error: "Contraseña inválida. Mínimo 8 caracteres." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Contraseña inválida. Mínimo 8 caracteres." },
+        { status: 400 }
+      );
     }
     data.passwordHash = await hashPassword(body.password);
   }
@@ -322,7 +359,7 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
     if (adminCount <= 1) {
       return NextResponse.json(
         { error: "Debe existir al menos un usuario con privilegios administrativos activo." },
-        { status: 409 },
+        { status: 409 }
       );
     }
   }
@@ -330,7 +367,10 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
   if (existing.activo && !nextActive) {
     const activeUsersCount = await prisma.usuario.count({ where: { activo: true } });
     if (activeUsersCount <= 1) {
-      return NextResponse.json({ error: "Debe existir al menos un usuario activo." }, { status: 409 });
+      return NextResponse.json(
+        { error: "Debe existir al menos un usuario activo." },
+        { status: 409 }
+      );
     }
   }
 
@@ -380,13 +420,17 @@ export async function PUT(request: Request, context: { params: Promise<{ usuario
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {
       const code = (error as { code: string }).code;
-      if (code === "P2002") return NextResponse.json({ error: "El usuario ya existe." }, { status: 409 });
+      if (code === "P2002")
+        return NextResponse.json({ error: "El usuario ya existe." }, { status: 409 });
     }
     return NextResponse.json({ error: "No se pudo actualizar el usuario." }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, context: { params: Promise<{ usuarioId: string }> }) {
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ usuarioId: string }> }
+) {
   const auth = await authorizeRequest(request, "manage_users");
   if (!auth.ok) return auth.response;
 
@@ -395,8 +439,11 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
 
   if (personalCi) {
     return NextResponse.json(
-      { error: "Las cuentas de personal no se eliminan. Usa activar/desactivar para controlar el acceso." },
-      { status: 400 },
+      {
+        error:
+          "Las cuentas de personal no se eliminan. Usa activar/desactivar para controlar el acceso.",
+      },
+      { status: 400 }
     );
   }
 
@@ -431,7 +478,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
     if (admins <= 1) {
       return NextResponse.json(
         { error: "Debe existir al menos un usuario con privilegios administrativos activo." },
-        { status: 409 },
+        { status: 409 }
       );
     }
   }
@@ -439,7 +486,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ usua
   if (target.activo) {
     const activeUsers = await prisma.usuario.count({ where: { activo: true } });
     if (activeUsers <= 1) {
-      return NextResponse.json({ error: "Debe existir al menos un usuario activo." }, { status: 409 });
+      return NextResponse.json(
+        { error: "Debe existir al menos un usuario activo." },
+        { status: 409 }
+      );
     }
   }
 

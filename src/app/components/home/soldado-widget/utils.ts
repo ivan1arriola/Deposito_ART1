@@ -1,9 +1,5 @@
 import type { RecordatorioTarea } from "@/types/entities";
-import type {
-  SoldierDialogueDefinition,
-  SoldierDialogueKind,
-  WidgetCorner,
-} from "./types";
+import type { SoldierDialogueDefinition, SoldierDialogueKind, WidgetCorner } from "./types";
 
 export const WIDGET_CORNER_STORAGE_KEY = "soldado-recordatorio-widget-corner";
 export const WIDGET_DRAG_THRESHOLD_PX = 10;
@@ -46,10 +42,20 @@ export function sortCompletedTasks(a: RecordatorioTarea, b: RecordatorioTarea) {
 }
 
 export function isWidgetCorner(value: string | null): value is WidgetCorner {
-  return value === "TOP_LEFT" || value === "TOP_RIGHT" || value === "BOTTOM_LEFT" || value === "BOTTOM_RIGHT";
+  return (
+    value === "TOP_LEFT" ||
+    value === "TOP_RIGHT" ||
+    value === "BOTTOM_LEFT" ||
+    value === "BOTTOM_RIGHT"
+  );
 }
 
-export function resolveCornerFromPoint(clientX: number, clientY: number, viewportWidth: number, viewportHeight: number): WidgetCorner {
+export function resolveCornerFromPoint(
+  clientX: number,
+  clientY: number,
+  viewportWidth: number,
+  viewportHeight: number
+): WidgetCorner {
   const vertical = clientY <= viewportHeight / 2 ? "TOP" : "BOTTOM";
   const horizontal = clientX <= viewportWidth / 2 ? "LEFT" : "RIGHT";
   return `${vertical}_${horizontal}` as WidgetCorner;
@@ -67,7 +73,7 @@ export function clampWidgetPosition(
   bounds?: {
     minLeft?: number;
     minTop?: number;
-  },
+  }
 ) {
   const maxLeft = viewportSize.width - widgetSize.width - viewportPadding;
   const maxTop = viewportSize.height - widgetSize.height - viewportPadding;

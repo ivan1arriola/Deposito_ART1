@@ -52,7 +52,10 @@ export async function PUT(request: Request) {
   if (hasTelefonoContacto) {
     const rawTelefonoContacto = body.telefonoContacto;
     if (rawTelefonoContacto !== null && typeof rawTelefonoContacto !== "string") {
-      return NextResponse.json({ error: "telefonoContacto debe ser texto o null." }, { status: 400 });
+      return NextResponse.json(
+        { error: "telefonoContacto debe ser texto o null." },
+        { status: 400 }
+      );
     }
 
     if (rawTelefonoContacto === null || rawTelefonoContacto.trim() === "") {
@@ -60,7 +63,10 @@ export async function PUT(request: Request) {
     } else {
       const normalized = normalizeOptionalUruguayanMobileNumber(rawTelefonoContacto);
       if (!normalized) {
-        return NextResponse.json({ error: "telefonoContacto debe ser un celular uruguayo valido." }, { status: 400 });
+        return NextResponse.json(
+          { error: "telefonoContacto debe ser un celular uruguayo valido." },
+          { status: 400 }
+        );
       }
       nextTelefonoContacto = normalized;
     }

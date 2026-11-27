@@ -9,7 +9,12 @@ import {
   getTodayDateInput,
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
-import { formatPrestamoDestinatario, prestamoInclude, serializePrestamoWithActuante, totalUnidadesPrestamo } from "@/lib/prestamos";
+import {
+  formatPrestamoDestinatario,
+  prestamoInclude,
+  serializePrestamoWithActuante,
+  totalUnidadesPrestamo,
+} from "@/lib/prestamos";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { notifyAdminOnMovement } from "@/lib/notify-admins";
@@ -63,7 +68,9 @@ function parseCantidad(value: unknown) {
 }
 
 function parseEstadoEquipoPrestamo(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "NUEVO") return "NUEVO";
   if (raw === "BUENO") return "BUENO";
   if (raw === "REGULAR") return "REGULAR";
@@ -72,7 +79,9 @@ function parseEstadoEquipoPrestamo(value: unknown) {
 }
 
 function parsePrestamoClase(value: unknown): PrestamoClase | null {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "INTERNO") return "INTERNO";
   if (raw === "EXTERNO") return "EXTERNO";
   if (raw === "PENDIENTE") return "PENDIENTE";
@@ -80,7 +89,9 @@ function parsePrestamoClase(value: unknown): PrestamoClase | null {
 }
 
 function parseDestinatarioTipo(value: unknown): PrestamoDestinatarioTipo | null {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (raw === "PERSONAL") return "PERSONAL";
   if (raw === "OFICIAL") return "OFICIAL";
   if (raw === "SUBOFICIAL") return "SUBOFICIAL";
@@ -107,8 +118,16 @@ function inferPrestamoClase(body: Record<string, unknown>) {
   const explicit = parsePrestamoClase(body.clasePrestamo);
   if (explicit) return explicit;
 
-  const external = sanitizeExternalPayload(body.destinatarioExterno as PrestamoPayload["destinatarioExterno"]);
-  if (external.ci || external.grado || external.nombre || external.apellido || external.unidadDestino) {
+  const external = sanitizeExternalPayload(
+    body.destinatarioExterno as PrestamoPayload["destinatarioExterno"]
+  );
+  if (
+    external.ci ||
+    external.grado ||
+    external.nombre ||
+    external.apellido ||
+    external.unidadDestino
+  ) {
     return "EXTERNO" as const;
   }
 
@@ -127,7 +146,9 @@ function isValidPayload(body: unknown): body is PrestamoPayload {
   const clasePrestamo = inferPrestamoClase(candidate);
   const destinatarioTipo = parseDestinatarioTipo(candidate.destinatarioTipo);
   const destinatarioCi = String(candidate.destinatarioCi ?? "").trim();
-  const destinatarioExterno = sanitizeExternalPayload(candidate.destinatarioExterno as PrestamoPayload["destinatarioExterno"]);
+  const destinatarioExterno = sanitizeExternalPayload(
+    candidate.destinatarioExterno as PrestamoPayload["destinatarioExterno"]
+  );
 
   if (clasePrestamo === "INTERNO") {
     if (!destinatarioTipo) return false;
@@ -136,16 +157,28 @@ function isValidPayload(body: unknown): body is PrestamoPayload {
 
   if (clasePrestamo === "EXTERNO") {
     if (!isValidUruguayanCi(destinatarioExterno.ci)) return false;
-    if (!destinatarioExterno.grado || !destinatarioExterno.nombre || !destinatarioExterno.apellido || !destinatarioExterno.unidadDestino) {
+    if (
+      !destinatarioExterno.grado ||
+      !destinatarioExterno.nombre ||
+      !destinatarioExterno.apellido ||
+      !destinatarioExterno.unidadDestino
+    ) {
       return false;
     }
   }
 
-  if (typeof candidate.actuanteCi !== "string" || String(candidate.actuanteCi).trim() === "") return false;
+  if (typeof candidate.actuanteCi !== "string" || String(candidate.actuanteCi).trim() === "")
+    return false;
   if (!Array.isArray(candidate.equipos) || candidate.equipos.length === 0) return false;
-  if (candidate.fechaPrestamo !== undefined && typeof candidate.fechaPrestamo !== "string") return false;
-  if (candidate.fechaEstimadaDevolucionTexto !== undefined && typeof candidate.fechaEstimadaDevolucionTexto !== "string") return false;
-  if (candidate.comentarios !== undefined && typeof candidate.comentarios !== "string") return false;
+  if (candidate.fechaPrestamo !== undefined && typeof candidate.fechaPrestamo !== "string")
+    return false;
+  if (
+    candidate.fechaEstimadaDevolucionTexto !== undefined &&
+    typeof candidate.fechaEstimadaDevolucionTexto !== "string"
+  )
+    return false;
+  if (candidate.comentarios !== undefined && typeof candidate.comentarios !== "string")
+    return false;
   return true;
 }
 
@@ -155,7 +188,9 @@ export async function GET(request: Request) {
   await ensurePrestamoActuanteCompatibility();
 
   const url = new URL(request.url);
-  const status = String(url.searchParams.get("status") ?? "todos").trim().toLowerCase();
+  const status = String(url.searchParams.get("status") ?? "todos")
+    .trim()
+    .toLowerCase();
   const ci = String(url.searchParams.get("ci") ?? "").trim();
   const destinatarioTipo = parseDestinatarioTipo(url.searchParams.get("destinatarioTipo"));
   const clasePrestamo = parsePrestamoClase(url.searchParams.get("clasePrestamo"));
@@ -215,8 +250,12 @@ export async function GET(request: Request) {
     take: limit,
   });
 
-  const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds(prestamos.map((prestamo) => prestamo.movimientoId));
-  return NextResponse.json(prestamos.map((prestamo) => serializePrestamoWithActuante(prestamo, actuanteByMovimientoId)));
+  const actuanteByMovimientoId = await fetchPrestamoActuanteByMovimientoIds(
+    prestamos.map((prestamo) => prestamo.movimientoId)
+  );
+  return NextResponse.json(
+    prestamos.map((prestamo) => serializePrestamoWithActuante(prestamo, actuanteByMovimientoId))
+  );
 }
 
 export async function POST(request: Request) {
@@ -228,7 +267,7 @@ export async function POST(request: Request) {
   if (!isValidPayload(body)) {
     return NextResponse.json(
       { error: "Payload inválido. Revisa destinatario, fecha y equipos del préstamo." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -236,16 +275,23 @@ export async function POST(request: Request) {
 
   const clasePrestamo = inferPrestamoClase(body as Record<string, unknown>);
   const destinatarioTipo = parseDestinatarioTipo(body.destinatarioTipo);
-  const destinatarioCi = String(body.destinatarioCi ?? "").trim().replace(/\D/g, "");
+  const destinatarioCi = String(body.destinatarioCi ?? "")
+    .trim()
+    .replace(/\D/g, "");
   const destinatarioExterno = sanitizeExternalPayload(body.destinatarioExterno);
-  const actuanteCi = String(body.actuanteCi ?? "").trim().replace(/\D/g, "");
+  const actuanteCi = String(body.actuanteCi ?? "")
+    .trim()
+    .replace(/\D/g, "");
   const fechaPrestamoInput = body.fechaPrestamo?.trim() || getTodayDateInput();
   const fechaPrestamo = parseFechaPrestamo(body.fechaPrestamo);
   if (!fechaPrestamo) {
     return NextResponse.json({ error: "fechaPrestamo inválida." }, { status: 400 });
   }
   if (isDateInputAfterToday(fechaPrestamoInput)) {
-    return NextResponse.json({ error: "La fecha del préstamo no puede ser futura." }, { status: 400 });
+    return NextResponse.json(
+      { error: "La fecha del préstamo no puede ser futura." },
+      { status: 400 }
+    );
   }
 
   if (!isValidUruguayanCi(actuanteCi)) {
@@ -267,10 +313,20 @@ export async function POST(request: Request) {
   }>;
 
   if (parsedItems.length === 0) {
-    return NextResponse.json({ error: "Debes enviar al menos un equipo válido para el préstamo." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Debes enviar al menos un equipo válido para el préstamo." },
+      { status: 400 }
+    );
   }
 
-  const dedupedItems = new Map<string, { cantidad: number; estadoEntrega: "NUEVO" | "BUENO" | "REGULAR" | "MALO"; comentarioEntrega: string }>();
+  const dedupedItems = new Map<
+    string,
+    {
+      cantidad: number;
+      estadoEntrega: "NUEVO" | "BUENO" | "REGULAR" | "MALO";
+      comentarioEntrega: string;
+    }
+  >();
   for (const equipo of parsedItems) {
     const key = equipo.equipoId.toString();
     const existing = dedupedItems.get(key);
@@ -282,10 +338,16 @@ export async function POST(request: Request) {
       });
       continue;
     }
-    if (existing.estadoEntrega !== equipo.estadoEntrega || existing.comentarioEntrega !== equipo.comentarioEntrega) {
+    if (
+      existing.estadoEntrega !== equipo.estadoEntrega ||
+      existing.comentarioEntrega !== equipo.comentarioEntrega
+    ) {
       return NextResponse.json(
-        { error: "No puedes repetir el mismo equipo con distinto estado/comentario en un mismo préstamo." },
-        { status: 400 },
+        {
+          error:
+            "No puedes repetir el mismo equipo con distinto estado/comentario en un mismo préstamo.",
+        },
+        { status: 400 }
       );
     }
     dedupedItems.set(key, { ...existing, cantidad: existing.cantidad + equipo.cantidad });
@@ -351,16 +413,25 @@ export async function POST(request: Request) {
             ? "No existe personal subalterno para la CI indicada."
             : "No existe oficial/suboficial para la CI indicada.",
       },
-      { status: 404 },
+      { status: 404 }
     );
   }
 
-  if (auth.user.rangoId !== null && (actorRango?.orden === null || actorRango?.orden === undefined)) {
-    return NextResponse.json({ error: "No se pudo determinar el orden del usuario autenticado." }, { status: 400 });
+  if (
+    auth.user.rangoId !== null &&
+    (actorRango?.orden === null || actorRango?.orden === undefined)
+  ) {
+    return NextResponse.json(
+      { error: "No se pudo determinar el orden del usuario autenticado." },
+      { status: 400 }
+    );
   }
 
   if (!actuanteFound) {
-    return NextResponse.json({ error: "No existe personal para la CI indicada en por orden de." }, { status: 404 });
+    return NextResponse.json(
+      { error: "No existe personal para la CI indicada en por orden de." },
+      { status: 404 }
+    );
   }
 
   const actuanteData = actuanteFound;
@@ -373,20 +444,22 @@ export async function POST(request: Request) {
   if (!isEligibleTipo) {
     return NextResponse.json(
       { error: "El registro por orden de solo admite oficial, suboficial o sargento." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   if (actorRango && actuanteData.rango.orden >= actorRango.orden) {
     return NextResponse.json(
       { error: "El registro por orden de debe ser de rango superior al usuario autenticado." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   const comentarios = body.comentarios?.trim() || null;
   const fechaEstimadaDevolucionTexto = body.fechaEstimadaDevolucionTexto?.trim() || null;
-  const itemNombrePorId = new Map(equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre]));
+  const itemNombrePorId = new Map(
+    equiposFound.map((equipo) => [equipo.equipoId.toString(), equipo.nombre])
+  );
 
   try {
     const created = await prisma.$transaction(async (tx) => {
@@ -465,7 +538,7 @@ export async function POST(request: Request) {
 
       console.log("DEBUG actuanteData antes de upsert:", actuanteData);
 
-      await upsertPrestamoActuante(tx, movimiento.movimientoId, actuanteData.ci); 
+      await upsertPrestamoActuante(tx, movimiento.movimientoId, actuanteData.ci);
 
       return tx.movimiento.findUniqueOrThrow({
         where: { movimientoId: movimiento.movimientoId },
@@ -483,7 +556,9 @@ export async function POST(request: Request) {
       detalle: {
         evento: "PRESTAMO_CREADO",
         clasePrestamo: destinatarioDetalle.clase,
-        reciboNumero: created.prestamoActivo?.reciboNumero ?? `PR-${created.movimientoId.toString().padStart(8, "0")}`,
+        reciboNumero:
+          created.prestamoActivo?.reciboNumero ??
+          `PR-${created.movimientoId.toString().padStart(8, "0")}`,
         destinatario: {
           tipo: destinatarioDetalle.tipo,
           ci: destinatarioDetalle.ci,
@@ -498,9 +573,10 @@ export async function POST(request: Request) {
         porOdenDe: {
           ci: actuanteData.ci,
           gradoAbreviacion: actuanteData.rango.abreviacion,
-          nombre: `${actuanteData.apellido1} ${actuanteData.apellido2 ?? ""}, ${actuanteData.nombre1} ${actuanteData.nombre2 ?? ""}`
-            .replace(/\s+/g, " ")
-            .trim(),
+          nombre:
+            `${actuanteData.apellido1} ${actuanteData.apellido2 ?? ""}, ${actuanteData.nombre1} ${actuanteData.nombre2 ?? ""}`
+              .replace(/\s+/g, " ")
+              .trim(),
         },
         totalEquipos: created.equipos.length,
         totalUnidades: totalUnidadesPrestamo(created),
@@ -524,13 +600,15 @@ export async function POST(request: Request) {
           rol: auth.user.rol,
         },
         `Préstamo ${destinatarioDetalle.clase.toLowerCase()} creado (${totalUnidadesPrestamo(created)} unidades).`,
-        `/api/prestamos/${encodeURIComponent(created.movimientoId.toString())}/recibo`,
+        `/api/prestamos/${encodeURIComponent(created.movimientoId.toString())}/recibo`
       );
     } catch {
       // No bloquear préstamo por fallas de push.
     }
 
-    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`.replace(/\s+/g, " ").trim();
+    const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
+      .replace(/\s+/g, " ")
+      .trim();
     const resumenItems = created.equipos
       .slice(0, 4)
       .map((equipo) => `${equipo.equipo.nombre} x${equipo.cantidad}`)
@@ -551,7 +629,9 @@ export async function POST(request: Request) {
             `Total de unidades: ${totalUnidadesPrestamo(created)}`,
             `Equipos: ${resumenItemsLine}`,
             comentarios ? `Comentarios: ${comentarios}` : "",
-            fechaEstimadaDevolucionTexto ? `Fecha estimada de devolución: ${fechaEstimadaDevolucionTexto}` : "",
+            fechaEstimadaDevolucionTexto
+              ? `Fecha estimada de devolución: ${fechaEstimadaDevolucionTexto}`
+              : "",
           ],
           actorLabel,
           portalPath: "/",
@@ -562,12 +642,15 @@ export async function POST(request: Request) {
     const actuanteByMovimientoId = new Map<string, { ci: string; label: string }>();
     actuanteByMovimientoId.set(created.movimientoId.toString(), {
       ci: actuanteData.ci,
-      label: `${actuanteData.rango.abreviacion} ${actuanteData.apellido1} ${actuanteData.apellido2 ?? ""}, ${actuanteData.nombre1} ${actuanteData.nombre2 ?? ""}`
-        .replace(/\s+/g, " ")
-        .trim(),
+      label:
+        `${actuanteData.rango.abreviacion} ${actuanteData.apellido1} ${actuanteData.apellido2 ?? ""}, ${actuanteData.nombre1} ${actuanteData.nombre2 ?? ""}`
+          .replace(/\s+/g, " ")
+          .trim(),
     });
 
-    return NextResponse.json(serializePrestamoWithActuante(created, actuanteByMovimientoId), { status: 201 });
+    return NextResponse.json(serializePrestamoWithActuante(created, actuanteByMovimientoId), {
+      status: 201,
+    });
   } catch (error) {
     console.log("ERROR REGISTRANDO PRÉSTAMO:", error);
     return NextResponse.json({ error: "No se pudo registrar el préstamo." }, { status: 500 });

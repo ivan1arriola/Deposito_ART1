@@ -2,7 +2,10 @@ import "server-only";
 
 import React from "react";
 import type { MovimientoFueraHojaRow } from "@/lib/hoja-entrega-data";
-import { buildFirmasInstitucionalesLineas, type FirmasInstitucionalesInput } from "@/lib/firma-lineas";
+import {
+  buildFirmasInstitucionalesLineas,
+  type FirmasInstitucionalesInput,
+} from "@/lib/firma-lineas";
 
 type RenderMovimientosFueraHojaPdfOptions = {
   pageNumberLabel?: string;
@@ -28,14 +31,16 @@ function buildTipoLabel(tipo: MovimientoFueraHojaRow["tipo"]) {
 export async function renderMovimientosFueraHojaPdf(
   rows: MovimientoFueraHojaRow[],
   fechaImpresion: string,
-  options: RenderMovimientosFueraHojaPdfOptions = {},
+  options: RenderMovimientosFueraHojaPdfOptions = {}
 ): Promise<Uint8Array> {
   const ReactPdf = await import("@react-pdf/renderer");
   const { Document, Page, Text, View, StyleSheet, pdf } = ReactPdf;
 
   const pageNumberLabel = options.pageNumberLabel ?? "Movimientos";
   const rowsPerPage =
-    typeof options.rowsPerPage === "number" && Number.isFinite(options.rowsPerPage) && options.rowsPerPage > 0
+    typeof options.rowsPerPage === "number" &&
+    Number.isFinite(options.rowsPerPage) &&
+    options.rowsPerPage > 0
       ? Math.floor(options.rowsPerPage)
       : DEFAULT_ROWS_PER_PAGE;
 
@@ -191,7 +196,9 @@ export async function renderMovimientosFueraHojaPdf(
               <View style={[styles.headerCell, { width: widths.cantidad }]}>
                 <Text>Cant.</Text>
               </View>
-              <View style={[styles.headerCell, styles.noRightBorder, { width: widths.observaciones }]}>
+              <View
+                style={[styles.headerCell, styles.noRightBorder, { width: widths.observaciones }]}
+              >
                 <Text>Obs.</Text>
               </View>
             </View>
@@ -222,7 +229,9 @@ export async function renderMovimientosFueraHojaPdf(
                   <View style={[styles.cell, { width: widths.cantidad }]}>
                     <Text style={styles.center}>{String(row.cantidad)}</Text>
                   </View>
-                  <View style={[styles.cell, styles.noRightBorder, { width: widths.observaciones }]}>
+                  <View
+                    style={[styles.cell, styles.noRightBorder, { width: widths.observaciones }]}
+                  >
                     <Text style={styles.left}>{row.observaciones ?? ""}</Text>
                   </View>
                 </View>
@@ -239,7 +248,11 @@ export async function renderMovimientosFueraHojaPdf(
                     styles.firmaLineRow,
                     {
                       paddingLeft: (linea.indentLevel || 0) * 40,
-                      marginTop: linea.key.endsWith("-nombre") ? 8 : linea.key.endsWith("-texto") ? 25 : 0,
+                      marginTop: linea.key.endsWith("-nombre")
+                        ? 8
+                        : linea.key.endsWith("-texto")
+                          ? 25
+                          : 0,
                     },
                   ]}
                 >

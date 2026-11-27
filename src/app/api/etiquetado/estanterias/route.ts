@@ -17,7 +17,9 @@ function hasEtiquetadoDelegates() {
 }
 
 function normalizeNombreEstanteria(value: unknown) {
-  const raw = String(value ?? "").trim().toUpperCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toUpperCase();
   if (!/^[A-Z]$/.test(raw)) return null;
   return raw;
 }
@@ -34,8 +36,10 @@ export async function POST(request: Request) {
 
   if (!hasEtiquetadoDelegates()) {
     return NextResponse.json(
-      { error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo." },
-      { status: 503 },
+      {
+        error: "El cliente Prisma de etiquetado no esta listo. Reinicia el servidor de desarrollo.",
+      },
+      { status: 503 }
     );
   }
 
@@ -46,7 +50,7 @@ export async function POST(request: Request) {
   if (!nombreEstanteria || piso === null) {
     return NextResponse.json(
       { error: "Payload invalido. Usa nombre de estanteria (1 letra A-Z) y piso 1 o 2." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -81,10 +85,15 @@ export async function POST(request: Request) {
         piso: created.piso,
         etiqueta: `${created.codigo} Piso ${created.piso}`,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
       return NextResponse.json({ error: "Esa estanteria ya existe." }, { status: 409 });
     }
 

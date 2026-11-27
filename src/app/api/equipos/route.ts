@@ -6,7 +6,11 @@ import { logAudit } from "@/lib/audit";
 import { applyEquipoOrder } from "@/lib/equipo-ordering";
 import { GENERAL_TIPO_EQUIPO_CLAVE, normalizeEquipoTipoClave } from "@/lib/equipo-tipos";
 import { serializeEquipoTipoData, tipoEquipoRelationSelect } from "@/lib/equipo-tipos-data";
-import { hasPrismaMissingColumn, isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
+import {
+  hasPrismaMissingColumn,
+  isPrismaDatabaseUnavailable,
+  withPrismaReadRetry,
+} from "@/lib/prisma-errors";
 
 type EquipoPayload = {
   nombre: string;
@@ -48,10 +52,18 @@ function parseNullableTipoEquipoId(value: unknown) {
   return parsed;
 }
 
-async function resolveTipoEquipoId(client: TipoEquipoLookupClient, body: EquipoPayload): Promise<number | null | undefined> {
+async function resolveTipoEquipoId(
+  client: TipoEquipoLookupClient,
+  body: EquipoPayload
+): Promise<number | null | undefined> {
   if (Object.prototype.hasOwnProperty.call(body, "tipoEquipoId")) {
     const parsed = parseNullableTipoEquipoId(body.tipoEquipoId);
-    if (body.tipoEquipoId !== null && body.tipoEquipoId !== undefined && body.tipoEquipoId !== "" && parsed === null) {
+    if (
+      body.tipoEquipoId !== null &&
+      body.tipoEquipoId !== undefined &&
+      body.tipoEquipoId !== "" &&
+      parsed === null
+    ) {
       return undefined;
     }
     if (parsed === null) return null;
@@ -116,7 +128,7 @@ export async function GET(request: Request) {
       prisma.equipo.findMany({
         orderBy: [{ ordenPdf: "asc" }, { nombre: "asc" }],
         select: equipoSelect,
-      }),
+      })
     );
 
     return NextResponse.json(equipos.map(serializeEquipo));
@@ -124,7 +136,7 @@ export async function GET(request: Request) {
     if (isPrismaDatabaseUnavailable(error)) {
       return NextResponse.json(
         { error: "Base de datos no disponible temporalmente. Intenta nuevamente." },
-        { status: 503 },
+        { status: 503 }
       );
     }
     if (hasPrismaMissingColumn(error, "equipos.tipo_equipo_id")) {
@@ -133,7 +145,7 @@ export async function GET(request: Request) {
           error:
             "La base de datos no tiene la relación equipos.tipo_equipo_id. Ejecuta `npm run db:patch:refactor-tipo-equipo` y recarga la app.",
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
     return NextResponse.json({ error: "No se pudieron cargar los equipos." }, { status: 500 });
@@ -150,8 +162,10 @@ export async function POST(request: Request) {
 
   if (!nombre || typeof tipoEquipoId === "undefined") {
     return NextResponse.json(
-      { error: "Payload inválido. 'nombre' es obligatorio y el tipo de equipo indicado no existe." },
-      { status: 400 },
+      {
+        error: "Payload inválido. 'nombre' es obligatorio y el tipo de equipo indicado no existe.",
+      },
+      { status: 400 }
     );
   }
 
@@ -194,7 +208,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json(serializeEquipo(created), { status: 201 });
   } catch (error: unknown) {
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
       return NextResponse.json({ error: "El equipo ya existe." }, { status: 409 });
     }
 
@@ -208,7 +227,10 @@ export async function PATCH(request: Request) {
 
   const body = (await request.json()) as ReorderEquiposPayload;
   if (!isValidReorderPayload(body)) {
-    return NextResponse.json({ error: "Payload inválido. orderedItemIds es obligatorio." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Payload inválido. orderedItemIds es obligatorio." },
+      { status: 400 }
+    );
   }
 
   const orderedEquipoIds = body.orderedItemIds.map(parseEquipoId);
@@ -219,44 +241,50 @@ export async function PATCH(request: Request) {
   const parsedIds = orderedEquipoIds as bigint[];
   const uniqueIds = new Set(parsedIds.map((equipoId) => equipoId.toString()));
   if (uniqueIds.size !== parsedIds.length) {
-    return NextResponse.json({ error: "No se puede repetir un equipo en el nuevo orden." }, { status: 400 });
+    return NextResponse.json(
+      { error: "No se puede repetir un equipo en el nuevo orden." },
+      { status: 400 }
+    );
   }
 
   const isActive = body.activo === undefined ? true : Boolean(body.activo);
 
   try {
-    const reordered = await prisma.$transaction(async (tx) => {
-      const targetEquipos = await tx.equipo.findMany({
-        where: { activo: isActive },
-        orderBy: [{ ordenPdf: "asc" }, { equipoId: "asc" }],
-        select: equipoSelect,
-      });
+    const reordered = await prisma.$transaction(
+      async (tx) => {
+        const targetEquipos = await tx.equipo.findMany({
+          where: { activo: isActive },
+          orderBy: [{ ordenPdf: "asc" }, { equipoId: "asc" }],
+          select: equipoSelect,
+        });
 
-      const targetIds = targetEquipos.map((equipo) => equipo.equipoId.toString());
-      if (parsedIds.length !== targetIds.length) {
-        throw new Error(
-          `El reordenamiento debe incluir todos los equipos ${isActive ? "visibles" : "ocultos"} en hoja.`,
-        );
-      }
+        const targetIds = targetEquipos.map((equipo) => equipo.equipoId.toString());
+        if (parsedIds.length !== targetIds.length) {
+          throw new Error(
+            `El reordenamiento debe incluir todos los equipos ${isActive ? "visibles" : "ocultos"} en hoja.`
+          );
+        }
 
-      const hasSameIds =
-        targetIds.every((equipoId) => uniqueIds.has(equipoId)) &&
-        Array.from(uniqueIds).every((equipoId) => targetIds.includes(equipoId));
+        const hasSameIds =
+          targetIds.every((equipoId) => uniqueIds.has(equipoId)) &&
+          Array.from(uniqueIds).every((equipoId) => targetIds.includes(equipoId));
 
-      if (!hasSameIds) {
-        throw new Error(
-          `El reordenamiento no coincide con los equipos ${isActive ? "visibles" : "ocultos"} en hoja.`,
-        );
-      }
+        if (!hasSameIds) {
+          throw new Error(
+            `El reordenamiento no coincide con los equipos ${isActive ? "visibles" : "ocultos"} en hoja.`
+          );
+        }
 
-      await applyEquipoOrder(tx, parsedIds, isActive ? 0 : 10000);
+        await applyEquipoOrder(tx, parsedIds, isActive ? 0 : 10000);
 
-      return tx.equipo.findMany({
-        where: { equipoId: { in: parsedIds } },
-        orderBy: [{ ordenPdf: "asc" }, { equipoId: "asc" }],
-        select: equipoSelect,
-      });
-    }, { maxWait: 5_000, timeout: 20_000 });
+        return tx.equipo.findMany({
+          where: { equipoId: { in: parsedIds } },
+          orderBy: [{ ordenPdf: "asc" }, { equipoId: "asc" }],
+          select: equipoSelect,
+        });
+      },
+      { maxWait: 5_000, timeout: 20_000 }
+    );
 
     await logAudit({
       usuarioId: auth.user.usuarioId,
@@ -277,7 +305,8 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json(reordered.map(serializeEquipo));
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "No se pudo actualizar el orden de los equipos.";
+    const message =
+      error instanceof Error ? error.message : "No se pudo actualizar el orden de los equipos.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

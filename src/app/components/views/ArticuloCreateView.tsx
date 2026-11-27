@@ -32,8 +32,12 @@ export function ArticuloCreateView({
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">Nueva vista</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">Registrar artículo</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">
+                Nueva vista
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">
+                Registrar artículo
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
                 Agrega un artículo auxiliar y clasifícalo como material de oficina o de limpieza.
               </p>
@@ -52,7 +56,9 @@ export function ArticuloCreateView({
         <div className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-4">
             <label className="block">
-              <span className="block text-xs font-medium text-stone-700">Nombre del artículo *</span>
+              <span className="block text-xs font-medium text-stone-700">
+                Nombre del artículo *
+              </span>
               <input
                 value={nombre}
                 onChange={(event) => onNombreChange(event.target.value)}
@@ -78,7 +84,9 @@ export function ArticuloCreateView({
           </div>
 
           <aside className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-ejercito-blue)] p-4 text-white shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">Alta inmediata</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ejercito-gold)]">
+              Alta inmediata
+            </p>
             <p className="mt-3 text-sm leading-6 text-white/85">
               El artículo queda disponible enseguida dentro del catálogo administrativo.
             </p>

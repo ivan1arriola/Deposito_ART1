@@ -47,7 +47,7 @@ function compareTipo(left: MovimientosEquipoSortableRow, right: MovimientosEquip
 function compareByField(
   left: MovimientosEquipoSortableRow,
   right: MovimientosEquipoSortableRow,
-  field: MovimientosEquipoSortField,
+  field: MovimientosEquipoSortField
 ) {
   if (field === "tipo") return compareTipo(left, right);
   return compareDate(left, right);
@@ -55,7 +55,7 @@ function compareByField(
 
 export function sortMovimientosEquipoRows<T extends MovimientosEquipoSortableRow>(
   rows: T[],
-  sort: MovimientosEquipoSort,
+  sort: MovimientosEquipoSort
 ): T[] {
   const factor = sort.direction === "asc" ? 1 : -1;
   return [...rows].sort((left, right) => factor * compareByField(left, right, sort.field));

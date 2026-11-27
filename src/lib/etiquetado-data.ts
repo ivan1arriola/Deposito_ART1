@@ -35,17 +35,20 @@ function normalizeTallaForSort(value: string | null) {
   return (value ?? "").trim().toUpperCase();
 }
 
-export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: number[] } = {}): Promise<EtiquetaCajaPrintData[]> {
+export async function getEtiquetasCajaData(
+  options: { codigosDepositoGeneral?: number[] } = {}
+): Promise<EtiquetaCajaPrintData[]> {
   const codigosFiltrados = Array.from(
     new Set(
       (options.codigosDepositoGeneral ?? []).filter(
-        (codigo) => Number.isInteger(codigo) && codigo > 0,
-      ),
-    ),
+        (codigo) => Number.isInteger(codigo) && codigo > 0
+      )
+    )
   );
 
   const cajas = await prisma.caja.findMany({
-    where: codigosFiltrados.length > 0 ? { codigoDepositoGeneral: { in: codigosFiltrados } } : undefined,
+    where:
+      codigosFiltrados.length > 0 ? { codigoDepositoGeneral: { in: codigosFiltrados } } : undefined,
     include: {
       equipos: {
         include: {
@@ -102,8 +105,11 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
       new Set(
         codigosSIE
           .map((codigo) => codigo.talla?.trim())
-          .filter((talla): talla is string => typeof talla === "string" && talla.length > 0 && talla !== "-"),
-      ),
+          .filter(
+            (talla): talla is string =>
+              typeof talla === "string" && talla.length > 0 && talla !== "-"
+          )
+      )
     ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
     const equiposBase =
@@ -114,7 +120,9 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
               equipoNombre: entry.equipo.nombre,
               cantidad: entry.cantidad,
             }))
-            .sort((a, b) => a.equipoNombre.localeCompare(b.equipoNombre, "es", { sensitivity: "base" }))
+            .sort((a, b) =>
+              a.equipoNombre.localeCompare(b.equipoNombre, "es", { sensitivity: "base" })
+            )
         : Array.from(
             new Map(
               codigosSIEConEquipo.map((codigo) => [
@@ -122,11 +130,15 @@ export async function getEtiquetasCajaData(options: { codigosDepositoGeneral?: n
                 {
                   equipoId: codigo.equipoId,
                   equipoNombre: codigo.equipoNombre,
-                  cantidad: codigosSIEConEquipo.filter((entry) => entry.equipoId === codigo.equipoId).length || 1,
+                  cantidad:
+                    codigosSIEConEquipo.filter((entry) => entry.equipoId === codigo.equipoId)
+                      .length || 1,
                 },
-              ]),
-            ).values(),
-          ).sort((a, b) => a.equipoNombre.localeCompare(b.equipoNombre, "es", { sensitivity: "base" }));
+              ])
+            ).values()
+          ).sort((a, b) =>
+            a.equipoNombre.localeCompare(b.equipoNombre, "es", { sensitivity: "base" })
+          );
 
     const equipos = equiposBase.map((equipo) => {
       const codigosEquipo = codigosSIEConEquipo
@@ -207,7 +219,8 @@ export async function getListadoCajasPrintData(): Promise<CajaListadoPrintData[]
       if (a.pisoPrincipal !== b.pisoPrincipal) return a.pisoPrincipal - b.pisoPrincipal;
       const byEstanteria = a.estanteria.localeCompare(b.estanteria, "es", { sensitivity: "base" });
       if (byEstanteria !== 0) return byEstanteria;
-      if (a.codigoDepositoGeneral !== b.codigoDepositoGeneral) return a.codigoDepositoGeneral - b.codigoDepositoGeneral;
+      if (a.codigoDepositoGeneral !== b.codigoDepositoGeneral)
+        return a.codigoDepositoGeneral - b.codigoDepositoGeneral;
       return a.contenido.localeCompare(b.contenido, "es", { sensitivity: "base" });
     })
     .map((row) => ({

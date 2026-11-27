@@ -81,15 +81,22 @@ function buildUsuarioEntregaLabel(usuario: {
   nombre: string;
   rango: { abreviacion: string } | null;
 }) {
-  return `${rangoAbreviacionLabel(usuario.rango, "")} ${usuario.apellido}, ${usuario.nombre}`.replace(/\s+/g, " ").trim();
+  return `${rangoAbreviacionLabel(usuario.rango, "")} ${usuario.apellido}, ${usuario.nombre}`
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function compareItemsByName(left: ArticuloEntregaHistorialItem, right: ArticuloEntregaHistorialItem) {
+function compareItemsByName(
+  left: ArticuloEntregaHistorialItem,
+  right: ArticuloEntregaHistorialItem
+) {
   return left.nombre.localeCompare(right.nombre, "es");
 }
 
 function serializeArticuloEntregaHistorialEntry(
-  entrega: Prisma.ArticuloEntregaPersonalGetPayload<{ include: typeof articuloEntregaHistorialInclude }>,
+  entrega: Prisma.ArticuloEntregaPersonalGetPayload<{
+    include: typeof articuloEntregaHistorialInclude;
+  }>
 ): ArticuloEntregaHistorialEntry {
   return {
     articuloEntregaPersonalId: String(entrega.articuloEntregaPersonalId),

@@ -63,7 +63,7 @@ const personalPermissionMatrix: Record<Permission, boolean> = {
 export function hasPermission(
   role: UserRole,
   permission: Permission,
-  accountType: AuthAccountType = "SISTEMA",
+  accountType: AuthAccountType = "SISTEMA"
 ) {
   if (accountType === "PERSONAL") {
     return personalPermissionMatrix[permission];

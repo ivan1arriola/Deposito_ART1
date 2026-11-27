@@ -27,7 +27,10 @@ interface ArticuloEntregasHistorialViewProps {
   onBack?: () => void;
 }
 
-export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: ArticuloEntregasHistorialViewProps) {
+export function ArticuloEntregasHistorialView({
+  isAdmin = false,
+  onBack,
+}: ArticuloEntregasHistorialViewProps) {
   const [entregas, setEntregas] = useState<ArticuloEntregaPersonalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +83,7 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
       if (!res.ok) {
         throw new Error(data.error || "No se pudo eliminar el registro.");
       }
-      
+
       // Actualizar UI
       await fetchHistory();
       setConfirmDeleteId(null);
@@ -97,7 +100,7 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
     window.open(
       `/api/articulos/entregas/${encodeURIComponent(entrega.articuloEntregaPersonalId)}/constancia`,
       "_blank",
-      "noopener,noreferrer",
+      "noopener,noreferrer"
     );
   };
 
@@ -114,7 +117,11 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
       params.set("endDate", endDate);
     }
 
-    window.open(`/listado-entregas-articulos?${params.toString()}`, "_blank", "noopener,noreferrer");
+    window.open(
+      `/listado-entregas-articulos?${params.toString()}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
   return (
@@ -136,7 +143,9 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
               <HistoryRoundedIcon className="text-stone-200" />
               Historial de Entregas a Personal
             </h2>
-            <p className="text-sm text-stone-200/90">Registro histórico de artículos de consumo distribuidos al personal.</p>
+            <p className="text-sm text-stone-200/90">
+              Registro histórico de artículos de consumo distribuidos al personal.
+            </p>
           </div>
         </div>
 
@@ -164,17 +173,26 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
       {!loading && !error && entregas.length > 0 && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="ej-card rounded-2xl p-4 bg-gradient-to-br from-white to-stone-50 border border-stone-200">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600">Total de Entregas</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600">
+              Total de Entregas
+            </span>
             <p className="mt-1 text-2xl font-extrabold text-stone-900">{entregas.length}</p>
           </div>
           <div className="ej-card rounded-2xl p-4 bg-gradient-to-br from-white to-stone-50 border border-stone-200">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600">Total Artículos Entregados</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600">
+              Total Artículos Entregados
+            </span>
             <p className="mt-1 text-2xl font-extrabold text-stone-900">
-              {entregas.reduce((acc, ent) => acc + ent.equipos.reduce((sum, equipo) => sum + equipo.cantidad, 0), 0)}
+              {entregas.reduce(
+                (acc, ent) => acc + ent.equipos.reduce((sum, equipo) => sum + equipo.cantidad, 0),
+                0
+              )}
             </p>
           </div>
           <div className="ej-card rounded-2xl p-4 bg-gradient-to-br from-white to-stone-50 border border-stone-200">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600">Personal Beneficiario</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600">
+              Personal Beneficiario
+            </span>
             <p className="mt-1 text-2xl font-extrabold text-stone-900">
               {new Set(entregas.map((ent) => ent.personalCi)).size} personas
             </p>
@@ -239,9 +257,13 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
         </div>
       ) : filteredEntregas.length === 0 ? (
         <div className="ej-card rounded-2xl p-12 text-center bg-white border border-stone-200">
-          <p className="text-stone-600 font-medium">No se encontraron entregas que coincidan con los filtros.</p>
+          <p className="text-stone-600 font-medium">
+            No se encontraron entregas que coincidan con los filtros.
+          </p>
           {entregas.length === 0 && (
-            <p className="text-xs text-stone-600 mt-1">Aún no se ha registrado ninguna entrega de artículos a personal.</p>
+            <p className="text-xs text-stone-600 mt-1">
+              Aún no se ha registrado ninguna entrega de artículos a personal.
+            </p>
           )}
         </div>
       ) : (
@@ -352,8 +374,12 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
               <span className="text-[10px] font-bold text-stone-600 bg-stone-100 rounded px-2 py-0.5">
                 Entrega #{selectedEntrega.articuloEntregaPersonalId}
               </span>
-              <h3 className="mt-1 text-lg font-extrabold text-stone-950">Constancia Detallada de Entrega</h3>
-              <p className="text-xs text-stone-600">Registrado en sistema el {formatDateOnlyForDisplay(selectedEntrega.fecha)}</p>
+              <h3 className="mt-1 text-lg font-extrabold text-stone-950">
+                Constancia Detallada de Entrega
+              </h3>
+              <p className="text-xs text-stone-600">
+                Registrado en sistema el {formatDateOnlyForDisplay(selectedEntrega.fecha)}
+              </p>
             </header>
 
             {/* Datos Clave */}
@@ -361,21 +387,31 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
               <div className="rounded-xl border border-stone-200 bg-stone-50 p-3.5 space-y-2">
                 <p>
                   <strong className="text-stone-600">Recibe (Personal):</strong>{" "}
-                  <span className="font-semibold text-stone-900">{selectedEntrega.personalLabel}</span>
+                  <span className="font-semibold text-stone-900">
+                    {selectedEntrega.personalLabel}
+                  </span>
                   <br />
-                  <span className="text-xs text-stone-600">C.I. {formatUruguayanCi(selectedEntrega.personalCi)}</span>
+                  <span className="text-xs text-stone-600">
+                    C.I. {formatUruguayanCi(selectedEntrega.personalCi)}
+                  </span>
                 </p>
                 <div className="border-t border-stone-200/60 my-2" />
                 <p>
                   <strong className="text-stone-600">Autoriza (Ordenante):</strong>{" "}
-                  <span className="font-semibold text-stone-900">{selectedEntrega.ordenanteLabel}</span>
+                  <span className="font-semibold text-stone-900">
+                    {selectedEntrega.ordenanteLabel}
+                  </span>
                   <br />
-                  <span className="text-xs text-stone-600">C.I. {formatUruguayanCi(selectedEntrega.ordenanteCi)}</span>
+                  <span className="text-xs text-stone-600">
+                    C.I. {formatUruguayanCi(selectedEntrega.ordenanteCi)}
+                  </span>
                 </p>
                 <div className="border-t border-stone-200/60 my-2" />
                 <p>
                   <strong className="text-stone-600">Registra (Operador):</strong>{" "}
-                  <span className="font-semibold text-stone-900">{selectedEntrega.usuarioEntregaLabel}</span>
+                  <span className="font-semibold text-stone-900">
+                    {selectedEntrega.usuarioEntregaLabel}
+                  </span>
                 </p>
               </div>
 
@@ -396,9 +432,15 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
                     <tbody>
                       {selectedEntrega.equipos.map((equipo) => (
                         <tr key={equipo.articuloId} className="border-b border-stone-100 text-xs">
-                          <td className="px-3 py-2 font-semibold text-stone-900">{equipo.nombre}</td>
-                          <td className="px-3 py-2 text-center text-[10px] text-stone-600 uppercase">{equipo.tipo}</td>
-                          <td className="px-3 py-2 text-right font-bold text-stone-900">{equipo.cantidad}</td>
+                          <td className="px-3 py-2 font-semibold text-stone-900">
+                            {equipo.nombre}
+                          </td>
+                          <td className="px-3 py-2 text-center text-[10px] text-stone-600 uppercase">
+                            {equipo.tipo}
+                          </td>
+                          <td className="px-3 py-2 text-right font-bold text-stone-900">
+                            {equipo.cantidad}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -410,7 +452,9 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
               {selectedEntrega.comentario && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
                   <h4 className="text-xs font-bold text-amber-900">Observaciones</h4>
-                  <p className="mt-1 text-xs text-amber-800 italic">&quot;{selectedEntrega.comentario}&quot;</p>
+                  <p className="mt-1 text-xs text-amber-800 italic">
+                    &quot;{selectedEntrega.comentario}&quot;
+                  </p>
                 </div>
               )}
             </div>
@@ -454,7 +498,8 @@ export function ArticuloEntregasHistorialView({ isAdmin = false, onBack }: Artic
             <div>
               <h3 className="text-base font-bold text-stone-950">¿Eliminar registro de entrega?</h3>
               <p className="mt-1.5 text-xs text-stone-600 leading-relaxed">
-                Esta acción eliminará el registro de forma permanente, descontará la entrega y <strong>reabastecerá el stock</strong> de los artículos involucrados inmediatamente.
+                Esta acción eliminará el registro de forma permanente, descontará la entrega y{" "}
+                <strong>reabastecerá el stock</strong> de los artículos involucrados inmediatamente.
               </p>
             </div>
             <div className="flex gap-2 justify-center pt-2">

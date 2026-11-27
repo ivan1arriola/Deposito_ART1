@@ -158,7 +158,7 @@ export function useEtiquetado({
         // Error manejado en el handler.
       }
     },
-    [canWrite, load, loadData, onStatusChange],
+    [canWrite, load, loadData, onStatusChange]
   );
 
   const createEstanteria = useCallback(
@@ -183,7 +183,7 @@ export function useEtiquetado({
         onStatusChange(err instanceof Error ? err.message : "No se pudo registrar la estantería.");
       }
     },
-    [canWrite, load, onStatusChange],
+    [canWrite, load, onStatusChange]
   );
 
   const deleteEstanteria = useCallback(
@@ -196,9 +196,12 @@ export function useEtiquetado({
       onStatusChange("Eliminando estantería...");
 
       try {
-        await api(`/api/etiquetado/estanterias/${encodeURIComponent(codigo)}/${encodeURIComponent(String(piso))}`, {
-          method: "DELETE",
-        });
+        await api(
+          `/api/etiquetado/estanterias/${encodeURIComponent(codigo)}/${encodeURIComponent(String(piso))}`,
+          {
+            method: "DELETE",
+          }
+        );
 
         onStatusChange("Estanteria eliminada.");
         await load();
@@ -206,11 +209,16 @@ export function useEtiquetado({
         onStatusChange(err instanceof Error ? err.message : "No se pudo eliminar la estantería.");
       }
     },
-    [canWrite, load, onStatusChange],
+    [canWrite, load, onStatusChange]
   );
 
   const createCodigoSIE = useCallback(
-    async (input: { codigo: string; talla: string; equipoId: string; allowDuplicateCodigo?: boolean }) => {
+    async (input: {
+      codigo: string;
+      talla: string;
+      equipoId: string;
+      allowDuplicateCodigo?: boolean;
+    }) => {
       if (!canWrite) {
         onStatusChange("No tienes permisos para crear.");
         return;
@@ -231,7 +239,7 @@ export function useEtiquetado({
         onStatusChange(err instanceof Error ? err.message : "No se pudo registrar el código SIE.");
       }
     },
-    [canWrite, load, onStatusChange],
+    [canWrite, load, onStatusChange]
   );
 
   const updateCodigoSIE = useCallback(
@@ -252,7 +260,7 @@ export function useEtiquetado({
       try {
         await api(
           `/api/etiquetado/codigos-sie/${encodeURIComponent(input.originalCodigo)}?id=${encodeURIComponent(
-            input.originalCodigoSIEId,
+            input.originalCodigoSIEId
           )}`,
           {
             method: "PUT",
@@ -262,7 +270,7 @@ export function useEtiquetado({
               talla: input.talla,
               equipoId: input.equipoId,
             }),
-          },
+          }
         );
 
         onStatusChange("Código SIE actualizado.");
@@ -271,7 +279,7 @@ export function useEtiquetado({
         onStatusChange(err instanceof Error ? err.message : "No se pudo actualizar el código SIE.");
       }
     },
-    [canWrite, load, onStatusChange],
+    [canWrite, load, onStatusChange]
   );
 
   const deleteCodigoSIE = useCallback(
@@ -284,9 +292,12 @@ export function useEtiquetado({
       onStatusChange("Eliminando código SIE...");
 
       try {
-        await api(`/api/etiquetado/codigos-sie/${encodeURIComponent(codigo)}?id=${encodeURIComponent(codigoSIEId)}`, {
-          method: "DELETE",
-        });
+        await api(
+          `/api/etiquetado/codigos-sie/${encodeURIComponent(codigo)}?id=${encodeURIComponent(codigoSIEId)}`,
+          {
+            method: "DELETE",
+          }
+        );
 
         onStatusChange("Código SIE eliminado.");
         await load();
@@ -294,7 +305,7 @@ export function useEtiquetado({
         onStatusChange(err instanceof Error ? err.message : "No se pudo eliminar el código SIE.");
       }
     },
-    [canWrite, load, onStatusChange],
+    [canWrite, load, onStatusChange]
   );
 
   const createCaja = useCallback(
@@ -307,11 +318,14 @@ export function useEtiquetado({
       onStatusChange("Registrando caja...");
 
       try {
-        const response = await api<{ ok: true; codigoDepositoGeneral: number }>("/api/etiquetado/cajas", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        });
+        const response = await api<{ ok: true; codigoDepositoGeneral: number }>(
+          "/api/etiquetado/cajas",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(input),
+          }
+        );
 
         onStatusChange(`Caja ${response.codigoDepositoGeneral} registrada.`);
         await load();
@@ -319,7 +333,7 @@ export function useEtiquetado({
         onStatusChange(err instanceof Error ? err.message : "No se pudo registrar la caja.");
       }
     },
-    [canWrite, load, onStatusChange],
+    [canWrite, load, onStatusChange]
   );
 
   const deleteCaja = useCallback(
@@ -342,14 +356,11 @@ export function useEtiquetado({
         onStatusChange(err instanceof Error ? err.message : "No se pudo eliminar la caja.");
       }
     },
-    [canWrite, load, onStatusChange],
+    [canWrite, load, onStatusChange]
   );
 
   const openEtiquetasPrint = useCallback(
-    (options: {
-      codigos?: number[];
-      orientacion?: "horizontal" | "vertical";
-    }) => {
+    (options: { codigos?: number[]; orientacion?: "horizontal" | "vertical" }) => {
       const params = new URLSearchParams();
 
       params.set("autoprint", "1");
@@ -359,7 +370,11 @@ export function useEtiquetado({
         params.set("cajas", options.codigos.join(","));
       }
 
-      const popup = window.open(`/etiquetas-cajas?${params.toString()}`, "_blank", "noopener,noreferrer");
+      const popup = window.open(
+        `/etiquetas-cajas?${params.toString()}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
 
       if (!popup) {
         onStatusChange("Permite ventanas emergentes para imprimir las etiquetas.");
@@ -368,14 +383,14 @@ export function useEtiquetado({
 
       return true;
     },
-    [onStatusChange],
+    [onStatusChange]
   );
 
   const printEtiquetaCaja = useCallback(
     (codigoDepositoGeneral: number, orientacion: "horizontal" | "vertical") => {
       openEtiquetasPrint({ codigos: [codigoDepositoGeneral], orientacion });
     },
-    [openEtiquetasPrint],
+    [openEtiquetasPrint]
   );
 
   const printTodasEtiquetas = useCallback(
@@ -385,7 +400,7 @@ export function useEtiquetado({
             (entry) =>
               Number.isInteger(entry.codigoDepositoGeneral) &&
               entry.codigoDepositoGeneral > 0 &&
-              (entry.orientacion === "horizontal" || entry.orientacion === "vertical"),
+              (entry.orientacion === "horizontal" || entry.orientacion === "vertical")
           )
         : [];
 
@@ -411,11 +426,11 @@ export function useEtiquetado({
 
       if (codigosHorizontal.length > 0 && codigosVertical.length > 0) {
         onStatusChange(
-          `Se abrieron 2 impresiones: ${codigosHorizontal.length} horizontal(es) y ${codigosVertical.length} vertical(es).`,
+          `Se abrieron 2 impresiones: ${codigosHorizontal.length} horizontal(es) y ${codigosVertical.length} vertical(es).`
         );
       }
     },
-    [openEtiquetasPrint, onStatusChange],
+    [openEtiquetasPrint, onStatusChange]
   );
 
   const printListadoCajas = useCallback(() => {
@@ -423,7 +438,11 @@ export function useEtiquetado({
 
     params.set("autoprint", "1");
 
-    const popup = window.open(`/listado-cajas?${params.toString()}`, "_blank", "noopener,noreferrer");
+    const popup = window.open(
+      `/listado-cajas?${params.toString()}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
 
     if (!popup) {
       onStatusChange("Permite ventanas emergentes para imprimir el listado de cajas.");

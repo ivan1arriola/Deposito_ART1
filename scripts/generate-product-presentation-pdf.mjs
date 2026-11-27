@@ -10,16 +10,16 @@ const MANUAL_ASSETS_DIR = path.join(ASSETS_DIR, "manual");
 
 // Colors
 const COLORS = {
-  primary: "#0f172a",    // Slate 900
-  secondary: "#334155",  // Slate 700
-  accent: "#059669",     // Emerald 600
-  text: "#1e293b",       // Slate 800
-  lightText: "#64748b",  // Slate 500
+  primary: "#0f172a", // Slate 900
+  secondary: "#334155", // Slate 700
+  accent: "#059669", // Emerald 600
+  text: "#1e293b", // Slate 800
+  lightText: "#64748b", // Slate 500
   background: "#f8fafc", // Slate 50
   white: "#ffffff",
-  border: "#e2e8f0",     // Slate 200
-  tip: "#0ea5e9",        // Sky 500
-  warning: "#f59e0b",    // Amber 500
+  border: "#e2e8f0", // Slate 200
+  tip: "#0ea5e9", // Sky 500
+  warning: "#f59e0b", // Amber 500
 };
 
 const PAGE_MARGIN = 50;
@@ -40,7 +40,7 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 
 const doc = new PDFDocument({
   size: "A4",
-  margin: 0, 
+  margin: 0,
   bufferPages: true,
   info: {
     Title: "Manual de Usuario - Deposito ART1",
@@ -58,25 +58,40 @@ doc.pipe(stream);
 function addHeader(titleText) {
   doc.save();
   doc.rect(0, 0, doc.page.width, HEADER_HEIGHT).fill(COLORS.background);
-  doc.fillColor(COLORS.lightText).font("Helvetica-Bold").fontSize(10).text("DEPÓSITO ART1 - MANUAL DE USUARIO", PAGE_MARGIN, 25);
-  doc.fillColor(COLORS.lightText).font("Helvetica").fontSize(10).text(titleText.toUpperCase(), PAGE_MARGIN, 25, {
-    align: "right",
-    width: doc.page.width - PAGE_MARGIN * 2,
-  });
+  doc
+    .fillColor(COLORS.lightText)
+    .font("Helvetica-Bold")
+    .fontSize(10)
+    .text("DEPÓSITO ART1 - MANUAL DE USUARIO", PAGE_MARGIN, 25);
+  doc
+    .fillColor(COLORS.lightText)
+    .font("Helvetica")
+    .fontSize(10)
+    .text(titleText.toUpperCase(), PAGE_MARGIN, 25, {
+      align: "right",
+      width: doc.page.width - PAGE_MARGIN * 2,
+    });
   doc.restore();
 }
 
 function addFooter(pageNum, totalPages) {
   const oldBottomMargin = doc.page.margins.bottom;
-  doc.page.margins.bottom = 0; 
+  doc.page.margins.bottom = 0;
   doc.save();
-  doc.rect(0, doc.page.height - FOOTER_HEIGHT, doc.page.width, FOOTER_HEIGHT).fill(COLORS.background);
+  doc
+    .rect(0, doc.page.height - FOOTER_HEIGHT, doc.page.width, FOOTER_HEIGHT)
+    .fill(COLORS.background);
   doc.fillColor(COLORS.lightText).font("Helvetica").fontSize(8);
   doc.text(`Página ${pageNum} de ${totalPages}`, PAGE_MARGIN, doc.page.height - 25);
-  doc.text("© 2026 Depósito ART1 - Confidencial para Uso Interno", PAGE_MARGIN, doc.page.height - 25, {
-    align: "right",
-    width: doc.page.width - PAGE_MARGIN * 2,
-  });
+  doc.text(
+    "© 2026 Depósito ART1 - Confidencial para Uso Interno",
+    PAGE_MARGIN,
+    doc.page.height - 25,
+    {
+      align: "right",
+      width: doc.page.width - PAGE_MARGIN * 2,
+    }
+  );
   doc.restore();
   doc.page.margins.bottom = oldBottomMargin;
 }
@@ -89,7 +104,12 @@ function resetContentPosition() {
 function h1(text) {
   doc.fillColor(COLORS.primary).font("Helvetica-Bold").fontSize(20).text(text);
   doc.moveDown(0.5);
-  doc.strokeColor(COLORS.accent).lineWidth(2).moveTo(doc.x, doc.y - 5).lineTo(doc.x + 40, doc.y - 5).stroke();
+  doc
+    .strokeColor(COLORS.accent)
+    .lineWidth(2)
+    .moveTo(doc.x, doc.y - 5)
+    .lineTo(doc.x + 40, doc.y - 5)
+    .stroke();
   doc.moveDown(0.5);
 }
 
@@ -99,11 +119,15 @@ function h2(text) {
 }
 
 function paragraph(text, options = {}) {
-  doc.fillColor(COLORS.text).font("Helvetica").fontSize(11).text(text, {
-    align: "justify",
-    lineGap: 2,
-    ...options,
-  });
+  doc
+    .fillColor(COLORS.text)
+    .font("Helvetica")
+    .fontSize(11)
+    .text(text, {
+      align: "justify",
+      lineGap: 2,
+      ...options,
+    });
   doc.moveDown(1);
 }
 
@@ -125,17 +149,25 @@ function infoBox(text, title = "NOTA", color = COLORS.accent) {
   const textX = startX + 15;
   const textWidth = boxWidth - 25;
   doc.save();
-  
+
   doc.fillColor(COLORS.text).font("Helvetica").fontSize(10);
   const textHeight = doc.heightOfString(text, { width: textWidth });
   const height = Math.max(40, textHeight + 30);
-  
+
   doc.rect(startX, startY, boxWidth, height).fill(COLORS.background);
   doc.rect(startX, startY, 4, height).fill(color);
-  
-  doc.fillColor(color).font("Helvetica-Bold").fontSize(9).text(title, textX, startY + 8);
-  doc.fillColor(COLORS.text).font("Helvetica").fontSize(10).text(text, textX, startY + 22, { width: textWidth });
-  
+
+  doc
+    .fillColor(color)
+    .font("Helvetica-Bold")
+    .fontSize(9)
+    .text(title, textX, startY + 8);
+  doc
+    .fillColor(COLORS.text)
+    .font("Helvetica")
+    .fontSize(10)
+    .text(text, textX, startY + 22, { width: textWidth });
+
   doc.restore();
   doc.y = startY + height + 15;
 }
@@ -156,7 +188,8 @@ function imageBox(imagePath, caption, width = 300) {
 
   let nextY = startY + renderHeight + 8;
   if (caption) {
-    doc.fillColor(COLORS.lightText)
+    doc
+      .fillColor(COLORS.lightText)
       .font("Helvetica-Oblique")
       .fontSize(9)
       .text(caption, PAGE_MARGIN, nextY, {
@@ -174,22 +207,34 @@ function imageBox(imagePath, caption, width = 300) {
 function renderCover() {
   const heroPath = path.join(MANUAL_ASSETS_DIR, "hero.png");
   const logoPath = path.join(ASSETS_DIR, "logo-deposito.png");
-  
+
   if (fs.existsSync(heroPath)) {
     doc.image(heroPath, 0, 0, { width: doc.page.width, height: doc.page.height });
   }
-  
+
   doc.save();
-  doc.rect(0, doc.page.height * 0.6, doc.page.width, doc.page.height * 0.4).fillOpacity(0.9).fill(COLORS.primary);
-  
+  doc
+    .rect(0, doc.page.height * 0.6, doc.page.width, doc.page.height * 0.4)
+    .fillOpacity(0.9)
+    .fill(COLORS.primary);
+
   doc.fillColor(COLORS.white).fillOpacity(1);
-  doc.font("Helvetica-Bold").fontSize(42).text("DEPÓSITO ART1", 50, doc.page.height * 0.65);
-  doc.font("Helvetica").fontSize(20).text("Manual de Usuario y Guía de Aprendizaje", 50, doc.page.height * 0.73);
-  
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(42)
+    .text("DEPÓSITO ART1", 50, doc.page.height * 0.65);
+  doc
+    .font("Helvetica")
+    .fontSize(20)
+    .text("Manual de Usuario y Guía de Aprendizaje", 50, doc.page.height * 0.73);
+
   doc.rect(50, doc.page.height * 0.78, 60, 4).fill(COLORS.accent);
-  
-  doc.fontSize(12).fillColor("#cbd5e1").text(`Version 2.1  |  ${dateLabel}`, 50, doc.page.height * 0.85);
-  
+
+  doc
+    .fontSize(12)
+    .fillColor("#cbd5e1")
+    .text(`Version 2.1  |  ${dateLabel}`, 50, doc.page.height * 0.85);
+
   if (fs.existsSync(logoPath)) {
     doc.image(logoPath, doc.page.width - 150, doc.page.height * 0.82, { width: 100 });
   }
@@ -204,21 +249,21 @@ function renderIntro() {
   paragraph(
     "Este manual ha sido diseñado para facilitar el aprendizaje y la operación diaria del sistema de gestión de depósitos. Nuestra plataforma centraliza la información crítica para asegurar que cada equipo, prenda y movimiento esté registrado con precisión."
   );
-  
+
   infoBox(
     "Este documento es de uso interno exclusivo. Asegúrese de mantener su sesión segura y no compartir sus credenciales de acceso.",
     "SEGURIDAD",
     COLORS.warning
   );
-  
+
   h2("Objetivos del Sistema");
   bulletList([
     "Estandarizar el registro de personal y tallas.",
     "Garantizar la trazabilidad total del stock.",
     "Agilizar la entrega y devolución de equipo mediante documentos automatizados.",
-    "Facilitar la toma de decisiones basada en datos reales de inventario."
+    "Facilitar la toma de decisiones basada en datos reales de inventario.",
   ]);
-  
+
   const inventoryPath = path.join(MANUAL_ASSETS_DIR, "inventory.png");
   imageBox(inventoryPath, "Figura 1: Representación del ecosistema de gestión del depósito.");
 }
@@ -231,24 +276,48 @@ function renderRoles() {
   paragraph(
     "El sistema utiliza un modelo de control de acceso basado en roles (RBAC) para garantizar que cada usuario tenga las herramientas necesarias según su responsabilidad administrativa."
   );
-  
+
   const roles = [
-    { name: "ADMIN (SISTEMA)", desc: "Control total del sistema, gestión de usuarios y acceso a auditoría." },
-    { name: "EDITOR (SISTEMA)", desc: "Operación diaria: altas, bajas, préstamos y edición de datos operativos." },
-    { name: "READ_ONLY (SISTEMA)", desc: "Consulta de reportes y estado de stock sin permisos de modificación." },
-    { name: "PERSONAL", desc: "Acceso individual para consultar su propia ficha y acciones personales habilitadas." }
+    {
+      name: "ADMIN (SISTEMA)",
+      desc: "Control total del sistema, gestión de usuarios y acceso a auditoría.",
+    },
+    {
+      name: "EDITOR (SISTEMA)",
+      desc: "Operación diaria: altas, bajas, préstamos y edición de datos operativos.",
+    },
+    {
+      name: "READ_ONLY (SISTEMA)",
+      desc: "Consulta de reportes y estado de stock sin permisos de modificación.",
+    },
+    {
+      name: "PERSONAL",
+      desc: "Acceso individual para consultar su propia ficha y acciones personales habilitadas.",
+    },
   ];
-  
+
   roles.forEach((role) => {
     const y = doc.y;
     doc.save();
-    doc.rect(50, y, doc.page.width - 100, 45).strokeColor(COLORS.border).lineWidth(1).stroke();
-    doc.fillColor(COLORS.primary).font("Helvetica-Bold").fontSize(11).text(role.name, 70, y + 10);
-    doc.fillColor(COLORS.text).font("Helvetica").fontSize(10).text(role.desc, 70, y + 25);
+    doc
+      .rect(50, y, doc.page.width - 100, 45)
+      .strokeColor(COLORS.border)
+      .lineWidth(1)
+      .stroke();
+    doc
+      .fillColor(COLORS.primary)
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(role.name, 70, y + 10);
+    doc
+      .fillColor(COLORS.text)
+      .font("Helvetica")
+      .fontSize(10)
+      .text(role.desc, 70, y + 25);
     doc.restore();
     doc.y = y + 55;
   });
-  
+
   doc.y += 10;
   h2("2.1 Matriz de permisos reales");
   paragraph(
@@ -307,18 +376,30 @@ function renderRoles() {
   const tableX = PAGE_MARGIN;
   const tableWidth = doc.page.width - PAGE_MARGIN * 2;
   const rowHeight = 22;
-  const colWidths = [tableWidth * 0.38, tableWidth * 0.155, tableWidth * 0.155, tableWidth * 0.155, tableWidth * 0.155];
+  const colWidths = [
+    tableWidth * 0.38,
+    tableWidth * 0.155,
+    tableWidth * 0.155,
+    tableWidth * 0.155,
+    tableWidth * 0.155,
+  ];
   const headers = ["Permiso", "ADMIN", "EDITOR", "READ_ONLY", "PERSONAL"];
   const tableY = doc.y;
 
   doc.save();
   headers.forEach((header, index) => {
     const x = tableX + colWidths.slice(0, index).reduce((sum, n) => sum + n, 0);
-    doc.rect(x, tableY, colWidths[index], rowHeight).fillAndStroke(COLORS.background, COLORS.border);
-    doc.fillColor(COLORS.secondary).font("Helvetica-Bold").fontSize(9).text(header, x + 6, tableY + 7, {
-      width: colWidths[index] - 12,
-      align: index === 0 ? "left" : "center",
-    });
+    doc
+      .rect(x, tableY, colWidths[index], rowHeight)
+      .fillAndStroke(COLORS.background, COLORS.border);
+    doc
+      .fillColor(COLORS.secondary)
+      .font("Helvetica-Bold")
+      .fontSize(9)
+      .text(header, x + 6, tableY + 7, {
+        width: colWidths[index] - 12,
+        align: index === 0 ? "left" : "center",
+      });
   });
 
   permissionLabels.forEach((permission, rowIndex) => {
@@ -335,10 +416,14 @@ function renderRoles() {
     values.forEach((value, colIndex) => {
       const x = tableX + colWidths.slice(0, colIndex).reduce((sum, n) => sum + n, 0);
       doc.rect(x, y, colWidths[colIndex], rowHeight).fillAndStroke(bg, COLORS.border);
-      doc.fillColor(COLORS.text).font(colIndex === 0 ? "Helvetica" : "Helvetica-Bold").fontSize(9).text(value, x + 6, y + 7, {
-        width: colWidths[colIndex] - 12,
-        align: colIndex === 0 ? "left" : "center",
-      });
+      doc
+        .fillColor(COLORS.text)
+        .font(colIndex === 0 ? "Helvetica" : "Helvetica-Bold")
+        .fontSize(9)
+        .text(value, x + 6, y + 7, {
+          width: colWidths[colIndex] - 12,
+          align: colIndex === 0 ? "left" : "center",
+        });
     });
   });
   doc.restore();
@@ -355,18 +440,18 @@ function renderModules() {
   addHeader("Módulos Funcionales");
   resetContentPosition();
   h1("3. Guía de Operación Detallada");
-  
+
   h2("3.1 Gestión de Personal y Tallas");
   paragraph(
     "La base del sistema es el registro preciso del personal. Cada individuo tiene una ficha donde se centralizan sus tallas de equipo y su historial de movimientos."
   );
-  
+
   const sizesPath = path.join(MANUAL_ASSETS_DIR, "sizes.png");
   imageBox(sizesPath, "Figura 2: Registro de tallas y personal.", 250);
-  
+
   bulletList([
     "Actualice las tallas periódicamente para evitar errores en las Hojas de Entrega.",
-    "Utilice el campo de 'Observaciones' para detalles médicos o excepciones de equipo."
+    "Utilice el campo de 'Observaciones' para detalles médicos o excepciones de equipo.",
   ]);
 
   doc.addPage({ margin: PAGE_MARGIN });
@@ -381,9 +466,21 @@ function renderModules() {
   imageBox(reportsPath, "Figura 3: Documentación institucional generada por el sistema.", 200);
 
   doc.save();
-  doc.font("Helvetica-Bold").text("Hoja de Entrega Individual:", { continued: true }).font("Helvetica").text(" Es el documento legal de compromiso. Registra qué recibió el soldado, en qué fecha y bajo qué responsabilidad. Debe imprimirse y firmarse en cada entrega física.");
+  doc
+    .font("Helvetica-Bold")
+    .text("Hoja de Entrega Individual:", { continued: true })
+    .font("Helvetica")
+    .text(
+      " Es el documento legal de compromiso. Registra qué recibió el soldado, en qué fecha y bajo qué responsabilidad. Debe imprimirse y firmarse en cada entrega física."
+    );
   doc.moveDown(0.5);
-  doc.font("Helvetica-Bold").text("Hoja Matriz:", { continued: true }).font("Helvetica").text(" Una vista consolidada por batería que permite al administrador ver de un vistazo qué tallas predominan y quién tiene equipo pendiente. Es fundamental para la planificación de compras y logística.");
+  doc
+    .font("Helvetica-Bold")
+    .text("Hoja Matriz:", { continued: true })
+    .font("Helvetica")
+    .text(
+      " Una vista consolidada por batería que permite al administrador ver de un vistazo qué tallas predominan y quién tiene equipo pendiente. Es fundamental para la planificación de compras y logística."
+    );
   doc.restore();
   doc.moveDown(1);
 
@@ -391,11 +488,11 @@ function renderModules() {
   paragraph(
     "El módulo de préstamos gestiona el equipo que sale del depósito de forma temporal (ej: para una misión o desfile)."
   );
-  
+
   bulletList([
     "Recibo de Préstamo: Genera un comprobante con un código único de seguimiento.",
     "Trazabilidad: El sistema asocia el código al equipo y al personal, facilitando la devolución.",
-    "Estado de Equipo: Permite registrar si el equipo vuelve en las mismas condiciones."
+    "Estado de Equipo: Permite registrar si el equipo vuelve en las mismas condiciones.",
   ]);
 
   infoBox(
@@ -409,15 +506,27 @@ function renderFullFunctionalMap() {
   addHeader("Mapa de Funcionalidades");
   resetContentPosition();
   h1("4. Mapa de Funcionalidades");
-  
+
   const functions = [
     { mod: "Personal", desc: "Gestión de fichas, tallas e historial individual." },
     { mod: "Stock", desc: "Control de existencias reales, altas, bajas y movimientos internos." },
-    { mod: "Préstamos", desc: "Registro de salidas temporales, recibos con código y control de devoluciones." },
+    {
+      mod: "Préstamos",
+      desc: "Registro de salidas temporales, recibos con código y control de devoluciones.",
+    },
     { mod: "Etiquetado", desc: "Generación de códigos SIE y etiquetas para cajas y estanterías." },
-    { mod: "Resúmenes", desc: "Paneles de tallas por batería y grupo jerárquico para análisis rápido." },
-    { mod: "Configuración", desc: "Administración de grados, firmas institucionales y permisos de usuario." },
-    { mod: "Auditoría", desc: "Registro de quién hizo qué y cuándo, garantizando transparencia total." }
+    {
+      mod: "Resúmenes",
+      desc: "Paneles de tallas por batería y grupo jerárquico para análisis rápido.",
+    },
+    {
+      mod: "Configuración",
+      desc: "Administración de grados, firmas institucionales y permisos de usuario.",
+    },
+    {
+      mod: "Auditoría",
+      desc: "Registro de quién hizo qué y cuándo, garantizando transparencia total.",
+    },
   ];
 
   functions.forEach((f) => {
@@ -472,20 +581,35 @@ function renderUserDetailedGuide() {
   doc.save();
   doc.font("Helvetica-Bold").fillColor(COLORS.primary).text("Error: ");
   doc.font("Helvetica").fillColor(COLORS.text).text("No encuentro a una persona por nombre.");
-  doc.font("Helvetica-Bold").fillColor(COLORS.secondary).text("Acción sugerida: ", { continued: true });
+  doc
+    .font("Helvetica-Bold")
+    .fillColor(COLORS.secondary)
+    .text("Acción sugerida: ", { continued: true });
   doc.font("Helvetica").fillColor(COLORS.text).text("buscar por CI o por primer apellido.");
   doc.moveDown(0.6);
 
   doc.font("Helvetica-Bold").fillColor(COLORS.primary).text("Error: ");
   doc.font("Helvetica").fillColor(COLORS.text).text("El PDF sale incompleto o con datos antiguos.");
-  doc.font("Helvetica-Bold").fillColor(COLORS.secondary).text("Acción sugerida: ", { continued: true });
-  doc.font("Helvetica").fillColor(COLORS.text).text("recargar la vista y volver a generar el documento.");
+  doc
+    .font("Helvetica-Bold")
+    .fillColor(COLORS.secondary)
+    .text("Acción sugerida: ", { continued: true });
+  doc
+    .font("Helvetica")
+    .fillColor(COLORS.text)
+    .text("recargar la vista y volver a generar el documento.");
   doc.moveDown(0.6);
 
   doc.font("Helvetica-Bold").fillColor(COLORS.primary).text("Error: ");
   doc.font("Helvetica").fillColor(COLORS.text).text("No permite confirmar devolución.");
-  doc.font("Helvetica-Bold").fillColor(COLORS.secondary).text("Acción sugerida: ", { continued: true });
-  doc.font("Helvetica").fillColor(COLORS.text).text("completar estado y comentario en todos los ítems pendientes.");
+  doc
+    .font("Helvetica-Bold")
+    .fillColor(COLORS.secondary)
+    .text("Acción sugerida: ", { continued: true });
+  doc
+    .font("Helvetica")
+    .fillColor(COLORS.text)
+    .text("completar estado y comentario en todos los ítems pendientes.");
   doc.restore();
   doc.moveDown(1);
 
@@ -501,13 +625,32 @@ function renderUserDetailedGuide() {
   h2("5.6 Preguntas frecuentes");
   doc.save();
   doc.font("Helvetica-Bold").fillColor(COLORS.primary).text("¿Qué hago si un ítem volvió dañado?");
-  doc.font("Helvetica").fillColor(COLORS.text).text("Registre el estado real (REGULAR o MALO) y detalle el daño en comentario de devolución.");
+  doc
+    .font("Helvetica")
+    .fillColor(COLORS.text)
+    .text(
+      "Registre el estado real (REGULAR o MALO) y detalle el daño en comentario de devolución."
+    );
   doc.moveDown(0.5);
-  doc.font("Helvetica-Bold").fillColor(COLORS.primary).text("¿Puedo editar un préstamo ya devuelto?");
-  doc.font("Helvetica").fillColor(COLORS.text).text("No. Debe revisarse en historial y, si corresponde, generar una nueva operación administrativa.");
+  doc
+    .font("Helvetica-Bold")
+    .fillColor(COLORS.primary)
+    .text("¿Puedo editar un préstamo ya devuelto?");
+  doc
+    .font("Helvetica")
+    .fillColor(COLORS.text)
+    .text(
+      "No. Debe revisarse en historial y, si corresponde, generar una nueva operación administrativa."
+    );
   doc.moveDown(0.5);
-  doc.font("Helvetica-Bold").fillColor(COLORS.primary).text("¿Quién puede cambiar permisos de usuarios?");
-  doc.font("Helvetica").fillColor(COLORS.text).text("Solo perfiles ADMIN, bajo autorización de la cadena de mando correspondiente.");
+  doc
+    .font("Helvetica-Bold")
+    .fillColor(COLORS.primary)
+    .text("¿Quién puede cambiar permisos de usuarios?");
+  doc
+    .font("Helvetica")
+    .fillColor(COLORS.text)
+    .text("Solo perfiles ADMIN, bajo autorización de la cadena de mando correspondiente.");
   doc.restore();
 }
 
@@ -563,37 +706,49 @@ function renderPractical() {
   addHeader("Buenas Prácticas");
   resetContentPosition();
   h1("7. Flujo de Trabajo Sugerido");
-  
+
   const steps = [
     "Inicio: Verificar alertas en el Dashboard.",
     "Operativa: Registrar movimientos (Entrega/Préstamo) en tiempo real.",
     "Documentación: Emitir y firmar Hojas de Entrega o Recibos.",
     "Control: Validar devoluciones contra el código del recibo.",
-    "Cierre: Revisar el historial de auditoría para asegurar consistencia."
+    "Cierre: Revisar el historial de auditoría para asegurar consistencia.",
   ];
-  
+
   steps.forEach((step, i) => {
     doc.save();
     doc.circle(70, doc.y + 10, 12).fill(COLORS.primary);
-    doc.fillColor(COLORS.white).font("Helvetica-Bold").fontSize(10).text(`${i + 1}`, 67, doc.y + 5);
-    doc.fillColor(COLORS.text).font("Helvetica").fontSize(11).text(step, 95, doc.y + 3, { width: doc.page.width - 150 });
+    doc
+      .fillColor(COLORS.white)
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .text(`${i + 1}`, 67, doc.y + 5);
+    doc
+      .fillColor(COLORS.text)
+      .font("Helvetica")
+      .fontSize(11)
+      .text(step, 95, doc.y + 3, { width: doc.page.width - 150 });
     doc.restore();
     doc.y += 35;
   });
-  
+
   doc.y += 20;
   h1("8. Conclusión");
   paragraph(
     "El Depósito ART1 garantiza que el patrimonio institucional esté protegido mediante una trazabilidad rigurosa y una documentación estandarizada."
   );
-  
+
   doc.moveDown(2);
-  doc.fillColor(COLORS.lightText).font("Helvetica-Bold").fontSize(12).text("¡Gracias por su compromiso con la excelencia operativa!", { align: "center" });
+  doc
+    .fillColor(COLORS.lightText)
+    .font("Helvetica-Bold")
+    .fontSize(12)
+    .text("¡Gracias por su compromiso con la excelencia operativa!", { align: "center" });
 }
 
 async function main() {
   console.log("Iniciando generación de manual expandido...");
-  
+
   renderCover();
   renderIntro();
   renderRoles();
@@ -601,7 +756,7 @@ async function main() {
   renderFullFunctionalMap();
   renderUserDetailedGuide();
   renderPractical();
-  
+
   const pages = doc.bufferedPageRange();
   for (let i = 0; i < pages.count; i++) {
     doc.switchToPage(i);
@@ -609,9 +764,9 @@ async function main() {
       addFooter(i, pages.count - 1);
     }
   }
-  
+
   doc.end();
-  
+
   stream.on("finish", () => {
     console.log(`Manual expandido generado exitosamente: ${OUTPUT_FILE}`);
   });

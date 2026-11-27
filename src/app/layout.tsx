@@ -23,7 +23,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Sistema de Depósito General - Artilleria 1",
-  description: "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
+  description:
+    'Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 "Brig. Gral. Manuel Oribe"',
   manifest: "/manifest.webmanifest",
   applicationName: "Sistema de Depósito General - Artilleria 1",
   appleWebApp: {
@@ -45,7 +46,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Sistema de Depósito General - Artilleria 1",
-    description: "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
+    description:
+      'Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 "Brig. Gral. Manuel Oribe"',
     type: "website",
     locale: "es_UY",
     siteName: "Sistema de Depósito General - Artilleria 1",
@@ -53,7 +55,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "Sistema de Depósito General - Artilleria 1",
-    description: "Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 \"Brig. Gral. Manuel Oribe\"",
+    description:
+      'Sistema de gestion de deposito general del Grupo de Artilleria 105mm No. 1 "Brig. Gral. Manuel Oribe"',
   },
   robots: {
     index: false,
@@ -79,7 +82,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es-UY" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
+      >
         <AuthProvider>
           <MaterialThemeProvider>
             <PwaBootstrap />

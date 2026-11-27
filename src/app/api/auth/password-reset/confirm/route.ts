@@ -59,7 +59,10 @@ export async function POST(request: Request) {
       const currentMail = normalizeEmailAddress(usuario.mailReferencia);
       const snapshotMail = normalizeEmailAddress(tokenRecord.mailSnapshot);
       if (currentMail !== snapshotMail) {
-        return NextResponse.json({ error: "El correo del usuario fue modificado. Solicita un nuevo enlace." }, { status: 400 });
+        return NextResponse.json(
+          { error: "El correo del usuario fue modificado. Solicita un nuevo enlace." },
+          { status: 400 }
+        );
       }
     }
 

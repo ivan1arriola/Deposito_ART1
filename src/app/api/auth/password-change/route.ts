@@ -28,7 +28,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
   if (!hasPermission(user.rol, "change_own_password", user.accountType)) {
-    return NextResponse.json({ error: "No autorizado para cambiar credenciales." }, { status: 403 });
+    return NextResponse.json(
+      { error: "No autorizado para cambiar credenciales." },
+      { status: 403 }
+    );
   }
 
   const body = await request.json();
@@ -38,10 +41,17 @@ export async function POST(request: Request) {
 
   if (user.accountType === "PERSONAL") {
     if (!user.personalCi) {
-      return NextResponse.json({ error: "No se pudo identificar la cuenta de personal." }, { status: 400 });
+      return NextResponse.json(
+        { error: "No se pudo identificar la cuenta de personal." },
+        { status: 400 }
+      );
     }
 
-    const result = await changePersonalPassword(user.personalCi, body.currentPassword, body.newPassword);
+    const result = await changePersonalPassword(
+      user.personalCi,
+      body.currentPassword,
+      body.newPassword
+    );
     if (!result.ok) {
       if (result.reason === "INVALID_CURRENT_PASSWORD") {
         return NextResponse.json({ error: "Contraseña actual invalida." }, { status: 400 });

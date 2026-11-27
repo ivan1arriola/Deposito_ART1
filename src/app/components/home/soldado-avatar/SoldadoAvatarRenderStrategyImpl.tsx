@@ -15,7 +15,10 @@ class SoldadoAvatarStrategyFactory {
   constructor(private readonly strategies: SoldadoAvatarRenderStrategy[]) {}
 
   resolve(context: SoldadoAvatarRenderContext): SoldadoAvatarRenderStrategy {
-    return this.strategies.find((strategy) => strategy.canHandle(context)) ?? defaultSoldadoAvatarRenderStrategy;
+    return (
+      this.strategies.find((strategy) => strategy.canHandle(context)) ??
+      defaultSoldadoAvatarRenderStrategy
+    );
   }
 }
 

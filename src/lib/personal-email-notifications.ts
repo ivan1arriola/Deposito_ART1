@@ -27,7 +27,7 @@ function escapeHtml(value: string) {
 }
 
 export async function sendPersonalMovementEmailNotification(
-  input: PersonalEmailNotificationInput,
+  input: PersonalEmailNotificationInput
 ): Promise<PersonalEmailNotificationResult> {
   const target = await getPersonalNotificationTarget(input.ci);
   if (!target) return { sent: false, reason: "NOT_FOUND" };
@@ -43,15 +43,13 @@ export async function sendPersonalMovementEmailNotification(
 
   const baseUrl = getAppBaseUrl(input.request);
   const portalUrl = `${baseUrl}${input.portalPath ?? "/"}`;
-  const detailLines = (input.detailLines ?? []).map((line) => line.trim()).filter((line) => line !== "");
+  const detailLines = (input.detailLines ?? [])
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
   const actorLabel = input.actorLabel?.trim() || null;
 
   const greetingName = `${target.gradoAbreviacion} ${target.nombreCompleto}`.trim();
-  const textSections: string[] = [
-    `Hola ${greetingName},`,
-    "",
-    input.headline.trim(),
-  ];
+  const textSections: string[] = [`Hola ${greetingName},`, "", input.headline.trim()];
 
   if (detailLines.length > 0) {
     textSections.push("", "Detalle:");
@@ -70,7 +68,9 @@ export async function sendPersonalMovementEmailNotification(
     detailLines.length > 0
       ? `<p><strong>Detalle:</strong></p><ul>${detailLines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`
       : "";
-  const htmlActor = actorLabel ? `<p><strong>Registrado por:</strong> ${escapeHtml(actorLabel)}</p>` : "";
+  const htmlActor = actorLabel
+    ? `<p><strong>Registrado por:</strong> ${escapeHtml(actorLabel)}</p>`
+    : "";
 
   await sendMail({
     to: email,
@@ -87,4 +87,3 @@ export async function sendPersonalMovementEmailNotification(
 
   return { sent: true, email };
 }
-
