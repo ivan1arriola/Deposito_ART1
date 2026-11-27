@@ -329,7 +329,7 @@ export function MovimientosPorEquipoView({
     <section className="mt-6 space-y-4">
       {!activeItem ? (
         <article className="ej-card min-h-[calc(100dvh-11.5rem)] rounded-2xl p-4 flex flex-col">
-          <div className="flex flex-wrap equipos-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold text-stone-900">Movimientos por equipo</h2>
               <p className="mt-1 text-sm text-stone-600">
@@ -356,7 +356,7 @@ export function MovimientosPorEquipoView({
             </button>
           </div>
 
-          <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:equipos-end">
+          <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
             <label className="text-sm text-stone-700">
               Buscar equipo
               <input
@@ -405,7 +405,7 @@ export function MovimientosPorEquipoView({
                 {filteredCatalogItems.map((equipo, index) => (
                   <li
                     key={equipo.equipoId}
-                    className={`flex flex-wrap equipos-center justify-between gap-2 px-3 py-2 ${
+                    className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${
                       index % 2 === 0 ? "bg-white" : "bg-stone-50/70"
                     }`}
                   >
@@ -447,7 +447,7 @@ export function MovimientosPorEquipoView({
       {activeItem ? (
         <>
           <article className="ej-card rounded-2xl p-4">
-            <div className="flex flex-wrap equipos-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-stone-900">
                   Movimientos del equipo seleccionado
@@ -509,7 +509,7 @@ export function MovimientosPorEquipoView({
               </div>
             </div>
 
-            <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,220px)_minmax(0,220px)] md:equipos-end">
+            <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,220px)_minmax(0,220px)] md:items-end">
               <label className="text-sm text-stone-700">
                 Buscar
                 <input

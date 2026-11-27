@@ -44,7 +44,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap equipos-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">
               Resumen de equipo en baterías
@@ -95,7 +95,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
 
       {data ? (
         <article className="ej-card rounded-2xl p-4">
-          <div className="mb-4 flex flex-wrap equipos-end justify-between gap-2">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
             <div className="flex-1 min-w-[280px]">
               <h3 className="text-base font-semibold text-stone-900">
                 Total de equipo en baterías según hojas de entrega
@@ -129,7 +129,7 @@ export function EquipoResumenView({ data, loading, error, onReload }: EquipoResu
                 key={`mobile-${row.equipoId}`}
                 className="rounded-xl border border-stone-200 bg-stone-50 p-3"
               >
-                <div className="flex equipos-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2">
                   <h4 className="text-sm font-semibold text-stone-900">{row.nombre}</h4>
                   <span className="inline-flex min-w-[3rem] justify-center rounded-full bg-emerald-100 px-2.5 py-1 text-sm font-bold text-emerald-800">
                     {row.totalUnidad}

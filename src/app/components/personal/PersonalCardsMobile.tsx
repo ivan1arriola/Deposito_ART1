@@ -56,7 +56,7 @@ export function PersonalCardsMobile({
                 : "border-[rgba(172,72,58,0.3)] bg-[linear-gradient(180deg,rgba(252,240,236,0.96)_0%,rgba(241,220,212,0.94)_100%)]"
             }`}
           >
-            <div className="flex equipos-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p
                   className={`text-xs font-mono ${ciValida ? "text-stone-600" : "font-semibold text-red-700"}`}

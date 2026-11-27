@@ -9,6 +9,11 @@ import { isValidUruguayanCi } from "@/lib/ci";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
 import {
+  applyMovimientoArticulosDelta,
+  parseArticulosPayload,
+  type ArticuloMovimientoInput,
+} from "@/lib/movimiento-articulos";
+import {
   MOVIMIENTO_TIPO_ASIGNACION,
   MOVIMIENTO_TIPO_DEVOLUCION,
   MOVIMIENTO_TIPO_ENTREGA,
@@ -51,7 +56,8 @@ type MovimientoPayload = {
   fecha?: string;
   tipo: TipoMovimiento | string;
   comentarios?: string;
-  equipos: MovimientoItemPayload[];
+  equipos?: MovimientoItemPayload[];
+  articulos?: Array<{ articuloId: number | string; cantidad: number | string }>;
 };
 
 type MovimientoRecintoClase = "INTERNO" | "EXTERNO";
@@ -330,8 +336,12 @@ function isValidPayload(body: unknown): body is MovimientoPayload {
   const destinatarioPayload = parseDestinatarioPayload(candidate);
   if (!tipo || !destinatarioPayload) return false;
   if (!validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload)) return false;
-  if (!Array.isArray(candidate.equipos) || candidate.equipos.length === 0) return false;
-  return true;
+  const hasEquipos = Array.isArray(candidate.equipos) && candidate.equipos.length > 0;
+  const hasArticulos = Array.isArray(candidate.articulos) && candidate.articulos.length > 0;
+  if (tipo === MOVIMIENTO_TIPO_ASIGNACION) {
+    return hasEquipos || hasArticulos;
+  }
+  return hasEquipos;
 }
 
 export async function GET(req: Request) {
@@ -428,6 +438,14 @@ export async function GET(req: Request) {
         include: { equipo: true },
         orderBy: { equipo: { ordenPdf: "asc" } },
       },
+      articulos: {
+        include: {
+          articulo: {
+            select: { articuloId: true, nombre: true, tipo: true },
+          },
+        },
+        orderBy: { articulo: { nombre: "asc" } },
+      },
     },
     orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
     take: limit,
@@ -506,11 +524,19 @@ export async function GET(req: Request) {
         fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
         tipo: movimiento.tipo,
         afectaStock: true,
+        anulado: Boolean(movimiento.anulado),
+        anuladoAt: movimiento.anuladoAt ? formatDateTimeForDisplay(movimiento.anuladoAt) : null,
         comentarios: movimiento.observaciones,
         createdAt: formatDateTimeForDisplay(movimiento.createdAt),
         equipos: movimiento.equipos.map((detail) => ({
           equipoId: detail.equipoId.toString(),
           nombre: detail.equipo.nombre,
+          cantidad: detail.cantidad,
+        })),
+        articulos: (movimiento.articulos ?? []).map((detail) => ({
+          articuloId: detail.articuloId,
+          nombre: detail.articulo.nombre,
+          tipo: detail.articulo.tipo,
           cantidad: detail.cantidad,
         })),
       };
@@ -554,7 +580,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
-  const parsedEquipos = body.equipos
+  const rawEquipos = Array.isArray(body.equipos) ? body.equipos : [];
+  const parsedEquipos = rawEquipos
     .map((equipo) => ({
       equipoId: parseBigIntId(equipo.equipoId),
       cantidad: parseCantidad(equipo.cantidad),
@@ -566,7 +593,23 @@ export async function POST(req: Request) {
     comentario: string;
   }>;
 
-  if (parsedEquipos.length === 0) {
+  const parsedArticulosResult = parseArticulosPayload(body.articulos);
+  if (!parsedArticulosResult.ok) {
+    return NextResponse.json({ error: parsedArticulosResult.error }, { status: 400 });
+  }
+  const parsedArticulos: ArticuloMovimientoInput[] = parsedArticulosResult.items;
+
+  if (parsedArticulos.length > 0 && tipo !== MOVIMIENTO_TIPO_ASIGNACION) {
+    return NextResponse.json(
+      { error: "Solo las asignaciones permiten incluir artículos." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    parsedEquipos.length === 0 &&
+    !(tipo === MOVIMIENTO_TIPO_ASIGNACION && parsedArticulos.length > 0)
+  ) {
     return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
   }
 
@@ -607,10 +650,12 @@ export async function POST(req: Request) {
           },
         })
       : Promise.resolve([]),
-    prisma.equipo.findMany({
-      where: { equipoId: { in: equipoIds } },
-      select: { equipoId: true, nombre: true },
-    }),
+    equipoIds.length > 0
+      ? prisma.equipo.findMany({
+          where: { equipoId: { in: equipoIds } },
+          select: { equipoId: true, nombre: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   const personalByCi = new Map(
@@ -681,16 +726,63 @@ export async function POST(req: Request) {
           },
         });
 
-        await tx.movimientoEquipo.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(
-            ([equipoId, { cantidad, comentario }]) => ({
-              movimientoId: movimiento.movimientoId,
-              equipoId: BigInt(equipoId),
-              cantidad,
-              comentarioEntrega: comentario || null,
-            })
-          ),
-        });
+        if (dedupedEquipos.size > 0) {
+          await tx.movimientoEquipo.createMany({
+            data: Array.from(dedupedEquipos.entries()).map(
+              ([equipoId, { cantidad, comentario }]) => ({
+                movimientoId: movimiento.movimientoId,
+                equipoId: BigInt(equipoId),
+                cantidad,
+                comentarioEntrega: comentario || null,
+              })
+            ),
+          });
+        }
+
+        const articulosDetallados =
+          parsedArticulos.length > 0
+            ? await applyMovimientoArticulosDelta(
+                tx,
+                movimiento.movimientoId,
+                [],
+                parsedArticulos,
+                comentarios
+                  ? `Asignación a ${destinatarioPayload.recintoNombre}: ${comentarios}`
+                  : `Asignación a ${destinatarioPayload.recintoNombre}`
+              )
+            : [];
+
+        if (parsedArticulos.length > 0) {
+          await tx.auditoria.create({
+            data: {
+              usuarioId: auth.user.usuarioId,
+              accion: "CREATE",
+              entidad: "REGISTRO",
+              entidadId: movimiento.movimientoId.toString(),
+              detalle: {
+                evento: "MOVIMIENTO_ASIGNACION_RECINTO",
+                destinatarioTipo: "RECINTO",
+                recinto: buildRecintoAuditDetail({
+                  clase: destinatarioPayload.recintoClase,
+                  nombre: destinatarioPayload.recintoNombre,
+                  responsable: destinatarioPayload.recintoResponsable,
+                }),
+                tipo,
+                afectaStock,
+                fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
+                comentarios,
+                totalEquipos: itemsDetallados.length,
+                totalUnidades,
+                totalArticulos: articulosDetallados.length,
+                articulos: articulosDetallados,
+                totalDestinatarios: 1,
+                equipos: itemsDetallados,
+                ip: requestMeta.ip,
+                userAgent: requestMeta.userAgent,
+              },
+            },
+          });
+        }
 
         created.push({ movimientoId: movimiento.movimientoId, ci: null });
         return created;
@@ -732,16 +824,59 @@ export async function POST(req: Request) {
           },
         });
 
-        await tx.movimientoEquipo.createMany({
-          data: Array.from(dedupedEquipos.entries()).map(
-            ([equipoId, { cantidad, comentario }]) => ({
-              movimientoId: movimiento.movimientoId,
-              equipoId: BigInt(equipoId),
-              cantidad,
-              comentarioEntrega: comentario || null,
-            })
-          ),
-        });
+        if (dedupedEquipos.size > 0) {
+          await tx.movimientoEquipo.createMany({
+            data: Array.from(dedupedEquipos.entries()).map(
+              ([equipoId, { cantidad, comentario }]) => ({
+                movimientoId: movimiento.movimientoId,
+                equipoId: BigInt(equipoId),
+                cantidad,
+                comentarioEntrega: comentario || null,
+              })
+            ),
+          });
+        }
+
+        const articulosDetallados =
+          parsedArticulos.length > 0
+            ? await applyMovimientoArticulosDelta(
+                tx,
+                movimiento.movimientoId,
+                [],
+                parsedArticulos,
+                comentarios
+                  ? `Asignación externa (${destinatarioPayload.externo.unidadDestino}): ${comentarios}`
+                  : `Asignación externa (${destinatarioPayload.externo.unidadDestino})`
+              )
+            : [];
+
+        if (parsedArticulos.length > 0) {
+          await tx.auditoria.create({
+            data: {
+              usuarioId: auth.user.usuarioId,
+              accion: "CREATE",
+              entidad: "REGISTRO",
+              entidadId: movimiento.movimientoId.toString(),
+              detalle: {
+                evento: "MOVIMIENTO_ASIGNACION_EXTERNO",
+                destinatarioTipo: "EXTERNO",
+                externo: buildExternoAuditDetail(destinatarioPayload),
+                tipo,
+                afectaStock,
+                fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
+                comentarios,
+                totalEquipos: itemsDetallados.length,
+                totalUnidades,
+                totalArticulos: articulosDetallados.length,
+                articulos: articulosDetallados,
+                totalDestinatarios: 1,
+                equipos: itemsDetallados,
+                ip: requestMeta.ip,
+                userAgent: requestMeta.userAgent,
+              },
+            },
+          });
+        }
 
         created.push({ movimientoId: movimiento.movimientoId, ci: null });
         return created;
@@ -784,55 +919,59 @@ export async function POST(req: Request) {
     });
 
     if (destinatarioPayload.destinatarioTipo === "RECINTO") {
-      const createdMovimiento = createdMovimientos[0];
-      await logAudit({
-        usuarioId: auth.user.usuarioId,
-        accion: "CREATE",
-        entidad: "REGISTRO",
-        entidadId: createdMovimiento.movimientoId.toString(),
-        detalle: {
-          evento: "MOVIMIENTO_ASIGNACION_RECINTO",
-          destinatarioTipo: "RECINTO",
-          recinto: buildRecintoAuditDetail({
-            clase: destinatarioPayload.recintoClase,
-            nombre: destinatarioPayload.recintoNombre,
-            responsable: destinatarioPayload.recintoResponsable,
-          }),
-          tipo,
-          afectaStock,
-          fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
-          comentarios,
-          totalEquipos: itemsDetallados.length,
-          totalUnidades,
-          totalDestinatarios: 1,
-          equipos: itemsDetallados,
-          ip: requestMeta.ip,
-          userAgent: requestMeta.userAgent,
-        },
-      });
+      if (parsedArticulos.length === 0) {
+        const createdMovimiento = createdMovimientos[0];
+        await logAudit({
+          usuarioId: auth.user.usuarioId,
+          accion: "CREATE",
+          entidad: "REGISTRO",
+          entidadId: createdMovimiento.movimientoId.toString(),
+          detalle: {
+            evento: "MOVIMIENTO_ASIGNACION_RECINTO",
+            destinatarioTipo: "RECINTO",
+            recinto: buildRecintoAuditDetail({
+              clase: destinatarioPayload.recintoClase,
+              nombre: destinatarioPayload.recintoNombre,
+              responsable: destinatarioPayload.recintoResponsable,
+            }),
+            tipo,
+            afectaStock,
+            fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
+            comentarios,
+            totalEquipos: itemsDetallados.length,
+            totalUnidades,
+            totalDestinatarios: 1,
+            equipos: itemsDetallados,
+            ip: requestMeta.ip,
+            userAgent: requestMeta.userAgent,
+          },
+        });
+      }
     } else if (destinatarioPayload.destinatarioTipo === "EXTERNO") {
-      const createdMovimiento = createdMovimientos[0];
-      await logAudit({
-        usuarioId: auth.user.usuarioId,
-        accion: "CREATE",
-        entidad: "REGISTRO",
-        entidadId: createdMovimiento.movimientoId.toString(),
-        detalle: {
-          evento: "MOVIMIENTO_ASIGNACION_EXTERNO",
-          destinatarioTipo: "EXTERNO",
-          externo: buildExternoAuditDetail(destinatarioPayload),
-          tipo,
-          afectaStock,
-          fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
-          comentarios,
-          totalEquipos: itemsDetallados.length,
-          totalUnidades,
-          totalDestinatarios: 1,
-          equipos: itemsDetallados,
-          ip: requestMeta.ip,
-          userAgent: requestMeta.userAgent,
-        },
-      });
+      if (parsedArticulos.length === 0) {
+        const createdMovimiento = createdMovimientos[0];
+        await logAudit({
+          usuarioId: auth.user.usuarioId,
+          accion: "CREATE",
+          entidad: "REGISTRO",
+          entidadId: createdMovimiento.movimientoId.toString(),
+          detalle: {
+            evento: "MOVIMIENTO_ASIGNACION_EXTERNO",
+            destinatarioTipo: "EXTERNO",
+            externo: buildExternoAuditDetail(destinatarioPayload),
+            tipo,
+            afectaStock,
+            fechaMovimiento: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
+            comentarios,
+            totalEquipos: itemsDetallados.length,
+            totalUnidades,
+            totalDestinatarios: 1,
+            equipos: itemsDetallados,
+            ip: requestMeta.ip,
+            userAgent: requestMeta.userAgent,
+          },
+        });
+      }
     } else {
       await Promise.all(
         createdMovimientos.map(async (movimiento) => {
@@ -954,7 +1093,19 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     );
-  } catch {
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message === "ARTICULO_NOT_FOUND") {
+        return NextResponse.json({ error: "Uno o más artículos no existen." }, { status: 400 });
+      }
+      if (error.message.startsWith("INSUFFICIENT_STOCK:")) {
+        const nombre = error.message.replace("INSUFFICIENT_STOCK:", "");
+        return NextResponse.json(
+          { error: `Stock insuficiente para el artículo "${nombre}".` },
+          { status: 409 }
+        );
+      }
+    }
     return NextResponse.json({ error: "No se pudo registrar el movimiento." }, { status: 500 });
   }
 }

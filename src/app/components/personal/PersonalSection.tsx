@@ -140,7 +140,7 @@ function QuickActionButton({
       />
       <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-white/10" />
       <span aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-black/25" />
-      <div className="flex equipos-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <span
           className="inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.24em]"
           style={{
@@ -152,7 +152,7 @@ function QuickActionButton({
           {eyebrow}
         </span>
         <span
-          className="inline-flex h-10 w-10 shrink-0 equipos-center justify-center rounded-2xl border"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border"
           style={{
             borderColor: "rgba(214, 197, 150, 0.34)",
             background: "linear-gradient(145deg, rgba(18,22,16,0.92) 0%, rgba(58,68,47,0.86) 100%)",
@@ -340,7 +340,7 @@ export function PersonalSection({
           <p className="mt-1 text-xs text-stone-600">
             Orden: grado del personal subalterno, apellidos y nombres.
           </p>
-          <div className="mt-2 flex flex-wrap equipos-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <div className="inline-flex rounded-full border border-[rgba(39,47,33,0.82)] bg-[linear-gradient(180deg,rgba(61,71,49,0.98)_0%,rgba(40,49,33,0.98)_100%)] px-3 py-1 text-xs font-bold text-[rgba(244,220,151,0.95)]">
               {personalFiltrado.length} resultado{personalFiltrado.length === 1 ? "" : "s"}
             </div>
@@ -422,8 +422,8 @@ export function PersonalSection({
 
       {personalConErrorReingreso.length > 0 ? (
         <section className="rounded-2xl border border-rose-300/80 bg-gradient-to-r from-rose-50/90 to-amber-50/80 p-4 shadow-sm">
-          <div className="flex equipos-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 equipos-center justify-center rounded-xl bg-rose-600 text-white shadow-xs">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-xs">
               <WarningAmberRoundedIcon />
             </div>
             <div className="flex-1 min-w-0">
@@ -438,7 +438,7 @@ export function PersonalSection({
                 {personalConErrorReingreso.map((persona) => (
                   <div
                     key={persona.ci}
-                    className="flex equipos-center justify-between rounded-xl bg-white p-3 border border-rose-200 shadow-xs hover:border-rose-300 transition"
+                    className="flex items-center justify-between rounded-xl bg-white p-3 border border-rose-200 shadow-xs hover:border-rose-300 transition"
                   >
                     <div className="min-w-0 pr-2">
                       <p className="text-xs font-bold text-stone-900 truncate">
@@ -548,7 +548,7 @@ export function PersonalSection({
 
       {editPersonalCi ? (
         <ModalFrame onClose={onCancelEditPersonal} size="xl" closeOnBackdrop={false}>
-          <div className="flex equipos-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-lg font-semibold text-stone-900">Editar subalterno</h3>
               <p className="mt-1 text-sm text-stone-600">

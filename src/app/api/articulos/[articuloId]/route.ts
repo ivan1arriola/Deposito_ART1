@@ -169,10 +169,19 @@ export async function DELETE(req: Request, context: { params: Promise<{ articulo
         throw new Error("P2025"); // Simulate not found
       }
 
-      // 1. Get all related ArticuloStockMovimiento
+      // 1. Protect historical assignments and movements linked to registros
+      const asignacionesCount = await tx.movimientoArticulo.count({
+        where: { articuloId },
+      });
       const stockMovimientos = await tx.articuloStockMovimiento.findMany({
         where: { articuloId },
       });
+      if (
+        asignacionesCount > 0 ||
+        stockMovimientos.some((movimiento) => movimiento.movimientoId !== null)
+      ) {
+        throw new Error("ARTICULO_LINKED_TO_ASIGNACION");
+      }
 
       // 2. Identify and fetch ArticuloEntregaPersonal that are affected
       const affectedEntregaIds = Array.from(
@@ -250,6 +259,12 @@ export async function DELETE(req: Request, context: { params: Promise<{ articulo
 
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
+    if (error instanceof Error && error.message === "ARTICULO_LINKED_TO_ASIGNACION") {
+      return NextResponse.json(
+        { error: "No se puede eliminar un artículo vinculado a asignaciones históricas." },
+        { status: 409 }
+      );
+    }
     if (error instanceof Error && error.message === "P2025") {
       return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
     }

@@ -7,6 +7,8 @@ import { isValidUruguayanCi } from "@/lib/ci";
 import { sendPersonalMovementEmailNotification } from "@/lib/personal-email-notifications";
 import { resolveDestinatarioMovimiento } from "@/lib/movimiento-destinatario";
 import { ensureMovimientoDestinatarioRecintoCompatibility } from "@/lib/movimiento-destinatario-recinto-compat";
+import { applyMovimientoArticulosDelta, parseArticulosPayload } from "@/lib/movimiento-articulos";
+import { lockArticulosForUpdate } from "@/lib/stock-calc";
 import { isAdminRole } from "@/lib/user-role";
 import {
   MOVIMIENTO_TIPO_ASIGNACION,
@@ -17,6 +19,7 @@ import {
   dateInputToDate,
   formatDateOnlyForDisplay,
   formatDateOnlyFromDate,
+  formatDateTimeForDisplay,
   getTodayDateInput,
   isDateInputAfterToday,
 } from "@/lib/date-helpers";
@@ -48,7 +51,8 @@ type UpdateMovimientoPayload = {
   fecha?: string;
   tipo: TipoMovimiento | string;
   comentarios?: string;
-  equipos: MovimientoItemPayload[];
+  equipos?: MovimientoItemPayload[];
+  articulos?: Array<{ articuloId: number | string; cantidad: number | string }>;
 };
 
 type MovimientoRecintoClase = "INTERNO" | "EXTERNO";
@@ -163,47 +167,82 @@ function parseRecintoNombre(value: unknown) {
 function sanitizeExternalPayload(
   value: UpdateMovimientoPayload["destinatarioExterno"] | undefined
 ) {
+  const hasCi = value?.ci !== undefined;
+  let ci = String(value?.ci ?? "").trim();
+  if (ci && !ci.toUpperCase().startsWith("SD-")) {
+    ci = ci.replace(/\D/g, "");
+  } else if (ci) {
+    ci = ci.toUpperCase();
+  }
   return {
+    hasGrado: value?.grado !== undefined,
+    hasNombre: value?.nombre !== undefined,
+    hasApellido: value?.apellido !== undefined,
+    hasCi,
+    hasUnidadDestino: value?.unidadDestino !== undefined,
     grado: String(value?.grado ?? "").trim(),
     nombre: String(value?.nombre ?? "").trim(),
     apellido: String(value?.apellido ?? "").trim(),
-    ci: String(value?.ci ?? "")
-      .trim()
-      .replace(/\D/g, ""),
+    ci,
     unidadDestino: String(value?.unidadDestino ?? "").trim(),
   };
+}
+
+function hasAnyResponsableField(responsable: {
+  grado?: string | null;
+  nombre?: string | null;
+  apellido?: string | null;
+  ci?: string | null;
+}) {
+  return Boolean(
+    responsable.grado?.trim() ||
+    responsable.nombre?.trim() ||
+    responsable.apellido?.trim() ||
+    responsable.ci?.trim()
+  );
 }
 
 function parseDestinatarioPayload(
   candidate: Record<string, unknown>,
   fallback: ParsedDestinatarioPayload | null = null
 ): ParsedDestinatarioPayload | null {
-  const destinatarioTipo = parseDestinatarioTipo(candidate.destinatarioTipo);
+  const destinatarioTipo =
+    candidate.destinatarioTipo !== undefined
+      ? parseDestinatarioTipo(candidate.destinatarioTipo)
+      : (fallback?.destinatarioTipo ?? parseDestinatarioTipo(candidate.destinatarioTipo));
   if (!destinatarioTipo) return fallback;
 
   if (destinatarioTipo === "RECINTO") {
     const fallbackRecinto = fallback?.destinatarioTipo === "RECINTO" ? fallback : null;
     const recintoClase =
-      parseRecintoClase(candidate.recintoClase) ?? fallbackRecinto?.recintoClase ?? null;
+      candidate.recintoClase !== undefined
+        ? (parseRecintoClase(candidate.recintoClase) ?? fallbackRecinto?.recintoClase ?? null)
+        : (fallbackRecinto?.recintoClase ?? parseRecintoClase(candidate.recintoClase));
     const recintoNombre =
       parseRecintoNombre(candidate.recintoNombre) ?? fallbackRecinto?.recintoNombre ?? null;
     if (!recintoClase || !recintoNombre) return null;
 
-    const rawDestinatarioRecinto = candidate.destinatarioRecinto as
-      Record<string, string> | undefined;
-    const recintoResponsable =
-      rawDestinatarioRecinto &&
-      (rawDestinatarioRecinto.grado ||
-        rawDestinatarioRecinto.nombre ||
-        rawDestinatarioRecinto.apellido ||
-        rawDestinatarioRecinto.ci)
-        ? {
-            grado: String(rawDestinatarioRecinto.grado ?? "").trim(),
-            nombre: String(rawDestinatarioRecinto.nombre ?? "").trim(),
-            apellido: String(rawDestinatarioRecinto.apellido ?? "").trim(),
-            ci: String(rawDestinatarioRecinto.ci ?? "").trim(),
-          }
-        : null;
+    let recintoResponsable: Extract<
+      ParsedDestinatarioPayload,
+      { destinatarioTipo: "RECINTO" }
+    >["recintoResponsable"] = fallbackRecinto?.recintoResponsable ?? null;
+
+    if (candidate.destinatarioRecinto !== undefined) {
+      if (candidate.destinatarioRecinto === null) {
+        recintoResponsable = null;
+      } else if (typeof candidate.destinatarioRecinto === "object") {
+        const raw = candidate.destinatarioRecinto as Record<string, unknown>;
+        const prev = fallbackRecinto?.recintoResponsable ?? null;
+        const merged = {
+          grado: raw.grado !== undefined ? String(raw.grado ?? "").trim() : (prev?.grado ?? ""),
+          nombre: raw.nombre !== undefined ? String(raw.nombre ?? "").trim() : (prev?.nombre ?? ""),
+          apellido:
+            raw.apellido !== undefined ? String(raw.apellido ?? "").trim() : (prev?.apellido ?? ""),
+          ci: raw.ci !== undefined ? String(raw.ci ?? "").trim() : (prev?.ci ?? ""),
+        };
+        recintoResponsable = hasAnyResponsableField(merged) ? merged : null;
+      }
+    }
 
     return {
       destinatarioTipo,
@@ -218,21 +257,27 @@ function parseDestinatarioPayload(
     const externoBase = sanitizeExternalPayload(
       candidate.destinatarioExterno as UpdateMovimientoPayload["destinatarioExterno"]
     );
+    const prev = fallbackExterno?.externo;
     const externo = {
-      grado: externoBase.grado || fallbackExterno?.externo.grado || "",
-      nombre: externoBase.nombre || fallbackExterno?.externo.nombre || "",
-      apellido: externoBase.apellido || fallbackExterno?.externo.apellido || "",
-      ci: externoBase.ci || fallbackExterno?.externo.ci || "",
-      unidadDestino: externoBase.unidadDestino || fallbackExterno?.externo.unidadDestino || "",
+      grado: externoBase.hasGrado ? externoBase.grado : (prev?.grado ?? ""),
+      nombre: externoBase.hasNombre ? externoBase.nombre : (prev?.nombre ?? ""),
+      apellido: externoBase.hasApellido ? externoBase.apellido : (prev?.apellido ?? ""),
+      ci: externoBase.hasCi ? externoBase.ci : (prev?.ci ?? ""),
+      unidadDestino: externoBase.hasUnidadDestino
+        ? externoBase.unidadDestino
+        : (prev?.unidadDestino ?? ""),
     };
+    const isHistoricalUnchangedCi = prev !== undefined && externo.ci === prev.ci;
+    const isSdIdentifier = externo.ci.toUpperCase().startsWith("SD-");
     if (
       !externo.grado ||
       !externo.nombre ||
       !externo.apellido ||
       !externo.unidadDestino ||
-      !isValidUruguayanCi(externo.ci)
-    )
+      (!isSdIdentifier && !isHistoricalUnchangedCi && !isValidUruguayanCi(externo.ci))
+    ) {
       return null;
+    }
     return {
       destinatarioTipo,
       externo,
@@ -267,15 +312,18 @@ function isValidPayload(body: unknown): body is UpdateMovimientoPayload {
   const candidate = body as Record<string, unknown>;
   const tipo = parseTipoMovimiento(candidate.tipo);
   if (!tipo) return false;
-  const destinatarioPayload = parseDestinatarioPayload(candidate);
   if (
     candidate.destinatarioTipo !== undefined &&
-    (!destinatarioPayload || !validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload))
+    parseDestinatarioTipo(candidate.destinatarioTipo) === null
   ) {
     return false;
   }
-  if (!Array.isArray(candidate.equipos) || candidate.equipos.length === 0) return false;
-  return true;
+  const hasEquipos = Array.isArray(candidate.equipos) && candidate.equipos.length > 0;
+  const hasArticulos = Array.isArray(candidate.articulos) && candidate.articulos.length > 0;
+  if (tipo === MOVIMIENTO_TIPO_ASIGNACION) {
+    return Array.isArray(candidate.equipos) || hasArticulos;
+  }
+  return hasEquipos;
 }
 
 function readRequestMeta(request: Request) {
@@ -420,6 +468,18 @@ const registroInclude = {
     },
     orderBy: { equipo: { ordenPdf: "asc" } },
   },
+  articulos: {
+    include: {
+      articulo: {
+        select: {
+          articuloId: true,
+          nombre: true,
+          tipo: true,
+        },
+      },
+    },
+    orderBy: { articulo: { nombre: "asc" } },
+  },
 } satisfies Prisma.MovimientoInclude;
 
 type RegistroWithRelations = Prisma.MovimientoGetPayload<{
@@ -430,20 +490,24 @@ function buildExistingDestinatarioPayload(
   existing: RegistroWithRelations
 ): ParsedDestinatarioPayload | null {
   if (existing.destinatarioRecinto) {
+    const hasResponsable = hasAnyResponsableField({
+      grado: existing.destinatarioRecinto.responsableGrado,
+      nombre: existing.destinatarioRecinto.responsableNombre,
+      apellido: existing.destinatarioRecinto.responsableApellido,
+      ci: existing.destinatarioRecinto.responsableCi,
+    });
     return {
       destinatarioTipo: "RECINTO",
       recintoClase: existing.destinatarioRecinto.clase === "EXTERNO" ? "EXTERNO" : "INTERNO",
       recintoNombre: existing.destinatarioRecinto.nombre,
-      recintoResponsable:
-        existing.destinatarioRecinto.responsableGrado ||
-        existing.destinatarioRecinto.responsableNombre
-          ? {
-              grado: existing.destinatarioRecinto.responsableGrado ?? "",
-              nombre: existing.destinatarioRecinto.responsableNombre ?? "",
-              apellido: existing.destinatarioRecinto.responsableApellido ?? "",
-              ci: existing.destinatarioRecinto.responsableCi ?? "",
-            }
-          : null,
+      recintoResponsable: hasResponsable
+        ? {
+            grado: existing.destinatarioRecinto.responsableGrado ?? "",
+            nombre: existing.destinatarioRecinto.responsableNombre ?? "",
+            apellido: existing.destinatarioRecinto.responsableApellido ?? "",
+            ci: existing.destinatarioRecinto.responsableCi ?? "",
+          }
+        : null,
     };
   }
 
@@ -472,11 +536,25 @@ function buildExistingDestinatarioPayload(
 
 function buildExistingDestinatarioAuditDetail(existing: RegistroWithRelations) {
   if (existing.destinatarioRecinto) {
+    const hasResponsable = hasAnyResponsableField({
+      grado: existing.destinatarioRecinto.responsableGrado,
+      nombre: existing.destinatarioRecinto.responsableNombre,
+      apellido: existing.destinatarioRecinto.responsableApellido,
+      ci: existing.destinatarioRecinto.responsableCi,
+    });
     return {
       destinatarioTipo: "RECINTO",
       recinto: buildRecintoAuditDetail({
         clase: existing.destinatarioRecinto.clase === "EXTERNO" ? "EXTERNO" : "INTERNO",
         nombre: existing.destinatarioRecinto.nombre,
+        responsable: hasResponsable
+          ? {
+              grado: existing.destinatarioRecinto.responsableGrado ?? "",
+              nombre: existing.destinatarioRecinto.responsableNombre ?? "",
+              apellido: existing.destinatarioRecinto.responsableApellido ?? "",
+              ci: existing.destinatarioRecinto.responsableCi ?? "",
+            }
+          : null,
       }),
     };
   }
@@ -542,10 +620,38 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
     );
   }
 
+  const recintoResponsableInfo =
+    movimiento.destinatarioRecinto &&
+    hasAnyResponsableField({
+      grado: movimiento.destinatarioRecinto.responsableGrado,
+      nombre: movimiento.destinatarioRecinto.responsableNombre,
+      apellido: movimiento.destinatarioRecinto.responsableApellido,
+      ci: movimiento.destinatarioRecinto.responsableCi,
+    })
+      ? {
+          grado: movimiento.destinatarioRecinto.responsableGrado ?? "",
+          nombre: movimiento.destinatarioRecinto.responsableNombre ?? "",
+          apellido: movimiento.destinatarioRecinto.responsableApellido ?? "",
+          ci: movimiento.destinatarioRecinto.responsableCi ?? "",
+        }
+      : null;
+
+  const destinatarioExternoInfo = movimiento.destinatarioExterno?.personaExterna
+    ? {
+        grado: movimiento.destinatarioExterno.personaExterna.grado,
+        nombre: movimiento.destinatarioExterno.personaExterna.nombre,
+        apellido: movimiento.destinatarioExterno.personaExterna.apellido,
+        ci: movimiento.destinatarioExterno.personaExterna.ci,
+        unidadDestino: movimiento.destinatarioExterno.personaExterna.unidadDestino,
+      }
+    : null;
+
   return NextResponse.json({
     registroId: movimiento.movimientoId.toString(),
     fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
     tipo: movimiento.tipo,
+    anulado: Boolean(movimiento.anulado),
+    anuladoAt: movimiento.anuladoAt ? formatDateTimeForDisplay(movimiento.anuladoAt) : null,
     comentarios: movimiento.observaciones,
     destinatarioTipo: movimiento.destinatarioRecinto
       ? "RECINTO"
@@ -554,6 +660,8 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
         : "PERSONAL",
     recintoClase: movimiento.destinatarioRecinto?.clase ?? null,
     recintoNombre: movimiento.destinatarioRecinto?.nombre ?? null,
+    recintoResponsableInfo,
+    destinatarioExternoInfo,
     ci: destinatario.ci,
     perfilCi: destinatario.perfilCi,
     persona: destinatario.etiqueta,
@@ -563,6 +671,12 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
     equipos: movimiento.equipos.map((detail) => ({
       equipoId: detail.equipo.equipoId.toString(),
       nombre: detail.equipo.nombre,
+      cantidad: detail.cantidad,
+    })),
+    articulos: (movimiento.articulos ?? []).map((detail) => ({
+      articuloId: detail.articuloId,
+      nombre: detail.articulo.nombre,
+      tipo: detail.articulo.tipo,
       cantidad: detail.cantidad,
     })),
   });
@@ -593,24 +707,13 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   if (!tipo || !fecha) {
     return NextResponse.json({ error: "tipo o fecha invalidos." }, { status: 400 });
   }
-  if (body.destinatarioTipo !== undefined) {
-    const explicitDestinatario = parseDestinatarioPayload(body as Record<string, unknown>);
-    if (
-      !explicitDestinatario ||
-      !validateDestinatarioTipoForMovimiento(tipo, explicitDestinatario)
-    ) {
-      return NextResponse.json(
-        { error: "El tipo de destinatario no es valido para este movimiento." },
-        { status: 400 }
-      );
-    }
-  }
 
   if (body.fecha && isDateInputAfterToday(body.fecha)) {
     return NextResponse.json({ error: "La fecha no puede ser futura." }, { status: 400 });
   }
 
-  const parsedEquipos = body.equipos
+  const rawEquipos = Array.isArray(body.equipos) ? body.equipos : [];
+  const parsedEquipos = rawEquipos
     .map((equipo) => ({
       equipoId: parseBigIntId(equipo.equipoId),
       cantidad: parseCantidad(equipo.cantidad),
@@ -620,8 +723,18 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
     cantidad: number;
   }>;
 
-  if (parsedEquipos.length === 0) {
-    return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
+  const hasExplicitArticulos = body.articulos !== undefined;
+  const parsedArticulosResult = parseArticulosPayload(body.articulos);
+  if (!parsedArticulosResult.ok) {
+    return NextResponse.json({ error: parsedArticulosResult.error }, { status: 400 });
+  }
+  const parsedArticulos = parsedArticulosResult.items;
+
+  if (hasExplicitArticulos && parsedArticulos.length > 0 && tipo !== MOVIMIENTO_TIPO_ASIGNACION) {
+    return NextResponse.json(
+      { error: "Solo las asignaciones permiten incluir artículos." },
+      { status: 400 }
+    );
   }
 
   const dedupedEquipos = new Map<string, number>();
@@ -642,6 +755,25 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
       existing.tipo !== MOVIMIENTO_TIPO_ASIGNACION)
   ) {
     return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
+  }
+
+  if (existing.anulado) {
+    return NextResponse.json(
+      { error: "No se puede rectificar una asignación anulada." },
+      { status: 409 }
+    );
+  }
+
+  const existingArticulos = existing.articulos ?? [];
+  const effectiveArticulosCount = hasExplicitArticulos
+    ? parsedArticulos.length
+    : existingArticulos.length;
+
+  if (
+    parsedEquipos.length === 0 &&
+    !(tipo === MOVIMIENTO_TIPO_ASIGNACION && effectiveArticulosCount > 0)
+  ) {
+    return NextResponse.json({ error: "Debes enviar al menos un equipo valido." }, { status: 400 });
   }
 
   const currentDestinatarioPayload = buildExistingDestinatarioPayload(existing);
@@ -667,10 +799,13 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   }
 
   const equipoIds = Array.from(dedupedEquipos.keys()).map((equipoId) => BigInt(equipoId));
-  const equiposFound = await prisma.equipo.findMany({
-    where: { equipoId: { in: equipoIds } },
-    select: { equipoId: true, nombre: true },
-  });
+  const equiposFound =
+    equipoIds.length > 0
+      ? await prisma.equipo.findMany({
+          where: { equipoId: { in: equipoIds } },
+          select: { equipoId: true, nombre: true },
+        })
+      : [];
   if (equiposFound.length !== equipoIds.length) {
     return NextResponse.json({ error: "Uno o mas equipos no existen." }, { status: 400 });
   }
@@ -753,6 +888,69 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   }
 
   try {
+    const articulosPreviosAudit = existingArticulos.map((detail) => ({
+      articuloId: detail.articuloId,
+      nombre: detail.articulo.nombre,
+      tipo: detail.articulo.tipo,
+      cantidad: detail.cantidad,
+    }));
+
+    const buildAuditDetail = (
+      articulosNuevosAudit: Array<{
+        articuloId: number;
+        nombre: string;
+        tipo: string;
+        cantidad: number;
+      }>
+    ) => ({
+      evento:
+        tipo === MOVIMIENTO_TIPO_ASIGNACION
+          ? "MOVIMIENTO_ASIGNACION_RECTIFICADO"
+          : "MOVIMIENTO_VESTUARIO_RECTIFICADO",
+      destinatarioAnterior: buildExistingDestinatarioAuditDetail(existing),
+      destinatarioNuevo:
+        nextDestinatarioPayload.destinatarioTipo === "RECINTO"
+          ? {
+              destinatarioTipo: "RECINTO",
+              recinto: buildRecintoAuditDetail({
+                clase: nextDestinatarioPayload.recintoClase,
+                nombre: nextDestinatarioPayload.recintoNombre,
+                responsable: nextDestinatarioPayload.recintoResponsable,
+              }),
+            }
+          : nextDestinatarioPayload.destinatarioTipo === "EXTERNO"
+            ? {
+                destinatarioTipo: "EXTERNO",
+                externo: buildExternoAuditDetail(nextDestinatarioPayload),
+              }
+            : {
+                destinatarioTipo: "PERSONAL",
+                ci: nextDestinatarioPayload.targetCis[0],
+                personal: nextPersonalRecord ? buildPersonalAuditDetail(nextPersonalRecord) : null,
+              },
+      tipoAnterior: existing.tipo,
+      tipoNuevo: tipo,
+      afectaStockAnterior: existing.afectaStock,
+      afectaStockNuevo: afectaStock,
+      fechaAnterior: formatDateOnlyFromDate(existing.fecha),
+      fechaNueva: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
+      comentariosAnterior: existing.observaciones,
+      comentariosNuevo: comentarios,
+      totalEquiposAnterior: itemsAnteriores.length,
+      totalUnidadesAnterior,
+      totalEquiposNuevo: itemsNuevos.length,
+      totalUnidadesNuevo,
+      itemsAnteriores,
+      itemsNuevos,
+      articulosAnteriores: articulosPreviosAudit,
+      articulosNuevos: articulosNuevosAudit,
+      ip: requestMeta.ip,
+      userAgent: requestMeta.userAgent,
+    });
+
+    const usesArticulosTransaction = hasExplicitArticulos || existingArticulos.length > 0;
+    let articulosFinalesAudit = articulosPreviosAudit;
+
     await prisma.$transaction(async (tx) => {
       await tx.movimiento.update({
         where: { movimientoId: existing.movimientoId },
@@ -823,66 +1021,48 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
         where: { movimientoId: existing.movimientoId },
       });
 
-      await tx.movimientoEquipo.createMany({
-        data: Array.from(dedupedEquipos.entries()).map(([equipoId, cantidad]) => ({
-          movimientoId: existing.movimientoId,
-          equipoId: BigInt(equipoId),
-          cantidad,
-        })),
+      if (dedupedEquipos.size > 0) {
+        await tx.movimientoEquipo.createMany({
+          data: Array.from(dedupedEquipos.entries()).map(([equipoId, cantidad]) => ({
+            movimientoId: existing.movimientoId,
+            equipoId: BigInt(equipoId),
+            cantidad,
+          })),
+        });
+      }
+
+      if (hasExplicitArticulos) {
+        articulosFinalesAudit = await applyMovimientoArticulosDelta(
+          tx,
+          existing.movimientoId,
+          existingArticulos.map((a) => ({ articuloId: a.articuloId, cantidad: a.cantidad })),
+          parsedArticulos,
+          comentarios ? `Rectificación asignación: ${comentarios}` : "Rectificación asignación"
+        );
+      }
+
+      if (usesArticulosTransaction) {
+        await tx.auditoria.create({
+          data: {
+            usuarioId: auth.user.usuarioId,
+            accion: "UPDATE",
+            entidad: "REGISTRO",
+            entidadId: existing.movimientoId.toString(),
+            detalle: buildAuditDetail(articulosFinalesAudit),
+          },
+        });
+      }
+    });
+
+    if (!usesArticulosTransaction) {
+      await logAudit({
+        usuarioId: auth.user.usuarioId,
+        accion: "UPDATE",
+        entidad: "REGISTRO",
+        entidadId: existing.movimientoId.toString(),
+        detalle: buildAuditDetail(articulosFinalesAudit),
       });
-    });
-
-    const auditDetail = {
-      evento:
-        tipo === MOVIMIENTO_TIPO_ASIGNACION
-          ? "MOVIMIENTO_ASIGNACION_RECTIFICADO"
-          : "MOVIMIENTO_VESTUARIO_RECTIFICADO",
-      destinatarioAnterior: buildExistingDestinatarioAuditDetail(existing),
-      destinatarioNuevo:
-        nextDestinatarioPayload.destinatarioTipo === "RECINTO"
-          ? {
-              destinatarioTipo: "RECINTO",
-              recinto: buildRecintoAuditDetail({
-                clase: nextDestinatarioPayload.recintoClase,
-                nombre: nextDestinatarioPayload.recintoNombre,
-                responsable: nextDestinatarioPayload.recintoResponsable,
-              }),
-            }
-          : nextDestinatarioPayload.destinatarioTipo === "EXTERNO"
-            ? {
-                destinatarioTipo: "EXTERNO",
-                externo: buildExternoAuditDetail(nextDestinatarioPayload),
-              }
-            : {
-                destinatarioTipo: "PERSONAL",
-                ci: nextDestinatarioPayload.targetCis[0],
-                personal: nextPersonalRecord ? buildPersonalAuditDetail(nextPersonalRecord) : null,
-              },
-      tipoAnterior: existing.tipo,
-      tipoNuevo: tipo,
-      afectaStockAnterior: existing.afectaStock,
-      afectaStockNuevo: afectaStock,
-      fechaAnterior: formatDateOnlyFromDate(existing.fecha),
-      fechaNueva: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
-      comentariosAnterior: existing.observaciones,
-      comentariosNuevo: comentarios,
-      totalEquiposAnterior: itemsAnteriores.length,
-      totalUnidadesAnterior,
-      totalEquiposNuevo: itemsNuevos.length,
-      totalUnidadesNuevo,
-      itemsAnteriores,
-      itemsNuevos,
-      ip: requestMeta.ip,
-      userAgent: requestMeta.userAgent,
-    };
-
-    await logAudit({
-      usuarioId: auth.user.usuarioId,
-      accion: "UPDATE",
-      entidad: "REGISTRO",
-      entidadId: existing.movimientoId.toString(),
-      detalle: auditDetail,
-    });
+    }
 
     const existingPersonal = existing.destinatarioPersonal?.personal ?? null;
     const actorLabel = `${auth.user.grado} ${auth.user.apellido}, ${auth.user.nombre}`
@@ -926,7 +1106,19 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
           : "",
       fecha: formatDateOnlyForDisplay(body.fecha || getTodayDateInput()),
     });
-  } catch {
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message === "ARTICULO_NOT_FOUND") {
+        return NextResponse.json({ error: "Uno o más artículos no existen." }, { status: 400 });
+      }
+      if (error.message.startsWith("INSUFFICIENT_STOCK:")) {
+        const nombre = error.message.replace("INSUFFICIENT_STOCK:", "");
+        return NextResponse.json(
+          { error: `Stock insuficiente para el artículo "${nombre}".` },
+          { status: 409 }
+        );
+      }
+    }
     return NextResponse.json({ error: "No se pudo rectificar el movimiento." }, { status: 500 });
   }
 }
@@ -982,6 +1174,97 @@ export async function DELETE(req: Request, context: { params: Promise<{ registro
   const requestMeta = readRequestMeta(req);
 
   try {
+    if (existing.tipo === MOVIMIENTO_TIPO_ASIGNACION) {
+      const anulacionResult = await prisma.$transaction(async (tx) => {
+        const current = await tx.movimiento.findUnique({
+          where: { movimientoId: existing.movimientoId },
+          select: {
+            movimientoId: true,
+            anulado: true,
+            articulos: {
+              select: {
+                articuloId: true,
+                cantidad: true,
+              },
+            },
+          },
+        });
+
+        if (!current) {
+          return { kind: "not_found" as const };
+        }
+        if (current.anulado) {
+          return { kind: "already_anulado" as const };
+        }
+
+        const updated = await tx.movimiento.updateMany({
+          where: { movimientoId: existing.movimientoId, anulado: false },
+          data: {
+            anulado: true,
+            anuladoAt: new Date(),
+            anuladoPorUsuarioId: auth.user.usuarioId,
+          },
+        });
+        if (updated.count === 0) {
+          return { kind: "already_anulado" as const };
+        }
+
+        if (current.articulos.length > 0) {
+          await lockArticulosForUpdate(
+            tx,
+            current.articulos.map((a) => a.articuloId)
+          );
+          await tx.articuloStockMovimiento.createMany({
+            data: current.articulos.map((art) => ({
+              articuloId: art.articuloId,
+              tipo: "INGRESO",
+              cantidad: art.cantidad,
+              comentario: `Anulación de asignación #${existing.movimientoId.toString()}`,
+              movimientoId: existing.movimientoId,
+            })),
+          });
+        }
+
+        await tx.auditoria.create({
+          data: {
+            usuarioId: auth.user.usuarioId,
+            accion: "DELETE",
+            entidad: "REGISTRO",
+            entidadId: existing.movimientoId.toString(),
+            detalle: {
+              evento: "MOVIMIENTO_ASIGNACION_ANULADO",
+              destinatario: buildExistingDestinatarioAuditDetail(existing),
+              ci: existingPersonal?.ci ?? null,
+              tipo: existing.tipo,
+              fecha: formatDateOnlyFromDate(existing.fecha),
+              comentarios: existing.observaciones,
+              totalEquiposEliminados: itemsEliminados.length,
+              totalUnidadesEliminadas,
+              itemsEliminados,
+              articulosCompensados: current.articulos,
+              ip: requestMeta.ip,
+              userAgent: requestMeta.userAgent,
+            },
+          },
+        });
+
+        return { kind: "anulado" as const };
+      });
+
+      if (anulacionResult.kind === "not_found") {
+        return NextResponse.json({ error: "Registro no encontrado." }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        ok: true,
+        anulado: true,
+        alreadyAnulado: anulacionResult.kind === "already_anulado",
+        registroId: existing.movimientoId.toString(),
+        destinatarioTipo: existingRecinto ? "RECINTO" : existingExterno ? "EXTERNO" : "PERSONAL",
+        ci: existingPersonal?.ci ?? "",
+      });
+    }
+
     await prisma.movimiento.delete({
       where: { movimientoId: existing.movimientoId },
     });

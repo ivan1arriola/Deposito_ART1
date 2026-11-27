@@ -195,7 +195,7 @@ export function GlobalSearchModal({
                 <Box component="li" key={result.ci}>
                   <button
                     onClick={() => handleSelect(result.ci)}
-                    className="group flex w-full equipos-center gap-4 rounded-xl p-3 text-left transition-all duration-150 hover:bg-stone-100/80 active:bg-stone-200/50"
+                    className="group flex w-full items-center gap-4 rounded-xl p-3 text-left transition-all duration-150 hover:bg-stone-100/80 active:bg-stone-200/50"
                   >
                     <Box
                       sx={{
@@ -217,7 +217,7 @@ export function GlobalSearchModal({
                     </Box>
 
                     <div className="flex-1">
-                      <div className="flex equipos-center justify-between">
+                      <div className="flex items-center justify-between">
                         <p className="text-[15px] font-bold text-stone-800 leading-tight">
                           {result.nombreCompleto}
                         </p>
@@ -275,13 +275,13 @@ export function GlobalSearchModal({
           }}
         >
           <div className="flex gap-4">
-            <div className="flex equipos-center gap-1.5">
+            <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black text-stone-300">TAB</span>
               <span className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">
                 Navegar
               </span>
             </div>
-            <div className="flex equipos-center gap-1.5">
+            <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black text-stone-300">ESC</span>
               <span className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">
                 Cerrar

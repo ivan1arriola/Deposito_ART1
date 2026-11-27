@@ -1,6 +1,6 @@
 {
   "name": "deposito-art1",
-  "version": "6.8.3",
+  "version": "6.8.10",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
@@ -21,6 +21,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:pdf": "playwright test tests/e2e/print-a4-pdf.spec.ts",
     "refactor:scan": "node scripts/refactor-metrics.mjs",
     "refactor:scan:json": "node scripts/refactor-metrics.mjs --format json --out reports/refactor-metrics.json",
     "refactor:gate": "node scripts/refactor-metrics.mjs --fail-on-high-risk",
@@ -82,6 +84,8 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",

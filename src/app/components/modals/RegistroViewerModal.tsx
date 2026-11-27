@@ -42,7 +42,7 @@ export function RegistroViewerModal({
 
   return (
     <ModalFrame onClose={onClose} size="xl" closeOnBackdrop={false}>
-      <div className="flex equipos-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-stone-900">Visualizador de movimientos</h3>
           <p className="text-xs text-stone-600">{`CI: ${formatUruguayanCi(viewer.ci)}`}</p>
@@ -80,11 +80,11 @@ export function RegistroViewerModal({
                 key={registro.registroId}
                 className="rounded-lg border border-stone-200 bg-stone-50 p-3"
               >
-                <div className="flex flex-wrap equipos-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-stone-900">
                     {formatDateOnlyForDisplay(registro.fecha)}
                   </p>
-                  <div className="flex equipos-center gap-2">
+                  <div className="flex items-center gap-2">
                     {canWrite && registro.tipo !== "AJUSTE" ? (
                       <button
                         type="button"

@@ -6,6 +6,33 @@ type PrismaTransaction = Omit<
 >;
 
 /**
+ * Serializa operaciones concurrentes sobre artículos ordenando por articuloId
+ * y tomando un bloqueo de fila FOR UPDATE dentro de la transacción activa.
+ */
+export async function lockArticulosForUpdate(
+  tx: PrismaTransaction | PrismaClient,
+  articuloIds: number[]
+): Promise<void> {
+  const uniqueSortedIds = Array.from(new Set(articuloIds))
+    .filter((id) => Number.isInteger(id) && id > 0)
+    .sort((a, b) => a - b);
+
+  if (uniqueSortedIds.length === 0) return;
+
+  const maybeQueryRaw = (tx as Partial<Pick<PrismaClient, "$queryRaw">>).$queryRaw;
+  if (typeof maybeQueryRaw !== "function") return;
+
+  await maybeQueryRaw.call(
+    tx,
+    [
+      'SELECT "articulo_id" FROM "articulo" WHERE "articulo_id" = ANY(',
+      '::smallint[]) ORDER BY "articulo_id" ASC FOR UPDATE',
+    ] as unknown as TemplateStringsArray,
+    uniqueSortedIds
+  );
+}
+
+/**
  * Calcula el stock actual de un artículo sumando INGRESOS y restando EGRESOS
  * desde la tabla de movimientos. Esta es la fuente de verdad única.
  */

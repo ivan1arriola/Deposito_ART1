@@ -368,11 +368,12 @@ CREATE TABLE "articulo_stock_movimiento" (
   "cantidad" INTEGER NOT NULL,
   "comentario" TEXT,
   "articulo_entrega_personal_id" BIGINT REFERENCES "articulo_entrega_personal"("articulo_entrega_personal_id") ON DELETE RESTRICT,
+  "movimiento_id" BIGINT REFERENCES "movimiento"("movimiento_id") ON DELETE RESTRICT,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   CONSTRAINT "articulo_stock_movimiento_cantidad_chk" CHECK ("cantidad" > 0),
   CONSTRAINT "articulo_stock_movimiento_tipo_entrega_chk" CHECK (
     ("tipo" = 'INGRESO' AND "articulo_entrega_personal_id" IS NULL)
-    OR ("tipo" = 'EGRESO' AND "articulo_entrega_personal_id" IS NOT NULL)
+    OR ("tipo" = 'EGRESO' AND ("articulo_entrega_personal_id" IS NOT NULL OR "movimiento_id" IS NOT NULL))
   )
 );
 
@@ -382,6 +383,8 @@ CREATE INDEX "articulo_stock_movimiento_tipo_fecha_idx"
   ON "articulo_stock_movimiento"("tipo", "created_at" DESC);
 CREATE INDEX "articulo_stock_movimiento_entrega_fecha_idx"
   ON "articulo_stock_movimiento"("articulo_entrega_personal_id", "created_at" DESC);
+CREATE INDEX "articulo_stock_movimiento_movimiento_fecha_idx"
+  ON "articulo_stock_movimiento"("movimiento_id", "created_at" DESC);
 
 CREATE TABLE "movimiento" (
   "movimiento_id" BIGSERIAL PRIMARY KEY,
@@ -390,6 +393,10 @@ CREATE TABLE "movimiento" (
   "usuario_entrega_id" TEXT NOT NULL REFERENCES "usuario"("usuario_id"),
   "afecta_stock" BOOLEAN NOT NULL DEFAULT TRUE,
   "observaciones" TEXT,
+  "anulado" BOOLEAN NOT NULL DEFAULT FALSE,
+  "anulado_at" TIMESTAMPTZ(6),
+  "anulado_por_usuario_id" TEXT REFERENCES "usuario"("usuario_id") ON DELETE SET NULL,
+  "motivo_anulacion" TEXT,
   "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
   CONSTRAINT "movimiento_fecha_hoy_chk" CHECK ("fecha" <= CURRENT_DATE),
@@ -398,6 +405,7 @@ CREATE TABLE "movimiento" (
 
 CREATE INDEX "movimiento_tipo_fecha_idx" ON "movimiento"("tipo", "fecha" DESC);
 CREATE INDEX "movimiento_usuario_entrega_id_fecha_idx" ON "movimiento"("usuario_entrega_id", "fecha" DESC);
+CREATE INDEX "movimiento_anulado_idx" ON "movimiento"("anulado");
 
 CREATE TABLE "persona_externa" (
   "ci" TEXT PRIMARY KEY,
@@ -868,3 +876,27 @@ CREATE TABLE "web_push_subscription" (
 
 CREATE INDEX "idx_web_push_subscription_usuario" ON "web_push_subscription"("usuario_id");
 CREATE INDEX "idx_web_push_subscription_enabled" ON "web_push_subscription"("enabled");
+
+CREATE TABLE "movimiento_articulo" (
+  "movimiento_id" BIGINT NOT NULL REFERENCES "movimiento"("movimiento_id") ON DELETE CASCADE,
+  "articulo_id" SMALLINT NOT NULL REFERENCES "articulo"("articulo_id") ON DELETE RESTRICT,
+  "cantidad" INTEGER NOT NULL CHECK ("cantidad" > 0),
+  PRIMARY KEY ("movimiento_id", "articulo_id")
+);
+
+CREATE INDEX "movimiento_articulo_articulo_id_idx" ON "movimiento_articulo"("articulo_id");
+
+CREATE TABLE "entidad_beneficiaria" (
+  "entidad_beneficiaria_id" SMALLSERIAL PRIMARY KEY,
+  "clase" VARCHAR(16) NOT NULL,
+  "nombre" TEXT NOT NULL,
+  "nombre_normalizado" TEXT NOT NULL,
+  "activo" BOOLEAN NOT NULL DEFAULT TRUE,
+  "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+  "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+  CONSTRAINT "entidad_beneficiaria_clase_chk" CHECK ("clase" IN ('INTERNO', 'EXTERNO')),
+  CONSTRAINT "entidad_beneficiaria_nombre_chk" CHECK (btrim("nombre") <> ''),
+  CONSTRAINT "entidad_beneficiaria_clase_nombre_uq" UNIQUE ("clase", "nombre_normalizado")
+);
+
+CREATE INDEX "entidad_beneficiaria_clase_activo_idx" ON "entidad_beneficiaria"("clase", "activo");

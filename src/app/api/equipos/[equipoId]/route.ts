@@ -21,6 +21,7 @@ type EquipoPayload = {
 
 type EquipoExistenciaSiePayload = {
   existenciaSie?: unknown;
+  expectedExistenciaSie?: unknown;
 };
 
 type EquipoMergePayload = {
@@ -955,41 +956,97 @@ export async function PATCH(request: Request, context: { params: Promise<{ equip
     );
   }
 
+  let expectedExistenciaSie: number | null = null;
+  if (body?.expectedExistenciaSie !== undefined) {
+    expectedExistenciaSie = parseExistenciaSie(body.expectedExistenciaSie);
+    if (expectedExistenciaSie === null) {
+      return NextResponse.json(
+        {
+          error: "Payload invalido. 'expectedExistenciaSie' debe ser un entero mayor o igual a 0.",
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   try {
-    const current = await prisma.equipo.findUnique({
-      where: { equipoId },
-      select: { existenciaSie: true },
+    const result = await prisma.$transaction(async (tx) => {
+      const current = await tx.equipo.findUnique({
+        where: { equipoId },
+        select: { equipoId: true, nombre: true, existenciaSie: true },
+      });
+
+      if (!current) {
+        return { kind: "not_found" as const };
+      }
+
+      if (expectedExistenciaSie !== null && current.existenciaSie !== expectedExistenciaSie) {
+        return {
+          kind: "conflict" as const,
+          currentExistenciaSie: current.existenciaSie,
+        };
+      }
+
+      const updateResult = await tx.equipo.updateMany({
+        where: {
+          equipoId,
+          ...(expectedExistenciaSie !== null ? { existenciaSie: expectedExistenciaSie } : {}),
+        },
+        data: { existenciaSie },
+      });
+
+      if (updateResult.count === 0) {
+        const latest = await tx.equipo.findUnique({
+          where: { equipoId },
+          select: { existenciaSie: true },
+        });
+        if (!latest) {
+          return { kind: "not_found" as const };
+        }
+        return {
+          kind: "conflict" as const,
+          currentExistenciaSie: latest.existenciaSie,
+        };
+      }
+
+      await tx.auditoria.create({
+        data: {
+          usuarioId: auth.user.usuarioId,
+          accion: "UPDATE",
+          entidad: "EQUIPO",
+          entidadId: current.equipoId.toString(),
+          detalle: {
+            evento: "EQUIPO_EXISTENCIA_SIE_UPDATE",
+            previo: { existenciaSie: current.existenciaSie },
+            nuevo: { existenciaSie },
+          },
+        },
+      });
+
+      return {
+        kind: "updated" as const,
+        equipoId: current.equipoId.toString(),
+        existenciaSie,
+      };
     });
 
-    if (!current) {
+    if (result.kind === "not_found") {
       return NextResponse.json({ error: "Equipo no encontrado." }, { status: 404 });
     }
 
-    const updated = await prisma.equipo.update({
-      where: { equipoId },
-      data: { existenciaSie },
-      select: {
-        equipoId: true,
-        nombre: true,
-        existenciaSie: true,
-      },
-    });
-
-    await logAudit({
-      usuarioId: auth.user.usuarioId,
-      accion: "UPDATE",
-      entidad: "EQUIPO",
-      entidadId: updated.equipoId.toString(),
-      detalle: {
-        evento: "EQUIPO_EXISTENCIA_SIE_UPDATE",
-        previo: { existenciaSie: current.existenciaSie },
-        nuevo: { existenciaSie: updated.existenciaSie },
-      },
-    });
+    if (result.kind === "conflict") {
+      return NextResponse.json(
+        {
+          error: "La existencia SIE fue modificada por otro usuario.",
+          currentExistenciaSie: result.currentExistenciaSie,
+        },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({
-      equipoId: updated.equipoId.toString(),
-      existenciaSie: updated.existenciaSie,
+      equipoId: result.equipoId,
+      existenciaSie: result.existenciaSie,
     });
   } catch (error: unknown) {
     if (typeof error === "object" && error && "code" in error) {

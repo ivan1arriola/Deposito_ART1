@@ -40,6 +40,17 @@ export async function GET(request: Request) {
           },
         },
       },
+      articulos: {
+        include: {
+          articulo: {
+            select: {
+              articuloId: true,
+              nombre: true,
+              tipo: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -80,8 +91,15 @@ export async function GET(request: Request) {
         tipo: movimiento.tipo,
         clase,
         nombre,
+        anulado: Boolean(movimiento.anulado),
         equipos: movimiento.equipos.map((detail) => ({
           equipo: detail.equipo.nombre,
+          cantidad: detail.cantidad,
+        })),
+        articulos: (movimiento.articulos ?? []).map((detail) => ({
+          articuloId: detail.articuloId,
+          articulo: detail.articulo.nombre,
+          tipo: detail.articulo.tipo,
           cantidad: detail.cantidad,
         })),
         observaciones: movimiento.observaciones,

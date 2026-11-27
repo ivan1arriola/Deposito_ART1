@@ -37,6 +37,7 @@ import { ConfigViews } from "./components/views/ConfigViews";
 import type { PrestamoEditPayload } from "./components/views/FormulariosPrestamosView";
 import { RecordatoriosConfigView } from "./components/views/RecordatoriosConfigView";
 import { EquiposUnificarView } from "./components/views/EquiposUnificarView";
+import { OperationalDashboardView } from "./components/views/OperationalDashboardView";
 import { ActionMenu, toast } from "./components/shared";
 import { useHomeData } from "./hooks/useHomeData";
 import { useLoginState } from "./hooks/useLoginState";
@@ -1859,10 +1860,10 @@ export default function Home() {
                     ).map((m) => (
                       <div
                         key={m.articuloStockMovimientoId}
-                        className="flex justify-between equipos-center rounded-lg border border-stone-150 bg-white p-2 text-xs"
+                        className="flex justify-between items-center rounded-lg border border-stone-150 bg-white p-2 text-xs"
                       >
                         <div>
-                          <div className="flex equipos-center gap-1.5">
+                          <div className="flex items-center gap-1.5">
                             <span
                               className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase ${
                                 m.tipo === "INGRESO"
@@ -6009,7 +6010,7 @@ export default function Home() {
                 </select>
               </div>
               <div className="col-span-1 md:col-span-2 lg:col-span-4 mt-1">
-                <label className="flex cursor-pointer equipos-center gap-2.5 rounded-xl border border-stone-200 bg-stone-50 p-3 hover:bg-stone-100">
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-stone-200 bg-stone-50 p-3 hover:bg-stone-100">
                   <input
                     type="checkbox"
                     checked={editEquipo.activo}
@@ -6046,7 +6047,7 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <div className="flex w-16 shrink-0 flex-col equipos-center justify-center border-r border-stone-100 bg-stone-50 p-2 text-stone-500">
+            <div className="flex w-16 shrink-0 flex-col items-center justify-center border-r border-stone-100 bg-stone-50 p-2 text-stone-500">
               <span className="text-[10px] font-bold uppercase tracking-widest mb-1">Posición</span>
               <span className="text-lg font-black text-stone-700">
                 {isReorderable
@@ -6057,20 +6058,20 @@ export default function Home() {
               </span>
             </div>
 
-            <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:equipos-center sm:justify-between">
+            <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex-1">
                 <h3 className="text-base font-bold text-stone-800 tracking-tight mb-1">
                   {equipo.nombre}
                 </h3>
-                <div className="flex flex-wrap equipos-center gap-3 text-[11px] font-semibold text-stone-500">
-                  <span className="flex equipos-center gap-1.5 uppercase tracking-wider">
+                <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-stone-500">
+                  <span className="flex items-center gap-1.5 uppercase tracking-wider">
                     <span
                       className={`h-1.5 w-1.5 rounded-full ${equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? "bg-sky-500" : "bg-amber-500"}`}
                     ></span>
                     {equipo.tipoLabel ?? equipo.tipo}
                   </span>
                   <span className="text-stone-300">•</span>
-                  <span className="flex equipos-center gap-1.5 uppercase tracking-wider">
+                  <span className="flex items-center gap-1.5 uppercase tracking-wider">
                     <span
                       className={`h-1.5 w-1.5 rounded-full ${equipo.activo ? "bg-emerald-500" : "bg-rose-500"}`}
                     ></span>
@@ -6079,12 +6080,12 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap equipos-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-2.5">
                 {canWrite ? (
                   <button
                     type="button"
                     onClick={() => void toggleEquipoActivo(equipo)}
-                    className={`flex h-9 equipos-center justify-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all active:scale-95 shadow-sm ${
+                    className={`flex h-9 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all active:scale-95 shadow-sm ${
                       equipo.activo
                         ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:border-rose-300"
                         : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300"
@@ -6135,8 +6136,8 @@ export default function Home() {
                 ) : null}
 
                 {isReorderable ? (
-                  <div className="flex h-9 equipos-center gap-1.5 rounded-xl border border-stone-200/80 bg-stone-50/80 px-1.5 shadow-sm">
-                    <div className="flex equipos-center gap-0.5 border-r border-stone-200 pr-1.5">
+                  <div className="flex h-9 items-center gap-1.5 rounded-xl border border-stone-200/80 bg-stone-50/80 px-1.5 shadow-sm">
+                    <div className="flex items-center gap-0.5 border-r border-stone-200 pr-1.5">
                       <button
                         type="button"
                         onClick={() =>
@@ -6145,7 +6146,7 @@ export default function Home() {
                             : moveEquipoInactivoInDraft(equipo.equipoId, "up", orderGroupType)
                         }
                         disabled={!canWrite || orderIndex <= 0}
-                        className="flex h-6 w-6 equipos-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
+                        className="flex h-6 w-6 items-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
                         title="Subir una posición"
                       >
                         <svg
@@ -6170,7 +6171,7 @@ export default function Home() {
                             : moveEquipoInactivoInDraft(equipo.equipoId, "down", orderGroupType)
                         }
                         disabled={!canWrite || orderIndex < 0 || orderIndex >= orderCount - 1}
-                        className="flex h-6 w-6 equipos-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
+                        className="flex h-6 w-6 items-center justify-center rounded-lg text-stone-500 hover:bg-white hover:text-stone-800 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30 transition-all"
                         title="Bajar una posición"
                       >
                         <svg
@@ -6188,7 +6189,7 @@ export default function Home() {
                         </svg>
                       </button>
                     </div>
-                    <div className="flex equipos-center">
+                    <div className="flex items-center">
                       <select
                         value={currentOrderLabel}
                         onChange={(event) =>
@@ -6637,236 +6638,244 @@ export default function Home() {
     );
   }
 
-  const sidebarContent = (
-    <>
-      <Stack spacing={2} sx={{ mb: 4, mt: 1, px: 1, alignItems: "center", overflow: "hidden" }}>
-        <Typography
-          sx={{
-            color: "rgba(255,255,255,0.5)",
-            fontSize: 11,
-            fontWeight: 700,
-            alignSelf: "flex-start",
-            opacity: sidebarCollapsed ? 0 : 1,
-            transition: "opacity 0.2s",
-          }}
-        >
-          Versión: {appVersion}
-        </Typography>
-
-        <Box
-          sx={{
-            width: sidebarCollapsed ? 45 : 100,
-            height: "auto",
-            my: 1,
-            transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          }}
-        >
-          <Image
-            src="/assets/logo-deposito.png"
-            alt="Logo Depósito"
-            width={200}
-            height={240}
-            style={{
-              width: "100%",
-              height: "auto",
-              filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))",
-              transition: "all 0.3s ease",
-            }}
-          />
-        </Box>
-
-        <Box sx={{ textAlign: "center", display: sidebarCollapsed ? "none" : "block" }}>
+  const renderSidebarContent = (isMobileDrawer: boolean) => {
+    const isCollapsedSidebar = !isMobileDrawer && sidebarCollapsed;
+    return (
+      <>
+        <Stack spacing={2} sx={{ mb: 4, mt: 1, px: 1, alignItems: "center", overflow: "hidden" }}>
           <Typography
             sx={{
-              color: "rgba(255,255,255,0.9)",
-              fontSize: 13,
-              fontStyle: "italic",
-              fontWeight: 800,
-              lineHeight: 1.2,
-              mb: 0.5,
+              color: "rgba(255,255,255,0.5)",
+              fontSize: 11,
+              fontWeight: 700,
+              alignSelf: "flex-start",
+              opacity: isCollapsedSidebar ? 0 : 1,
+              transition: "opacity 0.2s",
             }}
           >
-            Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1
+            Versión: {appVersion}
           </Typography>
-          <Typography
-            sx={{
-              color: "var(--color-ejercito-gold)",
-              fontWeight: 900,
-              fontSize: 20,
-              letterSpacing: "0.02em",
-              textTransform: "uppercase",
-            }}
-          >
-            Depósito General
-          </Typography>
-        </Box>
 
-        <Divider sx={{ width: "100%", borderColor: "rgba(255,255,255,0.1)" }} />
-
-        <Typography
-          sx={{
-            color: "rgba(255,255,255,0.4)",
-            fontSize: 11,
-            fontWeight: 800,
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            alignSelf: "flex-start",
-            pl: 1,
-            opacity: sidebarCollapsed ? 0 : 1,
-            transition: "opacity 0.2s",
-          }}
-        >
-          {!sidebarCollapsed && "Menú Principal"}
-        </Typography>
-      </Stack>
-
-      <MainNavigation
-        activeView={activeView}
-        canWrite={canWrite}
-        isAdmin={isAdmin}
-        showConfigViews={showConfigViews}
-        isConfigView={isConfigView}
-        configMenuRef={configMenuRef}
-        collapsed={sidebarCollapsed}
-        onToggleCollapsed={() => setSidebarCollapsed(!sidebarCollapsed)}
-        onSelectView={(view) => {
-          handleSelectMainView(view);
-          setMobileMenuOpen(false);
-        }}
-        onOpenSearch={() => {
-          setGlobalSearchOpen(true);
-          setMobileMenuOpen(false);
-        }}
-        onSetConfigViews={setShowConfigViews}
-        embedded
-      />
-
-      <Box sx={{ mt: 4, mb: 2 }}>
-        <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", mb: 3 }} />
-
-        {/* User Info Section */}
-        <Stack spacing={1.5} sx={{ px: 1, mb: 4 }}>
           <Box
             sx={{
-              p: 1.5,
-              borderRadius: 2,
-              bgcolor: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              width: isCollapsedSidebar ? 45 : 100,
+              height: "auto",
+              my: 1,
+              transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           >
+            <Image
+              src="/assets/logo-deposito.png"
+              alt="Logo Depósito"
+              width={200}
+              height={240}
+              style={{
+                width: "100%",
+                height: "auto",
+                filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))",
+                transition: "opacity 0.2s ease",
+              }}
+            />
+          </Box>
+
+          <Box sx={{ textAlign: "center", display: isCollapsedSidebar ? "none" : "block" }}>
             <Typography
               sx={{
-                color: "rgba(255,255,255,0.4)",
-                fontSize: 10,
-                fontWeight: 700,
-                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.9)",
+                fontSize: 13,
+                fontStyle: "italic",
+                fontWeight: 800,
+                lineHeight: 1.2,
                 mb: 0.5,
               }}
             >
-              Usuario Conectado
+              Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1
             </Typography>
-            <Typography sx={{ color: "common.white", fontSize: 14, fontWeight: 700 }}>
-              {currentUser?.username || "---"}
-            </Typography>
-            <Typography sx={{ color: "var(--color-ejercito-gold)", fontSize: 12, fontWeight: 600 }}>
-              {currentUser ? roleLabel(currentUser.rol) : "---"}
+            <Typography
+              sx={{
+                color: "var(--color-ejercito-gold)",
+                fontWeight: 900,
+                fontSize: 20,
+                letterSpacing: "0.02em",
+                textTransform: "uppercase",
+              }}
+            >
+              Depósito General
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={1}>
-            <Button
-              fullWidth
-              variant="outlined"
-              size="small"
-              onClick={() => reloadCurrentViewData(true)}
-              sx={{
-                borderColor: "rgba(255,255,255,0.2)",
-                color: "common.white",
-                fontSize: 11,
-                textTransform: "none",
-                "&:hover": {
-                  borderColor: "rgba(255,255,255,0.4)",
-                  bgcolor: "rgba(255,255,255,0.05)",
-                },
-              }}
-            >
-              Recargar
-            </Button>
-            <Button
-              fullWidth
-              variant="contained"
-              size="small"
-              color="error"
-              onClick={() => void logout()}
-              sx={{
-                fontSize: 11,
-                textTransform: "none",
-                boxShadow: "0 4px 12px rgba(211, 47, 47, 0.2)",
-              }}
-            >
-              Cerrar sesión
-            </Button>
-          </Stack>
+          <Divider sx={{ width: "100%", borderColor: "rgba(255,255,255,0.1)" }} />
+
+          <Typography
+            sx={{
+              color: "rgba(255,255,255,0.4)",
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              alignSelf: "flex-start",
+              pl: 1,
+              opacity: isCollapsedSidebar ? 0 : 1,
+              transition: "opacity 0.2s",
+            }}
+          >
+            {!isCollapsedSidebar && "Menú Principal"}
+          </Typography>
         </Stack>
 
-        {/* Metrics Section */}
-        <Typography
-          sx={{
-            color: "rgba(255,255,255,0.4)",
-            fontSize: 11,
-            fontWeight: 800,
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            mb: 1.5,
-            pl: 1,
+        <MainNavigation
+          activeView={activeView}
+          canWrite={canWrite}
+          isAdmin={isAdmin}
+          showConfigViews={showConfigViews}
+          isConfigView={isConfigView}
+          configMenuRef={configMenuRef}
+          collapsed={isCollapsedSidebar}
+          onToggleCollapsed={
+            isMobileDrawer ? undefined : () => setSidebarCollapsed((prev) => !prev)
+          }
+          onSelectView={(view) => {
+            handleSelectMainView(view);
+            setMobileMenuOpen(false);
           }}
-        >
-          Resumen del Sistema
-        </Typography>
+          onOpenSearch={() => {
+            setGlobalSearchOpen(true);
+            setMobileMenuOpen(false);
+          }}
+          onSetConfigViews={setShowConfigViews}
+          embedded
+        />
 
-        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.25, px: 0.5 }}>
-          {[
-            { label: "Subalternos", value: personal.length },
-            { label: "Oficiales/Sub", value: oficialesSuboficiales.length },
-            { label: "Equipos", value: equipos.length },
-            { label: "Movimientos", value: movimientosTotal },
-          ].map((metric) => (
+        <Box sx={{ mt: 4, mb: 2 }}>
+          <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", mb: 3 }} />
+
+          {/* User Info Section */}
+          <Stack spacing={1.5} sx={{ px: 1, mb: 4 }}>
             <Box
-              key={metric.label}
               sx={{
                 p: 1.5,
-                borderRadius: 1.5,
-                bgcolor: "rgba(0,0,0,0.2)",
-                border: "1px solid rgba(255,255,255,0.05)",
-                display: "flex",
-                flexDirection: "column",
+                borderRadius: 2,
+                bgcolor: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
               <Typography
                 sx={{
-                  color: "rgba(255,255,255,0.5)",
-                  fontSize: 9,
+                  color: "rgba(255,255,255,0.4)",
+                  fontSize: 10,
                   fontWeight: 700,
                   textTransform: "uppercase",
+                  mb: 0.5,
                 }}
               >
-                {metric.label}
+                Usuario Conectado
               </Typography>
-              <Typography sx={{ color: "common.white", fontSize: 18, fontWeight: 900, mt: 0.2 }}>
-                {metric.value}
+              <Typography sx={{ color: "common.white", fontSize: 14, fontWeight: 700 }}>
+                {currentUser?.username || "---"}
+              </Typography>
+              <Typography
+                sx={{ color: "var(--color-ejercito-gold)", fontSize: 12, fontWeight: 600 }}
+              >
+                {currentUser ? roleLabel(currentUser.rol) : "---"}
               </Typography>
             </Box>
-          ))}
+
+            <Stack direction="row" spacing={1}>
+              <Button
+                fullWidth
+                variant="outlined"
+                size="small"
+                onClick={() => reloadCurrentViewData(true)}
+                sx={{
+                  borderColor: "rgba(255,255,255,0.2)",
+                  color: "common.white",
+                  fontSize: 11,
+                  textTransform: "none",
+                  "&:hover": {
+                    borderColor: "rgba(255,255,255,0.4)",
+                    bgcolor: "rgba(255,255,255,0.05)",
+                  },
+                }}
+              >
+                Recargar
+              </Button>
+              <Button
+                fullWidth
+                variant="contained"
+                size="small"
+                color="error"
+                onClick={() => void logout()}
+                sx={{
+                  fontSize: 11,
+                  textTransform: "none",
+                  boxShadow: "0 4px 12px rgba(211, 47, 47, 0.2)",
+                }}
+              >
+                Cerrar sesión
+              </Button>
+            </Stack>
+          </Stack>
+
+          {/* Metrics Section */}
+          <Typography
+            sx={{
+              color: "rgba(255,255,255,0.4)",
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              mb: 1.5,
+              pl: 1,
+            }}
+          >
+            Resumen del Sistema
+          </Typography>
+
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.25, px: 0.5 }}>
+            {[
+              { label: "Subalternos", value: personal.length },
+              { label: "Oficiales/Sub", value: oficialesSuboficiales.length },
+              { label: "Equipos", value: equipos.length },
+              { label: "Movimientos", value: movimientosTotal },
+            ].map((metric) => (
+              <Box
+                key={metric.label}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 1.5,
+                  bgcolor: "rgba(0,0,0,0.2)",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <Typography
+                  sx={{
+                    color: "rgba(255,255,255,0.5)",
+                    fontSize: 9,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {metric.label}
+                </Typography>
+                <Typography sx={{ color: "common.white", fontSize: 18, fontWeight: 900, mt: 0.2 }}>
+                  {metric.value}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
         </Box>
-      </Box>
-    </>
-  );
+      </>
+    );
+  };
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "var(--color-camo-base)" }}>
       {/* Sidebar - Desktop Only */}
       <Box
         component="nav"
+        aria-label="Menú principal"
         sx={{
           width: { xs: 0, md: sidebarCollapsed ? 80 : 280, lg: sidebarCollapsed ? 80 : 300 },
           display: { xs: "none", md: "block" },
@@ -6886,7 +6895,7 @@ export default function Home() {
           overflowX: "hidden",
         }}
       >
-        {sidebarContent}
+        {renderSidebarContent(false)}
       </Box>
 
       {/* Drawer - Mobile Only */}
@@ -6894,6 +6903,7 @@ export default function Home() {
         anchor="left"
         open={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
+        aria-label="Menú principal móvil"
         PaperProps={{
           sx: {
             width: 280,
@@ -6905,7 +6915,7 @@ export default function Home() {
           },
         }}
       >
-        {sidebarContent}
+        {renderSidebarContent(true)}
       </Drawer>
 
       {/* Main Content Area */}
@@ -6929,9 +6939,9 @@ export default function Home() {
         }}
       >
         {/* Mobile Header */}
-        <header className="sticky top-0 z-40 flex equipos-center justify-between border-b border-stone-300/80 bg-white px-4 py-3 shadow-md backdrop-blur-md min-[900px]:hidden -mx-2 sm:-mx-3 mb-4">
-          <div className="flex equipos-center gap-3">
-            <div className="flex h-10 w-10 equipos-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-inner">
+        <header className="sticky top-0 z-40 flex items-center justify-between border-b border-stone-300/80 bg-white px-4 py-3 shadow-md backdrop-blur-md min-[900px]:hidden -mx-2 sm:-mx-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-inner">
               <Image
                 src="/assets/logo-deposito.png"
                 alt="Escudo"
@@ -6944,7 +6954,7 @@ export default function Home() {
               <h1 className="text-sm font-black tracking-tight text-[var(--color-ejercito-gold)] drop-shadow-sm">
                 DEPÓSITO GENERAL
               </h1>
-              <div className="flex equipos-center gap-1.5">
+              <div className="flex items-center gap-1.5">
                 <span className="text-[11px] font-black uppercase tracking-wider text-stone-700">
                   Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1
                 </span>
@@ -6953,11 +6963,11 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className="flex equipos-center gap-1">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setGlobalSearchOpen(true)}
-              className="flex h-10 w-10 equipos-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
             >
               <span className="sr-only">Buscar personal</span>
               <svg
@@ -6977,7 +6987,9 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="flex h-10 w-10 equipos-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+              aria-expanded={mobileMenuOpen}
+              aria-label="Abrir menú"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-stone-500 transition-colors hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
             >
               <span className="sr-only">Abrir menú</span>
               <svg
@@ -7006,7 +7018,18 @@ export default function Home() {
         )}
 
         <div>
-          {activeView !== "dashboard" ? <AppInstallCard /> : null}
+          {activeView === "dashboard" ? (
+            <OperationalDashboardView
+              canWrite={canWrite}
+              isAdmin={isAdmin}
+              onNavigateView={(view) => handleSelectMainView(view)}
+              onOpenEntrega={() => openMassRegistro("ENTREGA")}
+              onOpenAsignacion={() => handleSelectMainView("asignacion_recinto_nueva")}
+              onOpenPrestamo={() => handleSelectMainView("prestamos_registrar")}
+            />
+          ) : (
+            <AppInstallCard />
+          )}
 
           {inReminderConfigView ? (
             <RecordatoriosConfigView

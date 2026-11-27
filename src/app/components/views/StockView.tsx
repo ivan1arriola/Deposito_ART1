@@ -85,6 +85,11 @@ export function StockView({
   >({});
   const [sieDraftByItemId, setSieDraftByItemId] = useState<Record<string, string>>({});
   const [sieSavingItemId, setSieSavingItemId] = useState<string | null>(null);
+  const [sieSavedItemId, setSieSavedItemId] = useState<string | null>(null);
+  const [sieErrorByItemId, setSieErrorByItemId] = useState<Record<string, string>>({});
+  const [sieConflictValueByItemId, setSieConflictValueByItemId] = useState<Record<string, number>>(
+    {}
+  );
   const [sieError, setSieError] = useState<string | null>(null);
   const [searchTermEquipos, setSearchTermEquipos] = useState("");
   const [ordenAlfabetico, setOrdenAlfabetico] = useState(false);
@@ -204,9 +209,21 @@ export function StockView({
     return draftValue !== undefined ? draftValue : String(equipo.existenciaSie ?? 0);
   };
 
+  const hasSieDraftChange = (equipo: StockDashboardData["resumen"][number]) => {
+    const draftValue = sieDraftByItemId[equipo.equipoId];
+    return draftValue !== undefined && draftValue !== String(equipo.existenciaSie ?? 0);
+  };
+
   function updateSieDraft(equipoId: string, value: string) {
     if (!/^\d*$/.test(value)) return;
     setSieError(null);
+    setSieSavedItemId((current) => (current === equipoId ? null : current));
+    setSieErrorByItemId((prev) => {
+      if (!(equipoId in prev)) return prev;
+      const next = { ...prev };
+      delete next[equipoId];
+      return next;
+    });
     setSieDraftByItemId((prev) => ({
       ...prev,
       [equipoId]: value,
@@ -217,49 +234,92 @@ export function StockView({
     if (!canEditSie || sieSavingItemId !== null) return;
     const inputValue = getSieInputValue(equipo).trim();
     if (inputValue === "") {
-      resetSieDraft(equipo);
+      const msg = "La existencia del SIE debe ser un entero mayor o igual a 0.";
+      setSieError(msg);
+      setSieErrorByItemId((prev) => ({ ...prev, [equipo.equipoId]: msg }));
       return;
     }
 
     const parsed = Number(inputValue);
     if (!Number.isInteger(parsed) || parsed < 0) {
-      setSieError("La existencia del SIE debe ser un entero mayor o igual a 0.");
+      const msg = "La existencia del SIE debe ser un entero mayor o igual a 0.";
+      setSieError(msg);
+      setSieErrorByItemId((prev) => ({ ...prev, [equipo.equipoId]: msg }));
       return;
     }
 
-    if (parsed === equipo.existenciaSie) {
+    const expectedExistenciaSie =
+      sieConflictValueByItemId[equipo.equipoId] ?? equipo.existenciaSie ?? 0;
+
+    if (parsed === expectedExistenciaSie && !(equipo.equipoId in sieConflictValueByItemId)) {
+      resetSieDraft(equipo);
+      return;
+    }
+
+    setSieSavingItemId(equipo.equipoId);
+    setSieSavedItemId(null);
+    setSieError(null);
+    setSieErrorByItemId((prev) => {
+      if (!(equipo.equipoId in prev)) return prev;
+      const next = { ...prev };
+      delete next[equipo.equipoId];
+      return next;
+    });
+
+    try {
+      const response = await fetch(`/api/equipos/${encodeURIComponent(equipo.equipoId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          existenciaSie: parsed,
+          expectedExistenciaSie,
+        }),
+      });
+      const rawBody = await response.text();
+      let data: { error?: string; currentExistenciaSie?: number } | null = null;
+      if (rawBody) {
+        try {
+          data = JSON.parse(rawBody) as { error?: string; currentExistenciaSie?: number };
+        } catch {
+          data = null;
+        }
+      }
+
+      if (!response.ok) {
+        if (response.status === 409 && typeof data?.currentExistenciaSie === "number") {
+          const currentValue = data.currentExistenciaSie;
+          const conflictMessage = `Otro usuario modificó el SIE. Valor vigente: ${currentValue}. Tu borrador se conservó.`;
+          setSieConflictValueByItemId((prev) => ({
+            ...prev,
+            [equipo.equipoId]: currentValue,
+          }));
+          setSieError(conflictMessage);
+          setSieErrorByItemId((prev) => ({ ...prev, [equipo.equipoId]: conflictMessage }));
+          return;
+        }
+        throw new Error(data?.error || "No se pudo actualizar la existencia del SIE.");
+      }
+
       setSieDraftByItemId((prev) => {
+        const next = { ...prev };
+        delete next[equipo.equipoId];
+        return next;
+      });
+      setSieConflictValueByItemId((prev) => {
         if (!(equipo.equipoId in prev)) return prev;
         const next = { ...prev };
         delete next[equipo.equipoId];
         return next;
       });
-      return;
-    }
-
-    setSieSavingItemId(equipo.equipoId);
-    setSieError(null);
-    try {
-      await api<{ equipoId: string; existenciaSie: number }>(
-        `/api/equipos/${encodeURIComponent(equipo.equipoId)}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ existenciaSie: parsed }),
-        }
-      );
-      setSieDraftByItemId((prev) => {
-        const next = { ...prev };
-        delete next[equipo.equipoId];
-        return next;
-      });
+      setSieSavedItemId(equipo.equipoId);
       await onReload();
     } catch (saveError: unknown) {
-      setSieError(
+      const msg =
         saveError instanceof Error
           ? saveError.message
-          : "No se pudo actualizar la existencia del SIE."
-      );
+          : "No se pudo actualizar la existencia del SIE.";
+      setSieError(msg);
+      setSieErrorByItemId((prev) => ({ ...prev, [equipo.equipoId]: msg }));
     } finally {
       setSieSavingItemId((current) => (current === equipo.equipoId ? null : current));
     }
@@ -272,6 +332,19 @@ export function StockView({
       delete next[equipo.equipoId];
       return next;
     });
+    setSieErrorByItemId((prev) => {
+      if (!(equipo.equipoId in prev)) return prev;
+      const next = { ...prev };
+      delete next[equipo.equipoId];
+      return next;
+    });
+    setSieConflictValueByItemId((prev) => {
+      if (!(equipo.equipoId in prev)) return prev;
+      const next = { ...prev };
+      delete next[equipo.equipoId];
+      return next;
+    });
+    setSieSavedItemId((current) => (current === equipo.equipoId ? null : current));
     setSieError(null);
   }
 
@@ -321,14 +394,14 @@ export function StockView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap equipos-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">{viewTitle}</h2>
             <p className="mt-1 text-xs text-stone-600">Vista operativa de stock y movimientos.</p>
           </div>
-          <div className="flex flex-wrap equipos-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             {section === "total" ? (
-              <div className="flex equipos-center bg-stone-900 text-white rounded-xl shadow-md p-1 border border-stone-800">
+              <div className="flex items-center bg-stone-900 text-white rounded-xl shadow-md p-1 border border-stone-800">
                 <button
                   type="button"
                   onClick={() =>
@@ -338,7 +411,7 @@ export function StockView({
                       "noopener,noreferrer"
                     )
                   }
-                  className="flex equipos-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-[#e5bb37]"
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-[#e5bb37]"
                   title="Imprimir con el orden configurado en PDF / Catálogo"
                 >
                   <PrintRoundedIcon sx={{ fontSize: 18 }} />
@@ -354,7 +427,7 @@ export function StockView({
                       "noopener,noreferrer"
                     )
                   }
-                  className="flex equipos-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-stone-200 hover:text-white"
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-stone-200 hover:text-white"
                   title="Imprimir separando equipos por categoría, con orden alfabético dentro de cada grupo"
                 >
                   <SortByAlphaRoundedIcon sx={{ fontSize: 18 }} />
@@ -366,7 +439,7 @@ export function StockView({
               type="button"
               onClick={onReload}
               disabled={loading}
-              className="flex equipos-center gap-1.5 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition hover:bg-stone-50 hover:border-stone-400 active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition hover:bg-stone-50 hover:border-stone-400 active:scale-95 disabled:opacity-50"
             >
               <RefreshRoundedIcon sx={{ fontSize: 18 }} className={loading ? "animate-spin" : ""} />
               <span>{loading ? "Recargando..." : "Recargar"}</span>
@@ -466,7 +539,7 @@ export function StockView({
           </div>
 
           <div className="mt-3 space-y-2">
-            <div className="flex equipos-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
                 Equipos del movimiento
               </p>
@@ -709,7 +782,7 @@ export function StockView({
               </div>
 
               <div className="mt-3 space-y-2">
-                <div className="flex equipos-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
                     Equipos prestados
                   </p>
@@ -830,7 +903,7 @@ export function StockView({
           ) : null}
 
           <article className="ej-card rounded-2xl p-4">
-            <div className="flex flex-wrap equipos-end justify-between gap-2">
+            <div className="flex flex-wrap items-end justify-between gap-2">
               <h3 className="text-sm font-semibold text-stone-900">Prestamos registrados</h3>
               <label className="w-full max-w-xs text-xs text-stone-700">
                 Buscar hoja por ID
@@ -857,7 +930,7 @@ export function StockView({
                   key={prestamo.prestamoId}
                   className="rounded-xl border border-stone-200 bg-stone-50 p-3"
                 >
-                  <div className="flex flex-wrap equipos-start justify-between gap-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-stone-900">
                         {prestamo.reciboNumero}
@@ -893,7 +966,7 @@ export function StockView({
                         </p>
                       ) : null}
                     </div>
-                    <div className="flex equipos-center gap-2">
+                    <div className="flex items-center gap-2">
                       <span
                         className={`rounded-full px-2 py-1 text-[11px] font-semibold ${prestamo.estado === "PENDIENTE" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}
                       >
@@ -1007,10 +1080,10 @@ export function StockView({
 
       {showStockTable ? (
         <article className="ej-card rounded-2xl p-4">
-          <div className="flex flex-wrap equipos-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-semibold text-stone-900">{stockTableTitle}</h3>
-            <div className="flex flex-wrap equipos-center gap-4">
-              <label className="flex equipos-center gap-2 cursor-pointer text-xs font-medium text-stone-700 select-none">
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-stone-700 select-none">
                 <input
                   type="checkbox"
                   checked={ordenAlfabetico}
@@ -1053,11 +1126,11 @@ export function StockView({
               {resumenFiltrado.length > 0
                 ? stockTableSections.map((tableSection) => (
                     <div key={tableSection.key}>
-                      <div className="mb-2 flex equipos-center gap-2">
+                      <div className="mb-2 flex items-center gap-2">
                         <h4 className="text-sm font-semibold text-stone-900">
                           {tableSection.title}
                         </h4>
-                        <span className="inline-flex equipos-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
+                        <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700">
                           {tableSection.equipos.length}
                         </span>
                       </div>
@@ -1066,172 +1139,503 @@ export function StockView({
                           {`No hay registros para la categoría ${tableSection.title.toLowerCase()} en esta vista.`}
                         </div>
                       ) : (
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full border-separate border-spacing-0 text-sm">
-                            <thead>
-                              <tr>
-                                <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">
-                                  Equipo
-                                </th>
-                                {section === "total" ? (
-                                  <>
-                                    <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
-                                      Subalternos
-                                    </th>
-                                    <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
-                                      Recintos
-                                    </th>
-                                    <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
-                                      Prestamo
-                                    </th>
-                                    <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
-                                      Deposito
-                                    </th>
-                                    <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
-                                      Unidad
-                                    </th>
-                                    <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
-                                      Existencia SIE
-                                    </th>
-                                  </>
-                                ) : (
-                                  <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
-                                    Stock deposito
-                                  </th>
-                                )}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {tableSection.equipos.map((equipo, index) => (
-                                <tr
-                                  key={equipo.equipoId}
-                                  className={index % 2 === 0 ? "bg-white" : "bg-stone-100/80"}
+                        <>
+                          <div
+                            className="space-y-3 md:hidden"
+                            data-testid={`stock-mobile-${tableSection.key}`}
+                          >
+                            {tableSection.equipos.map((equipo) => {
+                              const existenciaSie = equipo.existenciaSie ?? 0;
+                              const sieDiff = equipo.stockUnidad - existenciaSie;
+                              return (
+                                <div
+                                  key={`mobile-${equipo.equipoId}`}
+                                  className="rounded-xl border border-stone-200 bg-white p-3.5"
                                 >
-                                  <td className="border-b border-stone-100 px-3 py-2 text-stone-900">
-                                    {equipo.nombre}
-                                  </td>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                                        {tableSection.title}
+                                      </p>
+                                      <h5 className="text-sm font-bold text-stone-900">
+                                        {equipo.nombre}
+                                      </h5>
+                                    </div>
+                                    {section === "total" ? (
+                                      <span
+                                        className={`rounded-md border px-2 py-0.5 text-xs font-bold tabular-nums ${
+                                          sieDiff === 0
+                                            ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                                            : "border-amber-300 bg-amber-50 text-amber-900"
+                                        }`}
+                                      >
+                                        Dif. SIE: {sieDiff > 0 ? `+${sieDiff}` : sieDiff}
+                                      </span>
+                                    ) : null}
+                                  </div>
+
                                   {section === "total" ? (
-                                    <>
-                                      <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
+                                    <div className="mt-3 space-y-2.5">
+                                      <div className="grid grid-cols-3 gap-2">
                                         <button
                                           type="button"
                                           onClick={() =>
                                             void openItemTraceDialog(equipo, "SUBALTERNOS")
                                           }
-                                          className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                          aria-label={`Ver detalle de ${equipo.nombre} en Subalternos (móvil): ${equipo.stockSubalternos}`}
+                                          className={`flex min-h-[44px] flex-col items-end justify-center rounded-lg border px-2.5 py-1.5 text-right tabular-nums transition-colors ${
                                             equipo.stockSubalternos < 0
-                                              ? "text-rose-600 font-bold animate-pulse"
-                                              : "text-stone-900"
+                                              ? "border-rose-300 bg-rose-50 text-rose-800"
+                                              : "border-stone-300 bg-stone-50 text-stone-900 hover:border-sky-400 hover:bg-sky-50"
                                           }`}
-                                          title={`Ver detalle de ${equipo.nombre} en Subalternos`}
                                         >
-                                          {equipo.stockSubalternos}
+                                          <span className="text-[10px] font-semibold uppercase text-stone-600">
+                                            Subalternos
+                                          </span>
+                                          <span className="text-sm font-bold">
+                                            {equipo.stockSubalternos < 0
+                                              ? `! ${equipo.stockSubalternos} Negativo`
+                                              : equipo.stockSubalternos}
+                                          </span>
                                         </button>
-                                      </td>
-                                      <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
+
                                         <button
                                           type="button"
                                           onClick={() =>
                                             void openItemTraceDialog(equipo, "RECINTO")
                                           }
-                                          className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                          aria-label={`Ver detalle de ${equipo.nombre} en Recintos (móvil): ${equipo.stockAsignacion}`}
+                                          className={`flex min-h-[44px] flex-col items-end justify-center rounded-lg border px-2.5 py-1.5 text-right tabular-nums transition-colors ${
                                             equipo.stockAsignacion < 0
-                                              ? "text-rose-600 font-bold animate-pulse"
-                                              : "text-stone-900"
+                                              ? "border-rose-300 bg-rose-50 text-rose-800"
+                                              : "border-stone-300 bg-stone-50 text-stone-900 hover:border-sky-400 hover:bg-sky-50"
                                           }`}
-                                          title={`Ver detalle de ${equipo.nombre} en Recintos`}
                                         >
-                                          {equipo.stockAsignacion}
+                                          <span className="text-[10px] font-semibold uppercase text-stone-600">
+                                            Recintos
+                                          </span>
+                                          <span className="text-sm font-bold">
+                                            {equipo.stockAsignacion < 0
+                                              ? `! ${equipo.stockAsignacion} Negativo`
+                                              : equipo.stockAsignacion}
+                                          </span>
                                         </button>
-                                      </td>
-                                      <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
+
                                         <button
                                           type="button"
                                           onClick={() =>
                                             void openItemTraceDialog(equipo, "PRESTAMO")
                                           }
-                                          className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                          aria-label={`Ver detalle de ${equipo.nombre} en Préstamo (móvil): ${equipo.stockPrestamo}`}
+                                          className={`flex min-h-[44px] flex-col items-end justify-center rounded-lg border px-2.5 py-1.5 text-right tabular-nums transition-colors ${
                                             equipo.stockPrestamo < 0
-                                              ? "text-rose-600 font-bold animate-pulse"
-                                              : "text-stone-900"
+                                              ? "border-rose-300 bg-rose-50 text-rose-800"
+                                              : "border-stone-300 bg-stone-50 text-stone-900 hover:border-sky-400 hover:bg-sky-50"
                                           }`}
-                                          title={`Ver detalle de ${equipo.nombre} en Préstamo`}
                                         >
-                                          {equipo.stockPrestamo}
+                                          <span className="text-[10px] font-semibold uppercase text-stone-600">
+                                            Préstamo
+                                          </span>
+                                          <span className="text-sm font-bold">
+                                            {equipo.stockPrestamo < 0
+                                              ? `! ${equipo.stockPrestamo} Negativo`
+                                              : equipo.stockPrestamo}
+                                          </span>
                                         </button>
-                                      </td>
-                                      <td
-                                        className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
+                                      </div>
+
+                                      <div className="grid grid-cols-2 gap-2 rounded-lg border border-stone-200 bg-stone-50 p-2.5 text-xs">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-stone-600">Depósito</span>
+                                          <span
+                                            className={`font-bold tabular-nums ${
+                                              equipo.stockDeposito < 0
+                                                ? "text-rose-800"
+                                                : "text-stone-900"
+                                            }`}
+                                          >
+                                            {equipo.stockDeposito < 0
+                                              ? `! ${equipo.stockDeposito} Negativo`
+                                              : equipo.stockDeposito}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-between border-l border-stone-300 pl-2">
+                                          <span className="font-semibold text-stone-700">
+                                            Stock Unidad
+                                          </span>
+                                          <span
+                                            className={`font-bold tabular-nums ${
+                                              equipo.stockUnidad < 0
+                                                ? "text-rose-800"
+                                                : "text-stone-900"
+                                            }`}
+                                          >
+                                            {equipo.stockUnidad}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <div className="rounded-lg border border-sky-200 bg-sky-50/50 p-2.5 text-xs">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="font-semibold text-stone-700">
+                                            Existencia SIE
+                                          </span>
+                                          {canEditSie ? (
+                                            <div className="flex items-center gap-1.5">
+                                              <input
+                                                type="number"
+                                                min={0}
+                                                step={1}
+                                                value={getSieInputValue(equipo)}
+                                                disabled={loading || sieSavingItemId !== null}
+                                                onChange={(event) =>
+                                                  updateSieDraft(
+                                                    equipo.equipoId,
+                                                    event.target.value
+                                                  )
+                                                }
+                                                aria-label={`Existencia del SIE (móvil) para ${equipo.nombre}`}
+                                                className="w-20 rounded border border-stone-300 bg-white px-2 py-1 text-right text-xs font-semibold tabular-nums text-stone-900"
+                                              />
+                                              {hasSieDraftChange(equipo) ||
+                                              equipo.equipoId in sieConflictValueByItemId ? (
+                                                <button
+                                                  type="button"
+                                                  disabled={loading || sieSavingItemId !== null}
+                                                  onClick={() => void persistSieValue(equipo)}
+                                                  aria-label={`Guardar SIE (móvil) para ${equipo.nombre}`}
+                                                  className="min-h-[36px] rounded bg-stone-900 px-2 py-1 text-[11px] font-semibold text-white"
+                                                >
+                                                  Guardar
+                                                </button>
+                                              ) : null}
+                                            </div>
+                                          ) : (
+                                            <span className="font-bold tabular-nums text-stone-900">
+                                              {existenciaSie}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="mt-2 flex items-center justify-between rounded-lg border border-stone-200 bg-stone-50 p-2.5 text-xs">
+                                      <span className="text-stone-600">Stock depósito</span>
+                                      <span
+                                        className={`font-bold tabular-nums ${
                                           equipo.stockDeposito < 0
-                                            ? "text-rose-600 font-bold"
+                                            ? "text-rose-800"
                                             : "text-stone-900"
                                         }`}
                                       >
-                                        {equipo.stockDeposito}
-                                      </td>
-                                      <td
-                                        className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
-                                          equipo.stockUnidad < 0
-                                            ? "text-rose-600 font-bold"
-                                            : "text-stone-900"
-                                        }`}
-                                      >
-                                        {equipo.stockUnidad}
-                                      </td>
-                                      <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
-                                        {canEditSie ? (
-                                          <div className="flex equipos-center justify-end gap-2">
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              value={getSieInputValue(equipo)}
-                                              disabled={loading || sieSavingItemId !== null}
-                                              onChange={(event) =>
-                                                updateSieDraft(equipo.equipoId, event.target.value)
-                                              }
-                                              onBlur={() => void persistSieValue(equipo)}
-                                              onKeyDown={(event) => {
-                                                if (event.key === "Enter") {
-                                                  event.preventDefault();
-                                                  void persistSieValue(equipo);
-                                                  return;
-                                                }
-                                                if (event.key === "Escape") {
-                                                  event.preventDefault();
-                                                  resetSieDraft(equipo);
-                                                }
-                                              }}
-                                              className="w-24 rounded border border-stone-300 px-2 py-1 text-right text-xs font-semibold text-stone-900"
-                                              aria-label={`Existencia del SIE para ${equipo.nombre}`}
-                                            />
-                                            {sieSavingItemId === equipo.equipoId ? (
-                                              <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">
-                                                Guardando
-                                              </span>
-                                            ) : null}
-                                          </div>
-                                        ) : (
-                                          (equipo.existenciaSie ?? 0)
-                                        )}
-                                      </td>
+                                        {equipo.stockDeposito < 0
+                                          ? `! ${equipo.stockDeposito} Negativo`
+                                          : equipo.stockDeposito}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="hidden overflow-x-auto md:block">
+                            <table className="min-w-full border-separate border-spacing-0 text-sm">
+                              <thead>
+                                <tr>
+                                  <th className="border-b border-stone-200 px-3 py-2 text-left font-semibold text-stone-700">
+                                    Equipo
+                                  </th>
+                                  {section === "total" ? (
+                                    <>
+                                      <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
+                                        Subalternos
+                                      </th>
+                                      <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
+                                        Recintos
+                                      </th>
+                                      <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
+                                        Préstamo
+                                      </th>
+                                      <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
+                                        Depósito
+                                      </th>
+                                      <th className="border-b border-l-2 border-stone-200 border-l-stone-300 bg-stone-50/70 px-3 py-2 text-right font-semibold text-stone-800">
+                                        Unidad
+                                      </th>
+                                      <th className="border-b border-l-2 border-stone-200 border-l-sky-200 bg-sky-50/50 px-3 py-2 text-right font-semibold text-stone-800">
+                                        Existencia SIE
+                                      </th>
+                                      <th className="border-b border-stone-200 bg-sky-50/50 px-3 py-2 text-right font-semibold text-stone-800">
+                                        Diferencia
+                                      </th>
                                     </>
                                   ) : (
-                                    <td
-                                      className={`border-b border-stone-100 px-3 py-2 text-right font-semibold ${
-                                        equipo.stockDeposito < 0
-                                          ? "text-rose-600 font-bold"
-                                          : "text-stone-900"
-                                      }`}
-                                    >
-                                      {equipo.stockDeposito}
-                                    </td>
+                                    <th className="border-b border-stone-200 px-3 py-2 text-right font-semibold text-stone-700">
+                                      Stock depósito
+                                    </th>
                                   )}
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                              </thead>
+                              <tbody>
+                                {tableSection.equipos.map((equipo, index) => {
+                                  const existenciaSie = equipo.existenciaSie ?? 0;
+                                  const sieDiff = equipo.stockUnidad - existenciaSie;
+                                  return (
+                                    <tr
+                                      key={equipo.equipoId}
+                                      className={index % 2 === 0 ? "bg-white" : "bg-stone-100/80"}
+                                    >
+                                      <td className="border-b border-stone-100 px-3 py-2 text-stone-900">
+                                        {equipo.nombre}
+                                      </td>
+                                      {section === "total" ? (
+                                        <>
+                                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold tabular-nums text-stone-900">
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                void openItemTraceDialog(equipo, "SUBALTERNOS")
+                                              }
+                                              className={`inline-flex min-h-[36px] min-w-[44px] items-center justify-end gap-1 rounded-md border px-2.5 py-1 text-right font-semibold tabular-nums transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                                equipo.stockSubalternos < 0
+                                                  ? "border-rose-300 bg-rose-50 font-bold text-rose-800 hover:bg-rose-100"
+                                                  : "border-stone-300 bg-stone-50 text-stone-900 hover:border-sky-400 hover:bg-sky-50"
+                                              }`}
+                                              aria-label={`Ver detalle de ${equipo.nombre} en Subalternos: ${equipo.stockSubalternos}`}
+                                              title={`Ver detalle de ${equipo.nombre} en Subalternos`}
+                                            >
+                                              {equipo.stockSubalternos < 0 ? (
+                                                <>
+                                                  <span
+                                                    aria-hidden="true"
+                                                    className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-700 text-[10px] font-black text-white"
+                                                  >
+                                                    !
+                                                  </span>
+                                                  <span>{equipo.stockSubalternos}</span>
+                                                  <span className="text-[10px] font-bold uppercase">
+                                                    Negativo
+                                                  </span>
+                                                </>
+                                              ) : (
+                                                equipo.stockSubalternos
+                                              )}
+                                            </button>
+                                          </td>
+                                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold tabular-nums text-stone-900">
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                void openItemTraceDialog(equipo, "RECINTO")
+                                              }
+                                              className={`inline-flex min-h-[36px] min-w-[44px] items-center justify-end gap-1 rounded-md border px-2.5 py-1 text-right font-semibold tabular-nums transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                                equipo.stockAsignacion < 0
+                                                  ? "border-rose-300 bg-rose-50 font-bold text-rose-800 hover:bg-rose-100"
+                                                  : "border-stone-300 bg-stone-50 text-stone-900 hover:border-sky-400 hover:bg-sky-50"
+                                              }`}
+                                              aria-label={`Ver detalle de ${equipo.nombre} en Recintos: ${equipo.stockAsignacion}`}
+                                              title={`Ver detalle de ${equipo.nombre} en Recintos`}
+                                            >
+                                              {equipo.stockAsignacion < 0 ? (
+                                                <>
+                                                  <span
+                                                    aria-hidden="true"
+                                                    className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-700 text-[10px] font-black text-white"
+                                                  >
+                                                    !
+                                                  </span>
+                                                  <span>{equipo.stockAsignacion}</span>
+                                                  <span className="text-[10px] font-bold uppercase">
+                                                    Negativo
+                                                  </span>
+                                                </>
+                                              ) : (
+                                                equipo.stockAsignacion
+                                              )}
+                                            </button>
+                                          </td>
+                                          <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold tabular-nums text-stone-900">
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                void openItemTraceDialog(equipo, "PRESTAMO")
+                                              }
+                                              className={`inline-flex min-h-[36px] min-w-[44px] items-center justify-end gap-1 rounded-md border px-2.5 py-1 text-right font-semibold tabular-nums transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+                                                equipo.stockPrestamo < 0
+                                                  ? "border-rose-300 bg-rose-50 font-bold text-rose-800 hover:bg-rose-100"
+                                                  : "border-stone-300 bg-stone-50 text-stone-900 hover:border-sky-400 hover:bg-sky-50"
+                                              }`}
+                                              aria-label={`Ver detalle de ${equipo.nombre} en Préstamo: ${equipo.stockPrestamo}`}
+                                              title={`Ver detalle de ${equipo.nombre} en Préstamo`}
+                                            >
+                                              {equipo.stockPrestamo < 0 ? (
+                                                <>
+                                                  <span
+                                                    aria-hidden="true"
+                                                    className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-700 text-[10px] font-black text-white"
+                                                  >
+                                                    !
+                                                  </span>
+                                                  <span>{equipo.stockPrestamo}</span>
+                                                  <span className="text-[10px] font-bold uppercase">
+                                                    Negativo
+                                                  </span>
+                                                </>
+                                              ) : (
+                                                equipo.stockPrestamo
+                                              )}
+                                            </button>
+                                          </td>
+                                          <td
+                                            className={`border-b border-stone-100 px-3 py-2 text-right font-semibold tabular-nums ${
+                                              equipo.stockDeposito < 0
+                                                ? "font-bold text-rose-800"
+                                                : "text-stone-900"
+                                            }`}
+                                          >
+                                            {equipo.stockDeposito < 0 ? (
+                                              <span className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-50 px-2 py-0.5 text-rose-800">
+                                                <span aria-hidden="true">!</span>
+                                                <span>{equipo.stockDeposito}</span>
+                                                <span className="text-[10px] font-bold uppercase">
+                                                  Negativo
+                                                </span>
+                                              </span>
+                                            ) : (
+                                              equipo.stockDeposito
+                                            )}
+                                          </td>
+                                          <td
+                                            className={`border-b border-l-2 border-stone-100 border-l-stone-300 bg-stone-50/70 px-3 py-2 text-right font-bold tabular-nums ${
+                                              equipo.stockUnidad < 0
+                                                ? "text-rose-800"
+                                                : "text-stone-900"
+                                            }`}
+                                          >
+                                            {equipo.stockUnidad}
+                                          </td>
+                                          <td className="border-b border-l-2 border-stone-100 border-l-sky-200 bg-sky-50/30 px-3 py-2 text-right font-semibold tabular-nums text-stone-900">
+                                            {canEditSie ? (
+                                              <div className="flex flex-col items-end gap-1">
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                  <input
+                                                    type="number"
+                                                    min={0}
+                                                    step={1}
+                                                    value={getSieInputValue(equipo)}
+                                                    disabled={loading || sieSavingItemId !== null}
+                                                    onChange={(event) =>
+                                                      updateSieDraft(
+                                                        equipo.equipoId,
+                                                        event.target.value
+                                                      )
+                                                    }
+                                                    onKeyDown={(event) => {
+                                                      if (event.key === "Enter") {
+                                                        event.preventDefault();
+                                                        void persistSieValue(equipo);
+                                                        return;
+                                                      }
+                                                      if (event.key === "Escape") {
+                                                        event.preventDefault();
+                                                        resetSieDraft(equipo);
+                                                      }
+                                                    }}
+                                                    className="w-24 rounded border border-stone-300 bg-white px-2 py-1 text-right text-xs font-semibold tabular-nums text-stone-900"
+                                                    aria-label={`Existencia del SIE para ${equipo.nombre}`}
+                                                  />
+                                                  {hasSieDraftChange(equipo) ||
+                                                  equipo.equipoId in sieConflictValueByItemId ? (
+                                                    <>
+                                                      <button
+                                                        type="button"
+                                                        disabled={
+                                                          loading || sieSavingItemId !== null
+                                                        }
+                                                        onClick={() => void persistSieValue(equipo)}
+                                                        className="rounded bg-stone-900 px-2 py-1 text-[11px] font-semibold text-white hover:bg-stone-700 disabled:opacity-50"
+                                                      >
+                                                        Guardar
+                                                      </button>
+                                                      <button
+                                                        type="button"
+                                                        disabled={
+                                                          loading || sieSavingItemId !== null
+                                                        }
+                                                        onClick={() => resetSieDraft(equipo)}
+                                                        className="rounded border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+                                                      >
+                                                        Cancelar
+                                                      </button>
+                                                    </>
+                                                  ) : null}
+                                                </div>
+                                                {hasSieDraftChange(equipo) ||
+                                                equipo.equipoId in sieConflictValueByItemId ? (
+                                                  <span className="text-[10px] text-stone-600">
+                                                    {`Original: ${sieConflictValueByItemId[equipo.equipoId] ?? equipo.existenciaSie ?? 0}`}
+                                                  </span>
+                                                ) : null}
+                                                {sieSavingItemId === equipo.equipoId ? (
+                                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+                                                    Guardando
+                                                  </span>
+                                                ) : sieSavedItemId === equipo.equipoId ? (
+                                                  <span className="text-[10px] font-semibold text-emerald-700">
+                                                    Guardado
+                                                  </span>
+                                                ) : null}
+                                                {sieErrorByItemId[equipo.equipoId] ? (
+                                                  <span className="text-[11px] font-medium text-rose-700">
+                                                    {sieErrorByItemId[equipo.equipoId]}
+                                                  </span>
+                                                ) : null}
+                                              </div>
+                                            ) : (
+                                              existenciaSie
+                                            )}
+                                          </td>
+                                          <td className="border-b border-stone-100 bg-sky-50/30 px-3 py-2 text-right font-bold tabular-nums">
+                                            <span
+                                              className={`inline-flex rounded-md border px-2 py-0.5 text-xs tabular-nums ${
+                                                sieDiff === 0
+                                                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                                                  : "border-amber-300 bg-amber-50 text-amber-900"
+                                              }`}
+                                            >
+                                              {sieDiff > 0 ? `+${sieDiff}` : sieDiff}
+                                            </span>
+                                          </td>
+                                        </>
+                                      ) : (
+                                        <td
+                                          className={`border-b border-stone-100 px-3 py-2 text-right font-semibold tabular-nums ${
+                                            equipo.stockDeposito < 0
+                                              ? "font-bold text-rose-800"
+                                              : "text-stone-900"
+                                          }`}
+                                        >
+                                          {equipo.stockDeposito < 0 ? (
+                                            <span className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-50 px-2 py-0.5 text-rose-800">
+                                              <span aria-hidden="true">!</span>
+                                              <span>{equipo.stockDeposito}</span>
+                                              <span className="text-[10px] font-bold uppercase">
+                                                Negativo
+                                              </span>
+                                            </span>
+                                          ) : (
+                                            equipo.stockDeposito
+                                          )}
+                                        </td>
+                                      )}
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
                       )}
                     </div>
                   ))
@@ -1269,14 +1673,14 @@ export function StockView({
             ) : null}
             {historial.map((entry) => (
               <div key={entry.id} className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-                <div className="flex flex-wrap equipos-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="text-sm font-semibold text-stone-900">
                       {formatDateOnlyForDisplay(entry.fecha)}
                     </p>
                     <p className="text-xs text-stone-600">{entry.persona ?? "Sin destinatario"}</p>
                   </div>
-                  <div className="flex equipos-center gap-2">
+                  <div className="flex items-center gap-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${historyBadgeClass(entry.tipo)}`}
                     >
@@ -1366,7 +1770,7 @@ export function StockView({
                       key={`trace-subalterno-${entry.ci}`}
                       className="rounded-xl border border-stone-200 bg-stone-50 p-3"
                     >
-                      <div className="flex flex-wrap equipos-start justify-between gap-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
                           <p className="text-sm font-semibold text-stone-900">{entry.persona}</p>
                           <p className="text-xs text-stone-600">
@@ -1423,7 +1827,7 @@ export function StockView({
                       key={`trace-recinto-${entry.recintoNombre}`}
                       className="rounded-xl border border-stone-200 bg-stone-50 p-3"
                     >
-                      <div className="flex flex-wrap equipos-start justify-between gap-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
                           <p className="text-sm font-semibold text-stone-900">
                             {entry.recintoNombre}
@@ -1476,7 +1880,7 @@ export function StockView({
                       key={`trace-prestamo-${entry.prestamoId}`}
                       className="rounded-xl border border-stone-200 bg-stone-50 p-3"
                     >
-                      <div className="flex flex-wrap equipos-start justify-between gap-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
                           <p className="text-sm font-semibold text-stone-900">
                             {entry.destinatarioEtiqueta}
@@ -1486,7 +1890,7 @@ export function StockView({
                               ? `CI ${formatUruguayanCi(entry.destinatarioCi)}`
                               : "CI pendiente"}
                           </p>
-                          <div className="flex equipos-center gap-2 mt-0.5">
+                          <div className="flex items-center gap-2 mt-0.5">
                             <p className="text-xs text-stone-500">
                               {prestamoClaseLabel(entry.clasePrestamo)}
                             </p>

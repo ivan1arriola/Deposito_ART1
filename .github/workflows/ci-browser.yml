@@ -1,0 +1,48 @@
+name: Browser E2E, Accessibility & A4 PDF Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  playwright-a11y-pdf:
+    name: Playwright Responsive, axe-core & A4 PDF Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/deposito_art1_ci"
+        run: npm run prisma:generate
+
+      - name: Install Chromium browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright a11y, responsive & A4 PDF checks
+        run: npm run test:e2e
+
+      - name: Upload Playwright report and A4 PDF artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-and-a4-pdfs
+          path: |
+            playwright-report/**
+            test-results/**
+          retention-days: 14

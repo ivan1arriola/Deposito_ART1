@@ -175,7 +175,7 @@ export function ArticuloEntregaPersonalView({
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">
                 Nueva entrega
@@ -263,7 +263,7 @@ export function ArticuloEntregaPersonalView({
 
             {/* Listado de Artículos */}
             <div className="space-y-3">
-              <div className="flex equipos-center justify-between">
+              <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-stone-700">
                   Artículos a entregar
                 </h3>
@@ -286,7 +286,7 @@ export function ArticuloEntregaPersonalView({
                 return (
                   <div
                     key={`entrega-equipo-${index}`}
-                    className={`grid grid-cols-1 gap-3 rounded-2xl border p-4 transition-colors md:grid-cols-[minmax(0,1fr)_120px_auto] equipos-end ${
+                    className={`grid grid-cols-1 gap-3 rounded-2xl border p-4 transition-colors md:grid-cols-[minmax(0,1fr)_120px_auto] items-end ${
                       isOverStock ? "border-amber-300 bg-amber-50/50" : "border-stone-200 bg-white"
                     }`}
                   >
@@ -335,7 +335,7 @@ export function ArticuloEntregaPersonalView({
                     </div>
 
                     {isOverStock && (
-                      <p className="col-span-full text-xs font-semibold text-amber-700 mt-1 flex equipos-center gap-1">
+                      <p className="col-span-full text-xs font-semibold text-amber-700 mt-1 flex items-center gap-1">
                         ⚠️ Cantidad excede el stock disponible ({selectedArt.stockActual} unidades
                         en depósito).
                       </p>
@@ -390,7 +390,7 @@ export function ArticuloEntregaPersonalView({
               type="button"
               onClick={onSubmit}
               disabled={saving || !validation.isValid}
-              className="mt-6 inline-flex w-full equipos-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3.5 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)] shadow-md hover:shadow-lg active:scale-[0.98] duration-150"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3.5 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)] shadow-md hover:shadow-lg active:scale-[0.98] duration-150"
             >
               {saving ? "Registrando entrega..." : "Registrar entrega"}
             </button>

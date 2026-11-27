@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { calcularStockArticulo, calcularStockTodos } from "@/lib/stock-calc";
+import {
+  calcularStockArticulo,
+  calcularStockTodos,
+  lockArticulosForUpdate,
+} from "@/lib/stock-calc";
 
 const mockPrisma = {
   articuloStockMovimiento: {
@@ -104,5 +108,20 @@ describe("calcularStockTodos", () => {
     const stockMap = await calcularStockTodos(mockPrisma as never);
 
     expect(stockMap.get(1)).toBe(-5);
+  });
+});
+
+describe("lockArticulosForUpdate", () => {
+  it("omite bloqueo cuando no hay IDs válidos o falta $queryRaw, y ordena IDs ascendentes", async () => {
+    const queryRaw = vi.fn().mockResolvedValue([]);
+    await lockArticulosForUpdate({ $queryRaw: queryRaw } as never, []);
+    await lockArticulosForUpdate({ $queryRaw: queryRaw } as never, [0, -1]);
+    expect(queryRaw).not.toHaveBeenCalled();
+
+    await lockArticulosForUpdate({} as never, [3, 1]);
+
+    await lockArticulosForUpdate({ $queryRaw: queryRaw } as never, [5, 2, 5, 1]);
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+    expect(queryRaw.mock.calls[0]?.[1]).toEqual([1, 2, 5]);
   });
 });

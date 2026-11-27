@@ -128,22 +128,23 @@ export function RegistroEditorModal({
     a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })
   );
   const canIncludeFueraDeHoja =
-    draft.modo === "crear" && (draft.tipo === "ENTREGA" || draft.tipo === "ASIGNACION");
-  const includeInactiveItems = canIncludeFueraDeHoja && draft.incluirFueraDeHoja;
+    draft.tipo === "ASIGNACION" || (draft.modo === "crear" && draft.tipo === "ENTREGA");
+  const includeInactiveItems =
+    draft.tipo === "ASIGNACION" || (canIncludeFueraDeHoja && draft.incluirFueraDeHoja);
   const showPersonalDestinatarios = !isRectificacion && draft.destinatarioTipo === "PERSONAL";
   const showRecintoFields = draft.destinatarioTipo === "RECINTO";
   const showExternoFields = draft.destinatarioTipo === "EXTERNO";
   const canPrintReceipt =
-    draft.modo === "crear" &&
-    (draft.destinatarioTipo === "RECINTO" ||
-      draft.destinatarioTipo === "EXTERNO" ||
-      (draft.tipo === "ASIGNACION" &&
-        draft.destinatarioTipo === "PERSONAL" &&
-        selectedCis.length === 1));
+    draft.destinatarioTipo === "RECINTO" ||
+    draft.destinatarioTipo === "EXTERNO" ||
+    (draft.modo === "crear" &&
+      draft.tipo === "ASIGNACION" &&
+      draft.destinatarioTipo === "PERSONAL" &&
+      selectedCis.length === 1);
 
   return (
     <ModalFrame onClose={onClose} size="lg" closeOnBackdrop={false}>
-      <div className="flex equipos-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-stone-900">
             {draft.modo === "rectificar"
@@ -360,7 +361,7 @@ export function RegistroEditorModal({
       ) : null}
 
       {canIncludeFueraDeHoja ? (
-        <label className="mt-3 flex equipos-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        <label className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           <input
             type="checkbox"
             checked={draft.incluirFueraDeHoja}
@@ -374,7 +375,7 @@ export function RegistroEditorModal({
 
       {showPersonalDestinatarios ? (
         <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
-          <div className="flex flex-wrap equipos-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-stone-700">
               Destinatarios
             </p>
@@ -415,7 +416,7 @@ export function RegistroEditorModal({
                 return (
                   <label
                     key={persona.ci}
-                    className={`flex cursor-pointer equipos-center gap-2 rounded px-2 py-1.5 text-xs ${
+                    className={`flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs ${
                       checked ? "bg-emerald-50 text-emerald-900" : "hover:bg-stone-50"
                     }`}
                   >
@@ -501,9 +502,9 @@ export function RegistroEditorModal({
             type="button"
             onClick={onAddItem}
             disabled={saving}
-            className="inline-flex equipos-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span className="inline-flex h-4 w-4 equipos-center justify-center rounded-full bg-stone-800 text-[10px] font-bold text-white">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-stone-800 text-[10px] font-bold text-white">
               +
             </span>
             Equipo

@@ -33,6 +33,20 @@ export const designTokens = {
     overlay: {
       dim: "rgba(0, 0, 0, 0.56)",
     },
+    surface: {
+      card: "#FFFFFF",
+      subtle: "#F7F8F9",
+      dangerSoft: "#FEF2F2",
+      warningSoft: "#FFFBEB",
+      successSoft: "#ECFDF5",
+    },
+  },
+  touchTarget: {
+    min: 44,
+  },
+  motion: {
+    fast: "150ms",
+    normal: "200ms",
   },
   typography: {
     fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',

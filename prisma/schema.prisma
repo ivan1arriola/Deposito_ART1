@@ -97,6 +97,7 @@ model Usuario {
   resetCodes                      PasswordResetCode[]
   rango                           Rango?              @relation(fields: [rangoId], references: [rangoId])
   movimientosEntregados           Movimiento[]        @relation("movimiento_usuario_entrega")
+  movimientosAnulados             Movimiento[]        @relation("movimiento_anulado_por")
   articuloEntregasRealizadas      ArticuloEntregaPersonal[] @relation("articulo_entrega_usuario")
   devolucionesPrestamoRegistradas PrestamoHistorial[] @relation("prestamo_historial_usuario_recepcion")
   recordatorioConfig              UsuarioRecordatorioConfig?
@@ -205,10 +206,11 @@ model Bateria {
 }
 
 model Articulo {
-  articuloId       Int                      @id @default(autoincrement()) @map("articulo_id") @db.SmallInt
-  nombre           String                   @unique
-  tipo             TipoArticulo
-  movimientosStock ArticuloStockMovimiento[]
+  articuloId            Int                      @id @default(autoincrement()) @map("articulo_id") @db.SmallInt
+  nombre                String                   @unique
+  tipo                  TipoArticulo
+  movimientosStock      ArticuloStockMovimiento[]
+  movimientosAsignacion MovimientoArticulo[]
 
   @@index([tipo])
   @@map("articulo")
@@ -252,13 +254,16 @@ model ArticuloStockMovimiento {
   cantidad                  Int
   comentario                String?
   articuloEntregaPersonalId BigInt?                  @map("articulo_entrega_personal_id")
+  movimientoId              BigInt?                  @map("movimiento_id")
   createdAt                 DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   articulo                  Articulo                 @relation(fields: [articuloId], references: [articuloId], onDelete: Restrict)
   articuloEntregaPersonal   ArticuloEntregaPersonal? @relation(fields: [articuloEntregaPersonalId], references: [articuloEntregaPersonalId], onDelete: Restrict)
+  movimiento                Movimiento?              @relation(fields: [movimientoId], references: [movimientoId], onDelete: Restrict)
 
   @@index([articuloId, createdAt(sort: Desc)])
   @@index([tipo, createdAt(sort: Desc)])
   @@index([articuloEntregaPersonalId, createdAt(sort: Desc)])
+  @@index([movimientoId, createdAt(sort: Desc)])
   @@map("articulo_stock_movimiento")
 }
 
@@ -411,24 +416,32 @@ model PersonaExterna {
 }
 
 model Movimiento {
-  movimientoId      BigInt             @id @default(autoincrement()) @map("movimiento_id")
-  tipo              TipoMovimiento
-  fecha             DateTime           @db.Date
-  usuarioEntregaId  String             @map("usuario_entrega_id")
-  afectaStock       Boolean            @default(true) @map("afecta_stock")
-  observaciones     String?
-  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  usuarioEntrega    Usuario            @relation("movimiento_usuario_entrega", fields: [usuarioEntregaId], references: [usuarioId])
-  destinatarioPersonal MovimientoDestinatarioPersonal?
-  destinatarioExterno MovimientoDestinatarioExterno?
-  destinatarioRecinto MovimientoDestinatarioRecinto?
-  equipos           MovimientoEquipo[]
-  prestamoActivo    PrestamoActivo?
-  prestamoHistorial PrestamoHistorial?
+  movimientoId              BigInt                         @id @default(autoincrement()) @map("movimiento_id")
+  tipo                      TipoMovimiento
+  fecha                     DateTime                       @db.Date
+  usuarioEntregaId          String                         @map("usuario_entrega_id")
+  afectaStock               Boolean                        @default(true) @map("afecta_stock")
+  observaciones             String?
+  anulado                   Boolean                        @default(false)
+  anuladoAt                 DateTime?                      @map("anulado_at") @db.Timestamptz(6)
+  anuladoPorUsuarioId       String?                        @map("anulado_por_usuario_id")
+  motivoAnulacion           String?                        @map("motivo_anulacion")
+  createdAt                 DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime                       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  usuarioEntrega            Usuario                        @relation("movimiento_usuario_entrega", fields: [usuarioEntregaId], references: [usuarioId])
+  anuladoPorUsuario         Usuario?                       @relation("movimiento_anulado_por", fields: [anuladoPorUsuarioId], references: [usuarioId], onDelete: SetNull)
+  destinatarioPersonal      MovimientoDestinatarioPersonal?
+  destinatarioExterno       MovimientoDestinatarioExterno?
+  destinatarioRecinto       MovimientoDestinatarioRecinto?
+  equipos                   MovimientoEquipo[]
+  articulos                 MovimientoArticulo[]
+  articulosStockMovimientos ArticuloStockMovimiento[]
+  prestamoActivo            PrestamoActivo?
+  prestamoHistorial         PrestamoHistorial?
 
   @@index([tipo, fecha(sort: Desc)])
   @@index([usuarioEntregaId, fecha(sort: Desc)])
+  @@index([anulado])
   @@map("movimiento")
 }
 
@@ -582,4 +595,30 @@ model PapeleraRegistro {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("papelera_registro")
+}
+
+model MovimientoArticulo {
+  movimientoId BigInt     @map("movimiento_id")
+  articuloId   Int        @map("articulo_id") @db.SmallInt
+  cantidad     Int
+  movimiento   Movimiento @relation(fields: [movimientoId], references: [movimientoId], onDelete: Cascade)
+  articulo     Articulo   @relation(fields: [articuloId], references: [articuloId], onDelete: Restrict)
+
+  @@id([movimientoId, articuloId])
+  @@index([articuloId])
+  @@map("movimiento_articulo")
+}
+
+model EntidadBeneficiaria {
+  entidadBeneficiariaId Int      @id @default(autoincrement()) @map("entidad_beneficiaria_id") @db.SmallInt
+  clase                 String   @db.VarChar(16)
+  nombre                String
+  nombreNormalizado     String   @map("nombre_normalizado")
+  activo                Boolean  @default(true)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([clase, nombreNormalizado])
+  @@index([clase, activo])
+  @@map("entidad_beneficiaria")
 }

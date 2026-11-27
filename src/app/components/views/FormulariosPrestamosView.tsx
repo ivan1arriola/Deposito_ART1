@@ -384,7 +384,7 @@ export function FormulariosPrestamosView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap equipos-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">{headerTitle}</h2>
             <p className="mt-1 text-xs text-stone-600">{headerDescription}</p>
@@ -462,7 +462,7 @@ export function FormulariosPrestamosView({
       {activeTab === "registrar" ? (
         canWrite ? (
           <article className="ej-card rounded-2xl p-4">
-            <div className="flex flex-wrap equipos-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-stone-900">Registrar prestamo</h3>
                 <p className="mt-1 text-xs text-stone-600">
@@ -792,7 +792,7 @@ export function FormulariosPrestamosView({
                       />
                     </label>
 
-                    <div className="flex equipos-end">
+                    <div className="flex items-end">
                       <button
                         type="button"
                         onClick={() => onRemovePrestamoItem(index)}
@@ -811,9 +811,9 @@ export function FormulariosPrestamosView({
                   type="button"
                   onClick={onAddPrestamoItem}
                   disabled={prestamoSaving}
-                  className="inline-flex w-full equipos-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50"
                 >
-                  <span className="inline-flex h-5 w-5 equipos-center justify-center rounded-full bg-stone-800 text-sm leading-none text-white">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-stone-800 text-sm leading-none text-white">
                     +
                   </span>
                   Agregar
@@ -858,7 +858,7 @@ export function FormulariosPrestamosView({
 
       {activeTab === "vigentes" ? (
         <article className="ej-card rounded-2xl p-4">
-          <div className="flex flex-wrap equipos-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-stone-900">Prestamos vigentes</h3>
             <a
               href={resumenPrestamosVigentesPrintHref}

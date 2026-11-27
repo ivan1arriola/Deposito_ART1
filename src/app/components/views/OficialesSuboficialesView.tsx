@@ -75,14 +75,14 @@ export function OficialesSuboficialesView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap equipos-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">{TYPE_LABEL[viewType]}</h2>
             <p className="mt-1 text-xs text-stone-600">
               {`Listado de ${TYPE_LABEL[viewType].toLowerCase()} con su grado y talles.`}
             </p>
           </div>
-          <div className="flex flex-wrap equipos-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {canWrite ? (
               <button
                 type="button"
@@ -114,7 +114,7 @@ export function OficialesSuboficialesView({
       </article>
 
       <article className="ej-card rounded-2xl p-4">
-        <div className="mb-3 flex equipos-center justify-between gap-2">
+        <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-stone-900">{TYPE_LABEL[viewType]}</h3>
           <span className="inline-flex min-w-[2.5rem] justify-center rounded-full bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">
             {registros.length}

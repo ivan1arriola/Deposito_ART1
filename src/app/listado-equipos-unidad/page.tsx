@@ -6,36 +6,16 @@ import {
 } from "@/app/components/print/InstitutionalPrintHeader";
 import { FirmaLineasHtml } from "@/app/components/shared/FirmaLineasHtml";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
-import {
-  compareEquiposByTipoAndName,
-  compareEquiposByTipoAndOrder,
-  groupEquiposByTipo,
-} from "@/lib/equipo-sort";
-import { serializeEquipoTipoData, tipoEquipoRelationSelect } from "@/lib/equipo-tipos-data";
+import { tipoEquipoRelationSelect } from "@/lib/equipo-tipos-data";
 import { TEXTO_ENCARGADO, TEXTO_OFICIAL, getFirmaConfig } from "@/lib/firma-config";
 import { buildFirmasInstitucionalesLineas } from "@/lib/firma-lineas";
+import { buildListadoEquiposUnidadModel } from "@/lib/listado-equipos-unidad-data";
 import { prisma } from "@/lib/prisma";
 import { buildStockSummaryMaps } from "@/lib/stock";
 
 export const revalidate = 0;
 export const metadata = {
   title: "Listado de Equipos de la Unidad",
-};
-
-type ItemResumen = {
-  equipoId: string;
-  nombre: string;
-  tipo: string;
-  tipoEquipoId: number | null;
-  tipoLabel: string;
-  tipoOrden: number;
-  ordenPdf: number;
-  stockSubalternos: number;
-  stockAsignacion: number;
-  stockPrestamo: number;
-  stockDeposito: number;
-  stockUnidad: number;
-  existenciaSie: number;
 };
 
 function buildStyles() {
@@ -239,41 +219,18 @@ export default async function ListadoEquiposUnidadPage({
     getFirmaConfig(),
   ]);
 
-  const resumen: ItemResumen[] = equipos.map((equipo) => {
-    const itemKey = equipo.equipoId.toString();
-    const stockUnidad = stockSummaryMaps.unidadByItem.get(itemKey) ?? 0;
-    const stockSubalternos = stockSummaryMaps.personalByItem.get(itemKey) ?? 0;
-    const stockAsignacion = stockSummaryMaps.asignacionByItem.get(itemKey) ?? 0;
-    const stockPrestamo = stockSummaryMaps.prestamoByItem.get(itemKey) ?? 0;
-    const stockDeposito = stockUnidad - stockSubalternos - stockAsignacion - stockPrestamo;
-    const tipo = serializeEquipoTipoData(equipo);
-
-    return {
-      equipoId: itemKey,
-      nombre: equipo.nombre,
-      ...tipo,
-      ordenPdf: equipo.ordenPdf,
-      stockSubalternos,
-      stockAsignacion,
-      stockPrestamo,
-      stockDeposito,
-      stockUnidad,
-      existenciaSie: equipo.existenciaSie,
-    };
-  });
-  const resumenOrdenado = [...resumen].sort(
-    isAlphaSort ? compareEquiposByTipoAndName : compareEquiposByTipoAndOrder
+  const { resumen, resumenOrdenado, resumenPorTipo, totals } = buildListadoEquiposUnidadModel(
+    equipos,
+    stockSummaryMaps,
+    isAlphaSort
   );
-  const resumenPorTipo = groupEquiposByTipo(resumenOrdenado).map((section) => ({
-    ...section,
-    title: isAlphaSort ? `Equipos ${section.label} (A-Z)` : `Equipos ${section.label}`,
-  }));
-
-  const totalSubalternos = resumen.reduce((total, equipo) => total + equipo.stockSubalternos, 0);
-  const totalRecintos = resumen.reduce((total, equipo) => total + equipo.stockAsignacion, 0);
-  const totalPrestamo = resumen.reduce((total, equipo) => total + equipo.stockPrestamo, 0);
-  const totalDeposito = resumen.reduce((total, equipo) => total + equipo.stockDeposito, 0);
-  const totalUnidad = resumen.reduce((total, equipo) => total + equipo.stockUnidad, 0);
+  const {
+    totalSubalternos,
+    totalAsignacion: totalRecintos,
+    totalPrestamo,
+    totalDeposito,
+    totalUnidad,
+  } = totals;
 
   const printedAt = new Date();
   const generatedAt = formatDateTimeForDisplay(printedAt);

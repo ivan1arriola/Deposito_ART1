@@ -5,7 +5,7 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { listArticuloEntregasHistorial } from "@/lib/server/articulo-entregas-history-data";
 import { isValidUruguayanCi } from "@/lib/ci";
-import { calcularStockArticulo } from "@/lib/stock-calc";
+import { calcularStockArticulo, lockArticulosForUpdate } from "@/lib/stock-calc";
 import {
   dateInputToDate,
   formatDateOnlyFromDate,
@@ -215,6 +215,11 @@ export async function POST(req: Request) {
       if (articulos.length !== equipos.length) {
         throw new Error("ARTICULO_NOT_FOUND");
       }
+
+      await lockArticulosForUpdate(
+        tx,
+        equipos.map((equipo) => equipo.articuloId)
+      );
 
       const articuloById = new Map(articulos.map((articulo) => [articulo.articuloId, articulo]));
       for (const equipo of equipos) {

@@ -61,7 +61,7 @@ export function OficialesSuboficialesResumenView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap equipos-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">{`Resumen de talles de ${typeLabel}`}</h2>
             <p className="mt-1 text-xs text-stone-600">{`Tabla consolidada por prenda y talla para ${typeLabel}.`}</p>
