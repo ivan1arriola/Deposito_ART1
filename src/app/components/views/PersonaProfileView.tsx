@@ -6,19 +6,21 @@ import { tallasEntries } from "@/lib/formatters";
 import { tallasMap } from "@/lib/form-mappers";
 import type { PersonalObservacion, Talla } from "@/types/entities";
 import type { PrestamoStockEntry, RegistroView } from "@/types/views";
-import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
-import BadgeRoundedIcon from "@mui/icons-material/BadgeRounded";
-import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
-import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
-import MilitaryTechRoundedIcon from "@mui/icons-material/MilitaryTechRounded";
-import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
-import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
-import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
-import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
-import Inventory2RoundedIcon from "@mui/icons-material/Inventory2Rounded";
-import TimelineRoundedIcon from "@mui/icons-material/TimelineRounded";
-import NoteAltRoundedIcon from "@mui/icons-material/NoteAltRounded";
+import {
+  Activity,
+  ArrowLeft,
+  Calendar,
+  FilePenLine,
+  FileText,
+  IdCard,
+  Medal,
+  Package,
+  Phone,
+  Printer,
+  RefreshCw,
+  User,
+  Users,
+} from "lucide-react";
 
 export type PersonaProfileTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
 export type PersonaProfileTimelineType =
@@ -126,7 +128,7 @@ export function PersonaProfileView({
       <section className="mt-4 sm:mt-8 space-y-6">
         <article className="rounded-3xl bg-white p-6 sm:p-8 shadow-xl border border-stone-200/50 text-center">
           <div className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-stone-100 text-stone-300">
-            <PersonRoundedIcon sx={{ fontSize: { xs: 32, sm: 40 } }} />
+            <User className="h-8 w-8 sm:h-10 sm:w-10" aria-hidden="true" />
           </div>
           <h2 className="mt-4 text-lg sm:text-xl font-bold text-stone-900">
             Perfil no seleccionado
@@ -140,7 +142,7 @@ export function PersonaProfileView({
               onClick={onBack}
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-stone-900 px-5 py-2.5 sm:px-6 sm:py-3 text-sm font-bold text-white transition hover:bg-black active:scale-95"
             >
-              <ArrowBackRoundedIcon fontSize="small" />
+              <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
               Volver al inicio
             </button>
           )}
@@ -168,7 +170,7 @@ export function PersonaProfileView({
         <div className="relative z-10 flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4 sm:gap-5">
             <div className="flex h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-stone-800 to-stone-900 text-white shadow-lg ring-4 ring-stone-100">
-              <MilitaryTechRoundedIcon sx={{ fontSize: { xs: 28, sm: 32 } }} />
+              <Medal className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -180,7 +182,10 @@ export function PersonaProfileView({
                 </span>
               </div>
               <p className="mt-1 text-base sm:text-lg font-black text-stone-500 flex items-center gap-1.5">
-                <BadgeRoundedIcon sx={{ fontSize: { xs: 20, sm: 22 }, opacity: 0.6 }} />
+                <IdCard
+                  className="h-5 w-5 sm:h-[22px] sm:w-[22px] opacity-60 shrink-0"
+                  aria-hidden="true"
+                />
                 {formatUruguayanCi(state.identity.ci)}
               </p>
             </div>
@@ -193,7 +198,7 @@ export function PersonaProfileView({
                 onClick={() => onPrintDeliverySheet(state.identity.ci)}
                 className="flex-grow sm:flex-grow-0 inline-flex items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-2.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-black active:scale-95 shadow-lg shadow-stone-900/10"
               >
-                <PrintRoundedIcon fontSize="small" />
+                <Printer className="h-4 w-4 shrink-0" aria-hidden="true" />
                 Hoja de Entrega
               </button>
             )}
@@ -204,7 +209,7 @@ export function PersonaProfileView({
                 onClick={() => onPrintMovementsSummary(state.identity.ci)}
                 className="flex-grow sm:flex-grow-0 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-[11px] sm:text-xs font-bold text-white transition hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-600/10"
               >
-                <Inventory2RoundedIcon fontSize="small" />
+                <Package className="h-4 w-4 shrink-0" aria-hidden="true" />
                 Hoja Movimientos
               </button>
             )}
@@ -213,18 +218,25 @@ export function PersonaProfileView({
               type="button"
               onClick={onReload}
               disabled={state.loading}
+              aria-label="Actualizar ficha"
+              title="Actualizar ficha"
               className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-stone-600 transition hover:bg-stone-200 active:scale-90 disabled:opacity-50"
             >
-              <RefreshRoundedIcon fontSize="small" />
+              <RefreshCw
+                className={`h-4 w-4 shrink-0 ${state.loading ? "animate-spin" : ""}`}
+                aria-hidden="true"
+              />
             </button>
 
             {showBackButton && (
               <button
                 type="button"
                 onClick={onBack}
+                aria-label="Volver"
+                title="Volver"
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-stone-600 transition hover:bg-stone-200 active:scale-90"
               >
-                <ArrowBackRoundedIcon fontSize="small" />
+                <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -253,7 +265,7 @@ export function PersonaProfileView({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
-                  <PersonRoundedIcon fontSize="small" />
+                  <User className="h-4 w-4 shrink-0" aria-hidden="true" />
                 </div>
                 <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">
                   Información de Servicio
@@ -283,8 +295,10 @@ export function PersonaProfileView({
               <div className="space-y-1">
                 <p className="text-xs font-black uppercase tracking-widest text-stone-400">Grado</p>
                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
-                  <MilitaryTechRoundedIcon
-                    sx={{ fontSize: 20, color: "var(--color-ejercito-gold)" }}
+                  <Medal
+                    className="h-5 w-5 shrink-0"
+                    style={{ color: "var(--color-ejercito-gold)" }}
+                    aria-hidden="true"
                   />
                   <span className="truncate">
                     {state.identity.gradoAbreviacion} — {state.identity.gradoNombre}
@@ -297,7 +311,7 @@ export function PersonaProfileView({
                   Batería / Unidad
                 </p>
                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
-                  <GroupsRoundedIcon sx={{ fontSize: 20, color: "stone.400" }} />
+                  <Users className="h-5 w-5 shrink-0 text-stone-400" aria-hidden="true" />
                   <span className="truncate">
                     {state.identity.bateriaNombre ?? "No aplica / General"}
                   </span>
@@ -309,7 +323,7 @@ export function PersonaProfileView({
                   Contacto
                 </p>
                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
-                  <PhoneRoundedIcon sx={{ fontSize: 18, color: "stone.300" }} />
+                  <Phone className="h-[18px] w-[18px] shrink-0 text-stone-300" aria-hidden="true" />
                   {state.identity.telefonoContacto ?? "Sin teléfono"}
                 </p>
               </div>
@@ -319,7 +333,10 @@ export function PersonaProfileView({
                   Incorporación
                 </p>
                 <p className="text-base font-bold text-stone-800 flex items-center gap-2">
-                  <CalendarTodayRoundedIcon sx={{ fontSize: 18, color: "stone.300" }} />
+                  <Calendar
+                    className="h-[18px] w-[18px] shrink-0 text-stone-300"
+                    aria-hidden="true"
+                  />
                   {state.identity.fechaIngreso ?? "No registrada"}
                 </p>
               </div>
@@ -373,7 +390,7 @@ export function PersonaProfileView({
             <article className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50 overflow-hidden">
               <div className="flex items-center gap-2 mb-6">
                 <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
-                  <Inventory2RoundedIcon fontSize="small" />
+                  <Package className="h-4 w-4 shrink-0" aria-hidden="true" />
                 </div>
                 <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">
                   Equipamiento Actual
@@ -445,7 +462,7 @@ export function PersonaProfileView({
               <article className="rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 shadow-lg border border-stone-200/50">
                 <div className="flex items-center gap-2 mb-6">
                   <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
-                    <NoteAltRoundedIcon fontSize="small" />
+                    <FilePenLine className="h-4 w-4 shrink-0" aria-hidden="true" />
                   </div>
                   <h3 className="text-base sm:text-lg font-black text-stone-900 tracking-tight">
                     Observaciones
@@ -487,7 +504,7 @@ export function PersonaProfileView({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-stone-100 text-stone-600">
-                  <TimelineRoundedIcon fontSize="small" />
+                  <Activity className="h-4 w-4 shrink-0" aria-hidden="true" />
                 </div>
                 <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">
                   Historial de Movimientos
@@ -531,7 +548,10 @@ export function PersonaProfileView({
                                 : "bg-cyan-500 text-white"
                       }`}
                     >
-                      <DescriptionRoundedIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />
+                      <FileText
+                        className="h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]"
+                        aria-hidden="true"
+                      />
                     </div>
 
                     <div className={movementCardClass(entry)}>
@@ -552,7 +572,7 @@ export function PersonaProfileView({
                             onClick={() => onPrintPrestamos([entry.dbId || entry.id])}
                             className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-[10px] sm:text-[11px] font-black text-indigo-700 transition hover:bg-indigo-100 active:scale-95"
                           >
-                            <PrintRoundedIcon sx={{ fontSize: 16 }} />
+                            <Printer className="h-4 w-4 shrink-0" aria-hidden="true" />
                             REIMPRIMIR RECIBO
                           </button>
                         )}
@@ -582,7 +602,10 @@ export function PersonaProfileView({
                         )}
 
                         <div className="flex items-center gap-1.5 pt-1">
-                          <NoteAltRoundedIcon sx={{ fontSize: 14, color: "stone.300" }} />
+                          <FilePenLine
+                            className="h-3.5 w-3.5 shrink-0 text-stone-300"
+                            aria-hidden="true"
+                          />
                           <span className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-tight truncate">
                             Responsable:{" "}
                             <span className="text-stone-600">

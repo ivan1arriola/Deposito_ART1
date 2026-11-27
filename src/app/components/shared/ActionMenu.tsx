@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import MoreVertRoundedIcon from "@mui/icons-material/MoreVertRounded";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
-import DragIndicatorRoundedIcon from "@mui/icons-material/DragIndicatorRounded";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { Check, GripVertical, MoreVertical, Pencil, Trash2, X } from "lucide-react";
 import {
   Button,
   IconButton,
@@ -40,15 +35,15 @@ export function ActionMenu(props: {
   const getIcon = (icon: string): ReactNode => {
     switch (icon) {
       case "edit":
-        return <EditOutlinedIcon fontSize="small" />;
+        return <Pencil className="h-4 w-4 shrink-0" aria-hidden="true" />;
       case "trash":
-        return <DeleteOutlineRoundedIcon fontSize="small" />;
+        return <Trash2 className="h-4 w-4 shrink-0" aria-hidden="true" />;
       case "check":
-        return <CheckRoundedIcon fontSize="small" />;
+        return <Check className="h-4 w-4 shrink-0" aria-hidden="true" />;
       case "x":
-        return <CloseRoundedIcon fontSize="small" />;
+        return <X className="h-4 w-4 shrink-0" aria-hidden="true" />;
       case "drag":
-        return <DragIndicatorRoundedIcon fontSize="small" />;
+        return <GripVertical className="h-4 w-4 shrink-0" aria-hidden="true" />;
       default:
         return null;
     }
@@ -91,7 +86,7 @@ export function ActionMenu(props: {
         <Button
           variant="outlined"
           size={props.compact ? "small" : "medium"}
-          endIcon={<MoreVertRoundedIcon fontSize="small" />}
+          endIcon={<MoreVertical className="h-4 w-4 shrink-0" aria-hidden="true" />}
           onClick={(event) => setAnchorEl(event.currentTarget)}
           sx={{ borderColor: "var(--color-border-subtle)" }}
         >
@@ -104,7 +99,7 @@ export function ActionMenu(props: {
           aria-label="Abrir menu de acciones"
           sx={{ border: "1px solid", borderColor: "var(--color-border-subtle)", borderRadius: 1.5 }}
         >
-          <MoreVertRoundedIcon fontSize="small" />
+          <MoreVertical className="h-4 w-4 shrink-0" aria-hidden="true" />
         </IconButton>
       )}
 

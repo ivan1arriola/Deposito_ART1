@@ -29,15 +29,16 @@ import type { PapeleraRecord } from "@/app/types/home";
 import { LoadingInline, PaginationControls, SmallActionButton } from "../shared";
 import { ModalFrame } from "../modals/ModalFrame";
 
-// Premium Material-UI Icons
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import RestoreFromTrashOutlinedIcon from "@mui/icons-material/RestoreFromTrashOutlined";
-import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
-import FolderZipOutlinedIcon from "@mui/icons-material/FolderZipOutlined";
-import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
-import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
-import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Database,
+  FolderArchive,
+  Info,
+  RotateCcw,
+  Search,
+  Trash2,
+} from "lucide-react";
 
 type RangoTipo = "SUBALTERNO" | "OFICIAL" | "SUBOFICIAL";
 type RangoConfig = Rango & { tipo?: RangoTipo };
@@ -2124,13 +2125,13 @@ export function ConfigViews(props: ConfigViewsProps) {
           </div>
           {undoSuccess && (
             <div className="mt-3 p-3 bg-green-50 text-green-800 rounded-lg border border-green-200 text-xs font-semibold flex items-center gap-2">
-              <CheckCircleOutlinedIcon className="h-4 w-4 text-green-600" />
+              <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
               {undoSuccess}
             </div>
           )}
           {undoError && (
             <div className="mt-3 p-3 bg-red-50 text-red-800 rounded-lg border border-red-200 text-xs font-semibold flex items-center gap-2">
-              <WarningAmberOutlinedIcon className="h-4 w-4 text-red-600" />
+              <AlertTriangle className="h-4 w-4 text-red-600" aria-hidden="true" />
               {undoError}
             </div>
           )}
@@ -2314,7 +2315,7 @@ export function ConfigViews(props: ConfigViewsProps) {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-stone-100 pb-4">
             <div>
               <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
-                <DeleteOutlineOutlinedIcon className="h-5 w-5 text-stone-600" />
+                <Trash2 className="h-5 w-5 text-stone-600" aria-hidden="true" />
                 Papelera de Reciclaje
               </h2>
               <p className="mt-1 text-xs text-stone-600 leading-relaxed">
@@ -2328,7 +2329,10 @@ export function ConfigViews(props: ConfigViewsProps) {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 {/* Search Bar */}
                 <div className="relative min-w-[220px]">
-                  <SearchOutlinedIcon className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+                  <Search
+                    className="absolute left-3 top-2.5 h-4 w-4 text-stone-400"
+                    aria-hidden="true"
+                  />
                   <input
                     type="text"
                     placeholder="Buscar por nombre o ID..."
@@ -2386,7 +2390,7 @@ export function ConfigViews(props: ConfigViewsProps) {
             <div className="mt-4 space-y-2">
               {filteredTrashRecords.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-stone-250 bg-stone-50 px-6 py-12 text-center flex flex-col items-center justify-center">
-                  <DeleteOutlineOutlinedIcon className="h-10 w-10 text-stone-300 mb-2.5" />
+                  <Trash2 className="h-10 w-10 text-stone-300 mb-2.5" aria-hidden="true" />
                   <p className="text-sm font-semibold text-stone-700">La papelera está vacía</p>
                   <p className="text-xs text-stone-500 mt-1 max-w-[340px] leading-relaxed">
                     {trashSearchQuery || trashTypeFilter !== "ALL"
@@ -2423,9 +2427,9 @@ export function ConfigViews(props: ConfigViewsProps) {
                           }`}
                         >
                           {record.tipo === "EQUIPO" ? (
-                            <FolderZipOutlinedIcon className="h-4.5 w-4.5" />
+                            <FolderArchive className="h-4.5 w-4.5" aria-hidden="true" />
                           ) : (
-                            <StorageOutlinedIcon className="h-4.5 w-4.5" />
+                            <Database className="h-4.5 w-4.5" aria-hidden="true" />
                           )}
                         </div>
 
@@ -2448,7 +2452,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                             </span>
                           </div>
                           <p className="mt-1.5 text-[11px] text-stone-500 flex items-center gap-1">
-                            <InfoOutlinedIcon className="h-3 w-3 inline text-stone-400" />
+                            <Info className="h-3 w-3 inline text-stone-400" aria-hidden="true" />
                             Eliminado el:{" "}
                             <strong className="text-stone-700 font-semibold">
                               {formatDateTimeForDisplay(record.createdAt)}
@@ -2463,7 +2467,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                           onClick={() => handleOpenTrashModal(record, "restore")}
                           className="rounded-lg border border-emerald-250 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition-all active:scale-95 flex items-center gap-1"
                         >
-                          <RestoreFromTrashOutlinedIcon className="h-3.5 w-3.5" />
+                          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                           Restaurar
                         </button>
                         <button
@@ -2471,7 +2475,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                           onClick={() => handleOpenTrashModal(record, "delete")}
                           className="rounded-lg border border-red-250 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-800 hover:bg-red-100 transition-all active:scale-95 flex items-center gap-1"
                         >
-                          <DeleteOutlineOutlinedIcon className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                           Eliminar
                         </button>
                       </div>
@@ -2496,9 +2500,9 @@ export function ConfigViews(props: ConfigViewsProps) {
             <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
               <h3 className="text-sm font-bold text-stone-900 flex items-center gap-1.5">
                 {trashModalAction === "restore" ? (
-                  <RestoreFromTrashOutlinedIcon className="h-4.5 w-4.5 text-emerald-600" />
+                  <RotateCcw className="h-4.5 w-4.5 text-emerald-600" aria-hidden="true" />
                 ) : (
-                  <DeleteOutlineOutlinedIcon className="h-4.5 w-4.5 text-red-650" />
+                  <Trash2 className="h-4.5 w-4.5 text-red-650" aria-hidden="true" />
                 )}
                 {trashModalAction === "restore"
                   ? "Confirmar Restauración de Registro"
@@ -2542,7 +2546,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     <>
                       <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                         <span className="font-medium text-stone-700 flex items-center gap-1.5">
-                          <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
+                          <FolderArchive className="h-4 w-4 text-stone-400" aria-hidden="true" />
                           Ficha base del Equipo:
                         </span>
                         <span className="font-extrabold text-stone-950">
@@ -2553,7 +2557,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       {(trashDetails.cajaEquipos?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
-                            <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            <Database className="h-4 w-4 text-stone-400" aria-hidden="true" />
                             Ubicaciones en Cajas del Depósito:
                           </span>
                           <span className="font-bold text-stone-900">
@@ -2565,7 +2569,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       {(trashDetails.equipoCodigosSIE?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
-                            <SearchOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            <Search className="h-4 w-4 text-stone-400" aria-hidden="true" />
                             Códigos de Barra de Inventario (SIE):
                           </span>
                           <span className="font-bold text-stone-900">
@@ -2577,7 +2581,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       {(trashDetails.cajaItemCodigosSIE?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
-                            <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            <Database className="h-4 w-4 text-stone-400" aria-hidden="true" />
                             Asociaciones de Códigos a Cajas:
                           </span>
                           <span className="font-bold text-stone-900">
@@ -2589,7 +2593,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       {(trashDetails.movimientoEquipos?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
-                            <InfoOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            <Info className="h-4 w-4 text-stone-400" aria-hidden="true" />
                             Historial de Movimientos de Equipos:
                           </span>
                           <span className="font-bold text-stone-900">
@@ -2601,7 +2605,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       {(trashDetails.deletedMovimientos?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
-                            <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            <FolderArchive className="h-4 w-4 text-stone-400" aria-hidden="true" />
                             Recibos de Entrega / Préstamos completos:
                           </span>
                           <span className="font-bold text-stone-900">
@@ -2613,7 +2617,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       {(trashDetails.deletedPrestamosActivos?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2 bg-amber-50/50 p-1.5 rounded-lg border border-amber-100">
                           <span className="text-amber-900 font-bold flex items-center gap-1.5">
-                            <WarningAmberOutlinedIcon className="h-4 w-4 text-amber-600" />
+                            <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
                             Préstamos Vigentes (Pendientes de Devolución):
                           </span>
                           <span className="font-black text-amber-800">
@@ -2625,7 +2629,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       {(trashDetails.deletedPrestamosHistoriales?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
-                            <CheckCircleOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            <CheckCircle2 className="h-4 w-4 text-stone-400" aria-hidden="true" />
                             Historial de Préstamos Finalizados:
                           </span>
                           <span className="font-bold text-stone-900">
@@ -2637,7 +2641,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       {(trashDetails.stockOperacionEquipos?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-stone-600 flex items-center gap-1.5">
-                            <CheckCircleOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            <CheckCircle2 className="h-4 w-4 text-stone-400" aria-hidden="true" />
                             Operaciones de Ajuste de Stock Relacionadas:
                           </span>
                           <span className="font-bold text-stone-900">
@@ -2650,7 +2654,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                     <>
                       <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                         <span className="font-medium text-stone-700 flex items-center gap-1.5">
-                          <StorageOutlinedIcon className="h-4 w-4 text-stone-400" />
+                          <Database className="h-4 w-4 text-stone-400" aria-hidden="true" />
                           Ficha base del Artículo:
                         </span>
                         <span className="font-extrabold text-stone-950">
@@ -2661,7 +2665,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       {(trashDetails.stockMovimientos?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                           <span className="text-stone-600 flex items-center gap-1.5">
-                            <InfoOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            <Info className="h-4 w-4 text-stone-400" aria-hidden="true" />
                             Movimientos de Stock (Ingresos / Entregas):
                           </span>
                           <span className="font-bold text-stone-900">
@@ -2673,7 +2677,7 @@ export function ConfigViews(props: ConfigViewsProps) {
                       {(trashDetails.emptyEntregas?.length ?? 0) > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-stone-600 flex items-center gap-1.5">
-                            <FolderZipOutlinedIcon className="h-4 w-4 text-stone-400" />
+                            <FolderArchive className="h-4 w-4 text-stone-400" aria-hidden="true" />
                             Planillas de Entregas a Personal Completas:
                           </span>
                           <span className="font-bold text-stone-900">
@@ -2687,7 +2691,7 @@ export function ConfigViews(props: ConfigViewsProps) {
 
                 {trashModalAction === "delete" ? (
                   <div className="rounded-xl border border-red-250 bg-red-50 p-3 text-xs text-red-950 flex gap-2 items-start shadow-sm">
-                    <WarningAmberOutlinedIcon className="h-5 w-5 text-red-750 shrink-0" />
+                    <AlertTriangle className="h-5 w-5 text-red-750 shrink-0" aria-hidden="true" />
                     <div>
                       <strong className="font-extrabold text-red-900 block mb-0.5">
                         ⚠️ ADVERTENCIA CRÍTICA:
@@ -2699,7 +2703,10 @@ export function ConfigViews(props: ConfigViewsProps) {
                   </div>
                 ) : (
                   <div className="rounded-xl border border-emerald-250 bg-emerald-50 p-3 text-xs text-emerald-950 flex gap-2 items-start shadow-sm">
-                    <CheckCircleOutlinedIcon className="h-5 w-5 text-emerald-750 shrink-0" />
+                    <CheckCircle2
+                      className="h-5 w-5 text-emerald-750 shrink-0"
+                      aria-hidden="true"
+                    />
                     <div>
                       <strong className="font-extrabold text-emerald-900 block mb-0.5">
                         💡 NOTA DE RESTAURACIÓN:

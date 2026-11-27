@@ -1,9 +1,6 @@
 "use client";
 
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { Check, Pencil, Trash2, X } from "lucide-react";
 import { Button, Pagination, Stack, TextField, Typography } from "@mui/material";
 
 export { toast } from "sonner";
@@ -65,13 +62,13 @@ export function SmallActionButton(props: {
 
     switch (icon) {
       case "edit":
-        return <EditOutlinedIcon fontSize="small" />;
+        return <Pencil className="h-4 w-4 shrink-0" aria-hidden="true" />;
       case "trash":
-        return <DeleteOutlineRoundedIcon fontSize="small" />;
+        return <Trash2 className="h-4 w-4 shrink-0" aria-hidden="true" />;
       case "check":
-        return <CheckRoundedIcon fontSize="small" />;
+        return <Check className="h-4 w-4 shrink-0" aria-hidden="true" />;
       case "x":
-        return <CloseRoundedIcon fontSize="small" />;
+        return <X className="h-4 w-4 shrink-0" aria-hidden="true" />;
       default:
         return null;
     }

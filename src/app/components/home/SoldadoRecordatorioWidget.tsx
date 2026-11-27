@@ -1,8 +1,6 @@
 "use client";
 
-import AddTaskRoundedIcon from "@mui/icons-material/AddTaskRounded";
-import ChecklistRoundedIcon from "@mui/icons-material/ChecklistRounded";
-import OpenWithRoundedIcon from "@mui/icons-material/OpenWithRounded";
+import { ListChecks, ListPlus, Move } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
@@ -1020,7 +1018,7 @@ export function SoldadoRecordatorioWidget({
                   }}
                   aria-hidden
                 >
-                  <OpenWithRoundedIcon sx={{ fontSize: dragHandleIconSize }} />
+                  <Move size={dragHandleIconSize} aria-hidden="true" />
                 </Box>
               ) : null}
             </Box>
@@ -1127,7 +1125,7 @@ export function SoldadoRecordatorioWidget({
               variant="outlined"
               color="inherit"
               size="small"
-              startIcon={<ChecklistRoundedIcon sx={{ fontSize: 18 }} />}
+              startIcon={<ListChecks className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />}
               sx={{
                 textTransform: "none",
                 justifyContent: "flex-start",
@@ -1181,7 +1179,7 @@ export function SoldadoRecordatorioWidget({
               variant="contained"
               color="inherit"
               size="small"
-              startIcon={<AddTaskRoundedIcon sx={{ fontSize: 18 }} />}
+              startIcon={<ListPlus className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />}
               sx={{
                 textTransform: "none",
                 justifyContent: "flex-start",

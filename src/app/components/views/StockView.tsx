@@ -13,9 +13,7 @@ import {
 import { formatDateOnlyForDisplay, getTodayDateInput } from "@/lib/date-helpers";
 import { formatUruguayanCi } from "@/lib/ci";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
-import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
-import SortByAlphaRoundedIcon from "@mui/icons-material/SortByAlphaRounded";
-import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import { ArrowDownAZ, Printer, RefreshCw } from "lucide-react";
 import type { StockDashboardData, StockEquipoTraceData } from "@/types/views";
 import type { PrestamoEstadoEquipo } from "@/types/forms";
 import type { StockViewProps } from "./stock/types";
@@ -414,7 +412,7 @@ export function StockView({
                   className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-[#e5bb37]"
                   title="Imprimir con el orden configurado en PDF / Catálogo"
                 >
-                  <PrintRoundedIcon sx={{ fontSize: 18 }} />
+                  <Printer className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
                   <span>Imprimir (Orden Asignado)</span>
                 </button>
                 <div className="w-[1px] h-5 bg-stone-700 mx-0.5" />
@@ -430,7 +428,7 @@ export function StockView({
                   className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all hover:bg-stone-800 active:scale-95 text-stone-200 hover:text-white"
                   title="Imprimir separando equipos por categoría, con orden alfabético dentro de cada grupo"
                 >
-                  <SortByAlphaRoundedIcon sx={{ fontSize: 18 }} />
+                  <ArrowDownAZ className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
                   <span>Imprimir (A-Z por categoría)</span>
                 </button>
               </div>
@@ -441,7 +439,10 @@ export function StockView({
               disabled={loading}
               className="flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition hover:bg-stone-50 hover:border-stone-400 active:scale-95 disabled:opacity-50"
             >
-              <RefreshRoundedIcon sx={{ fontSize: 18 }} className={loading ? "animate-spin" : ""} />
+              <RefreshCw
+                className={`h-[18px] w-[18px] shrink-0 ${loading ? "animate-spin" : ""}`}
+                aria-hidden="true"
+              />
               <span>{loading ? "Recargando..." : "Recargar"}</span>
             </button>
           </div>

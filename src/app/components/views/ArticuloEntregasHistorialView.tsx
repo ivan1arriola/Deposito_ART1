@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
-import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
-import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
-import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
-import ArticleRoundedIcon from "@mui/icons-material/ArticleRounded";
-import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
-import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
-import TodayRoundedIcon from "@mui/icons-material/TodayRounded";
-import FilterAltRoundedIcon from "@mui/icons-material/FilterAltRounded";
-import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import {
+  ArrowLeft,
+  Calendar,
+  FileText,
+  Filter,
+  History,
+  MessageSquare,
+  Printer,
+  RefreshCw,
+  Search,
+  Trash2,
+  User,
+} from "lucide-react";
 
 import { LoadingInline } from "@/app/components/shared";
 import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
@@ -134,13 +136,14 @@ export function ArticuloEntregasHistorialView({
               onClick={onBack}
               className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white transition hover:bg-white/20 hover:text-white active:scale-95 shadow-sm"
               title="Volver"
+              aria-label="Volver"
             >
-              <ArrowBackRoundedIcon fontSize="small" />
+              <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
             </button>
           )}
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <HistoryRoundedIcon className="text-stone-200" />
+              <History className="h-5 w-5 shrink-0 text-stone-200" aria-hidden="true" />
               Historial de Entregas a Personal
             </h2>
             <p className="text-sm text-stone-200/90">
@@ -155,7 +158,7 @@ export function ArticuloEntregasHistorialView({
             disabled={loading}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:text-white active:scale-95 disabled:opacity-50 shadow-sm"
           >
-            <PrintRoundedIcon fontSize="small" />
+            <Printer className="h-4 w-4 shrink-0" aria-hidden="true" />
             Imprimir listado
           </button>
           <button
@@ -163,7 +166,10 @@ export function ArticuloEntregasHistorialView({
             disabled={loading}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:text-white active:scale-95 disabled:opacity-50 shadow-sm"
           >
-            <RefreshRoundedIcon fontSize="small" className={loading ? "animate-spin" : ""} />
+            <RefreshCw
+              className={`h-4 w-4 shrink-0 ${loading ? "animate-spin" : ""}`}
+              aria-hidden="true"
+            />
             Actualizar
           </button>
         </div>
@@ -203,13 +209,13 @@ export function ArticuloEntregasHistorialView({
       {/* Panel de Filtros */}
       <div className="ej-card rounded-2xl p-4 border border-stone-200 bg-white flex flex-col gap-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-stone-600 flex items-center gap-1.5">
-          <FilterAltRoundedIcon fontSize="inherit" />
+          <Filter className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           Filtros de Búsqueda
         </h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           {/* Búsqueda por Texto */}
           <div className="relative md:col-span-2">
-            <SearchRoundedIcon className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" aria-hidden="true" />
             <input
               type="text"
               placeholder="Buscar por destinatario, CI, artículo o comentario..."
@@ -221,7 +227,10 @@ export function ArticuloEntregasHistorialView({
 
           {/* Fecha Desde */}
           <div className="relative">
-            <TodayRoundedIcon className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+            <Calendar
+              className="absolute left-3 top-2.5 h-4 w-4 text-stone-400"
+              aria-hidden="true"
+            />
             <input
               type="date"
               value={startDate}
@@ -233,7 +242,10 @@ export function ArticuloEntregasHistorialView({
 
           {/* Fecha Hasta */}
           <div className="relative">
-            <TodayRoundedIcon className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+            <Calendar
+              className="absolute left-3 top-2.5 h-4 w-4 text-stone-400"
+              aria-hidden="true"
+            />
             <input
               type="date"
               value={endDate}
@@ -285,7 +297,7 @@ export function ArticuloEntregasHistorialView({
                     </span>
                   </div>
                   <h4 className="text-sm font-bold text-stone-900 flex items-center gap-1.5">
-                    <PersonRoundedIcon className="text-stone-600" fontSize="inherit" />
+                    <User className="h-3.5 w-3.5 shrink-0 text-stone-600" aria-hidden="true" />
                     {entrega.personalLabel}
                     <span className="text-xs font-normal text-stone-600">
                       ({formatUruguayanCi(entrega.personalCi)})
@@ -299,7 +311,7 @@ export function ArticuloEntregasHistorialView({
                     className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 text-xs font-bold text-stone-700 transition hover:bg-stone-50 active:scale-95"
                     title="Imprimir constancia física"
                   >
-                    <PrintRoundedIcon fontSize="inherit" />
+                    <Printer className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     Imprimir
                   </button>
                   <button
@@ -313,8 +325,9 @@ export function ArticuloEntregasHistorialView({
                       onClick={() => setConfirmDeleteId(entrega.articuloEntregaPersonalId)}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 transition hover:bg-rose-100 active:scale-95"
                       title="Eliminar registro (en caso de error)"
+                      aria-label={`Eliminar entrega #${entrega.articuloEntregaPersonalId}`}
                     >
-                      <DeleteRoundedIcon fontSize="small" />
+                      <Trash2 className="h-4 w-4 shrink-0" aria-hidden="true" />
                     </button>
                   )}
                 </div>
@@ -331,7 +344,10 @@ export function ArticuloEntregasHistorialView({
                       key={`${entrega.articuloEntregaPersonalId}-${equipo.articuloId}`}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1 text-xs text-stone-700"
                     >
-                      <ArticleRoundedIcon fontSize="inherit" className="text-stone-600" />
+                      <FileText
+                        className="h-3.5 w-3.5 shrink-0 text-stone-600"
+                        aria-hidden="true"
+                      />
                       <span className="font-semibold text-stone-900">{equipo.nombre}</span>
                       <span className="font-bold text-stone-600 bg-white border border-stone-200 rounded px-1 text-[10px]">
                         x{equipo.cantidad}
@@ -355,7 +371,7 @@ export function ArticuloEntregasHistorialView({
 
                 {entrega.comentario && (
                   <div className="flex items-center gap-1.5 italic text-amber-800 bg-amber-50 rounded-lg px-2.5 py-1 border border-amber-200/50 self-start sm:self-auto">
-                    <ChatBubbleOutlineRoundedIcon fontSize="inherit" />
+                    <MessageSquare className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     <span>&quot;{entrega.comentario}&quot;</span>
                   </div>
                 )}
@@ -466,7 +482,7 @@ export function ArticuloEntregasHistorialView({
                   onClick={() => setConfirmDeleteId(selectedEntrega.articuloEntregaPersonalId)}
                   className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-700 transition hover:bg-rose-100 active:scale-95 mr-auto"
                 >
-                  <DeleteRoundedIcon fontSize="small" />
+                  <Trash2 className="h-4 w-4 shrink-0" aria-hidden="true" />
                   Eliminar
                 </button>
               )}
@@ -474,7 +490,7 @@ export function ArticuloEntregasHistorialView({
                 onClick={() => handlePrintReceipt(selectedEntrega)}
                 className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 text-sm font-bold text-stone-700 transition hover:bg-stone-50 active:scale-95"
               >
-                <PrintRoundedIcon fontSize="small" />
+                <Printer className="h-4 w-4 shrink-0" aria-hidden="true" />
                 Imprimir Recibo
               </button>
               <button
@@ -493,7 +509,7 @@ export function ArticuloEntregasHistorialView({
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-stone-900/70 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-stone-200 text-center space-y-4 animate-scale-up">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-              <DeleteRoundedIcon className="h-6 w-6" />
+              <Trash2 className="h-6 w-6 shrink-0" aria-hidden="true" />
             </div>
             <div>
               <h3 className="text-base font-bold text-stone-950">¿Eliminar registro de entrega?</h3>

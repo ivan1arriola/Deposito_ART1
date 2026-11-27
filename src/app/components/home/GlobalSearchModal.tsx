@@ -7,11 +7,7 @@ import React from "react";
 import type { Personal, OficialSuboficial } from "@/types/entities";
 import { formatUruguayanCi, normalizeCi } from "@/lib/ci";
 import { stripDiacritics } from "@/lib/spanish-text";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
-import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
-import BadgeRoundedIcon from "@mui/icons-material/BadgeRounded";
-import KeyboardArrowRightRoundedIcon from "@mui/icons-material/KeyboardArrowRightRounded";
+import { ChevronRight, IdCard, Search, User, X } from "lucide-react";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement<unknown> },
@@ -148,8 +144,10 @@ export function GlobalSearchModal({
             borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
           }}
         >
-          <SearchRoundedIcon
-            sx={{ color: "var(--color-ejercito-blue, #1a2a1a)", fontSize: 24, opacity: 0.6 }}
+          <Search
+            className="h-6 w-6 shrink-0 opacity-60"
+            style={{ color: "var(--color-ejercito-blue, #1a2a1a)" }}
+            aria-hidden="true"
           />
           <input
             ref={inputRef}
@@ -161,13 +159,14 @@ export function GlobalSearchModal({
           />
           <IconButton
             size="small"
+            aria-label="Cerrar buscador"
             onClick={handleClose}
             sx={{
               color: "rgba(0,0,0,0.2)",
               "&:hover": { color: "black", bgcolor: "rgba(0,0,0,0.05)" },
             }}
           >
-            <CloseRoundedIcon fontSize="small" />
+            <X className="h-4 w-4 shrink-0" aria-hidden="true" />
           </IconButton>
         </Box>
 
@@ -213,7 +212,11 @@ export function GlobalSearchModal({
                         groupHover: { bgcolor: "white", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" },
                       }}
                     >
-                      {result.tipo === "SOLDADO" ? <PersonRoundedIcon /> : <BadgeRoundedIcon />}
+                      {result.tipo === "SOLDADO" ? (
+                        <User className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      ) : (
+                        <IdCard className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      )}
                     </Box>
 
                     <div className="flex-1">
@@ -230,12 +233,9 @@ export function GlobalSearchModal({
                       </p>
                     </div>
 
-                    <KeyboardArrowRightRoundedIcon
-                      sx={{
-                        color: "stone.200",
-                        groupHover: { color: "stone.400" },
-                        transition: "color 0.2s",
-                      }}
+                    <ChevronRight
+                      className="h-5 w-5 shrink-0 text-stone-300 transition-colors group-hover:text-stone-500"
+                      aria-hidden="true"
                     />
                   </button>
                 </Box>

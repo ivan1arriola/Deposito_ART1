@@ -19,30 +19,33 @@ import {
   Typography,
   useMediaQuery,
 } from "@mui/material";
-import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import AddCircleOutlineRoundedIcon from "@mui/icons-material/AddCircleOutlineRounded";
-import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
-import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
-import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
-import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
-import Groups2OutlinedIcon from "@mui/icons-material/Groups2Outlined";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
-import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
-import InventoryOutlinedIcon from "@mui/icons-material/InventoryOutlined";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import MilitaryTechOutlinedIcon from "@mui/icons-material/MilitaryTechOutlined";
-import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
-import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
-import QrCode2OutlinedIcon from "@mui/icons-material/QrCode2Outlined";
-import QueryStatsOutlinedIcon from "@mui/icons-material/QueryStatsOutlined";
-import RemoveOutlinedIcon from "@mui/icons-material/RemoveOutlined";
-import SellOutlinedIcon from "@mui/icons-material/SellOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import {
+  Archive,
+  BarChart3,
+  Bell,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCheck,
+  FileText,
+  History,
+  LayoutDashboard,
+  LayoutGrid,
+  Lock,
+  Medal,
+  Minus,
+  Package,
+  PlusCircle,
+  Printer,
+  QrCode,
+  Rows3,
+  Search,
+  Settings,
+  Tag,
+  Trash2,
+  Users,
+  UsersRound,
+} from "lucide-react";
 import { normalizeSearchText } from "@/lib/spanish-text";
 import type { MainView } from "@/types/views";
 
@@ -128,45 +131,31 @@ type NavOption<T extends MainView> = {
   writeOnly?: boolean;
 };
 
-const materialIconProps = { fontSize: "small" as const };
+const iconProps = { className: "h-[18px] w-[18px] shrink-0", "aria-hidden": true as const };
 
 const icons = {
-  dashboard: <DashboardOutlinedIcon {...materialIconProps} />,
-  personal: <Groups2OutlinedIcon {...materialIconProps} />,
-  oficiales: <MilitaryTechOutlinedIcon {...materialIconProps} />,
-  stock: <Inventory2OutlinedIcon {...materialIconProps} />,
-  etiquetado: <SellOutlinedIcon {...materialIconProps} />,
-  resumen: <QueryStatsOutlinedIcon {...materialIconProps} />,
-  altas: <AddCircleOutlineRoundedIcon {...materialIconProps} />,
-  prestamos: <DescriptionOutlinedIcon {...materialIconProps} />,
-  config: <SettingsOutlinedIcon {...materialIconProps} />,
-  matrix: <GridViewOutlinedIcon {...materialIconProps} />,
-  resumenEquipo: <ViewAgendaOutlinedIcon {...materialIconProps} />,
-  codigo: <QrCode2OutlinedIcon {...materialIconProps} />,
-  cajas: <InventoryOutlinedIcon {...materialIconProps} />,
-  imprimir: <PrintOutlinedIcon {...materialIconProps} />,
-  bell: <NotificationsOutlinedIcon {...materialIconProps} />,
-  lock: <LockOutlinedIcon {...materialIconProps} />,
-  users: <GroupOutlinedIcon {...materialIconProps} />,
-  audit: <FactCheckOutlinedIcon {...materialIconProps} />,
-  minus: <RemoveOutlinedIcon {...materialIconProps} />,
-  history: <HistoryOutlinedIcon {...materialIconProps} />,
-  trash: <DeleteOutlineOutlinedIcon {...materialIconProps} />,
-  search: (
-    <svg
-      className="h-[18px] w-[18px]"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-      />
-    </svg>
-  ),
+  dashboard: <LayoutDashboard {...iconProps} />,
+  personal: <UsersRound {...iconProps} />,
+  oficiales: <Medal {...iconProps} />,
+  stock: <Package {...iconProps} />,
+  etiquetado: <Tag {...iconProps} />,
+  resumen: <BarChart3 {...iconProps} />,
+  altas: <PlusCircle {...iconProps} />,
+  prestamos: <FileText {...iconProps} />,
+  config: <Settings {...iconProps} />,
+  matrix: <LayoutGrid {...iconProps} />,
+  resumenEquipo: <Rows3 {...iconProps} />,
+  codigo: <QrCode {...iconProps} />,
+  cajas: <Archive {...iconProps} />,
+  imprimir: <Printer {...iconProps} />,
+  bell: <Bell {...iconProps} />,
+  lock: <Lock {...iconProps} />,
+  users: <Users {...iconProps} />,
+  audit: <ClipboardCheck {...iconProps} />,
+  minus: <Minus {...iconProps} />,
+  history: <History {...iconProps} />,
+  trash: <Trash2 {...iconProps} />,
+  search: <Search {...iconProps} />,
 };
 
 const configViews: Array<NavOption<ConfigView>> = [
@@ -564,13 +553,9 @@ function ExpandedMenuGroup({
         }}
         startIcon={icon}
         endIcon={
-          <ExpandMoreRoundedIcon
-            sx={{
-              fontSize: "1rem",
-              ml: "auto",
-              transform: isOpen ? "rotate(180deg)" : "none",
-              transition: "transform 0.2s ease",
-            }}
+          <ChevronDown
+            className={`ml-auto h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            aria-hidden="true"
           />
         }
       >
@@ -654,7 +639,11 @@ export function MainNavigation({
                 transition: "background-color 0.2s ease, color 0.2s ease",
               }}
             >
-              {effectiveCollapsed ? <ChevronRightRoundedIcon /> : <ChevronLeftRoundedIcon />}
+              {effectiveCollapsed ? (
+                <ChevronRight className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+              )}
             </IconButton>
           </Tooltip>
         </Box>

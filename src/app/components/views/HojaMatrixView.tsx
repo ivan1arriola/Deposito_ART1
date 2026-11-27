@@ -5,11 +5,7 @@ import { compareOptionalOrder } from "@/lib/catalog-order";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { HojaMatrixData } from "@/types/views";
 import { LoadingInline, Card, Badge } from "@/app/components/shared";
-import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
-import PictureAsPdfRoundedIcon from "@mui/icons-material/PictureAsPdfRounded";
-import TableChartRoundedIcon from "@mui/icons-material/TableChartRounded";
-import CorporateFareRoundedIcon from "@mui/icons-material/CorporateFareRounded";
-import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
+import { Building2, Eye, FileSpreadsheet, FileText, Users } from "lucide-react";
 import { Box, Button, Stack, Typography, useTheme, alpha } from "@mui/material";
 
 const SIN_BATERIA_LABEL = "Sin batería";
@@ -134,7 +130,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
                 disableElevation
                 onClick={() => setPreviewRequested(true)}
                 disabled={previewDisabled}
-                startIcon={<VisibilityRoundedIcon />}
+                startIcon={<Eye className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />}
                 sx={{
                   borderRadius: 2,
                   fontWeight: 800,
@@ -152,7 +148,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
                   variant="outlined"
                   onClick={() => window.open(printHref, "_blank", "noopener,noreferrer")}
                   disabled={printDisabled}
-                  startIcon={<PictureAsPdfRoundedIcon />}
+                  startIcon={<FileText className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />}
                   sx={{
                     borderRadius: 2,
                     fontWeight: 700,
@@ -168,7 +164,9 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
                   variant="outlined"
                   onClick={() => window.open(spreadsheetHref, "_blank", "noopener,noreferrer")}
                   disabled={printDisabled}
-                  startIcon={<TableChartRoundedIcon />}
+                  startIcon={
+                    <FileSpreadsheet className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                  }
                   sx={{
                     borderRadius: 2,
                     fontWeight: 700,
@@ -233,7 +231,9 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
                     setSelectedBattery(null);
                     setPreviewRequested(false);
                   }}
-                  startIcon={<CorporateFareRoundedIcon />}
+                  startIcon={
+                    <Building2 className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                  }
                   sx={{
                     borderRadius: 2,
                     px: 3,
@@ -261,7 +261,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
                     setViewMode("battery");
                     setPreviewRequested(false);
                   }}
-                  startIcon={<GroupsRoundedIcon />}
+                  startIcon={<Users className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />}
                   sx={{
                     borderRadius: 2,
                     px: 3,

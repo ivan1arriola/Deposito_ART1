@@ -1,11 +1,6 @@
 "use client";
 
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
-import ForwardToInboxOutlinedIcon from "@mui/icons-material/ForwardToInboxOutlined";
-import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
-import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
-import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
+import { AlertTriangle, ClipboardCheck, Mail, Plus, Printer, Rows3 } from "lucide-react";
 import { Pagination } from "@mui/material";
 import { useState, useMemo } from "react";
 import { LoadingInline } from "@/app/components/shared";
@@ -238,7 +233,7 @@ export function PersonalSection({
           {
             id: "mass-delivery",
             label: "Registrar entrega masiva",
-            icon: <FactCheckOutlinedIcon fontSize="small" />,
+            icon: <ClipboardCheck className="h-4 w-4 shrink-0" aria-hidden="true" />,
             onClick: onOpenMassEntrega,
             disabled: loading || total === 0,
           },
@@ -247,14 +242,14 @@ export function PersonalSection({
     {
       id: "print-sheets",
       label: "Imprimir hojas de entrega",
-      icon: <PrintOutlinedIcon fontSize="small" />,
+      icon: <Printer className="h-4 w-4 shrink-0" aria-hidden="true" />,
       onClick: onPrintAllDeliverySheets,
       disabled: documentsDisabled,
     },
     {
       id: "email-sheets",
       label: emailAllDeliverySheetsBusy ? "Cancelar envío de hojas" : "Enviar hojas por correo",
-      icon: <ForwardToInboxOutlinedIcon fontSize="small" />,
+      icon: <Mail className="h-4 w-4 shrink-0" aria-hidden="true" />,
       onClick: emailAllDeliverySheetsBusy
         ? onCancelEmailAllDeliverySheets
         : onEmailAllDeliverySheets,
@@ -263,7 +258,7 @@ export function PersonalSection({
     {
       id: "print-list",
       label: "Imprimir lista por batería",
-      icon: <ViewAgendaOutlinedIcon fontSize="small" />,
+      icon: <Rows3 className="h-4 w-4 shrink-0" aria-hidden="true" />,
       onClick: onPrintPersonnelByBattery,
       disabled: documentsDisabled,
     },
@@ -272,7 +267,7 @@ export function PersonalSection({
           {
             id: "register",
             label: "Registrar subalterno",
-            icon: <AddRoundedIcon fontSize="small" />,
+            icon: <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />,
             onClick: onOpenCreate,
             disabled: false,
           },
@@ -345,7 +340,7 @@ export function PersonalSection({
       {personalConErrorReingreso.length > 0 ? (
         <details className="mx-4 mb-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-950">
           <summary className="cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800">
-            <WarningAmberRoundedIcon fontSize="small" className="mx-1" />
+            <AlertTriangle className="mx-1 inline h-4 w-4 shrink-0" aria-hidden="true" />
             Fichas de reingreso sin fecha ({personalConErrorReingreso.length})
           </summary>
           <ul className="divide-y divide-amber-200 px-3">
