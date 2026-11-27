@@ -4,6 +4,8 @@ out
 build
 coverage
 reports
+playwright-report
+test-results
 src/generated/prisma
 prisma/schema-base.sql
 prisma/patches
