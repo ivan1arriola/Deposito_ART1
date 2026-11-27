@@ -13,6 +13,8 @@ jobs:
   quality-gates:
     name: Typecheck, Lint, Format, Arch, Knip, Spanish & 90% Coverage
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgresql://ci:ci@localhost:5432/deposito_art1_ci"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,8 +29,6 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
-        env:
-          DATABASE_URL: "postgresql://ci:ci@localhost:5432/deposito_art1_ci"
         run: npm run prisma:generate
 
       - name: TypeScript strict check
