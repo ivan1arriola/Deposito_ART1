@@ -163,15 +163,39 @@ function parseRecintoNombre(value: unknown) {
 function sanitizeExternalPayload(
   value: UpdateMovimientoPayload["destinatarioExterno"] | undefined
 ) {
+  const hasCi = value?.ci !== undefined;
+  let ci = String(value?.ci ?? "").trim();
+  if (ci && !ci.toUpperCase().startsWith("SD-")) {
+    ci = ci.replace(/\D/g, "");
+  } else if (ci) {
+    ci = ci.toUpperCase();
+  }
   return {
+    hasGrado: value?.grado !== undefined,
+    hasNombre: value?.nombre !== undefined,
+    hasApellido: value?.apellido !== undefined,
+    hasCi,
+    hasUnidadDestino: value?.unidadDestino !== undefined,
     grado: String(value?.grado ?? "").trim(),
     nombre: String(value?.nombre ?? "").trim(),
     apellido: String(value?.apellido ?? "").trim(),
-    ci: String(value?.ci ?? "")
-      .trim()
-      .replace(/\D/g, ""),
+    ci,
     unidadDestino: String(value?.unidadDestino ?? "").trim(),
   };
+}
+
+function hasAnyResponsableField(responsable: {
+  grado?: string | null;
+  nombre?: string | null;
+  apellido?: string | null;
+  ci?: string | null;
+}) {
+  return Boolean(
+    responsable.grado?.trim() ||
+    responsable.nombre?.trim() ||
+    responsable.apellido?.trim() ||
+    responsable.ci?.trim()
+  );
 }
 
 function parseDestinatarioPayload(
@@ -189,21 +213,27 @@ function parseDestinatarioPayload(
       parseRecintoNombre(candidate.recintoNombre) ?? fallbackRecinto?.recintoNombre ?? null;
     if (!recintoClase || !recintoNombre) return null;
 
-    const rawDestinatarioRecinto = candidate.destinatarioRecinto as
-      Record<string, string> | undefined;
-    const recintoResponsable =
-      rawDestinatarioRecinto &&
-      (rawDestinatarioRecinto.grado ||
-        rawDestinatarioRecinto.nombre ||
-        rawDestinatarioRecinto.apellido ||
-        rawDestinatarioRecinto.ci)
-        ? {
-            grado: String(rawDestinatarioRecinto.grado ?? "").trim(),
-            nombre: String(rawDestinatarioRecinto.nombre ?? "").trim(),
-            apellido: String(rawDestinatarioRecinto.apellido ?? "").trim(),
-            ci: String(rawDestinatarioRecinto.ci ?? "").trim(),
-          }
-        : null;
+    let recintoResponsable: Extract<
+      ParsedDestinatarioPayload,
+      { destinatarioTipo: "RECINTO" }
+    >["recintoResponsable"] = fallbackRecinto?.recintoResponsable ?? null;
+
+    if (candidate.destinatarioRecinto !== undefined) {
+      if (candidate.destinatarioRecinto === null) {
+        recintoResponsable = null;
+      } else if (typeof candidate.destinatarioRecinto === "object") {
+        const raw = candidate.destinatarioRecinto as Record<string, unknown>;
+        const prev = fallbackRecinto?.recintoResponsable ?? null;
+        const merged = {
+          grado: raw.grado !== undefined ? String(raw.grado ?? "").trim() : (prev?.grado ?? ""),
+          nombre: raw.nombre !== undefined ? String(raw.nombre ?? "").trim() : (prev?.nombre ?? ""),
+          apellido:
+            raw.apellido !== undefined ? String(raw.apellido ?? "").trim() : (prev?.apellido ?? ""),
+          ci: raw.ci !== undefined ? String(raw.ci ?? "").trim() : (prev?.ci ?? ""),
+        };
+        recintoResponsable = hasAnyResponsableField(merged) ? merged : null;
+      }
+    }
 
     return {
       destinatarioTipo,
@@ -218,21 +248,27 @@ function parseDestinatarioPayload(
     const externoBase = sanitizeExternalPayload(
       candidate.destinatarioExterno as UpdateMovimientoPayload["destinatarioExterno"]
     );
+    const prev = fallbackExterno?.externo;
     const externo = {
-      grado: externoBase.grado || fallbackExterno?.externo.grado || "",
-      nombre: externoBase.nombre || fallbackExterno?.externo.nombre || "",
-      apellido: externoBase.apellido || fallbackExterno?.externo.apellido || "",
-      ci: externoBase.ci || fallbackExterno?.externo.ci || "",
-      unidadDestino: externoBase.unidadDestino || fallbackExterno?.externo.unidadDestino || "",
+      grado: externoBase.hasGrado ? externoBase.grado : (prev?.grado ?? ""),
+      nombre: externoBase.hasNombre ? externoBase.nombre : (prev?.nombre ?? ""),
+      apellido: externoBase.hasApellido ? externoBase.apellido : (prev?.apellido ?? ""),
+      ci: externoBase.hasCi ? externoBase.ci : (prev?.ci ?? ""),
+      unidadDestino: externoBase.hasUnidadDestino
+        ? externoBase.unidadDestino
+        : (prev?.unidadDestino ?? ""),
     };
+    const isHistoricalUnchangedCi = prev !== undefined && externo.ci === prev.ci;
+    const isSdIdentifier = externo.ci.toUpperCase().startsWith("SD-");
     if (
       !externo.grado ||
       !externo.nombre ||
       !externo.apellido ||
       !externo.unidadDestino ||
-      !isValidUruguayanCi(externo.ci)
-    )
+      (!isSdIdentifier && !isHistoricalUnchangedCi && !isValidUruguayanCi(externo.ci))
+    ) {
       return null;
+    }
     return {
       destinatarioTipo,
       externo,
@@ -267,10 +303,9 @@ function isValidPayload(body: unknown): body is UpdateMovimientoPayload {
   const candidate = body as Record<string, unknown>;
   const tipo = parseTipoMovimiento(candidate.tipo);
   if (!tipo) return false;
-  const destinatarioPayload = parseDestinatarioPayload(candidate);
   if (
     candidate.destinatarioTipo !== undefined &&
-    (!destinatarioPayload || !validateDestinatarioTipoForMovimiento(tipo, destinatarioPayload))
+    parseDestinatarioTipo(candidate.destinatarioTipo) === null
   ) {
     return false;
   }
@@ -430,20 +465,24 @@ function buildExistingDestinatarioPayload(
   existing: RegistroWithRelations
 ): ParsedDestinatarioPayload | null {
   if (existing.destinatarioRecinto) {
+    const hasResponsable = hasAnyResponsableField({
+      grado: existing.destinatarioRecinto.responsableGrado,
+      nombre: existing.destinatarioRecinto.responsableNombre,
+      apellido: existing.destinatarioRecinto.responsableApellido,
+      ci: existing.destinatarioRecinto.responsableCi,
+    });
     return {
       destinatarioTipo: "RECINTO",
       recintoClase: existing.destinatarioRecinto.clase === "EXTERNO" ? "EXTERNO" : "INTERNO",
       recintoNombre: existing.destinatarioRecinto.nombre,
-      recintoResponsable:
-        existing.destinatarioRecinto.responsableGrado ||
-        existing.destinatarioRecinto.responsableNombre
-          ? {
-              grado: existing.destinatarioRecinto.responsableGrado ?? "",
-              nombre: existing.destinatarioRecinto.responsableNombre ?? "",
-              apellido: existing.destinatarioRecinto.responsableApellido ?? "",
-              ci: existing.destinatarioRecinto.responsableCi ?? "",
-            }
-          : null,
+      recintoResponsable: hasResponsable
+        ? {
+            grado: existing.destinatarioRecinto.responsableGrado ?? "",
+            nombre: existing.destinatarioRecinto.responsableNombre ?? "",
+            apellido: existing.destinatarioRecinto.responsableApellido ?? "",
+            ci: existing.destinatarioRecinto.responsableCi ?? "",
+          }
+        : null,
     };
   }
 
@@ -472,11 +511,25 @@ function buildExistingDestinatarioPayload(
 
 function buildExistingDestinatarioAuditDetail(existing: RegistroWithRelations) {
   if (existing.destinatarioRecinto) {
+    const hasResponsable = hasAnyResponsableField({
+      grado: existing.destinatarioRecinto.responsableGrado,
+      nombre: existing.destinatarioRecinto.responsableNombre,
+      apellido: existing.destinatarioRecinto.responsableApellido,
+      ci: existing.destinatarioRecinto.responsableCi,
+    });
     return {
       destinatarioTipo: "RECINTO",
       recinto: buildRecintoAuditDetail({
         clase: existing.destinatarioRecinto.clase === "EXTERNO" ? "EXTERNO" : "INTERNO",
         nombre: existing.destinatarioRecinto.nombre,
+        responsable: hasResponsable
+          ? {
+              grado: existing.destinatarioRecinto.responsableGrado ?? "",
+              nombre: existing.destinatarioRecinto.responsableNombre ?? "",
+              apellido: existing.destinatarioRecinto.responsableApellido ?? "",
+              ci: existing.destinatarioRecinto.responsableCi ?? "",
+            }
+          : null,
       }),
     };
   }
@@ -542,6 +595,32 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
     );
   }
 
+  const recintoResponsableInfo =
+    movimiento.destinatarioRecinto &&
+    hasAnyResponsableField({
+      grado: movimiento.destinatarioRecinto.responsableGrado,
+      nombre: movimiento.destinatarioRecinto.responsableNombre,
+      apellido: movimiento.destinatarioRecinto.responsableApellido,
+      ci: movimiento.destinatarioRecinto.responsableCi,
+    })
+      ? {
+          grado: movimiento.destinatarioRecinto.responsableGrado ?? "",
+          nombre: movimiento.destinatarioRecinto.responsableNombre ?? "",
+          apellido: movimiento.destinatarioRecinto.responsableApellido ?? "",
+          ci: movimiento.destinatarioRecinto.responsableCi ?? "",
+        }
+      : null;
+
+  const destinatarioExternoInfo = movimiento.destinatarioExterno?.personaExterna
+    ? {
+        grado: movimiento.destinatarioExterno.personaExterna.grado,
+        nombre: movimiento.destinatarioExterno.personaExterna.nombre,
+        apellido: movimiento.destinatarioExterno.personaExterna.apellido,
+        ci: movimiento.destinatarioExterno.personaExterna.ci,
+        unidadDestino: movimiento.destinatarioExterno.personaExterna.unidadDestino,
+      }
+    : null;
+
   return NextResponse.json({
     registroId: movimiento.movimientoId.toString(),
     fecha: formatDateOnlyFromDate(movimiento.fecha) ?? "",
@@ -554,6 +633,8 @@ export async function GET(req: Request, context: { params: Promise<{ registroId:
         : "PERSONAL",
     recintoClase: movimiento.destinatarioRecinto?.clase ?? null,
     recintoNombre: movimiento.destinatarioRecinto?.nombre ?? null,
+    recintoResponsableInfo,
+    destinatarioExternoInfo,
     ci: destinatario.ci,
     perfilCi: destinatario.perfilCi,
     persona: destinatario.etiqueta,
@@ -592,18 +673,6 @@ export async function PUT(req: Request, context: { params: Promise<{ registroId:
   const fecha = parseFecha(body.fecha);
   if (!tipo || !fecha) {
     return NextResponse.json({ error: "tipo o fecha invalidos." }, { status: 400 });
-  }
-  if (body.destinatarioTipo !== undefined) {
-    const explicitDestinatario = parseDestinatarioPayload(body as Record<string, unknown>);
-    if (
-      !explicitDestinatario ||
-      !validateDestinatarioTipoForMovimiento(tipo, explicitDestinatario)
-    ) {
-      return NextResponse.json(
-        { error: "El tipo de destinatario no es valido para este movimiento." },
-        { status: 400 }
-      );
-    }
   }
 
   if (body.fecha && isDateInputAfterToday(body.fecha)) {

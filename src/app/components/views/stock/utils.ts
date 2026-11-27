@@ -1,4 +1,5 @@
 import { apellidosLabel, nombresLabel } from "@/lib/formatters";
+import { computeEquipoStockTotals } from "@/lib/listado-equipos-unidad-data";
 import { normalizeSearchText } from "@/lib/spanish-text";
 import type { OficialSuboficial, Personal } from "@/types/entities";
 import type { PrestamoClase, PrestamoDraft, PrestamoEstadoEquipo } from "@/types/forms";
@@ -114,11 +115,8 @@ export function buildActuanteOptions(
 }
 
 export function getStockSummaryMetrics(resumen: StockDashboardData["resumen"]) {
-  const totalSubalternos = resumen.reduce((total, equipo) => total + equipo.stockSubalternos, 0);
-  const totalAsignacion = resumen.reduce((total, equipo) => total + equipo.stockAsignacion, 0);
-  const totalPrestamo = resumen.reduce((total, equipo) => total + equipo.stockPrestamo, 0);
-  const totalDeposito = resumen.reduce((total, equipo) => total + equipo.stockDeposito, 0);
-  const totalUnidad = resumen.reduce((total, equipo) => total + equipo.stockUnidad, 0);
+  const { totalSubalternos, totalAsignacion, totalPrestamo, totalDeposito, totalUnidad } =
+    computeEquipoStockTotals(resumen);
   const itemsConStockDeposito = resumen.filter((equipo) => equipo.stockDeposito !== 0).length;
   const itemsNegativosDeposito = resumen.filter((equipo) => equipo.stockDeposito < 0).length;
 

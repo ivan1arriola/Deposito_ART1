@@ -85,6 +85,11 @@ export function StockView({
   >({});
   const [sieDraftByItemId, setSieDraftByItemId] = useState<Record<string, string>>({});
   const [sieSavingItemId, setSieSavingItemId] = useState<string | null>(null);
+  const [sieSavedItemId, setSieSavedItemId] = useState<string | null>(null);
+  const [sieErrorByItemId, setSieErrorByItemId] = useState<Record<string, string>>({});
+  const [sieConflictValueByItemId, setSieConflictValueByItemId] = useState<Record<string, number>>(
+    {}
+  );
   const [sieError, setSieError] = useState<string | null>(null);
   const [searchTermEquipos, setSearchTermEquipos] = useState("");
   const [ordenAlfabetico, setOrdenAlfabetico] = useState(false);
@@ -204,9 +209,21 @@ export function StockView({
     return draftValue !== undefined ? draftValue : String(equipo.existenciaSie ?? 0);
   };
 
+  const hasSieDraftChange = (equipo: StockDashboardData["resumen"][number]) => {
+    const draftValue = sieDraftByItemId[equipo.equipoId];
+    return draftValue !== undefined && draftValue !== String(equipo.existenciaSie ?? 0);
+  };
+
   function updateSieDraft(equipoId: string, value: string) {
     if (!/^\d*$/.test(value)) return;
     setSieError(null);
+    setSieSavedItemId((current) => (current === equipoId ? null : current));
+    setSieErrorByItemId((prev) => {
+      if (!(equipoId in prev)) return prev;
+      const next = { ...prev };
+      delete next[equipoId];
+      return next;
+    });
     setSieDraftByItemId((prev) => ({
       ...prev,
       [equipoId]: value,
@@ -217,49 +234,92 @@ export function StockView({
     if (!canEditSie || sieSavingItemId !== null) return;
     const inputValue = getSieInputValue(equipo).trim();
     if (inputValue === "") {
-      resetSieDraft(equipo);
+      const msg = "La existencia del SIE debe ser un entero mayor o igual a 0.";
+      setSieError(msg);
+      setSieErrorByItemId((prev) => ({ ...prev, [equipo.equipoId]: msg }));
       return;
     }
 
     const parsed = Number(inputValue);
     if (!Number.isInteger(parsed) || parsed < 0) {
-      setSieError("La existencia del SIE debe ser un entero mayor o igual a 0.");
+      const msg = "La existencia del SIE debe ser un entero mayor o igual a 0.";
+      setSieError(msg);
+      setSieErrorByItemId((prev) => ({ ...prev, [equipo.equipoId]: msg }));
       return;
     }
 
-    if (parsed === equipo.existenciaSie) {
+    const expectedExistenciaSie =
+      sieConflictValueByItemId[equipo.equipoId] ?? equipo.existenciaSie ?? 0;
+
+    if (parsed === expectedExistenciaSie && !(equipo.equipoId in sieConflictValueByItemId)) {
+      resetSieDraft(equipo);
+      return;
+    }
+
+    setSieSavingItemId(equipo.equipoId);
+    setSieSavedItemId(null);
+    setSieError(null);
+    setSieErrorByItemId((prev) => {
+      if (!(equipo.equipoId in prev)) return prev;
+      const next = { ...prev };
+      delete next[equipo.equipoId];
+      return next;
+    });
+
+    try {
+      const response = await fetch(`/api/equipos/${encodeURIComponent(equipo.equipoId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          existenciaSie: parsed,
+          expectedExistenciaSie,
+        }),
+      });
+      const rawBody = await response.text();
+      let data: { error?: string; currentExistenciaSie?: number } | null = null;
+      if (rawBody) {
+        try {
+          data = JSON.parse(rawBody) as { error?: string; currentExistenciaSie?: number };
+        } catch {
+          data = null;
+        }
+      }
+
+      if (!response.ok) {
+        if (response.status === 409 && typeof data?.currentExistenciaSie === "number") {
+          const currentValue = data.currentExistenciaSie;
+          const conflictMessage = `Otro usuario modificó el SIE. Valor vigente: ${currentValue}. Tu borrador se conservó.`;
+          setSieConflictValueByItemId((prev) => ({
+            ...prev,
+            [equipo.equipoId]: currentValue,
+          }));
+          setSieError(conflictMessage);
+          setSieErrorByItemId((prev) => ({ ...prev, [equipo.equipoId]: conflictMessage }));
+          return;
+        }
+        throw new Error(data?.error || "No se pudo actualizar la existencia del SIE.");
+      }
+
       setSieDraftByItemId((prev) => {
+        const next = { ...prev };
+        delete next[equipo.equipoId];
+        return next;
+      });
+      setSieConflictValueByItemId((prev) => {
         if (!(equipo.equipoId in prev)) return prev;
         const next = { ...prev };
         delete next[equipo.equipoId];
         return next;
       });
-      return;
-    }
-
-    setSieSavingItemId(equipo.equipoId);
-    setSieError(null);
-    try {
-      await api<{ equipoId: string; existenciaSie: number }>(
-        `/api/equipos/${encodeURIComponent(equipo.equipoId)}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ existenciaSie: parsed }),
-        }
-      );
-      setSieDraftByItemId((prev) => {
-        const next = { ...prev };
-        delete next[equipo.equipoId];
-        return next;
-      });
+      setSieSavedItemId(equipo.equipoId);
       await onReload();
     } catch (saveError: unknown) {
-      setSieError(
+      const msg =
         saveError instanceof Error
           ? saveError.message
-          : "No se pudo actualizar la existencia del SIE."
-      );
+          : "No se pudo actualizar la existencia del SIE.";
+      setSieError(msg);
+      setSieErrorByItemId((prev) => ({ ...prev, [equipo.equipoId]: msg }));
     } finally {
       setSieSavingItemId((current) => (current === equipo.equipoId ? null : current));
     }
@@ -272,6 +332,19 @@ export function StockView({
       delete next[equipo.equipoId];
       return next;
     });
+    setSieErrorByItemId((prev) => {
+      if (!(equipo.equipoId in prev)) return prev;
+      const next = { ...prev };
+      delete next[equipo.equipoId];
+      return next;
+    });
+    setSieConflictValueByItemId((prev) => {
+      if (!(equipo.equipoId in prev)) return prev;
+      const next = { ...prev };
+      delete next[equipo.equipoId];
+      return next;
+    });
+    setSieSavedItemId((current) => (current === equipo.equipoId ? null : current));
     setSieError(null);
   }
 
@@ -1180,34 +1253,74 @@ export function StockView({
                                       </td>
                                       <td className="border-b border-stone-100 px-3 py-2 text-right font-semibold text-stone-900">
                                         {canEditSie ? (
-                                          <div className="flex equipos-center justify-end gap-2">
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              step={1}
-                                              value={getSieInputValue(equipo)}
-                                              disabled={loading || sieSavingItemId !== null}
-                                              onChange={(event) =>
-                                                updateSieDraft(equipo.equipoId, event.target.value)
-                                              }
-                                              onBlur={() => void persistSieValue(equipo)}
-                                              onKeyDown={(event) => {
-                                                if (event.key === "Enter") {
-                                                  event.preventDefault();
-                                                  void persistSieValue(equipo);
-                                                  return;
+                                          <div className="flex flex-col items-end gap-1">
+                                            <div className="flex items-center justify-end gap-1.5">
+                                              <input
+                                                type="number"
+                                                min={0}
+                                                step={1}
+                                                value={getSieInputValue(equipo)}
+                                                disabled={loading || sieSavingItemId !== null}
+                                                onChange={(event) =>
+                                                  updateSieDraft(
+                                                    equipo.equipoId,
+                                                    event.target.value
+                                                  )
                                                 }
-                                                if (event.key === "Escape") {
-                                                  event.preventDefault();
-                                                  resetSieDraft(equipo);
-                                                }
-                                              }}
-                                              className="w-24 rounded border border-stone-300 px-2 py-1 text-right text-xs font-semibold text-stone-900"
-                                              aria-label={`Existencia del SIE para ${equipo.nombre}`}
-                                            />
+                                                onKeyDown={(event) => {
+                                                  if (event.key === "Enter") {
+                                                    event.preventDefault();
+                                                    void persistSieValue(equipo);
+                                                    return;
+                                                  }
+                                                  if (event.key === "Escape") {
+                                                    event.preventDefault();
+                                                    resetSieDraft(equipo);
+                                                  }
+                                                }}
+                                                className="w-24 rounded border border-stone-300 px-2 py-1 text-right text-xs font-semibold text-stone-900"
+                                                aria-label={`Existencia del SIE para ${equipo.nombre}`}
+                                              />
+                                              {hasSieDraftChange(equipo) ||
+                                              equipo.equipoId in sieConflictValueByItemId ? (
+                                                <>
+                                                  <button
+                                                    type="button"
+                                                    disabled={loading || sieSavingItemId !== null}
+                                                    onClick={() => void persistSieValue(equipo)}
+                                                    className="rounded bg-stone-900 px-2 py-1 text-[11px] font-semibold text-white hover:bg-stone-700 disabled:opacity-50"
+                                                  >
+                                                    Guardar
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    disabled={loading || sieSavingItemId !== null}
+                                                    onClick={() => resetSieDraft(equipo)}
+                                                    className="rounded border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+                                                  >
+                                                    Cancelar
+                                                  </button>
+                                                </>
+                                              ) : null}
+                                            </div>
+                                            {hasSieDraftChange(equipo) ||
+                                            equipo.equipoId in sieConflictValueByItemId ? (
+                                              <span className="text-[10px] text-stone-600">
+                                                {`Original: ${sieConflictValueByItemId[equipo.equipoId] ?? equipo.existenciaSie ?? 0}`}
+                                              </span>
+                                            ) : null}
                                             {sieSavingItemId === equipo.equipoId ? (
                                               <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">
                                                 Guardando
+                                              </span>
+                                            ) : sieSavedItemId === equipo.equipoId ? (
+                                              <span className="text-[10px] font-semibold text-emerald-700">
+                                                Guardado
+                                              </span>
+                                            ) : null}
+                                            {sieErrorByItemId[equipo.equipoId] ? (
+                                              <span className="text-[11px] font-medium text-rose-700">
+                                                {sieErrorByItemId[equipo.equipoId]}
                                               </span>
                                             ) : null}
                                           </div>
