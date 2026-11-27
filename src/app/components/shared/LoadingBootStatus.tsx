@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Stack, Typography } from "@mui/material";
 import { LoadingInline } from "./LoadingSpinner";
 
 type BootStep = {
@@ -53,15 +52,13 @@ export function LoadingBootStatus() {
   );
 
   return (
-    <Stack spacing={0.65} alignItems="center">
+    <div className="flex flex-col items-center gap-1.5">
       <LoadingInline
         label={dynamicTitle}
         size="md"
         textClassName="text-sm font-semibold text-[var(--color-text-secondary)]"
       />
-      <Typography variant="caption" sx={{ color: "var(--color-text-muted)" }}>
-        {activeStep.detail}
-      </Typography>
-    </Stack>
+      <p className="text-xs text-[var(--color-text-secondary)]">{activeStep.detail}</p>
+    </div>
   );
 }

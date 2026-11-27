@@ -1,17 +1,14 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Check, GripVertical, MoreVertical, Pencil, Trash2, X } from "lucide-react";
 import {
-  Button,
-  IconButton,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  type SxProps,
-  type Theme,
-} from "@mui/material";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  setPendingMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 
 export interface ActionMenuItem {
   label: string;
@@ -29,8 +26,10 @@ export function ActionMenu(props: {
   buttonLabel?: string;
   compact?: boolean;
 }) {
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const isOpen = Boolean(anchorEl);
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const didToggleRef = useRef(false);
+  const suppressCloseFocusRef = useRef(false);
 
   const getIcon = (icon: string): ReactNode => {
     switch (icon) {
@@ -49,87 +48,118 @@ export function ActionMenu(props: {
     }
   };
 
-  const getToneSx = (tone: string): SxProps<Theme> => {
+  const getToneClass = (tone: string): string => {
     switch (tone) {
       case "primary":
-        return { color: "primary.main" };
+        return "text-[var(--color-ejercito-blue)]";
       case "success":
-        return { color: "success.main" };
+        return "text-[var(--color-ejercito-green)]";
       case "danger":
-        return { color: "error.main" };
+        return "text-[var(--color-ejercito-red)]";
       case "secondary":
-        return { color: "text.primary" };
+        return "text-[var(--color-text-primary)]";
       default:
-        return { color: "text.secondary" };
+        return "text-[var(--color-text-secondary)]";
     }
   };
 
   if (props.actions.length === 1 && !props.buttonLabel) {
     const action = props.actions[0];
     return (
-      <Button
+      <button
+        type="button"
         onClick={action.onClick}
         disabled={action.disabled}
-        variant="text"
-        size={props.compact ? "small" : "medium"}
-        startIcon={getIcon(action.icon)}
-        sx={{ ...getToneSx(action.tone), minWidth: 0 }}
+        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 ${
+          props.compact ? "min-h-9 text-xs" : "min-h-10 text-sm"
+        } font-semibold transition-colors hover:bg-[rgb(0_56_133/6%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] disabled:pointer-events-none disabled:opacity-50 ${getToneClass(
+          action.tone
+        )}`}
       >
-        {action.label}
-      </Button>
+        {getIcon(action.icon)}
+        <span>{action.label}</span>
+      </button>
     );
   }
 
   return (
-    <>
-      {props.buttonLabel ? (
-        <Button
-          variant="outlined"
-          size={props.compact ? "small" : "medium"}
-          endIcon={<MoreVertical className="h-4 w-4 shrink-0" aria-hidden="true" />}
-          onClick={(event) => setAnchorEl(event.currentTarget)}
-          sx={{ borderColor: "var(--color-border-subtle)" }}
-        >
-          {props.buttonLabel}
-        </Button>
-      ) : (
-        <IconButton
-          size={props.compact ? "small" : "medium"}
-          onClick={(event) => setAnchorEl(event.currentTarget)}
-          aria-label="Abrir menu de acciones"
-          sx={{ border: "1px solid", borderColor: "var(--color-border-subtle)", borderRadius: 1.5 }}
-        >
-          <MoreVertical className="h-4 w-4 shrink-0" aria-hidden="true" />
-        </IconButton>
-      )}
+    <DropdownMenu
+      open={open}
+      onOpenChange={(nextOpen) => {
+        didToggleRef.current = true;
+        setOpen(nextOpen);
+        queueMicrotask(() => {
+          didToggleRef.current = false;
+        });
+      }}
+    >
+      <DropdownMenuTrigger asChild>
+        {props.buttonLabel ? (
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={() => {
+              if (didToggleRef.current) {
+                didToggleRef.current = false;
+                return;
+              }
+              setOpen((prev) => !prev);
+            }}
+            className={`inline-flex items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border-subtle)] bg-white/80 font-semibold text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-ejercito-blue)] hover:bg-[rgb(0_56_133/6%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] ${
+              props.compact ? "min-h-9 px-3 text-xs" : "min-h-10 px-4 text-sm"
+            }`}
+          >
+            <span>{props.buttonLabel}</span>
+            <MoreVertical className="h-4 w-4 shrink-0" aria-hidden="true" />
+          </button>
+        ) : (
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={() => {
+              if (didToggleRef.current) {
+                didToggleRef.current = false;
+                return;
+              }
+              setOpen((prev) => !prev);
+            }}
+            aria-label="Abrir menú de acciones"
+            className={`inline-flex items-center justify-center rounded-md border border-[var(--color-border-subtle)] bg-white/80 text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-ejercito-blue)] hover:bg-[rgb(0_56_133/6%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] ${
+              props.compact ? "h-9 w-9" : "h-10 w-10"
+            }`}
+          >
+            <MoreVertical className="h-4 w-4 shrink-0" aria-hidden="true" />
+          </button>
+        )}
+      </DropdownMenuTrigger>
 
-      <Menu
-        open={isOpen}
-        anchorEl={anchorEl}
-        onClose={() => setAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-        PaperProps={{
-          sx: {
-            border: "1px solid var(--color-border-subtle)",
-            boxShadow: "var(--shadow-sm)",
-          },
+      <DropdownMenuContent
+        align="end"
+        onCloseAutoFocus={(event) => {
+          if (suppressCloseFocusRef.current) {
+            event.preventDefault();
+            suppressCloseFocusRef.current = false;
+          }
         }}
       >
         {props.actions.map((action, idx) => (
-          <MenuItem
+          <DropdownMenuItem
             key={`${action.label}-${idx}`}
             disabled={action.disabled}
-            onClick={() => {
+            onSelect={() => {
+              suppressCloseFocusRef.current = true;
+              setPendingMenuTrigger(triggerRef.current);
+              setOpen(false);
               action.onClick();
-              setAnchorEl(null);
             }}
           >
-            <ListItemIcon sx={getToneSx(action.tone)}>{getIcon(action.icon)}</ListItemIcon>
-            <ListItemText primary={action.label} />
-          </MenuItem>
+            <span className={`inline-flex shrink-0 ${getToneClass(action.tone)}`}>
+              {getIcon(action.icon)}
+            </span>
+            <span className="flex-1 text-sm text-[var(--color-text-primary)]">{action.label}</span>
+          </DropdownMenuItem>
         ))}
-      </Menu>
-    </>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

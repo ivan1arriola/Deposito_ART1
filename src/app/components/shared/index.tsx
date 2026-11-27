@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Pencil, Trash2, X } from "lucide-react";
-import { Button, Pagination, Stack, TextField, Typography } from "@mui/material";
+import { Pagination } from "@/components/ui/Pagination";
 
 export { toast } from "sonner";
 export { ActionMenu } from "./ActionMenu";
@@ -15,40 +15,13 @@ export function SmallActionButton(props: {
   className?: string;
   icon?: "edit" | "trash" | "check" | "x";
 }) {
-  const toneSx = {
-    edit: {
-      color: "var(--color-ejercito-white)",
-      border: "1px solid #002f70",
-      background: "linear-gradient(180deg, rgba(0,56,133,0.98) 0%, rgba(0,42,102,0.98) 100%)",
-      "&:hover": {
-        background: "linear-gradient(180deg, rgba(0,47,112,0.98) 0%, rgba(0,36,86,0.98) 100%)",
-      },
-    },
-    delete: {
-      color: "var(--color-ejercito-white)",
-      border: "1px solid rgba(94,26,21,0.95)",
-      background: "linear-gradient(180deg, rgba(149,46,36,0.98) 0%, rgba(107,31,24,0.98) 100%)",
-      "&:hover": {
-        background: "linear-gradient(180deg, rgba(127,38,30,0.98) 0%, rgba(88,24,18,0.98) 100%)",
-      },
-    },
-    ok: {
-      color: "var(--color-ejercito-white)",
-      border: "1px solid #184f1f",
-      background: "linear-gradient(180deg, rgba(31,103,40,0.98) 0%, rgba(22,76,30,0.98) 100%)",
-      "&:hover": {
-        background: "linear-gradient(180deg, rgba(25,85,34,0.98) 0%, rgba(18,60,24,0.98) 100%)",
-      },
-    },
-    neutral: {
-      color: "var(--color-text-primary)",
-      border: "1px solid rgba(95,86,61,0.34)",
-      background: "linear-gradient(180deg, rgba(246,243,233,0.96) 0%, rgba(231,226,210,0.94) 100%)",
-      "&:hover": {
-        background:
-          "linear-gradient(180deg, rgba(237,233,219,0.96) 0%, rgba(223,217,198,0.94) 100%)",
-      },
-    },
+  const toneClass = {
+    edit: "text-[var(--color-ejercito-white)] border-[#002f70] bg-[linear-gradient(180deg,rgba(0,56,133,0.98)_0%,rgba(0,42,102,0.98)_100%)] hover:bg-[linear-gradient(180deg,rgba(0,47,112,0.98)_0%,rgba(0,36,86,0.98)_100%)]",
+    delete:
+      "text-[var(--color-ejercito-white)] border-[rgba(94,26,21,0.95)] bg-[linear-gradient(180deg,rgba(149,46,36,0.98)_0%,rgba(107,31,24,0.98)_100%)] hover:bg-[linear-gradient(180deg,rgba(127,38,30,0.98)_0%,rgba(88,24,18,0.98)_100%)]",
+    ok: "text-[var(--color-ejercito-white)] border-[#184f1f] bg-[linear-gradient(180deg,rgba(31,103,40,0.98)_0%,rgba(22,76,30,0.98)_100%)] hover:bg-[linear-gradient(180deg,rgba(25,85,34,0.98)_0%,rgba(18,60,24,0.98)_100%)]",
+    neutral:
+      "text-[var(--color-text-primary)] border-[rgba(95,86,61,0.34)] bg-[linear-gradient(180deg,rgba(246,243,233,0.96)_0%,rgba(231,226,210,0.94)_100%)] hover:bg-[linear-gradient(180deg,rgba(237,233,219,0.96)_0%,rgba(223,217,198,0.94)_100%)]",
   } as const;
 
   const getIcon = () => {
@@ -75,32 +48,14 @@ export function SmallActionButton(props: {
   };
 
   return (
-    <Button
+    <button
       type="button"
       onClick={props.onClick}
-      size="small"
-      variant="contained"
-      color="inherit"
-      disableElevation
-      startIcon={getIcon()}
-      className={props.className}
-      sx={{
-        borderRadius: 1.5,
-        minHeight: 32,
-        fontWeight: 700,
-        textTransform: "none",
-        boxShadow: "none",
-        ...toneSx[props.tone],
-        "&.Mui-disabled": {
-          color: "rgba(23,33,43,0.56)",
-          borderColor: "rgba(95,86,61,0.18)",
-          background:
-            "linear-gradient(180deg, rgba(234,230,216,0.7) 0%, rgba(219,214,198,0.76) 100%)",
-        },
-      }}
+      className={`inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border px-3 py-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] disabled:pointer-events-none disabled:border-[rgba(95,86,61,0.18)] disabled:bg-[linear-gradient(180deg,rgba(234,230,216,0.7)_0%,rgba(219,214,198,0.76)_100%)] disabled:text-[rgba(23,33,43,0.56)] ${toneClass[props.tone]} ${props.className ?? ""}`}
     >
-      {props.text}
-    </Button>
+      {getIcon()}
+      <span>{props.text}</span>
+    </button>
   );
 }
 
@@ -120,92 +75,40 @@ export function PaginationControls(props: {
   const to = props.totalItems === 0 ? 0 : Math.min(safePage * props.pageSize, props.totalItems);
 
   return (
-    <Stack
-      direction={{ xs: "column", sm: "row" }}
-      spacing={2}
-      alignItems={{ xs: "stretch", sm: "center" }}
-      justifyContent="space-between"
-      sx={{
-        border: "1px solid rgba(95,86,61,0.2)",
-        bgcolor: "transparent",
-        background:
-          "linear-gradient(180deg, rgba(247,244,234,0.84) 0%, rgba(230,226,211,0.92) 100%)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.36)",
-        borderRadius: 2.5,
-        p: 1.5,
-      }}
-      className={props.className}
+    <div
+      className={`flex flex-col items-stretch justify-between gap-4 rounded-[10px] border border-[rgba(95,86,61,0.2)] bg-[linear-gradient(180deg,rgba(247,244,234,0.84)_0%,rgba(230,226,211,0.92)_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.36)] sm:flex-row sm:items-center ${props.className ?? ""}`}
     >
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ lineHeight: 1.5, color: "var(--color-text-secondary)" }}
-      >
+      <p className="text-xs leading-normal text-[var(--color-text-secondary)]">
         Mostrando {from} a {to} de {props.totalItems} {props.itemLabel}
         {props.totalItems !== 1 ? "s" : ""}
-      </Typography>
+      </p>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="center">
+      <div className="flex flex-col items-center gap-3 sm:flex-row">
         {props.onPageSizeChange && props.pageSizeOptions ? (
-          <TextField
-            select
-            SelectProps={{ native: true }}
-            size="small"
+          <select
+            aria-label={`Elementos por página (${props.itemLabel})`}
             value={props.pageSize}
             onChange={(event) => props.onPageSizeChange?.(Number(event.target.value))}
-            sx={{
-              minWidth: 120,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-                background:
-                  "linear-gradient(180deg, rgba(250,248,240,0.96) 0%, rgba(237,233,220,0.94) 100%)",
-              },
-            }}
+            className="min-h-9 min-w-[120px] rounded-lg border border-[var(--color-neutral-400)] bg-[linear-gradient(180deg,rgba(250,248,240,0.96)_0%,rgba(237,233,220,0.94)_100%)] px-2.5 py-1 text-xs font-semibold text-[var(--color-text-primary)] focus:border-[var(--color-ejercito-blue)] focus:outline-none focus:ring-2 focus:ring-[rgb(0_56_133/15%)]"
           >
             {props.pageSizeOptions.map((size) => (
               <option key={size} value={size}>
-                {size}/pagina
+                {size}/página
               </option>
             ))}
-          </TextField>
+          </select>
         ) : null}
 
         <Pagination
           page={safePage}
           count={totalPages}
-          onChange={(_, page) => props.onPageChange(page)}
-          color="primary"
-          shape="rounded"
-          size="small"
+          onChange={props.onPageChange}
           showFirstButton
           showLastButton
-          sx={{
-            "& .MuiPaginationItem-root": {
-              minWidth: 32,
-              height: 32,
-              color: "var(--color-text-primary)",
-              fontWeight: 700,
-              border: "1px solid rgba(95,86,61,0.18)",
-              background: "rgba(249,247,239,0.78)",
-            },
-            "& .MuiPaginationItem-root:hover": {
-              background: "rgba(94,107,72,0.12)",
-              borderColor: "rgba(94,107,72,0.28)",
-            },
-            "& .MuiPaginationItem-root.Mui-selected": {
-              color: "var(--color-ejercito-black)",
-              borderColor: "rgba(145,111,26,0.78)",
-              background:
-                "linear-gradient(180deg, rgba(255,210,74,0.98) 0%, rgba(214,170,38,0.98) 100%)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.38)",
-            },
-            "& .MuiPaginationItem-root.Mui-selected:hover": {
-              background:
-                "linear-gradient(180deg, rgba(242,198,62,0.98) 0%, rgba(196,154,28,0.98) 100%)",
-            },
-          }}
+          variant="institutional"
+          ariaLabel={`Paginación de ${props.itemLabel}`}
         />
-      </Stack>
-    </Stack>
+      </div>
+    </div>
   );
 }

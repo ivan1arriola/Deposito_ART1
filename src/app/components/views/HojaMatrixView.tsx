@@ -87,7 +87,7 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
       <Card
         padding="none"
         variant="elevated"
-        sx={{ overflow: "hidden", background: "linear-gradient(180deg, #ffffff 0%, #f9f8f4 100%)" }}
+        className="overflow-hidden bg-gradient-to-b from-white to-[#f9f8f4]"
       >
         <Box sx={{ p: { xs: 2, sm: 3 }, borderBottom: "1px solid", borderColor: "divider" }}>
           <Stack

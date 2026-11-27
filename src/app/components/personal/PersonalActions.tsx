@@ -1,7 +1,13 @@
 "use client";
 
-import { useId, useState } from "react";
-import { Menu, MenuItem } from "@mui/material";
+import { useId, useRef, useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  setPendingMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 
 type PersonalActionsProps = {
   canWrite: boolean;
@@ -38,7 +44,11 @@ export function PersonalActions({
   onOpenSheet,
 }: PersonalActionsProps) {
   const menuId = useId();
-  const [menuAnchor, setMenuAnchor] = useState<HTMLButtonElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const didToggleRef = useRef(false);
+  const suppressCloseFocusRef = useRef(false);
+
   const actions: { label: string; onSelect: () => void; danger?: boolean }[] = [
     ...(onToggleTallas
       ? [{ label: tallasOpen ? "Ocultar tallas" : "Ver tallas", onSelect: onToggleTallas }]
@@ -75,47 +85,71 @@ export function PersonalActions({
           Entrega
         </button>
       ) : null}
-      <button
-        id={menuId + "-trigger"}
-        type="button"
-        aria-label={personLabel ? "Más acciones para " + personLabel : "Más acciones"}
-        aria-haspopup="menu"
-        aria-expanded={Boolean(menuAnchor)}
-        aria-controls={menuAnchor ? menuId : undefined}
-        onClick={(event) => setMenuAnchor(event.currentTarget)}
-        className={
-          actionClass +
-          " min-w-11 justify-center border border-stone-300 bg-white text-stone-800 hover:bg-stone-100"
-        }
-      >
-        <span aria-hidden="true" className="text-lg leading-none">
-          ···
-        </span>
-      </button>
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={() => setMenuAnchor(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-        slotProps={{
-          list: { id: menuId, "aria-labelledby": menuId + "-trigger" },
-          paper: { sx: { mt: 0.75, bgcolor: "#fff", backgroundImage: "none" } },
+      <DropdownMenu
+        open={open}
+        onOpenChange={(nextOpen) => {
+          didToggleRef.current = true;
+          setOpen(nextOpen);
+          queueMicrotask(() => {
+            didToggleRef.current = false;
+          });
         }}
       >
-        {actions.map(({ label, onSelect, danger }) => (
-          <MenuItem
-            key={label}
+        <DropdownMenuTrigger asChild>
+          <button
+            ref={triggerRef}
+            id={menuId + "-trigger"}
+            type="button"
+            aria-label={personLabel ? "Más acciones para " + personLabel : "Más acciones"}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-controls={open ? menuId : undefined}
             onClick={() => {
-              setMenuAnchor(null);
-              onSelect();
+              if (didToggleRef.current) {
+                didToggleRef.current = false;
+                return;
+              }
+              setOpen((prev) => !prev);
             }}
-            sx={{ minHeight: 44, ...(danger ? { color: "error.main" } : {}) }}
+            className={
+              actionClass +
+              " min-w-11 justify-center border border-stone-300 bg-white text-stone-800 hover:bg-stone-100"
+            }
           >
-            {label}
-          </MenuItem>
-        ))}
-      </Menu>
+            <span aria-hidden="true" className="text-lg leading-none">
+              ···
+            </span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          id={menuId}
+          aria-labelledby={menuId + "-trigger"}
+          align="end"
+          onCloseAutoFocus={(event) => {
+            if (suppressCloseFocusRef.current) {
+              event.preventDefault();
+              suppressCloseFocusRef.current = false;
+            }
+          }}
+        >
+          {actions.map(({ label, onSelect, danger }) => (
+            <DropdownMenuItem
+              key={label}
+              onSelect={() => {
+                suppressCloseFocusRef.current = true;
+                setPendingMenuTrigger(triggerRef.current);
+                setOpen(false);
+                onSelect();
+              }}
+              className={`min-h-[44px] ${
+                danger ? "text-[var(--color-ejercito-red)] data-[highlighted]:text-red-800" : ""
+              }`}
+            >
+              {label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

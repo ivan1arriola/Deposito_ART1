@@ -1,7 +1,6 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { Chip, Paper, type SxProps, type Theme } from "@mui/material";
 
 /**
  * Card mejorado con variantes y sombra
@@ -12,61 +11,34 @@ export function Card(props: {
   variant?: "default" | "elevated" | "outlined";
   padding?: "none" | "sm" | "md" | "lg";
   hover?: boolean;
-  sx?: SxProps<Theme>;
 }) {
   const { variant = "default", padding = "md", hover = false } = props;
 
-  const paddingSx = {
-    none: { p: 0 },
-    sm: { p: 1.5 },
-    md: { p: { xs: 2, sm: 3 } },
-    lg: { p: { xs: 3, sm: 4 } },
+  const paddingClass = {
+    none: "p-0",
+    sm: "p-3",
+    md: "p-4 sm:p-6",
+    lg: "p-6 sm:p-8",
   };
 
-  const variantSx = {
-    default: {
-      bgcolor: "background.paper",
-      border: "1px solid",
-      borderColor: "divider",
-      boxShadow: "var(--shadow-xs)",
-    },
-    elevated: {
-      bgcolor: "background.paper",
-      border: "1px solid",
-      borderColor: "divider",
-      boxShadow: "var(--shadow-sm)",
-    },
-    outlined: {
-      bgcolor: "background.paper",
-      border: "2px solid",
-      borderColor: "divider",
-      boxShadow: 0,
-    },
+  const variantClass = {
+    default:
+      "bg-[var(--color-neutral-0)] border border-[var(--color-neutral-300)] shadow-[var(--shadow-xs)]",
+    elevated:
+      "bg-[var(--color-neutral-0)] border border-[var(--color-neutral-300)] shadow-[var(--shadow-sm)]",
+    outlined: "bg-[var(--color-neutral-0)] border-2 border-[var(--color-neutral-300)] shadow-none",
   };
 
   return (
-    <Paper
-      className={props.className}
-      sx={[
-        {
-          borderRadius: 3,
-          transition: "box-shadow 160ms ease, border-color 160ms ease",
-          ...(variantSx[variant] ?? variantSx.default),
-          ...(paddingSx[padding] ?? paddingSx.md),
-          ...(hover
-            ? {
-                "&:hover": {
-                  boxShadow: "var(--shadow-sm)",
-                  borderColor: "var(--color-border-strong)",
-                },
-              }
-            : null),
-        },
-        ...(Array.isArray(props.sx) ? props.sx : props.sx ? [props.sx] : []),
-      ]}
+    <div
+      className={`rounded-xl transition-[box-shadow,border-color] duration-150 ${
+        variantClass[variant] ?? variantClass.default
+      } ${paddingClass[padding] ?? paddingClass.md} ${
+        hover ? "hover:border-[var(--color-border-strong)] hover:shadow-[var(--shadow-sm)]" : ""
+      } ${props.className ?? ""}`}
     >
       {props.children}
-    </Paper>
+    </div>
   );
 }
 
@@ -78,66 +50,32 @@ export function Badge(props: {
   variant?: "default" | "success" | "error" | "warning" | "info";
   size?: "sm" | "md" | "lg";
   className?: string;
-  sx?: SxProps<Theme>;
 }) {
   const { variant = "default", size = "md" } = props;
 
-  const sizeByVariant = {
-    sm: "small",
-    md: "medium",
-    lg: "medium",
-  } as const;
-
-  const paddingSx = {
-    sm: { px: 0.5 },
-    md: { px: 0.75 },
-    lg: { px: 1 },
+  const sizeClass = {
+    sm: "h-6 px-2 text-xs",
+    md: "h-7 px-3 text-[13px]",
+    lg: "h-8 px-3.5 text-[13px]",
   };
 
-  const toneSx = {
-    default: {
-      bgcolor: "var(--color-surface-muted)",
-      color: "var(--color-text-primary)",
-      borderColor: "var(--color-border-subtle)",
-    },
-    success: {
-      bgcolor: "rgb(31 103 40 / 14%)",
-      color: "var(--color-text-primary)",
-      borderColor: "rgb(31 103 40 / 40%)",
-    },
-    error: {
-      bgcolor: "rgb(207 15 33 / 14%)",
-      color: "var(--color-text-primary)",
-      borderColor: "rgb(207 15 33 / 40%)",
-    },
-    warning: {
-      bgcolor: "rgb(255 204 0 / 24%)",
-      color: "var(--color-ejercito-black)",
-      borderColor: "rgb(255 204 0 / 45%)",
-    },
-    info: {
-      bgcolor: "rgb(27 117 170 / 14%)",
-      color: "var(--color-text-primary)",
-      borderColor: "rgb(27 117 170 / 40%)",
-    },
+  const toneClass = {
+    default:
+      "bg-[var(--color-surface-muted)] text-[var(--color-text-primary)] border-[var(--color-border-subtle)]",
+    success: "bg-[rgb(31_103_40/14%)] text-[var(--color-text-primary)] border-[rgb(31_103_40/40%)]",
+    error: "bg-[rgb(207_15_33/14%)] text-[var(--color-text-primary)] border-[rgb(207_15_33/40%)]",
+    warning:
+      "bg-[rgb(255_204_0/24%)] text-[var(--color-ejercito-black)] border-[rgb(255_204_0/45%)]",
+    info: "bg-[rgb(27_117_170/14%)] text-[var(--color-text-primary)] border-[rgb(27_117_170/40%)]",
   } as const;
 
   return (
-    <Chip
-      label={props.children}
-      size={sizeByVariant[size]}
-      color="default"
-      className={props.className}
-      sx={[
-        {
-          borderRadius: 999,
-          fontWeight: 700,
-          border: "1px solid",
-          ...paddingSx[size],
-          ...toneSx[variant],
-        },
-        ...(Array.isArray(props.sx) ? props.sx : props.sx ? [props.sx] : []),
-      ]}
-    />
+    <span
+      className={`inline-flex max-w-full items-center justify-center rounded-full border font-bold leading-none ${
+        sizeClass[size]
+      } ${toneClass[variant]} ${props.className ?? ""}`}
+    >
+      <span className="truncate">{props.children}</span>
+    </span>
   );
 }

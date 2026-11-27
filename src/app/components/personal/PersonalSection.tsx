@@ -1,8 +1,8 @@
 "use client";
 
 import { AlertTriangle, ClipboardCheck, Mail, Plus, Printer, Rows3 } from "lucide-react";
-import { Pagination } from "@mui/material";
 import { useState, useMemo } from "react";
+import { Pagination } from "@/components/ui/Pagination";
 import { LoadingInline } from "@/app/components/shared";
 import { ModalFrame } from "@/app/components/modals/ModalFrame";
 import type { TallaKey } from "@/lib/tallas";
@@ -409,21 +409,12 @@ export function PersonalSection({
                 Mostrando {from} a {to} de {total} subalternos
               </p>
               <Pagination
-                aria-label="Páginas de personal subalterno"
+                ariaLabel="Páginas de personal subalterno"
                 count={pages}
                 page={page}
-                onChange={(_, nextPage) => onPersonalPageChange(nextPage)}
-                color="primary"
-                shape="rounded"
-                size="small"
+                onChange={onPersonalPageChange}
                 siblingCount={0}
-                getItemAriaLabel={(type, itemPage, selected) => {
-                  if (type === "page") return "Página " + itemPage + (selected ? ", actual" : "");
-                  if (type === "previous") return "Página anterior";
-                  if (type === "next") return "Página siguiente";
-                  return type === "first" ? "Primera página" : "Última página";
-                }}
-                sx={{ "& .MuiPaginationItem-root": { minWidth: 36, height: 36 } }}
+                variant="compact"
               />
             </footer>
           ) : null}
