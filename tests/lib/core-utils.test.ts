@@ -58,7 +58,7 @@ describe("api", () => {
     vi.restoreAllMocks();
   });
 
-  it("ejecuta GET por defecto con cabeceras anti-caché, redacta secretos y devuelve JSON", async () => {
+  it("ejecuta GET por defecto con cabeceras anti-caché sin emitir logs con headers ni payloads", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
         status: 200,
@@ -87,14 +87,10 @@ describe("api", () => {
     expect(sentHeaders.get("Cache-Control")).toBe("no-cache");
     expect(sentHeaders.get("Pragma")).toBe("no-cache");
     expect(sentHeaders.get("X-Custom")).toBe("valor");
-    expect(console.log).toHaveBeenCalledWith(
-      "[api] headers iniciales:",
-      expect.objectContaining({
-        authorization: "[OCULTO]",
-        cookie: "[OCULTO]",
-        "x-custom": "valor",
-      })
-    );
+    expect(console.groupCollapsed).not.toHaveBeenCalled();
+    expect(console.log).not.toHaveBeenCalled();
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(console.groupEnd).not.toHaveBeenCalled();
   });
 
   it("respeta cabeceras anti-caché y cache en HEAD y omite anti-caché en POST", async () => {
@@ -132,7 +128,7 @@ describe("api", () => {
     expect(postHeaders.has("Pragma")).toBe(false);
   });
 
-  it("propaga errores de fetch (AbortError como DOMException, Error, objeto con code=20 o string) y cierra el grupo", async () => {
+  it("propaga errores de fetch sin emitir trazas", async () => {
     const domAbort = new DOMException("Cancelado", "AbortError");
     const errAbort = new Error("Aborted");
     errAbort.name = "AbortError";
@@ -145,7 +141,8 @@ describe("api", () => {
       await expect(api("/api/fail")).rejects.toBe(err);
     }
 
-    expect(console.groupEnd).toHaveBeenCalledTimes(5);
+    expect(console.log).not.toHaveBeenCalled();
+    expect(console.groupEnd).not.toHaveBeenCalled();
   });
 
   it("propaga errores al leer response.text() tanto abortados como genéricos", async () => {
