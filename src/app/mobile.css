@@ -134,14 +134,6 @@
     min-height: 48px;
   }
 
-  .MuiInputBase-input,
-  .MuiSelect-select,
-  input,
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-
   /* Diálogos como bottom sheet: más naturales y legibles en teléfono. */
   .MuiDialog-container {
     align-items: flex-end !important;

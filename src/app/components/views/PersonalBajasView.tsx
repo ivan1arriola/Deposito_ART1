@@ -150,7 +150,7 @@ export function PersonalBajasView() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] flex-col equipos-center justify-center p-8">
+      <div className="flex min-h-[400px] flex-col items-center justify-center p-8">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-stone-800" />
         <p className="mt-4 text-sm font-semibold text-stone-600">
           Reconstruyendo estado de bajas...
@@ -175,9 +175,9 @@ export function PersonalBajasView() {
 
       {/* SECTION 1: PENDING RETURNS */}
       <section className="ej-card rounded-2xl p-5 border border-stone-200 bg-white shadow-sm">
-        <div className="flex flex-wrap equipos-start justify-between gap-3 border-b border-stone-100 pb-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-stone-100 pb-4">
           <div>
-            <h2 className="text-lg font-black text-stone-900 flex equipos-center gap-2">
+            <h2 className="text-lg font-black text-stone-900 flex items-center gap-2">
               📋 Pendiente de Devolución por Baja
               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-black text-amber-800">
                 {pendientes.length}
@@ -257,7 +257,7 @@ export function PersonalBajasView() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Vestuario section */}
                             <div>
-                              <h4 className="text-xs font-black text-stone-800 uppercase tracking-wide flex equipos-center gap-1.5 border-b border-stone-200 pb-2">
+                              <h4 className="text-xs font-black text-stone-800 uppercase tracking-wide flex items-center gap-1.5 border-b border-stone-200 pb-2">
                                 👕 Vestuario & Prendas Entregadas
                                 <span className="rounded bg-stone-200 px-1.5 py-0.5 text-[10px] text-stone-700">
                                   {p.outstandingVestuario.length}
@@ -288,7 +288,7 @@ export function PersonalBajasView() {
 
                             {/* Loans section */}
                             <div>
-                              <h4 className="text-xs font-black text-stone-800 uppercase tracking-wide flex equipos-center gap-1.5 border-b border-stone-200 pb-2">
+                              <h4 className="text-xs font-black text-stone-800 uppercase tracking-wide flex items-center gap-1.5 border-b border-stone-200 pb-2">
                                 🛡️ Equipos en Préstamo Activo
                                 <span className="rounded bg-stone-200 px-1.5 py-0.5 text-[10px] text-stone-700">
                                   {p.outstandingLoans.length}
@@ -349,9 +349,9 @@ export function PersonalBajasView() {
 
       {/* SECTION 2: ARCHIVED HISTORY */}
       <section className="ej-card rounded-2xl p-5 border border-stone-200 bg-white shadow-sm">
-        <div className="flex flex-wrap equipos-start justify-between gap-3 border-b border-stone-100 pb-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-stone-100 pb-4">
           <div>
-            <h2 className="text-lg font-black text-stone-900 flex equipos-center gap-2">
+            <h2 className="text-lg font-black text-stone-900 flex items-center gap-2">
               📜 Historial Administrativo de Bajas
               <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-black text-stone-700">
                 {historial.length}
@@ -511,9 +511,9 @@ export function PersonalBajasView() {
 
       {/* CONFIRM ACTION MODAL (DEVOLUCION) */}
       {confirmCi && (
-        <div className="fixed inset-0 z-50 flex equipos-center justify-center bg-stone-900/50 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 backdrop-blur-xs p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-stone-150 animate-in fade-in zoom-in-95 duration-150">
-            <h3 className="text-base font-black text-stone-900 flex equipos-center gap-2">
+            <h3 className="text-base font-black text-stone-900 flex items-center gap-2">
               ⚠️ Confirmar Devolución y Baja Definitiva
             </h3>
             <p className="mt-3 text-xs text-stone-600 leading-relaxed">
@@ -544,7 +544,7 @@ export function PersonalBajasView() {
                 type="button"
                 onClick={() => void handleConfirmDevolucion(confirmCi)}
                 disabled={confirmingAction}
-                className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-black text-white hover:bg-emerald-800 disabled:opacity-50 flex equipos-center gap-1.5"
+                className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-black text-white hover:bg-emerald-800 disabled:opacity-50 flex items-center gap-1.5"
               >
                 {confirmingAction && (
                   <div className="h-3 w-3 animate-spin rounded-full border-2 border-stone-300 border-t-white" />
@@ -558,9 +558,9 @@ export function PersonalBajasView() {
 
       {/* CONFIRM ACTION MODAL (REACTIVATE) */}
       {reactivateCi && (
-        <div className="fixed inset-0 z-50 flex equipos-center justify-center bg-stone-900/50 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 backdrop-blur-xs p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-stone-150 animate-in fade-in zoom-in-95 duration-150">
-            <h3 className="text-base font-black text-stone-900 flex equipos-center gap-2">
+            <h3 className="text-base font-black text-stone-900 flex items-center gap-2">
               🛡️ Confirmar Reincorporación / Re-Alta
             </h3>
             <p className="mt-3 text-xs text-stone-600 leading-relaxed">
@@ -591,7 +591,7 @@ export function PersonalBajasView() {
                 type="button"
                 onClick={() => void handleReactivate(reactivateCi)}
                 disabled={reactivatingAction}
-                className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-black text-white hover:bg-stone-800 disabled:opacity-50 flex equipos-center gap-1.5"
+                className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-black text-white hover:bg-stone-800 disabled:opacity-50 flex items-center gap-1.5"
               >
                 {reactivatingAction && (
                   <div className="h-3 w-3 animate-spin rounded-full border-2 border-stone-300 border-t-white" />

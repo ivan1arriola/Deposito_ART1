@@ -23,7 +23,7 @@ import {
 function renderTag(label: string, tone: "neutral" | "accent" = "neutral") {
   return (
     <span
-      className={`inline-flex equipos-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
         tone === "accent"
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : "border-stone-300 bg-white text-stone-700"
@@ -432,7 +432,7 @@ export function EtiquetadoView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap equipos-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">{meta.title}</h2>
             <p className="mt-1 text-xs text-stone-600">{meta.description}</p>
@@ -574,7 +574,7 @@ export function EtiquetadoView({
                 estanteriasList.map((estanteria) => (
                   <div
                     key={`${estanteria.codigo}-${estanteria.piso}`}
-                    className="flex equipos-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700"
+                    className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700"
                   >
                     <span>
                       {estanteria.etiqueta ||
@@ -797,9 +797,9 @@ export function EtiquetadoView({
             </div>
           ) : null}
 
-          <div className="flex flex-wrap equipos-end justify-between gap-2">
+          <div className="flex flex-wrap items-end justify-between gap-2">
             <h3 className="text-sm font-semibold text-stone-900">Cajas registradas</h3>
-            <div className="flex w-full flex-wrap equipos-end justify-end gap-2 md:w-auto">
+            <div className="flex w-full flex-wrap items-end justify-end gap-2 md:w-auto">
               <button
                 type="button"
                 onClick={onPrintListadoCajas}
@@ -865,7 +865,7 @@ export function EtiquetadoView({
 
               <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
                 <div className="rounded-xl border border-stone-200 bg-white p-3">
-                  <div className="flex flex-wrap equipos-end justify-between gap-2">
+                  <div className="flex flex-wrap items-end justify-between gap-2">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
                         Equipos de la caja
@@ -904,7 +904,7 @@ export function EtiquetadoView({
                         return (
                           <label
                             key={`caja-equipo-${equipo.equipoId}`}
-                            className={`flex cursor-pointer equipos-center gap-2 rounded-lg border px-2.5 py-2 text-sm ${
+                            className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 text-sm ${
                               checked
                                 ? "border-blue-300 bg-blue-50 text-blue-900"
                                 : "border-stone-300 bg-white text-stone-700"
@@ -949,7 +949,7 @@ export function EtiquetadoView({
                             key={`caja-equipo-codigos-${equipo.equipoId}`}
                             className="rounded-lg border border-stone-200 bg-stone-50 p-2.5"
                           >
-                            <div className="flex flex-wrap equipos-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="min-w-0">
                                 <p className="text-sm font-semibold text-stone-800">
                                   {equipo.nombre}
@@ -1047,7 +1047,7 @@ export function EtiquetadoView({
                   key={`caja-${caja.codigoDepositoGeneral}`}
                   className="rounded-xl border border-stone-200 bg-stone-50 p-3"
                 >
-                  <div className="flex flex-wrap equipos-start justify-between gap-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-stone-900">
                         Caja {caja.codigoDepositoGeneral}
@@ -1133,7 +1133,7 @@ export function EtiquetadoView({
 
           {massPrintCodes.length > 0 ? (
             <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
-              <div className="flex flex-wrap equipos-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
                   Orientacion de etiquetas
                 </p>
@@ -1164,7 +1164,7 @@ export function EtiquetadoView({
                   return (
                     <div
                       key={`mass-print-orientacion-${caja.codigoDepositoGeneral}`}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] equipos-center gap-2 rounded-lg border border-stone-200 bg-white px-2.5 py-2"
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-stone-200 bg-white px-2.5 py-2"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-stone-900">

@@ -144,7 +144,7 @@ export function RecordatoriosConfigView({
   return (
     <section className="mt-6 flex flex-col gap-6 font-sans">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:equipos-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-black tracking-tight text-white drop-shadow-sm">
             Recordatorios
@@ -156,7 +156,7 @@ export function RecordatoriosConfigView({
         <button
           type="button"
           onClick={() => void onReload()}
-          className="inline-flex equipos-center justify-center gap-2 rounded-xl border border-stone-200/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/20 hover:shadow"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/20 hover:shadow"
         >
           <svg
             className="h-4 w-4"
@@ -210,7 +210,7 @@ export function RecordatoriosConfigView({
       </div>
 
       {/* Widget Settings */}
-      <section className="ej-surface flex flex-col gap-4 p-5 sm:flex-row sm:equipos-center sm:justify-between bg-white/50 backdrop-blur-md">
+      <section className="ej-surface flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between bg-white/50 backdrop-blur-md">
         <div className="flex flex-col gap-1">
           <h3 className="text-sm font-bold uppercase tracking-wider text-stone-800">
             Widget Flotante
@@ -220,8 +220,8 @@ export function RecordatoriosConfigView({
           </p>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:equipos-center sm:gap-6">
-          <label className="flex equipos-center gap-3 cursor-pointer">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+          <label className="flex items-center gap-3 cursor-pointer">
             <span className="text-sm font-bold text-stone-700">Mostrar muñeco</span>
             <div className="relative">
               <input
@@ -237,7 +237,7 @@ export function RecordatoriosConfigView({
 
           <div className="hidden h-8 w-px bg-stone-200 sm:block"></div>
 
-          <div className="flex equipos-center gap-3">
+          <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-stone-700">Modelo</span>
             <button
               type="button"
@@ -256,10 +256,10 @@ export function RecordatoriosConfigView({
           type="button"
           onClick={() => setShowCreateForm((current) => !current)}
           aria-expanded={showCreateForm}
-          className="flex w-full equipos-center justify-between bg-stone-100/50 p-4 transition-colors hover:bg-stone-100/80"
+          className="flex w-full items-center justify-between bg-stone-100/50 p-4 transition-colors hover:bg-stone-100/80"
         >
-          <div className="flex equipos-center gap-3">
-            <div className="flex h-8 w-8 equipos-center justify-center rounded-lg bg-[var(--color-ejercito-blue)] text-white shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-ejercito-blue)] text-white shadow-sm">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -371,10 +371,10 @@ export function RecordatoriosConfigView({
                   newTitulo.trim().length < 2 ||
                   (isAdmin && selectedNewUsuarioId.trim() === "")
                 }
-                className="inline-flex equipos-center gap-2 rounded-xl bg-[var(--color-ejercito-blue)] px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-800 disabled:opacity-50 disabled:shadow-none"
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-ejercito-blue)] px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-800 disabled:opacity-50 disabled:shadow-none"
               >
                 {saving ? (
-                  <span className="flex equipos-center gap-2">
+                  <span className="flex items-center gap-2">
                     <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                       <circle
                         cx="12"
@@ -415,13 +415,13 @@ export function RecordatoriosConfigView({
       {/* Task List */}
       <section className="flex flex-col gap-3">
         {loading ? (
-          <div className="ej-surface flex equipos-center justify-center p-8">
+          <div className="ej-surface flex items-center justify-center p-8">
             <p className="animate-pulse text-sm font-bold uppercase tracking-widest text-stone-400">
               Cargando tareas...
             </p>
           </div>
         ) : tasks.length === 0 ? (
-          <div className="ej-surface flex flex-col equipos-center justify-center p-10 text-center border-dashed border-2">
+          <div className="ej-surface flex flex-col items-center justify-center p-10 text-center border-dashed border-2">
             <div className="mb-3 rounded-full bg-stone-100 p-4">
               <svg
                 className="h-8 w-8 text-stone-300"
@@ -512,11 +512,11 @@ export function RecordatoriosConfigView({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col sm:flex-row sm:equipos-start gap-4 p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-4 p-4 sm:p-5">
                     {/* Botón de completar visualmente prioritario en móviles */}
-                    <div className="flex sm:flex-col sm:equipos-center justify-between sm:justify-start gap-3 border-b sm:border-b-0 border-stone-100 pb-3 sm:pb-0 sm:pr-4 sm:border-r">
-                      <label className="flex equipos-center gap-3 cursor-pointer group">
-                        <div className="relative flex equipos-center justify-center">
+                    <div className="flex sm:flex-col sm:items-center justify-between sm:justify-start gap-3 border-b sm:border-b-0 border-stone-100 pb-3 sm:pb-0 sm:pr-4 sm:border-r">
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative flex items-center justify-center">
                           <input
                             type="checkbox"
                             className="peer sr-only"
@@ -543,7 +543,7 @@ export function RecordatoriosConfigView({
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap equipos-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <h4
                           className={`text-base font-black truncate ${task.completada ? "text-stone-500 line-through" : isUrgent ? "text-rose-800" : "text-stone-800"}`}
                         >
@@ -556,10 +556,10 @@ export function RecordatoriosConfigView({
                         )}
                       </div>
 
-                      <div className="mt-1 flex equipos-center gap-3">
+                      <div className="mt-1 flex items-center gap-3">
                         {task.fechaLimite ? (
                           <div
-                            className={`flex equipos-center gap-1 text-xs font-bold ${isUrgent ? "text-rose-600" : "text-stone-500"}`}
+                            className={`flex items-center gap-1 text-xs font-bold ${isUrgent ? "text-rose-600" : "text-stone-500"}`}
                           >
                             <svg
                               className="h-3.5 w-3.5"
@@ -598,7 +598,7 @@ export function RecordatoriosConfigView({
                       <button
                         type="button"
                         onClick={() => beginEdit(task)}
-                        className="flex equipos-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-600 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-900"
+                        className="flex items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-600 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-900"
                       >
                         <svg
                           className="h-3.5 w-3.5"
@@ -618,7 +618,7 @@ export function RecordatoriosConfigView({
                       <button
                         type="button"
                         onClick={() => void onDeleteTask(task.tareaId)}
-                        className="flex equipos-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 shadow-sm transition-colors hover:bg-rose-100 hover:text-rose-800"
+                        className="flex items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 shadow-sm transition-colors hover:bg-rose-100 hover:text-rose-800"
                       >
                         <svg
                           className="h-3.5 w-3.5"

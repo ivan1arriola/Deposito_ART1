@@ -105,7 +105,7 @@ export function MovimientosFueraHojaView({
   return (
     <section className="mt-6 space-y-4">
       <article className="ej-card rounded-2xl p-4">
-        <div className="flex flex-wrap equipos-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-stone-900">
               Movimientos fuera de hoja de entrega
@@ -169,7 +169,7 @@ export function MovimientosFueraHojaView({
           </div>
         </div>
 
-        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:equipos-center">
+        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -181,7 +181,7 @@ export function MovimientosFueraHojaView({
           </p>
         </div>
 
-        <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,220px)_minmax(0,220px)_1fr] md:equipos-center">
+        <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,220px)_minmax(0,220px)_1fr] md:items-center">
           <label className="text-xs text-stone-700">
             Ordenar por
             <select

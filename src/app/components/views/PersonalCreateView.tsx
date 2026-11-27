@@ -110,7 +110,7 @@ export function PersonalCreateView({
     <section className="mt-6 space-y-4">
       <article className="ej-card overflow-hidden rounded-3xl">
         <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-4 py-5 sm:px-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:equipos-start lg:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--color-text-secondary)]">
                 Nueva vista
@@ -124,8 +124,8 @@ export function PersonalCreateView({
               </p>
             </div>
 
-            <div className="flex flex-wrap equipos-center gap-2">
-              <span className="inline-flex equipos-center rounded-full border border-[rgb(0,56,133,0.25)] bg-[rgb(0,56,133,0.1)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-full border border-[rgb(0,56,133,0.25)] bg-[rgb(0,56,133,0.1)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)]">
                 {`Campos obligatorios: ${requiredPersonalCompleted}/${requiredPersonalFields.length}`}
               </span>
               <button
@@ -245,7 +245,7 @@ export function PersonalCreateView({
                   Destino
                 </legend>
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <label className="md:col-span-3 flex equipos-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5">
+                  <label className="md:col-span-3 flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5">
                     <input
                       type="checkbox"
                       checked={newPersonal.esReingreso}
@@ -350,7 +350,7 @@ export function PersonalCreateView({
                 <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-stone-600">
                   Movimientos iniciales (opcional)
                 </legend>
-                <div className="flex flex-wrap equipos-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-xs text-stone-600">
                     Puedes cargar movimientos en esta misma pantalla. Al guardar, se crea la persona
                     y luego se registran sus movimientos.
@@ -358,7 +358,7 @@ export function PersonalCreateView({
                   <button
                     type="button"
                     onClick={onOpenMovimientoModal}
-                    className="inline-flex equipos-center gap-2 rounded-xl bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700"
+                    className="inline-flex items-center gap-2 rounded-xl bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700"
                   >
                     <span aria-hidden="true">(+) </span>
                     Agregar movimiento
@@ -376,7 +376,7 @@ export function PersonalCreateView({
                         key={`movimiento-${movimientoIndex}`}
                         className="rounded-xl border border-stone-200 bg-white p-3"
                       >
-                        <div className="flex flex-wrap equipos-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="space-y-1">
                             <p className="text-xs font-semibold text-stone-800">{`Movimiento #${movimientoIndex + 1}`}</p>
                             <p className="text-xs text-stone-600">
@@ -387,7 +387,7 @@ export function PersonalCreateView({
                             ) : null}
                           </div>
 
-                          <div className="flex equipos-center gap-2">
+                          <div className="flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => onEditMovimiento(movimientoIndex)}
@@ -479,7 +479,7 @@ export function PersonalCreateView({
                 <button
                   type="submit"
                   disabled={!canSubmitPersonal}
-                  className="mt-5 inline-flex w-full equipos-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
+                  className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--color-ejercito-gold)] px-4 py-3 text-sm font-bold text-[var(--color-ejercito-black)] transition hover:bg-[#e6b800] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-500)] disabled:text-[var(--color-neutral-200)]"
                 >
                   {creatingPersonal ? "Registrando..." : "Registrar subalterno"}
                 </button>
@@ -592,7 +592,7 @@ export function PersonalCreateView({
               <button
                 type="button"
                 onClick={onAddMovimientoDraftItem}
-                className="inline-flex equipos-center gap-2 rounded-xl bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700"
+                className="inline-flex items-center gap-2 rounded-xl bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700"
               >
                 <span aria-hidden="true">(+) </span>
                 Agregar equipo

@@ -39,7 +39,7 @@ export function PersonalActions({
     ? "w-full rounded-xl border px-3 py-2.5 text-xs font-semibold leading-tight text-[rgba(245,239,219,0.96)] transition-all duration-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),var(--shadow-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(255,204,0,0.24)] active:translate-y-0"
     : "rounded-lg border px-2.5 py-1.5 text-xs font-medium text-[rgba(245,239,219,0.96)] transition-all duration-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),var(--shadow-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(255,204,0,0.24)] active:translate-y-0";
 
-  const actionWithIconClass = `${actionClass} inline-flex equipos-center justify-center gap-1.5`;
+  const actionWithIconClass = `${actionClass} inline-flex items-center justify-center gap-1.5`;
   const actionToneClass = {
     taupe:
       "border-[rgba(74,67,53,0.86)] bg-[linear-gradient(180deg,rgba(95,86,71,0.98)_0%,rgba(58,52,43,0.98)_100%)]",

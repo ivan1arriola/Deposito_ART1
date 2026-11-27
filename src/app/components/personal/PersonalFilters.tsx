@@ -55,7 +55,7 @@ export function PersonalFilters({
     <section
       className={`rounded-[28px] border border-[rgba(88,80,58,0.18)] bg-[linear-gradient(180deg,rgba(247,244,234,0.96)_0%,rgba(232,228,213,0.94)_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] sm:p-4 ${className ?? ""}`}
     >
-      <div className="flex flex-col gap-3 sm:min-h-[74px] sm:flex-row sm:equipos-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:min-h-[74px] sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-stone-900">Filtros de subalternos</p>
           <p className="mt-1 min-h-[20px] text-xs text-stone-600">
@@ -64,7 +64,7 @@ export function PersonalFilters({
               : "Busca subalternos por cédula, apellidos, nombres o batería."}
           </p>
         </div>
-        <div className="flex equipos-center gap-2">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onClear}

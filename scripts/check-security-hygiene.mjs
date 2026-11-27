@@ -36,6 +36,12 @@ const RULES = [
     validate: (line) => !line.includes("-- "),
     message: "eslint-disable requiere justificación técnica con '-- motivo'.",
   },
+  {
+    id: "no-invalid-equipos-css-utility",
+    pattern: /\b(?:[a-z0-9-]+:)?equipos-(?:center|start|end|stretch|baseline)\b/,
+    validate: (_line, _lines, _index, rel) => rel.startsWith("src/"),
+    message: "Utilidad CSS inválida 'equipos-*'; usa 'items-*'.",
+  },
 ];
 
 function walk(dir) {
@@ -68,7 +74,7 @@ for (const dir of TARGET_DIRS) {
     const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
     lines.forEach((line, index) => {
       for (const rule of RULES) {
-        if (rule.pattern.test(line) && (!rule.validate || rule.validate(line, lines, index))) {
+        if (rule.pattern.test(line) && (!rule.validate || rule.validate(line, lines, index, rel))) {
           violations.push(`${rel}:${index + 1} [${rule.id}] ${rule.message}`);
         }
       }

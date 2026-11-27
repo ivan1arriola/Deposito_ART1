@@ -143,7 +143,7 @@ export function AppInstallCard({ compact = false }: AppInstallCardProps) {
       aria-live="polite"
     >
       <div
-        className={`flex flex-col gap-3 ${compact ? "" : "sm:flex-row sm:equipos-center sm:justify-between"}`}
+        className={`flex flex-col gap-3 ${compact ? "" : "sm:flex-row sm:items-center sm:justify-between"}`}
       >
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">

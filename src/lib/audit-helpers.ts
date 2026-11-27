@@ -280,7 +280,7 @@ function buildDiffLine(key: string, label: string, prevStr: string, nextStr: str
     "div",
     {
       key,
-      className: "text-[11px] text-stone-700 flex equipos-center gap-1.5 py-0.5 select-none w-full",
+      className: "text-[11px] text-stone-700 flex items-center gap-1.5 py-0.5 select-none w-full",
     },
     createElement(
       "span",
@@ -350,7 +350,7 @@ export function renderAuditDetalle(
     return createElement(
       "div",
       {
-        className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex equipos-center gap-2 select-none w-max ${bg}`,
+        className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex items-center gap-2 select-none w-max ${bg}`,
       },
       createElement("span", { className: "text-sm" }, icon),
       msg
@@ -367,7 +367,7 @@ export function renderAuditDetalle(
     return createElement(
       "div",
       {
-        className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex equipos-center gap-2 select-none w-max ${bg}`,
+        className: `mt-1 px-3 py-1.5 rounded-lg border text-xs flex items-center gap-2 select-none w-max ${bg}`,
       },
       createElement("span", { className: "text-sm" }, icon),
       msg
@@ -484,7 +484,7 @@ export function renderAuditDetalle(
       "p",
       {
         className:
-          "text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2 flex equipos-center gap-1.5 select-none",
+          "text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center gap-1.5 select-none",
       },
       createElement("span", { className: "inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" }),
       "Transición de Estado (Antes → Ahora):"

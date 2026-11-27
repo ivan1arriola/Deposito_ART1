@@ -37,7 +37,7 @@ export function PersonalObservacionModal({
 
   return (
     <ModalFrame onClose={onClose} size="lg" closeOnBackdrop={false}>
-      <div className="flex equipos-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-stone-900">
             {draft.observacionId ? "Editar Observación" : "Registrar Observación"}
@@ -73,7 +73,7 @@ export function PersonalObservacionModal({
 
       <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-2">
-          <div className="flex equipos-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
               Observaciones registradas
             </p>
@@ -99,7 +99,7 @@ export function PersonalObservacionModal({
                 key={observacion.observacionId}
                 className="rounded-lg border border-stone-200 bg-stone-50 p-3"
               >
-                <div className="flex equipos-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold text-stone-700">
                       {formatDateOnlyForDisplay(observacion.fecha)}
@@ -127,7 +127,7 @@ export function PersonalObservacionModal({
         </div>
 
         <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <div className="flex equipos-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">
               {draft.observacionId ? "Editar" : "Nueva"} observación
             </p>
