@@ -2,21 +2,8 @@
 
 import { ListChecks, ListPlus, Move } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Badge,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Drawer,
-  IconButton,
-  Stack,
-  TextField,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
+import { useMediaQuery } from "@/app/hooks/useMediaQuery";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/Dialog";
 import { formatDateOnlyForDisplay } from "@/lib/date-helpers";
 import { RenderSoldadoAvatar } from "./soldado-avatar/RenderSoldadoAvatar";
 import type {
@@ -52,11 +39,10 @@ export function SoldadoRecordatorioWidget({
   onToggleTask,
   onOpenConfig,
 }: SoldadoRecordatorioWidgetProps) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
-  const isLargeDesktop = useMediaQuery(theme.breakpoints.up("lg"));
-  const isExtraLargeDesktop = useMediaQuery(theme.breakpoints.up("xl"));
+  const isMobile = useMediaQuery("(max-width: 599.95px)");
+  const isDesktop = useMediaQuery("(min-width: 900px)");
+  const isLargeDesktop = useMediaQuery("(min-width: 1200px)");
+  const isExtraLargeDesktop = useMediaQuery("(min-width: 1536px)");
 
   const [open, setOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
@@ -166,6 +152,7 @@ export function SoldadoRecordatorioWidget({
   const urgentIndicatorLabel = urgentCount > 99 ? "Urg 99+" : `Urg ${urgentCount}`;
   const dragHandleSize = Math.max(20, Math.round(avatarSize * 0.24));
   const dragHandleIconSize = Math.max(14, Math.round(avatarSize * 0.17));
+
   const resolveLeftBoundary = useCallback(
     (viewportPadding: number) => {
       if (typeof window === "undefined") return viewportPadding;
@@ -187,7 +174,8 @@ export function SoldadoRecordatorioWidget({
     },
     [isMobile]
   );
-  const widgetPositionSx = useMemo(() => {
+
+  const widgetPositionStyle = useMemo(() => {
     const sideOffset = isMobile ? 10 : 24;
     const verticalOffset = isMobile ? 14 : 24;
     const leftBoundary = resolveLeftBoundary(sideOffset);
@@ -200,9 +188,15 @@ export function SoldadoRecordatorioWidget({
         : { right: sideOffset }),
     };
   }, [corner, isMobile, resolveLeftBoundary]);
-  const widgetRuntimePositionSx = dragPreview
-    ? { top: dragPreview.top, left: dragPreview.left, right: "auto", bottom: "auto" }
-    : widgetPositionSx;
+
+  const widgetRuntimePositionStyle = dragPreview
+    ? {
+        top: dragPreview.top,
+        left: dragPreview.left,
+        right: "auto" as const,
+        bottom: "auto" as const,
+      }
+    : widgetPositionStyle;
   const displayFirstName = normalizeFirstName(displayName);
 
   const canSubmit = !saving && titulo.trim().length >= 2;
@@ -392,135 +386,88 @@ export function SoldadoRecordatorioWidget({
     }
   };
 
+  const smallBtnClass =
+    "inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--color-neutral-400)] bg-white/80 px-3 py-1 text-xs font-bold text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-ejercito-blue)] hover:bg-[rgb(0_56_133/6%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]";
+
   const panelContent = (
-    <Box
-      sx={{
-        p: 1.5,
-        backgroundImage:
-          "linear-gradient(180deg, rgba(250,251,247,0.98) 0%, rgba(240,244,235,0.95) 100%)",
-      }}
-    >
-      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-        <Box sx={{ minWidth: 0 }}>
-          <Chip
-            label="Widget institucional"
-            size="small"
-            sx={{
-              height: 20,
-              borderRadius: 999,
-              fontSize: 9.5,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: 0.42,
-              color: "#f0f5ed",
-              bgcolor: "#2a3d2f",
-              border: "1px solid rgba(15, 25, 18, 0.35)",
-            }}
-          />
-          <Typography
-            variant="subtitle1"
-            sx={{ mt: 0.75, fontWeight: 900, lineHeight: 1.2, color: "#253027" }}
-          >
+    <div className="bg-[linear-gradient(180deg,rgba(250,251,247,0.98)_0%,rgba(240,244,235,0.95)_100%)] p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <span className="inline-flex h-5 items-center rounded-full border border-[rgba(15,25,18,0.35)] bg-[#2a3d2f] px-2 text-[9.5px] font-extrabold uppercase tracking-[0.42px] text-[#f0f5ed]">
+            Widget institucional
+          </span>
+          <h3 className="mt-1.5 text-base font-black leading-tight text-[#253027]">
             Recordatorios
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+          </h3>
+          <p className="text-xs font-semibold text-[var(--color-text-secondary)]">
             {urgentCount > 0
               ? `${urgentCount} urgente(s) para resolver hoy.`
               : `${pendingTasks.length} pendiente(s) en seguimiento.`}
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={0.75}>
-          <Button
-            type="button"
-            onClick={onOpenConfig}
-            size="small"
-            variant="outlined"
-            color="inherit"
-            sx={{ textTransform: "none", borderRadius: 2, fontWeight: 700 }}
-          >
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button type="button" onClick={onOpenConfig} className={smallBtnClass}>
             Config
-          </Button>
-          <Button
-            type="button"
-            onClick={closePanel}
-            size="small"
-            variant="outlined"
-            color="inherit"
-            sx={{ textTransform: "none", borderRadius: 2, fontWeight: 700 }}
-          >
+          </button>
+          <button type="button" onClick={closePanel} className={smallBtnClass}>
             Cerrar
-          </Button>
-        </Stack>
-      </Stack>
+          </button>
+        </div>
+      </div>
 
       {!showComposer ? (
         <>
-          <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ mt: 1.2 }}>
-            <Button
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            <button
               type="button"
-              size="small"
-              variant={filter === "PENDIENTES" ? "contained" : "outlined"}
-              color={filter === "PENDIENTES" ? "primary" : "inherit"}
               onClick={() => setFilter("PENDIENTES")}
-              sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700 }}
+              className={`inline-flex min-h-8 items-center rounded-full border px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] ${
+                filter === "PENDIENTES"
+                  ? "border-[var(--color-ejercito-blue)] bg-[var(--color-ejercito-blue)] text-white"
+                  : "border-[var(--color-neutral-400)] bg-white/80 text-[var(--color-text-primary)] hover:bg-stone-100"
+              }`}
             >
               {`Pendientes (${pendingTasks.length})`}
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              size="small"
-              variant={filter === "URGENTES" ? "contained" : "outlined"}
-              color={filter === "URGENTES" ? "error" : "inherit"}
               onClick={() => setFilter("URGENTES")}
-              sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700 }}
+              className={`inline-flex min-h-8 items-center rounded-full border px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] ${
+                filter === "URGENTES"
+                  ? "border-[var(--color-ejercito-red)] bg-[var(--color-ejercito-red)] text-white"
+                  : "border-[var(--color-neutral-400)] bg-white/80 text-[var(--color-text-primary)] hover:bg-stone-100"
+              }`}
             >
               {`Urgentes (${urgentCount})`}
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              size="small"
-              variant={filter === "HECHAS" ? "contained" : "outlined"}
-              color={filter === "HECHAS" ? "success" : "inherit"}
               onClick={() => setFilter("HECHAS")}
-              sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700 }}
+              className={`inline-flex min-h-8 items-center rounded-full border px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] ${
+                filter === "HECHAS"
+                  ? "border-[var(--color-ejercito-green)] bg-[var(--color-ejercito-green)] text-white"
+                  : "border-[var(--color-neutral-400)] bg-white/80 text-[var(--color-text-primary)] hover:bg-stone-100"
+              }`}
             >
               {`Hechas (${completedCount})`}
-            </Button>
-          </Stack>
+            </button>
+          </div>
 
-          <Box
-            sx={{
-              mt: 1.2,
-              maxHeight: isMobile ? "46vh" : "38vh",
-              overflowY: "auto",
-              pr: 0.2,
-            }}
+          <div
+            className={`mt-2.5 overflow-y-auto pr-0.5 ${isMobile ? "max-h-[46vh]" : "max-h-[38vh]"}`}
           >
-            <Stack spacing={1}>
+            <div className="flex flex-col gap-2">
               {loading ? (
-                <Typography variant="caption" color="text.secondary">
-                  Cargando tareas...
-                </Typography>
+                <p className="text-xs text-[var(--color-text-secondary)]">Cargando tareas...</p>
               ) : null}
               {!loading && visibleTasks.length === 0 ? (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    bgcolor: "action.hover",
-                    borderRadius: 1.5,
-                    px: 1,
-                    py: 1,
-                  }}
-                >
+                <p className="rounded-md border border-[var(--color-neutral-300)] bg-[rgb(0_56_133/4%)] px-2.5 py-2 text-xs text-[var(--color-text-secondary)]">
                   {filter === "HECHAS"
                     ? "No hay tareas hechas."
                     : filter === "URGENTES"
                       ? "No hay tareas urgentes."
                       : "No hay tareas pendientes."}
-                </Typography>
+                </p>
               ) : null}
 
               {!loading
@@ -529,260 +476,195 @@ export function SoldadoRecordatorioWidget({
                     const isDone = task.completada;
 
                     return (
-                      <Box
+                      <div
                         key={task.tareaId}
-                        sx={{
-                          borderRadius: 1.5,
-                          border: "1px solid",
-                          borderColor: taskUrgent && !isDone ? "error.light" : "divider",
-                          bgcolor: taskUrgent && !isDone ? "rgba(179,38,30,0.06)" : "action.hover",
-                          px: 1,
-                          py: 1,
-                        }}
+                        className={`rounded-md border px-2.5 py-2 ${
+                          taskUrgent && !isDone
+                            ? "border-rose-300 bg-[rgba(179,38,30,0.06)]"
+                            : "border-[var(--color-neutral-300)] bg-[rgb(0_56_133/4%)]"
+                        }`}
                       >
-                        <Stack direction="row" spacing={1} alignItems="flex-start">
-                          <Box sx={{ minWidth: 0, flex: 1 }}>
-                            <Stack
-                              direction="row"
-                              spacing={0.75}
-                              alignItems="center"
-                              flexWrap="wrap"
-                              useFlexGap
-                            >
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  fontWeight: 700,
-                                  color: taskUrgent && !isDone ? "error.main" : "text.primary",
-                                  textDecoration: isDone ? "line-through" : "none",
-                                  opacity: isDone ? 0.8 : 1,
-                                }}
+                        <div className="flex items-start gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span
+                                className={`text-xs font-bold ${
+                                  taskUrgent && !isDone
+                                    ? "text-[var(--color-ejercito-red)]"
+                                    : "text-[var(--color-text-primary)]"
+                                } ${isDone ? "line-through opacity-80" : ""}`}
                               >
                                 {task.titulo}
-                              </Typography>
-                              <Chip
-                                label={task.prioridad === "URGENTE" ? "Urgente" : "Normal"}
-                                size="small"
-                                color={task.prioridad === "URGENTE" ? "error" : "default"}
-                                sx={{
-                                  height: 20,
-                                  fontSize: 10,
-                                  textTransform: "uppercase",
-                                  fontWeight: 700,
-                                }}
-                              />
+                              </span>
+                              <span
+                                className={`inline-flex h-5 items-center rounded-full px-2 text-[10px] font-bold uppercase ${
+                                  task.prioridad === "URGENTE"
+                                    ? "bg-[var(--color-ejercito-red)] text-white"
+                                    : "border border-[var(--color-neutral-300)] bg-[var(--color-neutral-100)] text-[var(--color-text-primary)]"
+                                }`}
+                              >
+                                {task.prioridad === "URGENTE" ? "Urgente" : "Normal"}
+                              </span>
                               {task.fechaLimite ? (
-                                <Chip
-                                  label={`Limite ${formatDateOnlyForDisplay(task.fechaLimite)}`}
-                                  size="small"
-                                  variant="outlined"
-                                  color={taskUrgent && !isDone ? "error" : "default"}
-                                  sx={{ height: 20, fontSize: 10 }}
-                                />
+                                <span
+                                  className={`inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-semibold ${
+                                    taskUrgent && !isDone
+                                      ? "border-[var(--color-ejercito-red)] text-[var(--color-ejercito-red)]"
+                                      : "border-[var(--color-neutral-400)] text-[var(--color-text-secondary)]"
+                                  }`}
+                                >
+                                  {`Limite ${formatDateOnlyForDisplay(task.fechaLimite)}`}
+                                </span>
                               ) : null}
-                            </Stack>
+                            </div>
                             {task.nota ? (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                  mt: 0.4,
-                                  display: "block",
-                                  textDecoration: isDone ? "line-through" : "none",
-                                  opacity: isDone ? 0.8 : 1,
-                                }}
+                              <p
+                                className={`mt-1 text-xs text-[var(--color-text-secondary)] ${
+                                  isDone ? "line-through opacity-80" : ""
+                                }`}
                               >
                                 {task.nota}
-                              </Typography>
+                              </p>
                             ) : null}
-                          </Box>
-                          <Button
+                          </div>
+                          <button
                             type="button"
-                            size="small"
-                            variant={isDone ? "outlined" : "contained"}
-                            color={isDone ? "inherit" : "success"}
                             onClick={() => void onToggleTask(task.tareaId, !isDone)}
-                            sx={{ minWidth: 88, textTransform: "none" }}
+                            className={`inline-flex min-h-8 min-w-[88px] shrink-0 items-center justify-center rounded-md px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] ${
+                              isDone
+                                ? "border border-[var(--color-neutral-400)] bg-white text-[var(--color-text-primary)] hover:bg-stone-100"
+                                : "bg-[var(--color-ejercito-green)] text-white hover:bg-[#174f1e]"
+                            }`}
                           >
                             {isDone ? "Reabrir" : "Hecha"}
-                          </Button>
-                        </Stack>
-                      </Box>
+                          </button>
+                        </div>
+                      </div>
                     );
                   })
                 : null}
 
               {!loading && hiddenCount > 0 ? (
-                <Typography variant="caption" color="text.secondary">
+                <p className="text-xs text-[var(--color-text-secondary)]">
                   {`Mostrando ${visibleTasks.length} de ${activeList.length}. Ver el resto en Config.`}
-                </Typography>
+                </p>
               ) : null}
-            </Stack>
-          </Box>
+            </div>
+          </div>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1.3 }}>
-            <Button
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <button
               type="button"
               onClick={() => setShowComposer(true)}
-              size="small"
-              variant="outlined"
-              color="inherit"
-              fullWidth
-              sx={{ textTransform: "none" }}
+              className={`${smallBtnClass} w-full`}
             >
               Nueva tarea rapida
-            </Button>
-            <Button
-              type="button"
-              onClick={onOpenConfig}
-              size="small"
-              variant="outlined"
-              color="inherit"
-              fullWidth
-              sx={{ textTransform: "none" }}
-            >
+            </button>
+            <button type="button" onClick={onOpenConfig} className={`${smallBtnClass} w-full`}>
               Ir a Recordatorios
-            </Button>
-          </Stack>
+            </button>
+          </div>
         </>
       ) : null}
 
       {showComposer ? (
-        <Box
-          sx={{
-            mt: 1.2,
-            borderRadius: 2,
-            border: "1px solid",
-            borderColor: "divider",
-            bgcolor: "background.paper",
-            p: 1.2,
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: 0.6,
-              color: "text.secondary",
-            }}
-          >
+        <div className="mt-2.5 rounded-lg border border-[var(--color-neutral-300)] bg-white p-2.5">
+          <p className="text-xs font-bold uppercase tracking-[0.6px] text-[var(--color-text-secondary)]">
             Carga rapida
-          </Typography>
-          <Stack spacing={1} sx={{ mt: 1 }}>
-            <TextField
+          </p>
+          <div className="mt-2 flex flex-col gap-2">
+            <input
+              type="text"
               value={titulo}
               onChange={(event) => setTitulo(event.target.value)}
               placeholder="Titulo"
-              inputProps={{ maxLength: 140 }}
-              size="small"
-              fullWidth
+              maxLength={140}
+              aria-label="Título de tarea"
+              className="w-full rounded-md border border-[var(--color-neutral-400)] bg-white px-2.5 py-1.5 text-sm text-[var(--color-text-primary)]"
             />
-            <TextField
+            <textarea
               value={nota}
               onChange={(event) => setNota(event.target.value)}
               placeholder="Nota breve"
-              inputProps={{ maxLength: 2500 }}
-              multiline
-              minRows={2}
-              size="small"
-              fullWidth
+              maxLength={2500}
+              rows={2}
+              aria-label="Nota breve"
+              className="w-full rounded-md border border-[var(--color-neutral-400)] bg-white px-2.5 py-1.5 text-sm text-[var(--color-text-primary)]"
             />
-            <TextField
+            <input
               type="date"
               value={fechaLimite}
               onChange={(event) => setFechaLimite(event.target.value)}
-              size="small"
-              fullWidth
+              aria-label="Fecha límite"
+              className="w-full rounded-md border border-[var(--color-neutral-400)] bg-white px-2.5 py-1.5 text-sm text-[var(--color-text-primary)]"
             />
-            <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
-              <Button
+            <div className="flex flex-wrap gap-1.5">
+              <button
                 type="button"
-                size="small"
-                variant="outlined"
-                color="inherit"
                 onClick={() => setFechaLimite(todayIsoDate())}
+                className={smallBtnClass}
               >
                 Hoy
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
-                size="small"
-                variant="outlined"
-                color="inherit"
                 onClick={() => setFechaLimite(offsetIsoDate(1))}
+                className={smallBtnClass}
               >
                 Manana
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
-                size="small"
-                variant="outlined"
-                color="inherit"
                 onClick={() => setFechaLimite(offsetIsoDate(7))}
+                className={smallBtnClass}
               >
                 +7 dias
-              </Button>
-              <Button
-                type="button"
-                size="small"
-                variant="outlined"
-                color="inherit"
-                onClick={() => setFechaLimite("")}
-              >
+              </button>
+              <button type="button" onClick={() => setFechaLimite("")} className={smallBtnClass}>
                 Sin fecha
-              </Button>
-            </Stack>
-            <TextField
-              select
-              SelectProps={{ native: true }}
+              </button>
+            </div>
+            <select
+              aria-label="Prioridad de tarea"
               value={prioridad}
               onChange={(event) =>
                 setPrioridad(event.target.value === "URGENTE" ? "URGENTE" : "NORMAL")
               }
-              size="small"
-              fullWidth
+              className="w-full rounded-md border border-[var(--color-neutral-400)] bg-white px-2.5 py-1.5 text-sm text-[var(--color-text-primary)]"
             >
               <option value="NORMAL">Prioridad: Normal</option>
               <option value="URGENTE">Prioridad: Urgente</option>
-            </TextField>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-              <Button
+            </select>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
                 type="button"
                 disabled={!canSubmit}
                 onClick={() => void submit()}
-                variant="contained"
-                size="small"
-                fullWidth
-                sx={{ textTransform: "none" }}
+                className="inline-flex min-h-9 w-full items-center justify-center rounded-md bg-[var(--color-ejercito-blue)] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#002f70] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] disabled:pointer-events-none disabled:opacity-50"
               >
                 {saving ? "Guardando..." : "Guardar tarea"}
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
                 onClick={() => setShowComposer(false)}
-                variant="outlined"
-                size="small"
-                color="inherit"
-                fullWidth
-                sx={{ textTransform: "none" }}
+                className={`${smallBtnClass} w-full`}
               >
                 Cancelar
-              </Button>
-            </Stack>
-          </Stack>
-        </Box>
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
-    </Box>
+    </div>
   );
 
   return (
-    <Box
+    <div
       ref={widgetContainerRef}
-      sx={{
+      style={{
         position: "fixed",
         zIndex: 360,
-        ...widgetRuntimePositionSx,
+        ...widgetRuntimePositionStyle,
         transition: isDragging
           ? "none"
           : "top 0.2s ease, right 0.2s ease, bottom 0.2s ease, left 0.2s ease",
@@ -918,19 +800,13 @@ export function SoldadoRecordatorioWidget({
         }
       `}</style>
 
-      <Stack
-        direction={isMobile ? "row" : "column"}
-        alignItems={isRightCorner ? "flex-end" : "flex-start"}
-        spacing={isMobile ? 1 : 0.85}
+      <div
+        className={`flex ${isMobile ? "flex-row gap-2" : "flex-col gap-[7px]"} ${
+          isRightCorner ? "items-end" : "items-start"
+        }`}
       >
-        <Box
-          sx={{
-            position: "relative",
-            display: "inline-flex",
-            alignSelf: isRightCorner ? "flex-end" : "flex-start",
-          }}
-        >
-          <IconButton
+        <div className={`relative inline-flex ${isRightCorner ? "self-end" : "self-start"}`}>
+          <button
             type="button"
             onClick={handleSoldierClick}
             onPointerDown={handleSoldierPointerDown}
@@ -938,323 +814,179 @@ export function SoldadoRecordatorioWidget({
             onPointerUp={handleSoldierPointerUp}
             onPointerCancel={handleSoldierPointerCancel}
             aria-expanded={controlsOpen}
-            sx={{
-              p: 0,
-              borderRadius: 3,
-              bgcolor: "transparent",
+            aria-label="Recordatorios del soldado"
+            title="Recordatorios del soldado (toque para acciones, arrastre para mover)"
+            style={{
               touchAction: "none",
-              cursor: "grab",
-              "&:hover": { bgcolor: "transparent" },
-              "&:active": { cursor: "grabbing" },
               ...(isDragging
                 ? {
                     transform: "scale(1.03)",
                     filter: "drop-shadow(0 0 10px rgba(16, 94, 255, 0.35))",
                   }
                 : {}),
-              "&:focus-visible": {
-                outline: "2px solid",
-                outlineColor: "primary.main",
-                outlineOffset: 2,
-              },
             }}
-            title="Recordatorios del soldado (toque para acciones, arrastre para mover)"
+            className="inline-flex cursor-grab items-center justify-center rounded-xl bg-transparent p-0 active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-ejercito-blue)]"
           >
-            <Box sx={{ position: "relative", display: "inline-flex", alignItems: "flex-end" }}>
-              <Badge
-                badgeContent={pendingTasks.length}
-                color={urgentCount > 0 ? "error" : "primary"}
-                overlap="circular"
-                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                sx={{
-                  "& .MuiBadge-badge": {
-                    fontSize: badgeFontSize,
-                    minWidth: badgeSize,
-                    height: badgeSize,
-                    fontWeight: 800,
-                    boxShadow:
-                      "0 0 0 2px rgba(240, 244, 234, 0.97), 0 6px 14px rgba(17, 31, 20, 0.22)",
-                  },
-                }}
-              >
+            <span className="relative inline-flex items-end">
+              <span className="relative inline-flex">
                 <RenderSoldadoAvatar size={avatarSize} variant={variant} />
-              </Badge>
+                {pendingTasks.length > 0 ? (
+                  <span
+                    style={{
+                      fontSize: badgeFontSize,
+                      minWidth: badgeSize,
+                      height: badgeSize,
+                    }}
+                    className={`absolute bottom-[6%] right-[6%] inline-flex items-center justify-center rounded-full px-1 font-extrabold leading-none text-white shadow-[0_0_0_2px_rgba(240,244,234,0.97),0_6px_14px_rgba(17,31,20,0.22)] ${
+                      urgentCount > 0
+                        ? "bg-[var(--color-ejercito-red)]"
+                        : "bg-[var(--color-ejercito-blue)]"
+                    }`}
+                  >
+                    {pendingTasks.length}
+                  </span>
+                ) : null}
+              </span>
               {urgentCount > 0 ? (
-                <Chip
-                  label={urgentIndicatorLabel}
-                  color="default"
-                  size="small"
-                  sx={{
-                    position: "absolute",
+                <span
+                  style={{
                     top: Math.round(-avatarSize * 0.02),
                     right: Math.round(-avatarSize * 0.08),
                     height: urgentPillHeight,
                     minWidth: urgentPillMinWidth,
                     fontSize: urgentPillFontSize,
-                    fontWeight: 800,
                     borderRadius: Math.round(urgentPillHeight / 2),
-                    color: "#7f1d1d",
-                    bgcolor: "rgba(255, 245, 245, 0.96)",
-                    border: "1px solid rgba(153, 27, 27, 0.42)",
-                    "& .MuiChip-label": { px: 0.85, lineHeight: 1 },
                   }}
-                />
+                  className="absolute inline-flex items-center justify-center border border-[rgba(153,27,27,0.42)] bg-[rgba(255,245,245,0.96)] px-1.5 font-extrabold leading-none text-[#7f1d1d]"
+                >
+                  {urgentIndicatorLabel}
+                </span>
               ) : null}
               {isDragging || controlsOpen ? (
-                <Box
-                  sx={{
-                    position: "absolute",
+                <span
+                  style={{
                     left: Math.round(-avatarSize * 0.07),
                     bottom: Math.round(-avatarSize * 0.05),
                     width: dragHandleSize,
                     height: dragHandleSize,
-                    borderRadius: "50%",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    bgcolor: "rgba(18,22,16,0.78)",
-                    color: "rgba(255,255,255,0.92)",
-                    border: "1px solid rgba(255,255,255,0.3)",
                   }}
-                  aria-hidden
+                  className="absolute inline-flex items-center justify-center rounded-full border border-white/30 bg-[rgba(18,22,16,0.78)] text-white/90"
+                  aria-hidden="true"
                 >
                   <Move size={dragHandleIconSize} aria-hidden="true" />
-                </Box>
+                </span>
               ) : null}
-            </Box>
-          </IconButton>
+            </span>
+          </button>
 
           {activeDialogue && !isDragging ? (
-            <Box
-              sx={{
-                position: "absolute",
+            <div
+              style={{
                 ...(isTopCorner
                   ? { top: `calc(100% + ${isMobile ? 8 : 10}px)` }
                   : { bottom: `calc(100% + ${isMobile ? 8 : 10}px)` }),
                 ...(isRightCorner ? { right: 0 } : { left: 0 }),
-                maxWidth: { xs: 190, sm: 230 },
-                borderRadius: 2.75,
-                px: 1.2,
-                py: 0.95,
-                backgroundImage:
-                  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,238,0.98) 100%)",
-                color: "#1f261e",
-                border: "1px solid rgba(102, 114, 88, 0.34)",
-                boxShadow: "0 12px 26px rgba(20, 28, 19, 0.22)",
-                backdropFilter: "blur(1.5px)",
-                pointerEvents: "none",
-                zIndex: 2,
-                "&::after": {
-                  content: '""',
-                  position: "absolute",
-                  width: 12,
-                  height: 12,
-                  bgcolor: "rgba(250,252,246,0.98)",
-                  ...(isTopCorner
-                    ? {
-                        top: -6,
-                        borderLeft: "1px solid rgba(102, 114, 88, 0.34)",
-                        borderTop: "1px solid rgba(102, 114, 88, 0.34)",
-                      }
-                    : {
-                        bottom: -6,
-                        borderRight: "1px solid rgba(102, 114, 88, 0.34)",
-                        borderBottom: "1px solid rgba(102, 114, 88, 0.34)",
-                      }),
-                  transform: "rotate(45deg)",
-                  ...(isRightCorner ? { right: 20 } : { left: 20 }),
-                },
               }}
+              className="pointer-events-none absolute z-[2] max-w-[190px] rounded-[11px] border border-[rgba(102,114,88,0.34)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(244,248,238,0.98)_100%)] px-2.5 py-2 text-[#1f261e] shadow-[0_12px_26px_rgba(20,28,19,0.22)] backdrop-blur-[1.5px] sm:max-w-[230px]"
               aria-live="polite"
             >
-              <Typography sx={{ fontSize: 13, lineHeight: 1.28, fontWeight: 700 }}>
-                {activeDialogue.message}
-              </Typography>
-            </Box>
+              <span
+                aria-hidden="true"
+                style={{
+                  ...(isTopCorner ? { top: -6 } : { bottom: -6 }),
+                  ...(isRightCorner ? { right: 20 } : { left: 20 }),
+                }}
+                className={`absolute h-3 w-3 rotate-45 bg-[rgba(250,252,246,0.98)] ${
+                  isTopCorner
+                    ? "border-l border-t border-[rgba(102,114,88,0.34)]"
+                    : "border-b border-r border-[rgba(102,114,88,0.34)]"
+                }`}
+              />
+              <p className="text-[13px] font-bold leading-[1.28]">{activeDialogue.message}</p>
+            </div>
           ) : null}
-        </Box>
+        </div>
 
         {isDragging ? (
-          <Chip
-            size="small"
-            label="Arrastra a una esquina"
-            color="primary"
-            sx={{
-              borderRadius: 999,
-              fontSize: 11,
-              fontWeight: 700,
-              boxShadow: "0 8px 20px rgba(0, 56, 133, 0.25)",
-            }}
-          />
+          <span className="inline-flex h-6 items-center rounded-full bg-[var(--color-ejercito-blue)] px-2.5 text-[11px] font-bold text-white shadow-[0_8px_20px_rgba(0,56,133,0.25)]">
+            Arrastra a una esquina
+          </span>
         ) : null}
 
         {controlsOpen ? (
-          <Stack
-            spacing={1.25}
-            sx={{
-              minWidth: isMobile ? 186 : 220,
-              p: 1.25,
-              borderRadius: 4,
-              bgcolor: "rgba(250, 252, 248, 0.96)",
-              backgroundImage:
-                "linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(240,244,236,0.6) 100%)",
-              border: "1px solid rgba(130, 142, 115, 0.4)",
-              boxShadow: "0 16px 36px rgba(10, 15, 8, 0.4), 0 0 0 1px rgba(255,255,255,0.6) inset",
-              backdropFilter: "blur(12px) saturate(140%)",
-            }}
+          <div
+            className={`flex flex-col gap-2.5 rounded-2xl border border-[rgba(130,142,115,0.4)] bg-[rgba(250,252,248,0.96)] bg-[linear-gradient(180deg,rgba(255,255,255,0.8)_0%,rgba(240,244,236,0.6)_100%)] p-2.5 shadow-[0_16px_36px_rgba(10,15,8,0.4),0_0_0_1px_rgba(255,255,255,0.6)_inset] backdrop-blur-md ${
+              isMobile ? "min-w-[186px]" : "min-w-[220px]"
+            }`}
           >
-            <Box sx={{ px: 0.5, pb: 0.25 }}>
-              <Typography
-                sx={{
-                  fontSize: 10,
-                  fontWeight: 800,
-                  letterSpacing: 0.8,
-                  textTransform: "uppercase",
-                  color: "#8a9e7f",
-                }}
-              >
+            <div className="px-1 pb-0.5">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.8px] text-[#8a9e7f]">
                 Panel Rápido
-              </Typography>
-              <Typography sx={{ fontSize: 13, fontWeight: 800, lineHeight: 1.2, color: "#2c362a" }}>
+              </p>
+              <p className="text-[13px] font-extrabold leading-tight text-[#2c362a]">
                 Acciones del widget
-              </Typography>
-            </Box>
-            <Button
+              </p>
+            </div>
+            <button
               type="button"
               onClick={() => openPanel(false)}
-              variant="outlined"
-              color="inherit"
-              size="small"
-              startIcon={<ListChecks className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />}
-              sx={{
-                textTransform: "none",
-                justifyContent: "flex-start",
-                alignItems: "stretch",
-                minHeight: 56,
-                px: 1.5,
-                py: 1,
-                borderRadius: 2.5,
-                border: "1px solid",
+              style={{
                 borderColor: statusSurface.borderColor,
                 backgroundImage: statusSurface.backgroundImage,
                 color: statusSurface.color,
-                boxShadow: "0 6px 14px rgba(20, 28, 19, 0.15)",
-                "&:hover": {
-                  borderColor: statusSurface.borderColor,
-                  backgroundImage: statusSurface.backgroundImage,
-                  filter: "brightness(1.05)",
-                  transform: "translateY(-1px)",
-                  boxShadow: "0 8px 18px rgba(20, 28, 19, 0.22)",
-                },
-                transition: "all 0.2s ease-out",
-                "& .MuiButton-startIcon": {
-                  mt: 0.1,
-                  mr: 1.25,
-                },
               }}
+              className="flex min-h-14 items-stretch justify-start gap-2.5 rounded-[10px] border px-3 py-2 text-left shadow-[0_6px_14px_rgba(20,28,19,0.15)] transition-all duration-200 ease-out hover:-translate-y-px hover:brightness-105 hover:shadow-[0_8px_18px_rgba(20,28,19,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
             >
-              <Stack spacing={0.1} sx={{ textAlign: "left", alignItems: "flex-start" }}>
-                <Typography
-                  component="span"
-                  sx={{ fontSize: 15, fontWeight: 800, lineHeight: 1.14, letterSpacing: 0.08 }}
-                >
+              <ListChecks className="mt-0.5 h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+              <span className="flex flex-col items-start gap-px text-left">
+                <span className="text-[15px] font-extrabold leading-[1.14] tracking-[0.08px]">
                   {statusHeadline}
-                </Typography>
-                <Typography
-                  component="span"
-                  sx={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: statusSurface.mutedColor,
-                    lineHeight: 1.18,
-                  }}
+                </span>
+                <span
+                  style={{ color: statusSurface.mutedColor }}
+                  className="text-[11px] font-semibold leading-[1.18]"
                 >
                   {statusCaption}
-                </Typography>
-              </Stack>
-            </Button>
-            <Button
+                </span>
+              </span>
+            </button>
+            <button
               type="button"
               onClick={openComposer}
-              variant="contained"
-              color="inherit"
-              size="small"
-              startIcon={<ListPlus className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />}
-              sx={{
-                textTransform: "none",
-                justifyContent: "flex-start",
-                minHeight: 48,
-                px: 1.5,
-                py: 1,
-                borderRadius: 2.5,
-                color: "#ffffff",
-                backgroundImage: "linear-gradient(135deg, #40605c 0%, #5b877a 100%)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                boxShadow: "0 6px 14px rgba(36, 61, 54, 0.2)",
-                fontWeight: 700,
-                "&:hover": {
-                  backgroundImage: "linear-gradient(135deg, #476c67 0%, #659587 100%)",
-                  boxShadow: "0 8px 18px rgba(36, 61, 54, 0.3)",
-                  transform: "translateY(-1px)",
-                },
-                transition: "all 0.2s ease-out",
-                "& .MuiButton-startIcon": {
-                  mr: 1.25,
-                },
-              }}
+              className="flex min-h-12 items-center justify-start gap-2.5 rounded-[10px] border border-white/15 bg-[linear-gradient(135deg,#40605c_0%,#5b877a_100%)] px-3 py-2 text-xs font-bold text-white shadow-[0_6px_14px_rgba(36,61,54,0.2)] transition-all duration-200 ease-out hover:-translate-y-px hover:bg-[linear-gradient(135deg,#476c67_0%,#659587_100%)] hover:shadow-[0_8px_18px_rgba(36,61,54,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
             >
-              Nueva tarea rápida
-            </Button>
-          </Stack>
+              <ListPlus className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+              <span>Nueva tarea rápida</span>
+            </button>
+          </div>
         ) : null}
-      </Stack>
+      </div>
 
       {!isMobile && open ? (
-        <Card
-          sx={{
-            position: "relative",
-            mt: 1,
-            maxHeight: "72vh",
-            width: "min(26rem, calc(100vw - 1.4rem))",
-            overflow: "hidden",
-            borderRadius: 4,
-            border: "1px solid",
-            borderColor: "rgba(107, 119, 93, 0.32)",
-            backgroundImage:
-              "linear-gradient(180deg, rgba(253,254,251,0.98) 0%, rgba(238,244,232,0.96) 100%)",
-            boxShadow: "0 20px 46px rgba(26, 33, 23, 0.25)",
-          }}
-        >
-          <CardContent sx={{ p: 0, backdropFilter: "blur(2px)" }}>{panelContent}</CardContent>
-        </Card>
+        <div className="relative mt-2 max-h-[72vh] w-[min(26rem,calc(100vw-1.4rem))] overflow-hidden rounded-2xl border border-[rgba(107,119,93,0.32)] bg-[linear-gradient(180deg,rgba(253,254,251,0.98)_0%,rgba(238,244,232,0.96)_100%)] shadow-[0_20px_46px_rgba(26,33,23,0.25)] backdrop-blur-[2px]">
+          {panelContent}
+        </div>
       ) : null}
 
       {isMobile ? (
-        <Drawer
-          anchor="bottom"
+        <Dialog
           open={open}
-          onClose={closePanel}
-          ModalProps={{ keepMounted: true }}
-          PaperProps={{
-            sx: {
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              border: "1px solid",
-              borderColor: "rgba(107, 119, 93, 0.3)",
-              backgroundImage:
-                "linear-gradient(180deg, rgba(252,254,249,0.98) 0%, rgba(236,242,228,0.96) 100%)",
-              boxShadow: "0 -10px 30px rgba(20, 28, 19, 0.2)",
-              maxHeight: "82vh",
-              overflow: "hidden",
-            },
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) closePanel();
           }}
         >
-          <Box sx={{ py: 0.75, display: "flex", justifyContent: "center" }}>
-            <Box sx={{ width: 44, height: 4, borderRadius: 10, bgcolor: "text.disabled" }} />
-          </Box>
-          {panelContent}
-        </Drawer>
+          <DialogContent variant="drawer-bottom" aria-label="Recordatorios">
+            <DialogTitle className="sr-only">Recordatorios</DialogTitle>
+            <DialogDescription className="sr-only">
+              Panel de tareas pendientes, urgentes y carga rápida
+            </DialogDescription>
+            <div className="flex justify-center py-1.5" aria-hidden="true">
+              <div className="h-1 w-11 rounded-full bg-stone-400/60" />
+            </div>
+            {panelContent}
+          </DialogContent>
+        </Dialog>
       ) : null}
-    </Box>
+    </div>
   );
 }

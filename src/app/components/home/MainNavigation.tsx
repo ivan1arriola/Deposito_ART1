@@ -9,17 +9,6 @@ import {
   type RefObject,
 } from "react";
 import {
-  Box,
-  Button,
-  Collapse,
-  IconButton,
-  Popover,
-  Stack,
-  Tooltip,
-  Typography,
-  useMediaQuery,
-} from "@mui/material";
-import {
   Archive,
   BarChart3,
   Bell,
@@ -46,6 +35,9 @@ import {
   Users,
   UsersRound,
 } from "lucide-react";
+import { useMediaQuery } from "@/app/hooks/useMediaQuery";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { normalizeSearchText } from "@/lib/spanish-text";
 import type { MainView } from "@/types/views";
 
@@ -328,73 +320,24 @@ const tallasResumenViews: Array<NavOption<TallasResumenView>> = [
   },
 ];
 
-function navButtonSx(active: boolean, collapsed: boolean) {
-  return {
-    position: "relative",
-    px: collapsed ? 0 : 1.5,
-    justifyContent: collapsed ? "center" : "flex-start",
-    width: "100%",
-    minWidth: 0,
-    flexShrink: 0,
-    whiteSpace: "nowrap",
-    minHeight: 44,
-    borderRadius: "12px",
-    border: "1px solid",
-    borderColor: active ? "rgba(255, 204, 0, 0.4)" : "rgba(255, 255, 255, 0.12)",
-    background: active
-      ? "linear-gradient(135deg, rgba(255, 204, 0, 0.25) 0%, rgba(255, 204, 0, 0.1) 100%)"
-      : "rgba(255, 255, 255, 0.04)",
-    backdropFilter: "blur(12px)",
-    color: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.85)",
-    fontWeight: active ? 700 : 500,
-    fontSize: 14,
-    textTransform: "none",
-    transition:
-      "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease",
-    "& .MuiButton-startIcon": {
-      margin: 0,
-      color: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.6)",
-      transition: "margin 0.2s ease, color 0.2s ease",
-      ...(collapsed ? {} : { marginRight: 1.5 }),
-    },
-    "&:hover": {
-      borderColor: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.3)",
-      background: active
-        ? "linear-gradient(135deg, rgba(255, 204, 0, 0.35) 0%, rgba(255, 204, 0, 0.15) 100%)"
-        : "rgba(255, 255, 255, 0.08)",
-      transform: "translateY(-1px)",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-    },
-  };
+function navButtonClass(active: boolean, collapsed: boolean) {
+  return [
+    "relative inline-flex w-full min-w-0 min-h-11 shrink-0 items-center whitespace-nowrap rounded-xl border text-sm backdrop-blur-md transition-[background-color,border-color,color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]",
+    collapsed ? "justify-center px-0" : "justify-start gap-3 px-3",
+    active
+      ? "border-[rgba(255,204,0,0.4)] bg-[linear-gradient(135deg,rgba(255,204,0,0.25)_0%,rgba(255,204,0,0.1)_100%)] font-bold text-[var(--color-ejercito-gold)] hover:border-[var(--color-ejercito-gold)] hover:bg-[linear-gradient(135deg,rgba(255,204,0,0.35)_0%,rgba(255,204,0,0.15)_100%)]"
+      : "border-white/12 bg-white/[0.04] font-medium text-white/85 hover:border-white/30 hover:bg-white/[0.08]",
+    "hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(0,0,0,0.2)]",
+  ].join(" ");
 }
 
-function inlineSubmenuButtonSx(active: boolean) {
-  return {
-    justifyContent: "flex-start",
-    minWidth: 0,
-    minHeight: 40,
-    borderRadius: "8px",
-    border: "1px solid",
-    borderColor: active ? "rgba(255, 204, 0, 0.3)" : "transparent",
-    bgcolor: active ? "rgba(255, 204, 0, 0.12)" : "transparent",
-    color: active ? "var(--color-ejercito-gold)" : "rgba(255, 255, 255, 0.78)",
-    fontSize: 13,
-    fontWeight: active ? 700 : 500,
-    textTransform: "none",
-    px: 1.5,
-    ml: 1,
-    width: "calc(100% - 8px)",
-    transition: "background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease",
-    "& .MuiButton-startIcon": {
-      fontSize: "1rem",
-      marginRight: 1.25,
-      opacity: 0.85,
-    },
-    "&:hover": {
-      color: "rgba(255, 255, 255, 0.98)",
-      bgcolor: "rgba(255, 255, 255, 0.08)",
-    },
-  };
+function inlineSubmenuButtonClass(active: boolean) {
+  return [
+    "ml-2 inline-flex min-h-10 w-[calc(100%-8px)] min-w-0 items-center justify-start gap-2.5 rounded-lg border px-3 text-left text-[13px] transition-[background-color,border-color,color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]",
+    active
+      ? "border-[rgba(255,204,0,0.3)] bg-[rgba(255,204,0,0.12)] font-bold text-[var(--color-ejercito-gold)]"
+      : "border-transparent bg-transparent font-medium text-white/80 hover:bg-white/[0.08] hover:text-white",
+  ].join(" ");
 }
 
 function toSubmenuSlug(title: string) {
@@ -417,13 +360,12 @@ function ExpandedMenuGroup({
   children: ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(true);
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelId = `submenu-${toSubmenuSlug(title)}`;
-  const popoverOpen = Boolean(anchorEl);
 
   const closePopover = (restoreFocus: boolean) => {
-    setAnchorEl(null);
+    setPopoverOpen(false);
     if (restoreFocus) {
       window.setTimeout(() => {
         triggerRef.current?.focus();
@@ -446,129 +388,89 @@ function ExpandedMenuGroup({
 
   if (collapsed) {
     return (
-      <Box sx={{ mb: 1, display: "flex", justifyContent: "center" }}>
-        <Tooltip title={title} placement="right">
-          <IconButton
-            ref={triggerRef}
-            aria-label={title}
-            aria-expanded={popoverOpen}
-            aria-controls={popoverOpen ? panelId : undefined}
-            aria-haspopup="true"
-            onClick={(event) => {
-              if (popoverOpen) {
-                closePopover(false);
-              } else {
-                setAnchorEl(event.currentTarget);
-              }
-            }}
-            sx={{
-              width: 44,
-              height: 44,
-              borderRadius: "12px",
-              color:
-                popoverOpen || hasActiveChild
-                  ? "var(--color-ejercito-gold)"
-                  : "rgba(255, 255, 255, 0.7)",
-              bgcolor: popoverOpen || hasActiveChild ? "rgba(255, 204, 0, 0.14)" : "transparent",
-              transition: "background-color 0.2s ease, color 0.2s ease",
-              "&:hover": {
-                bgcolor: "rgba(255, 255, 255, 0.08)",
-              },
-            }}
-          >
-            {icon}
-          </IconButton>
-        </Tooltip>
+      <div className="mb-2 flex justify-center">
         <Popover
-          id={panelId}
           open={popoverOpen}
-          anchorEl={anchorEl}
-          onClose={(_event, reason) => closePopover(reason === "escapeKeyDown")}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "left" }}
-          slotProps={{
-            paper: {
-              sx: {
-                ml: 1,
-                minWidth: 230,
-                maxWidth: 280,
-                p: 1.25,
-                borderRadius: "12px",
-                bgcolor: "rgba(22, 28, 22, 0.98)",
-                color: "common.white",
-                border: "1px solid rgba(255, 255, 255, 0.14)",
-                boxShadow: "0 12px 32px rgba(0,0,0,0.4)",
-              },
-            },
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) {
+              closePopover(false);
+            } else {
+              setPopoverOpen(true);
+            }
           }}
         >
-          <Box onKeyDown={handleGroupKeyDown} role="region" aria-label={title}>
-            <Typography
-              sx={{
-                px: 1.25,
-                py: 0.5,
-                mb: 0.5,
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: "0.06em",
-                color: "var(--color-ejercito-gold)",
-                textTransform: "uppercase",
-              }}
-            >
-              {title}
-            </Typography>
-            <Stack spacing={0.5} onClick={() => closePopover(false)}>
-              {children}
-            </Stack>
-          </Box>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <button
+                  ref={triggerRef}
+                  type="button"
+                  aria-label={title}
+                  aria-expanded={popoverOpen}
+                  aria-controls={popoverOpen ? panelId : undefined}
+                  aria-haspopup="true"
+                  className={`inline-flex h-11 w-11 items-center justify-center rounded-xl transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] ${
+                    popoverOpen || hasActiveChild
+                      ? "bg-[rgba(255,204,0,0.14)] text-[var(--color-ejercito-gold)]"
+                      : "bg-transparent text-white/70"
+                  } hover:bg-white/[0.08]`}
+                >
+                  {icon}
+                </button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="right">{title}</TooltipContent>
+          </Tooltip>
+
+          <PopoverContent
+            id={panelId}
+            onEscapeKeyDown={(event) => {
+              event.preventDefault();
+              closePopover(true);
+            }}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+            }}
+          >
+            <div onKeyDown={handleGroupKeyDown} role="region" aria-label={title}>
+              <p className="mb-1 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] text-[var(--color-ejercito-gold)]">
+                {title}
+              </p>
+              <div className="flex flex-col gap-1" onClick={() => closePopover(false)}>
+                {children}
+              </div>
+            </div>
+          </PopoverContent>
         </Popover>
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ mb: 1.5 }} onKeyDown={handleGroupKeyDown}>
-      <Button
+    <div className="mb-3" onKeyDown={handleGroupKeyDown}>
+      <button
         ref={triggerRef}
-        fullWidth
+        type="button"
         aria-expanded={isOpen}
         aria-controls={panelId}
         onClick={() => setIsOpen(!isOpen)}
-        sx={{
-          justifyContent: "flex-start",
-          minHeight: 40,
-          px: 1.5,
-          py: 1,
-          borderRadius: "12px",
-          color: "rgba(255, 255, 255, 0.65)",
-          textTransform: "none",
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: "0.05em",
-          transition: "background-color 0.2s ease, color 0.2s ease",
-          "&:hover": {
-            bgcolor: "rgba(255, 255, 255, 0.06)",
-            color: "rgba(255, 255, 255, 0.95)",
-          },
-        }}
-        startIcon={icon}
-        endIcon={
-          <ChevronDown
-            className={`ml-auto h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-            aria-hidden="true"
-          />
-        }
+        className="flex min-h-10 w-full items-center justify-start gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-bold tracking-[0.05em] text-white/65 transition-colors duration-200 hover:bg-white/[0.06] hover:text-white/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
       >
-        {title.toUpperCase()}
-      </Button>
-      <Collapse in={isOpen}>
-        <Box id={panelId}>
-          <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-            {children}
-          </Stack>
-        </Box>
-      </Collapse>
-    </Box>
+        {icon}
+        <span className="flex-1 truncate">{title.toUpperCase()}</span>
+        <ChevronDown
+          className={`ml-auto h-4 w-4 shrink-0 transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          aria-hidden="true"
+        />
+      </button>
+      {isOpen ? (
+        <div id={panelId} className="mt-1 flex flex-col gap-1">
+          {children}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -582,7 +484,7 @@ export function MainNavigation({
   collapsed = false,
   onToggleCollapsed,
 }: MainNavigationProps) {
-  const isMobileViewport = useMediaQuery("(max-width:899.95px)", { noSsr: true });
+  const isMobileViewport = useMediaQuery("(max-width: 899.95px)");
   const effectiveCollapsed = isMobileViewport ? false : collapsed;
 
   const isDashboardView = activeView === "dashboard";
@@ -606,302 +508,280 @@ export function MainNavigation({
   }
 
   return (
-    <Box
-      sx={{
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: 1,
-        fontFamily: 'var(--fuentePrincipal, "Helvetica Neue", Helvetica, Arial, sans-serif)',
-      }}
-    >
-      {onToggleCollapsed && !isMobileViewport && (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: effectiveCollapsed ? "center" : "flex-end",
-            mb: 1,
-          }}
-        >
-          <Tooltip title={effectiveCollapsed ? "Expandir menú" : "Colapsar menú"} placement="right">
-            <IconButton
-              aria-label={effectiveCollapsed ? "Expandir menú" : "Colapsar menú"}
-              aria-expanded={!effectiveCollapsed}
-              onClick={onToggleCollapsed}
-              sx={{
-                minWidth: 44,
-                minHeight: 44,
-                color: "rgba(255, 255, 255, 0.6)",
-                "&:hover": {
-                  color: "var(--color-ejercito-gold)",
-                  bgcolor: "rgba(255, 255, 255, 0.06)",
-                },
-                transition: "background-color 0.2s ease, color 0.2s ease",
-              }}
-            >
-              {effectiveCollapsed ? (
-                <ChevronRight className="h-5 w-5" aria-hidden="true" />
-              ) : (
-                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-              )}
-            </IconButton>
+    <TooltipProvider delayDuration={400}>
+      <div
+        className="flex w-full flex-col gap-2"
+        style={{
+          fontFamily: 'var(--fuentePrincipal, "Helvetica Neue", Helvetica, Arial, sans-serif)',
+        }}
+      >
+        {onToggleCollapsed && !isMobileViewport && (
+          <div className={`mb-2 flex ${effectiveCollapsed ? "justify-center" : "justify-end"}`}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={effectiveCollapsed ? "Expandir menú" : "Colapsar menú"}
+                  aria-expanded={!effectiveCollapsed}
+                  onClick={onToggleCollapsed}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/60 transition-colors duration-200 hover:bg-white/[0.06] hover:text-[var(--color-ejercito-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
+                >
+                  {effectiveCollapsed ? (
+                    <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {effectiveCollapsed ? "Expandir menú" : "Colapsar menú"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+
+        {onOpenSearch && (
+          <Tooltip open={effectiveCollapsed ? undefined : false}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Buscar personal"
+                onClick={onOpenSearch}
+                className={`${navButtonClass(false, effectiveCollapsed)} mb-2 border-white/10 bg-white/[0.04] text-white/80 hover:border-white/20 hover:bg-white/[0.08]`}
+              >
+                {icons.search}
+                {!effectiveCollapsed && <span>Buscar personal</span>}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Buscar personal</TooltipContent>
           </Tooltip>
-        </Box>
-      )}
+        )}
 
-      {onOpenSearch && (
-        <Tooltip
-          title="Buscar personal"
-          placement="right"
-          disableHoverListener={!effectiveCollapsed}
-        >
-          <Button
-            variant="text"
-            aria-label="Buscar personal"
-            onClick={onOpenSearch}
-            startIcon={icons.search}
-            sx={{
-              ...navButtonSx(false, effectiveCollapsed),
-              mb: 1,
-              bgcolor: "rgba(255, 255, 255, 0.04)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              color: "rgba(255, 255, 255, 0.8)",
-              "&:hover": {
-                bgcolor: "rgba(255, 255, 255, 0.08)",
-                borderColor: "rgba(255, 255, 255, 0.2)",
-              },
-            }}
-          >
-            {!effectiveCollapsed && "Buscar personal"}
-          </Button>
-        </Tooltip>
-      )}
-
-      <Tooltip
-        title="Página Principal"
-        placement="right"
-        disableHoverListener={!effectiveCollapsed}
-      >
-        <Button
-          variant="text"
-          aria-label="Página Principal"
-          aria-current={isDashboardView ? "page" : undefined}
-          onClick={() => handleSelectView("dashboard")}
-          startIcon={icons.dashboard}
-          sx={navButtonSx(isDashboardView, effectiveCollapsed)}
-        >
-          {!effectiveCollapsed && "Página Principal"}
-        </Button>
-      </Tooltip>
-
-      <ExpandedMenuGroup
-        title="Personal"
-        icon={icons.personal}
-        collapsed={effectiveCollapsed}
-        hasActiveChild={personalViews.some((equipo) => equipo.view === activeView)}
-      >
-        {personalViews.map((equipo) => (
-          <Button
-            key={equipo.view}
-            variant="text"
-            aria-current={activeView === equipo.view ? "page" : undefined}
-            startIcon={equipo.icon}
-            onClick={() => handleSelectView(equipo.view)}
-            sx={inlineSubmenuButtonSx(activeView === equipo.view)}
-          >
-            {equipo.label}
-          </Button>
-        ))}
-      </ExpandedMenuGroup>
-
-      <ExpandedMenuGroup
-        title="Oficiales"
-        icon={icons.oficiales}
-        collapsed={effectiveCollapsed}
-        hasActiveChild={oficialesViews.some((equipo) => equipo.view === activeView)}
-      >
-        {oficialesViews.map((equipo) => (
-          <Button
-            key={equipo.view}
-            variant="text"
-            aria-current={activeView === equipo.view ? "page" : undefined}
-            startIcon={equipo.icon}
-            onClick={() => handleSelectView(equipo.view)}
-            sx={inlineSubmenuButtonSx(activeView === equipo.view)}
-          >
-            {equipo.label}
-          </Button>
-        ))}
-      </ExpandedMenuGroup>
-
-      <ExpandedMenuGroup
-        title="Stock"
-        icon={icons.stock}
-        collapsed={effectiveCollapsed}
-        hasActiveChild={filteredStockViews.some((equipo) => equipo.view === activeView)}
-      >
-        {filteredStockViews.map((equipo) => (
-          <Button
-            key={equipo.view}
-            variant="text"
-            aria-current={activeView === equipo.view ? "page" : undefined}
-            startIcon={equipo.icon}
-            onClick={() => handleSelectView(equipo.view)}
-            sx={inlineSubmenuButtonSx(activeView === equipo.view)}
-          >
-            {equipo.label}
-          </Button>
-        ))}
-      </ExpandedMenuGroup>
-
-      <ExpandedMenuGroup
-        title="Etiquetado"
-        icon={icons.etiquetado}
-        collapsed={effectiveCollapsed}
-        hasActiveChild={etiquetadoViews.some((equipo) => equipo.view === activeView)}
-      >
-        {etiquetadoViews.map((equipo) => (
-          <Button
-            key={equipo.view}
-            variant="text"
-            aria-current={activeView === equipo.view ? "page" : undefined}
-            startIcon={equipo.icon}
-            onClick={() => handleSelectView(equipo.view)}
-            sx={inlineSubmenuButtonSx(activeView === equipo.view)}
-          >
-            {equipo.label}
-          </Button>
-        ))}
-      </ExpandedMenuGroup>
-
-      <ExpandedMenuGroup
-        title="Resumen de tallas"
-        icon={icons.resumen}
-        collapsed={effectiveCollapsed}
-        hasActiveChild={tallasResumenViews.some((equipo) => equipo.view === activeView)}
-      >
-        {tallasResumenViews.map((equipo) => (
-          <Button
-            key={equipo.view}
-            variant="text"
-            aria-current={activeView === equipo.view ? "page" : undefined}
-            startIcon={equipo.icon}
-            onClick={() => handleSelectView(equipo.view)}
-            sx={inlineSubmenuButtonSx(activeView === equipo.view)}
-          >
-            {equipo.label}
-          </Button>
-        ))}
-      </ExpandedMenuGroup>
-
-      {canWrite ? (
-        <ExpandedMenuGroup
-          title="Altas de Personal"
-          icon={icons.altas}
-          collapsed={effectiveCollapsed}
-          hasActiveChild={filteredCreateViews.some((equipo) => equipo.view === activeView)}
-        >
-          {filteredCreateViews.map((equipo) => (
-            <Button
-              key={equipo.view}
-              variant="text"
-              aria-current={activeView === equipo.view ? "page" : undefined}
-              startIcon={equipo.icon}
-              onClick={() => handleSelectView(equipo.view)}
-              sx={inlineSubmenuButtonSx(activeView === equipo.view)}
+        <Tooltip open={effectiveCollapsed ? undefined : false}>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="Página Principal"
+              aria-current={isDashboardView ? "page" : undefined}
+              onClick={() => handleSelectView("dashboard")}
+              className={navButtonClass(isDashboardView, effectiveCollapsed)}
             >
-              {equipo.label}
-            </Button>
+              {icons.dashboard}
+              {!effectiveCollapsed && <span>Página Principal</span>}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Página Principal</TooltipContent>
+        </Tooltip>
+
+        <ExpandedMenuGroup
+          title="Personal"
+          icon={icons.personal}
+          collapsed={effectiveCollapsed}
+          hasActiveChild={personalViews.some((equipo) => equipo.view === activeView)}
+        >
+          {personalViews.map((equipo) => (
+            <button
+              key={equipo.view}
+              type="button"
+              aria-current={activeView === equipo.view ? "page" : undefined}
+              onClick={() => handleSelectView(equipo.view)}
+              className={inlineSubmenuButtonClass(activeView === equipo.view)}
+            >
+              {equipo.icon}
+              <span className="truncate">{equipo.label}</span>
+            </button>
           ))}
         </ExpandedMenuGroup>
-      ) : null}
 
-      <ExpandedMenuGroup
-        title="Préstamos"
-        icon={icons.prestamos}
-        collapsed={effectiveCollapsed}
-        hasActiveChild={filteredPrestamosViews.some((equipo) => equipo.view === activeView)}
-      >
-        {filteredPrestamosViews.map((equipo) => (
-          <Button
-            key={equipo.view}
-            variant="text"
-            aria-current={activeView === equipo.view ? "page" : undefined}
-            startIcon={equipo.icon}
-            onClick={() => handleSelectView(equipo.view)}
-            sx={inlineSubmenuButtonSx(activeView === equipo.view)}
-          >
-            {equipo.label}
-          </Button>
-        ))}
-      </ExpandedMenuGroup>
-
-      <ExpandedMenuGroup
-        title="Artículos"
-        icon={icons.stock}
-        collapsed={effectiveCollapsed}
-        hasActiveChild={filteredArticuloViews.some((equipo) => equipo.view === activeView)}
-      >
-        {filteredArticuloViews.map((equipo) => (
-          <Button
-            key={equipo.view}
-            variant="text"
-            aria-current={activeView === equipo.view ? "page" : undefined}
-            startIcon={equipo.icon}
-            onClick={() => handleSelectView(equipo.view)}
-            sx={inlineSubmenuButtonSx(activeView === equipo.view)}
-          >
-            {equipo.label}
-          </Button>
-        ))}
-      </ExpandedMenuGroup>
-
-      <ExpandedMenuGroup
-        title="Configuración"
-        icon={icons.config}
-        collapsed={effectiveCollapsed}
-        hasActiveChild={filteredConfigViews.some((equipo) => equipo.view === activeView)}
-      >
-        {filteredConfigViews.map((equipo) => (
-          <Button
-            key={equipo.view}
-            variant="text"
-            aria-current={activeView === equipo.view ? "page" : undefined}
-            startIcon={equipo.icon}
-            onClick={() => handleSelectView(equipo.view)}
-            sx={inlineSubmenuButtonSx(activeView === equipo.view)}
-          >
-            {equipo.label}
-          </Button>
-        ))}
-      </ExpandedMenuGroup>
-
-      <ExpandedMenuGroup title="Manuales" icon={icons.prestamos} collapsed={effectiveCollapsed}>
-        <Button
-          variant="text"
-          startIcon={icons.prestamos}
-          onClick={() =>
-            window.open("/docs/manual-usuario-final.pdf", "_blank", "noopener,noreferrer")
-          }
-          sx={inlineSubmenuButtonSx(false)}
+        <ExpandedMenuGroup
+          title="Oficiales"
+          icon={icons.oficiales}
+          collapsed={effectiveCollapsed}
+          hasActiveChild={oficialesViews.some((equipo) => equipo.view === activeView)}
         >
-          Manual de Usuario Final
-        </Button>
-        <Button
-          variant="text"
-          startIcon={icons.prestamos}
-          onClick={() =>
-            window.open(
-              "/docs/presentacion-producto-deposito-art1.pdf",
-              "_blank",
-              "noopener,noreferrer"
-            )
-          }
-          sx={inlineSubmenuButtonSx(false)}
+          {oficialesViews.map((equipo) => (
+            <button
+              key={equipo.view}
+              type="button"
+              aria-current={activeView === equipo.view ? "page" : undefined}
+              onClick={() => handleSelectView(equipo.view)}
+              className={inlineSubmenuButtonClass(activeView === equipo.view)}
+            >
+              {equipo.icon}
+              <span className="truncate">{equipo.label}</span>
+            </button>
+          ))}
+        </ExpandedMenuGroup>
+
+        <ExpandedMenuGroup
+          title="Stock"
+          icon={icons.stock}
+          collapsed={effectiveCollapsed}
+          hasActiveChild={filteredStockViews.some((equipo) => equipo.view === activeView)}
         >
-          Presentación del Producto
-        </Button>
-      </ExpandedMenuGroup>
-    </Box>
+          {filteredStockViews.map((equipo) => (
+            <button
+              key={equipo.view}
+              type="button"
+              aria-current={activeView === equipo.view ? "page" : undefined}
+              onClick={() => handleSelectView(equipo.view)}
+              className={inlineSubmenuButtonClass(activeView === equipo.view)}
+            >
+              {equipo.icon}
+              <span className="truncate">{equipo.label}</span>
+            </button>
+          ))}
+        </ExpandedMenuGroup>
+
+        <ExpandedMenuGroup
+          title="Etiquetado"
+          icon={icons.etiquetado}
+          collapsed={effectiveCollapsed}
+          hasActiveChild={etiquetadoViews.some((equipo) => equipo.view === activeView)}
+        >
+          {etiquetadoViews.map((equipo) => (
+            <button
+              key={equipo.view}
+              type="button"
+              aria-current={activeView === equipo.view ? "page" : undefined}
+              onClick={() => handleSelectView(equipo.view)}
+              className={inlineSubmenuButtonClass(activeView === equipo.view)}
+            >
+              {equipo.icon}
+              <span className="truncate">{equipo.label}</span>
+            </button>
+          ))}
+        </ExpandedMenuGroup>
+
+        <ExpandedMenuGroup
+          title="Resumen de tallas"
+          icon={icons.resumen}
+          collapsed={effectiveCollapsed}
+          hasActiveChild={tallasResumenViews.some((equipo) => equipo.view === activeView)}
+        >
+          {tallasResumenViews.map((equipo) => (
+            <button
+              key={equipo.view}
+              type="button"
+              aria-current={activeView === equipo.view ? "page" : undefined}
+              onClick={() => handleSelectView(equipo.view)}
+              className={inlineSubmenuButtonClass(activeView === equipo.view)}
+            >
+              {equipo.icon}
+              <span className="truncate">{equipo.label}</span>
+            </button>
+          ))}
+        </ExpandedMenuGroup>
+
+        {canWrite ? (
+          <ExpandedMenuGroup
+            title="Altas de Personal"
+            icon={icons.altas}
+            collapsed={effectiveCollapsed}
+            hasActiveChild={filteredCreateViews.some((equipo) => equipo.view === activeView)}
+          >
+            {filteredCreateViews.map((equipo) => (
+              <button
+                key={equipo.view}
+                type="button"
+                aria-current={activeView === equipo.view ? "page" : undefined}
+                onClick={() => handleSelectView(equipo.view)}
+                className={inlineSubmenuButtonClass(activeView === equipo.view)}
+              >
+                {equipo.icon}
+                <span className="truncate">{equipo.label}</span>
+              </button>
+            ))}
+          </ExpandedMenuGroup>
+        ) : null}
+
+        <ExpandedMenuGroup
+          title="Préstamos"
+          icon={icons.prestamos}
+          collapsed={effectiveCollapsed}
+          hasActiveChild={filteredPrestamosViews.some((equipo) => equipo.view === activeView)}
+        >
+          {filteredPrestamosViews.map((equipo) => (
+            <button
+              key={equipo.view}
+              type="button"
+              aria-current={activeView === equipo.view ? "page" : undefined}
+              onClick={() => handleSelectView(equipo.view)}
+              className={inlineSubmenuButtonClass(activeView === equipo.view)}
+            >
+              {equipo.icon}
+              <span className="truncate">{equipo.label}</span>
+            </button>
+          ))}
+        </ExpandedMenuGroup>
+
+        <ExpandedMenuGroup
+          title="Artículos"
+          icon={icons.stock}
+          collapsed={effectiveCollapsed}
+          hasActiveChild={filteredArticuloViews.some((equipo) => equipo.view === activeView)}
+        >
+          {filteredArticuloViews.map((equipo) => (
+            <button
+              key={equipo.view}
+              type="button"
+              aria-current={activeView === equipo.view ? "page" : undefined}
+              onClick={() => handleSelectView(equipo.view)}
+              className={inlineSubmenuButtonClass(activeView === equipo.view)}
+            >
+              {equipo.icon}
+              <span className="truncate">{equipo.label}</span>
+            </button>
+          ))}
+        </ExpandedMenuGroup>
+
+        <ExpandedMenuGroup
+          title="Configuración"
+          icon={icons.config}
+          collapsed={effectiveCollapsed}
+          hasActiveChild={filteredConfigViews.some((equipo) => equipo.view === activeView)}
+        >
+          {filteredConfigViews.map((equipo) => (
+            <button
+              key={equipo.view}
+              type="button"
+              aria-current={activeView === equipo.view ? "page" : undefined}
+              onClick={() => handleSelectView(equipo.view)}
+              className={inlineSubmenuButtonClass(activeView === equipo.view)}
+            >
+              {equipo.icon}
+              <span className="truncate">{equipo.label}</span>
+            </button>
+          ))}
+        </ExpandedMenuGroup>
+
+        <ExpandedMenuGroup title="Manuales" icon={icons.prestamos} collapsed={effectiveCollapsed}>
+          <button
+            type="button"
+            onClick={() =>
+              window.open("/docs/manual-usuario-final.pdf", "_blank", "noopener,noreferrer")
+            }
+            className={inlineSubmenuButtonClass(false)}
+          >
+            {icons.prestamos}
+            <span className="truncate">Manual de Usuario Final</span>
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              window.open(
+                "/docs/presentacion-producto-deposito-art1.pdf",
+                "_blank",
+                "noopener,noreferrer"
+              )
+            }
+            className={inlineSubmenuButtonClass(false)}
+          >
+            {icons.prestamos}
+            <span className="truncate">Presentación del Producto</span>
+          </button>
+        </ExpandedMenuGroup>
+      </div>
+    </TooltipProvider>
   );
 }

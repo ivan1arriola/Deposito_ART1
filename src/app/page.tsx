@@ -17,8 +17,7 @@ import {
   normalizeTallaValue,
 } from "@/lib/tallas";
 import { GlobalSearchModal } from "./components/home/GlobalSearchModal";
-import { MainNavigation } from "./components/home/MainNavigation";
-import { Box, Typography, Divider, Stack, Button, Drawer } from "@mui/material";
+import { AppShellSidebar } from "./components/home/AppShellSidebar";
 import { AdminPushNotifications } from "./components/home/AdminPushNotifications";
 import Image from "next/image";
 import { HomeOverlaysLayer } from "./components/home/overlays/HomeOverlaysLayer";
@@ -6638,304 +6637,45 @@ export default function Home() {
     );
   }
 
-  const renderSidebarContent = (isMobileDrawer: boolean) => {
-    const isCollapsedSidebar = !isMobileDrawer && sidebarCollapsed;
-    return (
-      <>
-        <Stack spacing={2} sx={{ mb: 4, mt: 1, px: 1, alignItems: "center", overflow: "hidden" }}>
-          <Typography
-            sx={{
-              color: "rgba(255,255,255,0.5)",
-              fontSize: 11,
-              fontWeight: 700,
-              alignSelf: "flex-start",
-              opacity: isCollapsedSidebar ? 0 : 1,
-              transition: "opacity 0.2s",
-            }}
-          >
-            Versión: {appVersion}
-          </Typography>
-
-          <Box
-            sx={{
-              width: isCollapsedSidebar ? 45 : 100,
-              height: "auto",
-              my: 1,
-              transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
-          >
-            <Image
-              src="/assets/logo-deposito.png"
-              alt="Logo Depósito"
-              width={200}
-              height={240}
-              style={{
-                width: "100%",
-                height: "auto",
-                filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))",
-                transition: "opacity 0.2s ease",
-              }}
-            />
-          </Box>
-
-          <Box sx={{ textAlign: "center", display: isCollapsedSidebar ? "none" : "block" }}>
-            <Typography
-              sx={{
-                color: "rgba(255,255,255,0.9)",
-                fontSize: 13,
-                fontStyle: "italic",
-                fontWeight: 800,
-                lineHeight: 1.2,
-                mb: 0.5,
-              }}
-            >
-              Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1
-            </Typography>
-            <Typography
-              sx={{
-                color: "var(--color-ejercito-gold)",
-                fontWeight: 900,
-                fontSize: 20,
-                letterSpacing: "0.02em",
-                textTransform: "uppercase",
-              }}
-            >
-              Depósito General
-            </Typography>
-          </Box>
-
-          <Divider sx={{ width: "100%", borderColor: "rgba(255,255,255,0.1)" }} />
-
-          <Typography
-            sx={{
-              color: "rgba(255,255,255,0.4)",
-              fontSize: 11,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              alignSelf: "flex-start",
-              pl: 1,
-              opacity: isCollapsedSidebar ? 0 : 1,
-              transition: "opacity 0.2s",
-            }}
-          >
-            {!isCollapsedSidebar && "Menú Principal"}
-          </Typography>
-        </Stack>
-
-        <MainNavigation
-          activeView={activeView}
-          canWrite={canWrite}
-          isAdmin={isAdmin}
-          showConfigViews={showConfigViews}
-          isConfigView={isConfigView}
-          configMenuRef={configMenuRef}
-          collapsed={isCollapsedSidebar}
-          onToggleCollapsed={
-            isMobileDrawer ? undefined : () => setSidebarCollapsed((prev) => !prev)
-          }
-          onSelectView={(view) => {
-            handleSelectMainView(view);
-            setMobileMenuOpen(false);
-          }}
-          onOpenSearch={() => {
-            setGlobalSearchOpen(true);
-            setMobileMenuOpen(false);
-          }}
-          onSetConfigViews={setShowConfigViews}
-          embedded
-        />
-
-        <Box sx={{ mt: 4, mb: 2 }}>
-          <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", mb: 3 }} />
-
-          {/* User Info Section */}
-          <Stack spacing={1.5} sx={{ px: 1, mb: 4 }}>
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                bgcolor: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}
-            >
-              <Typography
-                sx={{
-                  color: "rgba(255,255,255,0.4)",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  mb: 0.5,
-                }}
-              >
-                Usuario Conectado
-              </Typography>
-              <Typography sx={{ color: "common.white", fontSize: 14, fontWeight: 700 }}>
-                {currentUser?.username || "---"}
-              </Typography>
-              <Typography
-                sx={{ color: "var(--color-ejercito-gold)", fontSize: 12, fontWeight: 600 }}
-              >
-                {currentUser ? roleLabel(currentUser.rol) : "---"}
-              </Typography>
-            </Box>
-
-            <Stack direction="row" spacing={1}>
-              <Button
-                fullWidth
-                variant="outlined"
-                size="small"
-                onClick={() => reloadCurrentViewData(true)}
-                sx={{
-                  borderColor: "rgba(255,255,255,0.2)",
-                  color: "common.white",
-                  fontSize: 11,
-                  textTransform: "none",
-                  "&:hover": {
-                    borderColor: "rgba(255,255,255,0.4)",
-                    bgcolor: "rgba(255,255,255,0.05)",
-                  },
-                }}
-              >
-                Recargar
-              </Button>
-              <Button
-                fullWidth
-                variant="contained"
-                size="small"
-                color="error"
-                onClick={() => void logout()}
-                sx={{
-                  fontSize: 11,
-                  textTransform: "none",
-                  boxShadow: "0 4px 12px rgba(211, 47, 47, 0.2)",
-                }}
-              >
-                Cerrar sesión
-              </Button>
-            </Stack>
-          </Stack>
-
-          {/* Metrics Section */}
-          <Typography
-            sx={{
-              color: "rgba(255,255,255,0.4)",
-              fontSize: 11,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              mb: 1.5,
-              pl: 1,
-            }}
-          >
-            Resumen del Sistema
-          </Typography>
-
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.25, px: 0.5 }}>
-            {[
-              { label: "Subalternos", value: personal.length },
-              { label: "Oficiales/Sub", value: oficialesSuboficiales.length },
-              { label: "Equipos", value: equipos.length },
-              { label: "Movimientos", value: movimientosTotal },
-            ].map((metric) => (
-              <Box
-                key={metric.label}
-                sx={{
-                  p: 1.5,
-                  borderRadius: 1.5,
-                  bgcolor: "rgba(0,0,0,0.2)",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <Typography
-                  sx={{
-                    color: "rgba(255,255,255,0.5)",
-                    fontSize: 9,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {metric.label}
-                </Typography>
-                <Typography sx={{ color: "common.white", fontSize: 18, fontWeight: 900, mt: 0.2 }}>
-                  {metric.value}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-      </>
-    );
-  };
-
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "var(--color-camo-base)" }}>
-      {/* Sidebar - Desktop Only */}
-      <Box
-        component="nav"
-        aria-label="Menú principal"
-        sx={{
-          width: { xs: 0, md: sidebarCollapsed ? 80 : 280, lg: sidebarCollapsed ? 80 : 300 },
-          display: { xs: "none", md: "block" },
-          flexShrink: 0,
-          position: "sticky",
-          top: 0,
-          height: "100vh",
-          overflowY: "auto",
-          p: 2,
-          borderRight: "1px solid rgba(255, 255, 255, 0.1)",
-          background:
-            "linear-gradient(180deg, rgba(22, 28, 22, 0.98) 0%, rgba(15, 20, 15, 0.99) 100%)",
-          backdropFilter: "blur(20px)",
-          boxShadow: "4px 0 24px rgba(0,0,0,0.3)",
-          zIndex: 1200,
-          transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          overflowX: "hidden",
+    <div className="flex min-h-screen bg-[var(--color-camo-base)]">
+      <AppShellSidebar
+        appVersion={appVersion}
+        sidebarCollapsed={sidebarCollapsed}
+        mobileMenuOpen={mobileMenuOpen}
+        activeView={activeView}
+        canWrite={canWrite}
+        isAdmin={isAdmin}
+        showConfigViews={showConfigViews}
+        isConfigView={isConfigView}
+        configMenuRef={configMenuRef}
+        currentUser={currentUser}
+        roleLabel={currentUser ? roleLabel(currentUser.rol) : "---"}
+        metrics={{
+          personalCount: personal.length,
+          oficialesSuboficialesCount: oficialesSuboficiales.length,
+          equiposCount: equipos.length,
+          movimientosTotal,
         }}
-      >
-        {renderSidebarContent(false)}
-      </Box>
-
-      {/* Drawer - Mobile Only */}
-      <Drawer
-        anchor="left"
-        open={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-        aria-label="Menú principal móvil"
-        PaperProps={{
-          sx: {
-            width: 280,
-            bgcolor: "rgba(15, 20, 15, 0.98)",
-            backdropFilter: "blur(20px)",
-            p: 2,
-            borderRight: "1px solid rgba(255,255,255,0.1)",
-            backgroundImage: "none",
-          },
-        }}
-      >
-        {renderSidebarContent(true)}
-      </Drawer>
+        onToggleCollapsed={() => setSidebarCollapsed((prev) => !prev)}
+        onCloseMobileMenu={() => setMobileMenuOpen(false)}
+        onSelectView={handleSelectMainView}
+        onOpenSearch={() => setGlobalSearchOpen(true)}
+        onSetConfigViews={setShowConfigViews}
+        onReload={() => reloadCurrentViewData(true)}
+        onLogout={() => void logout()}
+      />
 
       {/* Main Content Area */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          minWidth: 0,
-          minHeight: "100vh",
-          overflowY: "auto",
-          position: "relative",
-          p: activeView === "dashboard" ? 0 : { xs: 2, sm: 3, lg: 4 },
-          backgroundColor: activeView === "dashboard" ? "#2f3a2a" : "#5f6c46",
+      <main
+        className={`relative min-h-screen min-w-0 flex-1 overflow-y-auto bg-cover bg-fixed bg-center ${
+          activeView === "dashboard" ? "bg-[#2f3a2a] p-0" : "bg-[#5f6c46] p-4 sm:p-6 lg:p-8"
+        }`}
+        style={{
           backgroundImage:
             activeView === "dashboard"
               ? "linear-gradient(110deg, rgba(12,16,11,0.78) 0%, rgba(20,27,18,0.56) 46%, rgba(9,12,10,0.76) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.04) 0 2px, rgba(0,0,0,0) 2px 7px), url('/assets/dashboard-foto.jpg')"
               : "linear-gradient(90deg, rgba(24,27,21,0.5) 0%, rgba(255,255,255,0.04) 40%, rgba(24,27,21,0.45) 100%), repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 2px, rgba(0,0,0,0) 2px 7px)",
-          backgroundSize: activeView === "dashboard" ? "cover" : "auto",
-          backgroundPosition: "center",
-          backgroundAttachment: "fixed",
         }}
       >
         {/* Mobile Header */}
@@ -7019,16 +6759,13 @@ export default function Home() {
           }
         >
           {currentUser && isAdminRole(currentUser.rol) ? (
-            <Box
-              className={activeView === "personal" ? "empty:hidden xl:flex-1" : undefined}
-              sx={{
-                position: "relative",
-                px: activeView === "dashboard" ? 3 : 0,
-                mt: activeView === "dashboard" ? 3 : 0,
-              }}
+            <div
+              className={`relative ${activeView === "personal" ? "empty:hidden xl:flex-1" : ""} ${
+                activeView === "dashboard" ? "mt-6 px-6" : ""
+              }`}
             >
               <AdminPushNotifications compact={activeView === "personal"} />
-            </Box>
+            </div>
           ) : null}
           {activeView !== "dashboard" ? (
             <AppInstallCard compact={activeView === "personal"} />
@@ -7571,7 +7308,7 @@ export default function Home() {
             appBusyLabel={appBusyLabel}
           />
         </div>
-      </Box>
+      </main>
 
       <GlobalSearchModal
         open={globalSearchOpen}
@@ -7583,6 +7320,6 @@ export default function Home() {
         personal={personal}
         oficialesSuboficiales={oficialesSuboficiales}
       />
-    </Box>
+    </div>
   );
 }
