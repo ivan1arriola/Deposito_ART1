@@ -3,6 +3,7 @@
 import { normalizeDateInput } from "@/lib/date-helpers";
 
 type DateTextInputProps = {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   className?: string;
@@ -13,6 +14,7 @@ type DateTextInputProps = {
 };
 
 export function DateTextInput({
+  id,
   value,
   onChange,
   className,
@@ -23,6 +25,7 @@ export function DateTextInput({
 }: DateTextInputProps) {
   return (
     <input
+      id={id}
       type="text"
       inputMode="numeric"
       autoComplete="off"

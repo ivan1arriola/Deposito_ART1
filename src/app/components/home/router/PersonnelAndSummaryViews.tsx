@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { PersonalSection } from "@/app/components/personal/PersonalSection";
 import { OficialesSuboficialesView } from "@/app/components/views/OficialesSuboficialesView";
 import { OficialesSuboficialesResumenView } from "@/app/components/views/OficialesSuboficialesResumenView";
@@ -82,7 +83,9 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
     equipoResumenError,
     loadEquipoResumen,
     equiposOrdenados,
+    onRectifyRegistro: _onRectifyRegistro,
   } = props;
+  const [editingAsignacionId, setEditingAsignacionId] = useState<string | null>(null);
 
   const isTallasResumenView =
     activeView === "tallas_resumen" ||
@@ -248,9 +251,15 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
         <MovimientosRecintosView
           canWrite={canWrite}
           canDelete={isAdmin}
-          onOpenRegistro={() => setActiveView("asignacion_recinto_nueva")}
+          onOpenRegistro={() => {
+            setEditingAsignacionId(null);
+            setActiveView("asignacion_recinto_nueva");
+          }}
           onDeleteRegistro={deleteRecintoRegistro}
-          onRectifyRegistro={props.onRectifyRegistro}
+          onRectifyRegistro={(registroId) => {
+            setEditingAsignacionId(registroId);
+            setActiveView("asignacion_recinto_nueva");
+          }}
         />
       ) : null}
 
@@ -262,8 +271,15 @@ export function PersonnelAndSummaryViews(props: PersonnelAndSummaryViewsProps) {
           personal={personal}
           oficialesSuboficiales={oficialesSuboficiales}
           maxFechaIngreso={maxFechaIngreso}
-          onBack={() => setActiveView("movimientos_recintos")}
-          onSuccess={() => setActiveView("movimientos_recintos")}
+          registroId={editingAsignacionId}
+          onBack={() => {
+            setEditingAsignacionId(null);
+            setActiveView("movimientos_recintos");
+          }}
+          onSuccess={() => {
+            setEditingAsignacionId(null);
+            setActiveView("movimientos_recintos");
+          }}
         />
       ) : null}
 

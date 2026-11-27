@@ -128,18 +128,19 @@ export function RegistroEditorModal({
     a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })
   );
   const canIncludeFueraDeHoja =
-    draft.modo === "crear" && (draft.tipo === "ENTREGA" || draft.tipo === "ASIGNACION");
-  const includeInactiveItems = canIncludeFueraDeHoja && draft.incluirFueraDeHoja;
+    draft.tipo === "ASIGNACION" || (draft.modo === "crear" && draft.tipo === "ENTREGA");
+  const includeInactiveItems =
+    draft.tipo === "ASIGNACION" || (canIncludeFueraDeHoja && draft.incluirFueraDeHoja);
   const showPersonalDestinatarios = !isRectificacion && draft.destinatarioTipo === "PERSONAL";
   const showRecintoFields = draft.destinatarioTipo === "RECINTO";
   const showExternoFields = draft.destinatarioTipo === "EXTERNO";
   const canPrintReceipt =
-    draft.modo === "crear" &&
-    (draft.destinatarioTipo === "RECINTO" ||
-      draft.destinatarioTipo === "EXTERNO" ||
-      (draft.tipo === "ASIGNACION" &&
-        draft.destinatarioTipo === "PERSONAL" &&
-        selectedCis.length === 1));
+    draft.destinatarioTipo === "RECINTO" ||
+    draft.destinatarioTipo === "EXTERNO" ||
+    (draft.modo === "crear" &&
+      draft.tipo === "ASIGNACION" &&
+      draft.destinatarioTipo === "PERSONAL" &&
+      selectedCis.length === 1);
 
   return (
     <ModalFrame onClose={onClose} size="lg" closeOnBackdrop={false}>

@@ -7,6 +7,15 @@ export type MovimientoRecintoViewRow = {
   clase: "INTERNO" | "EXTERNO";
   nombre: string;
   equipos: { equipo: string; cantidad: number }[];
+  articulos?: {
+    articuloId: number;
+    articulo: string;
+    tipo: string;
+    cantidad: number;
+    comentario?: string | null;
+  }[];
+  anulado?: boolean;
+  anuladoAt?: string | null;
   observaciones: string | null;
   usuarioEntrega: string | null;
   responsableInfo?: {
