@@ -3,7 +3,6 @@ import "server-only";
 import React from "react";
 import type { EquipoMovimientoCatalogEquipo, EquipoMovimientoViewRow } from "@/types/views";
 import { buildFirmasInstitucionalesLineas, type FirmasInstitucionalesInput } from "@/lib/firma-lineas";
-import { getArtilleriaLogoDataUrl } from "@/lib/server/react-pdf-assets";
 
 type RenderMovimientosEquipoPdfOptions = {
   pageNumberLabel?: string;
@@ -29,9 +28,7 @@ export async function renderMovimientosEquipoPdf(
   options: RenderMovimientosEquipoPdfOptions = {},
 ): Promise<Uint8Array> {
   const ReactPdf = await import("@react-pdf/renderer");
-  const { Document, Page, Text, View, StyleSheet, pdf, Image } = ReactPdf;
-
-  const logoDataUrl = await getArtilleriaLogoDataUrl();
+  const { Document, Page, Text, View, StyleSheet, pdf } = ReactPdf;
 
   const pageNumberLabel = options.pageNumberLabel ?? "Movimientos equipo";
   const rowsPerPage =
@@ -172,7 +169,7 @@ export async function renderMovimientosEquipoPdf(
             <Text style={styles.title}>Trazabilidad de movimientos por equipo</Text>
           </View>
           <Text style={styles.subtitle}>{`Equipo: ${selectedItem.nombre}`}</Text>
-          <Text style={styles.subtitleMuted}>{`${equipoEstado} | Fecha de impresion: ${fechaImpresion}`}</Text>
+          <Text style={styles.subtitleMuted}>{`${equipoEstado} | Fecha de impresión: ${fechaImpresion}`}</Text>
 
           <View style={styles.table}>
             <View style={styles.row}>

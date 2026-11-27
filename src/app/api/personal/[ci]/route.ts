@@ -450,7 +450,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ ci: stri
           evento: "PERSONAL_DADO_DE_BAJA_PENDIENTE",
           ci: ciDecoded,
           nombre: `${personalRecord.apellido1}, ${personalRecord.nombre1}`,
-          motivo: "Dado de baja con equipos pendientes de devolucion",
+          motivo: "Dado de baja con equipos pendientes de devolución",
           loansCount: activeLoans.length,
           vestuarioCount: outstandingVestuario.length,
         },

@@ -1,4 +1,4 @@
-import { Project, SyntaxKind, PropertyAssignment, Identifier, PropertyAccessExpression } from "ts-morph";
+import { Project, SyntaxKind } from "ts-morph";
 import * as path from "path";
 
 const project = new Project({
@@ -9,8 +9,6 @@ console.log("Adding source files...");
 project.addSourceFilesAtPaths(path.join(__dirname, "../src/**/*.ts"));
 project.addSourceFilesAtPaths(path.join(__dirname, "../src/**/*.tsx"));
 console.log("Source files added.");
-
-let changedFiles = new Set<string>();
 
 const files = project.getSourceFiles();
 

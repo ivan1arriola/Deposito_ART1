@@ -38,6 +38,61 @@ const TIPO_LABEL: Record<Articulo["tipo"], string> = {
   LIMPIEZA: "Limpieza",
 };
 
+function validateEntregaPersonal(
+  personalCi: string,
+  ordenanteCi: string,
+  equipos: ArticuloEntregaPersonalDraftItem[],
+  articulos: Articulo[],
+): { isValid: boolean; message: string | null; totalQuantity?: number } {
+  if (!personalCi.trim()) {
+    return { isValid: false, message: "Selecciona un personal destinatario." };
+  }
+  if (!ordenanteCi.trim()) {
+    return { isValid: false, message: "Indica quién autoriza u ordena la entrega." };
+  }
+  if (personalCi === ordenanteCi) {
+    return { isValid: false, message: "El destinatario no puede ser el mismo que ordena la entrega." };
+  }
+
+  let totalQuantity = 0;
+  const selectedItemIds = new Set<string>();
+
+  for (let i = 0; i < equipos.length; i++) {
+    const equipo = equipos[i];
+    if (!equipo.articuloId) {
+      return { isValid: false, message: `Selecciona un artículo en la fila ${i + 1}.` };
+    }
+    if (selectedItemIds.has(equipo.articuloId)) {
+      return { isValid: false, message: "No puedes repetir el mismo artículo en la entrega." };
+    }
+    selectedItemIds.add(equipo.articuloId);
+
+    const qty = Number(equipo.cantidad);
+    if (!Number.isInteger(qty) || qty <= 0) {
+      return { isValid: false, message: `La cantidad en la fila ${i + 1} debe ser un número entero mayor a 0.` };
+    }
+
+    const originalArticulo = articulos.find((a) => String(a.articuloId) === equipo.articuloId);
+    if (!originalArticulo) {
+      return { isValid: false, message: `Artículo no encontrado en la fila ${i + 1}.` };
+    }
+    if (qty > originalArticulo.stockActual) {
+      return {
+        isValid: false,
+        message: `Stock insuficiente para ${originalArticulo.nombre} (Solicitado: ${qty}, Disponible: ${originalArticulo.stockActual}).`,
+      };
+    }
+
+    totalQuantity += qty;
+  }
+
+  if (equipos.length === 0) {
+    return { isValid: false, message: "Agrega al menos un artículo para la entrega." };
+  }
+
+  return { isValid: true, message: null, totalQuantity };
+}
+
 export function ArticuloEntregaPersonalView({
   articulos,
   personal,
@@ -99,55 +154,10 @@ export function ArticuloEntregaPersonalView({
   }, [actuanteOptions, ordenanteCi]);
 
   // Validation checking
-  const validation = useMemo(() => {
-    if (!personalCi.trim()) {
-      return { isValid: false, message: "Selecciona un personal destinatario." };
-    }
-    if (!ordenanteCi.trim()) {
-      return { isValid: false, message: "Indica quién autoriza u ordena la entrega." };
-    }
-    if (personalCi === ordenanteCi) {
-      return { isValid: false, message: "El destinatario no puede ser el mismo que ordena la entrega." };
-    }
-
-    let totalQuantity = 0;
-    const selectedItemIds = new Set<string>();
-
-    for (let i = 0; i < equipos.length; i++) {
-      const equipo = equipos[i];
-      if (!equipo.articuloId) {
-        return { isValid: false, message: `Selecciona un artículo en la fila ${i + 1}.` };
-      }
-      if (selectedItemIds.has(equipo.articuloId)) {
-        return { isValid: false, message: "No puedes repetir el mismo artículo en la entrega." };
-      }
-      selectedItemIds.add(equipo.articuloId);
-
-      const qty = Number(equipo.cantidad);
-      if (!Number.isInteger(qty) || qty <= 0) {
-        return { isValid: false, message: `La cantidad en la fila ${i + 1} debe ser un número entero mayor a 0.` };
-      }
-
-      const originalArticulo = articulos.find((a) => String(a.articuloId) === equipo.articuloId);
-      if (!originalArticulo) {
-        return { isValid: false, message: `Artículo no encontrado en la fila ${i + 1}.` };
-      }
-      if (qty > originalArticulo.stockActual) {
-        return {
-          isValid: false,
-          message: `Stock insuficiente para ${originalArticulo.nombre} (Solicitado: ${qty}, Disponible: ${originalArticulo.stockActual}).`,
-        };
-      }
-
-      totalQuantity += qty;
-    }
-
-    if (equipos.length === 0) {
-      return { isValid: false, message: "Agrega al menos un artículo para la entrega." };
-    }
-
-    return { isValid: true, message: null, totalQuantity };
-  }, [personalCi, ordenanteCi, equipos, articulos]);
+  const validation = useMemo(
+    () => validateEntregaPersonal(personalCi, ordenanteCi, equipos, articulos),
+    [personalCi, ordenanteCi, equipos, articulos],
+  );
 
   return (
     <section className="mt-6 space-y-4">

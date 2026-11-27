@@ -90,7 +90,7 @@ export default async function ResumenTallesPorBateriaPage({
   for (const grupo of grupos) personalPorBateria.set(grupo.key, []);
 
   for (const persona of personal) {
-    const key = persona.bateria?.bateriaId != null ? String(persona.bateria.bateriaId) : "NONE";
+    const key = persona.bateria?.bateriaId !== null && persona.bateria?.bateriaId !== undefined ? String(persona.bateria.bateriaId) : "NONE";
     const bucket = personalPorBateria.get(key);
     if (bucket) {
       bucket.push(persona);

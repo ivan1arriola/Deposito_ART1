@@ -37,13 +37,6 @@ function resolveTipoLabel(equipo: EquipoTipoLike) {
   return equipo.tipoLabel?.trim() || (equipo.tipo === GENERAL_TIPO_EQUIPO_CLAVE ? GENERAL_TIPO_EQUIPO_NOMBRE : equipo.tipo);
 }
 
-export function compareTipoEquipo(left: TipoEquipo, right: TipoEquipo) {
-  const leftOrder = resolveTipoOrder(left);
-  const rightOrder = resolveTipoOrder(right);
-  if (leftOrder !== rightOrder) return leftOrder - rightOrder;
-  return left.localeCompare(right, "es", { sensitivity: "base" });
-}
-
 export function compareEquipoNombre(left: string, right: string) {
   return left.localeCompare(right, "es", { sensitivity: "base" });
 }

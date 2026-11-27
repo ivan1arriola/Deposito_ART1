@@ -925,7 +925,7 @@ export function StockView({
                                       className={`rounded px-1 text-right font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
                                         equipo.stockPrestamo < 0 ? "text-rose-600 font-bold animate-pulse" : "text-stone-900"
                                       }`}
-                                      title={`Ver detalle de ${equipo.nombre} en Prestamo`}
+                                      title={`Ver detalle de ${equipo.nombre} en Préstamo`}
                                     >
                                       {equipo.stockPrestamo}
                                     </button>

@@ -38,15 +38,3 @@ export async function applyEquipoOrder(tx: ItemOrderTx, orderedIds: bigint[], st
     WHERE i."equipo_id" = v.equipo_id::bigint
   `;
 }
-
-export async function getNextItemOrder(tx: ItemOrderTx, activo: boolean) {
-  const equipoIds = await getOrderedEquipoIds(tx, activo);
-  const offset = activo ? 0 : 10000;
-  return offset + equipoIds.length + 1;
-}
-
-export async function normalizeItemOrders(tx: ItemOrderTx, activo: boolean) {
-  const equipoIds = await getOrderedEquipoIds(tx, activo);
-  const offset = activo ? 0 : 10000;
-  await applyEquipoOrder(tx, equipoIds, offset);
-}

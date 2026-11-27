@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { compareOptionalOrder } from "@/lib/catalog-order";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { HojaMatrixData } from "@/types/views";
-import { LoadingInline, Card, CardHeader, Badge } from "@/app/components/shared";
-import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import { LoadingInline, Card, Badge } from "@/app/components/shared";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import PictureAsPdfRoundedIcon from "@mui/icons-material/PictureAsPdfRounded";
 import TableChartRoundedIcon from "@mui/icons-material/TableChartRounded";
@@ -53,11 +52,6 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
       })
       .map(([label]) => label);
   }, [data]);
-
-  const handleLoad = async () => {
-    setPreviewRequested(false);
-    await onReload();
-  };
 
   const previewHref = (() => {
     const params = new URLSearchParams();

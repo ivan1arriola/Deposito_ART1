@@ -4,7 +4,7 @@
  */
 
 import { api } from "@/lib/api";
-import type { EquipoTipo, TipoArticulo, TipoEquipo } from "@/types/entities";
+import type { TipoArticulo, TipoEquipo } from "@/types/entities";
 
 interface CallbackProps {
   onSuccess: (data?: unknown) => void;
@@ -284,10 +284,6 @@ export async function deleteEquipoHandler(equipoId: string, callbacks: CallbackP
   }
 }
 
-export function resolveEquipoTipoLabel(tiposEquipo: EquipoTipo[], tipo: TipoEquipo) {
-  return tiposEquipo.find((entry) => entry.clave === tipo)?.nombre ?? tipo;
-}
-
 export type EquipoMergeResult = {
   ok: boolean;
   sourceEquipo: {
@@ -404,16 +400,6 @@ export async function updateMultipleEquipoOrdersHandler(
     throw error;
   }
 }
-
-export type ItemMergeResult = EquipoMergeResult;
-export type ItemDeleteImpact = EquipoDeleteImpact;
-
-export const createItemHandler = createEquipoHandler;
-export const updateItemHandler = updateEquipoHandler;
-export const deleteItemHandler = deleteEquipoHandler;
-export const mergeItemHandler = mergeEquipoHandler;
-export const loadItemDeleteImpactHandler = loadEquipoDeleteImpactHandler;
-export const updateMultipleItemOrdersHandler = updateMultipleEquipoOrdersHandler;
 
 export async function entregarArticulosPersonalHandler(
   personalCi: string,

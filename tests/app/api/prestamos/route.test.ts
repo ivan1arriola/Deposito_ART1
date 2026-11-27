@@ -144,7 +144,7 @@ describe("POST /api/prestamos", () => {
     });
   }
 
-  it("acepta un prestamo pendiente con actuante seleccionado", async () => {
+  it("acepta un préstamo pendiente con actuante seleccionado", async () => {
     mockAuthorizedUser();
     mockBaseLookups();
     vi.mocked(prisma.personal.findFirst).mockResolvedValue({
@@ -204,7 +204,7 @@ describe("POST /api/prestamos", () => {
     expect(sendPersonalMovementEmailNotification).not.toHaveBeenCalled();
   });
 
-  it("acepta un prestamo interno y guarda destinatario personal", async () => {
+  it("acepta un préstamo interno y guarda destinatario personal", async () => {
     mockAuthorizedUser();
     mockBaseLookups();
     const destinatarioCi = generateRandomUruguayanCi();
@@ -266,7 +266,7 @@ describe("POST /api/prestamos", () => {
     expect(mockTx.personaExterna.upsert).not.toHaveBeenCalled();
   });
 
-  it("acepta un prestamo externo y crea persona externa", async () => {
+  it("acepta un préstamo externo y crea persona externa", async () => {
     mockAuthorizedUser();
     mockBaseLookups();
     vi.mocked(prisma.personal.findFirst).mockResolvedValue({

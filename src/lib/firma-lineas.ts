@@ -92,13 +92,6 @@ export function getFirmaLineInlineOffsetCss(linea: Pick<FirmaLinea, "inlineOffse
   return `${inlineOffsetChars}ch`;
 }
 
-export function getFirmaLineIndentCss(linea: Pick<FirmaLinea, "indentLevel" | "inlineOffsetChars">): string {
-  const inlineOffsetChars = linea.inlineOffsetChars ?? 0;
-  if (inlineOffsetChars <= 0) return getFirmaLineBaseIndentCss(linea);
-
-  return `calc(${getFirmaLineBaseIndentCss(linea)} + ${inlineOffsetChars}ch)`;
-}
-
 export function getFirmaLineBaseIndentPt(linea: Pick<FirmaLinea, "indentLevel">, tabSizePt: number): number {
   return tabSizePt * linea.indentLevel;
 }
@@ -108,14 +101,6 @@ export function getFirmaLineInlineOffsetPt(
   monospaceCharWidthPt: number,
 ): number {
   return monospaceCharWidthPt * (linea.inlineOffsetChars ?? 0);
-}
-
-export function getFirmaLineIndentPt(
-  linea: Pick<FirmaLinea, "indentLevel" | "inlineOffsetChars">,
-  tabSizePt: number,
-  monospaceCharWidthPt: number,
-): number {
-  return getFirmaLineBaseIndentPt(linea, tabSizePt) + getFirmaLineInlineOffsetPt(linea, monospaceCharWidthPt);
 }
 
 export function buildFirmasInstitucionalesLineas(

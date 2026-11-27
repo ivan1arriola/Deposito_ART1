@@ -820,7 +820,7 @@ export default function Home() {
     const next = new Map<number, number>();
 
     for (const equipo of equipos) {
-      if (equipo.tipoEquipoId == null) continue;
+      if (equipo.tipoEquipoId === null || equipo.tipoEquipoId === undefined) continue;
       next.set(equipo.tipoEquipoId, (next.get(equipo.tipoEquipoId) ?? 0) + 1);
     }
 
@@ -964,7 +964,8 @@ export default function Home() {
             log.detalle &&
             typeof log.detalle === "object" &&
             !Array.isArray(log.detalle) &&
-            ((log.detalle as any).accountType === "PERSONAL" || (log.detalle as any).ci);
+            ((log.detalle as Record<string, unknown>).accountType === "PERSONAL" ||
+              Boolean((log.detalle as Record<string, unknown>).ci));
           if (!isPersonal) return true;
         }
         return false;
@@ -1048,7 +1049,7 @@ export default function Home() {
       };
       allEntries.push(entry);
 
-      const batteryKey = persona.bateriaId == null ? "NONE" : String(persona.bateriaId);
+      const batteryKey = persona.bateriaId === null || persona.bateriaId === undefined ? "NONE" : String(persona.bateriaId);
       const batteryEntries = byBatteryFilter.get(batteryKey);
       if (batteryEntries) {
         batteryEntries.push(entry);
@@ -1704,7 +1705,15 @@ export default function Home() {
                   </span>
 
                   <div className="max-h-[160px] overflow-y-auto space-y-1.5 pr-1">
-                    {movimientosList.map((m: any) => (
+                    {(movimientosList as Array<{
+                      articuloStockMovimientoId: number;
+                      tipo: string;
+                      fechaEntrega?: string | null;
+                      createdAt: string;
+                      destinatario?: string | null;
+                      comentario?: string | null;
+                      cantidad: number;
+                    }>).map((m) => (
                       <div key={m.articuloStockMovimientoId} className="flex justify-between equipos-center rounded-lg border border-stone-150 bg-white p-2 text-xs">
                         <div>
                           <div className="flex equipos-center gap-1.5">
@@ -1761,8 +1770,8 @@ export default function Home() {
             }
           },
         });
-      } catch (err: any) {
-        setStatus(err.message || "Error al cargar los movimientos del artículo.");
+      } catch (err: unknown) {
+        setStatus(err instanceof Error ? err.message : "Error al cargar los movimientos del artículo.");
       }
     },
     [isAdmin, articulos, loadData],
@@ -5376,7 +5385,7 @@ export default function Home() {
 
       if (focus === "tipo") {
         setStatus(
-          equipo.tipoEquipoId == null
+          equipo.tipoEquipoId === null || equipo.tipoEquipoId === undefined
             ? `Selecciona el tipo para ${equipo.nombre} y guarda el cambio.`
             : `Selecciona el nuevo tipo para ${equipo.nombre} y guarda el cambio.`,
         );
@@ -6165,14 +6174,14 @@ export default function Home() {
         <header className="sticky top-0 z-40 flex equipos-center justify-between border-b border-stone-300/80 bg-white px-4 py-3 shadow-md backdrop-blur-md min-[900px]:hidden -mx-2 sm:-mx-3 mb-4">
             <div className="flex equipos-center gap-3">
               <div className="flex h-10 w-10 equipos-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-inner">
-                <img src="/assets/logo-deposito.png" alt="Escudo" className="h-8 w-8 object-contain drop-shadow-sm" />
+                <Image src="/assets/logo-deposito.png" alt="Escudo" width={32} height={32} className="h-8 w-8 object-contain drop-shadow-sm" />
               </div>
               <div className="flex flex-col">
                 <h1 className="text-sm font-black tracking-tight text-[var(--color-ejercito-gold)] drop-shadow-sm">
                   DEPÓSITO GENERAL
                 </h1>
                 <div className="flex equipos-center gap-1.5">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-stone-700">Grupo "Brigadier General Manuel Oribe" de Artillería 105mm No. 1</span>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-stone-700">Grupo &quot;Brigadier General Manuel Oribe&quot; de Artillería 105mm No. 1</span>
                   <span className="h-1 w-1 rounded-full bg-stone-400"></span>
                   <span className="text-[10px] font-bold text-stone-600">v{appVersion}</span>
                 </div>

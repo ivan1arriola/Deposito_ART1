@@ -27,7 +27,7 @@ export function MovimientosRecintosView({ canWrite, canDelete, onOpenRegistro, o
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [rows, setRows] = useState<MovimientoRecintoViewRow[]>([]);
   const [search, setSearch] = useState("");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [sortDirection] = useState<"asc" | "desc">("desc");
   const [detailRow, setDetailRow] = useState<MovimientoRecintoViewRow | null>(null);
 
   const loadRows = async () => {

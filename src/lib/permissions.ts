@@ -1,6 +1,6 @@
 import { UserRole } from "@/generated/prisma/client";
-import type { AuthAccountType } from "@/lib/auth";
-import { canWriteRole, isAdminRole } from "@/lib/user-role";
+
+export type AuthAccountType = "SISTEMA" | "PERSONAL";
 
 export type Permission =
   | "read_data"
@@ -69,12 +69,4 @@ export function hasPermission(
     return personalPermissionMatrix[permission];
   }
   return permissionMatrix[role][permission];
-}
-
-export function isAdministrativeAccountRole(role: UserRole | null | undefined) {
-  return isAdminRole(role);
-}
-
-export function canWriteAccountRole(role: UserRole | null | undefined) {
-  return canWriteRole(role);
 }

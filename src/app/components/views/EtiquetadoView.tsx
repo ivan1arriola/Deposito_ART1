@@ -19,7 +19,6 @@ import {
   sortCodigosSIE,
   sortEtiquetadoItems,
 } from "./etiquetado/utils";
-export type { EtiquetadoSection } from "./etiquetado/types";
 
 function renderTag(label: string, tone: "neutral" | "accent" = "neutral") {
   return (

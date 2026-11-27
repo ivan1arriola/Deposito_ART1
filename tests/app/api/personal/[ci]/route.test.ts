@@ -102,7 +102,7 @@ function basePersonalRecord() {
       { tallaTipoId: 4, tallaValor: "54", tallaTipo: { tallaTipoId: 4, nombre: "KEPI" } },
     ],
     observaciones: [
-      { observacionId: BigInt(1), texto: "Observacion de prueba", fecha: new Date("2024-05-18T00:00:00.000Z") },
+      { observacionId: BigInt(1), texto: "Observación de prueba", fecha: new Date("2024-05-18T00:00:00.000Z") },
     ],
   };
 }
@@ -215,7 +215,7 @@ describe("DELETE /api/personal/[ci]", () => {
           { tipo: "KEPI", valor: "54" },
         ],
         observaciones: [
-          { texto: "Observacion de prueba", fecha: new Date("2024-05-18T00:00:00.000Z") },
+          { texto: "Observación de prueba", fecha: new Date("2024-05-18T00:00:00.000Z") },
         ],
       },
     });

@@ -3,6 +3,7 @@ import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import { prisma } from "@/lib/prisma";
 import { compareOptionalOrder } from "@/lib/catalog-order";
 import { compareRanks } from "@/lib/rank-order";
+import { stripDiacritics } from "@/lib/spanish-text";
 import type { HojaMatrixData, HojaMatrixRow } from "@/types/views";
 
 export const SIN_BATERIA_LABEL = "Sin batería";
@@ -23,7 +24,7 @@ function normalizeBatteryFilter(value: string | null | undefined) {
 }
 
 function isWithoutBatteryFilter(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es") === "sin bateria";
+  return stripDiacritics(value).toLocaleLowerCase("es") === "sin bateria";
 }
 
 function compareMatrixRows(a: HojaMatrixRow, b: HojaMatrixRow) {

@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json(registros);
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: "No se pudo obtener la papelera." }, { status: 500 });
   }
 }

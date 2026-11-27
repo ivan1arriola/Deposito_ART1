@@ -51,10 +51,6 @@ export async function getTallaTipoIdMap() {
   return tallaTipoIdInflight;
 }
 
-export function invalidateTallaTipoCache() {
-  tallaTipoIdCache = null;
-}
-
 type RangoTipoCountMap = Map<TipoPersonal, number>;
 let rangoTipoCountCache: CachedValue<RangoTipoCountMap> | null = null;
 let rangoTipoCountInflight: Promise<RangoTipoCountMap> | null = null;

@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     const filename = `Movimientos_Equipo_${data.selectedItem.equipoId}_${data.selectedItem.nombre.replace(/[^a-z0-9]/gi, "_")}.pdf`;
 
-    return new Response(pdfBuffer as any, {
+    return new Response(Buffer.from(pdfBuffer), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="${filename}"`,

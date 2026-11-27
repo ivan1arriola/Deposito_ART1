@@ -6,6 +6,7 @@ import type { TransitionProps } from "@mui/material/transitions";
 import React from "react";
 import type { Personal, OficialSuboficial } from "@/types/entities";
 import { formatUruguayanCi, normalizeCi } from "@/lib/ci";
+import { stripDiacritics } from "@/lib/spanish-text";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
@@ -13,7 +14,7 @@ import BadgeRoundedIcon from "@mui/icons-material/BadgeRounded";
 import KeyboardArrowRightRoundedIcon from "@mui/icons-material/KeyboardArrowRightRounded";
 
 const Transition = React.forwardRef(function Transition(
-  props: TransitionProps & { children: React.ReactElement<any, any> },
+  props: TransitionProps & { children: React.ReactElement<unknown> },
   ref: React.Ref<unknown>,
 ) {
   return <Slide direction="down" ref={ref} {...props} />;
@@ -46,12 +47,11 @@ export function GlobalSearchModal({
 
   // Focus input when opened
   useEffect(() => {
-    if (open) {
-      setQuery("");
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-    }
+    if (!open) return;
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
   }, [open]);
 
   const results = useMemo(() => {
@@ -59,8 +59,7 @@ export function GlobalSearchModal({
     if (!q) return [];
     
     // Normalización: quitar tildes y pasar a minúsculas
-    const normalize = (str: string) => 
-      str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const normalize = (str: string) => stripDiacritics(str).toLowerCase();
       
     const qNormalized = normalize(q);
     const qNum = q.replace(/[^0-9]/g, "");
@@ -102,15 +101,20 @@ export function GlobalSearchModal({
     return matches.slice(0, 8);
   }, [query, personal, oficialesSuboficiales]);
 
+  const handleClose = () => {
+    setQuery("");
+    onClose();
+  };
+
   const handleSelect = (ci: string) => {
     onSelectPersona(ci);
-    onClose();
+    handleClose();
   };
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       TransitionComponent={Transition}
       fullWidth
       maxWidth="sm"
@@ -151,7 +155,7 @@ export function GlobalSearchModal({
           />
           <IconButton 
             size="small"
-            onClick={onClose}
+            onClick={handleClose}
             sx={{ 
               color: "rgba(0,0,0,0.2)",
               "&:hover": { color: "black", bgcolor: "rgba(0,0,0,0.05)" }
@@ -165,7 +169,7 @@ export function GlobalSearchModal({
         <Box sx={{ maxHeight: "60vh", overflowY: "auto", p: 1.5 }}>
           {query.length > 0 && results.length === 0 ? (
             <Box sx={{ py: 6, textAlign: "center", color: "stone.400" }}>
-              <p className="text-sm font-medium">No se encontraron resultados para "{query}"</p>
+              <p className="text-sm font-medium">No se encontraron resultados para &quot;{query}&quot;</p>
             </Box>
           ) : results.length > 0 ? (
             <Box component="ul" sx={{ display: "flex", flexDirection: "column", gap: 0.5, listStyle: "none", m: 0, p: 0 }}>

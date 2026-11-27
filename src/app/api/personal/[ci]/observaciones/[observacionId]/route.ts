@@ -4,7 +4,6 @@ import { isValidUruguayanCi } from "@/lib/ci";
 import { logAudit } from "@/lib/audit";
 import {
   dateInputToDate,
-  formatDateOnlyForDisplay,
   formatDateOnlyFromDate,
   formatDateTimeForDisplay,
   isDateInputAfterToday,

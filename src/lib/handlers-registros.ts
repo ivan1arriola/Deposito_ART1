@@ -3,7 +3,7 @@
  */
 
 import { api } from "@/lib/api";
-import type { RegistroView, RegistroViewerState } from "@/types/views";
+import type { RegistroView } from "@/types/views";
 
 interface CallbackProps {
   onSuccess?: (data?: unknown) => void;
@@ -86,37 +86,6 @@ export async function loadRegistrosHandler(
     const message = error instanceof Error ? error.message : "No se pudo cargar los movimientos.";
     callbacks.onError?.(message);
     throw error;
-  }
-}
-
-/**
- * Carga el historial de registros para el visor (con información personal)
- */
-export async function loadRegistroViewerHandler(
-  ci: string,
-  nombre: string,
-  callbacks: CallbackProps & { 
-    onLoad: (state: Omit<RegistroViewerState, "nombre" | "ci">) => void 
-  }
-) {
-  try {
-    const registros = await api<RegistroView[]>(
-      `/api/registros?ci=${encodeURIComponent(ci)}&limit=200`
-    );
-    callbacks.onLoad({
-      loading: false,
-      error: null,
-      registros,
-    });
-    callbacks.onSuccess?.();
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "No se pudo cargar el historial.";
-    callbacks.onLoad({
-      loading: false,
-      error: message,
-      registros: [],
-    });
-    callbacks.onError?.(message);
   }
 }
 

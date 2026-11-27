@@ -3,15 +3,9 @@ import {
   MOVIMIENTO_TIPO_ASIGNACION,
   MOVIMIENTO_TIPO_DEVOLUCION,
   MOVIMIENTO_TIPO_ENTREGA,
-  MOVIMIENTO_TIPOS_REGISTRO,
 } from "@/lib/tipo-movimiento";
 
-type PrismaLike = Pick<Prisma.TransactionClient, "movimiento" | "stockOperacion" | "prestamoActivo">;
 type PrismaRawLike = Pick<Prisma.TransactionClient, "$queryRaw">;
-
-type StockMapOptions = {
-  excludeMovimientoId?: bigint | null;
-};
 
 export function movimientoStockDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO") {
   switch (tipo) {
@@ -25,19 +19,6 @@ export function movimientoStockDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "D
     case MOVIMIENTO_TIPO_DEVOLUCION:
     case "DEVOLUCION":
       return 1;
-    default:
-      return 0;
-  }
-}
-
-export function movimientoPersonalDeltaFactor(tipo: TipoMovimiento | "ENTREGA" | "DEVOLUCION" | "ASIGNACION" | "PRESTAMO") {
-  switch (tipo) {
-    case MOVIMIENTO_TIPO_ENTREGA:
-    case "ENTREGA":
-      return 1;
-    case MOVIMIENTO_TIPO_DEVOLUCION:
-    case "DEVOLUCION":
-      return -1;
     default:
       return 0;
   }
@@ -130,173 +111,4 @@ export async function buildStockSummaryMaps(prisma: PrismaRawLike) {
     asignacionByItem: rowsToItemMap(asignacionRows),
     prestamoByItem: rowsToItemMap(prestamoRows),
   };
-}
-
-export async function buildStockByItemMap(prisma: PrismaLike, options: StockMapOptions = {}) {
-  const [movimientos, operaciones, prestamosActivos] = await Promise.all([
-    prisma.movimiento.findMany({
-      where: {
-        tipo: {
-          in: MOVIMIENTO_TIPOS_REGISTRO,
-        },
-        ...(options.excludeMovimientoId ? { movimientoId: { not: options.excludeMovimientoId } } : {}),
-      },
-      select: {
-        tipo: true,
-        equipos: {
-          select: {
-            equipoId: true,
-            cantidad: true,
-          },
-        },
-      },
-    }),
-    prisma.stockOperacion.findMany({
-      select: {
-        tipo: true,
-        equipos: {
-          select: {
-            equipoId: true,
-            cantidad: true,
-          },
-        },
-      },
-    }),
-    prisma.prestamoActivo.findMany({
-      select: {
-        movimiento: {
-          select: {
-            equipos: {
-              select: {
-                equipoId: true,
-                cantidad: true,
-              },
-            },
-          },
-        },
-      },
-    }),
-  ]);
-
-  const stockByItem = new Map<string, number>();
-
-  for (const movimiento of movimientos) {
-    const factor = movimientoStockDeltaFactor(movimiento.tipo);
-    if (factor === 0) continue;
-    for (const equipo of movimiento.equipos) {
-      const key = equipo.equipoId.toString();
-      stockByItem.set(key, (stockByItem.get(key) ?? 0) + equipo.cantidad * factor);
-    }
-  }
-
-  for (const operacion of operaciones) {
-    const factor = stockOperacionDeltaFactor(operacion.tipo);
-    for (const equipo of operacion.equipos) {
-      const key = equipo.equipoId.toString();
-      stockByItem.set(key, (stockByItem.get(key) ?? 0) + equipo.cantidad * factor);
-    }
-  }
-
-  for (const prestamo of prestamosActivos) {
-    for (const equipo of prestamo.movimiento.equipos) {
-      const key = equipo.equipoId.toString();
-      stockByItem.set(key, (stockByItem.get(key) ?? 0) - equipo.cantidad);
-    }
-  }
-
-  return stockByItem;
-}
-
-export async function buildUnidadByItemMap(prisma: Pick<Prisma.TransactionClient, "stockOperacion">) {
-  const operaciones = await prisma.stockOperacion.findMany({
-    select: {
-      tipo: true,
-      equipos: {
-        select: {
-          equipoId: true,
-          cantidad: true,
-        },
-      },
-    },
-  });
-
-  const unidadByItem = new Map<string, number>();
-  for (const operacion of operaciones) {
-    const factor = stockOperacionDeltaFactor(operacion.tipo);
-    for (const equipo of operacion.equipos) {
-      const key = equipo.equipoId.toString();
-      unidadByItem.set(key, (unidadByItem.get(key) ?? 0) + equipo.cantidad * factor);
-    }
-  }
-
-  return unidadByItem;
-}
-
-export async function buildPersonalByItemMap(prisma: PrismaLike) {
-  const movimientos = await prisma.movimiento.findMany({
-    where: {
-      tipo: {
-        in: [MOVIMIENTO_TIPO_ENTREGA, MOVIMIENTO_TIPO_DEVOLUCION],
-      },
-      destinatarioPersonal: {
-        isNot: null,
-      },
-    },
-    select: {
-      tipo: true,
-      equipos: {
-        select: {
-          equipoId: true,
-          cantidad: true,
-        },
-      },
-    },
-  });
-
-  const personalByItem = new Map<string, number>();
-  for (const movimiento of movimientos) {
-    const factor = movimientoPersonalDeltaFactor(movimiento.tipo);
-    if (factor === 0) continue;
-    for (const equipo of movimiento.equipos) {
-      const key = equipo.equipoId.toString();
-      personalByItem.set(key, (personalByItem.get(key) ?? 0) + equipo.cantidad * factor);
-    }
-  }
-
-  return personalByItem;
-}
-
-export async function buildPrestamoActivoByItemMap(prisma: Pick<Prisma.TransactionClient, "prestamoActivo">) {
-  const prestamosActivos = await prisma.prestamoActivo.findMany({
-    select: {
-      movimiento: {
-        select: {
-          equipos: {
-            select: {
-              equipoId: true,
-              cantidad: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  const prestamoByItem = new Map<string, number>();
-  for (const prestamo of prestamosActivos) {
-    for (const equipo of prestamo.movimiento.equipos) {
-      const key = equipo.equipoId.toString();
-      prestamoByItem.set(key, (prestamoByItem.get(key) ?? 0) + equipo.cantidad);
-    }
-  }
-
-  return prestamoByItem;
-}
-
-export function totalStockUnits(stockByItem: Map<string, number>) {
-  let total = 0;
-  for (const value of stockByItem.values()) {
-    total += value;
-  }
-  return total;
 }

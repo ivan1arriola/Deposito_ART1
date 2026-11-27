@@ -149,7 +149,3 @@ export function resolveDestinatarioMovimiento(source: DestinatarioSource): Desti
 
   return null;
 }
-
-export function requireDestinatarioPersonal(source: DestinatarioSource) {
-  return source.destinatarioPersonal?.personal ?? null;
-}

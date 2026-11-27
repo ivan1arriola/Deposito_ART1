@@ -215,7 +215,7 @@ function buildPrintStyles() {
 }
 
 export function ListadoCajasPrintStyles() {
-  return <style dangerouslySetInnerHTML={{ __html: buildPrintStyles() }} />;
+  return <style>{buildPrintStyles()}</style>;
 }
 
 export function ListadoCajasPrintEmptyState({ message }: { message: string }) {

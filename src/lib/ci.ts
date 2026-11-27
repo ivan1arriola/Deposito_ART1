@@ -38,10 +38,6 @@ export function generateRandomUruguayanCi() {
   return generateRandomNumber();
 }
 
-export function completeCiValidationDigit(ciWithoutDigit: string | number) {
-  return generateValidationDigit(ciWithoutDigit);
-}
-
 export function generatePlaceholderUruguayanCi() {
   return generateRandomUruguayanCi();
 }

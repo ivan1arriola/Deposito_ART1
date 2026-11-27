@@ -230,7 +230,7 @@ for (const filePath of listTrackedFiles()) {
     continue;
   }
 
-  let fixEdits = [];
+  const fixEdits = [];
 
   if (!ALLOWED_DIACRITIC_STRIP_FILES.has(filePath)) {
     const nfdMatch = text.match(NFD_NORMALIZE_RE);

@@ -2,7 +2,7 @@ import "server-only";
 
 import React from "react";
 import { formatUruguayanCi, isValidUruguayanCi } from "@/lib/ci";
-import { buildFirmasHojaEntregaLineas, getFirmaLineBaseIndentPt, type FirmaLinea } from "@/lib/firma-lineas";
+import { buildFirmasHojaEntregaLineas, type FirmaLinea } from "@/lib/firma-lineas";
 import { ParseSpeeds, PDFDocument } from "pdf-lib";
 import {
   getHojaEntregaDatePart,
@@ -447,7 +447,6 @@ export async function renderHojasEntregaPdf(
     const signatureFontSize = scaled(profile, 6.6, 4.7);
     const signatureBlockSeparatorGap = scaled(profile, 22, 16);
     const signatureNameGap = scaled(profile, 8.2, 6.2);
-    const signatureNameIndentExtra = signatureTab * 1.25;
 
     const cachedStyles = stylesCache.get(profile.id);
     const styles =
@@ -957,7 +956,6 @@ export async function renderHojasEntregaPdf(
               <View style={styles.firmas}>
                 {firmaBloques.map((bloque, blockIndex) => {
                   const isLastBlock = blockIndex === firmaBloques.length - 1;
-                  const blockIndentLevel = bloque.id === "alistado" ? 0 : 1;
 
                   return (
                     <View
@@ -1011,7 +1009,7 @@ export async function renderHojasEntregaPdf(
     const GuiaUsoPage = () => (
       <Page size="A4" style={styles.manualPage}>
         <View style={{ alignItems: "center", marginBottom: 20 }}>
-          {logoDataUrl ? <Image src={logoDataUrl} style={{ width: 60, height: 60 }} /> : null}
+          {logoDataUrl ? React.createElement(Image, { src: logoDataUrl, style: { width: 60, height: 60 } }) : null}
         </View>
         <Text style={styles.manualTitle}>GUÍA DE CUIDADO Y RESPONSABILIDAD</Text>
         
@@ -1041,7 +1039,7 @@ export async function renderHojasEntregaPdf(
 
         <View style={{ marginTop: 40, borderTopWidth: 1, borderTopColor: "#e2e8f0", paddingTop: 10 }}>
           <Text style={{ fontSize: 8, color: "#64748b", textAlign: "center" }}>
-            "La disciplina en el equipo refleja la disciplina en el servicio."
+            &ldquo;La disciplina en el equipo refleja la disciplina en el servicio.&rdquo;
           </Text>
         </View>
       </Page>

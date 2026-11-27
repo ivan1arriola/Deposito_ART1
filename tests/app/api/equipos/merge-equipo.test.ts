@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/equipos/[equipoId]/route";
 import { authorizeRequest } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
-import { applyEquipoOrder, getOrderedEquipoIds } from "@/lib/equipo-ordering";
 
 vi.mock("@/lib/auth", () => ({
   authorizeRequest: vi.fn(),

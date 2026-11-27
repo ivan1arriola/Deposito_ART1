@@ -355,7 +355,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (auth.user.rangoId !== null && actorRango?.orden == null) {
+  if (auth.user.rangoId !== null && (actorRango?.orden === null || actorRango?.orden === undefined)) {
     return NextResponse.json({ error: "No se pudo determinar el orden del usuario autenticado." }, { status: 400 });
   }
 
@@ -569,7 +569,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(serializePrestamoWithActuante(created, actuanteByMovimientoId), { status: 201 });
   } catch (error) {
-    console.log("ERROR REGISTRANDO PRESTAMO:", error);
+    console.log("ERROR REGISTRANDO PRÉSTAMO:", error);
     return NextResponse.json({ error: "No se pudo registrar el préstamo." }, { status: 500 });
   }
 }

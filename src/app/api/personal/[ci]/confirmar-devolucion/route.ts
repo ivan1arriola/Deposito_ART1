@@ -81,13 +81,13 @@ export async function POST(req: Request, context: { params: Promise<{ ci: string
         evento: "PERSONAL_CONFIRMAR_BAJA_HISTORIAL",
         ci: ciDecoded,
         nombre: `${personalRecord.apellido1}, ${personalRecord.nombre1}`,
-        motivo: "Se confirmo devolucion total y se transfirio a historial",
+        motivo: "Se confirmó devolución total y se transfirió a historial",
       },
     });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.log("Error al confirmar devolucion y baja:", error);
+    console.log("Error al confirmar devolución y baja:", error);
     return NextResponse.json({ error: "No se pudo confirmar la baja del personal." }, { status: 500 });
   }
 }

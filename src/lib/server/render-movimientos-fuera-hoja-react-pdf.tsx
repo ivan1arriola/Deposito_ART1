@@ -3,7 +3,6 @@ import "server-only";
 import React from "react";
 import type { MovimientoFueraHojaRow } from "@/lib/hoja-entrega-data";
 import { buildFirmasInstitucionalesLineas, type FirmasInstitucionalesInput } from "@/lib/firma-lineas";
-import { getArtilleriaLogoDataUrl } from "@/lib/server/react-pdf-assets";
 
 type RenderMovimientosFueraHojaPdfOptions = {
   pageNumberLabel?: string;
@@ -32,9 +31,7 @@ export async function renderMovimientosFueraHojaPdf(
   options: RenderMovimientosFueraHojaPdfOptions = {},
 ): Promise<Uint8Array> {
   const ReactPdf = await import("@react-pdf/renderer");
-  const { Document, Page, Text, View, StyleSheet, pdf, Image } = ReactPdf;
-
-  const logoDataUrl = await getArtilleriaLogoDataUrl();
+  const { Document, Page, Text, View, StyleSheet, pdf } = ReactPdf;
 
   const pageNumberLabel = options.pageNumberLabel ?? "Movimientos";
   const rowsPerPage =

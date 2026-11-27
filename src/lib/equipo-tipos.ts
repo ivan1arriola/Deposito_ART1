@@ -1,3 +1,4 @@
+import { stripDiacritics } from "@/lib/spanish-text";
 import type { EquipoTipo, TipoEquipo } from "@/types/entities";
 
 export const GENERAL_TIPO_EQUIPO_CLAVE = "GENERAL";
@@ -19,9 +20,7 @@ type EquipoTipoDescriptor = {
 };
 
 export function normalizeEquipoTipoClave(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+  return stripDiacritics(value)
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
@@ -68,12 +67,4 @@ export function buildEquipoTipoOptions<T extends EquipoTipoRecordLike>(tipos: T[
       esGeneral: false,
     })),
   ];
-}
-
-export function findEquipoTipoOptionByClave<T extends { clave: string }>(tipos: T[], clave: string) {
-  return tipos.find((tipo) => tipo.clave === clave) ?? null;
-}
-
-export function isGeneralEquipoTipo(tipo: string | null | undefined) {
-  return !tipo || normalizeEquipoTipoClave(tipo) === GENERAL_TIPO_EQUIPO_CLAVE;
 }

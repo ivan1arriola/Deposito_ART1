@@ -1,4 +1,4 @@
-import { Project, SyntaxKind, PropertyAssignment } from "ts-morph";
+import { Project, SyntaxKind } from "ts-morph";
 import * as path from "path";
 
 const project = new Project({

@@ -156,10 +156,6 @@ export function formatPrestamoDestinatario(
   };
 }
 
-export function serializePrestamo(prestamo: PrestamoWithRelations): PrestamoStockEntry {
-  return serializePrestamoWithActuante(prestamo, undefined);
-}
-
 export function serializePrestamoWithActuante(
   prestamo: PrestamoWithRelations,
   actuanteByMovimientoId?: PrestamoActuanteByMovimientoId,

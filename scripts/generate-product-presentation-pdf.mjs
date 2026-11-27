@@ -233,9 +233,9 @@ function renderRoles() {
   );
   
   const roles = [
-    { name: "ADMIN (SISTEMA)", desc: "Control total del sistema, gestion de usuarios y acceso a auditoria." },
-    { name: "EDITOR (SISTEMA)", desc: "Operacion diaria: altas, bajas, prestamos y edicion de datos operativos." },
-    { name: "READ_ONLY (SISTEMA)", desc: "Consulta de reportes y estado de stock sin permisos de modificacion." },
+    { name: "ADMIN (SISTEMA)", desc: "Control total del sistema, gestión de usuarios y acceso a auditoría." },
+    { name: "EDITOR (SISTEMA)", desc: "Operación diaria: altas, bajas, préstamos y edición de datos operativos." },
+    { name: "READ_ONLY (SISTEMA)", desc: "Consulta de reportes y estado de stock sin permisos de modificación." },
     { name: "PERSONAL", desc: "Acceso individual para consultar su propia ficha y acciones personales habilitadas." }
   ];
   
@@ -309,7 +309,7 @@ function renderRoles() {
   const rowHeight = 22;
   const colWidths = [tableWidth * 0.38, tableWidth * 0.155, tableWidth * 0.155, tableWidth * 0.155, tableWidth * 0.155];
   const headers = ["Permiso", "ADMIN", "EDITOR", "READ_ONLY", "PERSONAL"];
-  let tableY = doc.y;
+  const tableY = doc.y;
 
   doc.save();
   headers.forEach((header, index) => {
@@ -522,33 +522,33 @@ function renderPractical() {
       title: "A) Alta de subalterno con tallas",
       steps: [
         "Ir a Altas > Alta de subalterno.",
-        "Completar CI, nombres, apellidos, rango, bateria y fechas de ingreso.",
-        "Cargar tallas (parka, camisaco, pantalon, kepi y calzado).",
+        "Completar CI, nombres, apellidos, rango, batería y fechas de ingreso.",
+        "Cargar tallas (parka, camisaco, pantalón, kepi y calzado).",
         "Guardar y validar que aparezca en la vista de Personal.",
       ],
     },
     {
-      title: "B) Registrar prestamo",
+      title: "B) Registrar préstamo",
       steps: [
-        "Ingresar a Prestamos > Registrar prestamo.",
+        "Ingresar a Préstamos > Registrar préstamo.",
         "Seleccionar destinatario, fecha estimada y equipos con cantidad.",
-        "Guardar operacion y emitir recibo PDF.",
+        "Guardar operación y emitir recibo PDF.",
         "Entregar copia y conservar referencia del recibo.",
       ],
     },
     {
-      title: "C) Registrar devolucion",
+      title: "C) Registrar devolución",
       steps: [
-        "Ir a Prestamos > Vigentes y abrir devolucion del recibo correspondiente.",
-        "Completar estado de cada item (NUEVO/BUENO/REGULAR/MALO) y comentario.",
-        "Confirmar para mover el prestamo al historial.",
+        "Ir a Préstamos > Vigentes y abrir devolución del recibo correspondiente.",
+        "Completar estado de cada ítem (NUEVO/BUENO/REGULAR/MALO) y comentario.",
+        "Confirmar para mover el préstamo al historial.",
       ],
     },
     {
-      title: "D) Emitir resumenes",
+      title: "D) Emitir resúmenes",
       steps: [
-        "Abrir Resumen de tallas y seleccionar subvista segun necesidad.",
-        "Validar datos en pantalla y usar botones de impresion PDF.",
+        "Abrir Resumen de tallas y seleccionar subvista según necesidad.",
+        "Validar datos en pantalla y usar botones de impresión PDF.",
         "Archivar documento firmado en carpeta operativa.",
       ],
     },

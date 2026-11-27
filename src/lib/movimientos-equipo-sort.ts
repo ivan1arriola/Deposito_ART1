@@ -60,23 +60,3 @@ export function sortMovimientosEquipoRows<T extends MovimientosEquipoSortableRow
   const factor = sort.direction === "asc" ? 1 : -1;
   return [...rows].sort((left, right) => factor * compareByField(left, right, sort.field));
 }
-
-export function parseMovimientosEquipoSort(
-  sortByRaw: string | null | undefined,
-  sortDirectionRaw: string | null | undefined,
-): MovimientosEquipoSort {
-  const field =
-    sortByRaw === "fecha" || sortByRaw === "tipo"
-      ? sortByRaw
-      : DEFAULT_MOVIMIENTOS_EQUIPO_SORT.field;
-
-  const direction =
-    sortDirectionRaw === "asc" || sortDirectionRaw === "desc"
-      ? sortDirectionRaw
-      : DEFAULT_MOVIMIENTOS_EQUIPO_SORT.direction;
-
-  return {
-    field,
-    direction,
-  };
-}

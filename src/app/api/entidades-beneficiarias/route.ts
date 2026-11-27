@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json(Array.from(parsedEntities).sort());
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: "Error al cargar entidades" }, { status: 500 });
   }
 }

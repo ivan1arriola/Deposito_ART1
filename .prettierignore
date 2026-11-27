@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+build
+coverage
+reports
+src/generated/prisma
+prisma/schema-base.sql
+prisma/patches
+package-lock.json
+licenses.json
+licenses-prod.json
+tsconfig.tsbuildinfo

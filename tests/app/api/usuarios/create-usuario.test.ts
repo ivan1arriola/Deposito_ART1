@@ -84,7 +84,7 @@ describe("POST /api/usuarios", () => {
       ok: true,
       user: { usuarioId: "admin-1" },
     } as never);
-    vi.mocked(prisma.rango.findUnique as any).mockResolvedValue(null as any);
+    vi.mocked(prisma.rango.findUnique).mockResolvedValue(null);
 
     const req = createMockRequest({
       rangoId: 99,
@@ -106,7 +106,7 @@ describe("POST /api/usuarios", () => {
       user: { usuarioId: "admin-1" },
     } as never);
     vi.mocked(hashPassword).mockResolvedValue("hashed_secret");
-    vi.mocked(prisma.rango.findUnique as any).mockResolvedValue({
+    vi.mocked(prisma.rango.findUnique).mockResolvedValue({
       rangoId: 1,
       abreviacion: "Sgto.",
     } as never);
@@ -132,7 +132,7 @@ describe("POST /api/usuarios", () => {
       updatedAt: new Date("2026-05-17T10:00:00Z"),
         bateria: true
     };
-    vi.mocked(prisma.usuario.create as any).mockResolvedValue(mockCreatedUser as any);
+    vi.mocked(prisma.usuario.create).mockResolvedValue(mockCreatedUser as never);
 
     const req = createMockRequest({
       rangoId: 1,
@@ -192,13 +192,13 @@ describe("POST /api/usuarios", () => {
       user: { usuarioId: "admin-1" },
     } as never);
     vi.mocked(hashPassword).mockResolvedValue("hashed_secret");
-    vi.mocked(prisma.rango.findUnique as any).mockResolvedValue({
+    vi.mocked(prisma.rango.findUnique).mockResolvedValue({
       rangoId: 1,
       abreviacion: "Sgto.",
     } as never);
 
     const errorP2002 = { code: "P2002" };
-    vi.mocked(prisma.usuario.create as any).mockRejectedValue(errorP2002 as any);
+    vi.mocked(prisma.usuario.create).mockRejectedValue(errorP2002);
 
     const req = createMockRequest({
       rangoId: 1,

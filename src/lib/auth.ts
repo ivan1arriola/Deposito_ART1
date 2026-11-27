@@ -1,15 +1,16 @@
-import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { UserRole } from "@/generated/prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
 import { getPersonalSessionIdentity, parsePersonalUsuarioId } from "@/lib/personal-auth";
+import { hashPassword, verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import { isPrismaDatabaseUnavailable, withPrismaReadRetry } from "@/lib/prisma-errors";
-import { hasPermission, type Permission } from "@/lib/permissions";
+import { hasPermission, type AuthAccountType, type Permission } from "@/lib/permissions";
 import { rangoAbreviacionLabel } from "@/lib/formatters";
 
-export type AuthAccountType = "SISTEMA" | "PERSONAL";
+export type { AuthAccountType };
+export { hashPassword, verifyPassword };
 
 export type AuthUser = {
   usuarioId: string;
@@ -55,14 +56,6 @@ export function invalidateAuthUserCache(userId?: string) {
   }
   authUserCache.clear();
   authUserInflight.clear();
-}
-
-export async function hashPassword(password: string) {
-  return bcrypt.hash(password, 12);
-}
-
-export async function verifyPassword(password: string, hash: string) {
-  return bcrypt.compare(password, hash);
 }
 
 export async function getUserFromRequest(): Promise<AuthUser | null> {

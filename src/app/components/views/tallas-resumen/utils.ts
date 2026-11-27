@@ -53,7 +53,7 @@ export function buildResumenTallasPorBateria(baterias: Bateria[], personal: Pers
   }
 
   for (const persona of personal) {
-    const key = persona.bateriaId == null ? "NONE" : String(persona.bateriaId);
+    const key = persona.bateriaId === null || persona.bateriaId === undefined ? "NONE" : String(persona.bateriaId);
     const bucket = personalPorBateria.get(key);
     if (bucket) {
       bucket.push(persona);

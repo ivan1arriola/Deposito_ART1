@@ -1,20 +1,13 @@
 "use client";
 
-import { useEffect, useState, type JSX, type MouseEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useState, type JSX, type ReactNode, type RefObject } from "react";
 import {
   Box,
   Button,
   Collapse,
-  Divider,
-  ListItemIcon,
-  ListItemText,
   IconButton,
-  Menu,
-  MenuItem,
-  Paper,
   Stack,
   Tooltip,
-  Typography,
   useMediaQuery,
 } from "@mui/material";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
@@ -77,7 +70,6 @@ type MainNavigationProps = {
   onToggleCollapsed?: () => void;
 };
 
-type MenuKey = "personal" | "oficiales" | "stock" | "etiquetado" | "create" | "config";
 type NavOption<T extends MainView> = {
   view: T;
   label: string;
@@ -86,18 +78,6 @@ type NavOption<T extends MainView> = {
   adminOnly?: boolean;
   writeOnly?: boolean;
 };
-
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <ExpandMoreRoundedIcon
-      fontSize="small"
-      sx={{
-        transform: open ? "rotate(180deg)" : "rotate(0deg)",
-        transition: "transform 180ms ease",
-      }}
-    />
-  );
-}
 
 const materialIconProps = { fontSize: "small" as const };
 
@@ -169,8 +149,8 @@ const stockViews: Array<NavOption<StockView>> = [
 ];
 
 const prestamosViews: Array<NavOption<PrestamosView>> = [
-  { view: "prestamos_registrar", label: "Registrar prestamo", shortLabel: "Registrar", icon: icons.altas, writeOnly: true },
-  { view: "prestamos_vigentes", label: "Prestamos vigentes", shortLabel: "Vigentes", icon: icons.prestamos },
+  { view: "prestamos_registrar", label: "Registrar préstamo", shortLabel: "Registrar", icon: icons.altas, writeOnly: true },
+  { view: "prestamos_vigentes", label: "Préstamos vigentes", shortLabel: "Vigentes", icon: icons.prestamos },
   { view: "prestamos_historial", label: "Historial de Préstamos", shortLabel: "Historial", icon: icons.history },
   { view: "movimientos_recintos", label: "Asignaciones a Recintos", shortLabel: "Recintos", icon: icons.history },
 ];
@@ -242,7 +222,7 @@ function navButtonSx(active: boolean, collapsed: boolean) {
   };
 }
 
-function inlineSubmenuButtonSx(active: boolean, compact: boolean) {
+function inlineSubmenuButtonSx(active: boolean) {
   return {
     justifyContent: "flex-start",
     minWidth: 0,
@@ -271,65 +251,14 @@ function inlineSubmenuButtonSx(active: boolean, compact: boolean) {
   };
 }
 
-function menuPaperSx(compact: boolean) {
-  return {
-    mt: 1,
-    p: 1,
-    borderRadius: "16px",
-    width: "280px",
-    border: "1px solid rgba(255, 255, 255, 0.12)",
-    bgcolor: "rgba(20, 24, 20, 0.95)",
-    backdropFilter: "blur(20px)",
-    color: "rgba(255, 255, 255, 0.9)",
-    boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
-  };
-}
-
-const menuHeaderSx = {
-  px: 2,
-  py: 1,
-  color: "rgba(255, 255, 255, 0.5)",
-  fontWeight: 700,
-  fontSize: "0.65rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.1em",
-};
-
-const menuDividerSx = {
-  my: 1,
-  borderColor: "rgba(255, 255, 255, 0.08)",
-};
-
-const menuItemSx = {
-  borderRadius: "8px",
-  mx: 0.5,
-  py: 1.2,
-  color: "rgba(255, 255, 255, 0.8)",
-  transition: "all 0.2s ease",
-  "&:hover": {
-    bgcolor: "rgba(255, 255, 255, 0.08)",
-    color: "#fff",
-  },
-  "&.Mui-selected": {
-    bgcolor: "rgba(255, 204, 0, 0.15)",
-    color: "var(--color-ejercito-gold)",
-    fontWeight: 700,
-  },
-  "&.Mui-selected:hover": {
-    bgcolor: "rgba(255, 204, 0, 0.2)",
-  },
-};
-
 function ExpandedMenuGroup({
   title,
   icon,
-  compact,
   collapsed,
   children,
 }: {
   title: string;
   icon: JSX.Element;
-  compact: boolean;
   collapsed?: boolean;
   children: ReactNode;
 }) {
@@ -404,27 +333,16 @@ function ExpandedMenuGroup({
   );
 }
 
-function labelForViewport(label: string, shortLabel?: string) {
-  return label;
-}
-
 export function MainNavigation({
   activeView,
   canWrite,
   isAdmin,
-  showConfigViews,
-  isConfigView,
-  configMenuRef,
   onSelectView,
   onSetConfigViews,
-  embedded = false,
-  expandSubmenus = false,
-  hideContainerChrome = false,
   onOpenSearch,
   collapsed = false,
   onToggleCollapsed,
 }: MainNavigationProps) {
-  const [menuAnchors, setMenuAnchors] = useState<Partial<Record<MenuKey, HTMLElement | null>>>({});
   const isMobileViewport = useMediaQuery("(max-width:899.95px)", { noSsr: true });
 
   useEffect(() => {
@@ -434,37 +352,6 @@ export function MainNavigation({
   }, [collapsed, isMobileViewport, onToggleCollapsed]);
 
   const isDashboardView = activeView === "dashboard";
-  const isPersonalView =
-    activeView === "personal" ||
-    activeView === "hoja_matrix" ||
-    activeView === "equipo_resumen" ||
-    activeView === "movimientos_fuera_hoja" ||
-    activeView === "personal_bajas";
-  const isOficialesSuboficialesView =
-    activeView === "oficiales" ||
-    activeView === "suboficiales" ||
-    activeView === "oficiales_resumen" ||
-    activeView === "suboficiales_resumen";
-  const isStockView =
-    activeView === "stock" ||
-    activeView === "equipos" ||
-    activeView === "tipos_equipo" ||
-    activeView === "equipo_nuevo" ||
-    activeView === "stock_total" ||
-    activeView === "stock_actual" ||
-    activeView === "stock_alta" ||
-    activeView === "stock_baja" ||
-    activeView === "stock_historial" ||
-    activeView === "stock_prestamos" ||
-    activeView === "movimientos_por_equipo";
-  const isEtiquetadoView =
-    activeView === "etiquetado_codigos_sie" ||
-    activeView === "etiquetado_listado_cajas" ||
-    activeView === "etiquetado_imprimir_todas";
-  const isCreateView =
-    activeView === "personal_nuevo" ||
-    activeView === "oficial_nuevo" ||
-    activeView === "suboficial_nuevo";
   const filteredStockViews = stockViews.filter((equipo) => (equipo.writeOnly ? canWrite : true));
   const filteredPrestamosViews = prestamosViews.filter((equipo) => (equipo.writeOnly ? canWrite : true));
   const filteredCreateViews = createViews.filter((equipo) => (equipo.adminOnly ? isAdmin : true));
@@ -472,7 +359,6 @@ export function MainNavigation({
   const filteredConfigViews = configViews.filter((equipo) => (equipo.adminOnly ? isAdmin : true));
 
   function closeAllMenus() {
-    setMenuAnchors({});
     onSetConfigViews(false);
   }
 
@@ -542,14 +428,14 @@ export function MainNavigation({
         </Button>
       </Tooltip>
 
-      <ExpandedMenuGroup title="Personal" icon={icons.personal} compact={false} collapsed={collapsed}>
+      <ExpandedMenuGroup title="Personal" icon={icons.personal} collapsed={collapsed}>
         {personalViews.map((equipo) => (
           <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
               startIcon={equipo.icon}
               onClick={() => handleSelectView(equipo.view)}
-              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view)}
             >
               {!collapsed && equipo.label}
             </Button>
@@ -557,14 +443,14 @@ export function MainNavigation({
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Oficiales" icon={icons.oficiales} compact={false} collapsed={collapsed}>
+      <ExpandedMenuGroup title="Oficiales" icon={icons.oficiales} collapsed={collapsed}>
         {oficialesViews.map((equipo) => (
           <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
               startIcon={equipo.icon}
               onClick={() => handleSelectView(equipo.view)}
-              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view)}
             >
               {!collapsed && equipo.label}
             </Button>
@@ -572,14 +458,14 @@ export function MainNavigation({
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Stock" icon={icons.stock} compact={false} collapsed={collapsed}>
+      <ExpandedMenuGroup title="Stock" icon={icons.stock} collapsed={collapsed}>
         {filteredStockViews.map((equipo) => (
           <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
               startIcon={equipo.icon}
               onClick={() => handleSelectView(equipo.view)}
-              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view)}
             >
               {!collapsed && equipo.label}
             </Button>
@@ -587,14 +473,14 @@ export function MainNavigation({
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Etiquetado" icon={icons.etiquetado} compact={false} collapsed={collapsed}>
+      <ExpandedMenuGroup title="Etiquetado" icon={icons.etiquetado} collapsed={collapsed}>
         {etiquetadoViews.map((equipo) => (
           <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
               startIcon={equipo.icon}
               onClick={() => handleSelectView(equipo.view)}
-              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view)}
             >
               {!collapsed && equipo.label}
             </Button>
@@ -602,14 +488,14 @@ export function MainNavigation({
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Resumen de tallas" icon={icons.resumen} compact={false} collapsed={collapsed}>
+      <ExpandedMenuGroup title="Resumen de tallas" icon={icons.resumen} collapsed={collapsed}>
         {tallasResumenViews.map((equipo) => (
           <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
               startIcon={equipo.icon}
               onClick={() => handleSelectView(equipo.view)}
-              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view)}
             >
               {!collapsed && equipo.label}
             </Button>
@@ -618,14 +504,14 @@ export function MainNavigation({
       </ExpandedMenuGroup>
 
       {canWrite ? (
-        <ExpandedMenuGroup title="Altas de Personal" icon={icons.altas} compact={false} collapsed={collapsed}>
+        <ExpandedMenuGroup title="Altas de Personal" icon={icons.altas} collapsed={collapsed}>
           {filteredCreateViews.map((equipo) => (
             <Button
               key={equipo.view}
               variant="text"
               startIcon={equipo.icon}
               onClick={() => handleSelectView(equipo.view)}
-              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view)}
             >
               {!collapsed && equipo.label}
             </Button>
@@ -633,7 +519,7 @@ export function MainNavigation({
         </ExpandedMenuGroup>
       ) : null}
 
-      <ExpandedMenuGroup title="Préstamos" icon={icons.prestamos} compact={false} collapsed={collapsed}>
+      <ExpandedMenuGroup title="Préstamos" icon={icons.prestamos} collapsed={collapsed}>
         {filteredPrestamosViews.map((equipo) => (
           <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
@@ -641,7 +527,7 @@ export function MainNavigation({
               variant="text"
               startIcon={equipo.icon}
               onClick={() => handleSelectView(equipo.view)}
-              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view)}
             >
               {!collapsed && equipo.label}
             </Button>
@@ -649,14 +535,14 @@ export function MainNavigation({
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Artículos" icon={icons.stock} compact={false} collapsed={collapsed}>
+      <ExpandedMenuGroup title="Artículos" icon={icons.stock} collapsed={collapsed}>
         {filteredArticuloViews.map((equipo) => (
           <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
               startIcon={equipo.icon}
               onClick={() => handleSelectView(equipo.view)}
-              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view)}
             >
               {!collapsed && equipo.label}
             </Button>
@@ -664,14 +550,14 @@ export function MainNavigation({
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Configuración" icon={icons.config} compact={false} collapsed={collapsed}>
+      <ExpandedMenuGroup title="Configuración" icon={icons.config} collapsed={collapsed}>
         {filteredConfigViews.map((equipo) => (
           <Tooltip key={equipo.view} title={equipo.label} placement="right" disableHoverListener={!collapsed}>
             <Button
               variant="text"
               startIcon={equipo.icon}
               onClick={() => handleSelectView(equipo.view)}
-              sx={inlineSubmenuButtonSx(activeView === equipo.view, false)}
+              sx={inlineSubmenuButtonSx(activeView === equipo.view)}
             >
               {!collapsed && equipo.label}
             </Button>
@@ -679,13 +565,13 @@ export function MainNavigation({
         ))}
       </ExpandedMenuGroup>
 
-      <ExpandedMenuGroup title="Manuales" icon={icons.prestamos} compact={false} collapsed={collapsed}>
+      <ExpandedMenuGroup title="Manuales" icon={icons.prestamos} collapsed={collapsed}>
         <Tooltip title="Manual de Usuario Final" placement="right" disableHoverListener={!collapsed}>
           <Button
             variant="text"
             startIcon={icons.prestamos}
             onClick={() => window.open("/docs/manual-usuario-final.pdf", "_blank", "noopener,noreferrer")}
-            sx={inlineSubmenuButtonSx(false, false)}
+            sx={inlineSubmenuButtonSx(false)}
           >
             {!collapsed && "Manual de Usuario Final"}
           </Button>
@@ -695,7 +581,7 @@ export function MainNavigation({
             variant="text"
             startIcon={icons.prestamos}
             onClick={() => window.open("/docs/presentacion-producto-deposito-art1.pdf", "_blank", "noopener,noreferrer")}
-            sx={inlineSubmenuButtonSx(false, false)}
+            sx={inlineSubmenuButtonSx(false)}
           >
             {!collapsed && "Presentación del Producto"}
           </Button>

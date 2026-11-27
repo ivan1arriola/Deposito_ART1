@@ -297,9 +297,10 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
     );
   }
 
-  const isUndoEvent = detalle.evento === "UNDO_ACCION_AUDITORIA" || (detalle as any).evento === "UNDO_ACCION_AUDITORIA";
+  const isUndoEvent = detalle.evento === "UNDO_ACCION_AUDITORIA";
   if (isUndoEvent) {
-    const audId = String((detalle as any).auditoriaIdRestaurada || (detalle as any).auditoriaId || "");
+    const detalleRecord = detalle as Record<string, unknown>;
+    const audId = String(detalleRecord.auditoriaIdRestaurada ?? detalleRecord.auditoriaId ?? "");
     const msg = `Fue por un deshacer de la acción #${audId}`;
     const icon = "🔄";
     const bg = "bg-amber-50 border-amber-200/40 text-amber-800 font-semibold";
@@ -427,13 +428,6 @@ export function renderAuditDetalle(detalle: unknown, ciReferences?: AuditCiRefer
       ...lines
     )
   );
-}
-
-export function renderAuditDetalleEquipos(detalle: unknown): string[] | null {
-  if (!isObject(detalle)) return null;
-
-  const equipos = extractEquipos(detalle.equipos);
-  return equipos.length > 0 ? equipos : null;
 }
 
 export function resolveAuditEntityName(entidad: string, detalle: unknown, ciReferences?: AuditCiReferences): string | null {

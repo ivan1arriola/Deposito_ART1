@@ -119,7 +119,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
       console.log("[api] intentando parsear JSON...");
       data = JSON.parse(rawBody);
       console.log("[api] JSON parseado correctamente:", data);
-    } catch (error) {
+    } catch (_error) {
       console.groupEnd();
       throw new Error("El servidor devolvió una respuesta inválida.");
     }

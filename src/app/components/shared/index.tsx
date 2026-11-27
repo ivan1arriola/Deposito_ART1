@@ -1,73 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import { Box, Button, Card as MuiCard, CardContent, Pagination, Stack, TextField, Typography } from "@mui/material";
+import { Button, Pagination, Stack, TextField, Typography } from "@mui/material";
 
 export { toast } from "sonner";
 export { ActionMenu } from "./ActionMenu";
-export type { ActionMenuItem } from "./ActionMenu";
-export { ConfirmDialog } from "./ConfirmDialog";
-export { Input, Select, Textarea } from "./FormInputs";
-export { Card, CardHeader, StatCard, EmptyState, Badge } from "./Cards";
-export { LoadingSpinner, LoadingInline, LoadingOverlay } from "./LoadingSpinner";
-
-export function CatalogCard(props: {
-  title: string;
-  placeholder: string;
-  newValue: string;
-  onNewValueChange: (value: string) => void;
-  onCreate: () => void;
-  createDisabled?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <MuiCard
-      variant="outlined"
-      sx={{
-        borderRadius: 3,
-        borderColor: "rgba(95,86,61,0.22)",
-        background: "linear-gradient(180deg, rgba(248,246,238,0.96) 0%, rgba(232,228,214,0.98) 100%)",
-      }}
-    >
-      <CardContent>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>{props.title}</Typography>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 1.5 }}>
-          <TextField
-            fullWidth
-            size="small"
-          value={props.newValue}
-          onChange={(event) => props.onNewValueChange(event.target.value)}
-          placeholder={props.placeholder}
-        />
-          <Button
-            type="button"
-            onClick={props.onCreate}
-            disabled={props.createDisabled}
-            variant="contained"
-            disableElevation
-            sx={{
-              borderRadius: 2,
-              fontWeight: 700,
-              color: "var(--color-ejercito-black)",
-              border: "1px solid rgba(145,111,26,0.82)",
-              background: "linear-gradient(180deg, rgba(255,210,74,0.98) 0%, rgba(214,170,38,0.98) 100%)",
-              "&:hover": {
-                background: "linear-gradient(180deg, rgba(242,198,62,0.98) 0%, rgba(196,154,28,0.98) 100%)",
-              },
-            }}
-          >
-            Crear
-          </Button>
-        </Stack>
-        <Box sx={{ mt: 2 }}>{props.children}</Box>
-      </CardContent>
-    </MuiCard>
-  );
-}
+export { Card, Badge } from "./Cards";
+export { LoadingInline, LoadingOverlay } from "./LoadingSpinner";
 
 export function SmallActionButton(props: {
   text: string;

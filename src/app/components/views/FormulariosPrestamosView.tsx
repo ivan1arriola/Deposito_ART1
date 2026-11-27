@@ -329,12 +329,12 @@ export function FormulariosPrestamosView({
 
   const headerTitle =
     fixedTab === "registrar"
-      ? "Registrar prestamo"
+      ? "Registrar préstamo"
       : fixedTab === "vigentes"
-        ? "Prestamos vigentes"
+        ? "Préstamos vigentes"
         : fixedTab === "historial"
-          ? "Historial de prestamos"
-          : "Prestamos";
+          ? "Historial de préstamos"
+          : "Préstamos";
   const headerDescription =
     fixedTab === "registrar"
       ? "Registro de nuevos préstamos de equipo."

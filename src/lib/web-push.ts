@@ -60,10 +60,6 @@ function ensureVapidConfigured() {
   return true;
 }
 
-export function getWebPushPublicKey() {
-  return getVapidConfig().publicKey;
-}
-
 async function ensureWebPushSchema() {
   if (webPushSchemaReady) return webPushSchemaReady;
 

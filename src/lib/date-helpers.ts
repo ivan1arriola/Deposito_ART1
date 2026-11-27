@@ -134,16 +134,8 @@ export function parseDateInput(value: string): ParsedDateInput {
   };
 }
 
-export function isCompleteDateInput(value: string) {
-  return parseDateInput(value).complete;
-}
-
 export function dateInputToDate(value: string) {
   return parseDateInput(value).date;
-}
-
-export function dateInputToIsoDate(value: string) {
-  return parseDateInput(value).isoValue;
 }
 
 export function compareDateInputValues(left: string, right: string) {
@@ -191,12 +183,6 @@ export function extractDateParts(value: string | Date | null | undefined): DateP
   return utcDateParts(parsed);
 }
 
-export function getDatePart(value: string | Date | null | undefined, part: "day" | "month" | "year" = "year"): string {
-  const parts = extractDateParts(value);
-  if (!parts) return "";
-  return parts[part];
-}
-
 export function formatDateOnlyFromDate(value: Date | null | undefined) {
   if (!value) return null;
   return formatParts(utcDateParts(value));
@@ -225,10 +211,6 @@ export function formatDateTimeForDisplay(value: string | Date | null | undefined
   }
 
   return formatParts(localDateParts(parsed));
-}
-
-export function formatDateForDisplay(dateString: string): string {
-  return formatDateOnlyForDisplay(dateString);
 }
 
 export function getTodayDateInput(now = new Date()): string {

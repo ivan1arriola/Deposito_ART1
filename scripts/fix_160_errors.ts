@@ -11,17 +11,6 @@ project.addSourceFilesAtPaths(path.join(__dirname, "../src/**/*.tsx"));
 const files = project.getSourceFiles();
 
 for (const file of files) {
-  let changed = false;
-
-  const replaceTextInNode = (node: any, search: string | RegExp, replace: string) => {
-      const text = node.getText();
-      const newText = typeof search === "string" ? text.split(search).join(replace) : text.replace(search, replace);
-      if (text !== newText) {
-          node.replaceWithText(newText);
-          changed = true;
-      }
-  };
-
   file.forEachDescendant(node => {
       // 1. Prisma includes/selects with subalterno, oficial, suboficial
       if (node.isKind(SyntaxKind.PropertyAssignment)) {
@@ -37,7 +26,7 @@ for (const file of files) {
   });
 
   // A safer approach: just string replacement on the file text!
-  let text = file.getFullText();
+  const text = file.getFullText();
   let newText = text;
 
   newText = newText.replace(/subalterno:\s*\{\s*select:\s*\{\s*bateria:\s*true\s*\}\s*\},?/g, 'bateria: true,');

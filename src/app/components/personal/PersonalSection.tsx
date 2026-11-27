@@ -278,7 +278,6 @@ export function PersonalSection({
   emailAllDeliverySheetsDisabledReason,
   onPrintPersonnelByBattery,
   onOpenMassEntrega,
-  onOpenRecintoEntrega,
   onOpenCreate,
   onToggleTallas,
   onDeletePersonal,

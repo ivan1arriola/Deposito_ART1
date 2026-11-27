@@ -285,7 +285,7 @@ export default async function ListadoEquiposUnidadPage({
       <main className="sheet">
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <h1 className="title">Listado de Equipos de la Unidad</h1>
-        <p className="subtitle">{`Totales por equipo (subalternos + prestamo + deposito) ${isAlphaSort ? "· Categorías separadas en orden alfabético" : "· Categorías separadas respetando el orden asignado"}`}</p>
+        <p className="subtitle">{`Totales por equipo (subalternos + préstamo + deposito) ${isAlphaSort ? "· Categorías separadas en orden alfabético" : "· Categorías separadas respetando el orden asignado"}`}</p>
         <p className="meta">{`Generado: ${generatedAt} | Equipos listados: ${resumen.length}`}</p>
 
         <section className="totals">

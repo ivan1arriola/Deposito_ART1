@@ -8,7 +8,7 @@ import type { HojaEntregaMatrixRow, HojaEntregaSheetData } from "@/lib/hoja-entr
 import { prisma } from "@/lib/prisma";
 import { comparePersonalByHierarchy } from "@/lib/rank-order";
 
-export type { HojaEntregaMatrixRow, HojaEntregaSheetData } from "@/lib/hoja-entrega-sheet";
+export type { HojaEntregaSheetData } from "@/lib/hoja-entrega-sheet";
 export { formatHojaEntregaDisplayDate, getHojaEntregaDatePart } from "@/lib/hoja-entrega-sheet";
 
 type MovimientoWithItems = {

@@ -4,8 +4,157 @@ import { authorizeRequest } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { buildSubalternoPersonalData } from "@/lib/personal-subalterno-data";
 import { invalidateRangoTipoCountCache, getTallaTipoIdMap } from "@/lib/reference-data-cache";
-import { TipoPersonal, TipoArticulo, TipoMovimiento } from "@/generated/prisma/client";
+import {
+  type Prisma,
+  TipoArticulo,
+  TipoMovimiento,
+  TipoPersonal,
+} from "@/generated/prisma/client";
 import type { TallaKey } from "@/lib/tallas";
+
+type UndoTalla = {
+  tipo: string;
+  valor: string;
+};
+
+type UndoPrevio = {
+  abreviacion: string;
+  nombreCompleto: string;
+  orden: number;
+  nombre: string;
+  tipo: TipoArticulo;
+  existenciaSie: number;
+  activo: boolean;
+  ordenPdf: number;
+  apellido1: string;
+  apellido2: string | null;
+  nombre1: string;
+  nombre2: string | null;
+  telefonoContacto: string | null;
+  rangoId: number;
+  tallas?: UndoTalla[];
+  fecha: string | Date;
+  texto: string;
+};
+
+type UndoDetalle = {
+  previo?: UndoPrevio;
+  evento?: string;
+  tipo?: TipoPersonal;
+  abreviacion: string;
+  nombreCompleto: string;
+  orden: number;
+  nombre: string;
+  ci: string;
+  fecha: string | Date;
+  texto: string;
+};
+
+type UndoTrashPayload = {
+  equipo: {
+    equipoId: string | number;
+    nombre: string;
+    activo: boolean;
+    ordenPdf: number;
+    existenciaSie: number;
+  };
+  cajaEquipos?: Array<{
+    codigoDepositoGeneral: string | number;
+    equipoId: string | number;
+    cantidad: number;
+  }>;
+  equipoCodigosSIE?: Array<{
+    equipoCodigoSIEId: string | number;
+    codigo: string;
+    talla?: string;
+    equipoId: string | number;
+  }>;
+  cajaItemCodigosSIE?: Array<{
+    codigoDepositoGeneral: string | number;
+    equipoCodigoSIEId: string | number;
+  }>;
+  deletedMovimientos?: Array<{
+    movimientoId: string | number;
+    tipo: TipoMovimiento;
+    fecha: string;
+    usuarioEntregaId: string;
+    afectaStock: boolean;
+    observaciones: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  deletedMovimientoDestinatariosPersonal?: Array<{
+    movimientoId: string | number;
+    ci: string;
+  }>;
+  deletedMovimientoDestinatariosExterno?: Array<{
+    movimientoId: string | number;
+    personaExternaCi: string;
+  }>;
+  deletedPrestamosActivos?: Array<{
+    movimientoId: string | number;
+    reciboNumero: string;
+    estado: Prisma.PrestamoActivoUncheckedCreateInput["estado"];
+    fechaEstimadaDevolucionTexto: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
+  deletedPrestamosHistoriales?: Array<{
+    movimientoId: string | number;
+    reciboNumero: string;
+    estado: Prisma.PrestamoHistorialUncheckedCreateInput["estado"];
+    fechaDevolucion: string;
+    fechaEstimadaDevolucionTexto: string | null;
+    usuarioRecibeDevolucionId: string;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
+  deletedStockOperaciones?: Array<{
+    stockOperacionId: string | number;
+    tipo: Prisma.StockOperacionUncheckedCreateInput["tipo"];
+    fecha: string;
+    comentarios: string | null;
+    createdAt: string;
+  }>;
+  movimientoEquipos?: Array<{
+    movimientoId: string | number;
+    equipoId: string | number;
+    cantidad: number;
+    estadoEntrega: Prisma.MovimientoEquipoUncheckedCreateInput["estadoEntrega"];
+    comentarioEntrega: string | null;
+    estadoDevolucion: Prisma.MovimientoEquipoUncheckedCreateInput["estadoDevolucion"];
+    comentarioDevolucion: string | null;
+  }>;
+  stockOperacionEquipos?: Array<{
+    stockOperacionId: string | number;
+    equipoId: string | number;
+    cantidad: number;
+  }>;
+  articulo: {
+    articuloId: string | number;
+    nombre: string;
+    tipo: TipoArticulo;
+  };
+  emptyEntregas?: Array<{
+    articuloEntregaPersonalId: string | number;
+    personalCi: string;
+    usuarioEntregaId: string;
+    ordenanteCi: string;
+    fecha: string;
+    comentario: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  stockMovimientos?: Array<{
+    articuloStockMovimientoId: string | number;
+    articuloId: string | number;
+    tipo: Prisma.ArticuloStockMovimientoUncheckedCreateInput["tipo"];
+    cantidad: number;
+    comentario: string | null;
+    articuloEntregaPersonalId?: string | number;
+    createdAt: string;
+  }>;
+};
 
 function parseAuditoriaId(raw: string) {
   try {
@@ -43,7 +192,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
         throw new Error("UNDO_EXPIRED");
       }
 
-      const detalle = (auditoria.detalle || {}) as any;
+      const detalle = (auditoria.detalle || {}) as UndoDetalle;
       const entidad = auditoria.entidad;
       const accion = auditoria.accion;
       const entidadId = auditoria.entidadId;
@@ -152,7 +301,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
           await tx.personalTalla.deleteMany({ where: { ci: entidadId } });
           const tallaTipoMap = await getTallaTipoIdMap();
           const tallasToCreate = (previo.tallas || [])
-            .map((t: any) => {
+            .map((t: UndoTalla) => {
               const tallaTipoId = tallaTipoMap.get(t.tipo as TallaKey);
               if (!tallaTipoId || !t.valor) return null;
               return {
@@ -161,7 +310,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
                 tallaValor: t.valor,
               };
             })
-            .filter((equipo: any): equipo is { ci: string; tallaTipoId: number; tallaValor: string } => equipo !== null);
+            .filter((equipo): equipo is { ci: string; tallaTipoId: number; tallaValor: string } => equipo !== null);
 
           if (tallasToCreate.length > 0) {
             await tx.personalTalla.createMany({
@@ -215,7 +364,7 @@ export async function POST(req: Request, context: { params: Promise<{ auditoriaI
             throw new Error("NOT_FOUND_IN_TRASH");
           }
 
-          const payload = recycleRecord.payload as any;
+          const payload = recycleRecord.payload as unknown as UndoTrashPayload;
 
           if (entidad === "EQUIPO") {
             const duplicate = await tx.equipo.findUnique({

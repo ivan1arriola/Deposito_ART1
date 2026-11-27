@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
-import { verifyPassword } from "@/lib/auth";
+import { verifyPassword } from "@/lib/password";
 import { logAudit } from "@/lib/audit";
 import { notifyAdminOnLogin } from "@/lib/notify-admins";
 import { isValidUruguayanCi, normalizeCi } from "@/lib/ci";

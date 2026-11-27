@@ -87,7 +87,7 @@ function basePersonalRecord() {
       { tallaTipoId: 5, tallaValor: "40", tallaTipo: { tallaTipoId: 5, nombre: "CALZADO" } },
     ],
     observaciones: [
-      { observacionId: BigInt(1), texto: "Observacion de prueba", fecha: new Date("2024-05-18T00:00:00.000Z") },
+      { observacionId: BigInt(1), texto: "Observación de prueba", fecha: new Date("2024-05-18T00:00:00.000Z") },
     ],
   };
 }
@@ -131,7 +131,7 @@ describe("POST /api/personal/[ci]/confirmar-devolucion", () => {
           { tipo: "CALZADO", valor: "40" },
         ],
         observaciones: [
-          { texto: "Observacion de prueba", fecha: new Date("2024-05-18T00:00:00.000Z") },
+          { texto: "Observación de prueba", fecha: new Date("2024-05-18T00:00:00.000Z") },
         ],
       },
     });

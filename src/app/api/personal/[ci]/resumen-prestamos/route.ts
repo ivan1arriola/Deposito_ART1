@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { TipoMovimiento, type Prisma } from "@/generated/prisma/client";
 import { readFile } from "fs/promises";
 import path from "path";
-import { PDFDocument, StandardFonts, rgb, type PDFImage, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { authorizeRequest } from "@/lib/auth";
 import { formatUruguayanCi } from "@/lib/ci";
 import { formatDateOnlyFromDate } from "@/lib/date-helpers";
@@ -28,10 +28,6 @@ const CONTENT_BOTTOM = A4_HEIGHT - PAGE_MARGIN_Y - RECEIPT_PADDING;
 
 const TABLE_HEADER_HEIGHT = 16;
 const TABLE_MIN_ROW_HEIGHT = 14;
-const TABLE_CELL_TEXT_SIZE = 9;
-const TABLE_CELL_LINE_HEIGHT = 9;
-const TABLE_CELL_TOP_PADDING = 3;
-const TABLE_CELL_BOTTOM_PADDING = 2;
 
 const TABLE_COL_QTY = 45;
 const TABLE_COL_ESTADO = 70;
@@ -76,15 +72,6 @@ function formatDateUy(value: Date) {
   }).format(value);
 }
 
-function formatLongDateUy(value: Date) {
-  return new Intl.DateTimeFormat("es-UY", {
-    timeZone: "America/Montevideo",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(value);
-}
-
 function sanitizeForPdf(value: string | null | undefined) {
   return normalizeOutputText(value);
 }
@@ -111,12 +98,7 @@ function movementTypeLabel(tipo: TipoMovimiento) {
   if (tipo === MOVIMIENTO_TIPO_ENTREGA) return "ENTREGA";
   if (tipo === MOVIMIENTO_TIPO_DEVOLUCION) return "DEVOLUCION";
   if (tipo === MOVIMIENTO_TIPO_ASIGNACION) return "ASIGNACION";
-  return "PRESTAMO PENDIENTE";
-}
-
-function movementTypeColor(tipo: TipoMovimiento) {
-  // Optimizado para Blanco y Negro (B&W)
-  return rgb(0, 0, 0);
+  return "PRÉSTAMO PENDIENTE";
 }
 
 function movementReference(movimiento: MovimientoResumen) {
