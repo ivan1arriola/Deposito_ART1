@@ -27,6 +27,7 @@ type ItemResumen = {
   tipoOrden: number;
   ordenPdf: number;
   stockSubalternos: number;
+  stockAsignacion: number;
   stockPrestamo: number;
   stockDeposito: number;
   stockUnidad: number;
@@ -84,7 +85,7 @@ function buildStyles() {
     .totals {
       margin: 3.2mm 0 0;
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 2mm;
     }
 
@@ -119,8 +120,8 @@ function buildStyles() {
       table-layout: fixed;
     }
 
-    col.col-equipo { width: 46%; }
-    col.col-numeric { width: 10.8%; }
+    col.col-equipo { width: 34%; }
+    col.col-numeric { width: 11%; }
 
     thead {
       display: table-header-group;
@@ -249,6 +250,7 @@ export default async function ListadoEquiposUnidadPage({
       ...tipo,
       ordenPdf: equipo.ordenPdf,
       stockSubalternos,
+      stockAsignacion,
       stockPrestamo,
       stockDeposito,
       stockUnidad,
@@ -262,6 +264,7 @@ export default async function ListadoEquiposUnidadPage({
   }));
 
   const totalSubalternos = resumen.reduce((total, equipo) => total + equipo.stockSubalternos, 0);
+  const totalRecintos = resumen.reduce((total, equipo) => total + equipo.stockAsignacion, 0);
   const totalPrestamo = resumen.reduce((total, equipo) => total + equipo.stockPrestamo, 0);
   const totalDeposito = resumen.reduce((total, equipo) => total + equipo.stockDeposito, 0);
   const totalUnidad = resumen.reduce((total, equipo) => total + equipo.stockUnidad, 0);
@@ -285,13 +288,17 @@ export default async function ListadoEquiposUnidadPage({
       <main className="sheet">
         <InstitutionalPrintHeader printedAt={institutionalPrintDate} />
         <h1 className="title">Listado de Equipos de la Unidad</h1>
-        <p className="subtitle">{`Totales por equipo (subalternos + prestamo + deposito) ${isAlphaSort ? "· Categorías separadas en orden alfabético" : "· Categorías separadas respetando el orden asignado"}`}</p>
+        <p className="subtitle">{`Totales por equipo (subalternos + recintos + prestamo + deposito) ${isAlphaSort ? "· Categorías separadas en orden alfabético" : "· Categorías separadas respetando el orden asignado"}`}</p>
         <p className="meta">{`Generado: ${generatedAt} | Equipos listados: ${resumen.length}`}</p>
 
         <section className="totals">
           <article className="totals-equipo">
             <p className="totals-label">Total subalternos</p>
             <p className="totals-value">{totalSubalternos}</p>
+          </article>
+          <article className="totals-equipo">
+            <p className="totals-label">Total recintos</p>
+            <p className="totals-value">{totalRecintos}</p>
           </article>
           <article className="totals-equipo">
             <p className="totals-label">Total prestamo</p>
@@ -326,11 +333,13 @@ export default async function ListadoEquiposUnidadPage({
                         <col className="col-numeric" />
                         <col className="col-numeric" />
                         <col className="col-numeric" />
+                        <col className="col-numeric" />
                       </colgroup>
                       <thead>
                         <tr>
                           <th>Equipo</th>
                           <th className="numeric">Subalternos</th>
+                          <th className="numeric">Recintos</th>
                           <th className="numeric">Prestamo</th>
                           <th className="numeric">Deposito</th>
                           <th className="numeric">Unidad</th>
@@ -342,6 +351,7 @@ export default async function ListadoEquiposUnidadPage({
                           <tr key={`equipo-print-${section.key}-${equipo.equipoId}`}>
                             <td>{equipo.nombre}</td>
                             <td className="numeric">{equipo.stockSubalternos}</td>
+                            <td className="numeric">{equipo.stockAsignacion}</td>
                             <td className="numeric">{equipo.stockPrestamo}</td>
                             <td className="numeric">{equipo.stockDeposito}</td>
                             <td className="numeric">{equipo.stockUnidad}</td>
