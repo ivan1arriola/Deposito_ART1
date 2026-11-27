@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Building2, Eye, FileSpreadsheet, FileText, Users } from "lucide-react";
 import { compareOptionalOrder } from "@/lib/catalog-order";
 import { formatDateTimeForDisplay } from "@/lib/date-helpers";
 import type { HojaMatrixData } from "@/types/views";
 import { LoadingInline, Card, Badge } from "@/app/components/shared";
-import { Building2, Eye, FileSpreadsheet, FileText, Users } from "lucide-react";
-import { Box, Button, Stack, Typography, useTheme, alpha } from "@mui/material";
 
 const SIN_BATERIA_LABEL = "Sin batería";
 
@@ -18,7 +17,6 @@ export interface HojaMatrixViewProps {
 }
 
 export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixViewProps) {
-  const theme = useTheme();
   const [viewMode, setViewMode] = useState<"all" | "battery">("all");
   const [selectedBattery, setSelectedBattery] = useState<string | null>(null);
   const [previewRequested, setPreviewRequested] = useState(false);
@@ -83,31 +81,19 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
   const previewDisabled = printDisabled || !data;
 
   return (
-    <Box sx={{ mt: 3 }}>
+    <div className="mt-6">
       <Card
         padding="none"
         variant="elevated"
         className="overflow-hidden bg-gradient-to-b from-white to-[#f9f8f4]"
       >
-        <Box sx={{ p: { xs: 2, sm: 3 }, borderBottom: "1px solid", borderColor: "divider" }}>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={3}
-            alignItems={{ md: "center" }}
-            justifyContent="space-between"
-          >
-            <Box>
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontWeight: 800,
-                    color: "var(--color-ejercito-black)",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
+        <div className="border-b border-[var(--color-neutral-300)] p-4 sm:p-6">
+          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-2xl font-extrabold tracking-[-0.02em] text-[var(--color-ejercito-black)]">
                   Hoja Matriz General de Entrega
-                </Typography>
+                </h2>
                 {data && (
                   <Badge variant="success" size="sm">
                     {viewMode === "all"
@@ -115,338 +101,171 @@ export function HojaMatrixView({ data, loading, error, onReload }: HojaMatrixVie
                       : selectedBattery || "Pendiente Selección"}
                   </Badge>
                 )}
-              </Stack>
-              <Typography
-                variant="body2"
-                sx={{ mt: 0.5, color: "text.secondary", fontWeight: 500 }}
-              >
+              </div>
+              <p className="mt-1 text-sm font-medium text-[var(--color-text-secondary)]">
                 {subtitle} • Ordenado por grado, batería y apellidos.
-              </Typography>
-            </Box>
+              </p>
+            </div>
 
-            <Stack direction="row" spacing={1.5} flexWrap="wrap" sx={{ gap: 1 }}>
-              <Button
-                variant="contained"
-                disableElevation
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
                 onClick={() => setPreviewRequested(true)}
                 disabled={previewDisabled}
-                startIcon={<Eye className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />}
-                sx={{
-                  borderRadius: 2,
-                  fontWeight: 800,
-                  bgcolor: "var(--color-ejercito-black)",
-                  px: 2.5,
-                  "&:hover": { bgcolor: "#1a1a1a" },
-                  "&.Mui-disabled": { bgcolor: alpha("#000", 0.1) },
-                }}
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[var(--color-ejercito-black)] px-5 text-sm font-extrabold text-white transition-colors hover:bg-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] disabled:pointer-events-none disabled:bg-black/10 disabled:text-black/40"
               >
-                {loading ? "Cargando..." : "Vista Previa"}
-              </Button>
+                <Eye className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                <span>{loading ? "Cargando..." : "Vista Previa"}</span>
+              </button>
 
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="outlined"
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
                   onClick={() => window.open(printHref, "_blank", "noopener,noreferrer")}
                   disabled={printDisabled}
-                  startIcon={<FileText className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />}
-                  sx={{
-                    borderRadius: 2,
-                    fontWeight: 700,
-                    borderColor: alpha("#002f70", 0.2),
-                    color: "#002f70",
-                    "&:hover": { borderColor: "#002f70", bgcolor: alpha("#002f70", 0.04) },
-                  }}
                   title="Imprimir / Guardar PDF"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[rgba(0,47,112,0.2)] bg-white px-4 text-sm font-bold text-[#002f70] transition-colors hover:border-[#002f70] hover:bg-[rgba(0,47,112,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] disabled:pointer-events-none disabled:opacity-45"
                 >
-                  PDF
-                </Button>
-                <Button
-                  variant="outlined"
+                  <FileText className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                  <span>PDF</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => window.open(spreadsheetHref, "_blank", "noopener,noreferrer")}
                   disabled={printDisabled}
-                  startIcon={
-                    <FileSpreadsheet className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
-                  }
-                  sx={{
-                    borderRadius: 2,
-                    fontWeight: 700,
-                    borderColor: alpha("#184f1f", 0.2),
-                    color: "#184f1f",
-                    "&:hover": { borderColor: "#184f1f", bgcolor: alpha("#184f1f", 0.04) },
-                  }}
                   title="Descargar Planilla"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[rgba(24,79,31,0.2)] bg-white px-4 text-sm font-bold text-[#184f1f] transition-colors hover:border-[#184f1f] hover:bg-[rgba(24,79,31,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] disabled:pointer-events-none disabled:opacity-45"
                 >
-                  Excel
-                </Button>
-              </Stack>
-            </Stack>
-          </Stack>
-        </Box>
+                  <FileSpreadsheet className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                  <span>Excel</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <Box
-          sx={{
-            p: { xs: 2, sm: 3 },
-            bgcolor: "#2d3421",
-            position: "relative",
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "1px",
-              bgcolor: "rgba(255,255,255,0.1)",
-            },
-          }}
-        >
-          <Stack spacing={3}>
-            <Box>
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: "rgba(255,255,255,0.5)",
-                  display: "block",
-                  mb: 1.5,
-                }}
-              >
+        <div className="relative bg-[#2d3421] p-4 sm:p-6 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-white/10">
+          <div className="flex flex-col gap-6">
+            <div>
+              <span className="mb-3 block text-xs font-extrabold uppercase tracking-[0.08em] text-white/60">
                 Selección de Alcance
-              </Typography>
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{
-                  p: 0.75,
-                  bgcolor: "rgba(0,0,0,0.2)",
-                  borderRadius: 3,
-                  width: "fit-content",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                }}
-              >
-                <Button
+              </span>
+              <div className="flex w-fit flex-wrap gap-2 rounded-xl border border-white/5 bg-black/20 p-1.5">
+                <button
+                  type="button"
                   onClick={() => {
                     setViewMode("all");
                     setSelectedBattery(null);
                     setPreviewRequested(false);
                   }}
-                  startIcon={
-                    <Building2 className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
-                  }
-                  sx={{
-                    borderRadius: 2,
-                    px: 3,
-                    py: 1,
-                    textTransform: "none",
-                    fontWeight: 700,
-                    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                    ...(viewMode === "all"
-                      ? {
-                          bgcolor: "#d4aa26",
-                          color: "black",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                          "&:hover": { bgcolor: "#e5bb37" },
-                        }
-                      : {
-                          color: "rgba(255,255,255,0.7)",
-                          "&:hover": { bgcolor: "rgba(255,255,255,0.08)", color: "white" },
-                        }),
-                  }}
+                  className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-6 py-2 text-sm font-bold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] ${
+                    viewMode === "all"
+                      ? "bg-[#d4aa26] text-black shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:bg-[#e5bb37]"
+                      : "text-white/75 hover:bg-white/10 hover:text-white"
+                  }`}
                 >
-                  Toda la Unidad
-                </Button>
-                <Button
+                  <Building2 className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                  <span>Toda la Unidad</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     setViewMode("battery");
                     setPreviewRequested(false);
                   }}
-                  startIcon={<Users className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />}
-                  sx={{
-                    borderRadius: 2,
-                    px: 3,
-                    py: 1,
-                    textTransform: "none",
-                    fontWeight: 700,
-                    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                    ...(viewMode === "battery"
-                      ? {
-                          bgcolor: "#d4aa26",
-                          color: "black",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                          "&:hover": { bgcolor: "#e5bb37" },
-                        }
-                      : {
-                          color: "rgba(255,255,255,0.7)",
-                          "&:hover": { bgcolor: "rgba(255,255,255,0.08)", color: "white" },
-                        }),
-                  }}
+                  className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-6 py-2 text-sm font-bold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] ${
+                    viewMode === "battery"
+                      ? "bg-[#d4aa26] text-black shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:bg-[#e5bb37]"
+                      : "text-white/75 hover:bg-white/10 hover:text-white"
+                  }`}
                 >
-                  Por Batería
-                </Button>
-              </Stack>
-            </Box>
+                  <Users className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                  <span>Por Batería</span>
+                </button>
+              </div>
+            </div>
 
             {viewMode === "battery" && (
-              <Box
-                sx={{
-                  animation: "fadeIn 0.3s ease-out",
-                  "@keyframes fadeIn": {
-                    from: { opacity: 0, transform: "translateY(-10px)" },
-                    to: { opacity: 1, transform: "translateY(0)" },
-                  },
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    color: "rgba(255,255,255,0.5)",
-                    display: "block",
-                    mb: 1.5,
-                  }}
-                >
+              <div>
+                <span className="mb-3 block text-xs font-extrabold uppercase tracking-[0.08em] text-white/60">
                   Baterías Disponibles
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1.5 }}>
+                </span>
+                <div className="flex flex-wrap gap-3">
                   {bateriaOptions.length === 0 ? (
-                    <Typography
-                      variant="body2"
-                      sx={{ fontStyle: "italic", color: "rgba(255,255,255,0.3)", py: 1 }}
-                    >
+                    <p className="py-2 text-sm italic text-white/50">
                       No se detectaron subunidades en los datos actuales.
-                    </Typography>
+                    </p>
                   ) : (
                     bateriaOptions.map((label) => (
-                      <Button
+                      <button
                         key={label}
+                        type="button"
                         onClick={() => {
                           setSelectedBattery(label);
                           setPreviewRequested(false);
                         }}
-                        sx={{
-                          borderRadius: 2,
-                          px: 2.5,
-                          py: 1,
-                          textTransform: "none",
-                          fontWeight: 700,
-                          fontSize: "0.8125rem",
-                          border: "1px solid",
-                          transition: "all 0.2s ease",
-                          ...(selectedBattery === label
-                            ? {
-                                bgcolor: "rgba(212, 170, 38, 0.15)",
-                                borderColor: "#d4aa26",
-                                color: "#d4aa26",
-                                boxShadow: "0 0 15px rgba(212, 170, 38, 0.1)",
-                              }
-                            : {
-                                bgcolor: "transparent",
-                                borderColor: "rgba(255,255,255,0.15)",
-                                color: "rgba(255,255,255,0.6)",
-                                "&:hover": {
-                                  borderColor: "rgba(255,255,255,0.4)",
-                                  color: "white",
-                                  bgcolor: "rgba(255,255,255,0.05)",
-                                },
-                              }),
-                        }}
+                        className={`inline-flex min-h-10 items-center rounded-lg border px-5 py-2 text-[13px] font-bold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] ${
+                          selectedBattery === label
+                            ? "border-[#d4aa26] bg-[rgba(212,170,38,0.15)] text-[#d4aa26] shadow-[0_0_15px_rgba(212,170,38,0.1)]"
+                            : "border-white/15 bg-transparent text-white/70 hover:border-white/40 hover:bg-white/5 hover:text-white"
+                        }`}
                       >
                         {label}
-                      </Button>
+                      </button>
                     ))
                   )}
-                </Stack>
-              </Box>
+                </div>
+              </div>
             )}
-          </Stack>
-        </Box>
+          </div>
+        </div>
 
         {error && (
-          <Box
-            sx={{
-              p: 2,
-              mx: 3,
-              mb: 3,
-              borderRadius: 2,
-              bgcolor: alpha(theme.palette.error.main, 0.08),
-              border: "1px solid",
-              borderColor: alpha(theme.palette.error.main, 0.2),
-            }}
-          >
-            <Typography variant="body2" sx={{ color: theme.palette.error.main, fontWeight: 600 }}>
-              {error}
-            </Typography>
-          </Box>
+          <div className="mx-6 mb-6 mt-4 rounded-lg border border-[rgb(207_15_33/20%)] bg-[rgb(207_15_33/8%)] p-4">
+            <p className="text-sm font-semibold text-[var(--color-ejercito-red)]">{error}</p>
+          </div>
         )}
 
         {loading && !data && (
-          <Box sx={{ p: 6, textAlign: "center" }}>
+          <div className="p-12 text-center">
             <LoadingInline
               label="Procesando datos de la unidad..."
               textClassName="font-bold text-stone-600"
             />
-          </Box>
+          </div>
         )}
 
         {data && previewRequested ? (
-          <Box
-            sx={{
-              p: { xs: 1, sm: 2 },
-              bgcolor: "stone.200",
-              borderTop: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <Box
-              sx={{
-                overflow: "hidden",
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                bgcolor: "white",
-                boxShadow: theme.shadows[2],
-              }}
-            >
+          <div className="border-t border-[var(--color-neutral-300)] bg-stone-200 p-2 sm:p-4">
+            <div className="overflow-hidden rounded-lg border border-[var(--color-neutral-300)] bg-white shadow-[var(--shadow-sm)]">
               <iframe
                 key={previewHref}
                 title={viewMode === "all" ? "Vista previa unidad" : "Vista previa batería"}
                 src={previewHref}
-                style={{ width: "100%", height: "80vh", minHeight: "800px", border: "none" }}
+                className="h-[80vh] min-h-[800px] w-full border-0"
               />
-            </Box>
-          </Box>
+            </div>
+          </div>
         ) : (
           data && (
-            <Box sx={{ p: 3, textAlign: "center", borderTop: "1px solid", borderColor: "divider" }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary" }}>
+            <div className="border-t border-[var(--color-neutral-300)] p-6 text-center">
+              <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
                 La vista previa está lista. Presione el botón{" "}
-                <Box component="span" sx={{ color: "text.primary" }}>
-                  &quot;Vista Previa&quot;
-                </Box>{" "}
+                <span className="text-[var(--color-text-primary)]">&quot;Vista Previa&quot;</span>{" "}
                 para visualizar la matriz.
-              </Typography>
-            </Box>
+              </p>
+            </div>
           )
         )}
 
         {data && (
-          <Box
-            sx={{
-              p: 2,
-              bgcolor: alpha(theme.palette.action.hover, 0.2),
-              borderTop: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <Typography variant="caption" sx={{ fontWeight: 600, color: "text.disabled" }}>
+          <div className="border-t border-[var(--color-neutral-300)] bg-[rgb(0_56_133/2%)] p-4">
+            <p className="text-xs font-semibold text-stone-500">
               Última actualización: {formatDateTimeForDisplay(data.generatedAt)}
-            </Typography>
-          </Box>
+            </p>
+          </div>
         )}
       </Card>
-    </Box>
+    </div>
   );
 }

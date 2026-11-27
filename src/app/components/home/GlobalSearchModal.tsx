@@ -1,20 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
-import { Dialog, Slide, Box, IconButton } from "@mui/material";
-import type { TransitionProps } from "@mui/material/transitions";
-import React from "react";
+import { useMemo, useRef, useState } from "react";
+import { ChevronRight, IdCard, Search, User, X } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/Dialog";
 import type { Personal, OficialSuboficial } from "@/types/entities";
 import { formatUruguayanCi, normalizeCi } from "@/lib/ci";
 import { stripDiacritics } from "@/lib/spanish-text";
-import { ChevronRight, IdCard, Search, User, X } from "lucide-react";
-
-const Transition = React.forwardRef(function Transition(
-  props: TransitionProps & { children: React.ReactElement<unknown> },
-  ref: React.Ref<unknown>
-) {
-  return <Slide direction="down" ref={ref} {...props} />;
-});
 
 type GlobalSearchModalProps = {
   open: boolean;
@@ -40,15 +31,6 @@ export function GlobalSearchModal({
 }: GlobalSearchModalProps) {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Focus input when opened
-  useEffect(() => {
-    if (!open) return;
-    const timer = setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [open]);
 
   const results = useMemo(() => {
     const q = query.trim();
@@ -114,185 +96,139 @@ export function GlobalSearchModal({
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
-      TransitionComponent={Transition}
-      fullWidth
-      maxWidth="sm"
-      PaperProps={{
-        sx: {
-          borderRadius: "20px",
-          background: "rgba(255, 255, 255, 0.95)",
-          backdropFilter: "blur(20px) saturate(180%)",
-          border: "1px solid rgba(0, 0, 0, 0.08)",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0,0,0,0.02)",
-          margin: "16px",
-          alignSelf: "flex-start",
-          mt: { xs: 4, sm: 10 },
-          overflow: "hidden",
-        },
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          handleClose();
+        }
       }}
     >
-      <Box sx={{ display: "flex", flexDirection: "column" }}>
-        {/* Search Input Bar */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            p: 2.5,
-            background: "white",
-            borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          <Search
-            className="h-6 w-6 shrink-0 opacity-60"
-            style={{ color: "var(--color-ejercito-blue, #1a2a1a)" }}
-            aria-hidden="true"
-          />
-          <input
-            ref={inputRef}
-            type="text"
-            className="flex-1 bg-transparent text-lg font-semibold text-stone-800 placeholder:text-stone-400 focus:outline-none"
-            placeholder="Buscar por cédula o nombre..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <IconButton
-            size="small"
-            aria-label="Cerrar buscador"
-            onClick={handleClose}
-            sx={{
-              color: "rgba(0,0,0,0.2)",
-              "&:hover": { color: "black", bgcolor: "rgba(0,0,0,0.05)" },
-            }}
-          >
-            <X className="h-4 w-4 shrink-0" aria-hidden="true" />
-          </IconButton>
-        </Box>
+      <DialogContent
+        variant="search"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          inputRef.current?.focus();
+        }}
+      >
+        <DialogTitle className="sr-only">Buscador de personal</DialogTitle>
+        <DialogDescription className="sr-only">
+          Busca personal por cédula de identidad o nombre completo para abrir su ficha.
+        </DialogDescription>
 
-        {/* Results Body */}
-        <Box sx={{ maxHeight: "60vh", overflowY: "auto", p: 1.5 }}>
-          {query.length > 0 && results.length === 0 ? (
-            <Box sx={{ py: 6, textAlign: "center", color: "stone.400" }}>
-              <p className="text-sm font-medium">
-                No se encontraron resultados para &quot;{query}&quot;
-              </p>
-            </Box>
-          ) : results.length > 0 ? (
-            <Box
-              component="ul"
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 0.5,
-                listStyle: "none",
-                m: 0,
-                p: 0,
-              }}
+        <div className="flex flex-col">
+          {/* Search Input Bar */}
+          <div className="flex items-center gap-4 border-b border-black/5 bg-white p-5">
+            <Search
+              className="h-6 w-6 shrink-0 opacity-60"
+              style={{ color: "var(--color-ejercito-blue, #1a2a1a)" }}
+              aria-hidden="true"
+            />
+            <input
+              ref={inputRef}
+              type="text"
+              aria-label="Buscar por cédula o nombre"
+              className="flex-1 border-0 bg-transparent text-lg font-semibold text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-0"
+              style={{ minHeight: "auto", background: "transparent", boxShadow: "none" }}
+              placeholder="Buscar por cédula o nombre..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <button
+              type="button"
+              aria-label="Cerrar buscador"
+              onClick={handleClose}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-black/5 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
             >
-              {results.map((result) => (
-                <Box component="li" key={result.ci}>
-                  <button
-                    onClick={() => handleSelect(result.ci)}
-                    className="group flex w-full items-center gap-4 rounded-xl p-3 text-left transition-all duration-150 hover:bg-stone-100/80 active:bg-stone-200/50"
-                  >
-                    <Box
-                      sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        bgcolor:
-                          result.tipo === "SOLDADO" ? "stone.100" : "rgba(202, 161, 79, 0.1)",
-                        color:
-                          result.tipo === "SOLDADO" ? "stone.400" : "var(--color-ejercito-gold)",
-                        transition: "all 0.2s",
-                        groupHover: { bgcolor: "white", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" },
-                      }}
-                    >
-                      {result.tipo === "SOLDADO" ? (
-                        <User className="h-5 w-5 shrink-0" aria-hidden="true" />
-                      ) : (
-                        <IdCard className="h-5 w-5 shrink-0" aria-hidden="true" />
-                      )}
-                    </Box>
+              <X className="h-4 w-4 shrink-0" aria-hidden="true" />
+            </button>
+          </div>
 
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[15px] font-bold text-stone-800 leading-tight">
-                          {result.nombreCompleto}
-                        </p>
-                        <span className="text-[9px] font-black uppercase tracking-wider text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200/50">
-                          {result.rango}
-                        </span>
-                      </div>
-                      <p className="text-[11px] font-semibold text-stone-500 mt-0.5">
-                        {formatUruguayanCi(result.ci)}
-                      </p>
-                    </div>
-
-                    <ChevronRight
-                      className="h-5 w-5 shrink-0 text-stone-300 transition-colors group-hover:text-stone-500"
-                      aria-hidden="true"
-                    />
-                  </button>
-                </Box>
-              ))}
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                py: 4,
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                itemsCenter: "center",
-                gap: 1,
-              }}
-            >
-              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-stone-300">
-                Buscador Inteligente
+          {/* Results Body */}
+          <div className="max-h-[60vh] overflow-y-auto p-3">
+            {query.length > 0 && results.length === 0 ? (
+              <div className="py-12 text-center text-stone-500">
+                <p className="text-sm font-medium">
+                  No se encontraron resultados para &quot;{query}&quot;
+                </p>
               </div>
-              <p className="text-[11px] text-stone-400 font-medium">
-                Empieza a escribir para buscar personal...
-              </p>
-            </Box>
-          )}
-        </Box>
+            ) : results.length > 0 ? (
+              <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                {results.map((result) => (
+                  <li key={result.ci}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(result.ci)}
+                      className="group flex w-full items-center gap-4 rounded-xl p-3 text-left transition-all duration-150 hover:bg-stone-100/80 active:bg-stone-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
+                    >
+                      <span
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all group-hover:bg-white group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] ${
+                          result.tipo === "SOLDADO"
+                            ? "bg-stone-100 text-stone-500"
+                            : "bg-[rgba(202,161,79,0.12)] text-[var(--color-ejercito-gold)]"
+                        }`}
+                      >
+                        {result.tipo === "SOLDADO" ? (
+                          <User className="h-5 w-5 shrink-0" aria-hidden="true" />
+                        ) : (
+                          <IdCard className="h-5 w-5 shrink-0" aria-hidden="true" />
+                        )}
+                      </span>
 
-        {/* Action Bar */}
-        <Box
-          sx={{
-            p: 2,
-            px: 3,
-            bgcolor: "#fcfcfc",
-            borderTop: "1px solid rgba(0, 0, 0, 0.04)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div className="flex gap-4">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black text-stone-300">TAB</span>
-              <span className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">
-                Navegar
-              </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-[15px] font-bold leading-tight text-stone-800">
+                            {result.nombreCompleto}
+                          </p>
+                          <span className="shrink-0 rounded border border-stone-200/50 bg-stone-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-stone-500">
+                            {result.rango}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-[11px] font-semibold text-stone-500">
+                          {formatUruguayanCi(result.ci)}
+                        </p>
+                      </div>
+
+                      <ChevronRight
+                        className="h-5 w-5 shrink-0 text-stone-300 transition-colors group-hover:text-stone-500"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <div className="text-[10px] font-black uppercase tracking-[0.25em] text-stone-400">
+                  Buscador Inteligente
+                </div>
+                <p className="text-[11px] font-medium text-stone-500">
+                  Empieza a escribir para buscar personal...
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Action Bar */}
+          <div className="flex items-center justify-between border-t border-black/5 bg-[#fcfcfc] px-6 py-4">
+            <div className="flex gap-4">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-black text-stone-400">TAB</span>
+                <span className="text-[9px] font-bold uppercase tracking-tighter text-stone-500">
+                  Navegar
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-black text-stone-400">ESC</span>
+                <span className="text-[9px] font-bold uppercase tracking-tighter text-stone-500">
+                  Cerrar
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black text-stone-300">ESC</span>
-              <span className="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">
-                Cerrar
-              </span>
+            <div className="text-[9px] font-black uppercase tracking-widest text-stone-400">
+              G.A. 105mm No. 1
             </div>
           </div>
-          <div className="text-[9px] font-black text-stone-300 uppercase tracking-widest">
-            G.A. 105mm No. 1
-          </div>
-        </Box>
-      </Box>
+        </div>
+      </DialogContent>
     </Dialog>
   );
 }
